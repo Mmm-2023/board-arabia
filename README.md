@@ -164,7 +164,7 @@ Proof build: `GITHUB_PAGES=true VITE_BASE_PATH=/board-arabia/ npm run build` wri
 
 ## Security checklist (Factory audit + PR2)
 
-Evidence tags: **VERIFIED** = proved against live project / staging; **INFERRED** = from code + policies; **UNKNOWN** = needs Michael dashboard click.
+Evidence tags: **VERIFIED** = proved against live project / staging; **INFERRED** = from code + policies; **UNKNOWN** = needs a dashboard click; **SKIPPED BY MICHAEL** = declined, do not re-ask.
 
 | Area | Result | Evidence |
 |------|--------|----------|
@@ -178,13 +178,13 @@ Evidence tags: **VERIFIED** = proved against live project / staging; **INFERRED*
 | Invite-only `/dashboard` | **VERIFIED PASS** | Signed-out redirects to `/login?next=/dashboard`. No `members` row → invitation required. No public signup form |
 | No anon directory scrape | **VERIFIED PASS** | Directory shell does not query other members. Anon `select` on `members` and `profiles` is permission denied. `founding_capacity()` returns counts to a member or staff user only |
 | `/dashboard` vs `/admin` | **VERIFIED PASS** | `/admin` still requires `staff_users`. `/dashboard` requires `members` and blocks `suspended`. Staff `/login` without `next` still resolves to `/admin` |
-| Member invite secrets | **VERIFIED PASS** for storage; live send **UNKNOWN / GAP** | `email_events` for an Admit stores mode and seat only (no otp, token, or password keys). A dry-run link is returned only in the signed-in staff HTTP response. `RESEND_API_KEY` is not set on the Edge Function, so the email is logged and not delivered until that secret exists |
+| Member invite secrets | **VERIFIED PASS** for storage; live send is Michael-owned | `email_events` for an Admit stores mode and seat only (no otp, token, or password keys). A dry-run link is returned only in the signed-in staff HTTP response. Dry-run is the Wave 1 path. Michael owns `RESEND_API_KEY` for live Accept, Reject, and Admit mail |
 | No public booking CTA / PII | **VERIFIED PASS** | Client/dist grep: 0× `calendar.app.google`; apply form has no applicant list |
 | Rate-limit + sanitize apply | **VERIFIED PASS** | `submit-application`: length caps, email/URL checks, 5/hr per email+IP via `apply_rate_limits` |
 | Secrets hygiene | **INFERRED PASS** | Only public anon in repo/`.env.example`; Resend key is Edge secret only |
 | Notify no cross-applicant leak | **INFERRED PASS** | Templates built from single row id only |
-| Leaked-password protection (Auth) | **UNKNOWN / GAP** | Michael must enable in Supabase → Authentication → Providers → Email → **Leaked password protection** |
-| Live Resend delivery | **GAP** | Needs `RESEND_API_KEY` (dry-run proved; Accept body contains booking URL) |
+| Leaked-password protection (Auth) | **SKIPPED BY MICHAEL** | 22 Sep 2026, via Sasha. No Supabase Pro upgrade. Do not re-ask |
+| Live Resend delivery | Dry-run OK for Wave 1 | Michael owns live Accept/Reject mail. Dry-run is proved while `RESEND_API_KEY` is unset |
 | `staff_users_claim_first` | **GAP** | Safe while Michael present; drop later if desired |
 | Legacy `notify-application` | **GAP** | Prefer `submit-application` only |
 
