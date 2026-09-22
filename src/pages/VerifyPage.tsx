@@ -1,17 +1,20 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { Footer } from '../components/Footer'
 import { Nav } from '../components/Nav'
 import {
   clearHeldSlot,
   getHeldSlot,
   hasBooked,
+  markBooked,
   setHeldSlot,
+  slotFromSearchParams,
 } from '../lib/booking'
 import { supabase } from '../lib/supabase'
 
 export function VerifyPage() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const [turnover, setTurnover] = useState('')
   const [companies, setCompanies] = useState('')
   const [jobTitles, setJobTitles] = useState('')
@@ -23,12 +26,20 @@ export function VerifyPage() {
 
   useEffect(() => {
     document.title = 'Verify — Board Arabia'
-    if (!hasBooked() && !getHeldSlot()) {
+    const fromQuery = slotFromSearchParams(searchParams)
+    if (fromQuery) {
+      setHeldSlot(fromQuery)
+      markBooked()
+      setCalendarSlot(fromQuery)
+      return
+    }
+    const held = getHeldSlot()
+    if (!hasBooked() && !held) {
       navigate('/book', { replace: true })
       return
     }
-    setCalendarSlot(getHeldSlot())
-  }, [navigate])
+    setCalendarSlot(held)
+  }, [navigate, searchParams])
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault()
