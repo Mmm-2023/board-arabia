@@ -4,6 +4,24 @@ Application-only site: **land → apply (pre-vet) → staff review**, with priva
 
 **Staging (Vercel):** https://board-arabia.vercel.app/
 
+## Marketing pages
+
+English only. No public calendar, no member names or photographs, no fee schedule.
+
+| Route | Purpose |
+| --- | --- |
+| `/` | Home: hero, why, Founding 100 (50/50), member-tool tiles, how it works, partners, trust, final CTA |
+| `/apply` | Pre-vet form. CTA language is “Request consideration”. |
+| `/for-members` | Directory, availability, intros, founding badge, majlis, vouchers, sector tags, dashboard preview |
+| `/for-capital` | How FDI, family offices, PE, and VC reach members — mandate inbox and deal rooms, admin-gated |
+| `/partners` | Three annual seats, fifteen finance categories, interest via `mailto:partners@boardarabia.com` (not stored) |
+| `/how-it-works` | Pre-vet → review → Accept → private booking email → admit |
+| `/about` | Short founding note |
+
+Primary CTA on every marketing page is **Request consideration** → `/apply`. Partner CTA is **Partner with us** (mailto draft). Staff `/login` and `/admin` are unchanged and are not linked from the marketing nav.
+
+**Security:** marketing pages render no applicant PII. The private booking URL stays in the Accept email path only (`supabase/functions/decide-application`). Do not add it to client code.
+
 Preferred GitHub Pages once enabled: https://mmm-2023.github.io/board-arabia/
 
 ## Stack
@@ -25,7 +43,7 @@ npm run dev
 
 ## Visitor flow (no login)
 
-1. **Landing** (`/`) — prestige club feel; English only; **no** public Google Calendar CTA.
+1. **Landing** (`/`) — founding membership; English only; **no** public calendar CTA. Subpages explain members, capital, and partners.
 2. **Apply** (`/apply`) — pre-vet form: name, email, phone (optional), turnover **or** FO AUM, LinkedIn URL, job titles, companies → `applications.status = pending`.
 3. On submit → Edge Function `notify-application`:
    - Acknowledgement email to applicant

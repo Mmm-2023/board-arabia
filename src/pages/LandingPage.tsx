@@ -1,29 +1,39 @@
 import { motion, useScroll, useTransform } from 'motion/react'
 import { useRef } from 'react'
 import { Link } from 'react-router-dom'
+import { CtaBand } from '../components/CtaBand'
 import { Footer } from '../components/Footer'
 import { Nav } from '../components/Nav'
 import { Reveal } from '../components/Reveal'
+import { DisplayHeading, Eyebrow } from '../components/Type'
+import { MEMBER_TOOLS, PARTNER_CATEGORIES, PROCESS_STEPS } from '../content/marketing'
+import { usePageTitle } from '../lib/usePageTitle'
 
 const HERO_IMAGE =
   'https://images.unsplash.com/photo-1586724237569-f3d0c1dee8c6?auto=format&fit=crop&w=2400&q=80'
 
-const CREDENTIAL_PATHS = [
-  'Chairpersons',
-  'Board advisors',
-  'Aspiring NEDs',
-]
+const PATHS = ['Chairpersons', 'Board advisors', 'Saudi & international']
 
 export function LandingPage() {
+  usePageTitle('Board Arabia')
+
   return (
     <>
       <Nav />
       <main>
         <Hero />
         <PathsStrip />
-        <AboutSection />
+        <WhySection />
+        <FoundingSection />
+        <ToolsSection />
         <ProcessSection />
-        <ApplyCtaSection />
+        <PartnersSection />
+        <TrustSection />
+        <CtaBand
+          eyebrow="Begin"
+          title="Request consideration."
+          body="Submit a pre-vet. If you are accepted, a private booking email follows. Nothing on this site opens a calendar."
+        />
       </main>
       <Footer />
     </>
@@ -63,7 +73,7 @@ function Hero() {
             transition={{ duration: 0.8, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
             className="mb-4 font-serif text-[1.1rem] italic text-stone/85 md:text-[1.25rem]"
           >
-            Private membership
+            Founding membership
           </motion.p>
 
           <motion.h1
@@ -87,10 +97,11 @@ function Hero() {
             transition={{ duration: 0.9, delay: 0.4, ease: [0.22, 1, 0.36, 1] }}
             className="mt-7 flex max-w-3xl flex-col gap-7 md:mt-9 md:flex-row md:items-end md:justify-between md:gap-12"
           >
-            <p className="max-w-md text-[1.05rem] leading-relaxed text-stone/90 md:text-[1.15rem]">
-              A selective circle for Saudi and GCC chairpersons, board advisors,
-              and aspiring NEDs. Apply for review — conversations are by invite
-              after vetting.
+            <p className="max-w-md text-[1.05rem] leading-relaxed text-stone/90 md:text-[1.12rem]">
+              A selective founding membership for Saudi and international
+              chairpersons and board advisors. One hundred places. Request
+              consideration — a conversation follows only after review, by
+              private email.
             </p>
 
             <div className="flex shrink-0 flex-col gap-3 sm:flex-row">
@@ -98,13 +109,13 @@ function Hero() {
                 to="/apply"
                 className="inline-flex items-center justify-center bg-brass px-6 py-3.5 text-[0.78rem] font-semibold tracking-[0.08em] text-ink uppercase transition-colors hover:bg-brass-bright"
               >
-                Apply for review
+                Request consideration
               </Link>
               <a
                 href="#process"
                 className="inline-flex items-center justify-center border border-pearl/35 px-6 py-3.5 text-[0.78rem] font-semibold tracking-[0.08em] text-pearl uppercase transition-colors hover:border-pearl hover:bg-pearl/5"
               >
-                See the process
+                How it works
               </a>
             </div>
           </motion.div>
@@ -119,10 +130,10 @@ function PathsStrip() {
     <section className="border-b border-ink/8 bg-pearl py-9 md:py-11">
       <div className="mx-auto max-w-7xl px-5 md:px-10">
         <p className="text-center text-[0.7rem] font-semibold tracking-[0.16em] text-ink/40 uppercase">
-          Built for
+          Held for
         </p>
         <ul className="mt-4 flex flex-wrap items-center justify-center gap-x-3 gap-y-2 md:mt-5 md:gap-x-2">
-          {CREDENTIAL_PATHS.map((label, i) => (
+          {PATHS.map((label, i) => (
             <li key={label} className="flex items-center gap-3 md:gap-4">
               {i > 0 && (
                 <span aria-hidden className="hidden h-3 w-px bg-ink/15 sm:block" />
@@ -138,23 +149,146 @@ function PathsStrip() {
   )
 }
 
-function AboutSection() {
+function WhySection() {
+  const points = [
+    {
+      n: '01',
+      title: 'Proximity to capital',
+      body: 'Mandates from family offices, funds, and strategic investors arrive through an admin-gated inbox. Members are not left open to cold outreach.',
+    },
+    {
+      n: '02',
+      title: 'Proximity to peers',
+      body: 'Saudi and international chairs and advisors, admitted on the same standard: credentials first, then a decision.',
+    },
+    {
+      n: '03',
+      title: 'Not an open directory',
+      body: 'You cannot browse members, buy a seat, or arrange a conversation from this site. The pages explain the room. They do not open it.',
+    },
+  ]
+
   return (
-    <section id="about" className="grain relative overflow-hidden bg-pearl py-24 md:py-32">
+    <section id="why" className="grain relative overflow-hidden bg-pearl py-24 md:py-32">
       <div className="relative mx-auto max-w-7xl px-5 md:px-10">
         <Reveal>
-          <p className="mb-4 font-serif text-[1.2rem] italic text-ink-soft/70">
-            The club
-          </p>
-          <h2 className="max-w-3xl font-display text-[clamp(2.2rem,5vw,3.85rem)] font-bold leading-[1.05] tracking-[-0.035em] text-balance text-ink">
-            Prestige through credentials, not open signup.
-          </h2>
-          <p className="mt-5 max-w-xl text-[1.05rem] leading-relaxed text-ink/60">
-            Board Arabia is a reviewed membership. You submit a pre-vet form;
-            Michael reviews credentials. Accepted candidates receive a private
-            conversation invite by email.
+          <Eyebrow>Why Board Arabia</Eyebrow>
+          <DisplayHeading className="max-w-3xl">
+            Near capital. Near peers. Closed by design.
+          </DisplayHeading>
+          <p className="mt-6 max-w-xl text-[1.05rem] leading-relaxed text-ink/60">
+            Board Arabia is a reviewed membership. It is not a directory you
+            can search, and it is not a calendar you can book.
           </p>
         </Reveal>
+
+        <ol className="mt-16 grid gap-12 md:mt-20 md:grid-cols-3 md:gap-10">
+          {points.map((point, i) => (
+            <Reveal key={point.n} delay={0.06 * i}>
+              <li className="border-t border-ink/12 pt-6">
+                <span className="font-display text-[0.78rem] font-semibold tracking-[0.18em] text-brass">
+                  {point.n}
+                </span>
+                <h3 className="mt-4 font-display text-[1.45rem] font-semibold tracking-[-0.03em] text-ink">
+                  {point.title}
+                </h3>
+                <p className="mt-3 text-[0.98rem] leading-relaxed text-ink/60">
+                  {point.body}
+                </p>
+              </li>
+            </Reveal>
+          ))}
+        </ol>
+      </div>
+    </section>
+  )
+}
+
+function FoundingSection() {
+  return (
+    <section id="founding" className="bg-stone">
+      <div className="mx-auto grid max-w-7xl md:grid-cols-2">
+        <div className="bg-ink px-5 py-20 text-pearl md:px-10 md:py-28">
+          <Reveal>
+            <Eyebrow tone="brass">Founding 100</Eyebrow>
+            <DisplayHeading tone="light" className="max-w-md">
+              Fifty and fifty.
+            </DisplayHeading>
+            <p className="mt-6 max-w-md text-[1.05rem] leading-relaxed text-stone/75">
+              One hundred founding places, split evenly. Complimentary while
+              founding members contribute — a majlis attended, an introduction
+              made with care, judgment when it is asked for. Places are not
+              priced on this site.
+            </p>
+          </Reveal>
+        </div>
+        <div className="grid h-full sm:grid-cols-2">
+          <div className="flex flex-col justify-end border-ink/10 px-5 py-14 sm:border-r md:px-10 md:py-16">
+            <p className="font-display text-[clamp(4.5rem,8vw,7rem)] font-extrabold leading-none tracking-[-0.05em] text-ink">
+              50
+            </p>
+            <h3 className="mt-4 font-display text-[1.35rem] font-semibold tracking-[-0.03em] text-ink">
+              Saudi
+            </h3>
+            <p className="mt-3 text-[0.98rem] leading-relaxed text-ink/60">
+              Chairpersons and board advisors held for the Kingdom.
+            </p>
+          </div>
+          <div className="flex flex-col justify-end px-5 py-14 md:px-10 md:py-16">
+            <p className="font-display text-[clamp(4.5rem,8vw,7rem)] font-extrabold leading-none tracking-[-0.05em] text-ink">
+              50
+            </p>
+            <h3 className="mt-4 font-display text-[1.35rem] font-semibold tracking-[-0.03em] text-ink">
+              International
+            </h3>
+            <p className="mt-3 text-[0.98rem] leading-relaxed text-ink/60">
+              Counterparts who work with Saudi capital and companies.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function ToolsSection() {
+  return (
+    <section id="tools" className="bg-pearl py-24 md:py-32">
+      <div className="mx-auto max-w-7xl px-5 md:px-10">
+        <Reveal>
+          <Eyebrow>Member tools and benefits</Eyebrow>
+          <DisplayHeading className="max-w-3xl">
+            What the room actually uses.
+          </DisplayHeading>
+          <p className="mt-6 max-w-xl text-[1.05rem] leading-relaxed text-ink/60">
+            Nine instruments, each inside the dashboard after admission. Read
+            the one you care about.
+          </p>
+        </Reveal>
+
+        <ul className="mt-14 grid border-t border-l border-ink/10 sm:grid-cols-2 lg:grid-cols-3">
+          {MEMBER_TOOLS.map((tool) => (
+            <li key={tool.id} className="border-r border-b border-ink/10">
+              <Link
+                to={tool.href}
+                className="group flex h-full flex-col px-6 py-7 transition-colors hover:bg-white/70 md:px-7 md:py-8"
+              >
+                <span className="font-display text-[0.75rem] font-semibold tracking-[0.18em] text-brass">
+                  {tool.n}
+                </span>
+                <h3 className="mt-4 font-display text-[1.35rem] font-semibold tracking-[-0.03em] text-ink">
+                  {tool.title}
+                </h3>
+                <p className="mt-3 flex-1 text-[0.95rem] leading-relaxed text-ink/60">
+                  {tool.home}
+                </p>
+                <span className="mt-6 text-[0.72rem] font-semibold tracking-[0.12em] text-ink/45 uppercase transition-colors group-hover:text-brass">
+                  Read
+                </span>
+              </Link>
+            </li>
+          ))}
+        </ul>
       </div>
     </section>
   )
@@ -176,82 +310,129 @@ function ProcessSection() {
       />
       <div className="relative mx-auto max-w-7xl px-5 md:px-10">
         <Reveal>
-          <p className="mb-4 font-serif text-[1.2rem] italic text-brass-bright/90">
-            How it works
-          </p>
-          <h2 className="max-w-3xl font-display text-[clamp(2.2rem,5vw,3.85rem)] font-bold leading-[1.05] tracking-[-0.035em] text-balance">
-            Apply. Review. Invite.
-          </h2>
+          <Eyebrow tone="brass">How it works</Eyebrow>
+          <DisplayHeading tone="light" className="max-w-3xl">
+            Consideration before any conversation.
+          </DisplayHeading>
           <p className="mt-6 max-w-xl text-[1.05rem] leading-relaxed text-stone/75">
-            No open calendar on this site. Credentials first; a private booking
-            link is emailed only after acceptance.
+            Pre-vet, review, accept, a private booking email, then admission.
+            No open calendar sits between those steps.
           </p>
         </Reveal>
 
-        <ol className="mt-16 grid gap-10 md:mt-20 md:grid-cols-3 md:gap-8">
-          {[
-            {
-              step: '01',
-              title: 'Submit pre-vet form',
-              body: 'Name, email, LinkedIn, titles, companies, and turnover or FO AUM.',
-            },
-            {
-              step: '02',
-              title: 'Credential review',
-              body: 'Michael reviews every pending application in staff admin.',
-            },
-            {
-              step: '03',
-              title: 'Private invite or decline',
-              body: 'Accepted candidates get a private booking link by email. Declines are notified politely.',
-            },
-          ].map((item, i) => (
-            <Reveal key={item.step} delay={0.08 * i}>
-              <li className="flex flex-col">
+        <ol className="mt-16 grid gap-10 md:mt-20 md:grid-cols-2 lg:grid-cols-5 lg:gap-6">
+          {PROCESS_STEPS.map((step, i) => (
+            <Reveal key={step.n} delay={0.05 * i}>
+              <li>
                 <span className="font-display text-[0.85rem] font-semibold tracking-[0.2em] text-brass">
-                  {item.step}
+                  {step.n}
                 </span>
-                <h3 className="mt-4 font-display text-[1.3rem] font-semibold tracking-[-0.02em]">
-                  {item.title}
+                <h3 className="mt-4 font-display text-[1.2rem] font-semibold tracking-[-0.02em]">
+                  {step.title}
                 </h3>
-                <p className="mt-3 text-[0.95rem] leading-relaxed text-stone/70">
-                  {item.body}
+                <p className="mt-3 text-[0.92rem] leading-relaxed text-stone/70">
+                  {step.home}
                 </p>
               </li>
             </Reveal>
           ))}
         </ol>
+
+        <Reveal>
+          <Link
+            to="/how-it-works"
+            className="mt-14 inline-flex border-b border-brass pb-0.5 text-[0.78rem] font-semibold tracking-[0.1em] text-pearl uppercase"
+          >
+            Full sequence
+          </Link>
+        </Reveal>
       </div>
     </section>
   )
 }
 
-function ApplyCtaSection() {
+function PartnersSection() {
+  const sample = PARTNER_CATEGORIES.slice(0, 6)
+
   return (
-    <section className="relative overflow-hidden bg-stone py-24 md:py-32">
-      <div
-        aria-hidden
-        className="pointer-events-none absolute left-1/2 top-0 h-[22rem] w-[22rem] -translate-x-1/2 rounded-full bg-brass/15 blur-3xl"
-      />
-      <div className="relative mx-auto max-w-3xl px-5 text-center md:px-10">
+    <section id="partners" className="bg-pearl py-24 md:py-32">
+      <div className="mx-auto grid max-w-7xl gap-14 px-5 md:px-10 lg:grid-cols-[1.1fr_0.9fr] lg:gap-20">
         <Reveal>
-          <p className="mb-4 font-serif text-[1.25rem] italic text-ink-soft/70">
-            Begin
-          </p>
-          <h2 className="font-display text-[clamp(2.3rem,5.5vw,4rem)] font-bold leading-[1.02] tracking-[-0.04em] text-balance text-ink">
-            Apply first. Invite after.
-          </h2>
-          <p className="mx-auto mt-6 max-w-lg text-[1.05rem] leading-relaxed text-ink/65">
-            Share your credentials for review. If accepted, you will receive a
-            private next-step email — not a public booking page.
+          <Eyebrow>Ecosystem partners</Eyebrow>
+          <DisplayHeading>Three seats a year.</DisplayHeading>
+          <p className="mt-6 max-w-xl text-[1.05rem] leading-relaxed text-ink/60">
+            Partner seats are annual and capped at three. They are for firms
+            on the finance rails of a deal — not a wall of logos. We do not
+            scrape names, and we do not publish a partner directory here.
           </p>
           <Link
-            to="/apply"
-            className="mt-10 inline-flex items-center justify-center bg-ink px-8 py-4 text-[0.78rem] font-semibold tracking-[0.08em] text-pearl uppercase transition-colors hover:bg-ink-soft"
+            to="/partners"
+            className="mt-8 inline-flex items-center justify-center bg-ink px-7 py-3.5 text-[0.78rem] font-semibold tracking-[0.08em] text-pearl uppercase transition-colors hover:bg-ink-soft"
           >
-            Apply for review
+            Partner with us
           </Link>
         </Reveal>
+
+        <Reveal delay={0.08}>
+          <p className="text-[0.7rem] font-semibold tracking-[0.16em] text-ink/40 uppercase">
+            Finance first
+          </p>
+          <ul className="mt-5 divide-y divide-ink/10 border-y border-ink/10">
+            {sample.map((category) => (
+              <li
+                key={category.name}
+                className="py-3.5 font-display text-[1.05rem] font-semibold tracking-[-0.02em] text-ink/80"
+              >
+                {category.name}
+              </li>
+            ))}
+          </ul>
+          <p className="mt-4 text-[0.92rem] text-ink/50">
+            Fifteen categories in full on the partners page.
+          </p>
+        </Reveal>
+      </div>
+    </section>
+  )
+}
+
+function TrustSection() {
+  const points = [
+    {
+      title: 'Credentials are reviewed',
+      body: 'No one is offered a conversation on the strength of a form that has not been read.',
+    },
+    {
+      title: 'No open calendar',
+      body: 'This site does not publish a booking page. A link, when one is offered, is emailed after acceptance.',
+    },
+    {
+      title: 'Admin oversight',
+      body: 'Outreach, warm introductions, and mandates pass admin before they reach a member.',
+    },
+  ]
+
+  return (
+    <section id="trust" className="border-t border-ink/10 bg-pearl pb-24 md:pb-32">
+      <div className="mx-auto max-w-7xl px-5 md:px-10">
+        <Reveal>
+          <Eyebrow>Trust and discretion</Eyebrow>
+          <DisplayHeading className="max-w-3xl">
+            Reviewed. Gated. Off the open web.
+          </DisplayHeading>
+        </Reveal>
+        <ul className="mt-14 grid gap-8 md:grid-cols-3">
+          {points.map((point) => (
+            <li key={point.title} className="border-l border-brass pl-5">
+              <h3 className="font-display text-[1.25rem] font-semibold tracking-[-0.02em] text-ink">
+                {point.title}
+              </h3>
+              <p className="mt-3 text-[0.98rem] leading-relaxed text-ink/60">
+                {point.body}
+              </p>
+            </li>
+          ))}
+        </ul>
       </div>
     </section>
   )

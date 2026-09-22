@@ -34,7 +34,7 @@ export function ApplyPage() {
   const [emailNote, setEmailNote] = useState('')
 
   useEffect(() => {
-    document.title = 'Apply — Board Arabia'
+    document.title = 'Request consideration — Board Arabia'
   }, [])
 
   function setField<K extends keyof FormState>(key: K, value: FormState[K]) {
@@ -117,11 +117,12 @@ export function ApplyPage() {
               Received
             </p>
             <h1 className="mt-3 font-display text-[clamp(2rem,4.5vw,3rem)] font-bold tracking-[-0.03em] text-ink">
-              Application submitted
+              Consideration requested
             </h1>
             <p className="mt-5 text-[1.05rem] leading-relaxed text-ink/65">
-              Thank you. We have your pre-vet details. Michael will review and
-              reply — there is no public calendar booking on this site.
+              Thank you. We have your pre-vet details. There is nothing to
+              arrange on this site. You will hear back after review — an
+              acceptance with a private next step by email, or a decline.
             </p>
             {emailNote && (
               <p className="mt-4 text-[0.9rem] text-ink/50">{emailNote}</p>
@@ -141,18 +142,20 @@ export function ApplyPage() {
 
   return (
     <>
-      <Nav ctaTo="/apply" ctaLabel="Apply" />
+      <Nav />
       <main className="min-h-dvh bg-pearl pt-24 pb-20 md:pt-28">
         <div className="mx-auto max-w-2xl px-5 md:px-10">
           <p className="font-serif text-[1.15rem] italic text-ink-soft/70">
-            Pre-vet registration
+            Pre-vet
           </p>
           <h1 className="mt-3 font-display text-[clamp(2.2rem,5vw,3.4rem)] font-bold leading-[1.05] tracking-[-0.035em] text-ink">
-            Apply for review
+            Request consideration
           </h1>
           <p className="mt-5 text-[1.05rem] leading-relaxed text-ink/65">
-            Submit credentials first. If accepted, you receive a private
-            conversation invite — visitors never see an open calendar.
+            This form is a pre-vet, not a booking. Send your name, email,
+            LinkedIn, titles, companies, and turnover or family-office size.
+            Michael reviews every submission. If you are accepted, a private
+            booking link arrives by email. That link is not on this website.
           </p>
 
           <form onSubmit={onSubmit} className="mt-10 space-y-6">
@@ -190,7 +193,7 @@ export function ApplyPage() {
               value={form.turnover}
               onChange={(v) => setField('turnover', v)}
               placeholder="e.g. SAR 50m+ group revenue"
-              hint="Provide turnover and/or family-office AUM below — at least one."
+              hint="Turnover or family-office size — at least one. This is for review, not a time slot."
             />
             <Field
               id="fo_aum"
@@ -238,7 +241,7 @@ export function ApplyPage() {
               disabled={submitting}
               className="inline-flex items-center justify-center bg-ink px-7 py-3.5 text-[0.78rem] font-semibold tracking-[0.08em] text-pearl uppercase transition-colors hover:bg-ink-soft disabled:opacity-60"
             >
-              {submitting ? 'Submitting…' : 'Submit application'}
+              {submitting ? 'Submitting…' : 'Submit for consideration'}
             </button>
           </form>
         </div>

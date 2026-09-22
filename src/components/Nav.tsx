@@ -1,16 +1,19 @@
 import { useEffect, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
+import { NAV_LINKS } from '../content/marketing'
 
 export function Nav({
   ctaTo = '/apply',
-  ctaLabel = 'Apply for review',
+  ctaLabel = 'Request consideration',
 }: {
   ctaTo?: string
   ctaLabel?: string
 }) {
   const [scrolled, setScrolled] = useState(false)
+  const [openPath, setOpenPath] = useState<string | null>(null)
   const location = useLocation()
   const isHome = location.pathname === '/' || location.pathname === ''
+  const open = openPath === location.pathname
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 24)
@@ -19,7 +22,16 @@ export function Nav({
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
-  const darkNav = !isHome || scrolled
+  useEffect(() => {
+    if (!open) return
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setOpenPath(null)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [open])
+
+  const darkNav = !isHome || scrolled || open
   const linkClass = darkNav
     ? 'text-ink/60 hover:text-ink'
     : 'text-pearl/70 hover:text-pearl'
@@ -41,32 +53,103 @@ export function Nav({
         >
           Board Arabia
         </Link>
-        <nav className="hidden items-center gap-8 md:flex">
-          {isHome &&
-            [
-              ['About', '#about'],
-              ['Process', '#process'],
-            ].map(([label, href]) => (
-              <a
-                key={href}
-                href={href}
-                className={`text-[0.78rem] font-medium tracking-[0.06em] uppercase transition-colors ${linkClass}`}
+
+        <nav className="hidden items-center gap-7 lg:flex" aria-label="Primary">
+          {NAV_LINKS.map((item) => {
+            const active = location.pathname === item.to
+            return (
+              <Link
+                key={item.to}
+                to={item.to}
+                aria-current={active ? 'page' : undefined}
+                className={`text-[0.78rem] font-medium tracking-[0.06em] uppercase transition-colors ${
+                  active ? (darkNav ? 'text-ink' : 'text-pearl') : linkClass
+                }`}
               >
-                {label}
-              </a>
-            ))}
+                {item.label}
+              </Link>
+            )
+          })}
         </nav>
-        <Link
-          to={ctaTo}
-          className={`text-[0.72rem] font-semibold tracking-[0.04em] uppercase transition-all sm:text-[0.78rem] ${
-            darkNav
-              ? 'border-b border-brass pb-0.5 text-ink'
-              : 'border-b border-pearl/45 pb-0.5 text-pearl hover:border-pearl'
-          }`}
-        >
-          {ctaLabel}
-        </Link>
+
+        <div className="flex items-center gap-4">
+          <Link
+            to={ctaTo}
+            className={`hidden text-[0.72rem] font-semibold tracking-[0.04em] uppercase transition-all sm:inline sm:text-[0.78rem] ${
+              darkNav
+                ? 'border-b border-brass pb-0.5 text-ink'
+                : 'border-b border-pearl/45 pb-0.5 text-pearl hover:border-pearl'
+            }`}
+          >
+            {ctaLabel}
+          </Link>
+          <button
+            type="button"
+            className={`inline-flex h-10 w-10 items-center justify-center lg:hidden ${
+              darkNav ? 'text-ink' : 'text-pearl'
+            }`}
+            aria-expanded={open}
+            aria-controls="mobile-nav"
+            onClick={() => setOpenPath(open ? null : location.pathname)}
+          >
+            <span className="sr-only">{open ? 'Close menu' : 'Open menu'}</span>
+            <svg width="20" height="14" viewBox="0 0 20 14" aria-hidden>
+              {open ? (
+                <path
+                  d="M2 2 L18 12 M18 2 L2 12"
+                  stroke="currentColor"
+                  strokeWidth="1.4"
+                  fill="none"
+                />
+              ) : (
+                <path
+                  d="M0 1.2 H20 M0 7 H20 M0 12.8 H20"
+                  stroke="currentColor"
+                  strokeWidth="1.4"
+                  fill="none"
+                />
+              )}
+            </svg>
+          </button>
+        </div>
       </div>
+
+      {open && (
+        <nav
+          id="mobile-nav"
+          aria-label="Mobile"
+          className="border-t border-ink/8 bg-pearl lg:hidden"
+        >
+          <ul className="mx-auto flex max-w-7xl flex-col px-5 py-4 md:px-10">
+            {NAV_LINKS.map((item) => (
+              <li key={item.to}>
+                <Link
+                  to={item.to}
+                  className="block py-3 font-display text-[1.35rem] font-semibold tracking-[-0.03em] text-ink"
+                >
+                  {item.label}
+                </Link>
+              </li>
+            ))}
+            <li>
+              <Link
+                to="/about"
+                className="block py-3 font-display text-[1.35rem] font-semibold tracking-[-0.03em] text-ink"
+              >
+                About
+              </Link>
+            </li>
+            <li className="pt-2">
+              <Link
+                to={ctaTo}
+                className="inline-flex bg-ink px-5 py-3 text-[0.75rem] font-semibold tracking-[0.08em] text-pearl uppercase"
+              >
+                {ctaLabel}
+              </Link>
+            </li>
+          </ul>
+        </nav>
+      )}
     </header>
   )
 }
