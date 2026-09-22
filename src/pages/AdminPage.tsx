@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { Link, Navigate } from 'react-router-dom'
 import {
@@ -8,16 +8,6 @@ import {
   type ApplicationStatus,
 } from '../lib/supabase'
 
-/** Suggest next weekday 10:00 local (browser) as a starting slot Michael can edit. */
-function suggestedMeetingLocalValue(): string {
-  const d = new Date()
-  d.setDate(d.getDate() + 1)
-  while (d.getDay() === 0 || d.getDay() === 6) d.setDate(d.getDate() + 1)
-  d.setHours(10, 0, 0, 0)
-  const pad = (n: number) => String(n).padStart(2, '0')
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
-}
-
 export function AdminPage() {
   const [session, setSession] = useState<Session | null | undefined>(undefined)
   const [isStaff, setIsStaff] = useState(false)
@@ -26,11 +16,6 @@ export function AdminPage() {
   const [listError, setListError] = useState('')
   const [updatingId, setUpdatingId] = useState<string | null>(null)
   const [actionNote, setActionNote] = useState('')
-  const [acceptForId, setAcceptForId] = useState<string | null>(null)
-  const [meetingLocal, setMeetingLocal] = useState(suggestedMeetingLocalValue)
-  const [durationMin, setDurationMin] = useState(30)
-
-  const suggested = useMemo(() => suggestedMeetingLocalValue(), [])
 
   useEffect(() => {
     document.title = 'Admin — Board Arabia'
@@ -96,33 +81,11 @@ export function AdminPage() {
     await supabase.auth.signOut()
   }
 
-  function openAccept(id: string) {
-    setAcceptForId(id)
-    setMeetingLocal(suggestedMeetingLocalValue())
-    setDurationMin(30)
-    setListError('')
-    setActionNote('')
-  }
-
-  async function confirmAccept(id: string) {
-    const start = new Date(meetingLocal)
-    if (Number.isNaN(start.getTime())) {
-      setListError('Pick a valid meeting date and time.')
-      return
-    }
-    if (start.getTime() < Date.now() - 60_000) {
-      setListError('Meeting time must be in the future.')
-      return
-    }
-    const end = new Date(start.getTime() + durationMin * 60_000)
-
+  async function onAccept(id: string) {
     setUpdatingId(id)
     setActionNote('')
     setListError('')
-    const result = await decideApplication(id, 'accepted', {
-      meeting_start: start.toISOString(),
-      meeting_end: end.toISOString(),
-    })
+    const result = await decideApplication(id, 'accepted')
     if (result.error) {
       setListError(result.error)
       setUpdatingId(null)
@@ -136,15 +99,14 @@ export function AdminPage() {
               ...row,
               status: 'accepted',
               decision_at: new Date().toISOString(),
-              invite_event_id: result.inviteEventId ?? row.invite_event_id,
+              invite_event_id: 'private_booking_link',
               invite_sent_at: new Date().toISOString(),
-              calendar_slot: start.toISOString(),
+              calendar_slot: 'private_invite_emailed',
             }
           : row,
       ),
     )
-    setActionNote(result.message || 'Accepted — calendar invite sent.')
-    setAcceptForId(null)
+    setActionNote(result.message || 'Accepted — private booking link emailed.')
     setUpdatingId(null)
   }
 
@@ -152,7 +114,6 @@ export function AdminPage() {
     setUpdatingId(id)
     setActionNote('')
     setListError('')
-    setAcceptForId(null)
     const result = await decideApplication(id, 'rejected')
     if (result.error) {
       setListError(result.error)
@@ -336,76 +297,7 @@ export function AdminPage() {
                     )}
                   </dl>
 
-                  {acceptForId === app.id ? (
-                    <div className="mt-5 border border-brass/40 bg-brass/5 px-4 py-4">
-                      <p className="text-[0.72rem] font-semibold tracking-[0.08em] text-brass-bright uppercase">
-                        Accept — pick meeting time
-                      </p>
-                      <p className="mt-2 text-[0.88rem] text-stone/70">
-                        Creates a Google Calendar event with Meet and invites{' '}
-                        {app.email}. Not a public booking page.
-                      </p>
-                      <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-end">
-                        <label className="block flex-1">
-                          <span className="mb-1.5 block text-[0.68rem] font-semibold tracking-[0.06em] text-pearl/45 uppercase">
-                            Date & time
-                          </span>
-                          <input
-                            type="datetime-local"
-                            value={meetingLocal}
-                            onChange={(e) => setMeetingLocal(e.target.value)}
-                            className="w-full border border-pearl/20 bg-ink px-3 py-2.5 text-[0.95rem] text-pearl outline-none focus:border-brass"
-                          />
-                        </label>
-                        <label className="block sm:w-36">
-                          <span className="mb-1.5 block text-[0.68rem] font-semibold tracking-[0.06em] text-pearl/45 uppercase">
-                            Minutes
-                          </span>
-                          <select
-                            value={durationMin}
-                            onChange={(e) =>
-                              setDurationMin(Number(e.target.value))
-                            }
-                            className="w-full border border-pearl/20 bg-ink px-3 py-2.5 text-[0.95rem] text-pearl outline-none focus:border-brass"
-                          >
-                            {[30, 45, 60].map((m) => (
-                              <option key={m} value={m}>
-                                {m}
-                              </option>
-                            ))}
-                          </select>
-                        </label>
-                      </div>
-                      <button
-                        type="button"
-                        className="mt-3 text-[0.75rem] font-semibold tracking-[0.06em] text-brass-bright uppercase hover:text-brass"
-                        onClick={() => setMeetingLocal(suggested)}
-                      >
-                        Use suggested: {suggested.replace('T', ' ')}
-                      </button>
-                      <div className="mt-4 flex flex-wrap gap-2">
-                        <button
-                          type="button"
-                          disabled={updatingId === app.id}
-                          onClick={() => void confirmAccept(app.id)}
-                          className="bg-brass px-4 py-2.5 text-[0.68rem] font-semibold tracking-[0.06em] text-ink uppercase disabled:opacity-40"
-                        >
-                          {updatingId === app.id
-                            ? 'Creating invite…'
-                            : 'Confirm & send calendar invite'}
-                        </button>
-                        <button
-                          type="button"
-                          disabled={updatingId === app.id}
-                          onClick={() => setAcceptForId(null)}
-                          className="border border-pearl/20 px-4 py-2.5 text-[0.68rem] font-semibold tracking-[0.06em] text-pearl/70 uppercase hover:text-pearl"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="mt-5 flex flex-wrap gap-2">
+                  <div className="mt-5 flex flex-wrap gap-2">
                       <button
                         type="button"
                         disabled={
@@ -413,7 +305,7 @@ export function AdminPage() {
                           app.status === 'accepted' ||
                           app.status === 'verified'
                         }
-                        onClick={() => openAccept(app.id)}
+                        onClick={() => void onAccept(app.id)}
                         className={`px-3 py-2 text-[0.68rem] font-semibold tracking-[0.06em] uppercase transition-colors disabled:opacity-40 ${
                           app.status === 'accepted' || app.status === 'verified'
                             ? 'bg-brass text-ink'
@@ -439,7 +331,6 @@ export function AdminPage() {
                         Reject
                       </button>
                     </div>
-                  )}
                 </li>
               ))}
             </ul>

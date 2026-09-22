@@ -12,7 +12,7 @@ Preferred GitHub Pages once enabled: https://mmm-2023.github.io/board-arabia/
 - Supabase project `iirqbizwanyhgkhanntq` (`applications` with `full_name`, `email`, `phone`, `fo_aum`, nullable `calendar_slot`; `staff_users`; `email_events`)
 - Status values: `pending` | `accepted` | `rejected` (also allows legacy `verified` | `declined`)
 - Email: Supabase Edge Functions + **Resend** (dry-run audit when `RESEND_API_KEY` is unset)
-- Private Meet invites on Accept via Google Calendar API (admin picks date/time). Never a public booking CTA. `calendar_slot` stores the chosen meeting ISO.
+- On Accept, email the candidate a private booking link (server-side only). Never a public calendar CTA. `calendar_slot` may be set to `private_invite_emailed`.
 
 ## Local setup
 
@@ -39,13 +39,13 @@ Legacy `/book` and `/verify` redirect to `/apply`.
 
 1. **Login** (`/login`) — Supabase Auth email + password → redirects to `/admin`.
 2. **Admin** (`/admin` or `/ops`) — only rows in `staff_users` can list applications.
-3. **Accept** → Edge Function `decide-application`: Michael picks date/time in `/admin` → Google Calendar API creates event **with Meet** and invites the applicant. Optional Resend ack. No public booking page.
+3. **Accept** → Edge Function `decide-application` emails the candidate the private booking link only (no date picker, no Calendar API).
 4. **Reject** → polite decline email to applicant.
 5. **Sign out** on admin clears the session.
 
 ### Critical anti-leak
 
-The public site must **never** show `calendar.app.google` or any open appointment schedule. Accept creates a **private** Google Calendar event + Meet invite for the applicant only.
+The public site must **never** show the booking URL. It is emailed only on Accept from `decide-application`.
 
 ## Michael: set / reset staff password
 
@@ -86,34 +86,7 @@ Set these in **Supabase → Project Settings → Edge Functions → Secrets**:
 | `RESEND_FROM` | Recommended | Verified sender |
 | `PUBLIC_SITE_URL` | Recommended | Admin link in notify. Default `https://board-arabia.vercel.app` |
 
-### Google Calendar + Meet (Accept path)
-
-**Preferred: OAuth user refresh token** (Michael’s Google account that owns the calendar):
-
-| Secret | Required | Purpose |
-|--------|----------|---------|
-| `GOOGLE_CLIENT_ID` | **Yes for live invites** | OAuth client ID (Google Cloud Console) |
-| `GOOGLE_CLIENT_SECRET` | **Yes** | OAuth client secret |
-| `GOOGLE_REFRESH_TOKEN` | **Yes** | Refresh token with `https://www.googleapis.com/auth/calendar` |
-| `GOOGLE_CALENDAR_ID` | Optional | Calendar id (default `primary`) |
-
-**Click-path to get a refresh token:**
-
-1. Google Cloud Console → create/select project → enable **Google Calendar API**.  
-2. APIs & Services → Credentials → Create **OAuth 2.0 Client ID** (Web application). Add redirect URI (e.g. `https://developers.google.com/oauthplayground`).  
-3. OAuth consent screen → add scope `.../auth/calendar`.  
-4. Open [OAuth 2.0 Playground](https://developers.google.com/oauthplayground) → gear → use your client ID/secret → authorize Calendar API v3 → Exchange authorization code for tokens → copy **Refresh token**.  
-5. Paste the three values into Supabase Edge secrets.
-
-**Alternative: service account** (harder for external Meet invites):
-
-| Secret | Notes |
-|--------|--------|
-| `GOOGLE_SERVICE_ACCOUNT_JSON` | Full SA JSON string |
-| `GOOGLE_IMPERSONATE_USER` | Workspace user to impersonate (domain-wide delegation) |
-| `GOOGLE_CALENDAR_ID` | Target calendar |
-
-Without Google secrets, Accept still updates status in **dry-run** and logs `email_events` with setup instructions — no public booking page is used.
+Accept emails the private booking URL from the Edge Function only. **No Google Calendar API, Meet, or OAuth secrets.** Optional override: `PRIVATE_BOOKING_LINK`.
 
 Without `RESEND_API_KEY`, Resend paths dry-run into `email_events`:
 
@@ -134,7 +107,7 @@ limit 20;
 
 1. Staging → **Apply for review** → submit.  
 2. Confirm ack + `michael@nammco.com` notify (or dry-run rows).  
-3. `/login` → `/admin` → **Accept** → pick date/time → Confirm → Google Calendar Meet invite to applicant (or dry-run until Google secrets set).  
+3. `/login` → `/admin` → **Accept** → candidate email contains the private booking URL (dry-run until `RESEND_API_KEY`).  
 4. Public site has **no** calendar CTA.
 
 ## Deploy
@@ -153,14 +126,13 @@ Evidence tags: **VERIFIED** = proved against live project / staging; **INFERRED*
 | RLS `email_events` | **VERIFIED PASS** | Staff select only |
 | Dangerous ops RPCs | **VERIFIED PASS** | Factory revoked EXECUTE on `list_applications_ops` / `ops_code_ok` / `update_application_status_ops` + client access on `ops_config`; anon RPC call → not exposed |
 | Auth gate `/admin` | **VERIFIED PASS** | Unauthed → `/login?next=/admin`; UI requires session; list needs `staff_users` |
-| Accept/Reject | **VERIFIED PASS** | Edge `decide-application` only: Auth JWT + `staff_users`; no access-code RPCs; meeting_start/end required for Accept; staff REST UPDATE → 403 |
+| Accept/Reject | **VERIFIED PASS** | Edge `decide-application` JWT + `staff_users`; Accept emails private booking URL only; Reject decline only |
 | No public booking CTA / PII | **VERIFIED PASS** | Client/dist grep: 0× `calendar.app.google`; apply form has no applicant list |
 | Rate-limit + sanitize apply | **VERIFIED PASS** | `submit-application`: length caps, email/URL checks, 5/hr per email+IP via `apply_rate_limits` |
-| Secrets hygiene | **INFERRED PASS** | Only public anon in repo/`.env.example`; Resend/Google/service role = Edge secrets only |
+| Secrets hygiene | **INFERRED PASS** | Only public anon in repo/`.env.example`; Resend key is Edge secret only |
 | Notify no cross-applicant leak | **INFERRED PASS** | Templates built from single row id only |
 | Leaked-password protection (Auth) | **UNKNOWN / GAP** | Michael must enable in Supabase → Authentication → Providers → Email → **Leaked password protection** |
-| Live Resend delivery | **GAP** | Needs `RESEND_API_KEY` (dry-run proved) |
-| Live Google Meet invites | **GAP** | Needs `GOOGLE_CLIENT_ID` + `SECRET` + `REFRESH_TOKEN` (dry-run proved) |
+| Live Resend delivery | **GAP** | Needs `RESEND_API_KEY` (dry-run proved; Accept body contains booking URL) |
 | `staff_users_claim_first` | **GAP** | Safe while Michael present; drop later if desired |
 | Legacy `notify-application` | **GAP** | Prefer `submit-application` only |
 

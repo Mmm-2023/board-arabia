@@ -1,6 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1'
-import { createMeetInvite } from './google.ts'
 import {
+  PRIVATE_BOOKING_LINK,
   corsHeaders,
   jsonResponse,
   logEmailEvent,
@@ -43,14 +43,10 @@ Deno.serve(async (req) => {
 
   let applicationId = ''
   let decision = ''
-  let meetingStart = ''
-  let meetingEnd = ''
   try {
     const body = await req.json()
     applicationId = String(body.application_id || '')
     decision = String(body.decision || '')
-    meetingStart = String(body.meeting_start || '')
-    meetingEnd = String(body.meeting_end || '')
   } catch {
     return jsonResponse(req, { error: 'Invalid JSON' }, 400)
   }
@@ -84,56 +80,23 @@ Deno.serve(async (req) => {
   }
 
   if (decision === 'accepted') {
-    if (!meetingStart || !meetingEnd) {
-      return jsonResponse(
-        req,
-        { error: 'meeting_start and meeting_end required for Accept' },
-        400,
-      )
-    }
-    const startMs = Date.parse(meetingStart)
-    const endMs = Date.parse(meetingEnd)
-    if (Number.isNaN(startMs) || Number.isNaN(endMs) || endMs <= startMs) {
-      return jsonResponse(req, { error: 'Invalid meeting window' }, 400)
-    }
-
-    let invite
-    try {
-      invite = await createMeetInvite({
-        applicantEmail: app.email,
-        applicantName: app.full_name,
-        startIso: new Date(startMs).toISOString(),
-        endIso: new Date(endMs).toISOString(),
-        applicationId: app.id,
-      })
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Calendar invite failed'
-      await logEmailEvent(admin, {
-        application_id: app.id,
-        kind: 'accept_calendar_invite',
-        recipient: app.email,
-        subject: 'Board Arabia calendar invite (failed)',
-        status: 'error',
-        provider: 'google_calendar',
-        detail: msg,
-      })
-      return jsonResponse(req, { error: msg }, 502)
-    }
-
-    // Optional Resend ack (Calendar also emails the invite when sendUpdates=all)
-    const subject = 'Board Arabia — conversation confirmed'
-    const when = new Date(startMs).toUTCString()
+    const subject = 'Board Arabia — next step (private booking)'
     const text = `Hello ${app.full_name || 'there'},
 
 Your Board Arabia application has been accepted.
 
-A calendar invite${invite.meetLink ? ' with Google Meet' : ''} for ${when} has been sent to ${app.email}. Please accept the invite in your calendar.
+Please use this private booking link to schedule a conversation with Michael:
+
+${PRIVATE_BOOKING_LINK}
+
+This link is personal to accepted candidates and is not published on the public site.
 
 — Board Arabia`
     const html = `<p>Hello ${escapeHtml(app.full_name || 'there')},</p>
 <p>Your Board Arabia application has been <strong>accepted</strong>.</p>
-<p>A calendar invite${invite.meetLink ? ' with Google Meet' : ''} for <strong>${escapeHtml(when)}</strong> has been sent to ${escapeHtml(app.email)}. Please accept the invite in your calendar.</p>
-${invite.meetLink ? `<p>Meet: <a href="${escapeHtml(invite.meetLink)}">${escapeHtml(invite.meetLink)}</a></p>` : ''}
+<p>Please use this private booking link to schedule a conversation with Michael:</p>
+<p><a href="${escapeHtml(PRIVATE_BOOKING_LINK)}">${escapeHtml(PRIVATE_BOOKING_LINK)}</a></p>
+<p>This link is personal to accepted candidates and is not published on the public site.</p>
 <p>— Board Arabia</p>`
 
     const sent = await sendEmail({
@@ -144,52 +107,44 @@ ${invite.meetLink ? `<p>Meet: <a href="${escapeHtml(invite.meetLink)}">${escapeH
     })
     await logEmailEvent(admin, {
       application_id: app.id,
-      kind: 'accept_calendar_invite',
+      kind: 'accept_private_booking',
       recipient: app.email,
       subject,
-      status: invite.dryRun ? 'dry_run' : sent.status === 'error' ? 'error' : 'sent',
-      provider: invite.dryRun ? 'google_calendar_dry_run' : 'google_calendar',
-      provider_id: invite.eventId,
-      detail: invite.detail ?? sent.detail ?? null,
+      status: sent.status,
+      provider: sent.provider,
+      provider_id: sent.providerId,
+      detail: sent.detail ?? null,
       payload: {
-        invite_mode: 'google_calendar_meet',
-        meet_link: invite.meetLink,
-        html_link: invite.htmlLink,
-        meeting_start: meetingStart,
-        meeting_end: meetingEnd,
-        resend_status: sent.status,
+        invite_mode: 'private_booking_link',
+        booking_url: PRIVATE_BOOKING_LINK,
+        email_text: text,
       },
     })
-
-    if (!invite.dryRun && sent.status === 'error') {
-      // Calendar invite already sent; note Resend failure but still mark accepted
+    if (sent.status === 'error') {
+      return jsonResponse(req, { error: sent.detail || 'Email failed' }, 502)
     }
 
     updatePayload.invite_sent_at = now
-    updatePayload.invite_event_id = invite.eventId || 'google_calendar_pending_secrets'
-    updatePayload.calendar_slot = new Date(startMs).toISOString()
+    updatePayload.invite_event_id = 'private_booking_link'
+    updatePayload.calendar_slot = 'private_invite_emailed'
 
     const { error: upErr } = await admin
       .from('applications')
       .update(updatePayload)
       .eq('id', app.id)
-    if (upErr) {
-      return jsonResponse(req, { error: upErr.message }, 500)
-    }
+    if (upErr) return jsonResponse(req, { error: upErr.message }, 500)
 
     return jsonResponse(req, {
       ok: true,
-      dry_run: invite.dryRun,
-      invite_mode: 'google_calendar_meet',
-      invite_event_id: invite.eventId,
-      meet_link: invite.meetLink,
-      message: invite.dryRun
-        ? 'Accepted (dry-run). Set Google Calendar secrets to create Meet invites. See README.'
-        : 'Accepted — Google Calendar event + Meet invite sent to applicant.',
+      dry_run: sent.dryRun,
+      invite_mode: 'private_booking_link',
+      booking_url: PRIVATE_BOOKING_LINK,
+      message: sent.dryRun
+        ? 'Accepted (dry-run). Set RESEND_API_KEY to send the private booking email.'
+        : 'Accepted — private booking link emailed to candidate.',
     })
   }
 
-  // Reject: decline email only
   const subject = 'Board Arabia application update'
   const text = `Hello ${app.full_name || 'there'},
 
@@ -203,12 +158,7 @@ We appreciate you taking the time to apply.
 <p>We appreciate you taking the time to apply.</p>
 <p>— Board Arabia</p>`
 
-  const sent = await sendEmail({
-    to: app.email,
-    subject,
-    html,
-    text,
-  })
+  const sent = await sendEmail({ to: app.email, subject, html, text })
   await logEmailEvent(admin, {
     application_id: app.id,
     kind: 'reject_decline',
@@ -218,8 +168,8 @@ We appreciate you taking the time to apply.
     provider: sent.provider,
     provider_id: sent.providerId,
     detail: sent.detail ?? null,
+    payload: { email_text: text },
   })
-
   if (sent.status === 'error') {
     return jsonResponse(req, { error: sent.detail || 'Email failed' }, 502)
   }
@@ -232,9 +182,7 @@ We appreciate you taking the time to apply.
     .from('applications')
     .update(updatePayload)
     .eq('id', app.id)
-  if (upErr) {
-    return jsonResponse(req, { error: upErr.message }, 500)
-  }
+  if (upErr) return jsonResponse(req, { error: upErr.message }, 500)
 
   return jsonResponse(req, {
     ok: true,

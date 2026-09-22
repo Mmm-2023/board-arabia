@@ -92,7 +92,6 @@ export async function submitApplication(payload: {
 export async function decideApplication(
   applicationId: string,
   decision: 'accepted' | 'rejected',
-  meeting?: { meeting_start: string; meeting_end: string },
 ): Promise<{
   error?: string
   message?: string
@@ -106,7 +105,6 @@ export async function decideApplication(
       body: JSON.stringify({
         application_id: applicationId,
         decision,
-        ...(meeting ?? {}),
       }),
     })
     const body = (await res.json().catch(() => ({}))) as {
