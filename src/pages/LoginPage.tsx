@@ -2,7 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom'
 import { resolveAfterLogin } from '../lib/memberGate'
-import { supabase } from '../lib/supabase'
+import { sendPasswordReset, supabase } from '../lib/supabase'
 import { useNoIndex } from '../lib/usePageTitle'
 
 export function LoginPage() {
@@ -17,6 +17,7 @@ export function LoginPage() {
   const [authError, setAuthError] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [destination, setDestination] = useState<string | null>(null)
+  const [resetNote, setResetNote] = useState('')
   const memberEntry = nextPath.startsWith('/dashboard')
   const codeType = otpType(searchParams.get('otp_type'))
 
@@ -61,6 +62,23 @@ export function LoginPage() {
     const dest = await resolveAfterLogin(data.user.id, nextPath)
     setSubmitting(false)
     navigate(dest, { replace: true })
+  }
+
+  async function onReset() {
+    setAuthError('')
+    setResetNote('')
+    if (!email.trim()) {
+      setAuthError('Enter your email, then request a reset link.')
+      return
+    }
+    setSubmitting(true)
+    const result = await sendPasswordReset(email)
+    setSubmitting(false)
+    if (result.error) {
+      setAuthError(result.error)
+      return
+    }
+    setResetNote('If this inbox can sign in, a reset link is on its way.')
   }
 
   async function onCode(e: FormEvent) {
@@ -189,6 +207,15 @@ export function LoginPage() {
             >
               {submitting ? 'Signing in…' : 'Sign in'}
             </button>
+            <button
+              type="button"
+              disabled={submitting}
+              onClick={() => void onReset()}
+              className="w-full border border-pearl/25 px-6 py-3.5 text-[0.78rem] font-semibold tracking-[0.08em] text-pearl uppercase transition-colors hover:border-pearl/50 disabled:opacity-60"
+            >
+              Email me a reset link
+            </button>
+            {resetNote && <p className="text-[0.9rem] text-brass-bright">{resetNote}</p>}
           </form>
 
           {memberEntry && (
@@ -219,8 +246,8 @@ export function LoginPage() {
 
           <p className="mt-8 text-[0.85rem] leading-relaxed text-pearl/45">
             {memberEntry
-              ? 'Admission is by invitation. This page does not create accounts.'
-              : 'Forgot password? Ask an owner to send a Supabase Auth invite or recovery link, or reset it under Authentication → Users in the dashboard. See README.'}
+              ? 'Admission is by invitation. This page does not create accounts. Email me a reset link sends you to set a new password.'
+              : 'Email me a reset link opens a page on this site where you choose a new password. An owner can also send a recovery link from the Supabase dashboard if the redirect is https://boardarabia.com/auth/confirm.'}
           </p>
         </div>
       </main>

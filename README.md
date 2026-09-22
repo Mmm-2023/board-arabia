@@ -95,14 +95,17 @@ Michael (`michael@smemarketer.com`) is already in `staff_users` on the locked pr
 
 **One-time password (pick one):**
 
-1. **Dashboard reset (simplest)**  
-   Supabase → Authentication → Users → Michael → *Send password recovery* or *Reset password*.
+1. **Reset link from the site (simplest)**  
+   Open https://boardarabia.com/login, enter the email, and choose **Email me a reset link**. That calls `resetPasswordForEmail` with `redirectTo` `https://boardarabia.com/auth/confirm`. The link uses `type=recovery`. After it verifies, set a new password. Staff continue to `/admin`. Other accounts return to `/login`.
 
-2. **Invite link**  
+2. **Dashboard reset**  
+   Supabase → Authentication → Users → the person → *Send password recovery*. The redirect URL must be `https://boardarabia.com/auth/confirm` (allow that URL in Authentication → URL configuration). `/auth/confirm` accepts `recovery` and `signup` as well as invite, magic link, and email.
+
+3. **Invite link**  
    Authentication → Users → Invite user (same email) → open invite email → set password.
 
-3. **Magic / recovery link (SQL / Auth API)**  
-   Authentication → Users → generate recovery link → open once and set password.
+4. **Magic / recovery link (SQL / Auth API)**  
+   Authentication → Users → generate recovery link with redirect `https://boardarabia.com/auth/confirm` → open once and set password.
 
 Then open https://boardarabia.com/login and sign in → `/admin`.
 
