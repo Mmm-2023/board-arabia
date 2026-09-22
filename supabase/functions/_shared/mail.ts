@@ -80,11 +80,11 @@ export async function sendEmail(opts: {
   const token = await fetchAccessToken()
   if ('error' in token) {
     return {
-      dryRun: false,
+      dryRun: true,
       provider: 'gmail',
       providerId: null,
-      status: 'error',
-      detail: redactDetail(token.error) || 'Gmail authentication failed.',
+      status: 'dry_run',
+      detail: 'Gmail authentication failed. Email logged only.',
     }
   }
 
@@ -92,6 +92,7 @@ export async function sendEmail(opts: {
     buildRfc822({
       from,
       to,
+      replyTo: WORKSPACE_MAILBOX,
       subject,
       text: opts.text,
       html: opts.html,
@@ -120,6 +121,15 @@ export async function sendEmail(opts: {
 
   const body = await res.json().catch(() => ({}))
   if (!res.ok) {
+    if (res.status === 401 || res.status === 403) {
+      return {
+        dryRun: true,
+        provider: 'gmail',
+        providerId: null,
+        status: 'dry_run',
+        detail: 'Gmail authentication failed. Email logged only.',
+      }
+    }
     const message =
       body && typeof body === 'object' && 'error' in body
         ? JSON.stringify((body as { error?: unknown }).error)
@@ -211,14 +221,17 @@ function looksSecret(value: string): boolean {
 export function buildRfc822(opts: {
   from: string
   to: string
+  replyTo?: string
   subject: string
   text: string
   html: string
 }): string {
   const boundary = `ba_${crypto.randomUUID().replaceAll('-', '')}`
+  const replyTo = sanitizeHeader(opts.replyTo || WORKSPACE_MAILBOX)
   const lines = [
     `From: ${sanitizeHeader(opts.from)}`,
     `To: ${sanitizeHeader(opts.to)}`,
+    `Reply-To: ${replyTo}`,
     `Subject: ${encodeSubject(sanitizeHeader(opts.subject))}`,
     'MIME-Version: 1.0',
     `Content-Type: multipart/alternative; boundary="${boundary}"`,

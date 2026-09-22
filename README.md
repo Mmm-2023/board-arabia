@@ -137,7 +137,16 @@ Set these in **Supabase → Project Settings → Edge Functions → Secrets**:
 
 ### Email (Google Workspace, Gmail API)
 
-Outbound product mail (apply acknowledgement, staff notify, Accept, Reject, Admit, and master invite) is sent by the Edge Function directly to the Gmail API. The From mailbox is `cindy@nammco.com`. There is no Resend key and no Vercel send path.
+Outbound product mail (apply acknowledgement, staff notify, Accept, Reject, Admit, and master invite) is sent by the Edge Function directly to the Gmail API. There is no Resend key and no Vercel send path.
+
+| Header | Value |
+|--------|--------|
+| From | `"Board Arabia" <cindy@nammco.com>` |
+| Reply-To | `cindy@nammco.com` |
+
+Cindy watches `cindy@nammco.com`. Each send uses her mailbox (`users/me` on the Gmail API), so the message is in her Sent folder. An applicant reply arrives in that inbox on the same Gmail thread, because From and Reply-To are her address. She routes a decision to Michael. Accept and Reject are not automatic. Staff press those buttons in `/admin`.
+
+Do not send applicant mail from `michael@`. The new-application notice is still addressed to `michael@nammco.com`, and it is sent from `cindy@nammco.com`. Do not ask for a Resend key.
 
 Preferred path: OAuth refresh token for the Workspace user `cindy@nammco.com`.
 
@@ -153,7 +162,7 @@ Alternative, if domain-wide delegation is already approved: set `GMAIL_SERVICE_A
 
 Accept still emails the private booking URL from `decide-application` only. Optional override: `PRIVATE_BOOKING_LINK`. Do not put that URL on a public page.
 
-When the Gmail secrets above are missing, every send is a dry-run (`email_events.status = dry_run`, provider `gmail`). No message leaves Workspace.
+When the Gmail secrets are missing, or Gmail rejects the token (auth failure), every send is a dry-run (`email_events.status = dry_run`, provider `gmail`). No message leaves Workspace. Other Gmail errors stay `error` and are logged without tokens.
 
 ```sql
 select created_at, kind, recipient, subject, status
@@ -180,6 +189,8 @@ Payload columns are not granted to the staff client. The admin list never select
 4. Open the link once, or sign in with the code at the login URL in the box. Staff destination is https://boardarabia.com/login. Member destination is https://boardarabia.com/login?next=/dashboard.
 5. Hand the link to Michael through a channel you trust. Do not paste it into a shared chat if you can avoid it.
 6. After a password is set, use the staff and member URLs above. When Gmail secrets are present, the same actions email from `cindy@nammco.com` and the admin response does not include the secret.
+
+Local proof of the Accept path, without a live mailbox: `node --experimental-strip-types --test scripts/gmail-mail.test.ts`. It checks From and Reply-To are `cindy@nammco.com`, that the message does not use Resend, and that a configured client posts to `https://gmail.googleapis.com/gmail/v1/users/me/messages/send`. A real send still needs the three Gmail secrets on the Edge Function.
 
 ## Prove apply → emails → Accept
 
