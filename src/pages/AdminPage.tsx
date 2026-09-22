@@ -22,9 +22,12 @@ const SECTIONS = [
   { href: '#invite', label: 'Invite' },
   { href: '#applications', label: 'Applications' },
   { href: '#members', label: 'Members' },
+  { href: '#people', label: 'People' },
   { href: '#email', label: 'Email' },
-  { href: '#staff', label: 'Staff' },
 ]
+
+const PEOPLE_TIERS = ['Master', 'Admin', 'Sponsor', 'Founding Member', 'Member'] as const
+type PersonTier = (typeof PEOPLE_TIERS)[number]
 
 export function AdminPage() {
   const [session, setSession] = useState<Session | null | undefined>(undefined)
@@ -285,6 +288,11 @@ export function AdminPage() {
     if (session) void refreshStaffAndApps(session, { silent: true })
   }
 
+  const signedInEmail = session?.user.email?.toLowerCase() || ''
+  const memberSwitcher = members.some(
+    (member) => member.email.toLowerCase() === signedInEmail && member.status !== 'suspended',
+  )
+
   if (session === undefined) {
     return (
       <div className="flex min-h-dvh items-center justify-center bg-ink text-pearl">
@@ -309,13 +317,23 @@ export function AdminPage() {
               Ops / Admin
             </p>
           </div>
-          <button
-            type="button"
-            onClick={() => void onSignOut()}
-            className="text-[0.75rem] font-semibold tracking-[0.06em] text-pearl/60 uppercase transition-colors hover:text-pearl"
-          >
-            Sign out
-          </button>
+          <div className="flex items-center gap-4">
+            {memberSwitcher && (
+              <Link
+                to="/dashboard"
+                className="text-[0.75rem] font-semibold tracking-[0.06em] text-brass-bright uppercase transition-colors hover:text-pearl"
+              >
+                Member
+              </Link>
+            )}
+            <button
+              type="button"
+              onClick={() => void onSignOut()}
+              className="text-[0.75rem] font-semibold tracking-[0.06em] text-pearl/60 uppercase transition-colors hover:text-pearl"
+            >
+              Sign out
+            </button>
+          </div>
         </div>
       </header>
 
@@ -595,7 +613,7 @@ export function AdminPage() {
                     <div>
                       <p className="text-[0.95rem] text-stone/85">{member.email}</p>
                       <p className="mt-1 text-[0.8rem] text-pearl/45">
-                        {seatLabel(member.seat)} · {member.status}
+                        {seatLabel(member.seat)} · Founding Member · {member.status}
                       </p>
                     </div>
                     {member.status === 'suspended' ? (
@@ -652,39 +670,73 @@ export function AdminPage() {
               </ul>
             </section>
 
-            <section id="staff" className="mt-12 scroll-mt-24">
-              <h2 className="font-display text-[1.6rem] font-semibold tracking-[-0.02em]">Staff</h2>
+            <section id="people" className="mt-12 scroll-mt-24">
+              <h2 className="font-display text-[1.6rem] font-semibold tracking-[-0.02em]">People</h2>
               <p className="mt-2 max-w-2xl text-[0.9rem] text-stone/60">
-                Emails and created time. This screen does not remove staff. The last master stays in
-                place.
+                Master, Admin, Sponsor, Founding Member, and Member. This screen does not remove
+                people. The last master stays in place.
               </p>
-              <ul className="mt-6 space-y-3">
-                {staffRows.length === 0 && (
-                  <li className="border border-pearl/10 px-5 py-8 text-stone/55">No staff rows yet.</li>
-                )}
-                {staffRows.map((row) => (
-                  <li
-                    key={`${row.email}-${row.created_at}`}
-                    className="flex flex-wrap items-center justify-between gap-3 border border-pearl/10 px-5 py-4"
-                  >
-                    <div>
-                      <p className="text-[0.95rem] text-stone/85">{row.email}</p>
-                      <p className="mt-1 text-[0.8rem] text-pearl/45">
-                        {new Date(row.created_at).toLocaleString()}
-                      </p>
+              <div className="mt-6 space-y-8">
+                {PEOPLE_TIERS.map((tier) => {
+                  const rows = peopleInTier(tier, staffRows, members)
+                  return (
+                    <div key={tier}>
+                      <h3 className="text-[0.72rem] font-semibold tracking-[0.12em] text-pearl/45 uppercase">
+                        {tier}
+                      </h3>
+                      <ul className="mt-3 space-y-3">
+                        {rows.length === 0 && (
+                          <li className="border border-pearl/10 px-5 py-6 text-stone/55">None yet.</li>
+                        )}
+                        {rows.map((row) => (
+                          <li
+                            key={`${tier}-${row.email}`}
+                            className="flex flex-wrap items-center justify-between gap-3 border border-pearl/10 px-5 py-4"
+                          >
+                            <div>
+                              <p className="text-[0.95rem] text-stone/85">{row.email}</p>
+                              <p className="mt-1 text-[0.8rem] text-pearl/45">{row.detail}</p>
+                            </div>
+                            <span className="border border-pearl/20 px-2 py-1 text-[0.68rem] font-semibold tracking-[0.08em] text-brass-bright uppercase">
+                              {tier}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
                     </div>
-                    <span className="border border-pearl/20 px-2 py-1 text-[0.68rem] font-semibold tracking-[0.08em] text-brass-bright uppercase">
-                      {row.role === 'master' ? 'Master' : 'Staff'}
-                    </span>
-                  </li>
-                ))}
-              </ul>
+                  )
+                })}
+              </div>
             </section>
           </div>
         )}
       </main>
     </div>
   )
+}
+
+function peopleInTier(
+  tier: PersonTier,
+  staffRows: StaffDirectoryRow[],
+  members: MemberAdminRow[],
+): { email: string; detail: string }[] {
+  if (tier === 'Master') {
+    return staffRows
+      .filter((row) => row.role === 'master')
+      .map((row) => ({ email: row.email, detail: new Date(row.created_at).toLocaleString() }))
+  }
+  if (tier === 'Admin') {
+    return staffRows
+      .filter((row) => row.role !== 'master')
+      .map((row) => ({ email: row.email, detail: new Date(row.created_at).toLocaleString() }))
+  }
+  if (tier === 'Founding Member') {
+    return members.map((member) => ({
+      email: member.email,
+      detail: `${seatLabel(member.seat)} · ${member.status}`,
+    }))
+  }
+  return []
 }
 
 function DryRunInviteBox({ invite }: { invite: DryRunInvite }) {

@@ -136,7 +136,7 @@ export function DashboardLayout() {
                 to="/admin"
                 className="bg-ink px-4 py-3 text-[0.75rem] font-semibold tracking-[0.08em] text-pearl uppercase"
               >
-                Staff admin
+                Admin
               </Link>
             )}
             <button
@@ -171,7 +171,7 @@ export function DashboardLayout() {
                   to="/admin"
                   className="text-[0.72rem] font-semibold tracking-[0.08em] text-brass uppercase hover:text-ink"
                 >
-                  Staff admin
+                  Admin
                 </Link>
               )}
               <button
