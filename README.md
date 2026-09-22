@@ -2,7 +2,9 @@
 
 Application-only site: **land → book → verify**, with a staff admin view.
 
-Staging (GitHub Pages): https://mmm-2023.github.io/board-arabia/
+Staging (preferred GitHub Pages once enabled): https://mmm-2023.github.io/board-arabia/
+
+**Staging live now (Vercel fallback — Pages blocked until Settings→Pages→GitHub Actions):** https://board-arabia-nammco.vercel.app/
 
 ## Stack
 
