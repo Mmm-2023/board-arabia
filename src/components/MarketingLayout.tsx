@@ -1,19 +1,19 @@
 import type { ReactNode } from 'react'
-import { usePageTitle } from '../lib/usePageTitle'
+import type { MarketingPath } from '../content/seo'
 import { Footer } from './Footer'
 import { Nav } from './Nav'
+import { Seo } from './Seo'
 
 export function MarketingLayout({
-  title,
+  path,
   children,
 }: {
-  title: string
+  path: MarketingPath
   children: ReactNode
 }) {
-  usePageTitle(title)
-
   return (
     <>
+      <Seo path={path} />
       <Nav />
       <main className="min-h-dvh bg-pearl pt-16 md:pt-20">{children}</main>
       <Footer />

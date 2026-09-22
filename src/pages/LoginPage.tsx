@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { useNoIndex } from '../lib/usePageTitle'
 
 export function LoginPage() {
   const navigate = useNavigate()
@@ -14,9 +15,7 @@ export function LoginPage() {
   const [authError, setAuthError] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
-  useEffect(() => {
-    document.title = 'Staff login — Board Arabia'
-  }, [])
+  useNoIndex('Staff login — Board Arabia')
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {

@@ -27,7 +27,7 @@ const RULES = [
 
 export function PartnersPage() {
   return (
-    <MarketingLayout title="Partners — Board Arabia">
+    <MarketingLayout path="/partners">
       <header className="mx-auto max-w-7xl px-5 pt-12 md:px-10 md:pt-20">
         <p className="mb-4 font-serif text-[1.2rem] italic text-ink-soft/70">
           Ecosystem partners
@@ -36,9 +36,10 @@ export function PartnersPage() {
           Three seats a year.
         </h1>
         <p className="mt-6 max-w-2xl text-[1.08rem] leading-relaxed text-ink/65">
-          Partner seats are offered, not sold from this page. They are for
-          firms that sit on the finance rails of a transaction. There is no
-          fee schedule here, and there is no directory of partner names.
+          Board Arabia offers three partner seats a year. They are offered,
+          not sold from this page, to firms on the finance rails of a
+          transaction. There is no fee schedule here, and there is no
+          directory of partner names.
         </p>
       </header>
 

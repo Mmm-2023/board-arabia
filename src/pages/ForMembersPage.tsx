@@ -63,7 +63,7 @@ const TOOLS = [
 
 export function ForMembersPage() {
   return (
-    <MarketingLayout title="For members — Board Arabia">
+    <MarketingLayout path="/for-members">
       <header className="mx-auto max-w-7xl px-5 pt-12 pb-4 md:px-10 md:pt-20">
         <p className="mb-4 font-serif text-[1.2rem] italic text-ink-soft/70">
           For members
@@ -72,9 +72,11 @@ export function ForMembersPage() {
           The instruments inside the membership.
         </h1>
         <p className="mt-6 max-w-2xl text-[1.08rem] leading-relaxed text-ink/65">
-          After admission, work happens in a private dashboard: directory,
-          availability, introductions, the mandate inbox, and the founding
-          mark. Nothing on this page is a live member record.
+          Admitted members of Board Arabia — chairpersons, NEDs, and board
+          advisors — work from a private dashboard: directory, availability,
+          introductions, the mandate inbox, and the founding mark. Sector and
+          Vision 2030 tags stay inside the room. Nothing on this page is a
+          live member record.
         </p>
         <ul className="mt-8 flex flex-wrap gap-x-6 gap-y-2">
           {TOOLS.map((tool) => (

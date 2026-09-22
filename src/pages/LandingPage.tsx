@@ -2,23 +2,23 @@ import { motion, useScroll, useTransform } from 'motion/react'
 import { useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { CtaBand } from '../components/CtaBand'
+import { FaqList } from '../components/FaqList'
 import { Footer } from '../components/Footer'
 import { Nav } from '../components/Nav'
 import { Reveal } from '../components/Reveal'
+import { Seo } from '../components/Seo'
 import { DisplayHeading, Eyebrow } from '../components/Type'
 import { MEMBER_TOOLS, PARTNER_CATEGORIES, PROCESS_STEPS } from '../content/marketing'
-import { usePageTitle } from '../lib/usePageTitle'
 
 const HERO_IMAGE =
   'https://images.unsplash.com/photo-1586724237569-f3d0c1dee8c6?auto=format&fit=crop&w=2400&q=80'
 
-const PATHS = ['Chairpersons', 'Board advisors', 'Saudi & international']
+const PATHS = ['Chairpersons', 'NEDs', 'Saudi Arabia & the GCC']
 
 export function LandingPage() {
-  usePageTitle('Board Arabia')
-
   return (
     <>
+      <Seo path="/" />
       <Nav />
       <main>
         <Hero />
@@ -29,6 +29,7 @@ export function LandingPage() {
         <ProcessSection />
         <PartnersSection />
         <TrustSection />
+        <FaqList />
         <CtaBand
           eyebrow="Begin"
           title="Request consideration."
@@ -56,6 +57,10 @@ function Hero() {
         <img
           src={HERO_IMAGE}
           alt="Modern skyline over Riyadh at dusk"
+          width={2400}
+          height={1350}
+          fetchPriority="high"
+          decoding="async"
           className="h-[120%] w-full object-cover object-[center_30%]"
         />
         <div className="absolute inset-0 bg-gradient-to-b from-ink/45 via-ink/35 to-ink/90" />
@@ -68,7 +73,7 @@ function Hero() {
       >
         <div className="mt-auto max-w-4xl pb-2 md:pb-4">
           <motion.p
-            initial={{ opacity: 0, y: 14 }}
+            initial={{ opacity: 1, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
             className="mb-4 font-serif text-[1.1rem] italic text-stone/85 md:text-[1.25rem]"
@@ -77,7 +82,7 @@ function Hero() {
           </motion.p>
 
           <motion.h1
-            initial={{ opacity: 0, y: 36 }}
+            initial={{ opacity: 1, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{
               duration: 1.05,
@@ -92,16 +97,16 @@ function Hero() {
           </motion.h1>
 
           <motion.div
-            initial={{ opacity: 0, y: 22 }}
+            initial={{ opacity: 1, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.9, delay: 0.4, ease: [0.22, 1, 0.36, 1] }}
             className="mt-7 flex max-w-3xl flex-col gap-7 md:mt-9 md:flex-row md:items-end md:justify-between md:gap-12"
           >
             <p className="max-w-md text-[1.05rem] leading-relaxed text-stone/90 md:text-[1.12rem]">
-              A selective founding membership for Saudi and international
-              chairpersons and board advisors. One hundred places. Request
-              consideration — a conversation follows only after review, by
-              private email.
+              Board Arabia is a selective founding membership for chairpersons,
+              NEDs, and board advisors in Saudi Arabia and the GCC, and for
+              international peers. One hundred places. Request consideration —
+              a conversation follows only after review, by private email.
             </p>
 
             <div className="flex shrink-0 flex-col gap-3 sm:flex-row">
@@ -184,8 +189,8 @@ function WhySection() {
 
         <ol className="mt-16 grid gap-12 md:mt-20 md:grid-cols-3 md:gap-10">
           {points.map((point, i) => (
-            <Reveal key={point.n} delay={0.06 * i}>
-              <li className="border-t border-ink/12 pt-6">
+            <li key={point.n} className="border-t border-ink/12 pt-6">
+              <Reveal delay={0.06 * i}>
                 <span className="font-display text-[0.78rem] font-semibold tracking-[0.18em] text-brass">
                   {point.n}
                 </span>
@@ -195,8 +200,8 @@ function WhySection() {
                 <p className="mt-3 text-[0.98rem] leading-relaxed text-ink/60">
                   {point.body}
                 </p>
-              </li>
-            </Reveal>
+              </Reveal>
+            </li>
           ))}
         </ol>
       </div>
@@ -215,10 +220,11 @@ function FoundingSection() {
               Fifty and fifty.
             </DisplayHeading>
             <p className="mt-6 max-w-md text-[1.05rem] leading-relaxed text-stone/75">
-              One hundred founding places, split evenly. Complimentary while
-              founding members contribute — a majlis attended, an introduction
-              made with care, judgment when it is asked for. Places are not
-              priced on this site.
+              The Founding 100 is one hundred places, split evenly: fifty in
+              Saudi Arabia, fifty international. Complimentary while founding
+              members contribute — a majlis attended, an introduction made with
+              care, judgment when it is asked for. Places are not priced on
+              this site.
             </p>
           </Reveal>
         </div>
@@ -228,10 +234,10 @@ function FoundingSection() {
               50
             </p>
             <h3 className="mt-4 font-display text-[1.35rem] font-semibold tracking-[-0.03em] text-ink">
-              Saudi
+              Saudi Arabia
             </h3>
             <p className="mt-3 text-[0.98rem] leading-relaxed text-ink/60">
-              Chairpersons and board advisors held for the Kingdom.
+              Chairpersons and NEDs held for the Kingdom.
             </p>
           </div>
           <div className="flex flex-col justify-end px-5 py-14 md:px-10 md:py-16">
@@ -322,8 +328,8 @@ function ProcessSection() {
 
         <ol className="mt-16 grid gap-10 md:mt-20 md:grid-cols-2 lg:grid-cols-5 lg:gap-6">
           {PROCESS_STEPS.map((step, i) => (
-            <Reveal key={step.n} delay={0.05 * i}>
-              <li>
+            <li key={step.n}>
+              <Reveal delay={0.05 * i}>
                 <span className="font-display text-[0.85rem] font-semibold tracking-[0.2em] text-brass">
                   {step.n}
                 </span>
@@ -333,8 +339,8 @@ function ProcessSection() {
                 <p className="mt-3 text-[0.92rem] leading-relaxed text-stone/70">
                   {step.home}
                 </p>
-              </li>
-            </Reveal>
+              </Reveal>
+            </li>
           ))}
         </ol>
 

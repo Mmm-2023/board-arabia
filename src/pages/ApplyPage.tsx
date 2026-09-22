@@ -1,7 +1,8 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { Footer } from '../components/Footer'
 import { Nav } from '../components/Nav'
+import { Seo } from '../components/Seo'
 import { notifyApplicationSubmitted, supabase } from '../lib/supabase'
 
 type FormState = {
@@ -32,10 +33,6 @@ export function ApplyPage() {
   const [error, setError] = useState('')
   const [done, setDone] = useState(false)
   const [emailNote, setEmailNote] = useState('')
-
-  useEffect(() => {
-    document.title = 'Request consideration — Board Arabia'
-  }, [])
 
   function setField<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((prev) => ({ ...prev, [key]: value }))
@@ -110,6 +107,7 @@ export function ApplyPage() {
   if (done) {
     return (
       <>
+        <Seo path="/apply" />
         <Nav ctaTo="/" ctaLabel="Home" />
         <main className="min-h-dvh bg-pearl pt-24 pb-20 md:pt-28">
           <div className="mx-auto max-w-xl px-5 text-center md:px-10">
@@ -142,6 +140,7 @@ export function ApplyPage() {
 
   return (
     <>
+      <Seo path="/apply" />
       <Nav />
       <main className="min-h-dvh bg-pearl pt-24 pb-20 md:pt-28">
         <div className="mx-auto max-w-2xl px-5 md:px-10">
@@ -152,7 +151,7 @@ export function ApplyPage() {
             Request consideration
           </h1>
           <p className="mt-5 text-[1.05rem] leading-relaxed text-ink/65">
-            This form is a pre-vet, not a booking. Send your name, email,
+            This form is a pre-vet for Board Arabia, not a booking. Send your name, email,
             LinkedIn, titles, companies, and turnover or family-office size.
             Michael reviews every submission. If you are accepted, a private
             booking link arrives by email. That link is not on this website.

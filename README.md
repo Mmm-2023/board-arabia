@@ -22,6 +22,21 @@ Primary CTA on every marketing page is **Request consideration** → `/apply`. P
 
 **Security:** marketing pages render no applicant PII. The private booking URL stays in the Accept email path only (`supabase/functions/decide-application`). Do not add it to client code.
 
+## SEO and answer engines
+
+`npm run build` prerenders each marketing route to static HTML (Puppeteer), so the response is not an empty SPA shell. Canonicals use `https://boardarabia.com` even on Vercel staging and preview URLs until the domain is cut over. Do not change that host from a preview deploy, and do not put a booking URL in schema or CTAs.
+
+| Check | Where |
+| --- | --- |
+| Unique title and description | `src/content/seo.ts` |
+| Canonical, Open Graph, Twitter | `src/components/Seo.tsx`, captured in `dist/<route>/index.html` |
+| Organization + WebSite JSON-LD | Every marketing page |
+| FAQPage | Home only, matching the visible questions |
+| `sitemap.xml` + `robots.txt` | `public/`, sitemap refreshed at build |
+| Staff `/login`, `/admin`, `/ops` | `noindex`; `/admin` and `/ops` serve `shell.html` |
+
+Home includes an answer-first definition and eight questions (Founding 100, Vision 2030, family offices, FDI, chairperson, NED, Saudi Arabia, GCC). No review or rating schema.
+
 Preferred GitHub Pages once enabled: https://mmm-2023.github.io/board-arabia/
 
 ## Stack

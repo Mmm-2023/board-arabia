@@ -7,6 +7,7 @@ import {
   type Application,
   type ApplicationStatus,
 } from '../lib/supabase'
+import { useNoIndex } from '../lib/usePageTitle'
 
 export function AdminPage() {
   const [session, setSession] = useState<Session | null | undefined>(undefined)
@@ -17,9 +18,7 @@ export function AdminPage() {
   const [updatingId, setUpdatingId] = useState<string | null>(null)
   const [actionNote, setActionNote] = useState('')
 
-  useEffect(() => {
-    document.title = 'Admin — Board Arabia'
-  }, [])
+  useNoIndex('Admin — Board Arabia')
 
   const refreshStaffAndApps = useCallback(async (active: Session | null) => {
     if (!active) {

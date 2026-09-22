@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+
+Disallow: /admin
+Disallow: /ops
+Disallow: /login
+Disallow: /book
+Disallow: /verify
+Disallow: /shell.html
+
+Sitemap: https://boardarabia.com/sitemap.xml

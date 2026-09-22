@@ -4,7 +4,7 @@ import { MarketingLayout } from '../components/MarketingLayout'
 
 export function AboutPage() {
   return (
-    <MarketingLayout title="About — Board Arabia">
+    <MarketingLayout path="/about">
       <article className="mx-auto max-w-3xl px-5 pt-12 pb-8 md:px-10 md:pt-20">
         <p className="mb-4 font-serif text-[1.2rem] italic text-ink-soft/70">
           About
@@ -14,9 +14,10 @@ export function AboutPage() {
         </h1>
         <div className="mt-8 space-y-5 text-[1.08rem] leading-relaxed text-ink/70">
           <p>
-            Board Arabia is a founding membership for chairpersons and board
-            advisors in Saudi Arabia, and for international counterparts who
-            work with Saudi capital and companies.
+            Board Arabia is a founding membership for chairpersons, NEDs, and
+            board advisors in Saudi Arabia and the GCC, and for international
+            counterparts who work with Saudi capital, family offices, and
+            foreign direct investment.
           </p>
           <p>
             The first hundred places are held evenly: fifty Saudi, fifty

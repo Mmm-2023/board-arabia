@@ -1,3 +1,15 @@
 {
-  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+  "rewrites": [
+    { "source": "/admin", "destination": "/shell.html" },
+    { "source": "/ops", "destination": "/shell.html" },
+    { "source": "/book", "destination": "/apply/index.html" },
+    { "source": "/verify", "destination": "/apply/index.html" },
+    { "source": "/apply", "destination": "/apply/index.html" },
+    { "source": "/for-members", "destination": "/for-members/index.html" },
+    { "source": "/for-capital", "destination": "/for-capital/index.html" },
+    { "source": "/partners", "destination": "/partners/index.html" },
+    { "source": "/how-it-works", "destination": "/how-it-works/index.html" },
+    { "source": "/about", "destination": "/about/index.html" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
 }

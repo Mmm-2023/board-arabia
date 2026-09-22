@@ -46,7 +46,7 @@ const PATH = [
 
 export function ForCapitalPage() {
   return (
-    <MarketingLayout title="For capital — Board Arabia">
+    <MarketingLayout path="/for-capital">
       <header className="mx-auto max-w-7xl px-5 pt-12 pb-6 md:px-10 md:pt-20">
         <p className="mb-4 font-serif text-[1.2rem] italic text-ink-soft/70">
           For capital
@@ -55,9 +55,10 @@ export function ForCapitalPage() {
           Capital reaches the room by mandate.
         </h1>
         <p className="mt-6 max-w-2xl text-[1.08rem] leading-relaxed text-ink/65">
-          Family offices, private equity, venture, and foreign direct investors
-          do not browse Board Arabia. A mandate is written inside the
-          membership and read by admin before a member sees it.
+          Family offices, private equity, venture capital, and foreign direct
+          investors do not browse Board Arabia. A mandate concerning Saudi
+          Arabia or the GCC is written inside the membership and read by admin
+          before a member sees it.
         </p>
       </header>
 

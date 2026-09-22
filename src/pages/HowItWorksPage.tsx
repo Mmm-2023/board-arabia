@@ -12,7 +12,7 @@ const REFUSALS = [
 
 export function HowItWorksPage() {
   return (
-    <MarketingLayout title="How it works — Board Arabia">
+    <MarketingLayout path="/how-it-works">
       <header className="mx-auto max-w-7xl px-5 pt-12 md:px-10 md:pt-20">
         <p className="mb-4 font-serif text-[1.2rem] italic text-ink-soft/70">
           How it works
@@ -21,8 +21,15 @@ export function HowItWorksPage() {
           Pre-vet. Review. Accept. Private email. Admit.
         </h1>
         <p className="mt-6 max-w-2xl text-[1.08rem] leading-relaxed text-ink/65">
-          The sequence is the product. A visitor can request consideration.
-          A visitor cannot arrange the conversation.
+          Admission to Board Arabia is a sequence: pre-vet, review, accept, a
+          private email, then the member dashboard. A visitor may request
+          consideration. A visitor cannot arrange the conversation. There is
+          no public calendar.
+        </p>
+        <p className="mt-4">
+          <Link to="/#faq" className="border-b border-brass text-ink">
+            Common questions
+          </Link>
         </p>
       </header>
 
