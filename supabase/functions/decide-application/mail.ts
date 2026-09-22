@@ -1,4 +1,4 @@
-/** Shared mail helpers for Board Arabia edge functions (Resend + dry-run audit). */
+/** Mail helpers for decide-application (Resend + dry-run). */
 
 export const ADMIN_NOTIFY_EMAIL = 'michael@nammco.com'
 

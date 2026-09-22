@@ -42,9 +42,10 @@ Preferred GitHub Pages once enabled: https://mmm-2023.github.io/board-arabia/
 ## Stack
 
 - Vite + React + TypeScript + Tailwind CSS v4
-- Supabase project `iirqbizwanyhgkhanntq` (`applications`, `staff_users`, `email_events`)
+- Supabase project `iirqbizwanyhgkhanntq` (`applications` with `full_name`, `email`, `phone`, `fo_aum`, nullable `calendar_slot`; `staff_users`; `email_events`)
+- Status values: `pending` | `accepted` | `rejected` (also allows legacy `verified` | `declined`)
 - Email: Supabase Edge Functions + **Resend** (dry-run audit when `RESEND_API_KEY` is unset)
-- Private booking link is emailed **only on Accept** — never shown on the public site
+- On Accept, email the candidate a private booking link (server-side only). Never a public calendar CTA. `calendar_slot` may be set to `private_invite_emailed`.
 
 ## Local setup
 
@@ -59,10 +60,11 @@ npm run dev
 ## Visitor flow (no login)
 
 1. **Landing** (`/`) — founding membership; English only; **no** public calendar CTA. Subpages explain members, capital, and partners.
-2. **Apply** (`/apply`) — pre-vet form: name, email, phone (optional), turnover **or** FO AUM, LinkedIn URL, job titles, companies → `applications.status = pending`.
-3. On submit → Edge Function `notify-application`:
+2. **Apply** (`/apply`) — pre-vet form: name, email, phone (optional), turnover **or** FO AUM, LinkedIn URL, job titles, companies.
+3. On submit → Edge Function **`submit-application`** (validated + rate-limited):
+   - Inserts `applications.status = pending`
    - Acknowledgement email to applicant
-   - Notify email to **michael@nammco.com** with summary + `/admin` link
+   - Notify email to **michael@nammco.com** with **this** application summary + `/admin` link (no other applicants’ data)
 
 Legacy `/book` and `/verify` redirect to `/apply`.
 
@@ -70,13 +72,13 @@ Legacy `/book` and `/verify` redirect to `/apply`.
 
 1. **Login** (`/login`) — Supabase Auth email + password → redirects to `/admin`.
 2. **Admin** (`/admin` or `/ops`) — only rows in `staff_users` can list applications.
-3. **Accept** → Edge Function `decide-application` emails the candidate a **private** booking link (server-side only). No admin date picker. No Google Calendar API.
+3. **Accept** → Edge Function `decide-application` emails the candidate the private booking link only (no date picker, no Calendar API).
 4. **Reject** → polite decline email to applicant.
 5. **Sign out** on admin clears the session.
 
 ### Critical anti-leak
 
-The calendar booking URL must **never** appear in marketing pages, nav, footer, or client bundles. It lives only in the Accept email path (`supabase/functions/decide-application`).
+The public site must **never** show the booking URL. It is emailed only on Accept from `decide-application`.
 
 ## Michael: set / reset staff password
 
@@ -107,16 +109,19 @@ on conflict (user_id) do update set email = excluded.email;
 
 ## Secrets (Michael clicks)
 
-Set these in **Supabase → Project Settings → Edge Functions → Secrets** (or CLI `supabase secrets set`):
+Set these in **Supabase → Project Settings → Edge Functions → Secrets**:
+
+### Email (Resend)
 
 | Secret | Required | Purpose |
 |--------|----------|---------|
-| `RESEND_API_KEY` | **Yes for live email** | Send ack / notify / accept / reject via Resend |
-| `RESEND_FROM` | Recommended | Verified sender, e.g. `Board Arabia <hello@yourdomain.com>`. Default falls back to Resend onboarding sender (test only). |
-| `PUBLIC_SITE_URL` | Recommended | Used in admin notify link. Default `https://board-arabia.vercel.app` |
-| `PRIVATE_BOOKING_LINK` | Optional override | Accept-email booking URL. Defaults to Michael’s private calendar Appointment schedule (server-side only). |
+| `RESEND_API_KEY` | **Yes for live email** | Ack / notify / reject (+ optional Accept ack) |
+| `RESEND_FROM` | Recommended | Verified sender |
+| `PUBLIC_SITE_URL` | Recommended | Admin link in notify. Default `https://board-arabia.vercel.app` |
 
-Without `RESEND_API_KEY`, functions still succeed in **dry-run**: rows are written to `public.email_events` so you can prove the path in SQL.
+Accept emails the private booking URL from the Edge Function only. **No Google Calendar API, Meet, or OAuth secrets.** Optional override: `PRIVATE_BOOKING_LINK`.
+
+Without `RESEND_API_KEY`, Resend paths dry-run into `email_events`:
 
 ```sql
 select created_at, kind, recipient, subject, status, detail
@@ -125,27 +130,47 @@ order by created_at desc
 limit 20;
 ```
 
-**Not required (removed from scope):** Google Calendar OAuth / service account / Meet API.
-
 ### Resend setup click-path
 
 1. Create a Resend account → API key.  
-2. Add + verify a sending domain (or use onboarding sender for sandbox tests to your own inbox).  
-3. Paste key into Supabase Edge Function secrets as `RESEND_API_KEY`.  
-4. Redeploy functions if secrets were added after first deploy (usually not needed).
+2. Add + verify a sending domain (or use onboarding sender for sandbox tests).  
+3. Paste key as `RESEND_API_KEY`.
 
 ## Prove apply → emails → Accept
 
-1. Staging → **Apply for review** → submit a real email you control.  
-2. Confirm applicant ack + `michael@nammco.com` notify (or `email_events` dry-run rows).  
-3. `/login` as staff → `/admin` → **Accept** → candidate receives private booking link email (not visible on site).  
-4. Confirm the public site has **no** calendar CTA: grep/`/apply` only.
+1. Staging → **Apply for review** → submit.  
+2. Confirm ack + `michael@nammco.com` notify (or dry-run rows).  
+3. `/login` → `/admin` → **Accept** → candidate email contains the private booking URL (dry-run until `RESEND_API_KEY`).  
+4. Public site has **no** calendar CTA.
 
 ## Deploy
 
-- **Vercel:** production alias https://board-arabia.vercel.app (auto from GitHub).  
-- **GitHub Pages:** `.github/workflows/pages.yml` (SPA fallback `404.html`). Enable **Settings → Pages → Source: GitHub Actions** if not already.
+- **Vercel:** https://board-arabia.vercel.app  
+- **GitHub Pages:** `.github/workflows/pages.yml` when Pages source is GitHub Actions.
+
+## Security checklist (Factory audit + PR2)
+
+Evidence tags: **VERIFIED** = proved against live project / staging; **INFERRED** = from code + policies; **UNKNOWN** = needs Michael dashboard click.
+
+| Area | Result | Evidence |
+|------|--------|----------|
+| RLS `applications` | **VERIFIED PASS** | Anon SELECT → `42501`; Factory: anon INSERT only; SELECT/UPDATE staff_users only |
+| RLS `staff_users` | **VERIFIED PASS-ish** | select-own + claim-first insert (bootstrap residual) |
+| RLS `email_events` | **VERIFIED PASS** | Staff select only |
+| Dangerous ops RPCs | **VERIFIED PASS** | Factory revoked EXECUTE on `list_applications_ops` / `ops_code_ok` / `update_application_status_ops` + client access on `ops_config`; anon RPC call → not exposed |
+| Auth gate `/admin` | **VERIFIED PASS** | Unauthed → `/login?next=/admin`; UI requires session; list needs `staff_users` |
+| Accept/Reject | **VERIFIED PASS** | Edge `decide-application` JWT + `staff_users`; Accept emails private booking URL only; Reject decline only |
+| No public booking CTA / PII | **VERIFIED PASS** | Client/dist grep: 0× `calendar.app.google`; apply form has no applicant list |
+| Rate-limit + sanitize apply | **VERIFIED PASS** | `submit-application`: length caps, email/URL checks, 5/hr per email+IP via `apply_rate_limits` |
+| Secrets hygiene | **INFERRED PASS** | Only public anon in repo/`.env.example`; Resend key is Edge secret only |
+| Notify no cross-applicant leak | **INFERRED PASS** | Templates built from single row id only |
+| Leaked-password protection (Auth) | **UNKNOWN / GAP** | Michael must enable in Supabase → Authentication → Providers → Email → **Leaked password protection** |
+| Live Resend delivery | **GAP** | Needs `RESEND_API_KEY` (dry-run proved; Accept body contains booking URL) |
+| `staff_users_claim_first` | **GAP** | Safe while Michael present; drop later if desired |
+| Legacy `notify-application` | **GAP** | Prefer `submit-application` only |
+
+App path does **not** call ops access-code RPCs. Decisions are Edge Function + JWT + `staff_users` only.
 
 ## Anti-jobs
 
-No Stripe, no Lovable, no Arabic UI, no LinkedIn OAuth login, no DNS changes, no public calendar embed/CTA, no Google Calendar API event creation, no nammco branding on the site.
+No Stripe, no Lovable, no Arabic UI, no LinkedIn OAuth login, no DNS changes, no public calendar embed/CTA, no nammco branding on the site.

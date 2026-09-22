@@ -80,45 +80,11 @@ export function AdminPage() {
     await supabase.auth.signOut()
   }
 
-  async function setStatus(id: string, status: ApplicationStatus) {
-    if (status === 'pending') {
-      setUpdatingId(id)
-      setActionNote('')
-      const { error } = await supabase
-        .from('applications')
-        .update({
-          status: 'pending',
-          updated_at: new Date().toISOString(),
-          decision_at: null,
-          invite_event_id: null,
-          invite_sent_at: null,
-        })
-        .eq('id', id)
-
-      if (!error) {
-        setApps((prev) =>
-          prev.map((row) =>
-            row.id === id
-              ? {
-                  ...row,
-                  status: 'pending',
-                  decision_at: null,
-                  invite_event_id: null,
-                  invite_sent_at: null,
-                }
-              : row,
-          ),
-        )
-      } else {
-        setListError(error.message)
-      }
-      setUpdatingId(null)
-      return
-    }
-
+  async function onAccept(id: string) {
     setUpdatingId(id)
     setActionNote('')
-    const result = await decideApplication(id, status)
+    setListError('')
+    const result = await decideApplication(id, 'accepted')
     if (result.error) {
       setListError(result.error)
       setUpdatingId(null)
@@ -130,18 +96,44 @@ export function AdminPage() {
         row.id === id
           ? {
               ...row,
-              status,
+              status: 'accepted',
               decision_at: new Date().toISOString(),
-              invite_event_id: result.inviteEventId ?? row.invite_event_id,
-              invite_sent_at:
-                status === 'accepted'
-                  ? new Date().toISOString()
-                  : row.invite_sent_at,
+              invite_event_id: 'private_booking_link',
+              invite_sent_at: new Date().toISOString(),
+              calendar_slot: 'private_invite_emailed',
             }
           : row,
       ),
     )
-    setActionNote(result.message || `Marked ${status}.`)
+    setActionNote(result.message || 'Accepted — private booking link emailed.')
+    setUpdatingId(null)
+  }
+
+  async function onReject(id: string) {
+    setUpdatingId(id)
+    setActionNote('')
+    setListError('')
+    const result = await decideApplication(id, 'rejected')
+    if (result.error) {
+      setListError(result.error)
+      setUpdatingId(null)
+      return
+    }
+    setApps((prev) =>
+      prev.map((row) =>
+        row.id === id
+          ? {
+              ...row,
+              status: 'rejected',
+              decision_at: new Date().toISOString(),
+              invite_event_id: null,
+              invite_sent_at: null,
+              calendar_slot: null,
+            }
+          : row,
+      ),
+    )
+    setActionNote(result.message || 'Rejected — decline email sent.')
     setUpdatingId(null)
   }
 
@@ -291,11 +283,11 @@ export function AdminPage() {
                         </dd>
                       </div>
                     )}
-                    {app.invite_sent_at && (
+                    {app.calendar_slot && (
                       <div className="md:col-span-2">
-                        <dt className="text-pearl/40">Private invite</dt>
+                        <dt className="text-pearl/40">Meeting / invite meta</dt>
                         <dd className="mt-0.5 text-stone/85">
-                          Sent {new Date(app.invite_sent_at).toLocaleString()}
+                          {app.calendar_slot}
                           {app.invite_event_id
                             ? ` · event ${app.invite_event_id}`
                             : ''}
@@ -303,31 +295,41 @@ export function AdminPage() {
                       </div>
                     )}
                   </dl>
+
                   <div className="mt-5 flex flex-wrap gap-2">
-                    {(
-                      [
-                        ['pending', 'Pending'],
-                        ['accepted', 'Accept'],
-                        ['rejected', 'Reject'],
-                      ] as const
-                    ).map(([status, label]) => (
                       <button
-                        key={status}
                         type="button"
                         disabled={
-                          updatingId === app.id || app.status === status
+                          updatingId === app.id ||
+                          app.status === 'accepted' ||
+                          app.status === 'verified'
                         }
-                        onClick={() => void setStatus(app.id, status)}
+                        onClick={() => void onAccept(app.id)}
                         className={`px-3 py-2 text-[0.68rem] font-semibold tracking-[0.06em] uppercase transition-colors disabled:opacity-40 ${
-                          app.status === status
+                          app.status === 'accepted' || app.status === 'verified'
                             ? 'bg-brass text-ink'
                             : 'border border-pearl/20 text-pearl/70 hover:border-pearl/40 hover:text-pearl'
                         }`}
                       >
-                        {label}
+                        Accept
                       </button>
-                    ))}
-                  </div>
+                      <button
+                        type="button"
+                        disabled={
+                          updatingId === app.id ||
+                          app.status === 'rejected' ||
+                          app.status === 'declined'
+                        }
+                        onClick={() => void onReject(app.id)}
+                        className={`px-3 py-2 text-[0.68rem] font-semibold tracking-[0.06em] uppercase transition-colors disabled:opacity-40 ${
+                          app.status === 'rejected' || app.status === 'declined'
+                            ? 'bg-brass text-ink'
+                            : 'border border-pearl/20 text-pearl/70 hover:border-pearl/40 hover:text-pearl'
+                        }`}
+                      >
+                        Reject
+                      </button>
+                    </div>
                 </li>
               ))}
             </ul>
@@ -340,9 +342,9 @@ export function AdminPage() {
 
 function StatusBadge({ status }: { status: ApplicationStatus }) {
   const tone =
-    status === 'accepted'
+    status === 'accepted' || status === 'verified'
       ? 'text-emerald-300 border-emerald-300/30'
-      : status === 'rejected'
+      : status === 'rejected' || status === 'declined'
         ? 'text-red-300 border-red-300/30'
         : 'text-brass-bright border-brass/40'
 

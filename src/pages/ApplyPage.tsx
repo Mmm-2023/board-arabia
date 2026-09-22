@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { Footer } from '../components/Footer'
 import { Nav } from '../components/Nav'
 import { Seo } from '../components/Seo'
-import { notifyApplicationSubmitted, supabase } from '../lib/supabase'
+import { submitApplication } from '../lib/supabase'
 
 type FormState = {
   fullName: string
@@ -43,14 +43,14 @@ export function ApplyPage() {
     e.preventDefault()
     setError('')
 
-    const fullName = form.fullName.trim()
-    const email = form.email.trim()
-    const phone = form.phone.trim()
-    const turnover = form.turnover.trim()
-    const foAum = form.foAum.trim()
-    const linkedinUrl = form.linkedinUrl.trim()
-    const jobTitles = form.jobTitles.trim()
-    const companies = form.companies.trim()
+    const fullName = form.fullName.trim().slice(0, 200)
+    const email = form.email.trim().slice(0, 320)
+    const phone = form.phone.trim().slice(0, 40)
+    const turnover = form.turnover.trim().slice(0, 500)
+    const foAum = form.foAum.trim().slice(0, 500)
+    const linkedinUrl = form.linkedinUrl.trim().slice(0, 500)
+    const jobTitles = form.jobTitles.trim().slice(0, 2000)
+    const companies = form.companies.trim().slice(0, 4000)
 
     if (!fullName || !email || !linkedinUrl || !jobTitles || !companies) {
       setError('Name, email, LinkedIn, job titles, and companies are required.')
@@ -60,47 +60,42 @@ export function ApplyPage() {
       setError('Provide turnover or family-office AUM / size.')
       return
     }
-
-    setSubmitting(true)
-
-    const { data, error: insertError } = await supabase
-      .from('applications')
-      .insert({
-        full_name: fullName,
-        email,
-        phone: phone || null,
-        turnover: turnover || foAum,
-        fo_aum: foAum || null,
-        linkedin_url: linkedinUrl,
-        job_titles: jobTitles,
-        companies,
-        calendar_slot: null,
-        status: 'pending',
-      })
-      .select('id')
-      .single()
-
-    if (insertError || !data) {
-      setSubmitting(false)
-      setError(insertError?.message || 'Could not submit application.')
+    try {
+      const u = new URL(linkedinUrl)
+      if (u.protocol !== 'http:' && u.protocol !== 'https:') {
+        setError('LinkedIn URL must start with https://')
+        return
+      }
+    } catch {
+      setError('LinkedIn URL is not valid.')
       return
     }
 
-    const notify = await notifyApplicationSubmitted(data.id)
+    setSubmitting(true)
+    const result = await submitApplication({
+      full_name: fullName,
+      email,
+      phone: phone || null,
+      turnover,
+      fo_aum: foAum || null,
+      linkedin_url: linkedinUrl,
+      job_titles: jobTitles,
+      companies,
+    })
     setSubmitting(false)
 
-    if (notify.error) {
-      setEmailNote(
-        'Application saved. Email notify may need Resend secrets — see README.',
-      )
-    } else if (notify.dryRun) {
+    if (result.error) {
+      setError(result.error)
+      return
+    }
+
+    if (result.dryRun) {
       setEmailNote(
         'Application saved. Emails logged in dry-run until RESEND_API_KEY is set.',
       )
     } else {
       setEmailNote('Acknowledgement and staff notify emails were queued.')
     }
-
     setDone(true)
   }
 

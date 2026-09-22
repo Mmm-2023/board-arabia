@@ -1,9 +1,9 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1'
 import {
+  PRIVATE_BOOKING_LINK,
   corsHeaders,
   jsonResponse,
   logEmailEvent,
-  PRIVATE_BOOKING_LINK,
   sendEmail,
 } from './mail.ts'
 
@@ -80,7 +80,6 @@ Deno.serve(async (req) => {
   }
 
   if (decision === 'accepted') {
-    // Accept: email private booking link only. No Calendar API. No public CTA.
     const subject = 'Board Arabia — next step (private booking)'
     const text = `Hello ${app.full_name || 'there'},
 
@@ -93,7 +92,6 @@ ${PRIVATE_BOOKING_LINK}
 This link is personal to accepted candidates and is not published on the public site.
 
 — Board Arabia`
-
     const html = `<p>Hello ${escapeHtml(app.full_name || 'there')},</p>
 <p>Your Board Arabia application has been <strong>accepted</strong>.</p>
 <p>Please use this private booking link to schedule a conversation with Michael:</p>
@@ -116,35 +114,37 @@ This link is personal to accepted candidates and is not published on the public 
       provider: sent.provider,
       provider_id: sent.providerId,
       detail: sent.detail ?? null,
-      payload: { invite_mode: 'private_booking_link' },
+      payload: {
+        invite_mode: 'private_booking_link',
+        booking_url: PRIVATE_BOOKING_LINK,
+        email_text: text,
+      },
     })
-
     if (sent.status === 'error') {
       return jsonResponse(req, { error: sent.detail || 'Email failed' }, 502)
     }
 
     updatePayload.invite_sent_at = now
     updatePayload.invite_event_id = 'private_booking_link'
+    updatePayload.calendar_slot = 'private_invite_emailed'
 
     const { error: upErr } = await admin
       .from('applications')
       .update(updatePayload)
       .eq('id', app.id)
-    if (upErr) {
-      return jsonResponse(req, { error: upErr.message }, 500)
-    }
+    if (upErr) return jsonResponse(req, { error: upErr.message }, 500)
 
     return jsonResponse(req, {
       ok: true,
       dry_run: sent.dryRun,
       invite_mode: 'private_booking_link',
+      booking_url: PRIVATE_BOOKING_LINK,
       message: sent.dryRun
         ? 'Accepted (dry-run). Set RESEND_API_KEY to send the private booking email.'
         : 'Accepted — private booking link emailed to candidate.',
     })
   }
 
-  // Reject: decline email only
   const subject = 'Board Arabia application update'
   const text = `Hello ${app.full_name || 'there'},
 
@@ -153,18 +153,12 @@ Thank you for your interest in Board Arabia. After review, we are unable to proc
 We appreciate you taking the time to apply.
 
 — Board Arabia`
-
   const html = `<p>Hello ${escapeHtml(app.full_name || 'there')},</p>
 <p>Thank you for your interest in Board Arabia. After review, we are unable to proceed with your application at this time.</p>
 <p>We appreciate you taking the time to apply.</p>
 <p>— Board Arabia</p>`
 
-  const sent = await sendEmail({
-    to: app.email,
-    subject,
-    html,
-    text,
-  })
+  const sent = await sendEmail({ to: app.email, subject, html, text })
   await logEmailEvent(admin, {
     application_id: app.id,
     kind: 'reject_decline',
@@ -174,22 +168,21 @@ We appreciate you taking the time to apply.
     provider: sent.provider,
     provider_id: sent.providerId,
     detail: sent.detail ?? null,
+    payload: { email_text: text },
   })
-
   if (sent.status === 'error') {
     return jsonResponse(req, { error: sent.detail || 'Email failed' }, 502)
   }
 
   updatePayload.invite_event_id = null
   updatePayload.invite_sent_at = null
+  updatePayload.calendar_slot = null
 
   const { error: upErr } = await admin
     .from('applications')
     .update(updatePayload)
     .eq('id', app.id)
-  if (upErr) {
-    return jsonResponse(req, { error: upErr.message }, 500)
-  }
+  if (upErr) return jsonResponse(req, { error: upErr.message }, 500)
 
   return jsonResponse(req, {
     ok: true,
