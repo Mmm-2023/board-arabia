@@ -4,6 +4,8 @@ Allow: /
 Disallow: /admin
 Disallow: /ops
 Disallow: /login
+Disallow: /dashboard
+Disallow: /auth
 Disallow: /book
 Disallow: /verify
 Disallow: /shell.html

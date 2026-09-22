@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import type { Database } from './database.types'
+import { parseCapacity, type FoundingCapacity, type FoundingSeat } from './member'
 
 const url = import.meta.env.VITE_SUPABASE_URL
 const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
@@ -18,6 +19,7 @@ export type ApplicationStatus =
   | 'declined'
   | 'accepted'
   | 'rejected'
+  | 'admitted'
 
 export type Application = {
   id: string
@@ -38,6 +40,10 @@ export type Application = {
   invite_sent_at: string | null
   decision_at: string | null
   decision_by: string | null
+  founding_seat: 'ksa' | 'intl' | null
+  member_user_id: string | null
+  admitted_at: string | null
+  admitted_by: string | null
 }
 
 const functionsBase = `${url.replace(/\/$/, '')}/functions/v1`
@@ -122,4 +128,69 @@ export async function decideApplication(
   } catch (err) {
     return { error: err instanceof Error ? err.message : 'Decision failed' }
   }
+}
+
+export type DryRunInvite = {
+  confirmUrl: string | null
+  loginUrl: string
+  otp: string | null
+  tempPassword: string | null
+}
+
+export async function admitMember(
+  applicationId: string,
+  seat: FoundingSeat,
+): Promise<{
+  error?: string
+  message?: string
+  dryRun?: boolean
+  dryRunInvite?: DryRunInvite
+}> {
+  try {
+    const res = await fetch(`${functionsBase}/admit-member`, {
+      method: 'POST',
+      headers: await staffHeaders(),
+      body: JSON.stringify({
+        application_id: applicationId,
+        seat,
+      }),
+    })
+    const body = (await res.json().catch(() => ({}))) as {
+      error?: string
+      message?: string
+      dry_run?: boolean
+      dry_run_invite?: {
+        confirm_url?: string | null
+        login_url?: string
+        otp?: string | null
+        temp_password?: string | null
+      }
+    }
+    if (!res.ok) return { error: body.error || `Admit failed (${res.status})` }
+    const invite = body.dry_run_invite
+    return {
+      message: body.message,
+      dryRun: Boolean(body.dry_run),
+      dryRunInvite: invite
+        ? {
+            confirmUrl: invite.confirm_url ?? null,
+            loginUrl: invite.login_url || '',
+            otp: invite.otp ?? null,
+            tempPassword: invite.temp_password ?? null,
+          }
+        : undefined,
+    }
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : 'Admit failed' }
+  }
+}
+
+export async function fetchFoundingCapacity(): Promise<
+  { error: string } | FoundingCapacity
+> {
+  const { data, error } = await supabase.rpc('founding_capacity')
+  if (error) return { error: error.message }
+  const parsed = parseCapacity(data)
+  if (!parsed) return { error: 'Capacity is unavailable.' }
+  return parsed
 }

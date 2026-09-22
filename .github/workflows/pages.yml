@@ -36,9 +36,17 @@ jobs:
           test -f dist/.nojekyll
           test -f dist/404.html
           test -f dist/for-members/index.html
+          test -f dist/dashboard/index.html
+          test -f dist/dashboard/profile/index.html
+          test -f dist/auth/confirm/index.html
           test -f dist/robots.txt
           grep -q '/board-arabia/' dist/index.html
+          grep -q 'noindex' dist/dashboard/index.html
           grep -q 'Board Arabia' dist/for-members/index.html
+          if grep -R -E -i -q 'calendar\.app\.google|nammco' dist; then
+            echo 'banned string in Pages artifact'
+            exit 1
+          fi
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist

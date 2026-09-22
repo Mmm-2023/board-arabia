@@ -1,11 +1,15 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { Link, Navigate } from 'react-router-dom'
+import { seatLabel, type FoundingCapacity, type FoundingSeat } from '../lib/member'
 import {
+  admitMember,
   decideApplication,
+  fetchFoundingCapacity,
   supabase,
   type Application,
   type ApplicationStatus,
+  type DryRunInvite,
 } from '../lib/supabase'
 import { useNoIndex } from '../lib/usePageTitle'
 
@@ -17,6 +21,9 @@ export function AdminPage() {
   const [listError, setListError] = useState('')
   const [updatingId, setUpdatingId] = useState<string | null>(null)
   const [actionNote, setActionNote] = useState('')
+  const [seatById, setSeatById] = useState<Record<string, FoundingSeat | ''>>({})
+  const [capacity, setCapacity] = useState<FoundingCapacity | null>(null)
+  const [dryRunInvite, setDryRunInvite] = useState<DryRunInvite | null>(null)
 
   useNoIndex('Admin — Board Arabia')
 
@@ -47,6 +54,8 @@ export function AdminPage() {
     }
 
     setIsStaff(true)
+    const capacityResult = await fetchFoundingCapacity()
+    setCapacity('error' in capacityResult ? null : capacityResult)
     const { data, error } = await supabase
       .from('applications')
       .select('*')
@@ -83,6 +92,7 @@ export function AdminPage() {
   async function onAccept(id: string) {
     setUpdatingId(id)
     setActionNote('')
+    setDryRunInvite(null)
     setListError('')
     const result = await decideApplication(id, 'accepted')
     if (result.error) {
@@ -109,9 +119,44 @@ export function AdminPage() {
     setUpdatingId(null)
   }
 
+  async function onAdmit(id: string) {
+    const seat = seatById[id]
+    if (seat !== 'ksa' && seat !== 'intl') {
+      setListError('Choose a Saudi or international seat.')
+      return
+    }
+    setUpdatingId(id)
+    setActionNote('')
+    setDryRunInvite(null)
+    setListError('')
+    const result = await admitMember(id, seat)
+    if (result.error) {
+      setListError(result.error)
+      setUpdatingId(null)
+      return
+    }
+    setApps((prev) =>
+      prev.map((row) =>
+        row.id === id
+          ? {
+              ...row,
+              status: 'admitted',
+              founding_seat: seat,
+              admitted_at: new Date().toISOString(),
+            }
+          : row,
+      ),
+    )
+    setActionNote(result.message || 'Admitted.')
+    setDryRunInvite(result.dryRunInvite ?? null)
+    setUpdatingId(null)
+    if (session) void refreshStaffAndApps(session)
+  }
+
   async function onReject(id: string) {
     setUpdatingId(id)
     setActionNote('')
+    setDryRunInvite(null)
     setListError('')
     const result = await decideApplication(id, 'rejected')
     if (result.error) {
@@ -213,8 +258,38 @@ export function AdminPage() {
             {listError && (
               <p className="mt-4 text-[0.9rem] text-red-300">{listError}</p>
             )}
+            {capacity && (
+              <p className="mt-4 text-[0.9rem] text-stone/60">
+                Saudi Arabia {capacity.ksa}/{capacity.ksa_cap} · International{' '}
+                {capacity.intl}/{capacity.intl_cap}
+              </p>
+            )}
             {actionNote && (
               <p className="mt-4 text-[0.9rem] text-brass-bright">{actionNote}</p>
+            )}
+            {dryRunInvite && (
+              <div className="mt-4 max-w-2xl border border-brass/40 px-4 py-4 text-[0.9rem] text-stone/80">
+                <p className="font-semibold text-brass-bright">
+                  Dry-run invite. Not emailed. Do not forward.
+                </p>
+                {dryRunInvite.confirmUrl && (
+                  <p className="mt-3 break-all">
+                    <a
+                      href={dryRunInvite.confirmUrl}
+                      className="text-brass-bright underline-offset-2 hover:underline"
+                    >
+                      {dryRunInvite.confirmUrl}
+                    </a>
+                  </p>
+                )}
+                {dryRunInvite.otp && <p className="mt-2">One-time code: {dryRunInvite.otp}</p>}
+                {dryRunInvite.tempPassword && (
+                  <p className="mt-2">Temporary password: {dryRunInvite.tempPassword}</p>
+                )}
+                {dryRunInvite.loginUrl && (
+                  <p className="mt-2 break-all">{dryRunInvite.loginUrl}</p>
+                )}
+              </div>
             )}
 
             <ul className="mt-8 space-y-4">
@@ -296,13 +371,20 @@ export function AdminPage() {
                     )}
                   </dl>
 
-                  <div className="mt-5 flex flex-wrap gap-2">
+                  {app.founding_seat && (
+                    <p className="mt-4 text-[0.9rem] text-stone/70">
+                      Founding seat · {seatLabel(app.founding_seat)}
+                    </p>
+                  )}
+
+                  <div className="mt-5 flex flex-wrap items-center gap-2">
                       <button
                         type="button"
                         disabled={
                           updatingId === app.id ||
                           app.status === 'accepted' ||
-                          app.status === 'verified'
+                          app.status === 'verified' ||
+                          app.status === 'admitted'
                         }
                         onClick={() => void onAccept(app.id)}
                         className={`px-3 py-2 text-[0.68rem] font-semibold tracking-[0.06em] uppercase transition-colors disabled:opacity-40 ${
@@ -318,7 +400,8 @@ export function AdminPage() {
                         disabled={
                           updatingId === app.id ||
                           app.status === 'rejected' ||
-                          app.status === 'declined'
+                          app.status === 'declined' ||
+                          app.status === 'admitted'
                         }
                         onClick={() => void onReject(app.id)}
                         className={`px-3 py-2 text-[0.68rem] font-semibold tracking-[0.06em] uppercase transition-colors disabled:opacity-40 ${
@@ -329,6 +412,35 @@ export function AdminPage() {
                       >
                         Reject
                       </button>
+                      {(app.status === 'accepted' || app.status === 'verified') && (
+                        <>
+                          <label className="ml-1 text-[0.68rem] font-semibold tracking-[0.06em] text-pearl/45 uppercase">
+                            <span className="sr-only">Founding seat</span>
+                            <select
+                              value={seatById[app.id] ?? ''}
+                              onChange={(event) =>
+                                setSeatById((prev) => ({
+                                  ...prev,
+                                  [app.id]: event.target.value as FoundingSeat | '',
+                                }))
+                              }
+                              className="border border-pearl/20 bg-ink px-2 py-2 text-pearl"
+                            >
+                              <option value="">Seat</option>
+                              <option value="ksa">Saudi Arabia</option>
+                              <option value="intl">International</option>
+                            </select>
+                          </label>
+                          <button
+                            type="button"
+                            disabled={updatingId === app.id}
+                            onClick={() => void onAdmit(app.id)}
+                            className="border border-brass/60 px-3 py-2 text-[0.68rem] font-semibold tracking-[0.06em] text-brass-bright uppercase disabled:opacity-40"
+                          >
+                            Admit
+                          </button>
+                        </>
+                      )}
                     </div>
                 </li>
               ))}
@@ -342,7 +454,7 @@ export function AdminPage() {
 
 function StatusBadge({ status }: { status: ApplicationStatus }) {
   const tone =
-    status === 'accepted' || status === 'verified'
+    status === 'accepted' || status === 'verified' || status === 'admitted'
       ? 'text-emerald-300 border-emerald-300/30'
       : status === 'rejected' || status === 'declined'
         ? 'text-red-300 border-red-300/30'
