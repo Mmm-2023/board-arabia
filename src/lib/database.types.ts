@@ -23,7 +23,7 @@ export type Database = {
           job_titles: string
           linkedin_url: string | null
           calendar_slot: string | null
-          status: 'pending' | 'accepted' | 'rejected'
+          status: 'pending' | 'verified' | 'declined' | 'accepted' | 'rejected'
           notes: string | null
           invite_event_id: string | null
           invite_sent_at: string | null
@@ -43,7 +43,7 @@ export type Database = {
           job_titles: string
           linkedin_url?: string | null
           calendar_slot?: string | null
-          status?: 'pending' | 'accepted' | 'rejected'
+          status?: 'pending' | 'verified' | 'declined' | 'accepted' | 'rejected'
           notes?: string | null
           invite_event_id?: string | null
           invite_sent_at?: string | null
@@ -63,7 +63,7 @@ export type Database = {
           job_titles?: string
           linkedin_url?: string | null
           calendar_slot?: string | null
-          status?: 'pending' | 'accepted' | 'rejected'
+          status?: 'pending' | 'verified' | 'declined' | 'accepted' | 'rejected'
           notes?: string | null
           invite_event_id?: string | null
           invite_sent_at?: string | null

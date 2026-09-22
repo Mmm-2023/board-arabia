@@ -276,11 +276,13 @@ export function AdminPage() {
                     <button
                       type="button"
                       disabled={
-                        updatingId === app.id || app.status === 'accepted'
+                        updatingId === app.id ||
+                        app.status === 'accepted' ||
+                        app.status === 'verified'
                       }
                       onClick={() => void onDecision(app.id, 'accepted')}
                       className={`px-3 py-2 text-[0.68rem] font-semibold tracking-[0.06em] uppercase transition-colors disabled:opacity-40 ${
-                        app.status === 'accepted'
+                        app.status === 'accepted' || app.status === 'verified'
                           ? 'bg-brass text-ink'
                           : 'border border-pearl/20 text-pearl/70 hover:border-pearl/40 hover:text-pearl'
                       }`}
@@ -290,11 +292,13 @@ export function AdminPage() {
                     <button
                       type="button"
                       disabled={
-                        updatingId === app.id || app.status === 'rejected'
+                        updatingId === app.id ||
+                        app.status === 'rejected' ||
+                        app.status === 'declined'
                       }
                       onClick={() => void onDecision(app.id, 'rejected')}
                       className={`px-3 py-2 text-[0.68rem] font-semibold tracking-[0.06em] uppercase transition-colors disabled:opacity-40 ${
-                        app.status === 'rejected'
+                        app.status === 'rejected' || app.status === 'declined'
                           ? 'bg-brass text-ink'
                           : 'border border-pearl/20 text-pearl/70 hover:border-pearl/40 hover:text-pearl'
                       }`}
@@ -314,9 +318,9 @@ export function AdminPage() {
 
 function StatusBadge({ status }: { status: ApplicationStatus }) {
   const tone =
-    status === 'accepted'
+    status === 'accepted' || status === 'verified'
       ? 'text-emerald-300 border-emerald-300/30'
-      : status === 'rejected'
+      : status === 'rejected' || status === 'declined'
         ? 'text-red-300 border-red-300/30'
         : 'text-brass-bright border-brass/40'
 

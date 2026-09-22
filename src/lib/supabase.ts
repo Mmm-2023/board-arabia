@@ -12,7 +12,12 @@ if (!url || !anonKey) {
 
 export const supabase = createClient<Database>(url, anonKey)
 
-export type ApplicationStatus = 'pending' | 'accepted' | 'rejected'
+export type ApplicationStatus =
+  | 'pending'
+  | 'verified'
+  | 'declined'
+  | 'accepted'
+  | 'rejected'
 
 export type Application = {
   id: string

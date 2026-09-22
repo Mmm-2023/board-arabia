@@ -125,6 +125,8 @@ This link is personal to accepted candidates and is not published on the public 
 
     updatePayload.invite_sent_at = now
     updatePayload.invite_event_id = 'private_booking_link'
+    // Nullable calendar_slot used as private-invite metadata only (never a public CTA).
+    updatePayload.calendar_slot = 'private_invite_emailed'
 
     const { error: upErr } = await admin
       .from('applications')
@@ -182,6 +184,7 @@ We appreciate you taking the time to apply.
 
   updatePayload.invite_event_id = null
   updatePayload.invite_sent_at = null
+  updatePayload.calendar_slot = null
 
   const { error: upErr } = await admin
     .from('applications')
