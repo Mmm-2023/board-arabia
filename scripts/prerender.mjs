@@ -69,6 +69,19 @@ function assertPage(route, html) {
   if (route === '/' && !html.includes('no public booking calendar')) {
     errors.push('home missing answer-first blurb')
   }
+  if (html.includes('\u2014')) errors.push('em dash in prerender')
+  if (route === '/' && !html.includes('Figures are platform sums from admitted members who opted to contribute capacity.')) {
+    errors.push('home missing platform totals disclaimer')
+  }
+  if (route === '/' && !html.includes('Building the Founding 100')) {
+    errors.push('home missing early-state totals copy')
+  }
+  if (route === '/' && !html.includes('What do the platform totals mean?')) {
+    errors.push('home missing platform totals FAQ')
+  }
+  if (route === '/' && /\$\d/.test(html)) {
+    errors.push('home prerender contains a dollar figure')
+  }
 
   if (errors.length) throw new Error(`${route}: ${errors.join('; ')}`)
   return { title, description }

@@ -17,6 +17,12 @@ export type ProfileRow = {
   linkedin_url: string | null
   bio: string | null
   phone: string | null
+  investable_capacity_usd: number | string | null
+  fo_aum_usd: number | string | null
+  turnover_usd: number | string | null
+  capacity_currency: string | null
+  include_in_public_aggregates: boolean
+  capacity_verified: boolean
 }
 
 export type FoundingCapacity = {

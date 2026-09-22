@@ -41,8 +41,9 @@ Deno.serve(async (req) => {
 
   let applicationId = ''
   let seat = ''
+  let body: Record<string, unknown> = {}
   try {
-    const body = await req.json()
+    body = await req.json()
     applicationId = String(body.application_id || '')
     seat = String(body.seat || '')
   } catch {
@@ -96,6 +97,13 @@ Deno.serve(async (req) => {
     return jsonResponse(req, { error: 'This person is already a member.' }, 409)
   }
 
+  const investable = readUsd(body.investable_capacity_usd)
+  const foAum = readUsd(body.fo_aum_usd)
+  const turnover = readUsd(body.turnover_usd)
+  if (investable.error || foAum.error || turnover.error) {
+    return jsonResponse(req, { error: 'Capacity amounts must be USD numbers, or blank.' }, 400)
+  }
+
   const site = publicSite()
   const issued = await issueCredential(admin, email, site)
   if ('error' in issued) {
@@ -114,6 +122,11 @@ Deno.serve(async (req) => {
     p_linkedin_url: httpsOrNull(app.linkedin_url),
     p_company: clip(firstLine(app.companies), 200),
     p_headline: clip(firstLine(app.job_titles), 160),
+    p_investable_capacity_usd: investable.value,
+    p_fo_aum_usd: foAum.value,
+    p_turnover_usd: turnover.value,
+    p_include_in_public_aggregates: body.include_in_public_aggregates !== false,
+    p_capacity_verified: body.capacity_verified === true,
   })
   if (claimError) {
     if (issued.createdNew) await admin.auth.admin.deleteUser(issued.userId)
@@ -214,7 +227,19 @@ function claimFailure(message: string) {
     return { error: 'Accept the application before admitting.' }
   }
   if (message.includes('forbidden')) return { error: 'Not allowed' }
+  if (message.includes('invalid_capacity')) {
+    return { error: 'Capacity amounts must be USD numbers, or blank.' }
+  }
   return { error: message }
+}
+
+function readUsd(value: unknown): { value: number | null; error?: string } {
+  if (value == null || value === '') return { value: null }
+  const amount = typeof value === 'number' ? value : typeof value === 'string' ? Number(value) : Number.NaN
+  if (!Number.isFinite(amount) || amount < 0 || amount > 1_000_000_000_000) {
+    return { value: null, error: 'invalid' }
+  }
+  return { value: amount }
 }
 
 function clip(value: string | null | undefined, max: number) {

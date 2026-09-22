@@ -10,7 +10,7 @@ English only. No public calendar, no member names or photographs, no fee schedul
 
 | Route | Purpose |
 | --- | --- |
-| `/` | Home: hero, why, Founding 100 (50/50), member-tool tiles, how it works, partners, trust, final CTA |
+| `/` | Home: hero, platform totals, why, Founding 100 (50/50), member-tool tiles, how it works, partners, trust, final CTA |
 | `/apply` | Pre-vet form. CTA language is “Apply for consideration”. |
 | `/for-members` | All nine tools, including mandate inbox and deal rooms, plus a dashboard preview |
 | `/for-capital` | How FDI, family offices, PE, and VC reach members: mandate inbox and deal rooms, admin-gated |
@@ -62,7 +62,7 @@ npm run dev
 ## Visitor flow (no login)
 
 1. **Landing** (`/`). Founding membership; English only; **no** public calendar CTA. Subpages explain members, capital, and partners.
-2. **Apply** (`/apply`). Pre-vet form: name, email, phone (optional), turnover **or** FO AUM, LinkedIn URL, job titles, companies.
+2. **Apply** (`/apply`). Pre-vet form: name, email, phone (optional), turnover **or** FO AUM, optional investable capacity in USD, a public-totals checkbox (on by default), LinkedIn URL, job titles, companies.
 3. On submit → Edge Function **`submit-application`** (validated + rate-limited):
    - Inserts `applications.status = pending`
    - Acknowledgement email to applicant
@@ -213,6 +213,16 @@ Pages must use **GitHub Actions** as the source (not the `main` branch files). M
 
 Proof build: `VITE_BASE_PATH=/ npm run build` writes `dist/CNAME`, `dist/dashboard/index.html`, and root `/assets/` URLs, and fails if the artifact contains a public booking URL.
 
+## Public platform totals
+
+The home page reads one aggregate row, `platform_stats`. It does not read members, profiles, or applications. Money figures stay null until five verified, opted-in admitted members contribute to that metric. Five to nine contributors round to the nearest $5m. Ten or more round to the nearest $1m. Seat counts can show earlier, including zero. The page does not invent a dollar total.
+
+Apply this on Supabase project `iirqbizwanyhgkhanntq` before the new Edge Function code is deployed. Supabase Dashboard → SQL Editor → paste and run:
+
+`supabase/migrations/20260922200000_platform_stats.sql`
+
+Then deploy `submit-application` and `admit-member`. Admit, a later capacity save, a profile opt-out, and suspend or restore all recompute the row. Anon can select `platform_stats` only.
+
 ## Security checklist (Factory audit + PR2)
 
 Evidence tags: **VERIFIED** = proved against live project / staging; **INFERRED** = from code + policies; **UNKNOWN** = needs a dashboard click; **SKIPPED BY MICHAEL** = declined, do not re-ask.
@@ -231,6 +241,8 @@ Evidence tags: **VERIFIED** = proved against live project / staging; **INFERRED*
 | `/dashboard` vs `/admin` | **VERIFIED PASS** | `/admin` still requires `staff_users`. `/dashboard` requires `members` and blocks `suspended`. Staff `/login` without `next` still resolves to `/admin` |
 | Member invite secrets | **VERIFIED PASS** for storage; live send needs Workspace secrets | `email_events` stores mode and seat flags only (no otp, token, or password keys). A dry-run link is returned only in the signed-in staff HTTP response. Live mail is the Gmail API from `noreply@boardarabia.com` with Reply-To `cindy@nammco.com` once `GMAIL_CLIENT_ID`, `GMAIL_CLIENT_SECRET`, and `GMAIL_REFRESH_TOKEN` are set on the Edge Function |
 | No public booking CTA / PII | **VERIFIED PASS** | Client/dist grep: 0× `calendar.app.google`; apply form has no applicant list |
+| RLS `platform_stats` | **INFERRED** until the migration is applied on `iirqbizwanyhgkhanntq` | Anon and authenticated get SELECT only. No insert, update, or delete grant. Money columns are written already rounded, or null when fewer than 5 contributors. Exact sums are not stored |
+| RLS members / applications / invites | **INFERRED** for this wave | No new anon SELECT on `members`, `profiles`, or `applications`. Profile capacity columns are granted to `authenticated` and limited by own-row or staff policies |
 | Rate-limit + sanitize apply | **VERIFIED PASS** | `submit-application`: length caps, email/URL checks, 5/hr per email+IP via `apply_rate_limits` |
 | Secrets hygiene | **INFERRED PASS** | Only public anon in repo/`.env.example`; Gmail client secret, refresh token, or service-account JSON stay in Edge secrets |
 | Notify no cross-applicant leak | **INFERRED PASS** | Templates built from single row id only |

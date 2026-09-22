@@ -62,7 +62,7 @@ export const MARKETING_PAGES: Record<MarketingPath, MarketingPage> = {
     path: '/apply',
     title: 'Apply for consideration | Board Arabia',
     description:
-      'Submit credentials for Board Arabia founding membership review. LinkedIn, titles, companies, and turnover or family-office AUM. Private next step by email if accepted. There is no public calendar.',
+      'Submit credentials for Board Arabia founding membership review. LinkedIn, titles, companies, turnover or family-office AUM, and optional investable capacity. Private next step by email if accepted. There is no public calendar.',
   },
   '/about': {
     path: '/about',
@@ -142,6 +142,11 @@ export const FAQ: FaqItem[] = [
     question: 'Are there public member names or reviews?',
     answer:
       'No. The site does not publish invented member lists, photos, or reviews.',
+  },
+  {
+    question: 'What do the platform totals mean?',
+    answer:
+      'Platform totals are sums from admitted members who chose to contribute capacity and whose figures the desk has verified. A money total stays unpublished until at least five members contribute to that figure, and the published sum is rounded. Names, photos, and individual amounts are never shown.',
   },
 ]
 

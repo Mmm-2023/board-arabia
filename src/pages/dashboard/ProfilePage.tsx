@@ -1,4 +1,6 @@
 import { useState, type FormEvent } from 'react'
+import { formatPrivateUsd, readNumeric } from '../../lib/capacity'
+import type { ProfileRow } from '../../lib/member'
 import { supabase } from '../../lib/supabase'
 import { useNoIndex } from '../../lib/usePageTitle'
 import { useMember } from './context'
@@ -15,6 +17,14 @@ export function ProfilePage() {
   const [linkedin, setLinkedin] = useState(profile?.linkedin_url ?? '')
   const [phone, setPhone] = useState(profile?.phone ?? '')
   const [bio, setBio] = useState(profile?.bio ?? '')
+  const [includeInPublic, setIncludeInPublic] = useState(
+    profile?.include_in_public_aggregates !== false,
+  )
+  const [includeSource, setIncludeSource] = useState(profile?.include_in_public_aggregates)
+  if (profile?.include_in_public_aggregates !== includeSource) {
+    setIncludeSource(profile?.include_in_public_aggregates)
+    setIncludeInPublic(profile?.include_in_public_aggregates !== false)
+  }
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
   const [profileNote, setProfileNote] = useState('')
@@ -50,6 +60,7 @@ export function ProfilePage() {
         linkedin_url: linkedinUrl || null,
         phone: emptyToNull(phone),
         bio: emptyToNull(bio),
+        include_in_public_aggregates: includeInPublic,
       })
       .eq('user_id', userId)
     setSavingProfile(false)
@@ -136,6 +147,19 @@ export function ProfilePage() {
             className={fieldClass}
           />
         </label>
+        <label className="flex items-start gap-3 text-[0.98rem] leading-relaxed text-ink/70">
+          <input
+            type="checkbox"
+            checked={includeInPublic}
+            onChange={(event) => setIncludeInPublic(event.target.checked)}
+            className="mt-1"
+          />
+          <span>
+            Include my capacity in Board Arabia&apos;s public platform totals
+            (never shown individually).
+          </span>
+        </label>
+        <CapacityOnFile profile={profile} />
         {profileError && (
           <p className="text-[0.92rem] text-red-700" role="alert">
             {profileError}
@@ -229,6 +253,36 @@ function Field({
       />
     </label>
   )
+}
+
+function CapacityOnFile({ profile }: { profile: ProfileRow | null }) {
+  if (!profile) return null
+  const lines = [
+    line('Investable capacity', readNumeric(profile.investable_capacity_usd)),
+    line('Family office AUM', readNumeric(profile.fo_aum_usd)),
+    line('Business turnover', readNumeric(profile.turnover_usd)),
+  ].filter((item): item is string => item != null)
+  if (lines.length === 0) return null
+  return (
+    <div className="border border-ink/10 bg-white/40 px-4 py-4 text-[0.92rem] leading-relaxed text-ink/60">
+      <p>Held by the desk. Not published as an individual amount.</p>
+      <ul className="mt-2 space-y-1">
+        {lines.map((item) => (
+          <li key={item}>{item}</li>
+        ))}
+      </ul>
+      <p className="mt-2">
+        {profile.capacity_verified
+          ? 'Verified. It can enter a public sum while the box above stays checked.'
+          : 'Not verified yet, so this figure is not in the public totals.'}
+      </p>
+    </div>
+  )
+}
+
+function line(label: string, amount: number | null) {
+  if (amount == null || amount <= 0) return null
+  return `${label}: ${formatPrivateUsd(amount)}`
 }
 
 function emptyToNull(value: string) {

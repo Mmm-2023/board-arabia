@@ -24,9 +24,17 @@ export function PrivacyPage() {
           </h2>
           <p>
             The consideration form asks for your name, email, phone if you
-            give it, LinkedIn URL, job titles, companies, and turnover or
-            family-office size. Those details are used to review the
-            application. They are not shown on these pages.
+            give it, LinkedIn URL, job titles, companies, turnover or
+            family-office size, and an optional investable capacity in US
+            dollars. Those details are used to review the application. They
+            are not shown on these pages as individual figures.
+          </p>
+          <p>
+            If you leave the public-totals box checked, a verified capacity
+            figure can be added into a platform sum after you are admitted.
+            The public site shows that sum only. It does not show your name,
+            your company, or your amount. You can turn the choice off later
+            in your profile.
           </p>
           <h2 className="pt-4 font-display text-[1.6rem] font-semibold tracking-[-0.03em] text-ink">
             Partner interest
