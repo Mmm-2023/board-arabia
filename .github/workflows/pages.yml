@@ -2,7 +2,7 @@ name: Deploy GitHub Pages
 
 on:
   push:
-    branches: [main, feat/land-book-verify]
+    branches: [main, feat/land-book-verify, cursor/admin-login-a54a]
   workflow_dispatch:
 
 permissions:

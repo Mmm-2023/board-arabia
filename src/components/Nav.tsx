@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 
 export function Nav({
-  ctaTo = '/book',
-  ctaLabel = 'Book a conversation',
+  ctaTo = '/apply',
+  ctaLabel = 'Apply for review',
 }: {
   ctaTo?: string
   ctaLabel?: string

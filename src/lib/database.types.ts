@@ -14,37 +14,61 @@ export type Database = {
           id: string
           created_at: string
           updated_at: string
+          full_name: string | null
+          email: string | null
+          phone: string | null
           turnover: string
+          fo_aum: string | null
           companies: string
           job_titles: string
           linkedin_url: string | null
           calendar_slot: string | null
-          status: 'pending' | 'verified' | 'declined'
+          status: 'pending' | 'accepted' | 'rejected'
           notes: string | null
+          invite_event_id: string | null
+          invite_sent_at: string | null
+          decision_at: string | null
+          decision_by: string | null
         }
         Insert: {
           id?: string
           created_at?: string
           updated_at?: string
+          full_name?: string | null
+          email?: string | null
+          phone?: string | null
           turnover: string
+          fo_aum?: string | null
           companies: string
           job_titles: string
           linkedin_url?: string | null
           calendar_slot?: string | null
-          status?: 'pending' | 'verified' | 'declined'
+          status?: 'pending' | 'accepted' | 'rejected'
           notes?: string | null
+          invite_event_id?: string | null
+          invite_sent_at?: string | null
+          decision_at?: string | null
+          decision_by?: string | null
         }
         Update: {
           id?: string
           created_at?: string
           updated_at?: string
+          full_name?: string | null
+          email?: string | null
+          phone?: string | null
           turnover?: string
+          fo_aum?: string | null
           companies?: string
           job_titles?: string
           linkedin_url?: string | null
           calendar_slot?: string | null
-          status?: 'pending' | 'verified' | 'declined'
+          status?: 'pending' | 'accepted' | 'rejected'
           notes?: string | null
+          invite_event_id?: string | null
+          invite_sent_at?: string | null
+          decision_at?: string | null
+          decision_by?: string | null
         }
         Relationships: []
       }
@@ -63,6 +87,48 @@ export type Database = {
           user_id?: string
           email?: string
           created_at?: string
+        }
+        Relationships: []
+      }
+      email_events: {
+        Row: {
+          id: string
+          created_at: string
+          application_id: string | null
+          kind: string
+          recipient: string
+          subject: string
+          status: string
+          provider: string | null
+          provider_id: string | null
+          detail: string | null
+          payload: Json | null
+        }
+        Insert: {
+          id?: string
+          created_at?: string
+          application_id?: string | null
+          kind: string
+          recipient: string
+          subject: string
+          status?: string
+          provider?: string | null
+          provider_id?: string | null
+          detail?: string | null
+          payload?: Json | null
+        }
+        Update: {
+          id?: string
+          created_at?: string
+          application_id?: string | null
+          kind?: string
+          recipient?: string
+          subject?: string
+          status?: string
+          provider?: string | null
+          provider_id?: string | null
+          detail?: string | null
+          payload?: Json | null
         }
         Relationships: []
       }

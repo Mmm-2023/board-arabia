@@ -1,16 +1,17 @@
 # Board Arabia
 
-Application-only site: **land → book → verify**, with a staff admin view.
+Application-only site: **land → apply (pre-vet) → staff review**, with private Accept/Reject emails.
 
-Staging (preferred GitHub Pages once enabled): https://mmm-2023.github.io/board-arabia/
+**Staging (Vercel):** https://board-arabia.vercel.app/
 
-**Staging live now (Vercel fallback — Pages blocked until Settings→Pages→GitHub Actions):** https://board-arabia-nammco.vercel.app/
+Preferred GitHub Pages once enabled: https://mmm-2023.github.io/board-arabia/
 
 ## Stack
 
 - Vite + React + TypeScript + Tailwind CSS v4
-- Supabase project `iirqbizwanyhgkhanntq` (applications + staff_users; RLS already migrated)
-- Google Calendar booking: https://calendar.app.google/a7RVc2v3mZ226Sd89
+- Supabase project `iirqbizwanyhgkhanntq` (`applications`, `staff_users`, `email_events`)
+- Email: Supabase Edge Functions + **Resend** (dry-run audit when `RESEND_API_KEY` is unset)
+- Private booking link is emailed **only on Accept** — never shown on the public site
 
 ## Local setup
 
@@ -22,59 +23,96 @@ npm run dev
 
 `.env.example` already contains the locked anon URL/key for local and preview builds.
 
-## Visitor flow
+## Visitor flow (no login)
 
-1. **Landing** (`/`) — prestige club feel; English only; no founding-member / sponsor wave.
-2. **Book** (`/book`) — open Google Calendar; soft-hold `calendar_slot` via form text or query params (`calendar_slot`, `slot`, `start`, `date`, `time`, `event`).
-3. **Verify** (`/verify`) — required turnover, companies, job titles; optional LinkedIn URL; inserts into `applications` as `pending`.
-4. **Admin** (`/admin` or `/ops`) — Supabase email/password; only `staff_users` can SELECT/UPDATE status (`pending` → `verified` / `declined`).
+1. **Landing** (`/`) — prestige club feel; English only; **no** public Google Calendar CTA.
+2. **Apply** (`/apply`) — pre-vet form: name, email, phone (optional), turnover **or** FO AUM, LinkedIn URL, job titles, companies → `applications.status = pending`.
+3. On submit → Edge Function `notify-application`:
+   - Acknowledgement email to applicant
+   - Notify email to **michael@nammco.com** with summary + `/admin` link
 
-## Promote Michael (or any staff) into `staff_users`
+Legacy `/book` and `/verify` redirect to `/apply`.
 
-1. In Supabase Auth, create the user (email + password), e.g. Michael signs up / is invited.
-2. In SQL Editor, after Auth signup:
+## Staff flow
+
+1. **Login** (`/login`) — Supabase Auth email + password → redirects to `/admin`.
+2. **Admin** (`/admin` or `/ops`) — only rows in `staff_users` can list applications.
+3. **Accept** → Edge Function `decide-application` emails the candidate a **private** booking link (server-side only). No admin date picker. No Google Calendar API.
+4. **Reject** → polite decline email to applicant.
+5. **Sign out** on admin clears the session.
+
+### Critical anti-leak
+
+The calendar booking URL must **never** appear in marketing pages, nav, footer, or client bundles. It lives only in the Accept email path (`supabase/functions/decide-application`).
+
+## Michael: set / reset staff password
+
+Michael (`michael@smemarketer.com`) is already in `staff_users` on the locked project.
+
+**One-time password (pick one):**
+
+1. **Dashboard reset (simplest)**  
+   Supabase → Authentication → Users → Michael → *Send password recovery* or *Reset password*.
+
+2. **Invite link**  
+   Authentication → Users → Invite user (same email) → open invite email → set password.
+
+3. **Magic / recovery link (SQL / Auth API)**  
+   Authentication → Users → generate recovery link → open once and set password.
+
+Then open https://board-arabia.vercel.app/login and sign in → `/admin`.
+
+### Promote another staff user
 
 ```sql
--- Replace email if needed. user_id must match auth.users.id.
 insert into public.staff_users (user_id, email)
 select id, email
 from auth.users
-where email = 'michael@smemarketer.com'
+where email = 'someone@example.com'
 on conflict (user_id) do update set email = excluded.email;
 ```
 
-If `staff_users` is empty, the first authenticated user can also self-claim via the existing `staff_users_claim_first` RLS policy (one-time). Prefer the SQL insert above for explicit promotion.
+## Secrets (Michael clicks)
 
-Michael (`michael@smemarketer.com`) is already present in `staff_users` on the locked project.
+Set these in **Supabase → Project Settings → Edge Functions → Secrets** (or CLI `supabase secrets set`):
 
-## Prove book → form → admin
+| Secret | Required | Purpose |
+|--------|----------|---------|
+| `RESEND_API_KEY` | **Yes for live email** | Send ack / notify / accept / reject via Resend |
+| `RESEND_FROM` | Recommended | Verified sender, e.g. `Board Arabia <hello@yourdomain.com>`. Default falls back to Resend onboarding sender (test only). |
+| `PUBLIC_SITE_URL` | Recommended | Used in admin notify link. Default `https://board-arabia.vercel.app` |
+| `PRIVATE_BOOKING_LINK` | Optional override | Accept-email booking URL. Defaults to Michael’s private calendar Appointment schedule (server-side only). |
 
-Click-path:
-
-1. Open staging → **Book a conversation** → open calendar (optional) → enter a slot like `QA hold 22 Sep` → **Continue to verification**.
-2. Fill turnover / companies / job titles → **Submit application**.
-3. Open `/admin`, sign in as staff → confirm the new `pending` row → set **verified**.
-
-Seed SQL (service role / SQL editor) if you need a row without the UI:
+Without `RESEND_API_KEY`, functions still succeed in **dry-run**: rows are written to `public.email_events` so you can prove the path in SQL.
 
 ```sql
-insert into public.applications (turnover, companies, job_titles, linkedin_url, calendar_slot, status)
-values (
-  'QA seed turnover',
-  'Board Arabia seed co',
-  'Chair',
-  null,
-  'QA hold seed',
-  'pending'
-);
+select created_at, kind, recipient, subject, status, detail
+from public.email_events
+order by created_at desc
+limit 20;
 ```
+
+**Not required (removed from scope):** Google Calendar OAuth / service account / Meet API.
+
+### Resend setup click-path
+
+1. Create a Resend account → API key.  
+2. Add + verify a sending domain (or use onboarding sender for sandbox tests to your own inbox).  
+3. Paste key into Supabase Edge Function secrets as `RESEND_API_KEY`.  
+4. Redeploy functions if secrets were added after first deploy (usually not needed).
+
+## Prove apply → emails → Accept
+
+1. Staging → **Apply for review** → submit a real email you control.  
+2. Confirm applicant ack + `michael@nammco.com` notify (or `email_events` dry-run rows).  
+3. `/login` as staff → `/admin` → **Accept** → candidate receives private booking link email (not visible on site).  
+4. Confirm the public site has **no** calendar CTA: grep/`/apply` only.
 
 ## Deploy
 
-GitHub Pages via `.github/workflows/pages.yml` (SPA fallback copies `index.html` → `404.html`). Base path: `/board-arabia/`.
-
-Enable **Settings → Pages → Source: GitHub Actions** on the repo if not already.
+- **Vercel:** production alias https://board-arabia.vercel.app (auto from GitHub).  
+- **GitHub Pages:** `.github/workflows/pages.yml` (SPA fallback `404.html`). Enable **Settings → Pages → Source: GitHub Actions** if not already.
 
 ## Anti-jobs
 
-No Stripe, no Lovable, no Arabic UI, no LinkedIn OAuth login, no DNS changes in this PR.
+No Stripe, no Lovable, no Arabic UI, no LinkedIn OAuth login, no DNS changes, no public calendar embed/CTA, no Google Calendar API event creation, no nammco branding on the site.

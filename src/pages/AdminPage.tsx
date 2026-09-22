@@ -1,22 +1,21 @@
-import { useCallback, useEffect, useState, type FormEvent } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import type { Session } from '@supabase/supabase-js'
-import { Link } from 'react-router-dom'
+import { Link, Navigate } from 'react-router-dom'
 import {
+  decideApplication,
   supabase,
   type Application,
   type ApplicationStatus,
 } from '../lib/supabase'
 
 export function AdminPage() {
-  const [session, setSession] = useState<Session | null>(null)
+  const [session, setSession] = useState<Session | null | undefined>(undefined)
   const [isStaff, setIsStaff] = useState(false)
   const [loading, setLoading] = useState(true)
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [authError, setAuthError] = useState('')
   const [apps, setApps] = useState<Application[]>([])
   const [listError, setListError] = useState('')
   const [updatingId, setUpdatingId] = useState<string | null>(null)
+  const [actionNote, setActionNote] = useState('')
 
   useEffect(() => {
     document.title = 'Admin — Board Arabia'
@@ -78,35 +77,85 @@ export function AdminPage() {
     return () => sub.subscription.unsubscribe()
   }, [refreshStaffAndApps])
 
-  async function onSignIn(e: FormEvent) {
-    e.preventDefault()
-    setAuthError('')
-    const { error } = await supabase.auth.signInWithPassword({
-      email: email.trim(),
-      password,
-    })
-    if (error) setAuthError(error.message)
-  }
-
   async function onSignOut() {
     await supabase.auth.signOut()
   }
 
   async function setStatus(id: string, status: ApplicationStatus) {
-    setUpdatingId(id)
-    const { error } = await supabase
-      .from('applications')
-      .update({ status, updated_at: new Date().toISOString() })
-      .eq('id', id)
+    if (status === 'pending') {
+      setUpdatingId(id)
+      setActionNote('')
+      const { error } = await supabase
+        .from('applications')
+        .update({
+          status: 'pending',
+          updated_at: new Date().toISOString(),
+          decision_at: null,
+          invite_event_id: null,
+          invite_sent_at: null,
+        })
+        .eq('id', id)
 
-    if (!error) {
-      setApps((prev) =>
-        prev.map((row) => (row.id === id ? { ...row, status } : row)),
-      )
-    } else {
-      setListError(error.message)
+      if (!error) {
+        setApps((prev) =>
+          prev.map((row) =>
+            row.id === id
+              ? {
+                  ...row,
+                  status: 'pending',
+                  decision_at: null,
+                  invite_event_id: null,
+                  invite_sent_at: null,
+                }
+              : row,
+          ),
+        )
+      } else {
+        setListError(error.message)
+      }
+      setUpdatingId(null)
+      return
     }
+
+    setUpdatingId(id)
+    setActionNote('')
+    const result = await decideApplication(id, status)
+    if (result.error) {
+      setListError(result.error)
+      setUpdatingId(null)
+      return
+    }
+
+    setApps((prev) =>
+      prev.map((row) =>
+        row.id === id
+          ? {
+              ...row,
+              status,
+              decision_at: new Date().toISOString(),
+              invite_event_id: result.inviteEventId ?? row.invite_event_id,
+              invite_sent_at:
+                status === 'accepted'
+                  ? new Date().toISOString()
+                  : row.invite_sent_at,
+            }
+          : row,
+      ),
+    )
+    setActionNote(result.message || `Marked ${status}.`)
     setUpdatingId(null)
+  }
+
+  if (session === undefined) {
+    return (
+      <div className="flex min-h-dvh items-center justify-center bg-ink text-pearl">
+        <p className="text-stone/70">Loading…</p>
+      </div>
+    )
+  }
+
+  if (!session) {
+    return <Navigate to="/login?next=/admin" replace />
   }
 
   return (
@@ -124,62 +173,18 @@ export function AdminPage() {
               Ops / Admin
             </p>
           </div>
-          {session && (
-            <button
-              type="button"
-              onClick={() => void onSignOut()}
-              className="text-[0.75rem] font-semibold tracking-[0.06em] text-pearl/60 uppercase transition-colors hover:text-pearl"
-            >
-              Sign out
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={() => void onSignOut()}
+            className="text-[0.75rem] font-semibold tracking-[0.06em] text-pearl/60 uppercase transition-colors hover:text-pearl"
+          >
+            Sign out
+          </button>
         </div>
       </header>
 
       <main className="mx-auto max-w-5xl px-5 py-10 md:px-8 md:py-14">
-        {!session ? (
-          <div className="mx-auto max-w-md">
-            <h1 className="font-display text-[2rem] font-bold tracking-[-0.03em]">
-              Staff sign-in
-            </h1>
-            <p className="mt-3 text-[0.95rem] text-stone/70">
-              Email and password via Supabase Auth. Only{' '}
-              <code className="text-brass-bright">staff_users</code> can list
-              applications.
-            </p>
-            <form onSubmit={onSignIn} className="mt-8 space-y-4">
-              <input
-                type="email"
-                required
-                autoComplete="username"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@boardarabia.com"
-                className="w-full border border-pearl/20 bg-pearl/5 px-4 py-3.5 text-[1rem] text-pearl outline-none placeholder:text-pearl/35 focus:border-brass"
-              />
-              <input
-                type="password"
-                required
-                autoComplete="current-password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Password"
-                className="w-full border border-pearl/20 bg-pearl/5 px-4 py-3.5 text-[1rem] text-pearl outline-none placeholder:text-pearl/35 focus:border-brass"
-              />
-              {authError && (
-                <p className="text-[0.9rem] text-red-300" role="alert">
-                  {authError}
-                </p>
-              )}
-              <button
-                type="submit"
-                className="w-full bg-brass px-6 py-3.5 text-[0.78rem] font-semibold tracking-[0.08em] text-ink uppercase transition-colors hover:bg-brass-bright"
-              >
-                Sign in
-              </button>
-            </form>
-          </div>
-        ) : loading ? (
+        {loading ? (
           <p className="text-stone/70">Loading…</p>
         ) : !isStaff ? (
           <div className="max-w-lg">
@@ -217,6 +222,9 @@ export function AdminPage() {
             {listError && (
               <p className="mt-4 text-[0.9rem] text-red-300">{listError}</p>
             )}
+            {actionNote && (
+              <p className="mt-4 text-[0.9rem] text-brass-bright">{actionNote}</p>
+            )}
 
             <ul className="mt-8 space-y-4">
               {apps.length === 0 && (
@@ -235,8 +243,14 @@ export function AdminPage() {
                         {new Date(app.created_at).toLocaleString()}
                       </p>
                       <p className="mt-2 font-display text-[1.15rem] font-semibold tracking-[-0.02em]">
-                        {app.job_titles}
+                        {app.full_name || app.job_titles}
                       </p>
+                      {app.email && (
+                        <p className="mt-1 text-[0.9rem] text-stone/65">
+                          {app.email}
+                          {app.phone ? ` · ${app.phone}` : ''}
+                        </p>
+                      )}
                     </div>
                     <StatusBadge status={app.status} />
                   </div>
@@ -246,9 +260,15 @@ export function AdminPage() {
                       <dd className="mt-0.5 text-stone/85">{app.turnover}</dd>
                     </div>
                     <div>
-                      <dt className="text-pearl/40">Calendar slot</dt>
+                      <dt className="text-pearl/40">FO / AUM</dt>
                       <dd className="mt-0.5 text-stone/85">
-                        {app.calendar_slot || '—'}
+                        {app.fo_aum || '—'}
+                      </dd>
+                    </div>
+                    <div className="md:col-span-2">
+                      <dt className="text-pearl/40">Job titles</dt>
+                      <dd className="mt-0.5 whitespace-pre-wrap text-stone/85">
+                        {app.job_titles}
                       </dd>
                     </div>
                     <div className="md:col-span-2">
@@ -272,27 +292,42 @@ export function AdminPage() {
                         </dd>
                       </div>
                     )}
+                    {app.invite_sent_at && (
+                      <div className="md:col-span-2">
+                        <dt className="text-pearl/40">Private invite</dt>
+                        <dd className="mt-0.5 text-stone/85">
+                          Sent {new Date(app.invite_sent_at).toLocaleString()}
+                          {app.invite_event_id
+                            ? ` · event ${app.invite_event_id}`
+                            : ''}
+                        </dd>
+                      </div>
+                    )}
                   </dl>
                   <div className="mt-5 flex flex-wrap gap-2">
-                    {(['pending', 'verified', 'declined'] as const).map(
-                      (status) => (
-                        <button
-                          key={status}
-                          type="button"
-                          disabled={
-                            updatingId === app.id || app.status === status
-                          }
-                          onClick={() => void setStatus(app.id, status)}
-                          className={`px-3 py-2 text-[0.68rem] font-semibold tracking-[0.06em] uppercase transition-colors disabled:opacity-40 ${
-                            app.status === status
-                              ? 'bg-brass text-ink'
-                              : 'border border-pearl/20 text-pearl/70 hover:border-pearl/40 hover:text-pearl'
-                          }`}
-                        >
-                          {status}
-                        </button>
-                      ),
-                    )}
+                    {(
+                      [
+                        ['pending', 'Pending'],
+                        ['accepted', 'Accept'],
+                        ['rejected', 'Reject'],
+                      ] as const
+                    ).map(([status, label]) => (
+                      <button
+                        key={status}
+                        type="button"
+                        disabled={
+                          updatingId === app.id || app.status === status
+                        }
+                        onClick={() => void setStatus(app.id, status)}
+                        className={`px-3 py-2 text-[0.68rem] font-semibold tracking-[0.06em] uppercase transition-colors disabled:opacity-40 ${
+                          app.status === status
+                            ? 'bg-brass text-ink'
+                            : 'border border-pearl/20 text-pearl/70 hover:border-pearl/40 hover:text-pearl'
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    ))}
                   </div>
                 </li>
               ))}
@@ -306,9 +341,9 @@ export function AdminPage() {
 
 function StatusBadge({ status }: { status: ApplicationStatus }) {
   const tone =
-    status === 'verified'
+    status === 'accepted'
       ? 'text-emerald-300 border-emerald-300/30'
-      : status === 'declined'
+      : status === 'rejected'
         ? 'text-red-300 border-red-300/30'
         : 'text-brass-bright border-brass/40'
 

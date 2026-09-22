@@ -15,10 +15,10 @@ export function Footer() {
         </div>
         <div className="flex flex-col items-start gap-2 md:items-end">
           <Link
-            to="/book"
+            to="/apply"
             className="font-serif text-[1.05rem] italic text-ink/70 transition-colors hover:text-ink"
           >
-            Book a conversation
+            Apply for review
           </Link>
           <p className="text-[0.8rem] tracking-wide text-ink/40">
             © {new Date().getFullYear()} Board Arabia

@@ -23,7 +23,7 @@ export function LandingPage() {
         <PathsStrip />
         <AboutSection />
         <ProcessSection />
-        <BookCtaSection />
+        <ApplyCtaSection />
       </main>
       <Footer />
     </>
@@ -89,15 +89,16 @@ function Hero() {
           >
             <p className="max-w-md text-[1.05rem] leading-relaxed text-stone/90 md:text-[1.15rem]">
               A selective circle for Saudi and GCC chairpersons, board advisors,
-              and aspiring NEDs. Book a conversation, then complete verification.
+              and aspiring NEDs. Apply for review — conversations are by invite
+              after vetting.
             </p>
 
             <div className="flex shrink-0 flex-col gap-3 sm:flex-row">
               <Link
-                to="/book"
+                to="/apply"
                 className="inline-flex items-center justify-center bg-brass px-6 py-3.5 text-[0.78rem] font-semibold tracking-[0.08em] text-ink uppercase transition-colors hover:bg-brass-bright"
               >
-                Book a conversation
+                Apply for review
               </Link>
               <a
                 href="#process"
@@ -149,8 +150,9 @@ function AboutSection() {
             Prestige through credentials, not open signup.
           </h2>
           <p className="mt-5 max-w-xl text-[1.05rem] leading-relaxed text-ink/60">
-            Board Arabia is a reviewed membership. You book a conversation first,
-            then submit the details we need to verify fit. Acceptance is earned.
+            Board Arabia is a reviewed membership. You submit a pre-vet form;
+            Michael reviews credentials. Accepted candidates receive a private
+            conversation invite by email.
           </p>
         </Reveal>
       </div>
@@ -178,11 +180,11 @@ function ProcessSection() {
             How it works
           </p>
           <h2 className="max-w-3xl font-display text-[clamp(2.2rem,5vw,3.85rem)] font-bold leading-[1.05] tracking-[-0.035em] text-balance">
-            Book. Verify. Review.
+            Apply. Review. Invite.
           </h2>
           <p className="mt-6 max-w-xl text-[1.05rem] leading-relaxed text-stone/75">
-            No open signup. A calendar hold comes first; your verification form
-            follows. We review credentials and respond.
+            No open calendar on this site. Credentials first; a private booking
+            link is emailed only after acceptance.
           </p>
         </Reveal>
 
@@ -190,18 +192,18 @@ function ProcessSection() {
           {[
             {
               step: '01',
-              title: 'Book a conversation',
-              body: 'Choose a Google Calendar slot. We soft-hold the time until your form arrives.',
+              title: 'Submit pre-vet form',
+              body: 'Name, email, LinkedIn, titles, companies, and turnover or FO AUM.',
             },
             {
               step: '02',
-              title: 'Complete verification',
-              body: 'Share turnover, companies involved with, and job titles. LinkedIn URL is optional.',
+              title: 'Credential review',
+              body: 'Michael reviews every pending application in staff admin.',
             },
             {
               step: '03',
-              title: 'Credential review',
-              body: 'Michael reviews every submission. Status moves from pending to verified when cleared.',
+              title: 'Private invite or decline',
+              body: 'Accepted candidates get a private booking link by email. Declines are notified politely.',
             },
           ].map((item, i) => (
             <Reveal key={item.step} delay={0.08 * i}>
@@ -224,7 +226,7 @@ function ProcessSection() {
   )
 }
 
-function BookCtaSection() {
+function ApplyCtaSection() {
   return (
     <section className="relative overflow-hidden bg-stone py-24 md:py-32">
       <div
@@ -237,17 +239,17 @@ function BookCtaSection() {
             Begin
           </p>
           <h2 className="font-display text-[clamp(2.3rem,5.5vw,4rem)] font-bold leading-[1.02] tracking-[-0.04em] text-balance text-ink">
-            Book first. Verify after.
+            Apply first. Invite after.
           </h2>
           <p className="mx-auto mt-6 max-w-lg text-[1.05rem] leading-relaxed text-ink/65">
-            Reserve a conversation slot, then return here to submit your
-            verification details.
+            Share your credentials for review. If accepted, you will receive a
+            private next-step email — not a public booking page.
           </p>
           <Link
-            to="/book"
+            to="/apply"
             className="mt-10 inline-flex items-center justify-center bg-ink px-8 py-4 text-[0.78rem] font-semibold tracking-[0.08em] text-pearl uppercase transition-colors hover:bg-ink-soft"
           >
-            Book a conversation
+            Apply for review
           </Link>
         </Reveal>
       </div>
