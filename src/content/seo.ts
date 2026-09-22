@@ -28,41 +28,41 @@ export const MARKETING_PAGES: Record<MarketingPath, MarketingPage> = {
   '/': {
     path: '/',
     title:
-      'Board Arabia — Selective founding board membership | Saudi, GCC & international',
+      'Board Arabia | Selective founding board membership | Saudi, GCC & international',
     description:
-      'Board Arabia is a reviewed founding membership for chairpersons, board advisors, and aspiring NEDs across Saudi Arabia, the GCC, and internationally. Apply for consideration — no public calendar.',
+      'Board Arabia is a reviewed founding membership for chairpersons, board advisors, and aspiring NEDs across Saudi Arabia, the GCC, and internationally. Apply for consideration. There is no public calendar.',
     faq: true,
   },
   '/for-members': {
     path: '/for-members',
-    title: 'Member tools — directory, mandates, majlis | Board Arabia',
+    title: 'Member tools: directory, mandates, majlis | Board Arabia',
     description:
       'Board Arabia members use a private directory, admin-gated mandates and intros, availability controls, founding badge, quarterly majlis, invite vouchers, Vision 2030 tags, and deal rooms.',
   },
   '/for-capital': {
     path: '/for-capital',
-    title: 'For capital — FDI, family offices, PE & VC | Board Arabia',
+    title: 'For capital: FDI, family offices, PE & VC | Board Arabia',
     description:
       'Family offices, FDI, PE, and VC engage Board Arabia members through admin-gated mandates. No open scrape of the directory. Apply for consideration remains the public gate.',
   },
   '/partners': {
     path: '/partners',
-    title: 'Ecosystem partners — 3 annual seats | Board Arabia',
+    title: 'Ecosystem partners: 3 annual seats | Board Arabia',
     description:
-      'Board Arabia offers three annual Founding Ecosystem Partner seats, prioritising finance and deal-rail categories. Partner interest is by form or email — no public calendar.',
+      'Board Arabia offers three annual Founding Ecosystem Partner seats, prioritising finance and deal-rail categories. Partner interest is by form or email. There is no public calendar.',
   },
   '/how-it-works': {
     path: '/how-it-works',
-    title: 'How Board Arabia works — apply, review, invite',
+    title: 'How Board Arabia works: apply, review, invite',
     description:
       'Apply with credentials, personal review, then a private invite by email if accepted. No open calendar. After admission, members use the Board Arabia dashboard.',
     faq: true,
   },
   '/apply': {
     path: '/apply',
-    title: 'Apply for consideration — Board Arabia',
+    title: 'Apply for consideration | Board Arabia',
     description:
-      'Submit credentials for Board Arabia founding membership review. LinkedIn, titles, companies, and turnover or family-office AUM. Private next step by email if accepted — no public calendar.',
+      'Submit credentials for Board Arabia founding membership review. LinkedIn, titles, companies, and turnover or family-office AUM. Private next step by email if accepted. There is no public calendar.',
   },
   '/about': {
     path: '/about',
@@ -96,7 +96,7 @@ export const FAQ: FaqItem[] = [
   {
     question: 'What is Board Arabia?',
     answer:
-      'Board Arabia is a reviewed founding membership connecting chairpersons, board advisors, and aspiring NEDs with peers and capital proximity in Saudi Arabia, the GCC, and internationally — not an open directory.',
+      'Board Arabia is a reviewed founding membership connecting chairpersons, board advisors, and aspiring NEDs with peers and capital proximity in Saudi Arabia, the GCC, and internationally. It is not an open directory.',
   },
   {
     question: 'Who is it for?',
@@ -127,14 +127,14 @@ export const FAQ: FaqItem[] = [
   {
     question: 'What do members get?',
     answer:
-      'Private directory, admin-gated mandate inbox and warm intros, availability controls, founding badge and LinkedIn announce, quarterly majlis, peer invite vouchers, sector and Vision 2030 tags, and deal rooms — details on /for-members.',
+      'Private directory, admin-gated mandate inbox and warm intros, availability controls, founding badge and LinkedIn announce, quarterly majlis, peer invite vouchers, sector and Vision 2030 tags, and deal rooms. Details are on /for-members.',
     to: '/for-members',
     toLabel: 'See the tools',
   },
   {
     question: 'How do family offices or FDI engage?',
     answer:
-      'Capital (FDI, family offices, PE, VC) engages through admin-gated mandates — not open outbound to members. See /for-capital; the public CTA remains Apply for consideration.',
+      'Capital (FDI, family offices, PE, VC) engages through admin-gated mandates. There is no open outbound to members. See /for-capital; the public CTA remains Apply for consideration.',
     to: '/for-capital',
     toLabel: 'For capital',
   },

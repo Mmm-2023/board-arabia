@@ -26,7 +26,7 @@ export function DashboardLayout() {
   const [gate, setGate] = useState<Gate>({ status: 'loading' })
   const loadSeq = useRef(0)
   const loadRef = useRef<() => Promise<void>>(async () => {})
-  useNoIndex('Member dashboard — Board Arabia')
+  useNoIndex('Member dashboard | Board Arabia')
 
   const load = useCallback(async () => {
     const seq = ++loadSeq.current

@@ -180,7 +180,7 @@ try {
     const file = routeFile(route)
     fs.mkdirSync(path.dirname(file), { recursive: true })
     fs.writeFileSync(file, html)
-    console.log(`prerendered ${route} — ${meta.title}`)
+    console.log(`prerendered ${route}: ${meta.title}`)
   }
 } finally {
   await vite.close()

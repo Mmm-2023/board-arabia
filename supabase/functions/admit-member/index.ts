@@ -126,7 +126,7 @@ Deno.serve(async (req) => {
       : null
 
   const greeting = fullName || 'there'
-  const subject = 'Board Arabia — your member invitation'
+  const subject = 'Board Arabia: your member invitation'
   const text = inviteText({ greeting, seatLabel, loginUrl, confirmUrl, issued })
   const html = inviteHtml({ greeting, seatLabel, loginUrl, confirmUrl, issued })
 
@@ -173,7 +173,7 @@ Deno.serve(async (req) => {
     seat,
     message: sent.dryRun
       ? 'Admitted (dry-run). Set RESEND_API_KEY to email the invite.'
-      : 'Admitted — invite emailed to the member.',
+      : 'Admitted. Invite emailed to the member.',
     ...(dryRunInvite ? { dry_run_invite: dryRunInvite } : {}),
   })
 })
@@ -299,7 +299,7 @@ function inviteText(opts: {
     '',
     'This invitation is personal. The member dashboard is not public.',
     '',
-    '— Board Arabia',
+    'Board Arabia',
   )
   return lines.join('\n')
 }
@@ -335,7 +335,7 @@ function inviteHtml(opts: {
   parts.push(
     '<p>After you arrive, set a password and review your profile.</p>',
     '<p>This invitation is personal. The member dashboard is not public.</p>',
-    '<p>— Board Arabia</p>',
+    '<p>Board Arabia</p>',
   )
   return parts.join('\n')
 }

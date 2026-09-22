@@ -87,7 +87,7 @@ Deno.serve(async (req) => {
   }
 
   if (decision === 'accepted') {
-    const subject = 'Board Arabia — next step (private booking)'
+    const subject = 'Board Arabia: next step (private booking)'
     const text = `Hello ${app.full_name || 'there'},
 
 Your Board Arabia application has been accepted.
@@ -98,13 +98,13 @@ ${PRIVATE_BOOKING_LINK}
 
 This link is personal to accepted candidates and is not published on the public site.
 
-— Board Arabia`
+Board Arabia`
     const html = `<p>Hello ${escapeHtml(app.full_name || 'there')},</p>
 <p>Your Board Arabia application has been <strong>accepted</strong>.</p>
 <p>Please use this private booking link to schedule a conversation with Michael:</p>
 <p><a href="${escapeHtml(PRIVATE_BOOKING_LINK)}">${escapeHtml(PRIVATE_BOOKING_LINK)}</a></p>
 <p>This link is personal to accepted candidates and is not published on the public site.</p>
-<p>— Board Arabia</p>`
+<p>Board Arabia</p>`
 
     const sent = await sendEmail({
       to: app.email,
@@ -148,7 +148,7 @@ This link is personal to accepted candidates and is not published on the public 
       booking_url: PRIVATE_BOOKING_LINK,
       message: sent.dryRun
         ? 'Accepted (dry-run). Set RESEND_API_KEY to send the private booking email.'
-        : 'Accepted — private booking link emailed to candidate.',
+        : 'Accepted. Private booking link emailed to candidate.',
     })
   }
 
@@ -159,11 +159,11 @@ Thank you for your interest in Board Arabia. After review, we are unable to proc
 
 We appreciate you taking the time to apply.
 
-— Board Arabia`
+Board Arabia`
   const html = `<p>Hello ${escapeHtml(app.full_name || 'there')},</p>
 <p>Thank you for your interest in Board Arabia. After review, we are unable to proceed with your application at this time.</p>
 <p>We appreciate you taking the time to apply.</p>
-<p>— Board Arabia</p>`
+<p>Board Arabia</p>`
 
   const sent = await sendEmail({ to: app.email, subject, html, text })
   await logEmailEvent(admin, {
@@ -196,7 +196,7 @@ We appreciate you taking the time to apply.
     dry_run: sent.dryRun,
     message: sent.dryRun
       ? 'Rejected (dry-run). Set RESEND_API_KEY to send the decline email.'
-      : 'Rejected — decline email sent to applicant.',
+      : 'Rejected. Decline email sent to applicant.',
   })
 })
 

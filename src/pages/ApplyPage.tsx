@@ -188,7 +188,7 @@ export function ApplyPage() {
               value={form.turnover}
               onChange={(v) => setField('turnover', v)}
               placeholder="e.g. SAR 50m+ group revenue"
-              hint="Turnover or family-office size — at least one. This is for review, not a time slot."
+              hint="Turnover or family-office size (at least one). This is for review, not a time slot."
             />
             <Field
               id="fo_aum"

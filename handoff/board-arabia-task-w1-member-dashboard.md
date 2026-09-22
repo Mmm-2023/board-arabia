@@ -1,4 +1,4 @@
-# Board Arabia — Wave 1 handoff
+# Board Arabia: Wave 1 handoff
 
 Date: 22 Sep 2026
 PR: https://github.com/Mmm-2023/board-arabia/pull/4

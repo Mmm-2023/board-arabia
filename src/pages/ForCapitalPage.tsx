@@ -163,7 +163,7 @@ export function ForCapitalPage() {
           <p className="mt-8 max-w-2xl text-[1rem] leading-relaxed text-ink/60">
             Principals who belong in the room request consideration. Firms
             that want a working seat on the finance rails use the partner
-            path — three seats a year, still gated.
+            path (three seats a year, still gated).
           </p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
             <Link
@@ -185,7 +185,7 @@ export function ForCapitalPage() {
       <CtaBand
         eyebrow="Principals"
         title="If you belong in the room, ask."
-        body="Consideration is the door. A mandate is what you file after you are admitted — not from this page."
+        body="Consideration is the door. A mandate is what you file after you are admitted, not from this page."
       />
     </MarketingLayout>
   )

@@ -10,7 +10,7 @@ export function DashboardHome() {
   const [capacity, setCapacity] = useState<FoundingCapacity | null>(null)
   const [capacityError, setCapacityError] = useState('')
   const name = profile?.full_name?.trim() || 'Founding member'
-  useNoIndex('Home — Board Arabia')
+  useNoIndex('Home | Board Arabia')
 
   useEffect(() => {
     let cancelled = false

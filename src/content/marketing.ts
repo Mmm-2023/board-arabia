@@ -120,7 +120,7 @@ export const PROCESS_STEPS: ProcessStep[] = [
     title: 'Admit',
     home: 'After the conversation, admitted members enter the dashboard.',
     detail:
-      'The conversation is about fit: the room, the contribution expected of founding members, and whether admission is right. Admitted members then enter the dashboard — directory, availability, introductions, mandate inbox, and the founding mark.',
+      'The conversation is about fit: the room, the contribution expected of founding members, and whether admission is right. Admitted members then enter the dashboard: directory, availability, introductions, mandate inbox, and the founding mark.',
   },
 ]
 

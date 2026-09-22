@@ -22,8 +22,8 @@ export function AboutPage() {
           <p>
             The first hundred places are held evenly: fifty Saudi, fifty
             international. Founding membership is complimentary, pending
-            contribution — presence, judgment, and introductions made with
-            care. Seats are not priced on this site.
+            contribution (presence, judgment, and introductions made with
+            care). Seats are not priced on this site.
           </p>
           <p>
             Admission is by review. There is no fixed response time. Every
@@ -32,8 +32,8 @@ export function AboutPage() {
             decline. The link is never published here.
           </p>
           <p>
-            The tools — a private directory, availability, warm introductions,
-            a mandate inbox, deal rooms, a quarterly majlis — are the standard
+            The tools (a private directory, availability, warm introductions,
+            a mandate inbox, deal rooms, and a quarterly majlis) are the standard
             of the room as it opens. This website describes them. It does not
             display members, and it does not invent them.
           </p>

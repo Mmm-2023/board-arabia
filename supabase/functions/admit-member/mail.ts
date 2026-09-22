@@ -1,4 +1,4 @@
-/** Mail helpers for admit-member. Invite email only — no booking link. */
+/** Mail helpers for admit-member. Invite email only. No booking link. */
 
 export type SendResult = {
   dryRun: boolean
@@ -27,7 +27,7 @@ export async function sendEmail(opts: {
       provider: 'resend',
       providerId: null,
       status: 'dry_run',
-      detail: 'RESEND_API_KEY not set — email logged only',
+      detail: 'RESEND_API_KEY not set. Email logged only.',
     }
   }
 

@@ -25,7 +25,7 @@ const MODULES = {
 
 export function ModulePage({ id }: { id: keyof typeof MODULES }) {
   const module = MODULES[id]
-  useNoIndex(`${label(id)} — Board Arabia`)
+  useNoIndex(`${label(id)} | Board Arabia`)
   return (
     <div className="max-w-xl">
       <p className="text-[0.72rem] font-semibold tracking-[0.14em] text-brass uppercase">

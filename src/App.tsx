@@ -41,7 +41,7 @@ export default function App() {
         <Route path="rooms" element={<ModulePage id="rooms" />} />
         <Route path="events" element={<ModulePage id="events" />} />
       </Route>
-      {/* Legacy book/verify routes redirect — public calendar CTA removed */}
+      {/* Legacy book/verify routes redirect. Public calendar CTA removed. */}
       <Route path="/book" element={<Navigate to="/apply" replace />} />
       <Route path="/verify" element={<Navigate to="/apply" replace />} />
       <Route path="*" element={<Navigate to="/" replace />} />

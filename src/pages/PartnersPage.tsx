@@ -116,7 +116,7 @@ function InterestForm() {
       return
     }
     setError('')
-    const subject = `Partner interest — ${firm.trim().replace(/[\r\n]/g, ' ')}`
+    const subject = `Partner interest: ${firm.trim().replace(/[\r\n]/g, ' ')}`
     const body = [
       `Name: ${name.trim()}`,
       `Firm: ${firm.trim()}`,
