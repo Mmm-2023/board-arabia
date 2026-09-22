@@ -26,6 +26,8 @@ jobs:
       - run: npm ci
       - name: Build
         env:
+          GITHUB_PAGES: 'true'
+          VITE_BASE_PATH: /board-arabia/
           VITE_SUPABASE_URL: https://iirqbizwanyhgkhanntq.supabase.co
           VITE_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlpcnFiaXp3YW55aGdraGFubnRxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAwNzMzMjEsImV4cCI6MjEwNTY0OTMyMX0.VSxdt1GVSka1Il7oozc6K_9pIKy8zFYegomBvWgOQDY
         run: npm run build
