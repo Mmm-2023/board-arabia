@@ -37,9 +37,18 @@ export type Application = {
 
 const functionsBase = `${url.replace(/\/$/, '')}/functions/v1`
 
-async function authHeaders(): Promise<HeadersInit> {
+async function anonHeaders(): Promise<HeadersInit> {
+  return {
+    Authorization: `Bearer ${anonKey}`,
+    apikey: anonKey,
+    'Content-Type': 'application/json',
+  }
+}
+
+async function staffHeaders(): Promise<HeadersInit> {
   const { data } = await supabase.auth.getSession()
-  const token = data.session?.access_token ?? anonKey
+  const token = data.session?.access_token
+  if (!token) throw new Error('Not signed in')
   return {
     Authorization: `Bearer ${token}`,
     apikey: anonKey,
@@ -47,24 +56,31 @@ async function authHeaders(): Promise<HeadersInit> {
   }
 }
 
-export async function notifyApplicationSubmitted(applicationId: string): Promise<{
-  error?: string
-  dryRun?: boolean
-}> {
+export async function submitApplication(payload: {
+  full_name: string
+  email: string
+  phone?: string | null
+  turnover: string
+  fo_aum?: string | null
+  linkedin_url: string
+  job_titles: string
+  companies: string
+}): Promise<{ error?: string; dryRun?: boolean; id?: string }> {
   try {
-    const res = await fetch(`${functionsBase}/notify-application`, {
+    const res = await fetch(`${functionsBase}/submit-application`, {
       method: 'POST',
-      headers: await authHeaders(),
-      body: JSON.stringify({ application_id: applicationId }),
+      headers: await anonHeaders(),
+      body: JSON.stringify(payload),
     })
     const body = (await res.json().catch(() => ({}))) as {
       error?: string
       dry_run?: boolean
+      id?: string
     }
-    if (!res.ok) return { error: body.error || `Notify failed (${res.status})` }
-    return { dryRun: Boolean(body.dry_run) }
+    if (!res.ok) return { error: body.error || `Submit failed (${res.status})` }
+    return { dryRun: Boolean(body.dry_run), id: body.id }
   } catch (err) {
-    return { error: err instanceof Error ? err.message : 'Notify failed' }
+    return { error: err instanceof Error ? err.message : 'Submit failed' }
   }
 }
 
@@ -74,27 +90,21 @@ export async function decideApplication(
 ): Promise<{
   error?: string
   message?: string
-  inviteEventId?: string | null
   dryRun?: boolean
 }> {
   try {
     const res = await fetch(`${functionsBase}/decide-application`, {
       method: 'POST',
-      headers: await authHeaders(),
+      headers: await staffHeaders(),
       body: JSON.stringify({ application_id: applicationId, decision }),
     })
     const body = (await res.json().catch(() => ({}))) as {
       error?: string
       message?: string
       dry_run?: boolean
-      invite_mode?: string
     }
     if (!res.ok) return { error: body.error || `Decision failed (${res.status})` }
-    return {
-      message: body.message,
-      dryRun: Boolean(body.dry_run),
-      inviteEventId: body.invite_mode === 'private_booking_link' ? 'private_link' : null,
-    }
+    return { message: body.message, dryRun: Boolean(body.dry_run) }
   } catch (err) {
     return { error: err instanceof Error ? err.message : 'Decision failed' }
   }

@@ -81,45 +81,12 @@ export function AdminPage() {
     await supabase.auth.signOut()
   }
 
-  async function setStatus(id: string, status: ApplicationStatus) {
-    if (status === 'pending') {
-      setUpdatingId(id)
-      setActionNote('')
-      const { error } = await supabase
-        .from('applications')
-        .update({
-          status: 'pending',
-          updated_at: new Date().toISOString(),
-          decision_at: null,
-          invite_event_id: null,
-          invite_sent_at: null,
-        })
-        .eq('id', id)
-
-      if (!error) {
-        setApps((prev) =>
-          prev.map((row) =>
-            row.id === id
-              ? {
-                  ...row,
-                  status: 'pending',
-                  decision_at: null,
-                  invite_event_id: null,
-                  invite_sent_at: null,
-                }
-              : row,
-          ),
-        )
-      } else {
-        setListError(error.message)
-      }
-      setUpdatingId(null)
-      return
-    }
-
+  /** Accept / Reject only — server-side Edge Function (JWT + staff_users). */
+  async function onDecision(id: string, decision: 'accepted' | 'rejected') {
     setUpdatingId(id)
     setActionNote('')
-    const result = await decideApplication(id, status)
+    setListError('')
+    const result = await decideApplication(id, decision)
     if (result.error) {
       setListError(result.error)
       setUpdatingId(null)
@@ -131,18 +98,19 @@ export function AdminPage() {
         row.id === id
           ? {
               ...row,
-              status,
+              status: decision,
               decision_at: new Date().toISOString(),
-              invite_event_id: result.inviteEventId ?? row.invite_event_id,
+              invite_event_id:
+                decision === 'accepted'
+                  ? 'private_booking_link'
+                  : null,
               invite_sent_at:
-                status === 'accepted'
-                  ? new Date().toISOString()
-                  : row.invite_sent_at,
+                decision === 'accepted' ? new Date().toISOString() : null,
             }
           : row,
       ),
     )
-    setActionNote(result.message || `Marked ${status}.`)
+    setActionNote(result.message || `Marked ${decision}.`)
     setUpdatingId(null)
   }
 
@@ -298,36 +266,41 @@ export function AdminPage() {
                         <dd className="mt-0.5 text-stone/85">
                           Sent {new Date(app.invite_sent_at).toLocaleString()}
                           {app.invite_event_id
-                            ? ` · event ${app.invite_event_id}`
+                            ? ` · ${app.invite_event_id}`
                             : ''}
                         </dd>
                       </div>
                     )}
                   </dl>
                   <div className="mt-5 flex flex-wrap gap-2">
-                    {(
-                      [
-                        ['pending', 'Pending'],
-                        ['accepted', 'Accept'],
-                        ['rejected', 'Reject'],
-                      ] as const
-                    ).map(([status, label]) => (
-                      <button
-                        key={status}
-                        type="button"
-                        disabled={
-                          updatingId === app.id || app.status === status
-                        }
-                        onClick={() => void setStatus(app.id, status)}
-                        className={`px-3 py-2 text-[0.68rem] font-semibold tracking-[0.06em] uppercase transition-colors disabled:opacity-40 ${
-                          app.status === status
-                            ? 'bg-brass text-ink'
-                            : 'border border-pearl/20 text-pearl/70 hover:border-pearl/40 hover:text-pearl'
-                        }`}
-                      >
-                        {label}
-                      </button>
-                    ))}
+                    <button
+                      type="button"
+                      disabled={
+                        updatingId === app.id || app.status === 'accepted'
+                      }
+                      onClick={() => void onDecision(app.id, 'accepted')}
+                      className={`px-3 py-2 text-[0.68rem] font-semibold tracking-[0.06em] uppercase transition-colors disabled:opacity-40 ${
+                        app.status === 'accepted'
+                          ? 'bg-brass text-ink'
+                          : 'border border-pearl/20 text-pearl/70 hover:border-pearl/40 hover:text-pearl'
+                      }`}
+                    >
+                      Accept
+                    </button>
+                    <button
+                      type="button"
+                      disabled={
+                        updatingId === app.id || app.status === 'rejected'
+                      }
+                      onClick={() => void onDecision(app.id, 'rejected')}
+                      className={`px-3 py-2 text-[0.68rem] font-semibold tracking-[0.06em] uppercase transition-colors disabled:opacity-40 ${
+                        app.status === 'rejected'
+                          ? 'bg-brass text-ink'
+                          : 'border border-pearl/20 text-pearl/70 hover:border-pearl/40 hover:text-pearl'
+                      }`}
+                    >
+                      Reject
+                    </button>
                   </div>
                 </li>
               ))}
