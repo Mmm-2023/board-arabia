@@ -48,6 +48,11 @@ Deno.serve(async (req) => {
   const phone = clean(body.phone, MAX_FIELD.phone) || null
   const turnover = clean(body.turnover, MAX_FIELD.turnover)
   const foAum = clean(body.fo_aum, MAX_FIELD.fo_aum) || null
+  const investable = readUsd(body.investable_capacity_usd)
+  if (investable.error) return jsonResponse(req, { error: investable.error }, 400)
+  const includeInPublic = typeof body.include_in_public_aggregates === 'boolean'
+    ? body.include_in_public_aggregates
+    : true
   const linkedinUrl = clean(body.linkedin_url, MAX_FIELD.linkedin_url)
   const jobTitles = clean(body.job_titles, MAX_FIELD.job_titles)
   const companies = clean(body.companies, MAX_FIELD.companies)
@@ -82,6 +87,8 @@ Deno.serve(async (req) => {
       phone,
       turnover: turnover || foAum,
       fo_aum: foAum,
+      investable_capacity_usd: investable.value,
+      include_in_public_aggregates: includeInPublic,
       linkedin_url: linkedinUrl,
       job_titles: jobTitles,
       companies,
@@ -104,6 +111,8 @@ Deno.serve(async (req) => {
     `Phone: ${app.phone || 'Not provided'}`,
     `Turnover: ${app.turnover}`,
     `FO / AUM: ${app.fo_aum || 'Not provided'}`,
+    `Investable capacity USD: ${investable.value == null ? 'Not provided' : String(investable.value)}`,
+    `Public totals: ${includeInPublic ? 'include' : 'opt out'}`,
     `Titles: ${app.job_titles}`,
     `Companies: ${app.companies}`,
     `LinkedIn: ${app.linkedin_url || 'Not provided'}`,
@@ -174,6 +183,15 @@ Application id: ${app.id}`,
     notify: notify.status,
   })
 })
+
+function readUsd(value: unknown): { value: number | null; error?: string } {
+  if (value == null || value === '') return { value: null }
+  const amount = typeof value === 'number' ? value : typeof value === 'string' ? Number(value) : Number.NaN
+  if (!Number.isFinite(amount) || amount < 0 || amount > 1_000_000_000_000) {
+    return { value: null, error: 'Investable capacity must be a USD number, or be left blank.' }
+  }
+  return { value: amount }
+}
 
 function clean(value: unknown, max: number): string {
   if (typeof value !== 'string') return ''

@@ -1,6 +1,8 @@
 import { createClient } from '@supabase/supabase-js'
 import type { Database } from './database.types'
+import type { CapacityPayload } from './capacity'
 import { parseCapacity, type FoundingCapacity, type FoundingSeat } from './member'
+import { parsePlatformStats, type PlatformStats } from './platformStats'
 import { readRecoveryLocation } from './recovery'
 
 const url = import.meta.env.VITE_SUPABASE_URL
@@ -74,6 +76,8 @@ export type Application = {
   phone: string | null
   turnover: string
   fo_aum: string | null
+  investable_capacity_usd: number | string | null
+  include_in_public_aggregates: boolean
   companies: string
   job_titles: string
   linkedin_url: string | null
@@ -117,6 +121,8 @@ export async function submitApplication(payload: {
   phone?: string | null
   turnover: string
   fo_aum?: string | null
+  investable_capacity_usd?: number | null
+  include_in_public_aggregates?: boolean
   linkedin_url: string
   job_titles: string
   companies: string
@@ -184,6 +190,7 @@ export type DryRunInvite = {
 export async function admitMember(
   applicationId: string,
   seat: FoundingSeat,
+  capacity: CapacityPayload,
 ): Promise<{
   error?: string
   message?: string
@@ -197,6 +204,11 @@ export async function admitMember(
       body: JSON.stringify({
         application_id: applicationId,
         seat,
+        investable_capacity_usd: capacity.investable_capacity_usd,
+        fo_aum_usd: capacity.fo_aum_usd,
+        turnover_usd: capacity.turnover_usd,
+        include_in_public_aggregates: capacity.include_in_public_aggregates,
+        capacity_verified: capacity.capacity_verified,
       }),
     })
     const body = (await res.json().catch(() => ({}))) as {
@@ -324,6 +336,34 @@ export async function setMemberStatus(
   } catch (err) {
     return { error: err instanceof Error ? err.message : 'Update failed' }
   }
+}
+
+export async function staffSetMemberCapacity(
+  userId: string,
+  capacity: CapacityPayload,
+): Promise<{ error?: string }> {
+  const { error } = await supabase.rpc('staff_set_member_capacity', {
+    p_user_id: userId,
+    p_investable_capacity_usd: capacity.investable_capacity_usd,
+    p_fo_aum_usd: capacity.fo_aum_usd,
+    p_turnover_usd: capacity.turnover_usd,
+    p_include_in_public_aggregates: capacity.include_in_public_aggregates,
+    p_capacity_verified: capacity.capacity_verified,
+  })
+  if (error) return { error: error.message }
+  return {}
+}
+
+export async function fetchPlatformStats(): Promise<PlatformStats | null> {
+  const { data, error } = await supabase
+    .from('platform_stats')
+    .select(
+      'investment_capability_usd, fo_aum_usd, turnover_usd, founding_admitted_count, founding_ksa_count, founding_intl_count, contributors_investment_n, contributors_fo_n, contributors_turnover_n, updated_at',
+    )
+    .eq('id', 1)
+    .maybeSingle()
+  if (error || !data) return null
+  return parsePlatformStats(data)
 }
 
 export async function fetchFoundingCapacity(): Promise<

@@ -4,6 +4,7 @@ import { Footer } from '../components/Footer'
 import { Nav } from '../components/Nav'
 import { Seo } from '../components/Seo'
 import { REVIEW_SLA } from '../content/marketing'
+import { parseUsdInput } from '../lib/capacity'
 import { submitApplication } from '../lib/supabase'
 
 type FormState = {
@@ -12,6 +13,8 @@ type FormState = {
   phone: string
   turnover: string
   foAum: string
+  investable: string
+  includeInPublic: boolean
   linkedinUrl: string
   jobTitles: string
   companies: string
@@ -23,6 +26,8 @@ const empty: FormState = {
   phone: '',
   turnover: '',
   foAum: '',
+  investable: '',
+  includeInPublic: true,
   linkedinUrl: '',
   jobTitles: '',
   companies: '',
@@ -49,6 +54,7 @@ export function ApplyPage() {
     const phone = form.phone.trim().slice(0, 40)
     const turnover = form.turnover.trim().slice(0, 500)
     const foAum = form.foAum.trim().slice(0, 500)
+    const investable = parseUsdInput(form.investable)
     const linkedinUrl = form.linkedinUrl.trim().slice(0, 500)
     const jobTitles = form.jobTitles.trim().slice(0, 2000)
     const companies = form.companies.trim().slice(0, 4000)
@@ -59,6 +65,10 @@ export function ApplyPage() {
     }
     if (!turnover && !foAum) {
       setError('Provide turnover or family-office AUM / size.')
+      return
+    }
+    if (investable === 'invalid') {
+      setError('Investable capacity must be a USD number, or leave it blank.')
       return
     }
     try {
@@ -79,6 +89,8 @@ export function ApplyPage() {
       phone: phone || null,
       turnover,
       fo_aum: foAum || null,
+      investable_capacity_usd: investable,
+      include_in_public_aggregates: form.includeInPublic,
       linkedin_url: linkedinUrl,
       job_titles: jobTitles,
       companies,
@@ -198,6 +210,29 @@ export function ApplyPage() {
               placeholder="e.g. FO AUM USD 100m+"
             />
             <Field
+              id="investable_capacity_usd"
+              label="Investable capacity (USD)"
+              value={form.investable}
+              onChange={(v) => setField('investable', v)}
+              placeholder="e.g. 1000000"
+              inputMode="decimal"
+              hint="Optional. US dollars you can put to work. Used only inside a platform sum, and only after the desk verifies it."
+            />
+            <label className="flex items-start gap-3 text-[0.98rem] leading-relaxed text-ink/70">
+              <input
+                id="include_in_public_aggregates"
+                name="include_in_public_aggregates"
+                type="checkbox"
+                checked={form.includeInPublic}
+                onChange={(event) => setField('includeInPublic', event.target.checked)}
+                className="mt-1"
+              />
+              <span>
+                Include my capacity in Board Arabia&apos;s public platform totals
+                (never shown individually).
+              </span>
+            </label>
+            <Field
               id="linkedin_url"
               label="LinkedIn URL"
               required
@@ -257,6 +292,7 @@ function Field({
   type = 'text',
   hint,
   autoComplete,
+  inputMode,
 }: {
   id: string
   label: string
@@ -268,6 +304,7 @@ function Field({
   type?: string
   hint?: string
   autoComplete?: string
+  inputMode?: 'decimal' | 'text' | 'tel' | 'email' | 'url'
 }) {
   const shared =
     'mt-2 w-full border border-ink/15 bg-white/70 px-4 py-3.5 text-[1rem] text-ink outline-none transition-colors placeholder:text-ink/30 focus:border-brass'
@@ -302,6 +339,7 @@ function Field({
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
           autoComplete={autoComplete}
+          inputMode={inputMode}
           className={shared}
         />
       )}

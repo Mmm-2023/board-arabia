@@ -2,6 +2,7 @@ import { motion, useScroll, useTransform } from 'motion/react'
 import { useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { CtaBand } from '../components/CtaBand'
+import { StatsStrip } from '../components/StatsStrip'
 import { FaqList } from '../components/FaqList'
 import { Footer } from '../components/Footer'
 import { Nav } from '../components/Nav'
@@ -28,6 +29,7 @@ export function LandingPage() {
       <Nav />
       <main>
         <Hero />
+        <StatsStrip />
         <PathsStrip />
         <WhySection />
         <FoundingSection />

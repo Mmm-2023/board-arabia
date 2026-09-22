@@ -19,6 +19,8 @@ export type Database = {
           phone: string | null
           turnover: string
           fo_aum: string | null
+          investable_capacity_usd: number | null
+          include_in_public_aggregates: boolean
           companies: string
           job_titles: string
           linkedin_url: string | null
@@ -43,6 +45,8 @@ export type Database = {
           phone?: string | null
           turnover: string
           fo_aum?: string | null
+          investable_capacity_usd?: number | null
+          include_in_public_aggregates?: boolean
           companies: string
           job_titles: string
           linkedin_url?: string | null
@@ -67,6 +71,8 @@ export type Database = {
           phone?: string | null
           turnover?: string
           fo_aum?: string | null
+          investable_capacity_usd?: number | null
+          include_in_public_aggregates?: boolean
           companies?: string
           job_titles?: string
           linkedin_url?: string | null
@@ -133,6 +139,12 @@ export type Database = {
           linkedin_url: string | null
           bio: string | null
           phone: string | null
+          investable_capacity_usd: number | null
+          fo_aum_usd: number | null
+          turnover_usd: number | null
+          capacity_currency: string
+          include_in_public_aggregates: boolean
+          capacity_verified: boolean
           updated_at: string
         }
         Insert: {
@@ -144,6 +156,12 @@ export type Database = {
           linkedin_url?: string | null
           bio?: string | null
           phone?: string | null
+          investable_capacity_usd?: number | null
+          fo_aum_usd?: number | null
+          turnover_usd?: number | null
+          capacity_currency?: string
+          include_in_public_aggregates?: boolean
+          capacity_verified?: boolean
           updated_at?: string
         }
         Update: {
@@ -155,6 +173,54 @@ export type Database = {
           linkedin_url?: string | null
           bio?: string | null
           phone?: string | null
+          investable_capacity_usd?: number | null
+          fo_aum_usd?: number | null
+          turnover_usd?: number | null
+          capacity_currency?: string
+          include_in_public_aggregates?: boolean
+          capacity_verified?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      platform_stats: {
+        Row: {
+          id: number
+          investment_capability_usd: number | null
+          fo_aum_usd: number | null
+          turnover_usd: number | null
+          founding_admitted_count: number
+          founding_ksa_count: number
+          founding_intl_count: number
+          contributors_investment_n: number
+          contributors_fo_n: number
+          contributors_turnover_n: number
+          updated_at: string
+        }
+        Insert: {
+          id?: number
+          investment_capability_usd?: number | null
+          fo_aum_usd?: number | null
+          turnover_usd?: number | null
+          founding_admitted_count?: number
+          founding_ksa_count?: number
+          founding_intl_count?: number
+          contributors_investment_n?: number
+          contributors_fo_n?: number
+          contributors_turnover_n?: number
+          updated_at?: string
+        }
+        Update: {
+          id?: number
+          investment_capability_usd?: number | null
+          fo_aum_usd?: number | null
+          turnover_usd?: number | null
+          founding_admitted_count?: number
+          founding_ksa_count?: number
+          founding_intl_count?: number
+          contributors_investment_n?: number
+          contributors_fo_n?: number
+          contributors_turnover_n?: number
           updated_at?: string
         }
         Relationships: []
@@ -236,6 +302,17 @@ export type Database = {
           role: string
           created_at: string
         }[]
+      }
+      staff_set_member_capacity: {
+        Args: {
+          p_user_id: string
+          p_investable_capacity_usd: number | null
+          p_fo_aum_usd: number | null
+          p_turnover_usd: number | null
+          p_include_in_public_aggregates: boolean
+          p_capacity_verified: boolean
+        }
+        Returns: undefined
       }
     }
     Enums: Record<string, never>

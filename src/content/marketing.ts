@@ -92,7 +92,7 @@ export const PROCESS_STEPS: ProcessStep[] = [
     title: 'Pre-vet',
     home: 'Submit credentials for consideration. The form does not reserve a time.',
     detail:
-      'The application asks for your name, email, phone if you wish, LinkedIn, titles, companies, and turnover or family-office size. That is the pre-vet. It does not hold a slot and it does not open a calendar.',
+      'The application asks for your name, email, phone if you wish, LinkedIn, titles, companies, turnover or family-office size, and an optional investable capacity in US dollars. You can include that capacity in the public platform totals. The form does not hold a slot and it does not open a calendar.',
   },
   {
     n: '02',

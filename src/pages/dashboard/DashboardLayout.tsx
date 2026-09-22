@@ -64,7 +64,9 @@ export function DashboardLayout() {
 
     const { data: profile } = await supabase
       .from('profiles')
-      .select('user_id, full_name, headline, company, location, linkedin_url, bio, phone')
+      .select(
+        'user_id, full_name, headline, company, location, linkedin_url, bio, phone, investable_capacity_usd, fo_aum_usd, turnover_usd, capacity_currency, include_in_public_aggregates, capacity_verified',
+      )
       .eq('user_id', user.id)
       .maybeSingle()
 

@@ -1,6 +1,14 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { Link, Navigate } from 'react-router-dom'
+import { CapacityFields } from '../components/CapacityFields'
+import {
+  draftFromApplication,
+  draftFromProfile,
+  parseCapacityPayload,
+  usdSuggestionNote,
+  type CapacityDraft,
+} from '../lib/capacity'
 import { seatLabel, type FoundingCapacity, type FoundingSeat } from '../lib/member'
 import {
   admitMember,
@@ -8,6 +16,7 @@ import {
   fetchFoundingCapacity,
   inviteMaster,
   setMemberStatus,
+  staffSetMemberCapacity,
   supabase,
   type Application,
   type ApplicationStatus,
@@ -46,6 +55,19 @@ export function AdminPage() {
   const [inviteEmail, setInviteEmail] = useState('')
   const [inviteSeat, setInviteSeat] = useState<FoundingSeat>('ksa')
   const [inviteAdmit, setInviteAdmit] = useState(true)
+  const [capacityDrafts, setCapacityDrafts] = useState<Record<string, CapacityDraft>>({})
+  const [profileByUser, setProfileByUser] = useState<
+    Record<
+      string,
+      {
+        investable_capacity_usd: number | string | null
+        fo_aum_usd: number | string | null
+        turnover_usd: number | string | null
+        include_in_public_aggregates: boolean
+        capacity_verified: boolean
+      }
+    >
+  >({})
 
   useNoIndex('Admin | Board Arabia')
 
@@ -56,6 +78,7 @@ export function AdminPage() {
       setMembers([])
       setEvents([])
       setStaffRows([])
+      setProfileByUser({})
       setLoading(false)
       return
     }
@@ -73,6 +96,7 @@ export function AdminPage() {
       setMembers([])
       setEvents([])
       setStaffRows([])
+      setProfileByUser({})
       setListError(
         staffError?.message ||
           'Signed in, but this account is not in staff_users. See README for promotion SQL.',
@@ -81,7 +105,7 @@ export function AdminPage() {
       return
     }
 
-    const [capacityResult, appsRes, membersRes, eventsRes, staffRes] = await Promise.all([
+    const [capacityResult, appsRes, membersRes, eventsRes, staffRes, profilesRes] = await Promise.all([
       fetchFoundingCapacity(),
       supabase.from('applications').select('*').order('created_at', { ascending: false }),
       supabase
@@ -94,6 +118,11 @@ export function AdminPage() {
         .order('created_at', { ascending: false })
         .limit(40),
       supabase.rpc('list_staff_directory'),
+      supabase
+        .from('profiles')
+        .select(
+          'user_id, investable_capacity_usd, fo_aum_usd, turnover_usd, include_in_public_aggregates, capacity_verified',
+        ),
     ])
 
     setCapacity('error' in capacityResult ? null : capacityResult)
@@ -101,8 +130,13 @@ export function AdminPage() {
     setMembers((membersRes.data ?? []) as MemberAdminRow[])
     setEvents((eventsRes.data ?? []) as EmailEventAdminRow[])
     setStaffRows((staffRes.data ?? []) as StaffDirectoryRow[])
+    const nextProfiles: typeof profileByUser = {}
+    for (const row of profilesRes.data ?? []) {
+      nextProfiles[row.user_id] = row
+    }
+    setProfileByUser(nextProfiles)
 
-    const problems = [appsRes.error, membersRes.error, eventsRes.error, staffRes.error].filter(
+    const problems = [appsRes.error, membersRes.error, eventsRes.error, staffRes.error, profilesRes.error].filter(
       (item) => item != null,
     )
     setListError(problems.map((item) => item.message).join(' '))
@@ -177,7 +211,13 @@ export function AdminPage() {
     setActionNote('')
     setDryRunInvite(null)
     setListError('')
-    const result = await admitMember(id, seat)
+    const parsed = parseCapacityPayload(draftFor(id, draftFromApplication(appById(id))))
+    if ('error' in parsed) {
+      setListError(parsed.error)
+      setUpdatingId(null)
+      return
+    }
+    const result = await admitMember(id, seat, parsed)
     if (result.error) {
       setListError(result.error)
       setDryRunInvite(result.dryRunInvite ?? null)
@@ -284,6 +324,47 @@ export function AdminPage() {
       ),
     )
     setActionNote(result.message || 'Member updated.')
+    setUpdatingId(null)
+    if (session) void refreshStaffAndApps(session, { silent: true })
+  }
+
+  function appById(id: string) {
+    return (
+      apps.find((row) => row.id === id) ?? {
+        investable_capacity_usd: null,
+        include_in_public_aggregates: true,
+        fo_aum: null,
+        turnover: '',
+      }
+    )
+  }
+
+  function draftFor(key: string, fallback: CapacityDraft) {
+    return capacityDrafts[key] ?? fallback
+  }
+
+  function setDraft(key: string, next: CapacityDraft) {
+    setCapacityDrafts((prev) => ({ ...prev, [key]: next }))
+  }
+
+  async function onSaveCapacity(userId: string) {
+    const parsed = parseCapacityPayload(
+      draftFor(userId, draftFromProfile(profileByUser[userId] ?? null)),
+    )
+    if ('error' in parsed) {
+      setListError(parsed.error)
+      return
+    }
+    setUpdatingId(userId)
+    setActionNote('')
+    setListError('')
+    const result = await staffSetMemberCapacity(userId, parsed)
+    if (result.error) {
+      setListError(result.error)
+      setUpdatingId(null)
+      return
+    }
+    setActionNote('Capacity saved. Public totals recompute from admitted, verified, opted-in members.')
     setUpdatingId(null)
     if (session) void refreshStaffAndApps(session, { silent: true })
   }
@@ -529,6 +610,20 @@ export function AdminPage() {
                         Founding seat · {seatLabel(app.founding_seat)}
                       </p>
                     )}
+                    {(app.status === 'accepted' || app.status === 'verified') && (
+                      <CapacityFields
+                        idPrefix={app.id}
+                        draft={draftFor(app.id, draftFromApplication(app))}
+                        onChange={(next) => setDraft(app.id, next)}
+                        note={usdSuggestionNote(app.turnover, app.fo_aum)}
+                      />
+                    )}
+                    {app.investable_capacity_usd != null && (
+                      <p className="mt-3 text-[0.85rem] text-pearl/50">
+                        Declared investable capacity on the application. Public totals use the
+                        verified member figure, not this line alone.
+                      </p>
+                    )}
                     <div className="mt-5 flex flex-wrap items-center gap-2">
                       <button
                         type="button"
@@ -606,10 +701,8 @@ export function AdminPage() {
                   <li className="border border-pearl/10 px-5 py-8 text-stone/55">No members yet.</li>
                 )}
                 {members.map((member) => (
-                  <li
-                    key={member.user_id}
-                    className="flex flex-wrap items-center justify-between gap-3 border border-pearl/10 px-5 py-4"
-                  >
+                  <li key={member.user_id} className="border border-pearl/10 px-5 py-4">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
                       <p className="text-[0.95rem] text-stone/85">{member.email}</p>
                       <p className="mt-1 text-[0.8rem] text-pearl/45">
@@ -635,6 +728,21 @@ export function AdminPage() {
                         Suspend
                       </button>
                     )}
+                    </div>
+                    <CapacityFields
+                      idPrefix={member.user_id}
+                      draft={draftFor(member.user_id, draftFromProfile(profileByUser[member.user_id] ?? null))}
+                      onChange={(next) => setDraft(member.user_id, next)}
+                      note="USD only. Suspend removes this member from the public sums immediately. Opting out does the same."
+                    />
+                    <button
+                      type="button"
+                      disabled={updatingId === member.user_id}
+                      onClick={() => void onSaveCapacity(member.user_id)}
+                      className="mt-3 border border-brass/60 px-3 py-2 text-[0.68rem] font-semibold tracking-[0.06em] text-brass-bright uppercase disabled:opacity-40"
+                    >
+                      Save capacity
+                    </button>
                   </li>
                 ))}
               </ul>
