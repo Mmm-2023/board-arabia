@@ -113,6 +113,22 @@ export function DashboardHome() {
 
       <section className="mt-4 border border-ink/10 px-6 py-6">
         <h2 className="text-[0.72rem] font-semibold tracking-[0.14em] text-ink/40 uppercase">
+          Invites
+        </h2>
+        <p className="mt-3 max-w-xl text-[1.02rem] leading-relaxed text-ink/65">
+          {member.invites_remaining} of {member.invites_granted} remaining. Each admitted member
+          receives two. Unused invites do not refill.
+        </p>
+        <Link
+          to="/dashboard/invites"
+          className="mt-4 inline-block text-[0.75rem] font-semibold tracking-[0.08em] text-brass uppercase"
+        >
+          Send an invite
+        </Link>
+      </section>
+
+      <section className="mt-4 border border-ink/10 px-6 py-6">
+        <h2 className="text-[0.72rem] font-semibold tracking-[0.14em] text-ink/40 uppercase">
           Next majlis
         </h2>
         <p className="mt-3 max-w-xl text-[1.02rem] leading-relaxed text-ink/65">

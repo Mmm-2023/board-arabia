@@ -60,7 +60,9 @@ Deno.serve(async (req) => {
 
   const { data: app, error } = await admin
     .from('applications')
-    .select('id, full_name, email, phone, linkedin_url, job_titles, companies, status')
+    .select(
+      'id, full_name, email, phone, linkedin_url, job_titles, companies, status, invite_token_id',
+    )
     .eq('id', applicationId)
     .maybeSingle()
   if (error || !app) {
@@ -104,6 +106,16 @@ Deno.serve(async (req) => {
     return jsonResponse(req, { error: 'Capacity amounts must be USD numbers, or blank.' }, 400)
   }
 
+  let inviteBefore: { id: string; status: string } | null = null
+  if (app.invite_token_id) {
+    const { data: inviteRow } = await admin
+      .from('member_invites')
+      .select('id, status')
+      .eq('id', app.invite_token_id)
+      .maybeSingle()
+    if (inviteRow) inviteBefore = { id: inviteRow.id, status: inviteRow.status }
+  }
+
   const site = publicSite()
   const issued = await issueCredential(admin, email, site)
   if ('error' in issued) {
@@ -144,7 +156,7 @@ Deno.serve(async (req) => {
   const { subject, text, html } = admitMail({ greeting, seatLabel, loginUrl, confirmUrl, issued })
 
   if (/calendar\.app\.google|nammco/i.test(`${subject}\n${text}\n${html}`)) {
-    await rollbackAdmission(admin, app.id, app.status, issued)
+    await rollbackAdmission(admin, app.id, app.status, issued, inviteBefore)
     return jsonResponse(req, { error: 'Invite blocked' }, 500)
   }
 
@@ -167,7 +179,7 @@ Deno.serve(async (req) => {
   })
 
   if (sent.status === 'error') {
-    await rollbackAdmission(admin, app.id, app.status, issued)
+    await rollbackAdmission(admin, app.id, app.status, issued, inviteBefore)
     return jsonResponse(req, { error: sent.detail || 'Email failed' }, 502)
   }
 
@@ -196,6 +208,7 @@ async function rollbackAdmission(
   applicationId: string,
   previousStatus: string,
   issued: Issued,
+  inviteBefore: { id: string; status: string } | null,
 ) {
   await admin
     .from('applications')
@@ -209,6 +222,13 @@ async function rollbackAdmission(
     })
     .eq('id', applicationId)
   await admin.from('members').delete().eq('user_id', issued.userId)
+  if (inviteBefore) {
+    await admin
+      .from('member_invites')
+      .update({ status: inviteBefore.status, updated_at: new Date().toISOString() })
+      .eq('id', inviteBefore.id)
+      .eq('status', 'admitted')
+  }
   if (issued.createdNew) await admin.auth.admin.deleteUser(issued.userId)
 }
 

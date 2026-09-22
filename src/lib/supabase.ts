@@ -92,6 +92,9 @@ export type Application = {
   member_user_id: string | null
   admitted_at: string | null
   admitted_by: string | null
+  invited_by_member_id: string | null
+  invite_token_id: string | null
+  invite_reason: string | null
 }
 
 const functionsBase = `${url.replace(/\/$/, '')}/functions/v1`
@@ -126,7 +129,9 @@ export async function submitApplication(payload: {
   linkedin_url: string
   job_titles: string
   companies: string
-}): Promise<{ error?: string; dryRun?: boolean; id?: string }> {
+  invite_token?: string | null
+  invite_reason?: string | null
+}): Promise<{ error?: string; dryRun?: boolean; id?: string; inviteAttached?: boolean }> {
   try {
     const res = await fetch(`${functionsBase}/submit-application`, {
       method: 'POST',
@@ -137,9 +142,14 @@ export async function submitApplication(payload: {
       error?: string
       dry_run?: boolean
       id?: string
+      invite_attached?: boolean
     }
     if (!res.ok) return { error: body.error || `Submit failed (${res.status})` }
-    return { dryRun: Boolean(body.dry_run), id: body.id }
+    return {
+      dryRun: Boolean(body.dry_run),
+      id: body.id,
+      inviteAttached: Boolean(body.invite_attached),
+    }
   } catch (err) {
     return { error: err instanceof Error ? err.message : 'Submit failed' }
   }
@@ -246,6 +256,77 @@ export type MemberAdminRow = {
   email: string
   seat: FoundingSeat
   status: 'invited' | 'active' | 'suspended'
+  invites_remaining: number
+  invites_granted: number
+}
+
+export type MemberInviteAdminRow = {
+  id: string
+  application_id: string | null
+  channel: 'email' | 'whatsapp'
+  status: string
+  inviter_member_id: string
+}
+
+export type InviteLookup =
+  | { valid: true; inviterLabel: string }
+  | { valid: false; state: 'invalid' | 'expired' | 'used' | 'limited' }
+
+export async function lookupMemberInvite(token: string): Promise<InviteLookup> {
+  const { data, error } = await supabase.rpc('lookup_member_invite', { p_token: token })
+  if (error || !data || typeof data !== 'object') return { valid: false, state: 'invalid' }
+  const row = data as { valid?: boolean; state?: string; inviter_label?: string }
+  if (row.valid && row.inviter_label) {
+    return { valid: true, inviterLabel: row.inviter_label }
+  }
+  const state = row.state
+  if (state === 'expired' || state === 'used' || state === 'limited') {
+    return { valid: false, state }
+  }
+  return { valid: false, state: 'invalid' }
+}
+
+export async function sendMemberInvite(input: {
+  channel: 'email' | 'whatsapp'
+  email?: string
+  phone?: string
+}): Promise<{
+  error?: string
+  message?: string
+  dryRun?: boolean
+  invitesRemaining?: number
+  applyUrl?: string
+  whatsappUrl?: string | null
+}> {
+  try {
+    const res = await fetch(`${functionsBase}/send-member-invite`, {
+      method: 'POST',
+      headers: await staffHeaders(),
+      body: JSON.stringify({
+        channel: input.channel,
+        email: input.email || null,
+        phone: input.phone || null,
+      }),
+    })
+    const body = (await res.json().catch(() => ({}))) as {
+      error?: string
+      message?: string
+      dry_run?: boolean
+      invites_remaining?: number
+      apply_url?: string
+      whatsapp_url?: string | null
+    }
+    if (!res.ok) return { error: body.error || `Invite failed (${res.status})` }
+    return {
+      message: body.message,
+      dryRun: Boolean(body.dry_run),
+      invitesRemaining: body.invites_remaining,
+      applyUrl: body.apply_url,
+      whatsappUrl: body.whatsapp_url ?? null,
+    }
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : 'Invite failed' }
+  }
 }
 
 export type EmailEventAdminRow = {

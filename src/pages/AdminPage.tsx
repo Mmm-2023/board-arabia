@@ -23,6 +23,7 @@ import {
   type DryRunInvite,
   type EmailEventAdminRow,
   type MemberAdminRow,
+  type MemberInviteAdminRow,
   type StaffDirectoryRow,
 } from '../lib/supabase'
 import { useNoIndex } from '../lib/usePageTitle'
@@ -44,6 +45,7 @@ export function AdminPage() {
   const [loading, setLoading] = useState(true)
   const [apps, setApps] = useState<Application[]>([])
   const [members, setMembers] = useState<MemberAdminRow[]>([])
+  const [peerInvites, setPeerInvites] = useState<MemberInviteAdminRow[]>([])
   const [events, setEvents] = useState<EmailEventAdminRow[]>([])
   const [staffRows, setStaffRows] = useState<StaffDirectoryRow[]>([])
   const [listError, setListError] = useState('')
@@ -76,6 +78,7 @@ export function AdminPage() {
       setIsStaff(false)
       setApps([])
       setMembers([])
+      setPeerInvites([])
       setEvents([])
       setStaffRows([])
       setProfileByUser({})
@@ -94,6 +97,7 @@ export function AdminPage() {
       setIsStaff(false)
       setApps([])
       setMembers([])
+      setPeerInvites([])
       setEvents([])
       setStaffRows([])
       setProfileByUser({})
@@ -105,13 +109,17 @@ export function AdminPage() {
       return
     }
 
-    const [capacityResult, appsRes, membersRes, eventsRes, staffRes, profilesRes] = await Promise.all([
+    const [capacityResult, appsRes, membersRes, invitesRes, eventsRes, staffRes, profilesRes] = await Promise.all([
       fetchFoundingCapacity(),
       supabase.from('applications').select('*').order('created_at', { ascending: false }),
       supabase
         .from('members')
-        .select('user_id, email, seat, status')
+        .select('user_id, email, seat, status, invites_remaining, invites_granted')
         .order('invited_at', { ascending: false }),
+      supabase
+        .from('member_invites')
+        .select('id, application_id, channel, status, inviter_member_id')
+        .order('created_at', { ascending: false }),
       supabase
         .from('email_events')
         .select('id, created_at, kind, recipient, subject, status')
@@ -128,6 +136,7 @@ export function AdminPage() {
     setCapacity('error' in capacityResult ? null : capacityResult)
     setApps((appsRes.data ?? []) as Application[])
     setMembers((membersRes.data ?? []) as MemberAdminRow[])
+    setPeerInvites((invitesRes.data ?? []) as MemberInviteAdminRow[])
     setEvents((eventsRes.data ?? []) as EmailEventAdminRow[])
     setStaffRows((staffRes.data ?? []) as StaffDirectoryRow[])
     const nextProfiles: typeof profileByUser = {}
@@ -136,7 +145,14 @@ export function AdminPage() {
     }
     setProfileByUser(nextProfiles)
 
-    const problems = [appsRes.error, membersRes.error, eventsRes.error, staffRes.error, profilesRes.error].filter(
+    const problems = [
+      appsRes.error,
+      membersRes.error,
+      invitesRes.error,
+      eventsRes.error,
+      staffRes.error,
+      profilesRes.error,
+    ].filter(
       (item) => item != null,
     )
     setListError(problems.map((item) => item.message).join(' '))
@@ -595,6 +611,30 @@ export function AdminPage() {
                           </dd>
                         </div>
                       )}
+                      {(app.invited_by_member_id || app.invite_reason) && (
+                        <div className="md:col-span-2">
+                          <dt className="text-pearl/40">Peer invite</dt>
+                          <dd className="mt-0.5 text-stone/85">
+                            Invited by{' '}
+                            {members.find((member) => member.user_id === app.invited_by_member_id)
+                              ?.email || 'a member'}
+                            {app.invite_reason ? `. Why: ${app.invite_reason}` : ''}
+                            {peerMeta(peerInvites, app)
+                              ? `. ${peerMeta(peerInvites, app)}`
+                              : ''}
+                          </dd>
+                        </div>
+                      )}
+                      <div>
+                        <dt className="text-pearl/40">Public totals</dt>
+                        <dd className="mt-0.5 text-stone/85">
+                          {app.include_in_public_aggregates === true
+                            ? 'Opted in'
+                            : app.include_in_public_aggregates === false
+                              ? 'Opted out'
+                              : 'Not asked'}
+                        </dd>
+                      </div>
                       {app.calendar_slot && (
                         <div className="md:col-span-2">
                           <dt className="text-pearl/40">Meeting / invite meta</dt>
@@ -707,6 +747,8 @@ export function AdminPage() {
                       <p className="text-[0.95rem] text-stone/85">{member.email}</p>
                       <p className="mt-1 text-[0.8rem] text-pearl/45">
                         {seatLabel(member.seat)} · Founding Member · {member.status}
+                        {' · '}
+                        {member.invites_remaining} of {member.invites_granted} invites left
                       </p>
                     </div>
                     {member.status === 'suspended' ? (
@@ -866,6 +908,15 @@ function DryRunInviteBox({ invite }: { invite: DryRunInvite }) {
       {invite.loginUrl && <p className="mt-2 break-all">{invite.loginUrl}</p>}
     </div>
   )
+}
+
+function peerMeta(rows: MemberInviteAdminRow[], app: Application) {
+  const row = rows.find(
+    (item) => item.application_id === app.id || item.id === app.invite_token_id,
+  )
+  if (!row) return ''
+  const channel = row.channel === 'whatsapp' ? 'WhatsApp' : 'Email'
+  return `${channel} · ${row.status}`
 }
 
 function StatusBadge({ status }: { status: ApplicationStatus }) {
