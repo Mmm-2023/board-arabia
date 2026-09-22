@@ -90,8 +90,8 @@ export function ForMembersPage() {
         <p className="mt-6 max-w-2xl text-[1.08rem] leading-relaxed text-ink/65">
           Founding members of Board Arabia access tools designed for
           board-level discretion: a private peer directory, structured mandate
-          inbox, warm intros under admin oversight, and quarterly majlis — not
-          an open marketplace.
+          inbox, warm intros under admin oversight, and quarterly majlis. This
+          is not an open marketplace.
         </p>
         <ul className="mt-8 flex flex-wrap gap-x-6 gap-y-2">
           {TOOLS.map((tool) => (

@@ -92,20 +92,20 @@ Deno.serve(async (req) => {
     return jsonResponse(req, { error: insertError?.message || 'Insert failed' }, 400)
   }
 
-  // Emails: only this applicant + michael@nammco.com — never other applicants' rows
+  // Emails: only this applicant + michael@nammco.com. Never other applicants' rows.
   const siteUrl =
     Deno.env.get('PUBLIC_SITE_URL') || 'https://mmm-2023.github.io/board-arabia'
   const adminUrl = `${siteUrl.replace(/\/$/, '')}/admin`
 
   const summaryLines = [
-    `Name: ${app.full_name || '—'}`,
+    `Name: ${app.full_name || 'Not provided'}`,
     `Email: ${app.email}`,
-    `Phone: ${app.phone || '—'}`,
+    `Phone: ${app.phone || 'Not provided'}`,
     `Turnover: ${app.turnover}`,
-    `FO / AUM: ${app.fo_aum || '—'}`,
+    `FO / AUM: ${app.fo_aum || 'Not provided'}`,
     `Titles: ${app.job_titles}`,
     `Companies: ${app.companies}`,
-    `LinkedIn: ${app.linkedin_url || '—'}`,
+    `LinkedIn: ${app.linkedin_url || 'Not provided'}`,
   ]
 
   const ackSubject = 'We received your Board Arabia application'
@@ -113,15 +113,15 @@ Deno.serve(async (req) => {
 
 Thank you for applying to Board Arabia. We have your pre-vet details and Michael will review them shortly.
 
-You do not need to book anything yet — if accepted, you will receive a private next-step email.
+You do not need to book anything yet. If accepted, you will receive a private next-step email.
 
-— Board Arabia`
+Board Arabia`
   const ackHtml = `<p>Hello ${escapeHtml(app.full_name || 'there')},</p>
 <p>Thank you for applying to Board Arabia. We have your pre-vet details and Michael will review them shortly.</p>
-<p>You do not need to book anything yet — if accepted, you will receive a private next-step email.</p>
-<p>— Board Arabia</p>`
+<p>You do not need to book anything yet. If accepted, you will receive a private next-step email.</p>
+<p>Board Arabia</p>`
 
-  const notifySubject = `New Board Arabia application — ${app.full_name || app.email}`
+  const notifySubject = `New Board Arabia application: ${app.full_name || app.email}`
   const notifyText = `New pending application.
 
 ${summaryLines.join('\n')}
@@ -131,7 +131,7 @@ Review / Accept / Reject: ${adminUrl}
 Application id: ${app.id}`
   const notifyHtml = `<p>New pending application.</p>
 <pre style="font-family:ui-monospace,monospace;white-space:pre-wrap">${escapeHtml(summaryLines.join('\n'))}</pre>
-<p><a href="${escapeHtml(adminUrl)}">Open admin — Accept or Reject</a></p>
+<p><a href="${escapeHtml(adminUrl)}">Open admin (Accept or Reject)</a></p>
 <p>Application id: ${escapeHtml(app.id)}</p>`
 
   const ack = await sendEmail({

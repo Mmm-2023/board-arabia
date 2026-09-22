@@ -20,7 +20,7 @@ export function LoginPage() {
   const memberEntry = nextPath.startsWith('/dashboard')
   const codeType = otpType(searchParams.get('otp_type'))
 
-  useNoIndex(memberEntry ? 'Member login — Board Arabia' : 'Staff login — Board Arabia')
+  useNoIndex(memberEntry ? 'Member login | Board Arabia' : 'Staff login | Board Arabia')
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {

@@ -10,7 +10,7 @@ export function AuthConfirmPage() {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
   const [error, setError] = useState('')
-  useNoIndex('Sign in — Board Arabia')
+  useNoIndex('Sign in | Board Arabia')
 
   useEffect(() => {
     let cancelled = false

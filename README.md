@@ -13,7 +13,7 @@ English only. No public calendar, no member names or photographs, no fee schedul
 | `/` | Home: hero, why, Founding 100 (50/50), member-tool tiles, how it works, partners, trust, final CTA |
 | `/apply` | Pre-vet form. CTA language is “Apply for consideration”. |
 | `/for-members` | All nine tools, including mandate inbox and deal rooms, plus a dashboard preview |
-| `/for-capital` | How FDI, family offices, PE, and VC reach members — mandate inbox and deal rooms, admin-gated |
+| `/for-capital` | How FDI, family offices, PE, and VC reach members: mandate inbox and deal rooms, admin-gated |
 | `/partners` | Three annual Founding Ecosystem Partner seats, fifteen finance categories, interest via `mailto:partners@boardarabia.com` (not stored) |
 | `/how-it-works` | Pre-vet → personal review (no fixed SLA) → Accept → private booking email → admit |
 | `/about` | Short founding note |
@@ -61,8 +61,8 @@ npm run dev
 
 ## Visitor flow (no login)
 
-1. **Landing** (`/`) — founding membership; English only; **no** public calendar CTA. Subpages explain members, capital, and partners.
-2. **Apply** (`/apply`) — pre-vet form: name, email, phone (optional), turnover **or** FO AUM, LinkedIn URL, job titles, companies.
+1. **Landing** (`/`). Founding membership; English only; **no** public calendar CTA. Subpages explain members, capital, and partners.
+2. **Apply** (`/apply`). Pre-vet form: name, email, phone (optional), turnover **or** FO AUM, LinkedIn URL, job titles, companies.
 3. On submit → Edge Function **`submit-application`** (validated + rate-limited):
    - Inserts `applications.status = pending`
    - Acknowledgement email to applicant
@@ -72,8 +72,8 @@ Legacy `/book` and `/verify` redirect to `/apply`.
 
 ## Staff flow
 
-1. **Login** (`/login`) — Supabase Auth email + password → redirects to `/admin`.
-2. **Admin** (`/admin` or `/ops`) — only rows in `staff_users` can list applications.
+1. **Login** (`/login`). Supabase Auth email + password → redirects to `/admin`.
+2. **Admin** (`/admin` or `/ops`). Only rows in `staff_users` can list applications.
 3. **Accept** → Edge Function `decide-application` emails the candidate the private booking link only (no date picker, no Calendar API).
 4. **Reject** → polite decline email to applicant.
 5. **Admit** (after Accept) → Edge Function `admit-member` creates the member login and emails a one-time sign-in link (or a temporary password if a link cannot be issued). Choose Saudi Arabia (`ksa`) or International (`intl`). This does not send the booking link again.
@@ -82,7 +82,7 @@ Legacy `/book` and `/verify` redirect to `/apply`.
 ## Member flow
 
 1. Open the one-time link in the Admit email, or `/login?next=/dashboard` with the one-time code or the password you set.
-2. **Dashboard** (`/dashboard`) — Home shows a founding-badge placeholder, your seat, and capacity toward 100. Profile edits your own row. Directory, Mandates, Intros, Rooms, and Events are empty shells.
+2. **Dashboard** (`/dashboard`). Home shows a founding-badge placeholder, your seat, and capacity toward 100. Profile edits your own row. Directory, Mandates, Intros, Rooms, and Events are empty shells.
 3. Accounts are invite-only. A signed-in user who is not in `members` does not see the room. Staff `/login` with no `next` still goes to `/admin`.
 
 ### Critical anti-leak

@@ -23,7 +23,7 @@ export function ProfilePage() {
   const [passwordError, setPasswordError] = useState('')
   const [savingProfile, setSavingProfile] = useState(false)
   const [savingPassword, setSavingPassword] = useState(false)
-  useNoIndex('Profile — Board Arabia')
+  useNoIndex('Profile | Board Arabia')
 
   async function onSaveProfile(event: FormEvent) {
     event.preventDefault()

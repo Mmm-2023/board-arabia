@@ -384,7 +384,7 @@ function PartnersSection() {
           <DisplayHeading>Three seats a year.</DisplayHeading>
           <p className="mt-6 max-w-xl text-[1.05rem] leading-relaxed text-ink/60">
             Three annual Founding Ecosystem Partner seats. They are for firms
-            on the finance rails of a deal — not a wall of logos. We do not
+            on the finance rails of a deal, not a wall of logos. We do not
             scrape names, publish a partner directory, or show a price.
           </p>
           <Link

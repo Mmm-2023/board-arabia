@@ -25,7 +25,7 @@ export function AdminPage() {
   const [capacity, setCapacity] = useState<FoundingCapacity | null>(null)
   const [dryRunInvite, setDryRunInvite] = useState<DryRunInvite | null>(null)
 
-  useNoIndex('Admin — Board Arabia')
+  useNoIndex('Admin | Board Arabia')
 
   const refreshStaffAndApps = useCallback(async (active: Session | null) => {
     if (!active) {
@@ -115,7 +115,7 @@ export function AdminPage() {
           : row,
       ),
     )
-    setActionNote(result.message || 'Accepted — private booking link emailed.')
+    setActionNote(result.message || 'Accepted. Private booking link emailed.')
     setUpdatingId(null)
   }
 
@@ -178,7 +178,7 @@ export function AdminPage() {
           : row,
       ),
     )
-    setActionNote(result.message || 'Rejected — decline email sent.')
+    setActionNote(result.message || 'Rejected. Decline email sent.')
     setUpdatingId(null)
   }
 
@@ -328,7 +328,7 @@ export function AdminPage() {
                     <div>
                       <dt className="text-pearl/40">FO / AUM</dt>
                       <dd className="mt-0.5 text-stone/85">
-                        {app.fo_aum || '—'}
+                        {app.fo_aum || 'Not provided'}
                       </dd>
                     </div>
                     <div className="md:col-span-2">

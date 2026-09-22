@@ -23,8 +23,8 @@ export function HowItWorksPage() {
           Apply. Review. Invite.
         </h1>
         <p className="mt-6 max-w-2xl text-[1.08rem] leading-relaxed text-ink/65">
-          Board Arabia admission is credentials-first: submit a pre-vet form,
-          await personal review, and — if accepted — receive a private booking
+          Board Arabia admission is credentials-first. Submit a pre-vet form
+          and await personal review. If accepted, you receive a private booking
           link by email before joining the member dashboard. {REVIEW_SLA}
         </p>
         <p className="mt-4">
