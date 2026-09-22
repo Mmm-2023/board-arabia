@@ -142,24 +142,29 @@ limit 20;
 - **Vercel:** https://board-arabia.vercel.app  
 - **GitHub Pages:** `.github/workflows/pages.yml` when Pages source is GitHub Actions.
 
-## Security checklist (Michael lock)
+## Security checklist (Factory audit + PR2)
 
-| # | Requirement | Status | Notes |
-|---|-------------|--------|-------|
-| 1 | RLS: no anon SELECT on `applications`; staff-only read; anon INSERT validated or Edge-only | **PASS** | Anon SELECT/UPDATE denied (proved). Staff SELECT via `staff_users`. Client UPDATE grant removed. Preferred path: `submit-application`. |
-| 2 | `/admin` behind Supabase Auth + `staff_users` gate | **PASS** | Unauthed → `/login?next=/admin`. Non-staff sees Not authorized. |
-| 3 | No booking link / member PII on public pages | **PASS** | No `calendar.app.google` in client. Accept uses private Calendar API invite. |
-| 4 | Accept/Reject server-side only (JWT + staff) | **PASS** | `decide-application` JWT + staff; Accept requires meeting_start/end; Google Meet invite server-side. |
-| 5 | Rate-limit apply; validate/sanitize; no open redirects | **PASS** | `submit-application`: field length caps, email/URL checks, 5/hour per email+IP. Login `next` allowlist (path-only). |
-| 6 | Secrets only in Vercel/Supabase env | **PASS** | Repo has public anon key only (expected). `RESEND_API_KEY` / service role never committed. |
-| 7 | Notify templates don’t leak other applicants | **PASS** | Templates built from the single inserted/decided row only. |
+Evidence tags: **VERIFIED** = proved against live project / staging; **INFERRED** = from code + policies; **UNKNOWN** = needs Michael dashboard click.
 
-**Remaining GAPs (non-blocking for Done-when):**
+| Area | Result | Evidence |
+|------|--------|----------|
+| RLS `applications` | **VERIFIED PASS** | Anon SELECT → `42501`; Factory: anon INSERT only; SELECT/UPDATE staff_users only |
+| RLS `staff_users` | **VERIFIED PASS-ish** | select-own + claim-first insert (bootstrap residual) |
+| RLS `email_events` | **VERIFIED PASS** | Staff select only |
+| Dangerous ops RPCs | **VERIFIED PASS** | Factory revoked EXECUTE on `list_applications_ops` / `ops_code_ok` / `update_application_status_ops` + client access on `ops_config`; anon RPC call → not exposed |
+| Auth gate `/admin` | **VERIFIED PASS** | Unauthed → `/login?next=/admin`; UI requires session; list needs `staff_users` |
+| Accept/Reject | **VERIFIED PASS** | Edge `decide-application` only: Auth JWT + `staff_users`; no access-code RPCs; meeting_start/end required for Accept; staff REST UPDATE → 403 |
+| No public booking CTA / PII | **VERIFIED PASS** | Client/dist grep: 0× `calendar.app.google`; apply form has no applicant list |
+| Rate-limit + sanitize apply | **VERIFIED PASS** | `submit-application`: length caps, email/URL checks, 5/hr per email+IP via `apply_rate_limits` |
+| Secrets hygiene | **INFERRED PASS** | Only public anon in repo/`.env.example`; Resend/Google/service role = Edge secrets only |
+| Notify no cross-applicant leak | **INFERRED PASS** | Templates built from single row id only |
+| Leaked-password protection (Auth) | **UNKNOWN / GAP** | Michael must enable in Supabase → Authentication → Providers → Email → **Leaked password protection** |
+| Live Resend delivery | **GAP** | Needs `RESEND_API_KEY` (dry-run proved) |
+| Live Google Meet invites | **GAP** | Needs `GOOGLE_CLIENT_ID` + `SECRET` + `REFRESH_TOKEN` (dry-run proved) |
+| `staff_users_claim_first` | **GAP** | Safe while Michael present; drop later if desired |
+| Legacy `notify-application` | **GAP** | Prefer `submit-application` only |
 
-- **GAP:** Live Calendar Meet invites need Michael’s **Google OAuth** secrets (`GOOGLE_CLIENT_ID` / `SECRET` / `REFRESH_TOKEN`). Until set, Accept dry-runs.
-- **GAP:** Live email delivery needs **`RESEND_API_KEY`**.
-- **GAP:** `staff_users_claim_first` residual if table emptied.
-- **GAP:** Legacy `notify-application` still exists; prefer `submit-application`.
+App path does **not** call ops access-code RPCs. Decisions are Edge Function + JWT + `staff_users` only.
 
 ## Anti-jobs
 
