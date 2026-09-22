@@ -13,6 +13,8 @@ const routes = [
   '/partners',
   '/how-it-works',
   '/about',
+  '/privacy',
+  '/terms',
 ]
 
 function escapeAttr(value) {

@@ -11,6 +11,8 @@ export const MARKETING_PATHS = [
   '/partners',
   '/how-it-works',
   '/about',
+  '/privacy',
+  '/terms',
 ] as const
 
 export type MarketingPath = (typeof MARKETING_PATHS)[number]
@@ -27,7 +29,7 @@ export const MARKETING_PAGES: Record<MarketingPath, MarketingPage> = {
     path: '/',
     title: 'Board Arabia | Founding membership for chairs and NEDs',
     description:
-      'Board Arabia is a selective founding membership for chairpersons, NEDs, and board advisors in Saudi Arabia and the GCC. One hundred places. Request consideration.',
+      'Board Arabia is a selective founding membership for chairpersons, NEDs, and board advisors: fifty places in Saudi Arabia and the GCC, fifty international. Request consideration.',
     faq: true,
   },
   '/for-members': {
@@ -44,27 +46,39 @@ export const MARKETING_PAGES: Record<MarketingPath, MarketingPage> = {
   },
   '/partners': {
     path: '/partners',
-    title: 'Three annual partner seats | Board Arabia',
+    title: 'Founding Ecosystem Partner seats | Board Arabia',
     description:
-      'Board Arabia offers three partner seats a year to firms on the finance rails of a deal. Fifteen categories. Interest by email. No fee on this site.',
+      'Board Arabia offers three annual Founding Ecosystem Partner seats to finance firms on the rails of a deal. Fifteen categories. Interest by email. No fee on this site.',
   },
   '/how-it-works': {
     path: '/how-it-works',
     title: 'How Board Arabia admission works | Board Arabia',
     description:
-      'Board Arabia admission runs pre-vet, review, accept, then a private email. No public calendar. The member dashboard opens only after admission.',
+      'Board Arabia admission runs pre-vet, then a personal review with no fixed response time, then accept and a private email. No public calendar.',
   },
   '/apply': {
     path: '/apply',
     title: 'Request consideration | Board Arabia',
     description:
-      'Request consideration for Board Arabia. The pre-vet is credentials only. Michael reviews each application. A private email follows acceptance — not a public calendar.',
+      'Request consideration for Board Arabia. The pre-vet is credentials only. Every application is reviewed personally, with no fixed response time. Acceptance is a private email.',
   },
   '/about': {
     path: '/about',
     title: 'About Board Arabia | Founding membership',
     description:
       'Board Arabia is a founding membership for chairpersons and NEDs: fifty places in Saudi Arabia and fifty international. Admission is by review, not by open signup.',
+  },
+  '/privacy': {
+    path: '/privacy',
+    title: 'Privacy | Board Arabia',
+    description:
+      'Board Arabia collects the credentials you submit for a personal review. This site does not publish a member directory, sell personal information, or open a public calendar.',
+  },
+  '/terms': {
+    path: '/terms',
+    title: 'Terms | Board Arabia',
+    description:
+      'These Board Arabia pages are informational. They do not reserve a Founding 100 place, price a seat, or open a public calendar. Admission follows a personal review.',
   },
 }
 
@@ -96,7 +110,7 @@ export const FAQ: FaqItem[] = [
   {
     question: 'How does someone request consideration?',
     answer:
-      'Submit a pre-vet: name, email, LinkedIn, titles, companies, and turnover or family-office size. Michael reviews every application. The form does not reserve a time, and this site has no public calendar.',
+      'Submit a pre-vet: name, email, LinkedIn, titles, companies, and turnover or family-office size. There is no fixed response time. Every application is reviewed personally. The form does not reserve a time, and this site has no public calendar.',
     to: '/apply',
     toLabel: 'Request consideration',
   },
@@ -124,7 +138,7 @@ export const FAQ: FaqItem[] = [
   {
     question: 'How do the three partner seats work?',
     answer:
-      'Board Arabia offers three partner seats a year to firms on the finance rails of a deal. Interest is sent by email. A seat is not a logo placement, not a checkout, and it does not bypass admin.',
+      'Board Arabia offers three annual Founding Ecosystem Partner seats to firms on the finance rails of a deal. Interest is sent by email. A seat is not a logo placement, not a checkout, and it does not bypass admin.',
     to: '/partners',
     toLabel: 'Partner seats',
   },
@@ -145,16 +159,18 @@ export function pageGraph(page: MarketingPage) {
       url: `${SITE_ORIGIN}/`,
       description: MARKETING_PAGES['/'].description,
       email: 'partners@boardarabia.com',
-      areaServed: ['Saudi Arabia', 'GCC'],
+      areaServed: ['Saudi Arabia', 'GCC', 'International'],
       knowsAbout: [
         'chairpersons',
         'non-executive directors',
         'board advisors',
+        'Founding 100',
         'family offices',
         'foreign direct investment',
         'Vision 2030',
         'Saudi Arabia',
         'GCC',
+        'international board practice',
       ],
     },
     {

@@ -26,9 +26,10 @@ export function AboutPage() {
             care. Seats are not priced on this site.
           </p>
           <p>
-            Admission is by review. Michael reads every application. If you
-            are accepted, a private booking link is emailed to you. If you
-            are not, you receive a decline. The link is never published here.
+            Admission is by review. There is no fixed response time. Every
+            application is reviewed personally. If you are accepted, a private
+            booking link is emailed to you. If you are not, you receive a
+            decline. The link is never published here.
           </p>
           <p>
             The tools — a private directory, availability, warm introductions,

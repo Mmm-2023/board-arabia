@@ -7,6 +7,8 @@ const LINKS = [
   { label: 'About', to: '/about' },
   { label: 'Partners', to: '/partners' },
   { label: 'Request consideration', to: '/apply' },
+  { label: 'Privacy', to: '/privacy' },
+  { label: 'Terms', to: '/terms' },
 ]
 
 export function Footer() {

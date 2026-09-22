@@ -1,5 +1,9 @@
 export const PARTNER_EMAIL = 'partners@boardarabia.com'
 
+/** No day-count is published. Say this instead of inventing an SLA. */
+export const REVIEW_SLA =
+  'There is no fixed response time. Every application is reviewed personally.'
+
 export type MemberTool = {
   id: string
   n: string
@@ -22,7 +26,7 @@ export const MEMBER_TOOLS: MemberTool[] = [
     n: '02',
     title: 'Mandate inbox',
     home: 'Capital writes a mandate. Admin reads it before a member sees it.',
-    href: '/for-capital#inbox',
+    href: '/for-members#inbox',
   },
   {
     id: 'availability',
@@ -71,7 +75,7 @@ export const MEMBER_TOOLS: MemberTool[] = [
     n: '09',
     title: 'Deal rooms',
     home: 'A private room for a live mandate. Opened by admin, closed when the work ends.',
-    href: '/for-capital#rooms',
+    href: '/for-members#rooms',
   },
 ]
 
@@ -93,9 +97,9 @@ export const PROCESS_STEPS: ProcessStep[] = [
   {
     n: '02',
     title: 'Review',
-    home: 'Michael reads every pending application. Nothing is accepted automatically.',
+    home: 'Every application is reviewed personally. There is no fixed response time.',
     detail:
-      'Each submission stays pending until it is read. There is no score you can game and no queue you can skip. Fit is a judgment about credentials and about whether you will contribute to the room.',
+      'There is no fixed response time. Every application is reviewed personally. Nothing is accepted automatically, and there is no score you can game. Fit is a judgment about credentials and about whether you will contribute to the room. You hear back with an acceptance or a clear decline.',
   },
   {
     n: '03',

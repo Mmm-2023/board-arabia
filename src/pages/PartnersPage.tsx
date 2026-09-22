@@ -11,7 +11,7 @@ const RULES = [
   {
     n: '02',
     title: 'Three only',
-    body: 'When three seats are filled, the year is closed. There is no waiting list published here.',
+    body: 'Three Founding Ecosystem Partner seats a year. When they are filled, the year is closed. There is no waiting list published here.',
   },
   {
     n: '03',
@@ -30,16 +30,16 @@ export function PartnersPage() {
     <MarketingLayout path="/partners">
       <header className="mx-auto max-w-7xl px-5 pt-12 md:px-10 md:pt-20">
         <p className="mb-4 font-serif text-[1.2rem] italic text-ink-soft/70">
-          Ecosystem partners
+          Founding Ecosystem Partners
         </p>
         <h1 className="max-w-3xl font-display text-[clamp(2.5rem,5.5vw,4.4rem)] font-bold leading-[1.02] tracking-[-0.04em] text-balance text-ink">
-          Three seats a year.
+          Three Founding Ecosystem Partner seats.
         </h1>
         <p className="mt-6 max-w-2xl text-[1.08rem] leading-relaxed text-ink/65">
-          Board Arabia offers three partner seats a year. They are offered,
-          not sold from this page, to firms on the finance rails of a
-          transaction. There is no fee schedule here, and there is no
-          directory of partner names.
+          Board Arabia offers three annual Founding Ecosystem Partner seats.
+          They are offered, not sold from this page, to firms on the finance
+          rails of a transaction. There is no fee schedule here, and there is
+          no directory of partner names.
         </p>
       </header>
 

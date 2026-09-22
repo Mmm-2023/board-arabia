@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { Footer } from '../components/Footer'
 import { Nav } from '../components/Nav'
 import { Seo } from '../components/Seo'
+import { REVIEW_SLA } from '../content/marketing'
 import { submitApplication } from '../lib/supabase'
 
 type FormState = {
@@ -114,8 +115,8 @@ export function ApplyPage() {
             </h1>
             <p className="mt-5 text-[1.05rem] leading-relaxed text-ink/65">
               Thank you. We have your pre-vet details. There is nothing to
-              arrange on this site. You will hear back after review — an
-              acceptance with a private next step by email, or a decline.
+              arrange on this site. {REVIEW_SLA} You will hear back with an
+              acceptance and a private next step by email, or with a decline.
             </p>
             {emailNote && (
               <p className="mt-4 text-[0.9rem] text-ink/50">{emailNote}</p>
@@ -148,8 +149,8 @@ export function ApplyPage() {
           <p className="mt-5 text-[1.05rem] leading-relaxed text-ink/65">
             This form is a pre-vet for Board Arabia, not a booking. Send your name, email,
             LinkedIn, titles, companies, and turnover or family-office size.
-            Michael reviews every submission. If you are accepted, a private
-            booking link arrives by email. That link is not on this website.
+            {REVIEW_SLA} If you are accepted, a private booking link arrives by
+            email. That link is not on this website.
           </p>
 
           <form onSubmit={onSubmit} className="mt-10 space-y-6">

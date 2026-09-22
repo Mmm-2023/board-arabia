@@ -13,7 +13,7 @@ import { MEMBER_TOOLS, PARTNER_CATEGORIES, PROCESS_STEPS } from '../content/mark
 const HERO_IMAGE =
   'https://images.unsplash.com/photo-1586724237569-f3d0c1dee8c6?auto=format&fit=crop&w=2400&q=80'
 
-const PATHS = ['Chairpersons', 'NEDs', 'Saudi Arabia & the GCC']
+const PATHS = ['Chairpersons', 'NEDs', 'Saudi Arabia & the GCC', 'International']
 
 export function LandingPage() {
   return (
@@ -104,9 +104,11 @@ function Hero() {
           >
             <p className="max-w-md text-[1.05rem] leading-relaxed text-stone/90 md:text-[1.12rem]">
               Board Arabia is a selective founding membership for chairpersons,
-              NEDs, and board advisors in Saudi Arabia and the GCC, and for
-              international peers. One hundred places. Request consideration —
-              a conversation follows only after review, by private email.
+              NEDs, and board advisors. Fifty places are held in Saudi Arabia
+              and the GCC. Fifty are held for international chairs and advisors,
+              including those whose practice is not limited to the Gulf. Request
+              consideration — a conversation follows only after a personal
+              review, by private email.
             </p>
 
             <div className="flex shrink-0 flex-col gap-3 sm:flex-row">
@@ -248,7 +250,8 @@ function FoundingSection() {
               International
             </h3>
             <p className="mt-3 text-[0.98rem] leading-relaxed text-ink/60">
-              Counterparts who work with Saudi capital and companies.
+              International chairs and NEDs. The place is not reserved for a
+              GCC-only practice.
             </p>
           </div>
         </div>
@@ -267,8 +270,11 @@ function ToolsSection() {
             What the room actually uses.
           </DisplayHeading>
           <p className="mt-6 max-w-xl text-[1.05rem] leading-relaxed text-ink/60">
-            Nine instruments, each inside the dashboard after admission. Read
-            the one you care about.
+            After admission, the outcome is concrete: a private directory, an
+            admin-gated mandate inbox, availability you set, warm introductions
+            that are released rather than cold, a founding badge, a quarterly
+            majlis, peer vouchers, Vision 2030 tags, and deal rooms. Each tile
+            explains the instrument. None of them is a public list.
           </p>
         </Reveal>
 
@@ -364,12 +370,12 @@ function PartnersSection() {
     <section id="partners" className="bg-pearl py-24 md:py-32">
       <div className="mx-auto grid max-w-7xl gap-14 px-5 md:px-10 lg:grid-cols-[1.1fr_0.9fr] lg:gap-20">
         <Reveal>
-          <Eyebrow>Ecosystem partners</Eyebrow>
+          <Eyebrow>Founding Ecosystem Partners</Eyebrow>
           <DisplayHeading>Three seats a year.</DisplayHeading>
           <p className="mt-6 max-w-xl text-[1.05rem] leading-relaxed text-ink/60">
-            Partner seats are annual and capped at three. They are for firms
+            Three annual Founding Ecosystem Partner seats. They are for firms
             on the finance rails of a deal — not a wall of logos. We do not
-            scrape names, and we do not publish a partner directory here.
+            scrape names, publish a partner directory, or show a price.
           </p>
           <Link
             to="/partners"

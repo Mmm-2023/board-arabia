@@ -12,6 +12,14 @@ const TOOLS = [
     ],
   },
   {
+    id: 'inbox',
+    title: 'Mandate inbox',
+    paragraphs: [
+      'Capital writes a mandate. Admin reads it before a member sees it. You do not receive a cold approach from this site.',
+      'Family offices, funds, and foreign investors meet the same gate. The capital page explains that side of the room.',
+    ],
+  },
+  {
     id: 'availability',
     title: 'Availability',
     paragraphs: [
@@ -59,6 +67,14 @@ const TOOLS = [
       'They help admin match a mandate to members who are available. They are not a public biography.',
     ],
   },
+  {
+    id: 'rooms',
+    title: 'Deal rooms',
+    paragraphs: [
+      'A deal room opens for a live mandate, and only by admin. It closes when the work ends.',
+      'It is not a public data room, and it is not listed on this website.',
+    ],
+  },
 ]
 
 export function ForMembersPage() {
@@ -89,22 +105,6 @@ export function ForMembersPage() {
               </a>
             </li>
           ))}
-          <li>
-            <Link
-              to="/for-capital#inbox"
-              className="text-[0.75rem] font-semibold tracking-[0.1em] text-ink/45 uppercase hover:text-ink"
-            >
-              Mandate inbox
-            </Link>
-          </li>
-          <li>
-            <Link
-              to="/for-capital#rooms"
-              className="text-[0.75rem] font-semibold tracking-[0.1em] text-ink/45 uppercase hover:text-ink"
-            >
-              Deal rooms
-            </Link>
-          </li>
         </ul>
       </header>
 
@@ -148,9 +148,9 @@ export function ForMembersPage() {
           </h2>
           <div className="max-w-2xl space-y-4 text-[1.05rem] leading-relaxed text-ink/70">
             <p>
-              The mandate inbox and deal rooms are how capital reaches you.
-              Both are admin-gated. You see a mandate when you are available
-              and when it fits.
+              The mandate inbox and deal rooms above are how capital reaches
+              you. Both are admin-gated. You see a mandate when you are
+              available and when it fits.
             </p>
             <p>
               <Link to="/for-capital" className="border-b border-brass text-ink">

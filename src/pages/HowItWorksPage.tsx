@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { CtaBand } from '../components/CtaBand'
 import { MarketingLayout } from '../components/MarketingLayout'
-import { PROCESS_STEPS } from '../content/marketing'
+import { PROCESS_STEPS, REVIEW_SLA } from '../content/marketing'
 
 const REFUSALS = [
   'No public calendar, and no booking link anywhere on these pages.',
@@ -22,9 +22,9 @@ export function HowItWorksPage() {
         </h1>
         <p className="mt-6 max-w-2xl text-[1.08rem] leading-relaxed text-ink/65">
           Admission to Board Arabia is a sequence: pre-vet, review, accept, a
-          private email, then the member dashboard. A visitor may request
-          consideration. A visitor cannot arrange the conversation. There is
-          no public calendar.
+          private email, then the member dashboard. {REVIEW_SLA} A visitor may
+          request consideration. A visitor cannot arrange the conversation.
+          There is no public calendar.
         </p>
         <p className="mt-4">
           <Link to="/#faq" className="border-b border-brass text-ink">
