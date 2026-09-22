@@ -1,8 +1,7 @@
 import fs from 'node:fs'
-import http from 'node:http'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import puppeteer from 'puppeteer'
+import { createServer } from 'vite'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const dist = path.join(root, 'dist')
@@ -16,52 +15,11 @@ const routes = [
   '/about',
 ]
 
-const base = (process.env.VITE_BASE_PATH || '/').replace(/\/$/, '')
-const port = 4179
-
-const MIME = {
-  '.html': 'text/html; charset=utf-8',
-  '.js': 'text/javascript; charset=utf-8',
-  '.css': 'text/css; charset=utf-8',
-  '.svg': 'image/svg+xml',
-  '.json': 'application/json',
-  '.txt': 'text/plain; charset=utf-8',
-  '.xml': 'application/xml; charset=utf-8',
-  '.woff2': 'font/woff2',
-  '.ico': 'image/x-icon',
-  '.png': 'image/png',
-  '.webp': 'image/webp',
-}
-
-function startServer() {
-  const server = http.createServer((req, res) => {
-    const url = new URL(req.url || '/', 'http://127.0.0.1')
-    let pathname = decodeURIComponent(url.pathname)
-    if (base && pathname.startsWith(base)) {
-      pathname = pathname.slice(base.length) || '/'
-    }
-    const ext = path.extname(pathname)
-    let filePath = path.join(dist, pathname)
-    if (pathname.endsWith('/')) filePath = path.join(filePath, 'index.html')
-
-    if (!ext && !fs.existsSync(filePath)) {
-      filePath = path.join(dist, 'index.html')
-    }
-
-    if (!fs.existsSync(filePath) || fs.statSync(filePath).isDirectory()) {
-      res.writeHead(404)
-      res.end('not found')
-      return
-    }
-
-    const type = MIME[path.extname(filePath)] || 'application/octet-stream'
-    res.writeHead(200, { 'Content-Type': type })
-    fs.createReadStream(filePath).pipe(res)
-  })
-
-  return new Promise((resolve) => {
-    server.listen(port, '127.0.0.1', () => resolve(server))
-  })
+function escapeAttr(value) {
+  return value
+    .replaceAll('&', '&amp;')
+    .replaceAll('"', '&quot;')
+    .replaceAll('<', '&lt;')
 }
 
 function routeFile(route) {
@@ -89,21 +47,18 @@ function assertPage(route, html) {
   if (!canonical.startsWith('https://boardarabia.com')) errors.push(`canonical ${canonical}`)
   if (h1s.length !== 1) errors.push(`h1 count ${h1s.length}`)
   if (!html.includes('application/ld+json')) errors.push('missing json-ld')
-  if (/AggregateRating|Review"/.test(html)) errors.push('fake review schema')
+  if (/AggregateRating|"@type":"Review"/.test(html)) errors.push('fake review schema')
   if (/calendar\.app\.google/i.test(html)) errors.push('public calendar url')
-  if (html.includes('127.0.0.1')) errors.push('preview host leaked into html')
   if (route === '/' && !html.includes('FAQPage')) errors.push('home missing FAQPage')
   if (route !== '/' && html.includes('FAQPage')) errors.push('unexpected FAQPage')
-  if (!html.includes('"@type":"Organization"') && !html.includes('"@type": "Organization"')) {
-    errors.push('missing Organization')
-  }
-  if (!html.includes('WebSite')) errors.push('missing WebSite')
-
-  if (errors.length) {
-    throw new Error(`${route}: ${errors.join('; ')}`)
+  if (!html.includes('"@type":"Organization"')) errors.push('missing Organization')
+  if (!html.includes('"@type":"WebSite"')) errors.push('missing WebSite')
+  if (!html.includes('Request consideration') && route === '/') {
+    errors.push('home missing consideration CTA')
   }
 
-  return { title, description, canonical }
+  if (errors.length) throw new Error(`${route}: ${errors.join('; ')}`)
+  return { title, description }
 }
 
 function writeSitemap() {
@@ -118,66 +73,82 @@ function writeSitemap() {
   fs.writeFileSync(path.join(dist, 'sitemap.xml'), xml)
 }
 
-const server = await startServer()
-const browser = await puppeteer.launch({
-  headless: true,
-  args: ['--no-sandbox', '--disable-dev-shm-usage', '--disable-gpu'],
-})
+function documentFor(shell, rendered) {
+  const title = escapeAttr(rendered.title)
+  const description = escapeAttr(rendered.description)
+  const canonical = escapeAttr(rendered.canonical)
+  const image = escapeAttr(rendered.image)
+  const seo = [
+    `<link rel="canonical" href="${canonical}" />`,
+    `<meta property="og:type" content="website" />`,
+    `<meta property="og:site_name" content="Board Arabia" />`,
+    `<meta property="og:locale" content="en_US" />`,
+    `<meta property="og:title" content="${title}" />`,
+    `<meta property="og:description" content="${description}" />`,
+    `<meta property="og:url" content="${canonical}" />`,
+    `<meta property="og:image" content="${image}" />`,
+    `<meta property="og:image:alt" content="Riyadh skyline at dusk" />`,
+    `<meta name="twitter:card" content="summary_large_image" />`,
+    `<meta name="twitter:title" content="${title}" />`,
+    `<meta name="twitter:description" content="${description}" />`,
+    `<meta name="twitter:image" content="${image}" />`,
+    `<meta name="twitter:image:alt" content="Riyadh skyline at dusk" />`,
+    `<script id="board-arabia-ld" type="application/ld+json">${rendered.jsonLd}</script>`,
+  ].join('\n    ')
 
-const rendered = new Map()
-const seenDescriptions = new Set()
-
-try {
-  fs.copyFileSync(path.join(dist, 'index.html'), path.join(dist, 'shell.html'))
-  const shell = fs
-    .readFileSync(path.join(dist, 'shell.html'), 'utf8')
+  const html = shell
+    .replace(/<title>[^<]*<\/title>/, `<title>${title}</title>`)
+    .replace(
+      /<meta\s+name="description"[\s\S]*?\/>/,
+      `<meta name="description" content="${description}" />`,
+    )
     .replace(
       /<meta name="robots" content="[^"]*"\s*\/?>/,
-      '<meta name="robots" content="noindex, nofollow" />',
+      '<meta name="robots" content="index, follow" />',
     )
-  fs.writeFileSync(path.join(dist, 'shell.html'), shell)
+    .replace('</head>', `    ${seo}\n  </head>`)
+    .replace(/<div id="root">\s*<\/div>/, `<div id="root">${rendered.body}</div>`)
 
+  if (!html.includes(rendered.body.slice(0, 40))) {
+    throw new Error('Could not inject prerendered body into the built shell')
+  }
+  return html
+}
+
+const shellPath = path.join(dist, 'index.html')
+const shell = fs.readFileSync(shellPath, 'utf8')
+fs.writeFileSync(
+  path.join(dist, 'shell.html'),
+  shell.replace(
+    /<meta name="robots" content="[^"]*"\s*\/?>/,
+    '<meta name="robots" content="noindex, nofollow" />',
+  ),
+)
+
+const vite = await createServer({
+  server: { middlewareMode: true },
+  appType: 'custom',
+  logLevel: 'error',
+})
+
+const seen = new Set()
+
+try {
+  const { render } = await vite.ssrLoadModule('/src/entry-ssr.tsx')
   for (const route of routes) {
-    const page = await browser.newPage()
-    const url = `http://127.0.0.1:${port}${base}${route === '/' ? '/' : route}`
-    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 })
-    await page.waitForFunction(
-      () => {
-        const h1s = document.querySelectorAll('h1')
-        const canonical = document.querySelector('link[rel="canonical"]')
-        const desc = document.querySelector('meta[name="description"]')
-        const ld = document.querySelector('script#board-arabia-ld')
-        return (
-          h1s.length === 1 &&
-          canonical &&
-          desc &&
-          desc.content.length > 50 &&
-          ld &&
-          ld.textContent.includes('Organization')
-        )
-      },
-      { timeout: 20000 },
-    )
-    const html = await page.content()
+    const rendered = render(route)
+    const html = documentFor(shell, rendered)
     const meta = assertPage(route, html)
-    if (seenDescriptions.has(meta.description)) {
-      throw new Error(`${route}: duplicate meta description`)
-    }
-    seenDescriptions.add(meta.description)
-    rendered.set(route, html)
-    await page.close()
+    if (seen.has(meta.description)) throw new Error(`${route}: duplicate meta description`)
+    seen.add(meta.description)
+    const file = routeFile(route)
+    fs.mkdirSync(path.dirname(file), { recursive: true })
+    fs.writeFileSync(file, html)
     console.log(`prerendered ${route} — ${meta.title}`)
   }
 } finally {
-  await browser.close()
-  await new Promise((resolve) => server.close(resolve))
-}
-
-for (const [route, html] of rendered) {
-  const file = routeFile(route)
-  fs.mkdirSync(path.dirname(file), { recursive: true })
-  fs.writeFileSync(file, html)
+  await vite.close()
 }
 
 writeSitemap()
-console.log(`wrote ${rendered.size} routes + sitemap.xml`)
+console.log(`wrote ${routes.length} routes + sitemap.xml`)

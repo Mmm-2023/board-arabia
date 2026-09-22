@@ -24,7 +24,7 @@ Primary CTA on every marketing page is **Request consideration** → `/apply`. P
 
 ## SEO and answer engines
 
-`npm run build` prerenders each marketing route to static HTML (Puppeteer), so the response is not an empty SPA shell. Canonicals use `https://boardarabia.com` even on Vercel staging and preview URLs until the domain is cut over. Do not change that host from a preview deploy, and do not put a booking URL in schema or CTAs.
+`npm run build` prerenders each marketing route to static HTML (React server render, no browser), so the response is not an empty SPA shell. Canonicals use `https://boardarabia.com` even on Vercel staging and preview URLs until the domain is cut over. Do not change that host from a preview deploy, and do not put a booking URL in schema or CTAs.
 
 | Check | Where |
 | --- | --- |
