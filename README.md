@@ -43,8 +43,9 @@ Staging: https://mmm-2023.github.io/board-arabia/
 ## Stack
 
 - Vite + React + TypeScript + Tailwind CSS v4
-- Supabase project `iirqbizwanyhgkhanntq` (`applications` with `full_name`, `email`, `phone`, `fo_aum`, nullable `calendar_slot`; `staff_users`; `email_events`)
-- Status values: `pending` | `accepted` | `rejected` (also allows legacy `verified` | `declined`)
+- Supabase project `iirqbizwanyhgkhanntq` (`applications`; `staff_users`; `members`; `profiles`; `email_events`)
+- Application status: `pending` | `accepted` | `rejected` | `admitted` (also allows legacy `verified` | `declined`)
+- Member role is `members` + `profiles`, not `staff_users`. Seats are `ksa` or `intl`, 50 each.
 - Email: Supabase Edge Functions + **Resend** (dry-run audit when `RESEND_API_KEY` is unset)
 - On Accept, email the candidate a private booking link (server-side only). Never a public calendar CTA. `calendar_slot` may be set to `private_invite_emailed`.
 
@@ -75,7 +76,14 @@ Legacy `/book` and `/verify` redirect to `/apply`.
 2. **Admin** (`/admin` or `/ops`) — only rows in `staff_users` can list applications.
 3. **Accept** → Edge Function `decide-application` emails the candidate the private booking link only (no date picker, no Calendar API).
 4. **Reject** → polite decline email to applicant.
-5. **Sign out** on admin clears the session.
+5. **Admit** (after Accept) → Edge Function `admit-member` creates the member login and emails a one-time sign-in link (or a temporary password if a link cannot be issued). Choose Saudi Arabia (`ksa`) or International (`intl`). This does not send the booking link again.
+6. **Sign out** on admin clears the session.
+
+## Member flow
+
+1. Open the one-time link in the Admit email, or `/login?next=/dashboard` with the one-time code or the password you set.
+2. **Dashboard** (`/dashboard`) — Home shows a founding-badge placeholder, your seat, and capacity toward 100. Profile edits your own row. Directory, Mandates, Intros, Rooms, and Events are empty shells.
+3. Accounts are invite-only. A signed-in user who is not in `members` does not see the room. Staff `/login` with no `next` still goes to `/admin`.
 
 ### Critical anti-leak
 
@@ -150,11 +158,13 @@ GitHub Pages is the host. Actions builds with `VITE_BASE_PATH=/board-arabia/` an
 
 https://mmm-2023.github.io/board-arabia/
 
-Pages must use **GitHub Actions** as the source (not the `main` branch files). Marketing URLs are real `index.html` files. `/login`, `/admin`, and `/ops` ship the noindex app shell. Unknown paths use `404.html` with the same shell.
+Pages must use **GitHub Actions** as the source (not the `main` branch files). Marketing URLs are real `index.html` files. `/login`, `/admin`, `/ops`, `/dashboard` (and its sections), and `/auth/confirm` ship the noindex app shell. Unknown paths use `404.html` with the same shell.
+
+Proof build: `GITHUB_PAGES=true VITE_BASE_PATH=/board-arabia/ npm run build` writes `dist/dashboard/index.html` and fails if the artifact contains a public booking URL.
 
 ## Security checklist (Factory audit + PR2)
 
-Evidence tags: **VERIFIED** = proved against live project / staging; **INFERRED** = from code + policies; **UNKNOWN** = needs Michael dashboard click.
+Evidence tags: **VERIFIED** = proved against live project / staging; **INFERRED** = from code + policies; **UNKNOWN** = needs a dashboard click; **SKIPPED BY MICHAEL** = declined, do not re-ask.
 
 | Area | Result | Evidence |
 |------|--------|----------|
@@ -163,13 +173,18 @@ Evidence tags: **VERIFIED** = proved against live project / staging; **INFERRED*
 | RLS `email_events` | **VERIFIED PASS** | Staff select only |
 | Dangerous ops RPCs | **VERIFIED PASS** | Factory revoked EXECUTE on `list_applications_ops` / `ops_code_ok` / `update_application_status_ops` + client access on `ops_config`; anon RPC call → not exposed |
 | Auth gate `/admin` | **VERIFIED PASS** | Unauthed → `/login?next=/admin`; UI requires session; list needs `staff_users` |
-| Accept/Reject | **VERIFIED PASS** | Edge `decide-application` JWT + `staff_users`; Accept emails private booking URL only; Reject decline only |
+| Accept/Reject | **VERIFIED PASS** | Edge `decide-application` JWT + `staff_users`; Accept emails private booking URL only; Reject decline only. Admitted rows are refused so Accept is not sent again |
+| RLS `members` / `profiles` | **VERIFIED PASS** | Own row only. Anon has no table grant. No client insert. `claim_founding_seat` is service_role only |
+| Invite-only `/dashboard` | **VERIFIED PASS** | Signed-out redirects to `/login?next=/dashboard`. No `members` row → invitation required. No public signup form |
+| No anon directory scrape | **VERIFIED PASS** | Directory shell does not query other members. Anon `select` on `members` and `profiles` is permission denied. `founding_capacity()` returns counts to a member or staff user only |
+| `/dashboard` vs `/admin` | **VERIFIED PASS** | `/admin` still requires `staff_users`. `/dashboard` requires `members` and blocks `suspended`. Staff `/login` without `next` still resolves to `/admin` |
+| Member invite secrets | **VERIFIED PASS** for storage; live send is Michael-owned | `email_events` for an Admit stores mode and seat only (no otp, token, or password keys). A dry-run link is returned only in the signed-in staff HTTP response. Dry-run is the Wave 1 path. Michael owns `RESEND_API_KEY` for live Accept, Reject, and Admit mail |
 | No public booking CTA / PII | **VERIFIED PASS** | Client/dist grep: 0× `calendar.app.google`; apply form has no applicant list |
 | Rate-limit + sanitize apply | **VERIFIED PASS** | `submit-application`: length caps, email/URL checks, 5/hr per email+IP via `apply_rate_limits` |
 | Secrets hygiene | **INFERRED PASS** | Only public anon in repo/`.env.example`; Resend key is Edge secret only |
 | Notify no cross-applicant leak | **INFERRED PASS** | Templates built from single row id only |
-| Leaked-password protection (Auth) | **UNKNOWN / GAP** | Michael must enable in Supabase → Authentication → Providers → Email → **Leaked password protection** |
-| Live Resend delivery | **GAP** | Needs `RESEND_API_KEY` (dry-run proved; Accept body contains booking URL) |
+| Leaked-password protection (Auth) | **SKIPPED BY MICHAEL** | 22 Sep 2026, via Sasha. No Supabase Pro upgrade. Do not re-ask |
+| Live Resend delivery | Dry-run OK for Wave 1 | Michael owns live Accept/Reject mail. Dry-run is proved while `RESEND_API_KEY` is unset |
 | `staff_users_claim_first` | **GAP** | Safe while Michael present; drop later if desired |
 | Legacy `notify-application` | **GAP** | Prefer `submit-application` only |
 

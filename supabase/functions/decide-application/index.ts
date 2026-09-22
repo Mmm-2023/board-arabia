@@ -70,6 +70,13 @@ Deno.serve(async (req) => {
   if (!app.email) {
     return jsonResponse(req, { error: 'Application missing email' }, 400)
   }
+  if (app.status === 'admitted') {
+    return jsonResponse(
+      req,
+      { error: 'Already admitted. Accept and Reject do not change a member.' },
+      409,
+    )
+  }
 
   const now = new Date().toISOString()
   const updatePayload: Record<string, unknown> = {

@@ -68,6 +68,35 @@ function assertPage(route, html) {
   return { title, description }
 }
 
+function assertDistClean(distDir) {
+  const banned = [/calendar\.app\.google/i, /nammco/i]
+  const files = []
+  function walk(dir) {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const full = path.join(dir, entry.name)
+      if (entry.isDirectory()) walk(full)
+      else if (/\.(html|js|css|txt|xml|webmanifest|svg)$/.test(entry.name)) files.push(full)
+    }
+  }
+  walk(distDir)
+  for (const file of files) {
+    const text = fs.readFileSync(file, 'utf8')
+    for (const pattern of banned) {
+      if (pattern.test(text)) {
+        throw new Error(`${path.relative(distDir, file)} contains ${pattern}`)
+      }
+    }
+  }
+  const dashboard = fs.readFileSync(path.join(distDir, 'dashboard', 'index.html'), 'utf8')
+  if (!dashboard.includes('noindex')) throw new Error('dashboard shell is indexable')
+  if (!fs.existsSync(path.join(distDir, 'dashboard', 'profile', 'index.html'))) {
+    throw new Error('missing dashboard profile shell')
+  }
+  if (!fs.existsSync(path.join(distDir, 'auth', 'confirm', 'index.html'))) {
+    throw new Error('missing auth confirm shell')
+  }
+}
+
 function writeSitemap() {
   const today = new Date().toISOString().slice(0, 10)
   const urls = routes
@@ -161,12 +190,26 @@ writeSitemap()
 
 const shellHtml = fs.readFileSync(path.join(dist, 'shell.html'))
 fs.writeFileSync(path.join(dist, '404.html'), shellHtml)
-for (const staff of ['login', 'admin', 'ops']) {
+fs.writeFileSync(path.join(dist, '.nojekyll'), '')
+
+const appShells = [
+  'login',
+  'admin',
+  'ops',
+  'dashboard',
+  'dashboard/profile',
+  'dashboard/directory',
+  'dashboard/mandates',
+  'dashboard/intros',
+  'dashboard/rooms',
+  'dashboard/events',
+  'auth/confirm',
+]
+for (const staff of appShells) {
   const dir = path.join(dist, staff)
   fs.mkdirSync(dir, { recursive: true })
   fs.writeFileSync(path.join(dir, 'index.html'), shellHtml)
 }
-fs.writeFileSync(path.join(dist, '.nojekyll'), '')
 
 const pagesBase = (process.env.VITE_BASE_PATH || (process.env.GITHUB_PAGES === 'true' ? '/board-arabia/' : '/')).replace(/\/?$/, '/')
 if (pagesBase !== '/') {
@@ -178,6 +221,8 @@ if (pagesBase !== '/') {
     `Disallow: ${prefix}/admin`,
     `Disallow: ${prefix}/ops`,
     `Disallow: ${prefix}/login`,
+    `Disallow: ${prefix}/dashboard`,
+    `Disallow: ${prefix}/auth`,
     `Disallow: ${prefix}/book`,
     `Disallow: ${prefix}/verify`,
     `Disallow: ${prefix}/shell.html`,
@@ -187,5 +232,7 @@ if (pagesBase !== '/') {
   ].join('\n')
   fs.writeFileSync(path.join(dist, 'robots.txt'), robots)
 }
+
+assertDistClean(dist)
 
 console.log(`wrote ${routes.length} routes + sitemap.xml`)
