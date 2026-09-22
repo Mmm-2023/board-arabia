@@ -2,7 +2,7 @@
 
 Application-only site: **land → apply (pre-vet) → staff review**, with private Accept/Reject emails.
 
-**Staging (Vercel):** https://board-arabia.vercel.app/
+**Staging (GitHub Pages):** https://mmm-2023.github.io/board-arabia/
 
 ## Marketing pages
 
@@ -25,20 +25,20 @@ Primary CTA on every marketing page is **Apply for consideration** → `/apply`.
 
 ## SEO and answer engines
 
-`npm run build` prerenders each marketing route to static HTML (React server render, no browser), so the response is not an empty SPA shell. Canonicals use `https://boardarabia.com` even on Vercel staging and preview URLs until the domain is cut over. Do not change that host from a preview deploy, and do not put a booking URL in schema or CTAs.
+`npm run build` prerenders each marketing route to static HTML (React server render, no browser), so the response is not an empty SPA shell. The host is GitHub Pages at base path `/board-arabia/` (`.github/workflows/pages.yml`). Canonicals stay `https://boardarabia.com` until that domain is cut over in DNS. Do not put a booking URL in schema or CTAs. `vercel.json` is not the deploy path.
 
 | Check | Where |
 | --- | --- |
 | Unique title and description | `src/content/seo.ts` |
 | Canonical, Open Graph, Twitter | `src/components/Seo.tsx`, captured in `dist/<route>/index.html` |
 | Organization + WebSite JSON-LD | Every marketing page |
-| FAQPage | Home only, matching the visible questions |
+| FAQPage | Home and `/how-it-works`, matching the visible questions |
 | `sitemap.xml` + `robots.txt` | `public/`, sitemap refreshed at build |
 | Staff `/login`, `/admin`, `/ops` | `noindex`; `/admin` and `/ops` serve `shell.html` |
 
 Home includes an answer-first definition and eight questions (Founding 100, Vision 2030, family offices, FDI, chairperson, NED, Saudi Arabia, GCC, international places, personal review). No review or rating schema.
 
-Preferred GitHub Pages once enabled: https://mmm-2023.github.io/board-arabia/
+Staging: https://mmm-2023.github.io/board-arabia/
 
 ## Stack
 
@@ -96,7 +96,7 @@ Michael (`michael@smemarketer.com`) is already in `staff_users` on the locked pr
 3. **Magic / recovery link (SQL / Auth API)**  
    Authentication → Users → generate recovery link → open once and set password.
 
-Then open https://board-arabia.vercel.app/login and sign in → `/admin`.
+Then open https://mmm-2023.github.io/board-arabia/login and sign in → `/admin`.
 
 ### Promote another staff user
 
@@ -118,7 +118,7 @@ Set these in **Supabase → Project Settings → Edge Functions → Secrets**:
 |--------|----------|---------|
 | `RESEND_API_KEY` | **Yes for live email** | Ack / notify / reject (+ optional Accept ack) |
 | `RESEND_FROM` | Recommended | Verified sender |
-| `PUBLIC_SITE_URL` | Recommended | Admin link in notify. Default `https://board-arabia.vercel.app` |
+| `PUBLIC_SITE_URL` | Recommended | Admin link in notify. Default `https://mmm-2023.github.io/board-arabia` |
 
 Accept emails the private booking URL from the Edge Function only. **No Google Calendar API, Meet, or OAuth secrets.** Optional override: `PRIVATE_BOOKING_LINK`.
 
@@ -146,8 +146,11 @@ limit 20;
 
 ## Deploy
 
-- **Vercel:** https://board-arabia.vercel.app  
-- **GitHub Pages:** `.github/workflows/pages.yml` when Pages source is GitHub Actions.
+GitHub Pages is the host. Actions builds with `VITE_BASE_PATH=/board-arabia/` and publishes `dist`. Resend and other secrets stay in Supabase Edge Functions, not in the Pages workflow.
+
+https://mmm-2023.github.io/board-arabia/
+
+Pages must use **GitHub Actions** as the source (not the `main` branch files). Marketing URLs are real `index.html` files. `/login`, `/admin`, and `/ops` ship the noindex app shell. Unknown paths use `404.html` with the same shell.
 
 ## Security checklist (Factory audit + PR2)
 

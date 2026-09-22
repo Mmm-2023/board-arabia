@@ -44,7 +44,7 @@ Deno.serve(async (req) => {
   }
 
   const siteUrl =
-    Deno.env.get('PUBLIC_SITE_URL') || 'https://board-arabia.vercel.app'
+    Deno.env.get('PUBLIC_SITE_URL') || 'https://mmm-2023.github.io/board-arabia'
   const adminUrl = `${siteUrl.replace(/\/$/, '')}/admin`
 
   const summaryLines = [

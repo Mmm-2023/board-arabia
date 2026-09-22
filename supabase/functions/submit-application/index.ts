@@ -94,7 +94,7 @@ Deno.serve(async (req) => {
 
   // Emails: only this applicant + michael@nammco.com — never other applicants' rows
   const siteUrl =
-    Deno.env.get('PUBLIC_SITE_URL') || 'https://board-arabia.vercel.app'
+    Deno.env.get('PUBLIC_SITE_URL') || 'https://mmm-2023.github.io/board-arabia'
   const adminUrl = `${siteUrl.replace(/\/$/, '')}/admin`
 
   const summaryLines = [

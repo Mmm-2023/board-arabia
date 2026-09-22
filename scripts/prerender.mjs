@@ -158,4 +158,34 @@ try {
 }
 
 writeSitemap()
+
+const shellHtml = fs.readFileSync(path.join(dist, 'shell.html'))
+fs.writeFileSync(path.join(dist, '404.html'), shellHtml)
+for (const staff of ['login', 'admin', 'ops']) {
+  const dir = path.join(dist, staff)
+  fs.mkdirSync(dir, { recursive: true })
+  fs.writeFileSync(path.join(dir, 'index.html'), shellHtml)
+}
+fs.writeFileSync(path.join(dist, '.nojekyll'), '')
+
+const pagesBase = (process.env.VITE_BASE_PATH || (process.env.GITHUB_PAGES === 'true' ? '/board-arabia/' : '/')).replace(/\/?$/, '/')
+if (pagesBase !== '/') {
+  const prefix = pagesBase.replace(/\/$/, '')
+  const robots = [
+    'User-agent: *',
+    `Allow: ${prefix}/`,
+    '',
+    `Disallow: ${prefix}/admin`,
+    `Disallow: ${prefix}/ops`,
+    `Disallow: ${prefix}/login`,
+    `Disallow: ${prefix}/book`,
+    `Disallow: ${prefix}/verify`,
+    `Disallow: ${prefix}/shell.html`,
+    '',
+    'Sitemap: https://boardarabia.com/sitemap.xml',
+    '',
+  ].join('\n')
+  fs.writeFileSync(path.join(dist, 'robots.txt'), robots)
+}
+
 console.log(`wrote ${routes.length} routes + sitemap.xml`)
