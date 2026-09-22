@@ -19,7 +19,7 @@ English only. No public calendar, no member names or photographs, no fee schedul
 | `/about` | Short founding note |
 | `/privacy`, `/terms` | What the site collects, and what the pages do not promise |
 
-Primary CTA on every marketing page is **Apply for consideration** → `/apply`. Partner CTA is **Partner with us** (mailto draft). Staff `/login` and `/admin` are unchanged and are not linked from the marketing nav.
+Primary CTA on every marketing page is **Apply for consideration** → `/apply`. Partner CTA is **Partner with us** (mailto draft). The shared nav and footer include **Log in** → `/login?next=/dashboard` (member path). There is no public signup. Staff still open `/login`, which defaults to `/admin`.
 
 **Security:** marketing pages render no applicant PII. The private booking URL stays in the Accept email path only (`supabase/functions/decide-application`). Do not add it to client code.
 
@@ -107,8 +107,8 @@ The public site must **never** show the booking URL. It is emailed only on Accep
 
 **One-time password (pick one):**
 
-1. **Reset link from the site (simplest)**  
-   Open https://boardarabia.com/login, enter the email, and choose **Email me a reset link**. That calls `resetPasswordForEmail` with `redirectTo` `https://boardarabia.com/auth/confirm`. The link uses `type=recovery`. After it verifies, set a new password. Staff continue to `/admin`. Other accounts return to `/login`.
+1. **Forgot password? on the site (simplest)**  
+   Open https://boardarabia.com/login (staff) or https://boardarabia.com/login?next=/dashboard (members), enter the email, and choose **Forgot password?**. The Edge Function `request-password-reset` builds a recovery link whose redirect is `https://boardarabia.com/auth/confirm` and sends that message from `cindy@nammco.com` through the Gmail API. It does not use Auth's built-in mailer. The link uses `type=recovery`. After it verifies, set a new password. Staff continue to `/admin`. Other accounts return to member sign-in. The public response never includes the link. Until Gmail secrets are set, the row is a dry-run and nothing is emailed.
 
 2. **Dashboard reset**  
    Supabase → Authentication → Users → the person → *Send password recovery*. The redirect URL must be `https://boardarabia.com/auth/confirm` (allow that URL in Authentication → URL configuration). `/auth/confirm` accepts `recovery` and `signup` as well as invite, magic link, and email.
@@ -137,7 +137,7 @@ Set these in **Supabase → Project Settings → Edge Functions → Secrets**:
 
 ### Email (Google Workspace, Gmail API)
 
-Outbound product mail (apply acknowledgement, staff notify, Accept, Reject, Admit, and master invite) is sent by the Edge Function directly to the Gmail API. There is no Resend key and no Vercel send path.
+Outbound product mail (apply acknowledgement, staff notify, Accept, Reject, Admit, master invite, and password reset) is sent by the Edge Function directly to the Gmail API. There is no Resend key and no Vercel send path.
 
 | Header | Value |
 |--------|--------|
@@ -146,7 +146,7 @@ Outbound product mail (apply acknowledgement, staff notify, Accept, Reject, Admi
 
 Cindy watches `cindy@nammco.com`. Each send uses her mailbox (`users/me` on the Gmail API), so the message is in her Sent folder. An applicant reply arrives in that inbox on the same Gmail thread, because From and Reply-To are her address. She routes a decision to Michael. Accept and Reject are not automatic. Staff press those buttons in `/admin`.
 
-Apply acknowledgement, Accept, Reject, and Admit are sent from `cindy@nammco.com` and close with a Board Arabia footer only. The body does not include the nammco marketing banner, the nammco tagline, or the nammco signature block (job title, nammco.com, the LinkedIn block, or the Kingdom Centre banner). No images. If a body contains those markers, or it is missing the Board Arabia footer, the send is refused and logged as an error. It is not mailed. An applicant address at that same domain can still appear in the staff notice. The Gmail composer signature is not inserted, because the Edge Function uploads the raw message. Do not turn on a Workspace footer that appends that banner to mail sent by the API. Her normal Gmail signature can stay for mail she types herself.
+Apply acknowledgement, Accept, Reject, Admit, and password reset are sent from `cindy@nammco.com` and close with a Board Arabia footer only. The body does not include the nammco marketing banner, the nammco tagline, or the nammco signature block (job title, nammco.com, the LinkedIn block, or the Kingdom Centre banner). No images. An empty body, or a footer with no letter, is refused. If a body contains those markers, or it is missing the Board Arabia footer, the send is refused and logged as an error. It is not mailed. An applicant address at that same domain can still appear in the staff notice. The Gmail composer signature is not inserted, because the Edge Function uploads the raw message. Do not turn on a Workspace footer that appends that banner to mail sent by the API. Her normal Gmail signature can stay for mail she types herself.
 
 Do not send applicant mail from `michael@`. The new-application notice is still addressed to `michael@nammco.com`, and it is sent from `cindy@nammco.com`. Do not ask for a Resend key.
 
@@ -180,7 +180,7 @@ Payload columns are not granted to the staff client. The admin list never select
 1. In Google Cloud, enable the Gmail API and create an OAuth client.
 2. Consent once as `cindy@nammco.com` with scope `https://www.googleapis.com/auth/gmail.send` and copy the refresh token.
 3. Supabase → Project Settings → Edge Functions → Secrets: paste `GMAIL_CLIENT_ID`, `GMAIL_CLIENT_SECRET`, and `GMAIL_REFRESH_TOKEN`.
-4. Deploy the Edge Functions (`submit-application`, `notify-application`, `decide-application`, `admit-member`, `invite-master`, `set-member-status`).
+4. Deploy the Edge Functions (`submit-application`, `notify-application`, `decide-application`, `admit-member`, `invite-master`, `set-member-status`, `request-password-reset`).
 5. Apply `supabase/migrations/20260922190000_staff_master_admin_read.sql` on project `iirqbizwanyhgkhanntq` (master role, staff member read, safe email-event columns, staff directory, demotion guard).
 
 ### Dry-run invite (Workspace credentials not set)

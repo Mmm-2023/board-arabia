@@ -60,6 +60,12 @@ function assertPage(route, html) {
   if (route === '/' && !html.includes('Apply for consideration')) {
     errors.push('home missing consideration CTA')
   }
+  if (!html.includes('>Log in<') && !html.includes('>Log in</a>')) {
+    errors.push('missing Log in')
+  }
+  if (!html.includes('/login?next=/dashboard')) {
+    errors.push('Log in is not the member path')
+  }
   if (route === '/' && !html.includes('no public booking calendar')) {
     errors.push('home missing answer-first blurb')
   }

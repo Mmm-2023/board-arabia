@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { NAV_LINKS } from '../content/marketing'
+import { MEMBER_LOGIN, NAV_LINKS } from '../content/marketing'
 
 export function Nav({
   ctaTo = '/apply',
@@ -74,6 +74,14 @@ export function Nav({
 
         <div className="flex items-center gap-4">
           <Link
+            to={MEMBER_LOGIN}
+            className={`text-[0.72rem] font-semibold tracking-[0.06em] uppercase transition-colors sm:text-[0.78rem] ${
+              darkNav ? 'text-ink hover:text-ink/70' : 'text-pearl hover:text-pearl/80'
+            }`}
+          >
+            Log in
+          </Link>
+          <Link
             to={ctaTo}
             className={`hidden text-[0.72rem] font-semibold tracking-[0.04em] uppercase transition-all sm:inline sm:text-[0.78rem] ${
               darkNav
@@ -137,6 +145,14 @@ export function Nav({
                 className="block py-3 font-display text-[1.35rem] font-semibold tracking-[-0.03em] text-ink"
               >
                 About
+              </Link>
+            </li>
+            <li>
+              <Link
+                to={MEMBER_LOGIN}
+                className="block py-3 font-display text-[1.35rem] font-semibold tracking-[-0.03em] text-ink"
+              >
+                Log in
               </Link>
             </li>
             <li className="pt-2">

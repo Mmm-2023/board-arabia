@@ -44,11 +44,18 @@ export function clearPasswordRecovery() {
 }
 
 export async function sendPasswordReset(email: string): Promise<{ error?: string }> {
-  const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-    redirectTo: passwordResetRedirect,
-  })
-  if (error) return { error: error.message }
-  return {}
+  try {
+    const res = await fetch(`${functionsBase}/request-password-reset`, {
+      method: 'POST',
+      headers: await anonHeaders(),
+      body: JSON.stringify({ email: email.trim() }),
+    })
+    const body = (await res.json().catch(() => ({}))) as { error?: string }
+    if (!res.ok) return { error: body.error || 'Could not send a reset link.' }
+    return {}
+  } catch {
+    return { error: 'Could not send a reset link.' }
+  }
 }
 
 export type ApplicationStatus =

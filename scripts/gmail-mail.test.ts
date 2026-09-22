@@ -3,6 +3,7 @@ import { afterEach, test } from 'node:test'
 import {
   buildRfc822,
   hasBoardFooter,
+  hasSubstantiveBody,
   marketingSignatureHit,
   sendEmail,
   workspaceFromAddress,
@@ -13,6 +14,8 @@ import {
   acceptMail,
   admitMail,
   applicationAck,
+  passwordResetMail,
+  PASSWORD_RESET_REDIRECT,
   rejectMail,
 } from '../supabase/functions/_shared/transactional_copy.ts'
 
@@ -234,6 +237,48 @@ test('apply ack, Accept, Reject, and Admit use a Board Arabia footer only', () =
   }
   assert.match(messages[1].text, /has been accepted/)
   assert.match(messages[1].text, /https:\/\/booking\.example\/private/)
+})
+
+test('password reset uses a Board Arabia footer and a real letter', () => {
+  const confirmUrl = `${PASSWORD_RESET_REDIRECT}?token_hash=example&type=recovery`
+  const mail = passwordResetMail(confirmUrl)
+  assert.equal(PASSWORD_RESET_REDIRECT, 'https://boardarabia.com/auth/confirm')
+  assert.equal(hasBoardFooter(mail.text, mail.html), true)
+  assert.equal(hasSubstantiveBody(mail.text, mail.html), true)
+  assert.equal(marketingSignatureHit(mail.text, mail.html), null)
+  assert.match(mail.text, /reset the password/)
+  assert.match(mail.text, /type=recovery/)
+  assert.equal(mail.text.includes('\u2014'), false)
+  assert.equal(mail.html.includes('\u2014'), false)
+  assert.equal(/<img\b/i.test(mail.html), false)
+  assert.equal(/nammco/i.test(`${mail.subject}\n${mail.text}\n${mail.html}`), false)
+  assert.equal(/director of partner|advisory gateway|kingdom centre/i.test(mail.text), false)
+})
+
+test('a footer with no letter is refused and the Gmail API is not called', async () => {
+  clearMailEnv()
+  process.env.GMAIL_CLIENT_ID = 'client-id'
+  process.env.GMAIL_CLIENT_SECRET = 'client-secret'
+  process.env.GMAIL_REFRESH_TOKEN = 'refresh-token'
+  let called = false
+  const original = globalThis.fetch
+  globalThis.fetch = async () => {
+    called = true
+    return new Response('should not send', { status: 500 })
+  }
+  try {
+    const result = await sendEmail({
+      to: 'person@example.com',
+      subject: 'Board Arabia: reset your password',
+      text: 'Board Arabia',
+      html: '<footer>Board Arabia</footer>',
+    })
+    assert.equal(result.status, 'error')
+    assert.equal(called, false)
+    assert.match(result.detail || '', /empty/)
+  } finally {
+    globalThis.fetch = original
+  }
 })
 
 test('nammco tagline is refused even when a Board Arabia footer is present', async () => {

@@ -133,7 +133,7 @@ export function AuthConfirmPage() {
     const userId = data.user?.id
     if (!userId) {
       await supabase.auth.signOut()
-      navigate('/login', { replace: true })
+      navigate('/login?next=/dashboard', { replace: true })
       return
     }
     const { data: staff } = await supabase
@@ -146,7 +146,7 @@ export function AuthConfirmPage() {
       return
     }
     await supabase.auth.signOut()
-    navigate('/login', { replace: true })
+    navigate('/login?next=/dashboard', { replace: true })
   }
 
   const title =

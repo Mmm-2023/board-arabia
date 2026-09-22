@@ -77,6 +77,13 @@ export function hasBoardFooter(text: string, html: string): boolean {
   return text.trimEnd().endsWith(BOARD_SIGNOFF) && BOARD_FOOTER_HTML.test(html)
 }
 
+/** A footer with no letter is not a message. */
+export function hasSubstantiveBody(text: string, html: string): boolean {
+  const plain = text.replace(/\n*Board Arabia\s*$/i, '').trim()
+  const markup = html.replace(/<footer>\s*Board Arabia\s*<\/footer>\s*$/i, '').trim()
+  return plain.length >= 40 && markup.length >= 20
+}
+
 export function marketingSignatureHit(text: string, html: string): string | null {
   // Mailbox addresses may use the same domain. The site, tagline, and banner must not.
   const body = `${text}\n${html}`.replace(/[\w.+-]+@[\w.-]*nammco\.com/gi, '')
@@ -113,6 +120,15 @@ export async function sendEmail(opts: {
       providerId: null,
       status: 'error',
       detail: 'Board Arabia footer required.',
+    }
+  }
+  if (!hasSubstantiveBody(opts.text, opts.html)) {
+    return {
+      dryRun: false,
+      provider: 'gmail',
+      providerId: null,
+      status: 'error',
+      detail: 'Email body is empty. Board Arabia footer only.',
     }
   }
   if (!to || !subject) {
