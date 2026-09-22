@@ -26,10 +26,11 @@ npm run dev
 ## Visitor flow (no login)
 
 1. **Landing** (`/`) — prestige club feel; English only; **no** public Google Calendar CTA.
-2. **Apply** (`/apply`) — pre-vet form: name, email, phone (optional), turnover **or** FO AUM, LinkedIn URL, job titles, companies → `applications.status = pending`.
-3. On submit → Edge Function `notify-application`:
+2. **Apply** (`/apply`) — pre-vet form: name, email, phone (optional), turnover **or** FO AUM, LinkedIn URL, job titles, companies.
+3. On submit → Edge Function **`submit-application`** (validated + rate-limited):
+   - Inserts `applications.status = pending`
    - Acknowledgement email to applicant
-   - Notify email to **michael@nammco.com** with summary + `/admin` link
+   - Notify email to **michael@nammco.com** with **this** application summary + `/admin` link (no other applicants’ data)
 
 Legacy `/book` and `/verify` redirect to `/apply`.
 
@@ -112,6 +113,24 @@ limit 20;
 
 - **Vercel:** production alias https://board-arabia.vercel.app (auto from GitHub).  
 - **GitHub Pages:** `.github/workflows/pages.yml` (SPA fallback `404.html`). Enable **Settings → Pages → Source: GitHub Actions** if not already.
+
+## Security checklist (Michael lock)
+
+| # | Requirement | Status | Notes |
+|---|-------------|--------|-------|
+| 1 | RLS: no anon SELECT on `applications`; staff-only read; anon INSERT validated or Edge-only | **PASS** | Anon SELECT/UPDATE denied (proved). Staff SELECT via `staff_users`. Client UPDATE grant removed. Preferred path: `submit-application`. |
+| 2 | `/admin` behind Supabase Auth + `staff_users` gate | **PASS** | Unauthed → `/login?next=/admin`. Non-staff sees Not authorized. |
+| 3 | No booking link / member PII on public pages | **PASS** | Staging + client bundle grep: 0 hits for calendar URL. Link only in `decide-application` Accept email. |
+| 4 | Accept/Reject server-side only (JWT + staff) | **PASS** | `decide-application` with Auth JWT + `staff_users` check. Direct REST UPDATE by staff → 403. No client status writes. |
+| 5 | Rate-limit apply; validate/sanitize; no open redirects | **PASS** | `submit-application`: field length caps, email/URL checks, 5/hour per email+IP. Login `next` allowlist (path-only). |
+| 6 | Secrets only in Vercel/Supabase env | **PASS** | Repo has public anon key only (expected). `RESEND_API_KEY` / service role never committed. |
+| 7 | Notify templates don’t leak other applicants | **PASS** | Templates built from the single inserted/decided row only. |
+
+**Remaining GAPs (non-blocking for Done-when):**
+
+- **GAP:** `staff_users_claim_first` still allows the first authenticated user to self-insert if the table is ever emptied. Prefer removing after bootstrap; Michael already present.
+- **GAP:** Live email delivery needs Michael’s **`RESEND_API_KEY`** (and ideally `RESEND_FROM`). Until then functions dry-run into `email_events` (path proved).
+- **GAP:** Legacy `notify-application` remains callable with anon key for re-notify by id; prefer `submit-application` only. Can disable later.
 
 ## Anti-jobs
 
