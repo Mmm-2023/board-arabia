@@ -11,7 +11,45 @@ if (!url || !anonKey) {
   )
 }
 
+/** Recovery emails must return here. Do not point this at another host. */
+export const passwordResetRedirect = 'https://boardarabia.com/auth/confirm'
+const RECOVERY_KEY = 'ba-password-recovery'
+
+noteRecoveryVisit()
+
 export const supabase = createClient<Database>(url, anonKey)
+
+function noteRecoveryVisit() {
+  if (typeof window === 'undefined') return
+  const hash = new URLSearchParams(window.location.hash.replace(/^#/, ''))
+  const query = new URLSearchParams(window.location.search)
+  const type = query.get('type') || hash.get('type')
+  if (type !== 'recovery') return
+  sessionStorage.setItem(RECOVERY_KEY, '1')
+  if (!/\/auth\/confirm\/?$/.test(window.location.pathname)) {
+    window.location.replace(
+      `/auth/confirm${window.location.search}${window.location.hash}`,
+    )
+  }
+}
+
+export function passwordRecoveryPending() {
+  if (typeof sessionStorage === 'undefined') return false
+  return sessionStorage.getItem(RECOVERY_KEY) === '1'
+}
+
+export function clearPasswordRecovery() {
+  if (typeof sessionStorage === 'undefined') return
+  sessionStorage.removeItem(RECOVERY_KEY)
+}
+
+export async function sendPasswordReset(email: string): Promise<{ error?: string }> {
+  const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+    redirectTo: passwordResetRedirect,
+  })
+  if (error) return { error: error.message }
+  return {}
+}
 
 export type ApplicationStatus =
   | 'pending'
