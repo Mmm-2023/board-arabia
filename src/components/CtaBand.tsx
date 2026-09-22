@@ -4,10 +4,10 @@ import { Eyebrow } from './Type'
 
 export function CtaBand({
   eyebrow = 'Consideration',
-  title = 'Request consideration.',
-  body = 'A pre-vet form. A human review. If you are accepted, the next step arrives by private email.',
+  title = 'Apply for consideration.',
+  body = 'A pre-vet form. The desk reviews credentials. If you are accepted, the next step arrives by private email.',
   to = '/apply',
-  label = 'Request consideration',
+  label = 'Apply for consideration',
 }: {
   eyebrow?: string
   title?: string

@@ -85,14 +85,13 @@ export function ForMembersPage() {
           For members
         </p>
         <h1 className="max-w-3xl font-display text-[clamp(2.5rem,5.5vw,4.4rem)] font-bold leading-[1.02] tracking-[-0.04em] text-balance text-ink">
-          The instruments inside the membership.
+          Built for founding members
         </h1>
         <p className="mt-6 max-w-2xl text-[1.08rem] leading-relaxed text-ink/65">
-          Admitted members of Board Arabia — chairpersons, NEDs, and board
-          advisors — work from a private dashboard: directory, availability,
-          introductions, the mandate inbox, and the founding mark. Sector and
-          Vision 2030 tags stay inside the room. Nothing on this page is a
-          live member record.
+          Founding members of Board Arabia access tools designed for
+          board-level discretion: a private peer directory, structured mandate
+          inbox, warm intros under admin oversight, and quarterly majlis — not
+          an open marketplace.
         </p>
         <ul className="mt-8 flex flex-wrap gap-x-6 gap-y-2">
           {TOOLS.map((tool) => (

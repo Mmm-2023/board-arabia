@@ -4,7 +4,7 @@ import { NAV_LINKS } from '../content/marketing'
 
 export function Nav({
   ctaTo = '/apply',
-  ctaLabel = 'Request consideration',
+  ctaLabel = 'Apply for consideration',
 }: {
   ctaTo?: string
   ctaLabel?: string

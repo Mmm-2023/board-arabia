@@ -11,7 +11,7 @@ English only. No public calendar, no member names or photographs, no fee schedul
 | Route | Purpose |
 | --- | --- |
 | `/` | Home: hero, why, Founding 100 (50/50), member-tool tiles, how it works, partners, trust, final CTA |
-| `/apply` | Pre-vet form. CTA language is “Request consideration”. |
+| `/apply` | Pre-vet form. CTA language is “Apply for consideration”. |
 | `/for-members` | All nine tools, including mandate inbox and deal rooms, plus a dashboard preview |
 | `/for-capital` | How FDI, family offices, PE, and VC reach members — mandate inbox and deal rooms, admin-gated |
 | `/partners` | Three annual Founding Ecosystem Partner seats, fifteen finance categories, interest via `mailto:partners@boardarabia.com` (not stored) |
@@ -19,7 +19,7 @@ English only. No public calendar, no member names or photographs, no fee schedul
 | `/about` | Short founding note |
 | `/privacy`, `/terms` | What the site collects, and what the pages do not promise |
 
-Primary CTA on every marketing page is **Request consideration** → `/apply`. Partner CTA is **Partner with us** (mailto draft). Staff `/login` and `/admin` are unchanged and are not linked from the marketing nav.
+Primary CTA on every marketing page is **Apply for consideration** → `/apply`. Partner CTA is **Partner with us** (mailto draft). Staff `/login` and `/admin` are unchanged and are not linked from the marketing nav.
 
 **Security:** marketing pages render no applicant PII. The private booking URL stays in the Accept email path only (`supabase/functions/decide-application`). Do not add it to client code.
 

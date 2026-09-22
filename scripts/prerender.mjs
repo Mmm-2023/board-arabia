@@ -51,12 +51,17 @@ function assertPage(route, html) {
   if (!html.includes('application/ld+json')) errors.push('missing json-ld')
   if (/AggregateRating|"@type":"Review"/.test(html)) errors.push('fake review schema')
   if (/calendar\.app\.google/i.test(html)) errors.push('public calendar url')
-  if (route === '/' && !html.includes('FAQPage')) errors.push('home missing FAQPage')
-  if (route !== '/' && html.includes('FAQPage')) errors.push('unexpected FAQPage')
+  const faqRoutes = new Set(['/', '/how-it-works'])
+  if (faqRoutes.has(route) && !html.includes('FAQPage')) errors.push('missing FAQPage')
+  if (!faqRoutes.has(route) && html.includes('FAQPage')) errors.push('unexpected FAQPage')
+  if (/ReserveAction|SearchAction/.test(html)) errors.push('unexpected site action')
   if (!html.includes('"@type":"Organization"')) errors.push('missing Organization')
   if (!html.includes('"@type":"WebSite"')) errors.push('missing WebSite')
-  if (!html.includes('Request consideration') && route === '/') {
+  if (route === '/' && !html.includes('Apply for consideration')) {
     errors.push('home missing consideration CTA')
+  }
+  if (route === '/' && !html.includes('no public booking calendar')) {
+    errors.push('home missing answer-first blurb')
   }
 
   if (errors.length) throw new Error(`${route}: ${errors.join('; ')}`)

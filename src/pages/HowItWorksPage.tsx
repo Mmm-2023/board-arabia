@@ -1,7 +1,9 @@
 import { Link } from 'react-router-dom'
 import { CtaBand } from '../components/CtaBand'
+import { FaqList } from '../components/FaqList'
 import { MarketingLayout } from '../components/MarketingLayout'
 import { PROCESS_STEPS, REVIEW_SLA } from '../content/marketing'
+import { HOW_IT_WORKS_FAQ } from '../content/seo'
 
 const REFUSALS = [
   'No public calendar, and no booking link anywhere on these pages.',
@@ -18,18 +20,17 @@ export function HowItWorksPage() {
           How it works
         </p>
         <h1 className="max-w-3xl font-display text-[clamp(2.5rem,5.5vw,4.4rem)] font-bold leading-[1.02] tracking-[-0.04em] text-balance text-ink">
-          Pre-vet. Review. Accept. Private email. Admit.
+          Apply. Review. Invite.
         </h1>
         <p className="mt-6 max-w-2xl text-[1.08rem] leading-relaxed text-ink/65">
-          Admission to Board Arabia is a sequence: pre-vet, review, accept, a
-          private email, then the member dashboard. {REVIEW_SLA} A visitor may
-          request consideration. A visitor cannot arrange the conversation.
-          There is no public calendar.
+          Board Arabia admission is credentials-first: submit a pre-vet form,
+          await personal review, and — if accepted — receive a private booking
+          link by email before joining the member dashboard. {REVIEW_SLA}
         </p>
         <p className="mt-4">
-          <Link to="/#faq" className="border-b border-brass text-ink">
+          <a href="#faq" className="border-b border-brass text-ink">
             Common questions
-          </Link>
+          </a>
         </p>
       </header>
 
@@ -69,10 +70,12 @@ export function HowItWorksPage() {
             to="/apply"
             className="mt-10 inline-flex items-center justify-center bg-brass px-7 py-3.5 text-[0.78rem] font-semibold tracking-[0.08em] text-ink uppercase hover:bg-brass-bright"
           >
-            Request consideration
+            Apply for consideration
           </Link>
         </div>
       </section>
+
+      <FaqList items={HOW_IT_WORKS_FAQ} />
 
       <CtaBand
         eyebrow="The form"

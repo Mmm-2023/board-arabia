@@ -52,13 +52,12 @@ export function ForCapitalPage() {
           For capital
         </p>
         <h1 className="max-w-3xl font-display text-[clamp(2.5rem,5.5vw,4.4rem)] font-bold leading-[1.02] tracking-[-0.04em] text-balance text-ink">
-          Capital reaches the room by mandate.
+          Capital engages through the desk
         </h1>
         <p className="mt-6 max-w-2xl text-[1.08rem] leading-relaxed text-ink/65">
-          Family offices, private equity, venture capital, and foreign direct
-          investors do not browse Board Arabia. A mandate concerning Saudi
-          Arabia or the GCC is written inside the membership and read by admin
-          before a member sees it.
+          Board Arabia is not an open deal board. FDI, family offices, private
+          equity, and venture capital reach members via structured, admin-gated
+          mandates so outreach stays credentialled and discreet.
         </p>
       </header>
 
@@ -171,7 +170,7 @@ export function ForCapitalPage() {
               to="/apply"
               className="inline-flex items-center justify-center bg-ink px-7 py-3.5 text-[0.78rem] font-semibold tracking-[0.08em] text-pearl uppercase"
             >
-              Request consideration
+              Apply for consideration
             </Link>
             <Link
               to="/partners"

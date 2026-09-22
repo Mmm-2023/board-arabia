@@ -27,40 +27,42 @@ export type MarketingPage = {
 export const MARKETING_PAGES: Record<MarketingPath, MarketingPage> = {
   '/': {
     path: '/',
-    title: 'Board Arabia | Founding membership for chairs and NEDs',
+    title:
+      'Board Arabia — Selective founding board membership | Saudi, GCC & international',
     description:
-      'Board Arabia is a selective founding membership for chairpersons, NEDs, and board advisors: fifty places in Saudi Arabia and the GCC, fifty international. Request consideration.',
+      'Board Arabia is a reviewed founding membership for chairpersons, board advisors, and aspiring NEDs across Saudi Arabia, the GCC, and internationally. Apply for consideration — no public calendar.',
     faq: true,
   },
   '/for-members': {
     path: '/for-members',
-    title: 'Member directory and tools | Board Arabia',
+    title: 'Member tools — directory, mandates, majlis | Board Arabia',
     description:
-      'Admitted Board Arabia members use a private directory, availability controls, warm introductions, a founding badge, and Vision 2030 tags. Not a public list.',
+      'Board Arabia members use a private directory, admin-gated mandates and intros, availability controls, founding badge, quarterly majlis, invite vouchers, Vision 2030 tags, and deal rooms.',
   },
   '/for-capital': {
     path: '/for-capital',
-    title: 'Mandates for family offices and FDI | Board Arabia',
+    title: 'For capital — FDI, family offices, PE & VC | Board Arabia',
     description:
-      'Family offices, private equity, venture, and foreign direct investors reach Board Arabia members only by an admin-gated mandate. No public directory.',
+      'Family offices, FDI, PE, and VC engage Board Arabia members through admin-gated mandates. No open scrape of the directory. Apply for consideration remains the public gate.',
   },
   '/partners': {
     path: '/partners',
-    title: 'Founding Ecosystem Partner seats | Board Arabia',
+    title: 'Ecosystem partners — 3 annual seats | Board Arabia',
     description:
-      'Board Arabia offers three annual Founding Ecosystem Partner seats to finance firms on the rails of a deal. Fifteen categories. Interest by email. No fee on this site.',
+      'Board Arabia offers three annual Founding Ecosystem Partner seats, prioritising finance and deal-rail categories. Partner interest is by form or email — no public calendar.',
   },
   '/how-it-works': {
     path: '/how-it-works',
-    title: 'How Board Arabia admission works | Board Arabia',
+    title: 'How Board Arabia works — apply, review, invite',
     description:
-      'Board Arabia admission runs pre-vet, then a personal review with no fixed response time, then accept and a private email. No public calendar.',
+      'Apply with credentials, personal review, then a private invite by email if accepted. No open calendar. After admission, members use the Board Arabia dashboard.',
+    faq: true,
   },
   '/apply': {
     path: '/apply',
-    title: 'Request consideration | Board Arabia',
+    title: 'Apply for consideration — Board Arabia',
     description:
-      'Request consideration for Board Arabia. The pre-vet is credentials only. Every application is reviewed personally, with no fixed response time. Acceptance is a private email.',
+      'Submit credentials for Board Arabia founding membership review. LinkedIn, titles, companies, and turnover or family-office AUM. Private next step by email if accepted — no public calendar.',
   },
   '/about': {
     path: '/about',
@@ -89,60 +91,80 @@ export type FaqItem = {
   toLabel?: string
 }
 
+/** Home FAQ. Answer text is also the FAQPage JSON-LD. */
 export const FAQ: FaqItem[] = [
   {
     question: 'What is Board Arabia?',
     answer:
-      'Board Arabia is a selective founding membership for chairpersons, non-executive directors (NEDs), and board advisors in Saudi Arabia and the GCC, together with international peers. It is not an open directory.',
+      'Board Arabia is a reviewed founding membership connecting chairpersons, board advisors, and aspiring NEDs with peers and capital proximity in Saudi Arabia, the GCC, and internationally — not an open directory.',
   },
   {
-    question: 'Who is Board Arabia for?',
+    question: 'Who is it for?',
     answer:
-      'It is for chairs, NEDs, and board advisors who work in Saudi Arabia or the wider GCC, and for international counterparts who work with Saudi companies, family offices, and foreign direct investment.',
+      'Chairpersons, board advisors, and aspiring non-executive directors (NEDs), including Saudi, GCC, and international candidates in the Founding 100.',
     to: '/for-members',
-    toLabel: 'What members use',
+    toLabel: 'Member tools',
+  },
+  {
+    question: 'How do I apply?',
+    answer:
+      'Submit the pre-vet form at /apply with credentials (LinkedIn, titles, companies, turnover or family-office AUM). Applications are reviewed personally; accepted candidates receive a private next-step email.',
+    to: '/apply',
+    toLabel: 'Apply for consideration',
+  },
+  {
+    question: 'Is there a public calendar or open booking link?',
+    answer:
+      'No. Visitors never see an open calendar. A private booking link is emailed only after acceptance.',
+    to: '/how-it-works',
+    toLabel: 'How admission works',
   },
   {
     question: 'What is the Founding 100?',
     answer:
-      'The Founding 100 is one hundred places, split evenly: 50 Saudi and 50 international. Founding membership is complimentary, pending contribution to the room. Seats are not priced on this site.',
+      'A capped founding cohort: 50 Saudi and 50 international seats, with complimentary founding terms pending contribution as set by the desk.',
   },
   {
-    question: 'How does someone request consideration?',
+    question: 'What do members get?',
     answer:
-      'Submit a pre-vet: name, email, LinkedIn, titles, companies, and turnover or family-office size. There is no fixed response time. Every application is reviewed personally. The form does not reserve a time, and this site has no public calendar.',
-    to: '/apply',
-    toLabel: 'Request consideration',
+      'Private directory, admin-gated mandate inbox and warm intros, availability controls, founding badge and LinkedIn announce, quarterly majlis, peer invite vouchers, sector and Vision 2030 tags, and deal rooms — details on /for-members.',
+    to: '/for-members',
+    toLabel: 'See the tools',
   },
   {
-    question: 'What happens after an application is accepted?',
+    question: 'How do family offices or FDI engage?',
     answer:
-      'Accepted candidates receive a private email to arrange a conversation. That message is sent only by email and is not published on this website. Admission to the member dashboard follows the conversation. A decline is sent as a clear note.',
-    to: '/how-it-works',
-    toLabel: 'See the sequence',
-  },
-  {
-    question: 'How do family offices and FDI reach members?',
-    answer:
-      'Family offices, private equity, venture capital, and foreign direct investors reach members by a mandate. Admin reads the mandate before it is delivered. There is no export of the directory and no scraped contact list.',
+      'Capital (FDI, family offices, PE, VC) engages through admin-gated mandates — not open outbound to members. See /for-capital; the public CTA remains Apply for consideration.',
     to: '/for-capital',
-    toLabel: 'How capital engages',
+    toLabel: 'For capital',
   },
   {
-    question: 'What are Vision 2030 tags?',
+    question: 'Are there public member names or reviews?',
     answer:
-      'Sector and Vision 2030 tags sit inside the membership. They tell admin where a member works so a relevant mandate can be matched. They are not a public profile.',
-    to: '/for-members#tags',
-    toLabel: 'Sector tags',
-  },
-  {
-    question: 'How do the three partner seats work?',
-    answer:
-      'Board Arabia offers three annual Founding Ecosystem Partner seats to firms on the finance rails of a deal. Interest is sent by email. A seat is not a logo placement, not a checkout, and it does not bypass admin.',
-    to: '/partners',
-    toLabel: 'Partner seats',
+      'No. The site does not publish invented member lists, photos, or reviews.',
   },
 ]
+
+/** /how-it-works reuses home questions 3–5 and 8, plus admission. */
+export const HOW_IT_WORKS_FAQ: FaqItem[] = [
+  FAQ[2],
+  FAQ[3],
+  FAQ[4],
+  FAQ[7],
+  {
+    question: 'What happens after I am admitted?',
+    answer:
+      'After admission, members use the Board Arabia dashboard: the private directory, the member tools, and availability controls.',
+    to: '/for-members',
+    toLabel: 'Member tools',
+  },
+]
+
+export function faqFor(path: string): FaqItem[] | null {
+  if (path === '/') return FAQ
+  if (path === '/how-it-works') return HOW_IT_WORKS_FAQ
+  return null
+}
 
 export function canonicalUrl(path: string) {
   if (path === '/' || path === '') return `${SITE_ORIGIN}/`
@@ -157,20 +179,26 @@ export function pageGraph(page: MarketingPage) {
       '@id': `${SITE_ORIGIN}/#organization`,
       name: 'Board Arabia',
       url: `${SITE_ORIGIN}/`,
-      description: MARKETING_PAGES['/'].description,
+      description:
+        'Selective founding board membership for chairpersons, board advisors, and aspiring NEDs (Saudi Arabia, GCC, international).',
       email: 'partners@boardarabia.com',
       areaServed: ['Saudi Arabia', 'GCC', 'International'],
       knowsAbout: [
-        'chairpersons',
-        'non-executive directors',
-        'board advisors',
+        'chairperson',
+        'board advisor',
+        'non-executive director (NED)',
+        'founding membership',
         'Founding 100',
-        'family offices',
-        'foreign direct investment',
+        'family office',
+        'FDI',
         'Vision 2030',
+        'private directory',
+        'mandate inbox',
         'Saudi Arabia',
-        'GCC',
-        'international board practice',
+        'Gulf Cooperation Council (GCC)',
+        'private equity',
+        'venture capital',
+        'ecosystem partner',
       ],
     },
     {
@@ -210,13 +238,14 @@ export function pageGraph(page: MarketingPage) {
     })
   }
 
-  if (page.faq) {
+  const faqs = faqFor(page.path)
+  if (faqs) {
     graph.push({
       '@type': 'FAQPage',
       '@id': `${url}#faq`,
       url,
       isPartOf: { '@id': `${SITE_ORIGIN}/#website` },
-      mainEntity: FAQ.map((item) => ({
+      mainEntity: faqs.map((item) => ({
         '@type': 'Question',
         name: item.question,
         acceptedAnswer: {

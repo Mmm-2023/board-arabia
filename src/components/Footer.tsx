@@ -6,7 +6,7 @@ const LINKS = [
   { label: 'How it works', to: '/how-it-works' },
   { label: 'About', to: '/about' },
   { label: 'Partners', to: '/partners' },
-  { label: 'Request consideration', to: '/apply' },
+  { label: 'Apply for consideration', to: '/apply' },
   { label: 'Privacy', to: '/privacy' },
   { label: 'Terms', to: '/terms' },
 ]

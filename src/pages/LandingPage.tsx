@@ -13,7 +13,13 @@ import { MEMBER_TOOLS, PARTNER_CATEGORIES, PROCESS_STEPS } from '../content/mark
 const HERO_IMAGE =
   'https://images.unsplash.com/photo-1586724237569-f3d0c1dee8c6?auto=format&fit=crop&w=2400&q=80'
 
-const PATHS = ['Chairpersons', 'NEDs', 'Saudi Arabia & the GCC', 'International']
+const PATHS = [
+  'Chairpersons',
+  'Board advisors',
+  'Aspiring NEDs',
+  'Saudi Arabia & the GCC',
+  'International',
+]
 
 export function LandingPage() {
   return (
@@ -32,8 +38,9 @@ export function LandingPage() {
         <FaqList />
         <CtaBand
           eyebrow="Begin"
-          title="Request consideration."
-          body="Submit a pre-vet. If you are accepted, a private booking email follows. Nothing on this site opens a calendar."
+          title="Apply for consideration."
+          body="Submit the pre-vet. If you are accepted, the next step arrives by private email."
+          label="Apply for consideration"
         />
       </main>
       <Footer />
@@ -103,12 +110,10 @@ function Hero() {
             className="mt-7 flex max-w-3xl flex-col gap-7 md:mt-9 md:flex-row md:items-end md:justify-between md:gap-12"
           >
             <p className="max-w-md text-[1.05rem] leading-relaxed text-stone/90 md:text-[1.12rem]">
-              Board Arabia is a selective founding membership for chairpersons,
-              NEDs, and board advisors. Fifty places are held in Saudi Arabia
-              and the GCC. Fifty are held for international chairs and advisors,
-              including those whose practice is not limited to the Gulf. Request
-              consideration — a conversation follows only after a personal
-              review, by private email.
+              Board Arabia is a selective founding membership for Saudi, GCC,
+              and international chairpersons, board advisors, and aspiring
+              non-executive directors. Credentials are reviewed before any
+              conversation; there is no public booking calendar on this site.
             </p>
 
             <div className="flex shrink-0 flex-col gap-3 sm:flex-row">
@@ -116,7 +121,7 @@ function Hero() {
                 to="/apply"
                 className="inline-flex items-center justify-center bg-brass px-6 py-3.5 text-[0.78rem] font-semibold tracking-[0.08em] text-ink uppercase transition-colors hover:bg-brass-bright"
               >
-                Request consideration
+                Apply for consideration
               </Link>
               <a
                 href="#process"
@@ -161,7 +166,7 @@ function WhySection() {
     {
       n: '01',
       title: 'Proximity to capital',
-      body: 'Mandates from family offices, funds, and strategic investors arrive through an admin-gated inbox. Members are not left open to cold outreach.',
+      body: 'Mandates from family offices (FO), foreign direct investment (FDI), funds, and strategic investors arrive through an admin-gated inbox. Members are not left open to cold outreach.',
     },
     {
       n: '02',
@@ -223,10 +228,9 @@ function FoundingSection() {
             </DisplayHeading>
             <p className="mt-6 max-w-md text-[1.05rem] leading-relaxed text-stone/75">
               The Founding 100 is one hundred places, split evenly: fifty in
-              Saudi Arabia, fifty international. Complimentary while founding
-              members contribute — a majlis attended, an introduction made with
-              care, judgment when it is asked for. Places are not priced on
-              this site.
+              Saudi Arabia, fifty international. Complimentary founding terms
+              pending contribution, as set by the desk. Places are not priced
+              on this site.
             </p>
           </Reveal>
         </div>
@@ -239,7 +243,8 @@ function FoundingSection() {
               Saudi Arabia
             </h3>
             <p className="mt-3 text-[0.98rem] leading-relaxed text-ink/60">
-              Chairpersons and NEDs held for the Kingdom.
+              Chairpersons and NEDs held for Saudi Arabia and the Gulf
+              Cooperation Council (GCC).
             </p>
           </div>
           <div className="flex flex-col justify-end px-5 py-14 md:px-10 md:py-16">
@@ -274,7 +279,12 @@ function ToolsSection() {
             admin-gated mandate inbox, availability you set, warm introductions
             that are released rather than cold, a founding badge, a quarterly
             majlis, peer vouchers, Vision 2030 tags, and deal rooms. Each tile
-            explains the instrument. None of them is a public list.
+            opens on the member page. Capital reads the mandate path separately.
+          </p>
+          <p className="mt-4">
+            <Link to="/for-capital" className="border-b border-brass text-ink">
+              How FDI and family offices engage
+            </Link>
           </p>
         </Reveal>
 
@@ -327,8 +337,8 @@ function ProcessSection() {
             Consideration before any conversation.
           </DisplayHeading>
           <p className="mt-6 max-w-xl text-[1.05rem] leading-relaxed text-stone/75">
-            Pre-vet, review, accept, a private booking email, then admission.
-            No open calendar sits between those steps.
+            Pre-vet, personal review by the desk, accept, a private booking
+            email, then the member dashboard.
           </p>
         </Reveal>
 

@@ -33,13 +33,14 @@ export function PartnersPage() {
           Founding Ecosystem Partners
         </p>
         <h1 className="max-w-3xl font-display text-[clamp(2.5rem,5.5vw,4.4rem)] font-bold leading-[1.02] tracking-[-0.04em] text-balance text-ink">
-          Three Founding Ecosystem Partner seats.
+          Three annual partner seats
         </h1>
         <p className="mt-6 max-w-2xl text-[1.08rem] leading-relaxed text-ink/65">
-          Board Arabia offers three annual Founding Ecosystem Partner seats.
-          They are offered, not sold from this page, to firms on the finance
-          rails of a transaction. There is no fee schedule here, and there is
-          no directory of partner names.
+          Board Arabia reserves three annual Founding Ecosystem Partner seats,
+          weighted toward finance and deal-infrastructure categories. Interest
+          is collected privately; there is no public booking link for partners.
+          There is no fee schedule here, and there is no directory of partner
+          names.
         </p>
       </header>
 

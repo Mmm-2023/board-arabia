@@ -144,13 +144,13 @@ export function ApplyPage() {
             Pre-vet
           </p>
           <h1 className="mt-3 font-display text-[clamp(2.2rem,5vw,3.4rem)] font-bold leading-[1.05] tracking-[-0.035em] text-ink">
-            Request consideration
+            Apply for consideration
           </h1>
           <p className="mt-5 text-[1.05rem] leading-relaxed text-ink/65">
-            This form is a pre-vet for Board Arabia, not a booking. Send your name, email,
-            LinkedIn, titles, companies, and turnover or family-office size.
-            {REVIEW_SLA} If you are accepted, a private booking link arrives by
-            email. That link is not on this website.
+            Request consideration for Board Arabia by submitting a pre-vet
+            form. The desk reviews credentials; accepted candidates receive a
+            private conversation invite by email. {REVIEW_SLA} That link is
+            not on this website.
           </p>
 
           <form onSubmit={onSubmit} className="mt-10 space-y-6">
