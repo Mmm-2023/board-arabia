@@ -210,6 +210,7 @@ const appShells = [
   'dashboard/rooms',
   'dashboard/events',
   'auth/confirm',
+  'auth/reset',
 ]
 for (const staff of appShells) {
   const dir = path.join(dist, staff)

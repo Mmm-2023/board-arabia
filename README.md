@@ -108,10 +108,10 @@ The public site must **never** show the booking URL. It is emailed only on Accep
 **One-time password (pick one):**
 
 1. **Forgot password? on the site (simplest)**  
-   Open https://boardarabia.com/login (staff) or https://boardarabia.com/login?next=/dashboard (members), enter the email, and choose **Forgot password?**. The Edge Function `request-password-reset` builds a recovery link whose redirect is `https://boardarabia.com/auth/confirm` and sends that message from `cindy@nammco.com` through the Gmail API. It does not use Auth's built-in mailer. The link uses `type=recovery`. After it verifies, set a new password. Staff continue to `/admin`. Other accounts return to member sign-in. The public response never includes the link. Until Gmail secrets are set, the row is a dry-run and nothing is emailed.
+   Open https://boardarabia.com/login (staff) or https://boardarabia.com/login?next=/dashboard (members), enter the email, and choose **Forgot password?**. That calls `resetPasswordForEmail` with `redirectTo` `https://boardarabia.com/auth/confirm`. `/auth/confirm` and `/auth/reset` read `token_hash` plus `type=recovery` from the query string, and `access_token` from the URL hash. They also listen for `PASSWORD_RECOVERY`. Set the new password, confirm it, and you return to `/login`. Staff who are in `staff_users` then continue to `/admin`.
 
 2. **Dashboard reset**  
-   Supabase → Authentication → Users → the person → *Send password recovery*. The redirect URL must be `https://boardarabia.com/auth/confirm` (allow that URL in Authentication → URL configuration). `/auth/confirm` accepts `recovery` and `signup` as well as invite, magic link, and email.
+   Supabase → Authentication → Users → the person → *Send password recovery*. The redirect URL must be `https://boardarabia.com/auth/confirm` (allow that URL, and `https://boardarabia.com/auth/reset`, in Authentication → URL configuration). Both routes accept `recovery` and `signup` as well as invite, magic link, and email, from the query string or the hash.
 
 3. **Invite link**  
    Authentication → Users → Invite user (same email) → open invite email → set password.

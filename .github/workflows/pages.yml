@@ -41,6 +41,7 @@ jobs:
           test -f dist/dashboard/index.html
           test -f dist/dashboard/profile/index.html
           test -f dist/auth/confirm/index.html
+          test -f dist/auth/reset/index.html
           test -f dist/robots.txt
           grep -Eq '(src|href)="/assets/' dist/index.html
           if grep -q '/board-arabia/' dist/index.html; then

@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import type { Database } from './database.types'
 import { parseCapacity, type FoundingCapacity, type FoundingSeat } from './member'
+import { readRecoveryLocation } from './recovery'
 
 const url = import.meta.env.VITE_SUPABASE_URL
 const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
@@ -15,25 +16,30 @@ if (!url || !anonKey) {
 export const passwordResetRedirect = 'https://boardarabia.com/auth/confirm'
 const RECOVERY_KEY = 'ba-password-recovery'
 
-noteRecoveryVisit()
+const recoveryLanding = typeof window === 'undefined' ? null : readRecoveryLocation(window.location.href)
+if (recoveryLanding?.recovery) sessionStorage.setItem(RECOVERY_KEY, '1')
+if (recoveryLanding?.redirectTo) window.location.replace(recoveryLanding.redirectTo)
 
-export const supabase = createClient<Database>(url, anonKey)
+export const supabase = createClient<Database>(url, anonKey, {
+  auth: {
+    // Implicit so a recovery email can deliver access_token in the hash.
+    // Skip detection while we are leaving this page, or the client clears that hash.
+    flowType: 'implicit',
+    detectSessionInUrl: !recoveryLanding?.redirectTo,
+  },
+})
 
-function noteRecoveryVisit() {
-  if (typeof window === 'undefined') return
-  const hash = new URLSearchParams(window.location.hash.replace(/^#/, ''))
-  const query = new URLSearchParams(window.location.search)
-  const type = query.get('type') || hash.get('type')
-  if (type !== 'recovery') return
-  sessionStorage.setItem(RECOVERY_KEY, '1')
-  if (!/\/auth\/confirm\/?$/.test(window.location.pathname)) {
-    window.location.replace(
-      `/auth/confirm${window.location.search}${window.location.hash}`,
-    )
-  }
+let recoveryFromEvent = false
+if (typeof window !== 'undefined') {
+  supabase.auth.onAuthStateChange((event) => {
+    if (event !== 'PASSWORD_RECOVERY') return
+    recoveryFromEvent = true
+    sessionStorage.setItem(RECOVERY_KEY, '1')
+  })
 }
 
 export function passwordRecoveryPending() {
+  if (recoveryFromEvent) return true
   if (typeof sessionStorage === 'undefined') return false
   return sessionStorage.getItem(RECOVERY_KEY) === '1'
 }
@@ -44,18 +50,11 @@ export function clearPasswordRecovery() {
 }
 
 export async function sendPasswordReset(email: string): Promise<{ error?: string }> {
-  try {
-    const res = await fetch(`${functionsBase}/request-password-reset`, {
-      method: 'POST',
-      headers: await anonHeaders(),
-      body: JSON.stringify({ email: email.trim() }),
-    })
-    const body = (await res.json().catch(() => ({}))) as { error?: string }
-    if (!res.ok) return { error: body.error || 'Could not send a reset link.' }
-    return {}
-  } catch {
-    return { error: 'Could not send a reset link.' }
-  }
+  const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+    redirectTo: passwordResetRedirect,
+  })
+  if (error) return { error: error.message }
+  return {}
 }
 
 export type ApplicationStatus =

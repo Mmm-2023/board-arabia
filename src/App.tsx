@@ -30,6 +30,7 @@ export default function App() {
       <Route path="/terms" element={<TermsPage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/auth/confirm" element={<AuthConfirmPage />} />
+      <Route path="/auth/reset" element={<AuthConfirmPage />} />
       <Route path="/admin" element={<AdminPage />} />
       <Route path="/ops" element={<AdminPage />} />
       <Route path="/dashboard" element={<DashboardLayout />}>
