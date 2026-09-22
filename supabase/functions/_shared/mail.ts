@@ -1,11 +1,12 @@
 /** Board Arabia outbound mail via Google Workspace Gmail API.
- * From mailbox: cindy@nammco.com.
+ * From: noreply@boardarabia.com. Reply-To: cindy@nammco.com.
  * Secrets live only in Supabase Edge Function secrets.
  * Dry-run when those secrets are missing. No Resend.
  */
 
 export const ADMIN_NOTIFY_EMAIL = 'michael@nammco.com'
 export const WORKSPACE_MAILBOX = 'cindy@nammco.com'
+export const PRODUCT_FROM = 'noreply@boardarabia.com'
 const GMAIL_SEND_SCOPE = 'https://www.googleapis.com/auth/gmail.send'
 const TOKEN_URL = 'https://oauth2.googleapis.com/token'
 const GMAIL_SEND_URL = 'https://gmail.googleapis.com/gmail/v1/users/me/messages/send'
@@ -37,7 +38,7 @@ export function publicSite(): string {
 
 export function workspaceFromAddress(): string {
   const raw = readEnv('GMAIL_FROM')?.trim()
-  if (!raw) return `"Board Arabia" <${WORKSPACE_MAILBOX}>`
+  if (!raw) return `"Board Arabia" <${PRODUCT_FROM}>`
   const clean = sanitizeHeader(raw)
   if (clean.includes('<')) return clean
   return `"Board Arabia" <${clean}>`
@@ -351,9 +352,7 @@ function serviceAccountCreds(): { clientEmail: string; privateKey: string } | nu
 function impersonatedMailbox(): string {
   const explicit = readEnv('GMAIL_IMPERSONATE')?.trim()
   if (explicit) return sanitizeHeader(explicit)
-  const from = workspaceFromAddress()
-  const match = from.match(/<([^>]+)>/)
-  return sanitizeHeader(match?.[1] || WORKSPACE_MAILBOX)
+  return WORKSPACE_MAILBOX
 }
 
 async function fetchAccessToken(): Promise<{ token: string } | { error: string }> {

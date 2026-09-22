@@ -45,7 +45,7 @@ Evidence: **VERIFIED** = proved against the live project or the Pages-compatible
 | Secrets hygiene | **VERIFIED** for the repo and for `email_events`. No service role or Gmail secret in the client. Invite payload has no token. |
 | `/dashboard` vs `/admin` | **VERIFIED.** Staff login without `next` opens `/admin`. `/admin` still requires `staff_users`. `/dashboard` requires a non-suspended `members` row. A member cannot call Admit (403). |
 | Leaked-password protection | **SKIPPED BY MICHAEL** (via Sasha, 22 Sep 2026). No Supabase Pro upgrade. Do not re-ask. |
-| Live Workspace mail (Accept / Reject / Admit) | Sent by the Edge Function as cindy@nammco.com through the Gmail API. Dry-run while Gmail auth is missing. Do not set a Resend key. |
+| Live Workspace mail (Accept / Reject / Admit) | Sent by the Edge Function from noreply@boardarabia.com through the Gmail API. Reply-To is cindy@nammco.com. Dry-run while Gmail auth is missing. Do not set a Resend key. |
 
 ## Left with Michael
 
