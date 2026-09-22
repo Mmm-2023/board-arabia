@@ -147,7 +147,7 @@ Board Arabia`
       invite_mode: 'private_booking_link',
       booking_url: PRIVATE_BOOKING_LINK,
       message: sent.dryRun
-        ? 'Accepted (dry-run). Set RESEND_API_KEY to send the private booking email.'
+        ? 'Accepted (dry-run). Workspace mail is not connected, so the private booking email was not sent.'
         : 'Accepted. Private booking link emailed to candidate.',
     })
   }
@@ -195,7 +195,7 @@ Board Arabia`
     ok: true,
     dry_run: sent.dryRun,
     message: sent.dryRun
-      ? 'Rejected (dry-run). Set RESEND_API_KEY to send the decline email.'
+      ? 'Rejected (dry-run). Workspace mail is not connected, so the decline email was not sent.'
       : 'Rejected. Decline email sent to applicant.',
   })
 })

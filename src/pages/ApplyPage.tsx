@@ -92,7 +92,7 @@ export function ApplyPage() {
 
     if (result.dryRun) {
       setEmailNote(
-        'Application saved. Emails logged in dry-run until RESEND_API_KEY is set.',
+        'Application saved. Confirmation email is logged until outbound mail is connected.',
       )
     } else {
       setEmailNote('Acknowledgement and staff notify emails were queued.')

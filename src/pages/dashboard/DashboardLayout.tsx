@@ -165,13 +165,23 @@ export function DashboardLayout() {
                 Member
               </p>
             </div>
-            <button
-              type="button"
-              onClick={() => void onSignOut()}
-              className="text-[0.72rem] font-semibold tracking-[0.08em] text-ink/45 uppercase hover:text-ink"
-            >
-              Sign out
-            </button>
+            <div className="flex items-center gap-4">
+              {gate.room.isStaff && (
+                <Link
+                  to="/admin"
+                  className="text-[0.72rem] font-semibold tracking-[0.08em] text-brass uppercase hover:text-ink"
+                >
+                  Staff admin
+                </Link>
+              )}
+              <button
+                type="button"
+                onClick={() => void onSignOut()}
+                className="text-[0.72rem] font-semibold tracking-[0.08em] text-ink/45 uppercase hover:text-ink"
+              >
+                Sign out
+              </button>
+            </div>
           </div>
         </header>
 

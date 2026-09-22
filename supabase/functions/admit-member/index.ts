@@ -1,5 +1,6 @@
 import { createClient, type SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1'
-import { corsHeaders, jsonResponse, logEmailEvent, sendEmail } from './mail.ts'
+import { escapeHtml, issueCredential, type Issued } from '../_shared/credentials.ts'
+import { corsHeaders, jsonResponse, logEmailEvent, publicSite, sendEmail } from './mail.ts'
 
 const SEAT_CAP = 50
 
@@ -94,7 +95,7 @@ Deno.serve(async (req) => {
     return jsonResponse(req, { error: 'This person is already a member.' }, 409)
   }
 
-  const site = memberSite()
+  const site = publicSite()
   const issued = await issueCredential(admin, email, site)
   if ('error' in issued) {
     return jsonResponse(req, { error: issued.error }, 502)
@@ -172,91 +173,11 @@ Deno.serve(async (req) => {
     dry_run: sent.dryRun,
     seat,
     message: sent.dryRun
-      ? 'Admitted (dry-run). Set RESEND_API_KEY to email the invite.'
+      ? 'Admitted (dry-run). Workspace mail is not connected, so the invite was not emailed.'
       : 'Admitted. Invite emailed to the member.',
     ...(dryRunInvite ? { dry_run_invite: dryRunInvite } : {}),
   })
 })
-
-type Issued =
-  | {
-      mode: 'magic_link'
-      userId: string
-      createdNew: boolean
-      tokenHash: string
-      otp: string
-      otpType: 'invite' | 'magiclink'
-    }
-  | {
-      mode: 'temp_password'
-      userId: string
-      createdNew: boolean
-      tempPassword: string
-    }
-
-async function issueCredential(
-  admin: SupabaseClient,
-  email: string,
-  site: string,
-): Promise<Issued | { error: string }> {
-  const redirectTo = `${site}/auth/confirm`
-  const invite = await admin.auth.admin.generateLink({
-    type: 'invite',
-    email,
-    options: { redirectTo },
-  })
-  const invited = readLink(invite.data, true, 'invite')
-  if (invited) return invited
-
-  const inviteMsg = invite.error?.message ?? ''
-  if (/already|registered|exists/i.test(inviteMsg)) {
-    const magic = await admin.auth.admin.generateLink({
-      type: 'magiclink',
-      email,
-      options: { redirectTo },
-    })
-    const linked = readLink(magic.data, false, 'magiclink')
-    if (linked) return linked
-    return { error: magic.error?.message || inviteMsg || 'Could not issue a sign-in link' }
-  }
-
-  const tempPassword = makeTempPassword()
-  const created = await admin.auth.admin.createUser({
-    email,
-    password: tempPassword,
-    email_confirm: true,
-  })
-  if (created.error || !created.data.user?.id) {
-    return { error: created.error?.message || inviteMsg || 'Could not create member login' }
-  }
-  return {
-    mode: 'temp_password',
-    userId: created.data.user.id,
-    createdNew: true,
-    tempPassword,
-  }
-}
-
-function readLink(
-  data: {
-    user?: { id?: string } | null
-    properties?: { hashed_token?: string; email_otp?: string } | null
-  } | null,
-  createdNew: boolean,
-  otpType: 'invite' | 'magiclink',
-): Issued | null {
-  const userId = data?.user?.id || ''
-  const tokenHash = data?.properties?.hashed_token || ''
-  if (!userId || !tokenHash) return null
-  return {
-    mode: 'magic_link',
-    userId,
-    createdNew,
-    tokenHash,
-    otp: data?.properties?.email_otp || '',
-    otpType,
-  }
-}
 
 function inviteText(opts: {
   greeting: string
@@ -379,11 +300,6 @@ function claimFailure(message: string) {
   return { error: message }
 }
 
-function memberSite() {
-  const raw = Deno.env.get('PUBLIC_SITE_URL') || 'https://mmm-2023.github.io/board-arabia'
-  return raw.replace(/\/$/, '')
-}
-
 function clip(value: string | null | undefined, max: number) {
   if (!value) return null
   const trimmed = value.trim()
@@ -406,17 +322,3 @@ function httpsOrNull(value: string | null | undefined) {
   return clipped
 }
 
-function makeTempPassword() {
-  const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789'
-  const bytes = new Uint8Array(20)
-  crypto.getRandomValues(bytes)
-  return Array.from(bytes, (byte) => alphabet[byte % alphabet.length]).join('')
-}
-
-function escapeHtml(value: string) {
-  return value
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-}

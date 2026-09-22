@@ -48,7 +48,7 @@ export function AuthConfirmPage() {
           return
         }
         clearPasswordRecovery()
-        navigate('/dashboard', { replace: true })
+        navigate(safeNext(searchParams.get('next')), { replace: true })
         return
       }
 
@@ -70,7 +70,7 @@ export function AuthConfirmPage() {
           setPhase('set_password')
           return
         }
-        navigate('/dashboard', { replace: true })
+        navigate(safeNext(searchParams.get('next')), { replace: true })
         return
       }
 
@@ -90,7 +90,7 @@ export function AuthConfirmPage() {
       const { data } = await supabase.auth.getSession()
       if (cancelled) return
       if (data.session) {
-        navigate('/dashboard', { replace: true })
+        navigate(safeNext(searchParams.get('next')), { replace: true })
         return
       }
       setError('This sign-in link is missing or has expired.')
@@ -239,4 +239,11 @@ function otpType(raw: string | null): OtpType | null {
     return raw
   }
   return null
+}
+
+function safeNext(raw: string | null): string {
+  if (!raw) return '/dashboard'
+  if (!raw.startsWith('/') || raw.startsWith('//')) return '/dashboard'
+  if (raw.startsWith('/login')) return '/dashboard'
+  return raw
 }

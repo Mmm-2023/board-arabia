@@ -163,16 +163,19 @@ export type Database = {
         Row: {
           user_id: string
           email: string
+          role: 'staff' | 'master'
           created_at: string
         }
         Insert: {
           user_id: string
           email: string
+          role?: 'staff' | 'master'
           created_at?: string
         }
         Update: {
           user_id?: string
           email?: string
+          role?: 'staff' | 'master'
           created_at?: string
         }
         Relationships: []
@@ -225,6 +228,14 @@ export type Database = {
       founding_capacity: {
         Args: Record<string, never>
         Returns: Json
+      }
+      list_staff_directory: {
+        Args: Record<string, never>
+        Returns: {
+          email: string
+          role: string
+          created_at: string
+        }[]
       }
     }
     Enums: Record<string, never>

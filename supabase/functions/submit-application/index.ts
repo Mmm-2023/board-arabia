@@ -4,6 +4,7 @@ import {
   corsHeaders,
   jsonResponse,
   logEmailEvent,
+  publicSite,
   sendEmail,
 } from './mail.ts'
 
@@ -93,9 +94,7 @@ Deno.serve(async (req) => {
   }
 
   // Emails: only this applicant + michael@nammco.com. Never other applicants' rows.
-  const siteUrl =
-    Deno.env.get('PUBLIC_SITE_URL') || 'https://mmm-2023.github.io/board-arabia'
-  const adminUrl = `${siteUrl.replace(/\/$/, '')}/admin`
+  const adminUrl = `${publicSite()}/admin`
 
   const summaryLines = [
     `Name: ${app.full_name || 'Not provided'}`,

@@ -1,6 +1,14 @@
-/** Shared mail helpers for Board Arabia edge functions (Resend + dry-run audit). */
+/** Board Arabia outbound mail via Google Workspace Gmail API.
+ * From mailbox: cindy@nammco.com.
+ * Secrets live only in Supabase Edge Function secrets.
+ * Dry-run when those secrets are missing. No Resend.
+ */
 
 export const ADMIN_NOTIFY_EMAIL = 'michael@nammco.com'
+export const WORKSPACE_MAILBOX = 'cindy@nammco.com'
+const GMAIL_SEND_SCOPE = 'https://www.googleapis.com/auth/gmail.send'
+const TOKEN_URL = 'https://oauth2.googleapis.com/token'
+const GMAIL_SEND_URL = 'https://gmail.googleapis.com/gmail/v1/users/me/messages/send'
 
 export type SendResult = {
   dryRun: boolean
@@ -10,6 +18,35 @@ export type SendResult = {
   detail?: string
 }
 
+type EnvSource = {
+  get?: (key: string) => string | undefined
+}
+
+function readEnv(name: string): string | undefined {
+  const runtime = globalThis as { Deno?: { env?: EnvSource } }
+  const fromDeno = runtime.Deno?.env?.get?.(name)
+  if (fromDeno) return fromDeno
+  const fromNode = typeof process !== 'undefined' ? process.env?.[name] : undefined
+  return fromNode || undefined
+}
+
+export function publicSite(): string {
+  const raw = readEnv('PUBLIC_SITE_URL') || 'https://boardarabia.com'
+  return raw.replace(/\/$/, '')
+}
+
+export function workspaceFromAddress(): string {
+  const raw = readEnv('GMAIL_FROM')?.trim()
+  if (!raw) return `"Board Arabia" <${WORKSPACE_MAILBOX}>`
+  const clean = sanitizeHeader(raw)
+  if (clean.includes('<')) return clean
+  return `"Board Arabia" <${clean}>`
+}
+
+export function gmailCredentialsPresent(): boolean {
+  return refreshCreds() !== null || serviceAccountCreds() !== null
+}
+
 export async function sendEmail(opts: {
   to: string
   subject: string
@@ -17,59 +54,105 @@ export async function sendEmail(opts: {
   text: string
   from?: string
 }): Promise<SendResult> {
-  const apiKey = Deno.env.get('RESEND_API_KEY')
-  const from =
-    opts.from ||
-    Deno.env.get('RESEND_FROM') ||
-    'Board Arabia <onboarding@resend.dev>'
-
-  if (!apiKey) {
+  const from = opts.from ? sanitizeHeader(opts.from) : workspaceFromAddress()
+  const to = sanitizeHeader(opts.to)
+  const subject = sanitizeHeader(opts.subject)
+  if (!to || !subject) {
     return {
-      dryRun: true,
-      provider: 'resend',
+      dryRun: false,
+      provider: 'gmail',
       providerId: null,
-      status: 'dry_run',
-      detail: 'RESEND_API_KEY not set. Email logged only.',
+      status: 'error',
+      detail: 'Missing recipient or subject.',
     }
   }
 
-  const res = await fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
+  if (!gmailCredentialsPresent()) {
+    return {
+      dryRun: true,
+      provider: 'gmail',
+      providerId: null,
+      status: 'dry_run',
+      detail: 'Gmail credentials are not set. Email logged only.',
+    }
+  }
+
+  const token = await fetchAccessToken()
+  if ('error' in token) {
+    return {
+      dryRun: false,
+      provider: 'gmail',
+      providerId: null,
+      status: 'error',
+      detail: redactDetail(token.error) || 'Gmail authentication failed.',
+    }
+  }
+
+  const raw = toBase64Url(
+    buildRfc822({
       from,
-      to: [opts.to],
-      subject: opts.subject,
-      html: opts.html,
+      to,
+      subject,
       text: opts.text,
+      html: opts.html,
     }),
-  })
+  )
+
+  let res: Response
+  try {
+    res = await fetch(GMAIL_SEND_URL, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token.token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ raw }),
+    })
+  } catch (err) {
+    return {
+      dryRun: false,
+      provider: 'gmail',
+      providerId: null,
+      status: 'error',
+      detail: redactDetail(err instanceof Error ? err.message : 'Gmail request failed'),
+    }
+  }
 
   const body = await res.json().catch(() => ({}))
   if (!res.ok) {
+    const message =
+      body && typeof body === 'object' && 'error' in body
+        ? JSON.stringify((body as { error?: unknown }).error)
+        : `Gmail send failed (${res.status})`
     return {
       dryRun: false,
-      provider: 'resend',
+      provider: 'gmail',
       providerId: null,
       status: 'error',
-      detail: typeof body === 'object' ? JSON.stringify(body) : String(body),
+      detail: redactDetail(message) || 'Gmail send failed.',
     }
   }
 
+  const id =
+    body && typeof body === 'object' && 'id' in body
+      ? String((body as { id?: unknown }).id || '')
+      : ''
   return {
     dryRun: false,
-    provider: 'resend',
-    providerId: (body as { id?: string }).id ?? null,
+    provider: 'gmail',
+    providerId: id || null,
     status: 'sent',
   }
 }
 
+type EmailAdmin = {
+  from: (table: string) => {
+    insert: (row: Record<string, unknown>) => PromiseLike<unknown>
+  }
+}
+
 export async function logEmailEvent(
-  // deno-lint-ignore no-explicit-any
-  admin: any,
+  admin: EmailAdmin,
   row: {
     application_id: string | null
     kind: string
@@ -82,7 +165,249 @@ export async function logEmailEvent(
     payload?: Record<string, unknown> | null
   },
 ) {
-  await admin.from('email_events').insert(row)
+  await admin.from('email_events').insert({
+    application_id: row.application_id,
+    kind: row.kind,
+    recipient: row.recipient,
+    subject: row.subject,
+    status: row.status,
+    provider: row.provider ?? null,
+    provider_id: row.provider_id ?? null,
+    detail: redactDetail(row.detail),
+    payload: redactPayload(row.payload),
+  })
+}
+
+const SECRET_KEY = /token|password|otp|secret|authorization|private_key|refresh|credential|cookie/i
+
+export function redactPayload(
+  value: Record<string, unknown> | null | undefined,
+): Record<string, unknown> | null {
+  if (!value) return null
+  const out: Record<string, unknown> = {}
+  for (const [key, item] of Object.entries(value)) {
+    if (SECRET_KEY.test(key) && !key.startsWith('has_')) continue
+    if (item && typeof item === 'object') continue
+    if (typeof item === 'string' && looksSecret(item)) continue
+    out[key] = item as string | number | boolean | null
+  }
+  return out
+}
+
+export function redactDetail(detail: string | null | undefined): string | null {
+  if (!detail) return null
+  return detail
+    .replace(/ya29\.[A-Za-z0-9_\-]+/g, '[redacted]')
+    .replace(/Bearer\s+\S+/gi, 'Bearer [redacted]')
+    .replace(/-----BEGIN[\s\S]+?-----END [^-]+-----/g, '[redacted]')
+    .replace(/token_hash=[^\s&]+/gi, 'token_hash=[redacted]')
+    .slice(0, 500)
+}
+
+function looksSecret(value: string): boolean {
+  return /token_hash=|ya29\.|refresh_token|private_key|BEGIN /i.test(value)
+}
+
+export function buildRfc822(opts: {
+  from: string
+  to: string
+  subject: string
+  text: string
+  html: string
+}): string {
+  const boundary = `ba_${crypto.randomUUID().replaceAll('-', '')}`
+  const lines = [
+    `From: ${sanitizeHeader(opts.from)}`,
+    `To: ${sanitizeHeader(opts.to)}`,
+    `Subject: ${encodeSubject(sanitizeHeader(opts.subject))}`,
+    'MIME-Version: 1.0',
+    `Content-Type: multipart/alternative; boundary="${boundary}"`,
+    '',
+    `--${boundary}`,
+    'Content-Type: text/plain; charset=UTF-8',
+    'Content-Transfer-Encoding: base64',
+    '',
+    wrapBase64(utf8Bytes(opts.text)),
+    `--${boundary}`,
+    'Content-Type: text/html; charset=UTF-8',
+    'Content-Transfer-Encoding: base64',
+    '',
+    wrapBase64(utf8Bytes(opts.html)),
+    `--${boundary}--`,
+    '',
+  ]
+  return lines.join('\r\n')
+}
+
+function refreshCreds(): { clientId: string; clientSecret: string; refreshToken: string } | null {
+  const clientId = readEnv('GMAIL_CLIENT_ID')?.trim() || ''
+  const clientSecret = readEnv('GMAIL_CLIENT_SECRET')?.trim() || ''
+  const refreshToken = readEnv('GMAIL_REFRESH_TOKEN')?.trim() || ''
+  if (!clientId || !clientSecret || !refreshToken) return null
+  return { clientId, clientSecret, refreshToken }
+}
+
+function serviceAccountCreds(): { clientEmail: string; privateKey: string } | null {
+  const raw = readEnv('GMAIL_SERVICE_ACCOUNT_JSON')?.trim()
+  if (!raw) return null
+  try {
+    const parsed = JSON.parse(raw) as { client_email?: string; private_key?: string }
+    const clientEmail = parsed.client_email?.trim() || ''
+    const privateKey = parsed.private_key || ''
+    if (!clientEmail || !privateKey.includes('PRIVATE KEY')) return null
+    return { clientEmail, privateKey }
+  } catch {
+    return null
+  }
+}
+
+function impersonatedMailbox(): string {
+  const explicit = readEnv('GMAIL_IMPERSONATE')?.trim()
+  if (explicit) return sanitizeHeader(explicit)
+  const from = workspaceFromAddress()
+  const match = from.match(/<([^>]+)>/)
+  return sanitizeHeader(match?.[1] || WORKSPACE_MAILBOX)
+}
+
+async function fetchAccessToken(): Promise<{ token: string } | { error: string }> {
+  const refresh = refreshCreds()
+  if (refresh) return refreshAccessToken(refresh)
+  const account = serviceAccountCreds()
+  if (account) return serviceAccountToken(account)
+  return { error: 'Gmail credentials are not set.' }
+}
+
+async function refreshAccessToken(creds: {
+  clientId: string
+  clientSecret: string
+  refreshToken: string
+}): Promise<{ token: string } | { error: string }> {
+  const body = new URLSearchParams({
+    client_id: creds.clientId,
+    client_secret: creds.clientSecret,
+    refresh_token: creds.refreshToken,
+    grant_type: 'refresh_token',
+  })
+  return postToken(body)
+}
+
+async function serviceAccountToken(account: {
+  clientEmail: string
+  privateKey: string
+}): Promise<{ token: string } | { error: string }> {
+  let assertion = ''
+  try {
+    assertion = await signServiceJwt(account.clientEmail, account.privateKey, impersonatedMailbox())
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : 'Could not sign the Gmail assertion.' }
+  }
+  const body = new URLSearchParams({
+    grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+    assertion,
+  })
+  return postToken(body)
+}
+
+async function postToken(body: URLSearchParams): Promise<{ token: string } | { error: string }> {
+  let res: Response
+  try {
+    res = await fetch(TOKEN_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body,
+    })
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : 'Token request failed.' }
+  }
+  const parsed = (await res.json().catch(() => ({}))) as { access_token?: string; error?: unknown }
+  if (!res.ok || !parsed.access_token) {
+    const message =
+      typeof parsed.error === 'string'
+        ? parsed.error
+        : parsed.error
+          ? JSON.stringify(parsed.error)
+          : `Token request failed (${res.status})`
+    return { error: message }
+  }
+  return { token: parsed.access_token }
+}
+
+async function signServiceJwt(
+  clientEmail: string,
+  privateKeyPem: string,
+  subject: string,
+): Promise<string> {
+  const now = Math.floor(Date.now() / 1000)
+  const header = bytesToBase64Url(utf8Bytes(JSON.stringify({ alg: 'RS256', typ: 'JWT' })))
+  const payload = bytesToBase64Url(
+    utf8Bytes(
+      JSON.stringify({
+        iss: clientEmail,
+        scope: GMAIL_SEND_SCOPE,
+        aud: TOKEN_URL,
+        iat: now,
+        exp: now + 3600,
+        sub: subject,
+      }),
+    ),
+  )
+  const unsigned = `${header}.${payload}`
+  const key = await crypto.subtle.importKey(
+    'pkcs8',
+    pemToDer(privateKeyPem),
+    { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
+    false,
+    ['sign'],
+  )
+  const signature = await crypto.subtle.sign(
+    'RSASSA-PKCS1-v1_5',
+    key,
+    utf8Bytes(unsigned),
+  )
+  return `${unsigned}.${bytesToBase64Url(new Uint8Array(signature))}`
+}
+
+function pemToDer(pem: string): ArrayBuffer {
+  const body = pem
+    .replace(/-----BEGIN [^-]+-----/g, '')
+    .replace(/-----END [^-]+-----/g, '')
+    .replace(/\s+/g, '')
+  const binary = atob(body)
+  const bytes = new Uint8Array(binary.length)
+  for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i)
+  return bytes.buffer
+}
+
+export function toBase64Url(value: string): string {
+  return bytesToBase64Url(utf8Bytes(value))
+}
+
+function utf8Bytes(value: string): Uint8Array {
+  return new TextEncoder().encode(value)
+}
+
+function bytesToBase64Url(bytes: Uint8Array): string {
+  let binary = ''
+  for (const byte of bytes) binary += String.fromCharCode(byte)
+  return btoa(binary).replaceAll('+', '-').replaceAll('/', '_').replaceAll('=', '')
+}
+
+function wrapBase64(bytes: Uint8Array): string {
+  let binary = ''
+  for (const byte of bytes) binary += String.fromCharCode(byte)
+  const raw = btoa(binary)
+  const lines: string[] = []
+  for (let i = 0; i < raw.length; i += 76) lines.push(raw.slice(i, i + 76))
+  return lines.join('\r\n')
+}
+
+function encodeSubject(value: string): string {
+  if (/^[\u0000-\u007f]*$/.test(value)) return value
+  return `=?UTF-8?B?${btoa(String.fromCharCode(...utf8Bytes(value)))}?=`
+}
+
+export function sanitizeHeader(value: string): string {
+  return value.replace(/[\r\n]+/g, ' ').trim()
 }
 
 export function corsHeaders(req: Request): HeadersInit {
@@ -95,11 +420,7 @@ export function corsHeaders(req: Request): HeadersInit {
   }
 }
 
-export function jsonResponse(
-  req: Request,
-  body: unknown,
-  status = 200,
-): Response {
+export function jsonResponse(req: Request, body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
     status,
     headers: { ...corsHeaders(req), 'Content-Type': 'application/json' },
