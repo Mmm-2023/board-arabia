@@ -42,7 +42,7 @@ export function PrivacyPage() {
           <p>
             There is no public booking page, so these pages do not take a
             calendar slot. There is no checkout, so these pages do not take a
-            card. There is no member login on the marketing site.
+            card. Sign-in is for admitted members and staff. These pages do not create accounts.
           </p>
           <p>
             A privacy question about a submission can be sent to{' '}

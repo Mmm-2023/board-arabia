@@ -42,14 +42,14 @@ Evidence: **VERIFIED** = proved against the live project or the Pages-compatible
 | RLS on member tables | **VERIFIED.** Anon select on `members` and `profiles` is permission denied (`42501`). A signed-in member sees only their own row. `claim_founding_seat` with full arguments is `42501` for anon. |
 | Invite-only | **VERIFIED** in the app. No public signup form. Signed-out `/dashboard` redirects to member login. No `members` row shows invitation required. Suspended is blocked. Authorization does not use `user_metadata`. The Auth “disable signup” project switch was not queried. |
 | No anon directory scrape | **VERIFIED.** Anon cannot select `members` or `profiles`. Directory does not query other members. Schema `private` is not API-exposed (`PGRST106`). `founding_capacity()` returns counts only to a member or staff user. |
-| Secrets hygiene | **VERIFIED** for the repo and for `email_events`. No service role or Resend key in the client. Invite payload has no token. |
+| Secrets hygiene | **VERIFIED** for the repo and for `email_events`. No service role or Gmail secret in the client. Invite payload has no token. |
 | `/dashboard` vs `/admin` | **VERIFIED.** Staff login without `next` opens `/admin`. `/admin` still requires `staff_users`. `/dashboard` requires a non-suspended `members` row. A member cannot call Admit (403). |
 | Leaked-password protection | **SKIPPED BY MICHAEL** (via Sasha, 22 Sep 2026). No Supabase Pro upgrade. Do not re-ask. |
-| Live Resend (Accept / Reject / Admit) | Michael-owned. Dry-run is OK for Wave 1 while `RESEND_API_KEY` is unset. |
+| Live Workspace mail (Accept / Reject / Admit) | Sent by the Edge Function from noreply@boardarabia.com through the Gmail API. Reply-To is cindy@nammco.com. Dry-run while Gmail auth is missing. Do not set a Resend key. |
 
 ## Left with Michael
 
-- Set `RESEND_API_KEY` on the Supabase Edge Function when live Accept, Reject, and Admit mail should send. Dry-run is the Wave 1 path until then.
+- Set `GMAIL_CLIENT_ID`, `GMAIL_CLIENT_SECRET`, and `GMAIL_REFRESH_TOKEN` on the Supabase Edge Function (consent as cindy@nammco.com) when live Accept, Reject, and Admit mail should send. Dry-run is the path until Gmail auth succeeds. Do not set a Resend key.
 - Merge PR #4 to `main` when Pages should publish `/dashboard`.
 
 Out of scope: full Directory and Mandates, sponsors, Stripe, Lovable, DNS, leaked-password protection.

@@ -1,6 +1,8 @@
 import { Link } from 'react-router-dom'
+import { MEMBER_LOGIN } from '../content/marketing'
 
 const LINKS = [
+  { label: 'Log in', to: MEMBER_LOGIN },
   { label: 'For members', to: '/for-members' },
   { label: 'For capital', to: '/for-capital' },
   { label: 'How it works', to: '/how-it-works' },

@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import type { Database } from './database.types'
 import { parseCapacity, type FoundingCapacity, type FoundingSeat } from './member'
+import { readRecoveryLocation } from './recovery'
 
 const url = import.meta.env.VITE_SUPABASE_URL
 const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
@@ -15,25 +16,30 @@ if (!url || !anonKey) {
 export const passwordResetRedirect = 'https://boardarabia.com/auth/confirm'
 const RECOVERY_KEY = 'ba-password-recovery'
 
-noteRecoveryVisit()
+const recoveryLanding = typeof window === 'undefined' ? null : readRecoveryLocation(window.location.href)
+if (recoveryLanding?.recovery) sessionStorage.setItem(RECOVERY_KEY, '1')
+if (recoveryLanding?.redirectTo) window.location.replace(recoveryLanding.redirectTo)
 
-export const supabase = createClient<Database>(url, anonKey)
+export const supabase = createClient<Database>(url, anonKey, {
+  auth: {
+    // Implicit so a recovery email can deliver access_token in the hash.
+    // Skip detection while we are leaving this page, or the client clears that hash.
+    flowType: 'implicit',
+    detectSessionInUrl: !recoveryLanding?.redirectTo,
+  },
+})
 
-function noteRecoveryVisit() {
-  if (typeof window === 'undefined') return
-  const hash = new URLSearchParams(window.location.hash.replace(/^#/, ''))
-  const query = new URLSearchParams(window.location.search)
-  const type = query.get('type') || hash.get('type')
-  if (type !== 'recovery') return
-  sessionStorage.setItem(RECOVERY_KEY, '1')
-  if (!/\/auth\/confirm\/?$/.test(window.location.pathname)) {
-    window.location.replace(
-      `/auth/confirm${window.location.search}${window.location.hash}`,
-    )
-  }
+let recoveryFromEvent = false
+if (typeof window !== 'undefined') {
+  supabase.auth.onAuthStateChange((event) => {
+    if (event !== 'PASSWORD_RECOVERY') return
+    recoveryFromEvent = true
+    sessionStorage.setItem(RECOVERY_KEY, '1')
+  })
 }
 
 export function passwordRecoveryPending() {
+  if (recoveryFromEvent) return true
   if (typeof sessionStorage === 'undefined') return false
   return sessionStorage.getItem(RECOVERY_KEY) === '1'
 }
@@ -220,6 +226,103 @@ export async function admitMember(
     }
   } catch (err) {
     return { error: err instanceof Error ? err.message : 'Admit failed' }
+  }
+}
+
+export type MemberAdminRow = {
+  user_id: string
+  email: string
+  seat: FoundingSeat
+  status: 'invited' | 'active' | 'suspended'
+}
+
+export type EmailEventAdminRow = {
+  id: string
+  created_at: string
+  kind: string
+  recipient: string
+  subject: string
+  status: string
+}
+
+export type StaffDirectoryRow = {
+  email: string
+  role: string
+  created_at: string
+}
+
+export async function inviteMaster(input?: {
+  email?: string
+  seat?: FoundingSeat
+  admitMember?: boolean
+}): Promise<{
+  error?: string
+  message?: string
+  dryRun?: boolean
+  dryRunInvite?: DryRunInvite
+}> {
+  const payload: Record<string, unknown> = {}
+  if (input?.email) payload.email = input.email.trim()
+  if (input?.seat) payload.seat = input.seat
+  if (input && input.admitMember === false) payload.admit_member = false
+  try {
+    const res = await fetch(`${functionsBase}/invite-master`, {
+      method: 'POST',
+      headers: await staffHeaders(),
+      body: JSON.stringify(payload),
+    })
+    const body = (await res.json().catch(() => ({}))) as {
+      error?: string
+      message?: string
+      dry_run?: boolean
+      dry_run_invite?: {
+        confirm_url?: string | null
+        login_url?: string
+        otp?: string | null
+        temp_password?: string | null
+      }
+    }
+    const invite = body.dry_run_invite
+    const dryRunInvite = invite
+      ? {
+          confirmUrl: invite.confirm_url ?? null,
+          loginUrl: invite.login_url || '',
+          otp: invite.otp ?? null,
+          tempPassword: invite.temp_password ?? null,
+        }
+      : undefined
+    if (!res.ok) {
+      return { error: body.error || body.message || `Invite failed (${res.status})`, dryRunInvite }
+    }
+    return {
+      message: body.message,
+      dryRun: Boolean(body.dry_run),
+      dryRunInvite,
+    }
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : 'Invite failed' }
+  }
+}
+
+export async function setMemberStatus(
+  userId: string,
+  action: 'suspend' | 'restore',
+): Promise<{ error?: string; message?: string; status?: string }> {
+  try {
+    const res = await fetch(`${functionsBase}/set-member-status`, {
+      method: 'POST',
+      headers: await staffHeaders(),
+      body: JSON.stringify({ user_id: userId, action }),
+    })
+    const body = (await res.json().catch(() => ({}))) as {
+      error?: string
+      message?: string
+      status?: string
+    }
+    if (!res.ok) return { error: body.error || `Update failed (${res.status})` }
+    return { message: body.message, status: body.status }
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : 'Update failed' }
   }
 }
 

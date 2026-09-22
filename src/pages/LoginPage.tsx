@@ -211,9 +211,9 @@ export function LoginPage() {
               type="button"
               disabled={submitting}
               onClick={() => void onReset()}
-              className="w-full border border-pearl/25 px-6 py-3.5 text-[0.78rem] font-semibold tracking-[0.08em] text-pearl uppercase transition-colors hover:border-pearl/50 disabled:opacity-60"
+              className="text-[0.9rem] text-pearl/70 underline decoration-pearl/30 underline-offset-4 transition-colors hover:text-pearl disabled:opacity-60"
             >
-              Email me a reset link
+              Forgot password?
             </button>
             {resetNote && <p className="text-[0.9rem] text-brass-bright">{resetNote}</p>}
           </form>
@@ -246,8 +246,8 @@ export function LoginPage() {
 
           <p className="mt-8 text-[0.85rem] leading-relaxed text-pearl/45">
             {memberEntry
-              ? 'Admission is by invitation. This page does not create accounts. Email me a reset link sends you to set a new password.'
-              : 'Email me a reset link opens a page on this site where you choose a new password. An owner can also send a recovery link from the Supabase dashboard if the redirect is https://boardarabia.com/auth/confirm.'}
+              ? 'Admission is by invitation. This page does not create accounts. Forgot password? sends a link to choose a new password.'
+              : 'Forgot password? sends a link to choose a new password on this site. This page does not create accounts.'}
           </p>
         </div>
       </main>

@@ -1,11 +1,8 @@
-/** Re-export shared Workspace mail helpers. */
+/** Re-export shared Workspace mail helpers. Password reset only. No booking link. */
 
 export {
-  ADMIN_NOTIFY_EMAIL,
-  boardMail,
   corsHeaders,
   jsonResponse,
   logEmailEvent,
-  publicSite,
   sendEmail,
 } from '../_shared/mail.ts'

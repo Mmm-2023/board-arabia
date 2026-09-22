@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { readRecoveryLocation } from '../lib/recovery'
 import {
   clearPasswordRecovery,
   passwordRecoveryPending,
@@ -25,15 +26,26 @@ export function AuthConfirmPage() {
   useEffect(() => {
     let cancelled = false
 
-    async function confirm() {
-      const hash = new URLSearchParams(window.location.hash.replace(/^#/, ''))
-      const tokenHash = searchParams.get('token_hash') || hash.get('token_hash') || ''
-      const type = otpType(searchParams.get('type') || hash.get('type'))
-      const recovery = type === 'recovery' || passwordRecoveryPending()
+    const { data: sub } = supabase.auth.onAuthStateChange((event) => {
+      if (cancelled) return
+      if (event === 'PASSWORD_RECOVERY') setPhase('set_password')
+    })
 
-      if (tokenHash && type) {
+    async function confirm() {
+      const parsed = readRecoveryLocation(window.location.href)
+      const type = otpType(parsed.type)
+      const recovery = parsed.recovery || passwordRecoveryPending()
+
+      if (parsed.errorDescription && !parsed.tokenHash && !parsed.accessToken) {
+        clearPasswordRecovery()
+        setError(parsed.errorDescription)
+        setPhase('error')
+        return
+      }
+
+      if (parsed.tokenHash && type) {
         const { error: verifyError } = await supabase.auth.verifyOtp({
-          token_hash: tokenHash,
+          token_hash: parsed.tokenHash,
           type,
         })
         if (cancelled) return
@@ -48,8 +60,33 @@ export function AuthConfirmPage() {
           return
         }
         clearPasswordRecovery()
-        navigate('/dashboard', { replace: true })
+        navigate(safeNext(searchParams.get('next')), { replace: true })
         return
+      }
+
+      if (parsed.accessToken && parsed.refreshToken) {
+        const existing = await supabase.auth.getSession()
+        if (cancelled) return
+        if (!existing.data.session) {
+          const { error: sessionError } = await supabase.auth.setSession({
+            access_token: parsed.accessToken,
+            refresh_token: parsed.refreshToken,
+          })
+          if (cancelled) return
+          if (sessionError) {
+            const retry = await supabase.auth.getSession()
+            if (!(retry.data.session && recovery)) {
+              clearPasswordRecovery()
+              setError(sessionError.message)
+              setPhase('error')
+              return
+            }
+          }
+        }
+        if (recovery) {
+          setPhase('set_password')
+          return
+        }
       }
 
       const code = searchParams.get('code')
@@ -70,7 +107,7 @@ export function AuthConfirmPage() {
           setPhase('set_password')
           return
         }
-        navigate('/dashboard', { replace: true })
+        navigate(safeNext(searchParams.get('next')), { replace: true })
         return
       }
 
@@ -90,7 +127,7 @@ export function AuthConfirmPage() {
       const { data } = await supabase.auth.getSession()
       if (cancelled) return
       if (data.session) {
-        navigate('/dashboard', { replace: true })
+        navigate(safeNext(searchParams.get('next')), { replace: true })
         return
       }
       setError('This sign-in link is missing or has expired.')
@@ -98,11 +135,6 @@ export function AuthConfirmPage() {
     }
 
     void confirm()
-
-    const { data: sub } = supabase.auth.onAuthStateChange((event) => {
-      if (cancelled) return
-      if (event === 'PASSWORD_RECOVERY') setPhase('set_password')
-    })
 
     return () => {
       cancelled = true
@@ -129,22 +161,6 @@ export function AuthConfirmPage() {
       return
     }
     clearPasswordRecovery()
-    const { data } = await supabase.auth.getUser()
-    const userId = data.user?.id
-    if (!userId) {
-      await supabase.auth.signOut()
-      navigate('/login', { replace: true })
-      return
-    }
-    const { data: staff } = await supabase
-      .from('staff_users')
-      .select('user_id')
-      .eq('user_id', userId)
-      .maybeSingle()
-    if (staff) {
-      navigate('/admin', { replace: true })
-      return
-    }
     await supabase.auth.signOut()
     navigate('/login', { replace: true })
   }
@@ -162,7 +178,7 @@ export function AuthConfirmPage() {
         {phase === 'set_password' && (
           <form onSubmit={onSavePassword} className="mt-6 space-y-4">
             <p className="text-[1rem] leading-relaxed text-ink/65">
-              Choose a password for this account. You will use it the next time you sign in.
+              Choose a password for this account. After it is saved you return to sign in. Staff who are on the staff list continue to admin from there.
             </p>
             <label className="block">
               <span className="mb-2 block text-[0.72rem] font-semibold tracking-[0.08em] text-ink/45 uppercase">
@@ -239,4 +255,11 @@ function otpType(raw: string | null): OtpType | null {
     return raw
   }
   return null
+}
+
+function safeNext(raw: string | null): string {
+  if (!raw) return '/dashboard'
+  if (!raw.startsWith('/') || raw.startsWith('//')) return '/dashboard'
+  if (raw.startsWith('/login')) return '/dashboard'
+  return raw
 }
