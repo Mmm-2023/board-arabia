@@ -2,11 +2,6 @@
 
 export const ADMIN_NOTIFY_EMAIL = 'michael@nammco.com'
 
-/** Private booking link — emailed on Accept ONLY. Never expose on the public site. */
-export const PRIVATE_BOOKING_LINK =
-  Deno.env.get('PRIVATE_BOOKING_LINK') ??
-  'https://calendar.app.google/a7RVc2v3mZ226Sd89'
-
 export type SendResult = {
   dryRun: boolean
   provider: string

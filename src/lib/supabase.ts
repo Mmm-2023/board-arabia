@@ -92,24 +92,35 @@ export async function submitApplication(payload: {
 export async function decideApplication(
   applicationId: string,
   decision: 'accepted' | 'rejected',
+  meeting?: { meeting_start: string; meeting_end: string },
 ): Promise<{
   error?: string
   message?: string
   dryRun?: boolean
+  inviteEventId?: string | null
 }> {
   try {
     const res = await fetch(`${functionsBase}/decide-application`, {
       method: 'POST',
       headers: await staffHeaders(),
-      body: JSON.stringify({ application_id: applicationId, decision }),
+      body: JSON.stringify({
+        application_id: applicationId,
+        decision,
+        ...(meeting ?? {}),
+      }),
     })
     const body = (await res.json().catch(() => ({}))) as {
       error?: string
       message?: string
       dry_run?: boolean
+      invite_event_id?: string
     }
     if (!res.ok) return { error: body.error || `Decision failed (${res.status})` }
-    return { message: body.message, dryRun: Boolean(body.dry_run) }
+    return {
+      message: body.message,
+      dryRun: Boolean(body.dry_run),
+      inviteEventId: body.invite_event_id ?? null,
+    }
   } catch (err) {
     return { error: err instanceof Error ? err.message : 'Decision failed' }
   }

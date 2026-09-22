@@ -2,8 +2,6 @@
 
 export const ADMIN_NOTIFY_EMAIL = 'michael@nammco.com'
 
-/** Booking link constant intentionally omitted here — Accept emails only in decide-application. */
-
 export type SendResult = {
   dryRun: boolean
   provider: string

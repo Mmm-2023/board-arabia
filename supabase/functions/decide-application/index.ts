@@ -1,9 +1,9 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1'
+import { createMeetInvite } from './google.ts'
 import {
   corsHeaders,
   jsonResponse,
   logEmailEvent,
-  PRIVATE_BOOKING_LINK,
   sendEmail,
 } from './mail.ts'
 
@@ -43,10 +43,14 @@ Deno.serve(async (req) => {
 
   let applicationId = ''
   let decision = ''
+  let meetingStart = ''
+  let meetingEnd = ''
   try {
     const body = await req.json()
     applicationId = String(body.application_id || '')
     decision = String(body.decision || '')
+    meetingStart = String(body.meeting_start || '')
+    meetingEnd = String(body.meeting_end || '')
   } catch {
     return jsonResponse(req, { error: 'Invalid JSON' }, 400)
   }
@@ -80,25 +84,56 @@ Deno.serve(async (req) => {
   }
 
   if (decision === 'accepted') {
-    // Accept: email private booking link only. No Calendar API. No public CTA.
-    const subject = 'Board Arabia — next step (private booking)'
+    if (!meetingStart || !meetingEnd) {
+      return jsonResponse(
+        req,
+        { error: 'meeting_start and meeting_end required for Accept' },
+        400,
+      )
+    }
+    const startMs = Date.parse(meetingStart)
+    const endMs = Date.parse(meetingEnd)
+    if (Number.isNaN(startMs) || Number.isNaN(endMs) || endMs <= startMs) {
+      return jsonResponse(req, { error: 'Invalid meeting window' }, 400)
+    }
+
+    let invite
+    try {
+      invite = await createMeetInvite({
+        applicantEmail: app.email,
+        applicantName: app.full_name,
+        startIso: new Date(startMs).toISOString(),
+        endIso: new Date(endMs).toISOString(),
+        applicationId: app.id,
+      })
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Calendar invite failed'
+      await logEmailEvent(admin, {
+        application_id: app.id,
+        kind: 'accept_calendar_invite',
+        recipient: app.email,
+        subject: 'Board Arabia calendar invite (failed)',
+        status: 'error',
+        provider: 'google_calendar',
+        detail: msg,
+      })
+      return jsonResponse(req, { error: msg }, 502)
+    }
+
+    // Optional Resend ack (Calendar also emails the invite when sendUpdates=all)
+    const subject = 'Board Arabia — conversation confirmed'
+    const when = new Date(startMs).toUTCString()
     const text = `Hello ${app.full_name || 'there'},
 
 Your Board Arabia application has been accepted.
 
-Please use this private booking link to schedule a conversation with Michael:
-
-${PRIVATE_BOOKING_LINK}
-
-This link is personal to accepted candidates and is not published on the public site.
+A calendar invite${invite.meetLink ? ' with Google Meet' : ''} for ${when} has been sent to ${app.email}. Please accept the invite in your calendar.
 
 — Board Arabia`
-
     const html = `<p>Hello ${escapeHtml(app.full_name || 'there')},</p>
 <p>Your Board Arabia application has been <strong>accepted</strong>.</p>
-<p>Please use this private booking link to schedule a conversation with Michael:</p>
-<p><a href="${escapeHtml(PRIVATE_BOOKING_LINK)}">${escapeHtml(PRIVATE_BOOKING_LINK)}</a></p>
-<p>This link is personal to accepted candidates and is not published on the public site.</p>
+<p>A calendar invite${invite.meetLink ? ' with Google Meet' : ''} for <strong>${escapeHtml(when)}</strong> has been sent to ${escapeHtml(app.email)}. Please accept the invite in your calendar.</p>
+${invite.meetLink ? `<p>Meet: <a href="${escapeHtml(invite.meetLink)}">${escapeHtml(invite.meetLink)}</a></p>` : ''}
 <p>— Board Arabia</p>`
 
     const sent = await sendEmail({
@@ -109,24 +144,30 @@ This link is personal to accepted candidates and is not published on the public 
     })
     await logEmailEvent(admin, {
       application_id: app.id,
-      kind: 'accept_private_booking',
+      kind: 'accept_calendar_invite',
       recipient: app.email,
       subject,
-      status: sent.status,
-      provider: sent.provider,
-      provider_id: sent.providerId,
-      detail: sent.detail ?? null,
-      payload: { invite_mode: 'private_booking_link' },
+      status: invite.dryRun ? 'dry_run' : sent.status === 'error' ? 'error' : 'sent',
+      provider: invite.dryRun ? 'google_calendar_dry_run' : 'google_calendar',
+      provider_id: invite.eventId,
+      detail: invite.detail ?? sent.detail ?? null,
+      payload: {
+        invite_mode: 'google_calendar_meet',
+        meet_link: invite.meetLink,
+        html_link: invite.htmlLink,
+        meeting_start: meetingStart,
+        meeting_end: meetingEnd,
+        resend_status: sent.status,
+      },
     })
 
-    if (sent.status === 'error') {
-      return jsonResponse(req, { error: sent.detail || 'Email failed' }, 502)
+    if (!invite.dryRun && sent.status === 'error') {
+      // Calendar invite already sent; note Resend failure but still mark accepted
     }
 
     updatePayload.invite_sent_at = now
-    updatePayload.invite_event_id = 'private_booking_link'
-    // Nullable calendar_slot used as private-invite metadata only (never a public CTA).
-    updatePayload.calendar_slot = 'private_invite_emailed'
+    updatePayload.invite_event_id = invite.eventId || 'google_calendar_pending_secrets'
+    updatePayload.calendar_slot = new Date(startMs).toISOString()
 
     const { error: upErr } = await admin
       .from('applications')
@@ -138,11 +179,13 @@ This link is personal to accepted candidates and is not published on the public 
 
     return jsonResponse(req, {
       ok: true,
-      dry_run: sent.dryRun,
-      invite_mode: 'private_booking_link',
-      message: sent.dryRun
-        ? 'Accepted (dry-run). Set RESEND_API_KEY to send the private booking email.'
-        : 'Accepted — private booking link emailed to candidate.',
+      dry_run: invite.dryRun,
+      invite_mode: 'google_calendar_meet',
+      invite_event_id: invite.eventId,
+      meet_link: invite.meetLink,
+      message: invite.dryRun
+        ? 'Accepted (dry-run). Set Google Calendar secrets to create Meet invites. See README.'
+        : 'Accepted — Google Calendar event + Meet invite sent to applicant.',
     })
   }
 
@@ -155,7 +198,6 @@ Thank you for your interest in Board Arabia. After review, we are unable to proc
 We appreciate you taking the time to apply.
 
 — Board Arabia`
-
   const html = `<p>Hello ${escapeHtml(app.full_name || 'there')},</p>
 <p>Thank you for your interest in Board Arabia. After review, we are unable to proceed with your application at this time.</p>
 <p>We appreciate you taking the time to apply.</p>
