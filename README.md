@@ -2,7 +2,7 @@
 
 Application-only site: **land → apply (pre-vet) → staff review**, with private Accept/Reject emails.
 
-**Staging (GitHub Pages):** https://mmm-2023.github.io/board-arabia/
+**Site (GitHub Pages, custom domain):** https://boardarabia.com/
 
 ## Marketing pages
 
@@ -25,7 +25,7 @@ Primary CTA on every marketing page is **Apply for consideration** → `/apply`.
 
 ## SEO and answer engines
 
-`npm run build` prerenders each marketing route to static HTML (React server render, no browser), so the response is not an empty SPA shell. The host is GitHub Pages at base path `/board-arabia/` (`.github/workflows/pages.yml`). Canonicals stay `https://boardarabia.com` until that domain is cut over in DNS. Do not put a booking URL in schema or CTAs. `vercel.json` is not the deploy path.
+`npm run build` prerenders each marketing route to static HTML (React server render, no browser), so the response is not an empty SPA shell. GitHub Pages serves the custom domain at the root (`base` `/`, `public/CNAME`). Apex A records and the www CNAME are applied separately in GoDaddy. Do not put a booking URL in schema or CTAs. `vercel.json` is not the deploy path.
 
 | Check | Where |
 | --- | --- |
@@ -38,7 +38,7 @@ Primary CTA on every marketing page is **Apply for consideration** → `/apply`.
 
 Home includes an answer-first definition and eight questions (Founding 100, Vision 2030, family offices, FDI, chairperson, NED, Saudi Arabia, GCC, international places, personal review). No review or rating schema.
 
-Staging: https://mmm-2023.github.io/board-arabia/
+Site: https://boardarabia.com/
 
 ## Stack
 
@@ -104,7 +104,7 @@ Michael (`michael@smemarketer.com`) is already in `staff_users` on the locked pr
 3. **Magic / recovery link (SQL / Auth API)**  
    Authentication → Users → generate recovery link → open once and set password.
 
-Then open https://mmm-2023.github.io/board-arabia/login and sign in → `/admin`.
+Then open https://boardarabia.com/login and sign in → `/admin`.
 
 ### Promote another staff user
 
@@ -126,7 +126,7 @@ Set these in **Supabase → Project Settings → Edge Functions → Secrets**:
 |--------|----------|---------|
 | `RESEND_API_KEY` | **Yes for live email** | Ack / notify / reject (+ optional Accept ack) |
 | `RESEND_FROM` | Recommended | Verified sender |
-| `PUBLIC_SITE_URL` | Recommended | Admin link in notify. Default `https://mmm-2023.github.io/board-arabia` |
+| `PUBLIC_SITE_URL` | Recommended | Admin and admit links. Code default is still `https://mmm-2023.github.io/board-arabia`. Set `https://boardarabia.com` once the domain answers. |
 
 Accept emails the private booking URL from the Edge Function only. **No Google Calendar API, Meet, or OAuth secrets.** Optional override: `PRIVATE_BOOKING_LINK`.
 
@@ -154,13 +154,15 @@ limit 20;
 
 ## Deploy
 
-GitHub Pages is the host. Actions builds with `VITE_BASE_PATH=/board-arabia/` and publishes `dist`. Resend and other secrets stay in Supabase Edge Functions, not in the Pages workflow.
+GitHub Pages is the host. Actions builds with `VITE_BASE_PATH=/` and publishes `dist`, including `CNAME` (`boardarabia.com`), so the project site is served at the domain root. DNS for the apex (A) and www (CNAME) is configured in GoDaddy, not in this repo. Resend and other secrets stay in Supabase Edge Functions, not in the Pages workflow.
 
-https://mmm-2023.github.io/board-arabia/
+https://boardarabia.com/
+
+The previous project URL `https://mmm-2023.github.io/board-arabia/` redirects to the apex after the custom domain is active. In-app routes stay root paths (`/apply`, `/login`, `/dashboard`). React Router `basename` follows Vite `BASE_URL`.
 
 Pages must use **GitHub Actions** as the source (not the `main` branch files). Marketing URLs are real `index.html` files. `/login`, `/admin`, `/ops`, `/dashboard` (and its sections), and `/auth/confirm` ship the noindex app shell. Unknown paths use `404.html` with the same shell.
 
-Proof build: `GITHUB_PAGES=true VITE_BASE_PATH=/board-arabia/ npm run build` writes `dist/dashboard/index.html` and fails if the artifact contains a public booking URL.
+Proof build: `VITE_BASE_PATH=/ npm run build` writes `dist/CNAME`, `dist/dashboard/index.html`, and root `/assets/` URLs, and fails if the artifact contains a public booking URL.
 
 ## Security checklist (Factory audit + PR2)
 

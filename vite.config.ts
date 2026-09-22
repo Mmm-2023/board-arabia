@@ -2,11 +2,9 @@ import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
 
-// GitHub Pages project site: /board-arabia/. Local `npm run dev` stays at /.
-const base =
-  process.env.GITHUB_PAGES === 'true' || process.env.VITE_BASE_PATH
-    ? process.env.VITE_BASE_PATH || '/board-arabia/'
-    : '/'
+// Custom domain (boardarabia.com) is served at the domain root.
+// Local `npm run dev` stays at /. Set VITE_BASE_PATH only to override.
+const base = process.env.VITE_BASE_PATH || '/'
 
 export default defineConfig({
   base,

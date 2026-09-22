@@ -211,7 +211,7 @@ for (const staff of appShells) {
   fs.writeFileSync(path.join(dir, 'index.html'), shellHtml)
 }
 
-const pagesBase = (process.env.VITE_BASE_PATH || (process.env.GITHUB_PAGES === 'true' ? '/board-arabia/' : '/')).replace(/\/?$/, '/')
+const pagesBase = (process.env.VITE_BASE_PATH || '/').replace(/\/?$/, '/')
 if (pagesBase !== '/') {
   const prefix = pagesBase.replace(/\/$/, '')
   const robots = [
