@@ -1,6 +1,8 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1'
+import { applicationAck } from '../_shared/transactional_copy.ts'
 import {
   ADMIN_NOTIFY_EMAIL,
+  boardMail,
   corsHeaders,
   jsonResponse,
   logEmailEvent,
@@ -107,34 +109,27 @@ Deno.serve(async (req) => {
     `LinkedIn: ${app.linkedin_url || 'Not provided'}`,
   ]
 
-  const ackSubject = 'We received your Board Arabia application'
-  const ackText = `Hello ${app.full_name || 'there'},
-
-Thank you for applying to Board Arabia. We have your pre-vet details and Michael will review them shortly.
-
-You do not need to book anything yet. If accepted, you will receive a private next-step email.
-
-Board Arabia`
-  const ackHtml = `<p>Hello ${escapeHtml(app.full_name || 'there')},</p>
-<p>Thank you for applying to Board Arabia. We have your pre-vet details and Michael will review them shortly.</p>
-<p>You do not need to book anything yet. If accepted, you will receive a private next-step email.</p>
-<p>Board Arabia</p>`
+  const ackMail = applicationAck(app.full_name || 'there')
+  const ackSubject = ackMail.subject
+  const ackText = ackMail.text
+  const ackHtml = ackMail.html
 
   const notifySubject = `New Board Arabia application: ${app.full_name || app.email}`
-  const notifyText = `New pending application.
+  const notifyBody = boardMail(
+    `New pending application.
 
 ${summaryLines.join('\n')}
 
 Review / Accept / Reject: ${adminUrl}
 
-Application id: ${app.id}
-
-Board Arabia`
-  const notifyHtml = `<p>New pending application.</p>
+Application id: ${app.id}`,
+    `<p>New pending application.</p>
 <pre style="font-family:ui-monospace,monospace;white-space:pre-wrap">${escapeHtml(summaryLines.join('\n'))}</pre>
 <p><a href="${escapeHtml(adminUrl)}">Open admin (Accept or Reject)</a></p>
-<p>Application id: ${escapeHtml(app.id)}</p>
-<p>Board Arabia</p>`
+<p>Application id: ${escapeHtml(app.id)}</p>`,
+  )
+  const notifyText = notifyBody.text
+  const notifyHtml = notifyBody.html
 
   const ack = await sendEmail({
     to: app.email,

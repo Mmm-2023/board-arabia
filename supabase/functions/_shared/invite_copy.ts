@@ -1,3 +1,5 @@
+import { boardMail } from './mail.ts'
+
 type LinkIssued = {
   mode: 'magic_link'
   otp: string
@@ -22,9 +24,8 @@ export function buildMasterInvite(opts: {
   const subject = opts.seatLabel
     ? 'Board Arabia: your member invitation'
     : 'Board Arabia: staff sign-in'
-  const text = inviteText(opts)
-  const html = inviteHtml(opts)
-  return { subject, text, html }
+  const sealed = boardMail(inviteText(opts), inviteHtml(opts))
+  return { subject, text: sealed.text, html: sealed.html }
 }
 
 function inviteText(opts: {
@@ -65,8 +66,6 @@ function inviteText(opts: {
     'After you arrive, set a password and review your profile.',
     '',
     'This invitation is personal. The member dashboard is not public.',
-    '',
-    'Board Arabia',
   )
   return lines.join('\n')
 }
@@ -110,7 +109,6 @@ function inviteHtml(opts: {
     `<p>Member dashboard: <a href="${escapeHtml(opts.memberLoginUrl)}">${escapeHtml(opts.memberLoginUrl)}</a></p>`,
     '<p>After you arrive, set a password and review your profile.</p>',
     '<p>This invitation is personal. The member dashboard is not public.</p>',
-    '<p>Board Arabia</p>',
   )
   return parts.join('\n')
 }

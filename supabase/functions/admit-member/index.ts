@@ -1,5 +1,6 @@
 import { createClient, type SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1'
-import { escapeHtml, issueCredential, type Issued } from '../_shared/credentials.ts'
+import { issueCredential, type Issued } from '../_shared/credentials.ts'
+import { admitMail } from '../_shared/transactional_copy.ts'
 import { corsHeaders, jsonResponse, logEmailEvent, publicSite, sendEmail } from './mail.ts'
 
 const SEAT_CAP = 50
@@ -127,9 +128,7 @@ Deno.serve(async (req) => {
       : null
 
   const greeting = fullName || 'there'
-  const subject = 'Board Arabia: your member invitation'
-  const text = inviteText({ greeting, seatLabel, loginUrl, confirmUrl, issued })
-  const html = inviteHtml({ greeting, seatLabel, loginUrl, confirmUrl, issued })
+  const { subject, text, html } = admitMail({ greeting, seatLabel, loginUrl, confirmUrl, issued })
 
   if (/calendar\.app\.google|nammco/i.test(`${subject}\n${text}\n${html}`)) {
     await rollbackAdmission(admin, app.id, app.status, issued)
@@ -178,88 +177,6 @@ Deno.serve(async (req) => {
     ...(dryRunInvite ? { dry_run_invite: dryRunInvite } : {}),
   })
 })
-
-function inviteText(opts: {
-  greeting: string
-  seatLabel: string
-  loginUrl: string
-  confirmUrl: string | null
-  issued: Issued
-}) {
-  const lines = [
-    `Hello ${opts.greeting},`,
-    '',
-    `You have been admitted to Board Arabia as a founding member (${opts.seatLabel} seat).`,
-    '',
-  ]
-  if (opts.issued.mode === 'magic_link' && opts.confirmUrl) {
-    lines.push(
-      'Open this one-time link to sign in. It expires and works once:',
-      '',
-      opts.confirmUrl,
-      '',
-    )
-    if (opts.issued.otp) {
-      lines.push(
-        `Or sign in at ${opts.loginUrl} with this one-time code:`,
-        '',
-        opts.issued.otp,
-        '',
-      )
-    }
-  } else if (opts.issued.mode === 'temp_password') {
-    lines.push(
-      `Sign in at ${opts.loginUrl}`,
-      '',
-      `Temporary password: ${opts.issued.tempPassword}`,
-      '',
-    )
-  }
-  lines.push(
-    'After you arrive, set a password and review your profile.',
-    '',
-    'This invitation is personal. The member dashboard is not public.',
-    '',
-    'Board Arabia',
-  )
-  return lines.join('\n')
-}
-
-function inviteHtml(opts: {
-  greeting: string
-  seatLabel: string
-  loginUrl: string
-  confirmUrl: string | null
-  issued: Issued
-}) {
-  const parts = [
-    `<p>Hello ${escapeHtml(opts.greeting)},</p>`,
-    `<p>You have been admitted to Board Arabia as a founding member (${escapeHtml(opts.seatLabel)} seat).</p>`,
-  ]
-  if (opts.issued.mode === 'magic_link' && opts.confirmUrl) {
-    parts.push(
-      '<p>Open this one-time link to sign in. It expires and works once:</p>',
-      `<p><a href="${escapeHtml(opts.confirmUrl)}">${escapeHtml(opts.confirmUrl)}</a></p>`,
-    )
-    if (opts.issued.otp) {
-      parts.push(
-        `<p>Or sign in at <a href="${escapeHtml(opts.loginUrl)}">${escapeHtml(opts.loginUrl)}</a> with this one-time code:</p>`,
-        `<p><strong>${escapeHtml(opts.issued.otp)}</strong></p>`,
-      )
-    }
-  } else if (opts.issued.mode === 'temp_password') {
-    parts.push(
-      `<p>Sign in at <a href="${escapeHtml(opts.loginUrl)}">${escapeHtml(opts.loginUrl)}</a></p>`,
-      `<p>Temporary password: <strong>${escapeHtml(opts.issued.tempPassword)}</strong></p>`,
-    )
-  }
-  parts.push(
-    '<p>After you arrive, set a password and review your profile.</p>',
-    '<p>This invitation is personal. The member dashboard is not public.</p>',
-    '<p>Board Arabia</p>',
-  )
-  return parts.join('\n')
-}
 
 async function rollbackAdmission(
   admin: SupabaseClient,

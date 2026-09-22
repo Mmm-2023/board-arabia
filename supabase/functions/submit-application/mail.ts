@@ -2,6 +2,7 @@
 
 export {
   ADMIN_NOTIFY_EMAIL,
+  boardMail,
   corsHeaders,
   jsonResponse,
   logEmailEvent,

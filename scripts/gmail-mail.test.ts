@@ -2,12 +2,19 @@ import assert from 'node:assert/strict'
 import { afterEach, test } from 'node:test'
 import {
   buildRfc822,
+  hasBoardFooter,
   marketingSignatureHit,
   sendEmail,
   workspaceFromAddress,
   WORKSPACE_MAILBOX,
 } from '../supabase/functions/_shared/mail.ts'
 import { buildMasterInvite } from '../supabase/functions/_shared/invite_copy.ts'
+import {
+  acceptMail,
+  admitMail,
+  applicationAck,
+  rejectMail,
+} from '../supabase/functions/_shared/transactional_copy.ts'
 
 const SECRET_KEYS = [
   'GMAIL_CLIENT_ID',
@@ -38,13 +45,15 @@ const acceptText = [
   'Board Arabia',
 ].join('\n')
 
+const acceptHtml = '<p>Your Board Arabia application has been accepted.</p>\n<footer>Board Arabia</footer>'
+
 test('dry-run when Gmail credentials are missing', async () => {
   clearMailEnv()
   const result = await sendEmail({
     to: 'person@example.com',
     subject: 'Board Arabia: next step (private booking)',
     text: acceptText,
-    html: '<p>Your Board Arabia application has been accepted.</p>',
+    html: acceptHtml,
   })
   assert.equal(result.status, 'dry_run')
   assert.equal(result.dryRun, true)
@@ -92,7 +101,7 @@ test('configured client posts the Accept message to the Gmail API', async () => 
       to: 'person@example.com',
       subject: 'Board Arabia: next step (private booking)',
       text: acceptText,
-      html: '<p>Your Board Arabia application has been accepted.</p>',
+      html: acceptHtml,
     })
     assert.equal(result.status, 'sent')
     assert.equal(result.provider, 'gmail')
@@ -161,7 +170,7 @@ test('a mailbox at the same domain is not treated as the marketing site', async 
     '',
     'Board Arabia',
   ].join('\n')
-  const html = '<p>Email: founder@nammco.com</p><p>LinkedIn: https://www.linkedin.com/in/founder</p><p>Board Arabia</p>'
+  const html = '<p>Email: founder@nammco.com</p><p>LinkedIn: https://www.linkedin.com/in/founder</p>\n<footer>Board Arabia</footer>'
   assert.equal(marketingSignatureHit(text, html), null)
   const result = await sendEmail({
     to: 'michael@nammco.com',
@@ -199,6 +208,61 @@ test('the job title spelling in the mailbox signature is refused', async () => {
   }
 })
 
+test('apply ack, Accept, Reject, and Admit use a Board Arabia footer only', () => {
+  const booking = 'https://booking.example/private'
+  const messages = [
+    applicationAck('Ada'),
+    acceptMail('Ada', booking),
+    rejectMail('Ada'),
+    admitMail({
+      greeting: 'Ada',
+      seatLabel: 'Saudi Arabia',
+      loginUrl: 'https://boardarabia.com/login?next=/dashboard',
+      confirmUrl: 'https://boardarabia.com/auth/confirm?token_hash=example&type=invite',
+      issued: { mode: 'magic_link', otp: '123456' },
+    }),
+  ]
+  for (const mail of messages) {
+    assert.equal(hasBoardFooter(mail.text, mail.html), true)
+    assert.equal(marketingSignatureHit(mail.text, mail.html), null)
+    assert.equal(mail.text.includes('\u2014'), false)
+    assert.equal(mail.html.includes('\u2014'), false)
+    assert.equal(/<img\b/i.test(mail.html), false)
+    assert.equal(/director of partner/i.test(`${mail.text}\n${mail.html}`), false)
+    assert.equal(/advisory gateway|partnerships built to last|lasting partnerships/i.test(`${mail.text}\n${mail.html}`), false)
+    assert.equal(/nammco/i.test(`${mail.text}\n${mail.html}`), false)
+  }
+  assert.match(messages[1].text, /has been accepted/)
+  assert.match(messages[1].text, /https:\/\/booking\.example\/private/)
+})
+
+test('nammco tagline is refused even when a Board Arabia footer is present', async () => {
+  clearMailEnv()
+  process.env.GMAIL_CLIENT_ID = 'client-id'
+  process.env.GMAIL_CLIENT_SECRET = 'client-secret'
+  process.env.GMAIL_REFRESH_TOKEN = 'refresh-token'
+  let called = false
+  const original = globalThis.fetch
+  globalThis.fetch = async () => {
+    called = true
+    return new Response('should not send', { status: 500 })
+  }
+  try {
+    const result = await sendEmail({
+      to: 'person@example.com',
+      subject: 'Board Arabia: next step (private booking)',
+      text: `${acceptText}\nAn advisory gateway for lasting partnerships in Saudi Arabia`,
+      html: `${acceptHtml}\n<p>partnerships built to last</p>`,
+    })
+    assert.equal(result.status, 'error')
+    assert.equal(result.dryRun, false)
+    assert.equal(called, false)
+    assert.match(result.detail || '', /tagline/)
+  } finally {
+    globalThis.fetch = original
+  }
+})
+
 test('product invites use a plain Board Arabia sign-off', () => {
   const invite = buildMasterInvite({
     greeting: 'there',
@@ -210,8 +274,9 @@ test('product invites use a plain Board Arabia sign-off', () => {
     issued: { mode: 'magic_link', otp: '123456' },
   })
   assert.equal(marketingSignatureHit(invite.text, invite.html), null)
+  assert.equal(hasBoardFooter(invite.text, invite.html), true)
   assert.equal(invite.text.trimEnd().endsWith('Board Arabia'), true)
-  assert.match(invite.html, /<p>Board Arabia<\/p>\s*$/)
+  assert.match(invite.html, /<footer>Board Arabia<\/footer>\s*$/)
   assert.equal(invite.text.includes('\u2014'), false)
   assert.equal(invite.html.includes('\u2014'), false)
 })
@@ -236,7 +301,7 @@ test('Gmail auth failure is a dry-run and does not echo the token', async () => 
       to: 'person@example.com',
       subject: 'Board Arabia: next step (private booking)',
       text: acceptText,
-      html: '<p>Accepted.</p>',
+      html: acceptHtml,
     })
     assert.equal(result.status, 'dry_run')
     assert.equal(result.dryRun, true)

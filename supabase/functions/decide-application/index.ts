@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1'
+import { acceptMail, rejectMail } from '../_shared/transactional_copy.ts'
 import {
   PRIVATE_BOOKING_LINK,
   corsHeaders,
@@ -87,24 +88,7 @@ Deno.serve(async (req) => {
   }
 
   if (decision === 'accepted') {
-    const subject = 'Board Arabia: next step (private booking)'
-    const text = `Hello ${app.full_name || 'there'},
-
-Your Board Arabia application has been accepted.
-
-Please use this private booking link to schedule a conversation with Michael:
-
-${PRIVATE_BOOKING_LINK}
-
-This link is personal to accepted candidates and is not published on the public site.
-
-Board Arabia`
-    const html = `<p>Hello ${escapeHtml(app.full_name || 'there')},</p>
-<p>Your Board Arabia application has been <strong>accepted</strong>.</p>
-<p>Please use this private booking link to schedule a conversation with Michael:</p>
-<p><a href="${escapeHtml(PRIVATE_BOOKING_LINK)}">${escapeHtml(PRIVATE_BOOKING_LINK)}</a></p>
-<p>This link is personal to accepted candidates and is not published on the public site.</p>
-<p>Board Arabia</p>`
+    const { subject, text, html } = acceptMail(app.full_name || 'there', PRIVATE_BOOKING_LINK)
 
     const sent = await sendEmail({
       to: app.email,
@@ -152,18 +136,7 @@ Board Arabia`
     })
   }
 
-  const subject = 'Board Arabia application update'
-  const text = `Hello ${app.full_name || 'there'},
-
-Thank you for your interest in Board Arabia. After review, we are unable to proceed with your application at this time.
-
-We appreciate you taking the time to apply.
-
-Board Arabia`
-  const html = `<p>Hello ${escapeHtml(app.full_name || 'there')},</p>
-<p>Thank you for your interest in Board Arabia. After review, we are unable to proceed with your application at this time.</p>
-<p>We appreciate you taking the time to apply.</p>
-<p>Board Arabia</p>`
+  const { subject, text, html } = rejectMail(app.full_name || 'there')
 
   const sent = await sendEmail({ to: app.email, subject, html, text })
   await logEmailEvent(admin, {
@@ -199,11 +172,3 @@ Board Arabia`
       : 'Rejected. Decline email sent to applicant.',
   })
 })
-
-function escapeHtml(s: string) {
-  return s
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-}

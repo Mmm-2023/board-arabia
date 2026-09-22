@@ -50,10 +50,15 @@ export function gmailCredentialsPresent(): boolean {
 /** Plain Board Arabia close. Not a mailbox marketing signature. */
 export const BOARD_SIGNOFF = 'Board Arabia'
 
+const BOARD_FOOTER_HTML = /<footer>\s*Board Arabia\s*<\/footer>\s*$/
+
 const MARKETING_SIGNATURE = [
   [/director of partner/i, 'job title'],
   [/kingdom centre/i, 'banner'],
   [/kingdom center/i, 'banner'],
+  [/advisory gateway/i, 'tagline'],
+  [/partnerships built to last/i, 'tagline'],
+  [/lasting partnerships/i, 'tagline'],
   [/nammco\.com/i, 'nammco site'],
   [/linkedin\.com\/(?:company|school|in)\/nammco/i, 'linkedin block'],
   [/<img\b/i, 'image'],
@@ -61,8 +66,19 @@ const MARKETING_SIGNATURE = [
   [/\bcid:/i, 'inline image'],
 ] as const
 
+/** Append the only footer applicant mail may use. */
+export function boardMail(textBody: string, htmlBody: string): { text: string; html: string } {
+  const text = `${textBody.replace(/\s+$/, '')}\n\n${BOARD_SIGNOFF}`
+  const html = `${htmlBody.replace(/\s+$/, '')}\n<footer>${BOARD_SIGNOFF}</footer>`
+  return { text, html }
+}
+
+export function hasBoardFooter(text: string, html: string): boolean {
+  return text.trimEnd().endsWith(BOARD_SIGNOFF) && BOARD_FOOTER_HTML.test(html)
+}
+
 export function marketingSignatureHit(text: string, html: string): string | null {
-  // Mailbox addresses may use the same domain. The site and banner must not.
+  // Mailbox addresses may use the same domain. The site, tagline, and banner must not.
   const body = `${text}\n${html}`.replace(/[\w.+-]+@[\w.-]*nammco\.com/gi, '')
   for (const [pattern, label] of MARKETING_SIGNATURE) {
     if (pattern.test(body)) return label
@@ -87,7 +103,16 @@ export async function sendEmail(opts: {
       provider: 'gmail',
       providerId: null,
       status: 'error',
-      detail: `Blocked marketing signature (${signatureHit}). Board Arabia sign-off only.`,
+      detail: `Blocked marketing signature (${signatureHit}). Board Arabia footer only.`,
+    }
+  }
+  if (!hasBoardFooter(opts.text, opts.html)) {
+    return {
+      dryRun: false,
+      provider: 'gmail',
+      providerId: null,
+      status: 'error',
+      detail: 'Board Arabia footer required.',
     }
   }
   if (!to || !subject) {
