@@ -78,12 +78,15 @@ ${summaryLines.join('\n')}
 
 Review / Accept / Reject: ${adminUrl}
 
-Application id: ${app.id}`
+Application id: ${app.id}
+
+Board Arabia`
 
   const notifyHtml = `<p>New pending application.</p>
 <pre style="font-family:ui-monospace,monospace;white-space:pre-wrap">${escapeHtml(summaryLines.join('\n'))}</pre>
 <p><a href="${escapeHtml(adminUrl)}">Open admin (Accept or Reject)</a></p>
-<p>Application id: ${escapeHtml(app.id)}</p>`
+<p>Application id: ${escapeHtml(app.id)}</p>
+<p>Board Arabia</p>`
 
   const ack = await sendEmail({
     to: app.email,

@@ -47,6 +47,29 @@ export function gmailCredentialsPresent(): boolean {
   return refreshCreds() !== null || serviceAccountCreds() !== null
 }
 
+/** Plain Board Arabia close. Not a mailbox marketing signature. */
+export const BOARD_SIGNOFF = 'Board Arabia'
+
+const MARKETING_SIGNATURE = [
+  [/director of partner/i, 'job title'],
+  [/kingdom centre/i, 'banner'],
+  [/kingdom center/i, 'banner'],
+  [/nammco\.com/i, 'nammco site'],
+  [/linkedin\.com\/(?:company|school|in)\/nammco/i, 'linkedin block'],
+  [/<img\b/i, 'image'],
+  [/data:image\//i, 'image'],
+  [/\bcid:/i, 'inline image'],
+] as const
+
+export function marketingSignatureHit(text: string, html: string): string | null {
+  // Mailbox addresses may use the same domain. The site and banner must not.
+  const body = `${text}\n${html}`.replace(/[\w.+-]+@[\w.-]*nammco\.com/gi, '')
+  for (const [pattern, label] of MARKETING_SIGNATURE) {
+    if (pattern.test(body)) return label
+  }
+  return null
+}
+
 export async function sendEmail(opts: {
   to: string
   subject: string
@@ -57,6 +80,16 @@ export async function sendEmail(opts: {
   const from = opts.from ? sanitizeHeader(opts.from) : workspaceFromAddress()
   const to = sanitizeHeader(opts.to)
   const subject = sanitizeHeader(opts.subject)
+  const signatureHit = marketingSignatureHit(opts.text, opts.html)
+  if (signatureHit) {
+    return {
+      dryRun: false,
+      provider: 'gmail',
+      providerId: null,
+      status: 'error',
+      detail: `Blocked marketing signature (${signatureHit}). Board Arabia sign-off only.`,
+    }
+  }
   if (!to || !subject) {
     return {
       dryRun: false,

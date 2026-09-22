@@ -146,6 +146,8 @@ Outbound product mail (apply acknowledgement, staff notify, Accept, Reject, Admi
 
 Cindy watches `cindy@nammco.com`. Each send uses her mailbox (`users/me` on the Gmail API), so the message is in her Sent folder. An applicant reply arrives in that inbox on the same Gmail thread, because From and Reply-To are her address. She routes a decision to Michael. Accept and Reject are not automatic. Staff press those buttons in `/admin`.
 
+The message body is the whole email. It closes with `Board Arabia` only. It does not include Cindy's Gmail signature: job title, the nammco.com site, the LinkedIn block, or the Kingdom Centre banner. No images. If a body contains those markers, the send is refused and logged as an error. It is not mailed. An applicant address at that same domain can still appear in the staff notice. The Gmail composer signature is not inserted, because the Edge Function uploads the raw message. Do not turn on a Workspace footer that appends that banner to mail sent by the API. Her normal Gmail signature can stay for mail she types herself.
+
 Do not send applicant mail from `michael@`. The new-application notice is still addressed to `michael@nammco.com`, and it is sent from `cindy@nammco.com`. Do not ask for a Resend key.
 
 Preferred path: OAuth refresh token for the Workspace user `cindy@nammco.com`.
