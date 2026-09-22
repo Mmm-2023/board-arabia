@@ -9,9 +9,10 @@ Preferred GitHub Pages once enabled: https://mmm-2023.github.io/board-arabia/
 ## Stack
 
 - Vite + React + TypeScript + Tailwind CSS v4
-- Supabase project `iirqbizwanyhgkhanntq` (`applications`, `staff_users`, `email_events`)
+- Supabase project `iirqbizwanyhgkhanntq` (`applications` with `full_name`, `email`, `phone`, `fo_aum`, nullable `calendar_slot`; `staff_users`; `email_events`)
+- Status values: `pending` | `accepted` | `rejected` (also allows legacy `verified` | `declined`)
 - Email: Supabase Edge Functions + **Resend** (dry-run audit when `RESEND_API_KEY` is unset)
-- Private booking link is emailed **only on Accept** — never shown on the public site
+- Private booking link is emailed **only on Accept** — never shown on the public site. Accept may set `calendar_slot='private_invite_emailed'` as metadata only.
 
 ## Local setup
 
