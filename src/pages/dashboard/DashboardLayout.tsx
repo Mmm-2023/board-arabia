@@ -7,6 +7,7 @@ import { MemberContext, type MemberRoom } from './context'
 
 const NAV = [
   { to: '/dashboard', label: 'Home', end: true },
+  { to: '/dashboard/invites', label: 'Invites', end: false },
   { to: '/dashboard/directory', label: 'Directory', end: false },
   { to: '/dashboard/mandates', label: 'Mandates', end: false },
   { to: '/dashboard/intros', label: 'Intros', end: false },
@@ -42,7 +43,7 @@ export function DashboardLayout() {
       supabase.from('staff_users').select('user_id').eq('user_id', user.id).maybeSingle(),
       supabase
         .from('members')
-        .select('user_id, email, seat, status, must_set_password')
+        .select('user_id, email, seat, status, must_set_password, invites_remaining, invites_granted')
         .eq('user_id', user.id)
         .maybeSingle(),
     ])

@@ -1,11 +1,11 @@
-import { useState, type FormEvent } from 'react'
-import { Link } from 'react-router-dom'
+import { useEffect, useState, type FormEvent } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
 import { Footer } from '../components/Footer'
 import { Nav } from '../components/Nav'
 import { Seo } from '../components/Seo'
 import { REVIEW_SLA } from '../content/marketing'
 import { parseUsdInput } from '../lib/capacity'
-import { submitApplication } from '../lib/supabase'
+import { lookupMemberInvite, submitApplication } from '../lib/supabase'
 
 type FormState = {
   fullName: string
@@ -33,12 +33,59 @@ const empty: FormState = {
   companies: '',
 }
 
+type InviteView =
+  | { kind: 'none' }
+  | { kind: 'checking' }
+  | { kind: 'valid'; label: string; token: string }
+  | { kind: 'bad'; message: string }
+
+const INVITE_NOTE = {
+  invalid: 'This invite link is invalid. You can still request consideration.',
+  expired: 'This invite link has expired. You can still request consideration.',
+  used: 'This invite was already used. You can still request consideration.',
+  limited: 'This invite link could not be checked just now. You can still request consideration.',
+} as const
+
 export function ApplyPage() {
+  const [params] = useSearchParams()
+  const inviteParam = (params.get('invite') || '').trim()
   const [form, setForm] = useState<FormState>(empty)
+  const [inviteReason, setInviteReason] = useState('')
+  const [lookup, setLookup] = useState<{ token: string; view: InviteView } | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
   const [done, setDone] = useState(false)
   const [emailNote, setEmailNote] = useState('')
+  const tokenOk = /^[A-Za-z0-9_-]{43,80}$/.test(inviteParam)
+  const inviteView: InviteView = !inviteParam
+    ? { kind: 'none' }
+    : !tokenOk
+      ? { kind: 'bad', message: INVITE_NOTE.invalid }
+      : lookup?.token === inviteParam
+        ? lookup.view
+        : { kind: 'checking' }
+
+  useEffect(() => {
+    if (!tokenOk) return
+    let cancelled = false
+    void lookupMemberInvite(inviteParam).then((result) => {
+      if (cancelled) return
+      if (result.valid) {
+        setLookup({
+          token: inviteParam,
+          view: { kind: 'valid', label: result.inviterLabel, token: inviteParam },
+        })
+        return
+      }
+      setLookup({
+        token: inviteParam,
+        view: { kind: 'bad', message: INVITE_NOTE[result.state] },
+      })
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [inviteParam, tokenOk])
 
   function setField<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((prev) => ({ ...prev, [key]: value }))
@@ -71,6 +118,15 @@ export function ApplyPage() {
       setError('Investable capacity must be a USD number, or leave it blank.')
       return
     }
+    if (inviteView.kind === 'checking') {
+      setError('Still checking the invite link.')
+      return
+    }
+    const reason = inviteReason.trim().slice(0, 500)
+    if (inviteView.kind === 'valid' && !reason) {
+      setError('Say why you were invited.')
+      return
+    }
     try {
       const u = new URL(linkedinUrl)
       if (u.protocol !== 'http:' && u.protocol !== 'https:') {
@@ -94,6 +150,8 @@ export function ApplyPage() {
       linkedin_url: linkedinUrl,
       job_titles: jobTitles,
       companies,
+      invite_token: inviteView.kind === 'valid' ? inviteView.token : null,
+      invite_reason: inviteView.kind === 'valid' ? reason : null,
     })
     setSubmitting(false)
 
@@ -102,13 +160,16 @@ export function ApplyPage() {
       return
     }
 
+    const parts: string[] = []
     if (result.dryRun) {
-      setEmailNote(
-        'Application saved. Confirmation email is logged until outbound mail is connected.',
-      )
+      parts.push('Application saved. Confirmation email is logged until outbound mail is connected.')
     } else {
-      setEmailNote('Acknowledgement and staff notify emails were queued.')
+      parts.push('Acknowledgement and staff notify emails were queued.')
     }
+    if (inviteView.kind === 'valid' && result.inviteAttached === false) {
+      parts.push('The invite could not be attached. Your request was still received and will be reviewed.')
+    }
+    setEmailNote(parts.join(' '))
     setDone(true)
   }
 
@@ -165,7 +226,38 @@ export function ApplyPage() {
             not on this website.
           </p>
 
+          {inviteView.kind === 'checking' && (
+            <p className="mt-8 text-[0.95rem] text-ink/55">Checking this invite link.</p>
+          )}
+          {inviteView.kind === 'bad' && (
+            <p className="mt-8 border border-ink/10 bg-white/60 px-4 py-3 text-[0.95rem] text-ink/75" role="status">
+              {inviteView.message}
+            </p>
+          )}
+          {inviteView.kind === 'valid' && (
+            <div className="mt-8 border border-brass/40 bg-white/60 px-4 py-4">
+              <p className="text-[0.72rem] font-semibold tracking-[0.08em] text-ink/50 uppercase">
+                Invited by
+              </p>
+              <p className="mt-2 text-[1.05rem] text-ink">{inviteView.label}</p>
+              <p className="mt-2 text-[0.9rem] leading-relaxed text-ink/55">
+                This name comes from the invite link. An invitation does not skip review.
+              </p>
+            </div>
+          )}
+
           <form onSubmit={onSubmit} className="mt-10 space-y-6">
+            {inviteView.kind === 'valid' && (
+              <Field
+                id="invite_reason"
+                label="Why were you invited"
+                required
+                value={inviteReason}
+                onChange={setInviteReason}
+                placeholder="A short note on why you were invited"
+                multiline
+              />
+            )}
             <Field
               id="full_name"
               label="Full name"
@@ -268,7 +360,7 @@ export function ApplyPage() {
 
             <button
               type="submit"
-              disabled={submitting}
+              disabled={submitting || inviteView.kind === 'checking'}
               className="inline-flex items-center justify-center bg-ink px-7 py-3.5 text-[0.78rem] font-semibold tracking-[0.08em] text-pearl uppercase transition-colors hover:bg-ink-soft disabled:opacity-60"
             >
               {submitting ? 'Submitting…' : 'Submit for consideration'}

@@ -35,6 +35,9 @@ export type Database = {
           member_user_id: string | null
           admitted_at: string | null
           admitted_by: string | null
+          invited_by_member_id: string | null
+          invite_token_id: string | null
+          invite_reason: string | null
         }
         Insert: {
           id?: string
@@ -61,6 +64,9 @@ export type Database = {
           member_user_id?: string | null
           admitted_at?: string | null
           admitted_by?: string | null
+          invited_by_member_id?: string | null
+          invite_token_id?: string | null
+          invite_reason?: string | null
         }
         Update: {
           id?: string
@@ -87,6 +93,9 @@ export type Database = {
           member_user_id?: string | null
           admitted_at?: string | null
           admitted_by?: string | null
+          invited_by_member_id?: string | null
+          invite_token_id?: string | null
+          invite_reason?: string | null
         }
         Relationships: []
       }
@@ -100,6 +109,8 @@ export type Database = {
           must_set_password: boolean
           invited_at: string
           invited_by: string | null
+          invites_granted: number
+          invites_remaining: number
           created_at: string
           updated_at: string
         }
@@ -112,6 +123,8 @@ export type Database = {
           must_set_password?: boolean
           invited_at?: string
           invited_by?: string | null
+          invites_granted?: number
+          invites_remaining?: number
           created_at?: string
           updated_at?: string
         }
@@ -124,6 +137,56 @@ export type Database = {
           must_set_password?: boolean
           invited_at?: string
           invited_by?: string | null
+          invites_granted?: number
+          invites_remaining?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      member_invites: {
+        Row: {
+          id: string
+          token: string
+          inviter_member_id: string
+          channel: 'email' | 'whatsapp'
+          status: 'pending' | 'opened' | 'applied' | 'accepted' | 'rejected' | 'admitted'
+          recipient_email: string | null
+          recipient_phone: string | null
+          application_id: string | null
+          expires_at: string
+          opened_at: string | null
+          applied_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          token: string
+          inviter_member_id: string
+          channel: 'email' | 'whatsapp'
+          status?: 'pending' | 'opened' | 'applied' | 'accepted' | 'rejected' | 'admitted'
+          recipient_email?: string | null
+          recipient_phone?: string | null
+          application_id?: string | null
+          expires_at: string
+          opened_at?: string | null
+          applied_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          token?: string
+          inviter_member_id?: string
+          channel?: 'email' | 'whatsapp'
+          status?: 'pending' | 'opened' | 'applied' | 'accepted' | 'rejected' | 'admitted'
+          recipient_email?: string | null
+          recipient_phone?: string | null
+          application_id?: string | null
+          expires_at?: string
+          opened_at?: string | null
+          applied_at?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -313,6 +376,10 @@ export type Database = {
           p_capacity_verified: boolean
         }
         Returns: undefined
+      }
+      lookup_member_invite: {
+        Args: { p_token: string }
+        Returns: Json
       }
     }
     Enums: Record<string, never>

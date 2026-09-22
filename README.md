@@ -43,7 +43,7 @@ Site: https://boardarabia.com/
 ## Stack
 
 - Vite + React + TypeScript + Tailwind CSS v4
-- Supabase project `iirqbizwanyhgkhanntq` (`applications`; `staff_users`; `members`; `profiles`; `email_events`)
+- Supabase project `iirqbizwanyhgkhanntq` (`applications`; `staff_users`; `members`; `profiles`; `member_invites`; `email_events`)
 - Application status: `pending` | `accepted` | `rejected` | `admitted` (also allows legacy `verified` | `declined`)
 - Member role is `members` + `profiles`, not `staff_users`. Seats are `ksa` or `intl`, 50 each.
 - Email: Supabase Edge Functions call the **Gmail API**. From is `noreply@boardarabia.com`. Reply-To is `cindy@nammco.com`. Dry-run audit when Workspace credentials are unset. No Resend.
@@ -62,7 +62,7 @@ npm run dev
 ## Visitor flow (no login)
 
 1. **Landing** (`/`). Founding membership; English only; **no** public calendar CTA. Subpages explain members, capital, and partners.
-2. **Apply** (`/apply`). Pre-vet form: name, email, phone (optional), turnover **or** FO AUM, optional investable capacity in USD, a public-totals checkbox (on by default), LinkedIn URL, job titles, companies.
+2. **Apply** (`/apply`). Pre-vet form: name, email, phone (optional), turnover **or** FO AUM, optional investable capacity in USD, a public-totals checkbox (on by default), LinkedIn URL, job titles, companies. `/apply?invite=<token>` shows who invited them (read-only) and asks why. A bad or expired token still allows a normal request.
 3. On submit → Edge Function **`submit-application`** (validated + rate-limited):
    - Inserts `applications.status = pending`
    - Acknowledgement email to applicant
@@ -87,8 +87,9 @@ Legacy `/book` and `/verify` redirect to `/apply`.
 
 1. **Member login:** https://boardarabia.com/login?next=/dashboard
 2. Open the one-time link from Admit or Direct invite, or use the one-time code or the password you set.
-3. **Dashboard** (`/dashboard`). Home shows a founding-badge placeholder, your seat, and capacity toward 100. Profile edits your own row. Directory, Mandates, Intros, Rooms, and Events are empty shells. Staff who are also members see a Staff admin link.
-4. Accounts are invite-only. A signed-in user who is not in `members` does not see the room. Staff `/login` with no `next` still goes to `/admin`.
+3. **Dashboard** (`/dashboard`). Home shows a founding-badge placeholder, your seat, capacity toward 100, and invites remaining. **Invites** (`/dashboard/invites`) sends the two peer invites by email or WhatsApp. Profile edits your own row. Directory, Mandates, Intros, Rooms, and Events are empty shells. Staff who are also members see a Staff admin link.
+4. **Peer invites.** Admit grants exactly 2 (`invites_remaining`). Each send uses one. Unused invites do not refill. Email uses Edge `send-member-invite` and Workspace mail. WhatsApp returns a `wa.me` link with the apply URL. The invitee is still reviewed.
+5. Accounts are invite-only. A signed-in user who is not in `members` does not see the room. Staff `/login` with no `next` still goes to `/admin`.
 
 ### Critical anti-leak
 
@@ -180,8 +181,8 @@ Payload columns are not granted to the staff client. The admin list never select
 1. In Google Cloud, enable the Gmail API and create an OAuth client.
 2. Consent once as `cindy@nammco.com` with scope `https://www.googleapis.com/auth/gmail.send` and copy the refresh token.
 3. Supabase → Project Settings → Edge Functions → Secrets: paste `GMAIL_CLIENT_ID`, `GMAIL_CLIENT_SECRET`, and `GMAIL_REFRESH_TOKEN`.
-4. Deploy the Edge Functions (`submit-application`, `notify-application`, `decide-application`, `admit-member`, `invite-master`, `set-member-status`, `request-password-reset`).
-5. Apply `supabase/migrations/20260922190000_staff_master_admin_read.sql` on project `iirqbizwanyhgkhanntq` (master role, staff member read, safe email-event columns, staff directory, demotion guard).
+4. Deploy the Edge Functions (`submit-application`, `notify-application`, `decide-application`, `admit-member`, `send-member-invite`, `invite-master`, `set-member-status`, `request-password-reset`). `send-member-invite` keeps JWT verification on.
+5. Apply `supabase/migrations/20260922190000_staff_master_admin_read.sql` if it is not already on project `iirqbizwanyhgkhanntq`, then `supabase/migrations/20260922201000_member_invite_wallet.sql` (invite wallet, `member_invites`, apply attribution, anon lookup RPC). Do not seed members.
 
 ### Dry-run invite (Workspace credentials not set)
 
@@ -192,7 +193,7 @@ Payload columns are not granted to the staff client. The admin list never select
 5. Hand the link to Michael through a channel you trust. Do not paste it into a shared chat if you can avoid it.
 6. After a password is set, use the staff and member URLs above. When Gmail secrets are present, the same actions email from `noreply@boardarabia.com` with Reply-To `cindy@nammco.com`, and the admin response does not include the secret.
 
-Local proof of the Accept path, without a live mailbox: `node --experimental-strip-types --test scripts/gmail-mail.test.ts`. It checks From is `noreply@boardarabia.com`, Reply-To is `cindy@nammco.com`, that the message does not use Resend, and that a configured client posts to `https://gmail.googleapis.com/gmail/v1/users/me/messages/send`. A real send still needs the three Gmail secrets on the Edge Function.
+Local proof of the Accept path, without a live mailbox: `node --experimental-strip-types --test scripts/gmail-mail.test.ts scripts/peer-invite.test.ts`. The first checks From is `noreply@boardarabia.com`, Reply-To is `cindy@nammco.com`, that the message does not use Resend, and that a configured client posts to `https://gmail.googleapis.com/gmail/v1/users/me/messages/send`. The second checks the peer invite letter and the WhatsApp link. A real send still needs the three Gmail secrets on the Edge Function.
 
 ## Prove apply → emails → Accept
 
@@ -238,6 +239,7 @@ Evidence tags: **VERIFIED** = proved against live project / staging; **INFERRED*
 | RLS `members` / `profiles` | **VERIFIED PASS** | Own row only. Anon has no table grant. No client insert. `claim_founding_seat` is service_role only |
 | Invite-only `/dashboard` | **VERIFIED PASS** | Signed-out redirects to `/login?next=/dashboard`. No `members` row → invitation required. No public signup form |
 | No anon directory scrape | **VERIFIED PASS** | Directory shell does not query other members. Anon `select` on `members` and `profiles` is permission denied. `founding_capacity()` returns counts to a member or staff user only |
+| Peer invite wallet | **INFERRED** until the migration is on the live project | `member_invites` has no anon grant. Lookup is `lookup_member_invite(token)` and returns a label only. `issue_member_invite` and `release_member_invite` are service_role only. Wallet updates cannot raise `invites_remaining` without the release flag |
 | `/dashboard` vs `/admin` | **VERIFIED PASS** | `/admin` still requires `staff_users`. `/dashboard` requires `members` and blocks `suspended`. Staff `/login` without `next` still resolves to `/admin` |
 | Member invite secrets | **VERIFIED PASS** for storage; live send needs Workspace secrets | `email_events` stores mode and seat flags only (no otp, token, or password keys). A dry-run link is returned only in the signed-in staff HTTP response. Live mail is the Gmail API from `noreply@boardarabia.com` with Reply-To `cindy@nammco.com` once `GMAIL_CLIENT_ID`, `GMAIL_CLIENT_SECRET`, and `GMAIL_REFRESH_TOKEN` are set on the Edge Function |
 | No public booking CTA / PII | **VERIFIED PASS** | Client/dist grep: 0× `calendar.app.google`; apply form has no applicant list |

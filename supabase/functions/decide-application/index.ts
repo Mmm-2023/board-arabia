@@ -124,6 +124,7 @@ Deno.serve(async (req) => {
       .update(updatePayload)
       .eq('id', app.id)
     if (upErr) return jsonResponse(req, { error: upErr.message }, 500)
+    await syncPeerInvite(admin, app.invite_token_id, 'accepted', now)
 
     return jsonResponse(req, {
       ok: true,
@@ -163,6 +164,7 @@ Deno.serve(async (req) => {
     .update(updatePayload)
     .eq('id', app.id)
   if (upErr) return jsonResponse(req, { error: upErr.message }, 500)
+  await syncPeerInvite(admin, app.invite_token_id, 'rejected', now)
 
   return jsonResponse(req, {
     ok: true,
@@ -172,3 +174,22 @@ Deno.serve(async (req) => {
       : 'Rejected. Decline email sent to applicant.',
   })
 })
+
+async function syncPeerInvite(
+  // deno-lint-ignore no-explicit-any
+  admin: any,
+  inviteId: string | null,
+  status: 'accepted' | 'rejected',
+  now: string,
+) {
+  if (!inviteId) return
+  const from =
+    status === 'accepted'
+      ? ['applied', 'opened', 'pending']
+      : ['pending', 'opened', 'applied', 'accepted']
+  await admin
+    .from('member_invites')
+    .update({ status, updated_at: now })
+    .eq('id', inviteId)
+    .in('status', from)
+}

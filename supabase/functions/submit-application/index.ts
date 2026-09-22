@@ -70,6 +70,9 @@ Deno.serve(async (req) => {
     return jsonResponse(req, { error: 'Invalid LinkedIn URL' }, 400)
   }
 
+  const inviteToken = clean(body.invite_token, 128)
+  const inviteReason = clean(body.invite_reason, 500)
+
   const clientIp = (req.headers.get('x-forwarded-for') || '')
     .split(',')[0]
     ?.trim() || 'unknown'
@@ -77,6 +80,11 @@ Deno.serve(async (req) => {
   const limited = await bumpRateLimit(admin, rateKey)
   if (limited) {
     return jsonResponse(req, { error: 'Too many applications. Try again later.' }, 429)
+  }
+
+  const pendingInvite = await readLiveInvite(admin, inviteToken)
+  if (pendingInvite && !inviteReason) {
+    return jsonResponse(req, { error: 'Say why you were invited.' }, 400)
   }
 
   const { data: app, error: insertError } = await admin
@@ -102,6 +110,10 @@ Deno.serve(async (req) => {
     return jsonResponse(req, { error: insertError?.message || 'Insert failed' }, 400)
   }
 
+  const attached = pendingInvite
+    ? await attachInvite(admin, pendingInvite, app.id, inviteReason)
+    : null
+
   // Emails: only this applicant + michael@nammco.com. Never other applicants' rows.
   const adminUrl = `${publicSite()}/admin`
 
@@ -117,6 +129,9 @@ Deno.serve(async (req) => {
     `Companies: ${app.companies}`,
     `LinkedIn: ${app.linkedin_url || 'Not provided'}`,
   ]
+  if (attached) {
+    summaryLines.push(`Invited by: ${attached.label}`, `Why invited: ${inviteReason}`)
+  }
 
   const ackMail = applicationAck(app.full_name || 'there')
   const ackSubject = ackMail.subject
@@ -181,6 +196,7 @@ Application id: ${app.id}`,
     dry_run: dryRun,
     ack: ack.status,
     notify: notify.status,
+    invite_attached: Boolean(attached),
   })
 })
 
@@ -191,6 +207,70 @@ function readUsd(value: unknown): { value: number | null; error?: string } {
     return { value: null, error: 'Investable capacity must be a USD number, or be left blank.' }
   }
   return { value: amount }
+}
+
+type LiveInvite = { id: string; inviter_member_id: string; label: string }
+
+async function readLiveInvite(
+  // deno-lint-ignore no-explicit-any
+  admin: any,
+  token: string,
+): Promise<LiveInvite | null> {
+  if (!/^[A-Za-z0-9_-]{43,80}$/.test(token)) return null
+  const { data: invite } = await admin
+    .from('member_invites')
+    .select('id, inviter_member_id, status, expires_at')
+    .eq('token', token)
+    .maybeSingle()
+  if (!invite) return null
+  if (invite.status !== 'pending' && invite.status !== 'opened') return null
+  if (Date.parse(invite.expires_at) <= Date.now()) return null
+  const { data: profile } = await admin
+    .from('profiles')
+    .select('full_name')
+    .eq('user_id', invite.inviter_member_id)
+    .maybeSingle()
+  const label = oneLine(profile?.full_name || '') || 'A Board Arabia member'
+  return { id: invite.id, inviter_member_id: invite.inviter_member_id, label }
+}
+
+async function attachInvite(
+  // deno-lint-ignore no-explicit-any
+  admin: any,
+  invite: LiveInvite,
+  applicationId: string,
+  reason: string,
+): Promise<LiveInvite | null> {
+  const now = new Date().toISOString()
+  const { data: claimed } = await admin
+    .from('member_invites')
+    .update({
+      status: 'applied',
+      application_id: applicationId,
+      applied_at: now,
+    })
+    .eq('id', invite.id)
+    .in('status', ['pending', 'opened'])
+    .gt('expires_at', now)
+    .select('id')
+    .maybeSingle()
+  if (!claimed) return null
+
+  const { error } = await admin
+    .from('applications')
+    .update({
+      invited_by_member_id: invite.inviter_member_id,
+      invite_token_id: invite.id,
+      invite_reason: reason,
+      updated_at: now,
+    })
+    .eq('id', applicationId)
+  if (error) return null
+  return invite
+}
+
+function oneLine(value: string) {
+  return value.replace(/[\r\n]+/g, ' ').trim().slice(0, 200)
 }
 
 function clean(value: unknown, max: number): string {

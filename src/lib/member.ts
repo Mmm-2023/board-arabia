@@ -6,6 +6,8 @@ export type MemberRow = {
   seat: FoundingSeat
   status: 'invited' | 'active' | 'suspended'
   must_set_password: boolean
+  invites_remaining: number
+  invites_granted: number
 }
 
 export type ProfileRow = {
