@@ -1,7 +1,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1'
 import { applicationAck } from '../_shared/transactional_copy.ts'
 import {
-  ADMIN_NOTIFY_EMAIL,
+  adminNotifyEmail,
   boardMail,
   corsHeaders,
   jsonResponse,
@@ -114,7 +114,7 @@ Deno.serve(async (req) => {
     ? await attachInvite(admin, pendingInvite, app.id, inviteReason)
     : null
 
-  // Emails: only this applicant + michael@nammco.com. Never other applicants' rows.
+  // Emails: only this applicant + ADMIN_NOTIFY_EMAIL. Never other applicants' rows.
   const adminUrl = `${publicSite()}/admin`
 
   const summaryLines = [
@@ -172,16 +172,25 @@ Application id: ${app.id}`,
     detail: ack.detail ?? null,
   })
 
-  const notify = await sendEmail({
-    to: ADMIN_NOTIFY_EMAIL,
-    subject: notifySubject,
-    html: notifyHtml,
-    text: notifyText,
-  })
+  const notifyTo = adminNotifyEmail()
+  const notify = notifyTo
+    ? await sendEmail({
+        to: notifyTo,
+        subject: notifySubject,
+        html: notifyHtml,
+        text: notifyText,
+      })
+    : {
+        dryRun: false,
+        provider: 'gmail',
+        providerId: null,
+        status: 'error' as const,
+        detail: 'ADMIN_NOTIFY_EMAIL is not set.',
+      }
   await logEmailEvent(admin, {
     application_id: app.id,
     kind: 'admin_notify',
-    recipient: ADMIN_NOTIFY_EMAIL,
+    recipient: notifyTo,
     subject: notifySubject,
     status: notify.status,
     provider: notify.provider,

@@ -46,7 +46,7 @@ Site: https://boardarabia.com/
 - Supabase project `iirqbizwanyhgkhanntq` (`applications`; `staff_users`; `members`; `profiles`; `member_invites`; `email_events`)
 - Application status: `pending` | `accepted` | `rejected` | `admitted` (also allows legacy `verified` | `declined`)
 - Member role is `members` + `profiles`, not `staff_users`. Seats are `ksa` or `intl`, 50 each.
-- Email: Supabase Edge Functions call the **Gmail API**. From is `cindy@nammco.com`. Reply-To is `cindy@nammco.com`. `noreply@boardarabia.com` is parked until later. Dry-run audit when Workspace credentials are unset. No Resend.
+- Email: Supabase Edge Functions call the **Gmail API**. From and Reply-To come from `GMAIL_FROM` (example `ops@example.com`). `noreply@boardarabia.com` is parked until later. Dry-run audit when Workspace credentials are unset. A live send fails closed when `GMAIL_FROM` is missing. No Resend.
 - On Accept, email the candidate a private booking link (server-side only). Never a public calendar CTA. `calendar_slot` may be set to `private_invite_emailed`.
 
 ## Local setup
@@ -66,7 +66,7 @@ npm run dev
 3. On submit → Edge Function **`submit-application`** (validated + rate-limited):
    - Inserts `applications.status = pending`
    - Acknowledgement email to applicant
-   - Notify email to **michael@nammco.com** with **this** application summary + `/admin` link (no other applicants’ data)
+   - Notify email to **`ADMIN_NOTIFY_EMAIL`** (example `staff@example.com`) with **this** application summary + `/admin` link (no other applicants’ data)
 
 Legacy `/book` and `/verify` redirect to `/apply`.
 
@@ -78,10 +78,10 @@ Legacy `/book` and `/verify` redirect to `/apply`.
 4. **Reject** → polite decline email to applicant.
 5. **Admit** (after Accept) → Edge Function `admit-member` creates the member login and emails a one-time sign-in link (or a temporary password if a link cannot be issued). Choose Saudi Arabia (`ksa`) or International (`intl`). This does not send the booking link again.
 6. **Invite / promote Michael** → Edge Function `invite-master` (staff JWT). Creates or invites the auth user, upserts `staff_users.role = master`, and by default admits a Saudi Arabia founding seat (a minimal accepted application is created server-side when none exists). The same screen has **Direct invite** for another email, seat, and optional founding admission.
-7. **Suspend / Restore** → Edge Function `set-member-status`. This screen does not demote staff. `michael@nammco.com` and the last master cannot be demoted or deleted.
+7. **Suspend / Restore** → Edge Function `set-member-status`. This screen does not demote staff. The master mailbox and the last master cannot be demoted or deleted.
 8. **Sign out** on admin clears the session.
 
-`michael@nammco.com` is the intended master (staff admin and, when admitted, member dashboard). `michael@smemarketer.com` may remain staff. A person can hold both `staff_users` and `members`.
+`ADMIN_NOTIFY_EMAIL` (example `staff@example.com`) is the intended master (staff admin and, when admitted, member dashboard). Another staff account may remain staff. A person can hold both `staff_users` and `members`.
 
 ## Member flow
 
@@ -97,9 +97,9 @@ The public site must **never** show the booking URL. It is emailed only on Accep
 
 ## Michael: master staff and member access
 
-`michael@nammco.com` is the intended master. There may be no auth user yet. An existing staff account (`michael@smemarketer.com` or the QA staff user) signs in at https://boardarabia.com/login, opens `/admin`, and uses **Invite / promote Michael**. That promotes `michael@nammco.com` to master staff and admits the Saudi Arabia founding seat.
+`ADMIN_NOTIFY_EMAIL` (example `staff@example.com`) is the intended master. There may be no auth user yet. An existing staff account signs in at https://boardarabia.com/login, opens `/admin`, and uses **Invite / promote Michael**. That promotes the `ADMIN_NOTIFY_EMAIL` mailbox to master staff and admits the Saudi Arabia founding seat. The Edge Function uses that secret when the request omits an email, and fails closed when the secret is unset.
 
-`michael@smemarketer.com` may remain staff. Do not delete that row from this screen.
+Another staff account may remain staff. Do not delete that row from this screen.
 
 **After the one-time link is used and a password is set:**
 
@@ -142,28 +142,30 @@ Outbound product mail (apply acknowledgement, staff notify, Accept, Reject, Admi
 
 | Header | Value |
 |--------|--------|
-| From | `"Board Arabia" <cindy@nammco.com>` |
-| Reply-To | `cindy@nammco.com` |
+| From | `GMAIL_FROM`, for example `"Board Arabia" <ops@example.com>` |
+| Reply-To | the mailbox in `GMAIL_FROM`, for example `ops@example.com` |
 
-Cindy watches `cindy@nammco.com`. The Gmail API call uses her Workspace mailbox (`users/me`), and the visible From is `cindy@nammco.com`. `noreply@boardarabia.com` is parked until later. An applicant reply arrives in her inbox because Reply-To is her address. She routes a decision to Michael. Accept and Reject are not automatic. Staff press those buttons in `/admin`.
+There is no From address in source. Ops watches the mailbox in `GMAIL_FROM`. The Gmail API call uses that Workspace mailbox (`users/me`), and the visible From is that same mailbox. `noreply@boardarabia.com` is parked until later. A `GMAIL_FROM` value that uses the parked address is ignored, and the live send fails closed. An applicant reply arrives in that inbox because Reply-To is the same mailbox. Staff route a decision in `/admin`. Accept and Reject are not automatic. Staff press those buttons in `/admin`.
 
-Apply acknowledgement, Accept, Reject, Admit, and any password reset sent by an Edge Function use that From and Reply-To, and close with a Board Arabia footer only. The body does not include the nammco marketing banner, the nammco tagline, or the nammco signature block (job title, nammco.com, the LinkedIn block, or the Kingdom Centre banner). No images. An empty body, or a footer with no letter, is refused. If a body contains those markers, or it is missing the Board Arabia footer, the send is refused and logged as an error. It is not mailed. An applicant address at that same domain can still appear in the staff notice. The Gmail composer signature is not inserted, because the Edge Function uploads the raw message. Do not turn on a Workspace footer that appends that banner to mail sent by the API. Her normal Gmail signature can stay for mail she types herself.
+Apply acknowledgement, Accept, Reject, Admit, and any password reset sent by an Edge Function use that From and Reply-To, and close with a Board Arabia footer only. The body does not include an outside marketing banner, tagline, or signature block (job title, company site, the LinkedIn block, or an office banner). No images. An empty body, or a footer with no letter, is refused. If a body contains those markers, or it is missing the Board Arabia footer, the send is refused and logged as an error. It is not mailed. An applicant address can still appear in the staff notice. The Gmail composer signature is not inserted, because the Edge Function uploads the raw message. Do not turn on a Workspace footer that appends a banner to mail sent by the API. A normal mailbox signature can stay for mail typed by hand.
 
-Do not send applicant mail from `michael@`. The new-application notice is still addressed to `michael@nammco.com`, and it is sent from `cindy@nammco.com` with Reply-To `cindy@nammco.com`. Do not ask for a Resend key.
+Do not send applicant mail from `ADMIN_NOTIFY_EMAIL`. The new-application notice is addressed to `ADMIN_NOTIFY_EMAIL` (example `staff@example.com`), and it is sent from `GMAIL_FROM`. Do not ask for a Resend key.
 
-Preferred path: OAuth refresh token for the Workspace user `cindy@nammco.com`.
+Preferred path: OAuth refresh token for the Workspace user in `GMAIL_FROM`.
 
 | Secret | Required | Purpose |
 |--------|----------|---------|
 | `GMAIL_CLIENT_ID` | Yes for live email | Google Cloud OAuth client |
 | `GMAIL_CLIENT_SECRET` | Yes for live email | OAuth client secret |
-| `GMAIL_REFRESH_TOKEN` | Yes for live email | Refresh token from a consent as `cindy@nammco.com`, scope `https://www.googleapis.com/auth/gmail.send` |
-| `GMAIL_FROM` | Optional | Defaults to `"Board Arabia" <cindy@nammco.com>`. A `noreply@boardarabia.com` value is ignored while that address is parked. |
+| `GMAIL_REFRESH_TOKEN` | Yes for live email | Refresh token from a consent as the `GMAIL_FROM` mailbox, scope `https://www.googleapis.com/auth/gmail.send` |
+| `GMAIL_FROM` | Yes for live email | Visible From and Reply-To. Example: `"Board Arabia" <ops@example.com>`. No default in source. A `noreply@boardarabia.com` value is ignored. |
+| `ADMIN_NOTIFY_EMAIL` | Yes for staff notify and the master-invite default | Example: `staff@example.com`. No default in source. Missing value fails closed and does not send that mail. |
+| `PRIVATE_BOOKING_LINK` | Yes for Accept | Read only by `decide-application`. Accept fails closed when it is unset and does not send mail. Do not put that URL on a public page. |
 | `PUBLIC_SITE_URL` | Optional | Defaults to `https://boardarabia.com` |
 
-Alternative, if domain-wide delegation is already approved: set `GMAIL_SERVICE_ACCOUNT_JSON` (the JSON key) and `GMAIL_IMPERSONATE=cindy@nammco.com`. The service account needs the Gmail send scope delegated in Workspace admin. Refresh-token credentials win when both are set.
+Alternative, if domain-wide delegation is already approved: set `GMAIL_SERVICE_ACCOUNT_JSON` (the JSON key) and `GMAIL_IMPERSONATE` to the same mailbox as `GMAIL_FROM` (example `ops@example.com`). The service account needs the Gmail send scope delegated in Workspace admin. Refresh-token credentials win when both are set. There is no impersonation mailbox in source.
 
-Accept still emails the private booking URL from `decide-application` only. Optional override: `PRIVATE_BOOKING_LINK`. Do not put that URL on a public page.
+Accept emails the private booking link from `decide-application` only, using `PRIVATE_BOOKING_LINK`. Do not put that URL on a public page.
 
 When the Gmail secrets are missing, or Gmail rejects the token (auth failure), every send is a dry-run (`email_events.status = dry_run`, provider `gmail`). No message leaves Workspace. Other Gmail errors stay `error` and are logged without tokens.
 
@@ -179,7 +181,7 @@ Payload columns are not granted to the staff client. The admin list never select
 ### Workspace mail click-path
 
 1. In Google Cloud, enable the Gmail API and create an OAuth client.
-2. Consent once as `cindy@nammco.com` with scope `https://www.googleapis.com/auth/gmail.send` and copy the refresh token.
+2. Consent once as the `GMAIL_FROM` mailbox (example `ops@example.com`) with scope `https://www.googleapis.com/auth/gmail.send` and copy the refresh token.
 3. Supabase → Project Settings → Edge Functions → Secrets: paste `GMAIL_CLIENT_ID`, `GMAIL_CLIENT_SECRET`, and `GMAIL_REFRESH_TOKEN`.
 4. Deploy the Edge Functions (`submit-application`, `notify-application`, `decide-application`, `admit-member`, `send-member-invite`, `invite-master`, `set-member-status`, `request-password-reset`). `send-member-invite` keeps JWT verification on.
 5. Apply `supabase/migrations/20260922190000_staff_master_admin_read.sql` if it is not already on project `iirqbizwanyhgkhanntq`, then `supabase/migrations/20260922201000_member_invite_wallet.sql` (invite wallet, `member_invites`, apply attribution, anon lookup RPC). Do not seed members.
@@ -191,14 +193,14 @@ Payload columns are not granted to the staff client. The admin list never select
 3. The dry-run box on that page shows the one-time link, one-time code, or temporary password. That material is returned only in the staff HTTP response. It is not written into `email_events`.
 4. Open the link once, or sign in with the code at the login URL in the box. Staff destination is https://boardarabia.com/login. Member destination is https://boardarabia.com/login?next=/dashboard.
 5. Hand the link to Michael through a channel you trust. Do not paste it into a shared chat if you can avoid it.
-6. After a password is set, use the staff and member URLs above. When Gmail secrets are present, the same actions email from `cindy@nammco.com` with Reply-To `cindy@nammco.com`, and the admin response does not include the secret.
+6. After a password is set, use the staff and member URLs above. When Gmail secrets are present, the same actions email from `GMAIL_FROM` with Reply-To set to that mailbox, and the admin response does not include the secret.
 
-Local proof of the Accept path, without a live mailbox: `node --experimental-strip-types --test scripts/gmail-mail.test.ts scripts/peer-invite.test.ts`. The first checks From is `cindy@nammco.com`, Reply-To is `cindy@nammco.com`, that the message does not use Resend, and that a configured client posts to `https://gmail.googleapis.com/gmail/v1/users/me/messages/send`. The second checks the peer invite letter and the WhatsApp link. A real send still needs the three Gmail secrets on the Edge Function.
+Local proof of the Accept path, without a live mailbox: `node --experimental-strip-types --test scripts/gmail-mail.test.ts scripts/peer-invite.test.ts`. The first checks From and Reply-To follow `GMAIL_FROM` (the tests use `ops@example.com`), that the message does not use Resend, and that a configured client posts to `https://gmail.googleapis.com/gmail/v1/users/me/messages/send`. The second checks the peer invite letter and the WhatsApp link. A real send still needs the Gmail secrets plus `GMAIL_FROM`, `ADMIN_NOTIFY_EMAIL`, and `PRIVATE_BOOKING_LINK` on the Edge Function.
 
 ## Prove apply → emails → Accept
 
 1. Staging → **Apply for review** → submit.  
-2. Confirm ack + `michael@nammco.com` notify (or dry-run rows).  
+2. Confirm ack + `ADMIN_NOTIFY_EMAIL` notify (or dry-run rows).  
 3. https://boardarabia.com/login → `/admin` → **Accept** → candidate email contains the private booking URL (dry-run until Gmail secrets are set).  
 4. Public site has **no** calendar CTA.
 
@@ -241,7 +243,7 @@ Evidence tags: **VERIFIED** = proved against live project / staging; **INFERRED*
 | No anon directory scrape | **VERIFIED PASS** | Directory shell does not query other members. Anon `select` on `members` and `profiles` is permission denied. `founding_capacity()` returns counts to a member or staff user only |
 | Peer invite wallet | **INFERRED** until the migration is on the live project | `member_invites` has no anon grant. Lookup is `lookup_member_invite(token)` and returns a label only. `issue_member_invite` and `release_member_invite` are service_role only. Wallet updates cannot raise `invites_remaining` without the release flag |
 | `/dashboard` vs `/admin` | **VERIFIED PASS** | `/admin` still requires `staff_users`. `/dashboard` requires `members` and blocks `suspended`. Staff `/login` without `next` still resolves to `/admin` |
-| Member invite secrets | **VERIFIED PASS** for storage; live send needs Workspace secrets | `email_events` stores mode and seat flags only (no otp, token, or password keys). A dry-run link is returned only in the signed-in staff HTTP response. Live mail is the Gmail API from `cindy@nammco.com` with Reply-To `cindy@nammco.com` once `GMAIL_CLIENT_ID`, `GMAIL_CLIENT_SECRET`, and `GMAIL_REFRESH_TOKEN` are set on the Edge Function |
+| Member invite secrets | **VERIFIED PASS** for storage; live send needs Workspace secrets | `email_events` stores mode and seat flags only (no otp, token, or password keys). A dry-run link is returned only in the signed-in staff HTTP response. Live mail is the Gmail API using `GMAIL_FROM` once `GMAIL_CLIENT_ID`, `GMAIL_CLIENT_SECRET`, `GMAIL_REFRESH_TOKEN`, and `GMAIL_FROM` are set on the Edge Function |
 | No public booking CTA / PII | **VERIFIED PASS** | Client/dist grep: 0× `calendar.app.google`; apply form has no applicant list |
 | RLS `platform_stats` | **INFERRED** until the migration is applied on `iirqbizwanyhgkhanntq` | Anon and authenticated get SELECT only. No insert, update, or delete grant. Money columns are written already rounded, or null when fewer than 5 contributors. Exact sums are not stored |
 | RLS members / applications / invites | **INFERRED** for this wave | No new anon SELECT on `members`, `profiles`, or `applications`. Profile capacity columns are granted to `authenticated` and limited by own-row or staff policies |
@@ -249,7 +251,7 @@ Evidence tags: **VERIFIED** = proved against live project / staging; **INFERRED*
 | Secrets hygiene | **INFERRED PASS** | Only public anon in repo/`.env.example`; Gmail client secret, refresh token, or service-account JSON stay in Edge secrets |
 | Notify no cross-applicant leak | **INFERRED PASS** | Templates built from single row id only |
 | Leaked-password protection (Auth) | **SKIPPED BY MICHAEL** | 22 Sep 2026, via Sasha. No Supabase Pro upgrade. Do not re-ask |
-| Live Workspace delivery | Dry-run until Gmail secrets exist | Edge calls `gmail.googleapis.com` users.messages.send. From `cindy@nammco.com`. Reply-To `cindy@nammco.com`. `noreply@boardarabia.com` is parked until later. Dry-run while `GMAIL_REFRESH_TOKEN` (or the service-account JSON) is unset |
+| Live Workspace delivery | Dry-run until Gmail secrets exist | Edge calls `gmail.googleapis.com` users.messages.send. From and Reply-To come from `GMAIL_FROM`. `noreply@boardarabia.com` is parked until later. Dry-run while `GMAIL_REFRESH_TOKEN` (or the service-account JSON) is unset. Live send fails closed when `GMAIL_FROM` is missing |
 | `staff_users_claim_first` | **GAP** | Safe while Michael present; drop later if desired |
 | Legacy `notify-application` | **GAP** | Prefer `submit-application` only |
 

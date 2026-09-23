@@ -28,27 +28,34 @@ test('apply link is the public consider path with an unguessable token slot', ()
 })
 
 test('peer invite mail is Board Arabia only', () => {
-  const mail = peerInviteMail(applyUrl, 'Layla Hassan')
-  assert.equal(mail.subject, 'Board Arabia: a personal invitation')
-  assert.equal(hasBoardFooter(mail.text, mail.html), true)
-  assert.equal(marketingSignatureHit(mail.text, mail.html), null)
-  assert.equal(mail.text.includes('\u2014'), false)
-  assert.equal(mail.html.includes('\u2014'), false)
-  assert.equal(/calendar\.app\.google/i.test(mail.text + mail.html), false)
-  assert.equal(/nammco/i.test(mail.text + mail.html), false)
-  assert.match(mail.text, /does not skip review/)
-  assert.match(mail.text, /Layla Hassan/)
-  const raw = buildRfc822({
-    from: workspaceFromAddress(),
-    to: 'guest@example.com',
-    subject: mail.subject,
-    text: mail.text,
-    html: mail.html,
-  })
-  assert.match(raw, /From: "Board Arabia" <cindy@nammco.com>/)
-  assert.match(raw, /Reply-To: cindy@nammco.com/)
-  assert.equal(/noreply@boardarabia\.com/i.test(raw), false)
-  assert.equal(raw.includes('\u2014'), false)
+  const previous = process.env.GMAIL_FROM
+  process.env.GMAIL_FROM = 'ops@example.com'
+  try {
+    const mail = peerInviteMail(applyUrl, 'Layla Hassan')
+    assert.equal(mail.subject, 'Board Arabia: a personal invitation')
+    assert.equal(hasBoardFooter(mail.text, mail.html), true)
+    assert.equal(marketingSignatureHit(mail.text, mail.html), null)
+    assert.equal(mail.text.includes('\u2014'), false)
+    assert.equal(mail.html.includes('\u2014'), false)
+    assert.equal(/calendar\.app\.google/i.test(mail.text + mail.html), false)
+    assert.equal(/nammco/i.test(mail.text + mail.html), false)
+    assert.match(mail.text, /does not skip review/)
+    assert.match(mail.text, /Layla Hassan/)
+    const raw = buildRfc822({
+      from: workspaceFromAddress(),
+      to: 'guest@example.com',
+      subject: mail.subject,
+      text: mail.text,
+      html: mail.html,
+    })
+    assert.match(raw, /From: "Board Arabia" <ops@example.com>/)
+    assert.match(raw, /Reply-To: ops@example.com/)
+    assert.equal(/noreply@boardarabia\.com/i.test(raw), false)
+    assert.equal(raw.includes('\u2014'), false)
+  } finally {
+    if (previous === undefined) delete process.env.GMAIL_FROM
+    else process.env.GMAIL_FROM = previous
+  }
 })
 
 test('WhatsApp url carries the same apply link', () => {

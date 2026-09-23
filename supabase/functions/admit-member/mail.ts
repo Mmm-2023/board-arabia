@@ -1,7 +1,7 @@
 /** Re-export shared Workspace mail helpers. Invite email only. No booking link. */
 
 export {
-  ADMIN_NOTIFY_EMAIL,
+  adminNotifyEmail,
   corsHeaders,
   jsonResponse,
   logEmailEvent,

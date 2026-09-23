@@ -45,11 +45,11 @@ Evidence: **VERIFIED** = proved against the live project or the Pages-compatible
 | Secrets hygiene | **VERIFIED** for the repo and for `email_events`. No service role or Gmail secret in the client. Invite payload has no token. |
 | `/dashboard` vs `/admin` | **VERIFIED.** Staff login without `next` opens `/admin`. `/admin` still requires `staff_users`. `/dashboard` requires a non-suspended `members` row. A member cannot call Admit (403). |
 | Leaked-password protection | **SKIPPED BY MICHAEL** (via Sasha, 22 Sep 2026). No Supabase Pro upgrade. Do not re-ask. |
-| Live Workspace mail (Accept / Reject / Admit) | Sent by the Edge Function from cindy@nammco.com through the Gmail API. Reply-To is cindy@nammco.com. noreply@boardarabia.com is parked until later. Dry-run while Gmail auth is missing. Do not set a Resend key. |
+| Live Workspace mail (Accept / Reject / Admit) | Sent by the Edge Function through the Gmail API. From and Reply-To come from `GMAIL_FROM` (example `ops@example.com`). noreply@boardarabia.com is parked until later. Dry-run while Gmail auth is missing. Live send fails closed when `GMAIL_FROM` is missing. Do not set a Resend key. |
 
 ## Left with Michael
 
-- Set `GMAIL_CLIENT_ID`, `GMAIL_CLIENT_SECRET`, and `GMAIL_REFRESH_TOKEN` on the Supabase Edge Function (consent as cindy@nammco.com) when live Accept, Reject, and Admit mail should send. Dry-run is the path until Gmail auth succeeds. Do not set a Resend key.
+- Set `GMAIL_CLIENT_ID`, `GMAIL_CLIENT_SECRET`, `GMAIL_REFRESH_TOKEN`, and `GMAIL_FROM` on the Supabase Edge Function (consent as the `GMAIL_FROM` mailbox, example `ops@example.com`) when live Accept, Reject, and Admit mail should send. Dry-run is the path until Gmail auth succeeds. Do not set a Resend key.
 - Merge PR #4 to `main` when Pages should publish `/dashboard`.
 
 Out of scope: full Directory and Mandates, sponsors, Stripe, Lovable, DNS, leaked-password protection.
