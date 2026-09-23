@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import test from 'node:test'
-import { validateAvatarFile } from '../src/lib/avatar.ts'
+import { AVATAR_COPY, validateAvatarFile } from '../src/lib/avatar.ts'
 import {
   DIRECTORY_COPY,
   DIRECTORY_GHOST_COUNT,
@@ -104,6 +104,7 @@ test('directory copy has no em dash and no invented people', () => {
     assert.equal(/nammco/i.test(source), false, file)
   }
   const ghosts = readFileSync(new URL('../src/pages/dashboard/DirectoryEmpty.tsx', import.meta.url), 'utf8')
+  assert.match(ghosts, /rounded-full/)
   assert.match(ghosts, /aria-hidden="true"/)
   assert.match(ghosts, /to="\/dashboard\/invites"/)
   assert.match(ghosts, /to="\/dashboard\/profile"/)
@@ -114,18 +115,36 @@ test('directory copy has no em dash and no invented people', () => {
   assert.equal(modulePage.includes('directory:'), false)
 })
 
-test('avatar files stay small images and storage stays private to the member', () => {
+test('avatar files stay JPG or PNG under 5 MB and storage stays private', () => {
   assert.equal(validateAvatarFile({ type: 'image/jpeg', size: 1000 }), null)
   assert.equal(validateAvatarFile({ type: 'image/jpg', size: 1000 }), null)
-  assert.equal(validateAvatarFile({ type: 'image/gif', size: 1000 }), 'Use a JPG, PNG, or WebP under 2 MB.')
+  assert.equal(validateAvatarFile({ type: 'image/png', size: 5 * 1024 * 1024 }), null)
+  assert.equal(validateAvatarFile({ type: 'image/webp', size: 1000 }), AVATAR_COPY.uploadError)
+  assert.equal(validateAvatarFile({ type: 'image/gif', size: 1000 }), AVATAR_COPY.uploadError)
   assert.equal(
-    validateAvatarFile({ type: 'image/png', size: 2 * 1024 * 1024 + 1 }),
-    'Use a JPG, PNG, or WebP under 2 MB.',
+    validateAvatarFile({ type: 'image/png', size: 5 * 1024 * 1024 + 1 }),
+    AVATAR_COPY.uploadError,
   )
+  assert.equal(AVATAR_COPY.add, 'Add photo')
+  assert.equal(AVATAR_COPY.change, 'Change photo')
+  assert.equal(AVATAR_COPY.remove, 'Remove photo')
+  assert.equal(AVATAR_COPY.helper, 'Shown to founding peers when the private directory opens.')
+  assert.equal(AVATAR_COPY.uploadError, 'Couldn’t upload that photo. Try a JPG or PNG under 5 MB.')
+  assert.equal(AVATAR_COPY.tryAgain, 'Try again')
+  assert.equal(AVATAR_COPY.removeTitle, 'Remove photo?')
+  assert.equal(
+    AVATAR_COPY.removeBody,
+    'Your profile will show the empty photo placeholder until you add another.',
+  )
+  assert.equal(Object.values(AVATAR_COPY).join('\n').includes('\u2014'), false)
+  const avatarUi = readFileSync(new URL('../src/pages/dashboard/MemberAvatar.tsx', import.meta.url), 'utf8')
+  assert.equal(/Connect LinkedIn|Speed up with LinkedIn|Refresh from LinkedIn/.test(avatarUi), false)
   const migration = readFileSync(
     new URL('../supabase/migrations/20260923120000_member_avatar_storage.sql', import.meta.url),
     'utf8',
   )
+  assert.match(migration, /5242880/)
+  assert.doesNotMatch(migration, /image\/webp/)
   assert.match(migration, /public = false/)
   assert.match(migration, /member-avatars/)
   assert.match(migration, /name = \(\(select auth\.uid\(\)\)::text \|\| '\/avatar'\)/)

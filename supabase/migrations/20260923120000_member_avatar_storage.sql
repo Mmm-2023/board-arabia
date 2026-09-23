@@ -19,8 +19,8 @@ values (
   'member-avatars',
   'member-avatars',
   false,
-  2097152,
-  array['image/jpeg', 'image/png', 'image/webp']
+  5242880,
+  array['image/jpeg', 'image/png']
 )
 on conflict (id) do update
 set

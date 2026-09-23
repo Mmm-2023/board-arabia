@@ -19,17 +19,19 @@ Invite 2 opens `/dashboard/invites`. Complete your profile opens `/dashboard/pro
 
 `{X}` is `platform_stats.founding_admitted_count` only. A missing row, a failed read, or a non-integer shows "Couldn’t refresh the seat count." and Retry. The page does not substitute 0 or any other number.
 
-Ghost cards are four on desktop and three below 1024px. Labels are Sector, City, Role, and a Seat chip "KSA or Intl". The name row is an empty bar. No photos.
+Ghost cards are four on desktop and three below 1024px. Each card starts with a muted circle, then an empty name bar, then Sector, City, and Role, plus a Seat chip "KSA or Intl". No faces, initials, or photos.
 
 Filtered-zero ("No matches. Clear filters.") is not this screen. There is no peer query in this change.
 
 ## Profile photo
 
-Bucket `member-avatars` is private. A member may read, insert, update, and delete only `{their user id}/avatar`, and only while their member status is invited or active. `profiles.avatar_path` must equal that same path. The client shows a plain circle until a signed URL loads.
+On Your details the photo sits top-left. Empty state is a circle, **Add photo**, and "Shown to founding peers when the private directory opens." A saved photo offers **Change photo** and **Remove photo**. Remove asks "Remove photo?" then Cancel or Remove photo. A rejected file uses "Couldn’t upload that photo. Try a JPG or PNG under 5 MB." and Try again.
+
+Bucket `member-avatars` is private. JPG or PNG, 5 MB. A member may read, insert, update, and delete only `{their user id}/avatar`, and only while their member status is invited or active. `profiles.avatar_path` must equal that same path.
 
 Apply `supabase/migrations/20260923120000_member_avatar_storage.sql` on project `iirqbizwanyhgkhanntq`. The dashboard still loads if that column is missing: the profile read retries without `avatar_path`.
 
-LinkedIn OAuth is not in this change.
+LinkedIn Connect is not in this change. See `handoff/board-arabia-profile-avatar-linkedin-2026-09-23.md`.
 
 ## Security: no public PII / no fake names in the Directory empty state
 

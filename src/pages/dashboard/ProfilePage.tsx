@@ -122,19 +122,21 @@ export function ProfilePage() {
       </p>
       <p className="mt-4 text-[0.92rem] text-ink/45">{email}</p>
 
-      <MemberAvatar />
+      <div className="mt-8">
+        <MemberAvatar />
+      </div>
 
-      <form onSubmit={onSaveProfile} className="mt-10 space-y-5">
+      <form onSubmit={onSaveProfile} className="mt-8 space-y-5">
         <Field label="Name" value={fullName} onChange={setFullName} autoComplete="name" />
         <Field label="Headline" value={headline} onChange={setHeadline} />
         <Field label="Company" value={company} onChange={setCompany} autoComplete="organization" />
         <Field label="Location" value={location} onChange={setLocation} autoComplete="address-level2" />
         <Field
-          label="LinkedIn"
+          label="LinkedIn URL"
           value={linkedin}
           onChange={setLinkedin}
           type="url"
-          placeholder="https://"
+          placeholder="https://www.linkedin.com/in/…"
           autoComplete="url"
         />
         <Field label="Phone" value={phone} onChange={setPhone} type="tel" autoComplete="tel" />
