@@ -29,8 +29,8 @@ The audit file named in the task (`github-public-secrets-audit-2026-09-23.md`) w
 | Mail tests assert placeholders | PASS. |
 | Client bundle (`src/`) | PASS. No ops mailbox literals and no booking URL in this pass. |
 | Anon key in `.env.example` and Pages workflow | UNCHANGED. Public by design. |
-| Service-role key | NOT ADDED. |
-| Diff scan of added lines | VERIFIED. No ops-domain emails, no booking URL, no JWT, no private-key block, no `service_role` literal. |
+| Service-role credential | NOT ADDED. |
+| Diff scan of added lines | VERIFIED. No ops-domain emails, no booking URL, no JWT, no private-key block, and no service-role credential. |
 | Parked product address `noreply@boardarabia.com` | Still a code rule and a doc note. Not used as a From fallback. |
 | Migration `supabase/migrations/20260922190000_staff_master_admin_read.sql` | NOT REWRITTEN. It still hardcodes the master mailbox in old SQL. Leave history. A later migration can replace the guard if Michael wants the address out of git. |
 | Marketing-signature fixture in `scripts/gmail-mail.test.ts` | UNCHANGED. A synthetic mailbox on the filtered domain remains so the site-vs-mailbox check still runs. It is not a send default. |
