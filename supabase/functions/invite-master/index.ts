@@ -1,9 +1,15 @@
 import { createClient, type SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1'
 import { issueCredential, type Issued } from '../_shared/credentials.ts'
 import { buildMasterInvite } from '../_shared/invite_copy.ts'
-import { corsHeaders, jsonResponse, logEmailEvent, publicSite, sendEmail } from '../_shared/mail.ts'
+import {
+  adminNotifyEmail,
+  corsHeaders,
+  jsonResponse,
+  logEmailEvent,
+  publicSite,
+  sendEmail,
+} from '../_shared/mail.ts'
 
-const DEFAULT_MASTER_EMAIL = 'michael@nammco.com'
 const SEAT_CAP = 50
 
 Deno.serve(async (req) => {
@@ -35,13 +41,17 @@ Deno.serve(async (req) => {
     .maybeSingle()
   if (!staff) return jsonResponse(req, { error: 'Not staff' }, 403)
 
-  let email = DEFAULT_MASTER_EMAIL
+  let email = ''
+  let emailProvided = false
   let seat = 'ksa'
   let admitMember = true
   try {
     const body = await req.json()
     const requested = String(body.email || '').trim().toLowerCase()
-    if (requested) email = requested
+    if (requested) {
+      email = requested
+      emailProvided = true
+    }
     const requestedSeat = String(body.seat || '').trim()
     if (requestedSeat) seat = requestedSeat
     if (body.admit_member === false) admitMember = false
@@ -49,6 +59,10 @@ Deno.serve(async (req) => {
     return jsonResponse(req, { error: 'Invalid JSON' }, 400)
   }
 
+  if (!emailProvided) email = adminNotifyEmail().trim().toLowerCase()
+  if (!email) {
+    return jsonResponse(req, { error: 'ADMIN_NOTIFY_EMAIL is not set' }, 500)
+  }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return jsonResponse(req, { error: 'A usable email is required' }, 400)
   }

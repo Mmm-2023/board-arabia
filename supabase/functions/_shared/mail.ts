@@ -1,14 +1,12 @@
 /** Board Arabia outbound mail via Google Workspace Gmail API.
- * From: cindy@nammco.com. Reply-To: cindy@nammco.com.
- * noreply@boardarabia.com is parked until later.
- * Secrets live only in Supabase Edge Function secrets.
- * Dry-run when those secrets are missing. No Resend.
- * Board Arabia footer only. No nammco banner or signature.
+ * From and Reply-To come from GMAIL_FROM. Staff notify uses ADMIN_NOTIFY_EMAIL.
+ * The parked noreply address on the product domain is ignored.
+ * Secrets live only in Supabase Edge Function secrets. No address defaults in source.
+ * Dry-run when Gmail credentials are missing. Live send fails closed when GMAIL_FROM is missing.
+ * No Resend.
+ * Board Arabia footer only. No external marketing banner or signature.
  */
 
-export const ADMIN_NOTIFY_EMAIL = 'michael@nammco.com'
-export const WORKSPACE_MAILBOX = 'cindy@nammco.com'
-export const PRODUCT_FROM = 'cindy@nammco.com'
 const GMAIL_SEND_SCOPE = 'https://www.googleapis.com/auth/gmail.send'
 const TOKEN_URL = 'https://oauth2.googleapis.com/token'
 const GMAIL_SEND_URL = 'https://gmail.googleapis.com/gmail/v1/users/me/messages/send'
@@ -38,18 +36,33 @@ export function publicSite(): string {
   return raw.replace(/\/$/, '')
 }
 
-/** noreply@boardarabia.com stays parked. Product mail sends as cindy. */
+/** Parked product address is ignored. There is no baked-in From mailbox. */
 function isParkedFrom(value: string): boolean {
   return /noreply@boardarabia\.com/i.test(value)
 }
 
-export function workspaceFromAddress(): string {
-  const raw = readEnv('GMAIL_FROM')?.trim()
-  if (!raw) return `"Board Arabia" <${PRODUCT_FROM}>`
+/** Staff notify mailbox. Empty when ADMIN_NOTIFY_EMAIL is unset. */
+export function adminNotifyEmail(): string {
+  return readEnv('ADMIN_NOTIFY_EMAIL')?.trim() || ''
+}
+
+/** Visible product mailbox from GMAIL_FROM. Empty when missing or parked. */
+export function productFromMailbox(): string {
+  const raw = readEnv('GMAIL_FROM')?.trim() || ''
+  if (!raw || isParkedFrom(raw)) return ''
   const clean = sanitizeHeader(raw)
-  if (!clean || isParkedFrom(clean)) return `"Board Arabia" <${PRODUCT_FROM}>`
+  const wrapped = clean.match(/<([^<>]+)>/)
+  const mailbox = (wrapped?.[1] || clean).trim()
+  if (!mailbox || !mailbox.includes('@') || isParkedFrom(mailbox)) return ''
+  return mailbox
+}
+
+export function workspaceFromAddress(): string {
+  const mailbox = productFromMailbox()
+  if (!mailbox) return ''
+  const clean = sanitizeHeader(readEnv('GMAIL_FROM')?.trim() || '')
   if (clean.includes('<')) return clean
-  return `"Board Arabia" <${clean}>`
+  return `"Board Arabia" <${mailbox}>`
 }
 
 export function gmailCredentialsPresent(): boolean {
@@ -161,6 +174,17 @@ export async function sendEmail(opts: {
     }
   }
 
+  const replyTo = productFromMailbox()
+  if (!from || !replyTo) {
+    return {
+      dryRun: false,
+      provider: 'gmail',
+      providerId: null,
+      status: 'error',
+      detail: 'GMAIL_FROM is not set.',
+    }
+  }
+
   const token = await fetchAccessToken()
   if ('error' in token) {
     return {
@@ -176,7 +200,7 @@ export async function sendEmail(opts: {
     buildRfc822({
       from,
       to,
-      replyTo: WORKSPACE_MAILBOX,
+      replyTo,
       subject,
       text: opts.text,
       html: opts.html,
@@ -311,7 +335,7 @@ export function buildRfc822(opts: {
   html: string
 }): string {
   const boundary = `ba_${crypto.randomUUID().replaceAll('-', '')}`
-  const replyTo = sanitizeHeader(opts.replyTo || WORKSPACE_MAILBOX)
+  const replyTo = sanitizeHeader(opts.replyTo || productFromMailbox())
   const lines = [
     `From: ${sanitizeHeader(opts.from)}`,
     `To: ${sanitizeHeader(opts.to)}`,
@@ -360,8 +384,8 @@ function serviceAccountCreds(): { clientEmail: string; privateKey: string } | nu
 
 function impersonatedMailbox(): string {
   const explicit = readEnv('GMAIL_IMPERSONATE')?.trim()
-  if (explicit) return sanitizeHeader(explicit)
-  return WORKSPACE_MAILBOX
+  if (explicit && !isParkedFrom(explicit)) return sanitizeHeader(explicit)
+  return productFromMailbox()
 }
 
 async function fetchAccessToken(): Promise<{ token: string } | { error: string }> {
@@ -390,9 +414,11 @@ async function serviceAccountToken(account: {
   clientEmail: string
   privateKey: string
 }): Promise<{ token: string } | { error: string }> {
+  const subject = impersonatedMailbox()
+  if (!subject) return { error: 'GMAIL_FROM is not set.' }
   let assertion = ''
   try {
-    assertion = await signServiceJwt(account.clientEmail, account.privateKey, impersonatedMailbox())
+    assertion = await signServiceJwt(account.clientEmail, account.privateKey, subject)
   } catch (err) {
     return { error: err instanceof Error ? err.message : 'Could not sign the Gmail assertion.' }
   }

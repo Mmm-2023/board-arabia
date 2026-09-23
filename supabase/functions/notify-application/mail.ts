@@ -1,7 +1,7 @@
 /** Re-export shared Workspace mail helpers. */
 
 export {
-  ADMIN_NOTIFY_EMAIL,
+  adminNotifyEmail,
   boardMail,
   corsHeaders,
   jsonResponse,

@@ -1,15 +1,16 @@
 import assert from 'node:assert/strict'
 import { afterEach, test } from 'node:test'
 import {
+  adminNotifyEmail,
   buildRfc822,
   hasBoardFooter,
   hasSubstantiveBody,
   marketingSignatureHit,
+  productFromMailbox,
   sendEmail,
-  PRODUCT_FROM,
   workspaceFromAddress,
-  WORKSPACE_MAILBOX,
 } from '../supabase/functions/_shared/mail.ts'
+import { privateBookingLink } from '../supabase/functions/decide-application/mail.ts'
 import { buildMasterInvite } from '../supabase/functions/_shared/invite_copy.ts'
 import {
   acceptMail,
@@ -27,7 +28,12 @@ const SECRET_KEYS = [
   'GMAIL_SERVICE_ACCOUNT_JSON',
   'GMAIL_FROM',
   'GMAIL_IMPERSONATE',
+  'ADMIN_NOTIFY_EMAIL',
+  'PRIVATE_BOOKING_LINK',
 ]
+
+const PLACEHOLDER_FROM = 'ops@example.com'
+const PLACEHOLDER_STAFF = 'staff@example.com'
 
 function clearMailEnv() {
   for (const key of SECRET_KEYS) delete process.env[key]
@@ -64,8 +70,9 @@ test('dry-run when Gmail credentials are missing', async () => {
   assert.equal(result.provider, 'gmail')
 })
 
-test('Accept message is from cindy and replies to cindy', () => {
+test('Accept message From and Reply-To come from GMAIL_FROM', () => {
   clearMailEnv()
+  process.env.GMAIL_FROM = PLACEHOLDER_FROM
   const raw = buildRfc822({
     from: workspaceFromAddress(),
     to: 'person@example.com',
@@ -73,37 +80,90 @@ test('Accept message is from cindy and replies to cindy', () => {
     text: acceptText,
     html: '<p>Your Board Arabia application has been accepted.</p>',
   })
-  assert.match(raw, /From: "Board Arabia" <cindy@nammco.com>/)
-  assert.match(raw, /Reply-To: cindy@nammco.com/)
-  assert.equal(PRODUCT_FROM, 'cindy@nammco.com')
+  assert.match(raw, /From: "Board Arabia" <ops@example.com>/)
+  assert.match(raw, /Reply-To: ops@example.com/)
+  assert.equal(productFromMailbox(), PLACEHOLDER_FROM)
+  assert.equal(workspaceFromAddress(), '"Board Arabia" <ops@example.com>')
+  assert.equal(adminNotifyEmail(), '')
   assert.equal(/noreply@boardarabia\.com/i.test(raw), false)
   assert.equal(raw.includes('\u2014'), false)
   assert.equal(/resend/i.test(raw), false)
-  assert.equal(/calendar\.app\.google/i.test(raw), false)
-  assert.equal(WORKSPACE_MAILBOX, 'cindy@nammco.com')
 })
 
-test('a parked noreply GMAIL_FROM still sends as cindy', () => {
+test('staff notify and private booking link have no source fallback', () => {
+  clearMailEnv()
+  assert.equal(adminNotifyEmail(), '')
+  assert.equal(productFromMailbox(), '')
+  assert.equal(workspaceFromAddress(), '')
+  assert.equal(privateBookingLink(), '')
+  process.env.ADMIN_NOTIFY_EMAIL = `  ${PLACEHOLDER_STAFF}  `
+  process.env.PRIVATE_BOOKING_LINK = '   '
+  assert.equal(adminNotifyEmail(), PLACEHOLDER_STAFF)
+  assert.equal(privateBookingLink(), '')
+  process.env.PRIVATE_BOOKING_LINK = 'https://booking.example/private'
+  assert.equal(privateBookingLink(), 'https://booking.example/private')
+})
+
+test('a parked noreply GMAIL_FROM does not fall back to a baked-in mailbox', async () => {
   clearMailEnv()
   process.env.GMAIL_FROM = '"Board Arabia" <noreply@boardarabia.com>'
-  assert.equal(workspaceFromAddress(), '"Board Arabia" <cindy@nammco.com>')
-  const raw = buildRfc822({
-    from: workspaceFromAddress(),
-    to: 'person@example.com',
-    subject: 'Board Arabia: next step (private booking)',
-    text: acceptText,
-    html: acceptHtml,
-  })
-  assert.match(raw, /From: "Board Arabia" <cindy@nammco.com>/)
-  assert.match(raw, /Reply-To: cindy@nammco.com/)
-  assert.equal(/noreply@boardarabia\.com/i.test(raw), false)
-  assert.equal(raw.includes('\u2014'), false)
-  assert.equal(/resend/i.test(raw), false)
-  assert.equal(/calendar\.app\.google/i.test(raw), false)
+  process.env.GMAIL_CLIENT_ID = 'client-id'
+  process.env.GMAIL_CLIENT_SECRET = 'client-secret'
+  process.env.GMAIL_REFRESH_TOKEN = 'refresh-token'
+  assert.equal(workspaceFromAddress(), '')
+  assert.equal(productFromMailbox(), '')
+  let called = false
+  const original = globalThis.fetch
+  globalThis.fetch = async () => {
+    called = true
+    return new Response('should not send', { status: 500 })
+  }
+  try {
+    const result = await sendEmail({
+      to: 'person@example.com',
+      subject: 'Board Arabia: next step (private booking)',
+      text: acceptText,
+      html: acceptHtml,
+    })
+    assert.equal(result.status, 'error')
+    assert.equal(result.dryRun, false)
+    assert.equal(called, false)
+    assert.match(result.detail || '', /GMAIL_FROM/)
+  } finally {
+    globalThis.fetch = original
+  }
+})
+
+test('live send fails closed when GMAIL_FROM is missing', async () => {
+  clearMailEnv()
+  process.env.GMAIL_CLIENT_ID = 'client-id'
+  process.env.GMAIL_CLIENT_SECRET = 'client-secret'
+  process.env.GMAIL_REFRESH_TOKEN = 'refresh-token'
+  let called = false
+  const original = globalThis.fetch
+  globalThis.fetch = async () => {
+    called = true
+    return new Response('should not send', { status: 500 })
+  }
+  try {
+    const result = await sendEmail({
+      to: 'person@example.com',
+      subject: 'Board Arabia: next step (private booking)',
+      text: acceptText,
+      html: acceptHtml,
+    })
+    assert.equal(result.status, 'error')
+    assert.equal(result.dryRun, false)
+    assert.equal(called, false)
+    assert.match(result.detail || '', /GMAIL_FROM/)
+  } finally {
+    globalThis.fetch = original
+  }
 })
 
 test('configured client posts the Accept message to the Gmail API', async () => {
   clearMailEnv()
+  process.env.GMAIL_FROM = PLACEHOLDER_FROM
   process.env.GMAIL_CLIENT_ID = 'client-id'
   process.env.GMAIL_CLIENT_SECRET = 'client-secret'
   process.env.GMAIL_REFRESH_TOKEN = 'refresh-token'
@@ -136,8 +196,8 @@ test('configured client posts the Accept message to the Gmail API', async () => 
     assert.ok(gmailCall)
     const raw = JSON.parse(gmailCall.body).raw as string
     const decoded = Buffer.from(raw.replaceAll('-', '+').replaceAll('_', '/'), 'base64').toString('utf8')
-    assert.match(decoded, /From: "Board Arabia" <cindy@nammco.com>/)
-    assert.match(decoded, /Reply-To: cindy@nammco.com/)
+    assert.match(decoded, /From: "Board Arabia" <ops@example.com>/)
+    assert.match(decoded, /Reply-To: ops@example.com/)
     assert.equal(/noreply@boardarabia\.com/i.test(decoded), false)
     const plain = decoded
       .split('Content-Transfer-Encoding: base64\r\n\r\n')[1]
@@ -199,7 +259,7 @@ test('a mailbox at the same domain is not treated as the marketing site', async 
   const html = '<p>Email: founder@nammco.com</p><p>LinkedIn: https://www.linkedin.com/in/founder</p>\n<footer>Board Arabia</footer>'
   assert.equal(marketingSignatureHit(text, html), null)
   const result = await sendEmail({
-    to: 'michael@nammco.com',
+    to: PLACEHOLDER_STAFF,
     subject: 'New Board Arabia application',
     text,
     html,
@@ -351,6 +411,7 @@ test('product invites use a plain Board Arabia sign-off', () => {
 
 test('Gmail auth failure is a dry-run and does not echo the token', async () => {
   clearMailEnv()
+  process.env.GMAIL_FROM = PLACEHOLDER_FROM
   process.env.GMAIL_CLIENT_ID = 'client-id'
   process.env.GMAIL_CLIENT_SECRET = 'client-secret'
   process.env.GMAIL_REFRESH_TOKEN = 'refresh-token'

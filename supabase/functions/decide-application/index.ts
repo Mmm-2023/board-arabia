@@ -1,7 +1,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1'
 import { acceptMail, rejectMail } from '../_shared/transactional_copy.ts'
 import {
-  PRIVATE_BOOKING_LINK,
+  privateBookingLink,
   corsHeaders,
   jsonResponse,
   logEmailEvent,
@@ -88,7 +88,12 @@ Deno.serve(async (req) => {
   }
 
   if (decision === 'accepted') {
-    const { subject, text, html } = acceptMail(app.full_name || 'there', PRIVATE_BOOKING_LINK)
+    const bookingLink = privateBookingLink()
+    if (!bookingLink) {
+      return jsonResponse(req, { error: 'PRIVATE_BOOKING_LINK is not set' }, 500)
+    }
+
+    const { subject, text, html } = acceptMail(app.full_name || 'there', bookingLink)
 
     const sent = await sendEmail({
       to: app.email,
@@ -107,7 +112,7 @@ Deno.serve(async (req) => {
       detail: sent.detail ?? null,
       payload: {
         invite_mode: 'private_booking_link',
-        booking_url: PRIVATE_BOOKING_LINK,
+        booking_url: bookingLink,
         email_text: text,
       },
     })
@@ -130,7 +135,7 @@ Deno.serve(async (req) => {
       ok: true,
       dry_run: sent.dryRun,
       invite_mode: 'private_booking_link',
-      booking_url: PRIVATE_BOOKING_LINK,
+      booking_url: bookingLink,
       message: sent.dryRun
         ? 'Accepted (dry-run). Workspace mail is not connected, so the private booking email was not sent.'
         : 'Accepted. Private booking link emailed to candidate.',
