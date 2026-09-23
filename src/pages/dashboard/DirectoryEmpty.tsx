@@ -43,14 +43,14 @@ export function DirectoryEmpty({
 
       <div className="mt-8" aria-live="polite">
         {seat.status === 'loading' ? (
-          <p className="flex items-center gap-3 font-display text-[1.65rem] font-semibold tracking-[-0.03em]">
+          <p className="flex max-w-xl flex-wrap items-center gap-3 font-display text-[1.55rem] font-semibold leading-normal tracking-[-0.03em] md:text-[1.65rem]">
             <span className="sr-only">Loading the seat count. </span>
             <span className="inline-block h-8 w-12 animate-pulse bg-ink/10" aria-hidden="true" />
             <span>{DIRECTORY_COPY.progressLoading}</span>
           </p>
         ) : null}
         {seat.status === 'ready' ? (
-          <p className="font-display text-[1.65rem] font-semibold tracking-[-0.03em]">
+          <p className="max-w-xl font-display text-[1.55rem] font-semibold leading-normal tracking-[-0.03em] md:text-[1.65rem]">
             {progressLine(seat.admitted)}
           </p>
         ) : null}
