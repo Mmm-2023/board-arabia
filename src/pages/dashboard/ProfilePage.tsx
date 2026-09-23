@@ -4,6 +4,7 @@ import type { ProfileRow } from '../../lib/member'
 import { supabase } from '../../lib/supabase'
 import { useNoIndex } from '../../lib/usePageTitle'
 import { useMember } from './context'
+import { MemberAvatar } from './MemberAvatar'
 
 const fieldClass =
   'mt-2 w-full border border-ink/15 bg-white/70 px-4 py-3 text-[1rem] text-ink outline-none placeholder:text-ink/30 focus:border-brass'
@@ -121,17 +122,21 @@ export function ProfilePage() {
       </p>
       <p className="mt-4 text-[0.92rem] text-ink/45">{email}</p>
 
-      <form onSubmit={onSaveProfile} className="mt-10 space-y-5">
+      <div className="mt-8">
+        <MemberAvatar />
+      </div>
+
+      <form onSubmit={onSaveProfile} className="mt-8 space-y-5">
         <Field label="Name" value={fullName} onChange={setFullName} autoComplete="name" />
         <Field label="Headline" value={headline} onChange={setHeadline} />
         <Field label="Company" value={company} onChange={setCompany} autoComplete="organization" />
         <Field label="Location" value={location} onChange={setLocation} autoComplete="address-level2" />
         <Field
-          label="LinkedIn"
+          label="LinkedIn URL"
           value={linkedin}
           onChange={setLinkedin}
           type="url"
-          placeholder="https://"
+          placeholder="https://www.linkedin.com/in/…"
           autoComplete="url"
         />
         <Field label="Phone" value={phone} onChange={setPhone} type="tel" autoComplete="tel" />

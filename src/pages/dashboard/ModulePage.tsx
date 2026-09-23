@@ -1,10 +1,6 @@
 import { useNoIndex } from '../../lib/usePageTitle'
 
 const MODULES = {
-  directory: {
-    title: 'No names on this page',
-    body: 'The private directory of founding members will open here. It is not a public list, and this shell does not load one.',
-  },
   mandates: {
     title: 'Nothing released',
     body: 'Capital writes a mandate. Admin reads it before a member sees it. Your inbox is empty.',

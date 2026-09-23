@@ -29,6 +29,21 @@ type Gate =
   | { status: 'staff_home' }
   | { status: 'ready'; room: MemberRoom }
 
+const PROFILE_BASE =
+  'user_id, full_name, headline, company, location, linkedin_url, bio, phone, investable_capacity_usd, fo_aum_usd, turnover_usd, capacity_currency, include_in_public_aggregates, capacity_verified'
+
+async function loadOwnProfile(userId: string): Promise<ProfileRow | null> {
+  const withAvatar = await supabase
+    .from('profiles')
+    .select(`${PROFILE_BASE}, avatar_path`)
+    .eq('user_id', userId)
+    .maybeSingle()
+  if (!withAvatar.error) return withAvatar.data
+  const plain = await supabase.from('profiles').select(PROFILE_BASE).eq('user_id', userId).maybeSingle()
+  if (plain.error || !plain.data) return null
+  return { ...plain.data, avatar_path: null }
+}
+
 export function DashboardLayout() {
   const [gate, setGate] = useState<Gate>({ status: 'loading' })
   const loadSeq = useRef(0)
@@ -74,13 +89,7 @@ export function DashboardLayout() {
       return
     }
 
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select(
-        'user_id, full_name, headline, company, location, linkedin_url, bio, phone, investable_capacity_usd, fo_aum_usd, turnover_usd, capacity_currency, include_in_public_aggregates, capacity_verified',
-      )
-      .eq('user_id', user.id)
-      .maybeSingle()
+    const profile = await loadOwnProfile(user.id)
 
     if (seq !== loadSeq.current) return
     const room: MemberRoom = {
@@ -88,7 +97,7 @@ export function DashboardLayout() {
       email: user.email || member.email,
       staffRole,
       member,
-      profile: (profile as ProfileRow | null) ?? null,
+      profile,
       reload: async () => {
         await loadRef.current()
       },

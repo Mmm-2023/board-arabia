@@ -25,6 +25,7 @@ export type ProfileRow = {
   capacity_currency: string | null
   include_in_public_aggregates: boolean
   capacity_verified: boolean
+  avatar_path: string | null
 }
 
 export type FoundingCapacity = {
