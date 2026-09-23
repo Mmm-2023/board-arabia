@@ -111,6 +111,12 @@ function assertDistClean(distDir) {
   if (!fs.existsSync(path.join(distDir, 'dashboard', 'profile', 'index.html'))) {
     throw new Error('missing dashboard profile shell')
   }
+  if (!fs.existsSync(path.join(distDir, 'dashboard', 'network', 'index.html'))) {
+    throw new Error('missing dashboard network shell')
+  }
+  if (!fs.existsSync(path.join(distDir, 'admin', 'applications', 'index.html'))) {
+    throw new Error('missing admin applications shell')
+  }
   if (!fs.existsSync(path.join(distDir, 'auth', 'confirm', 'index.html'))) {
     throw new Error('missing auth confirm shell')
   }
@@ -214,12 +220,19 @@ fs.writeFileSync(path.join(dist, '.nojekyll'), '')
 const appShells = [
   'login',
   'admin',
+  'admin/applications',
+  'admin/people',
+  'admin/capacity',
+  'admin/settings',
+  'admin/email',
   'ops',
   'dashboard',
   'dashboard/profile',
-  'dashboard/invites',
   'dashboard/directory',
   'dashboard/mandates',
+  'dashboard/network',
+  'dashboard/help',
+  'dashboard/invites',
   'dashboard/intros',
   'dashboard/rooms',
   'dashboard/events',

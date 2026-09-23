@@ -66,6 +66,40 @@
   }
 }
 
+.shell-safe-top {
+  padding-top: env(safe-area-inset-top);
+}
+
+.shell-safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.shell-safe-left {
+  padding-left: env(safe-area-inset-left);
+}
+
+.shell-safe-x {
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+
+.shell-safe-y {
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.shell-main {
+  padding-top: 1.5rem;
+  padding-bottom: calc(5.75rem + env(safe-area-inset-bottom));
+}
+
+@media (min-width: 768px) {
+  .shell-main {
+    padding-top: 2rem;
+    padding-bottom: max(2rem, env(safe-area-inset-bottom));
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;

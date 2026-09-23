@@ -37,6 +37,6 @@ export function ModulePage({ id }: { id: keyof typeof MODULES }) {
 
 function label(id: keyof typeof MODULES) {
   if (id === 'intros') return 'Introductions'
-  if (id === 'events') return 'Events'
+  if (id === 'events') return 'Majlis'
   return id.charAt(0).toUpperCase() + id.slice(1)
 }

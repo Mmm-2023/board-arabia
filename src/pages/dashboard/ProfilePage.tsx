@@ -121,6 +121,11 @@ export function ProfilePage() {
         Visible to you. The directory is not open, and this page does not publish a profile.
       </p>
       <p className="mt-4 text-[0.92rem] text-ink/45">{email}</p>
+      <ProfileChecklist
+        name={fullName}
+        passwordSet={!member.must_set_password}
+        linkedin={linkedin}
+      />
 
       <div className="mt-8">
         <MemberAvatar />
@@ -176,7 +181,7 @@ export function ProfilePage() {
           disabled={savingProfile || !profile}
           className="bg-ink px-5 py-3 text-[0.75rem] font-semibold tracking-[0.08em] text-pearl uppercase disabled:opacity-50"
         >
-          {savingProfile ? 'Saving…' : 'Save profile'}
+          {savingProfile ? 'Saving…' : profileError ? 'Retry' : 'Save profile'}
         </button>
         {!profile && (
           <p className="text-[0.92rem] text-ink/50">
@@ -225,6 +230,33 @@ export function ProfilePage() {
         </button>
       </form>
     </div>
+  )
+}
+
+function ProfileChecklist({
+  name,
+  passwordSet,
+  linkedin,
+}: {
+  name: string
+  passwordSet: boolean
+  linkedin: string
+}) {
+  const items = [
+    { label: 'Name on file', done: name.trim().length > 0 },
+    { label: 'Password set', done: passwordSet },
+    { label: 'LinkedIn link', done: linkedin.trim().length > 0 },
+  ]
+  if (items.every((item) => item.done)) return null
+  return (
+    <ul className="mt-6 border border-ink/10 bg-white/50 px-4 py-4" aria-label="Incomplete profile">
+      {items.map((item) => (
+        <li key={item.label} className="flex min-h-11 items-center justify-between gap-3 text-[0.95rem]">
+          <span>{item.label}</span>
+          <span className={item.done ? 'text-ink/45' : 'text-brass'}>{item.done ? 'Done' : 'Needed'}</span>
+        </li>
+      ))}
+    </ul>
   )
 }
 
