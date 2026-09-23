@@ -1,25 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Link, NavLink, Navigate, Outlet } from 'react-router-dom'
-import {
-  isStaffRole,
-  memberRoomLabel,
-  showRoleSwitch,
-} from '../../../supabase/functions/_shared/staff_auth.ts'
+import { Navigate, Outlet } from 'react-router-dom'
+import { isStaffRole, showRoleSwitch } from '../../../supabase/functions/_shared/staff_auth.ts'
+import { AppShell } from '../../shell/AppShell'
+import { MEMBER_DESTINATIONS, MEMBER_SECONDARY, formatUpdated } from '../../shell/destinations'
+import { PermissionState } from '../../shell/ViewState'
+import { REFRESH_ERROR } from '../../shell/viewCopy'
 import { supabase } from '../../lib/supabase'
 import type { MemberRow, ProfileRow } from '../../lib/member'
 import { useNoIndex } from '../../lib/usePageTitle'
-import { MemberContext, type MemberRoom } from './context'
-
-const NAV = [
-  { to: '/dashboard', label: 'Home', end: true },
-  { to: '/dashboard/invites', label: 'Invites', end: false },
-  { to: '/dashboard/directory', label: 'Directory', end: false },
-  { to: '/dashboard/mandates', label: 'Mandates', end: false },
-  { to: '/dashboard/intros', label: 'Intros', end: false },
-  { to: '/dashboard/rooms', label: 'Rooms', end: false },
-  { to: '/dashboard/events', label: 'Events', end: false },
-  { to: '/dashboard/profile', label: 'Profile', end: false },
-]
+import { DashboardStatusContext, MemberContext, type MemberRoom } from './context'
 
 type Gate =
   | { status: 'loading' }
@@ -32,30 +21,41 @@ type Gate =
 const PROFILE_BASE =
   'user_id, full_name, headline, company, location, linkedin_url, bio, phone, investable_capacity_usd, fo_aum_usd, turnover_usd, capacity_currency, include_in_public_aggregates, capacity_verified'
 
-async function loadOwnProfile(userId: string): Promise<ProfileRow | null> {
+async function loadOwnProfile(userId: string): Promise<{ profile: ProfileRow | null; error: boolean }> {
   const withAvatar = await supabase
     .from('profiles')
     .select(`${PROFILE_BASE}, avatar_path`)
     .eq('user_id', userId)
     .maybeSingle()
-  if (!withAvatar.error) return withAvatar.data
+  if (!withAvatar.error) return { profile: withAvatar.data, error: false }
   const plain = await supabase.from('profiles').select(PROFILE_BASE).eq('user_id', userId).maybeSingle()
-  if (plain.error || !plain.data) return null
-  return { ...plain.data, avatar_path: null }
+  if (plain.error) return { profile: null, error: true }
+  if (!plain.data) return { profile: null, error: false }
+  return { profile: { ...plain.data, avatar_path: null }, error: false }
 }
 
 export function DashboardLayout() {
   const [gate, setGate] = useState<Gate>({ status: 'loading' })
+  const [refreshError, setRefreshError] = useState('')
+  const [refreshing, setRefreshing] = useState(false)
+  const [updatedAt, setUpdatedAt] = useState<Date | null>(null)
   const loadSeq = useRef(0)
   const loadRef = useRef<() => Promise<void>>(async () => {})
+  const readyRef = useRef<MemberRoom | null>(null)
   useNoIndex('Member dashboard | Board Arabia')
 
   const load = useCallback(async () => {
     const seq = ++loadSeq.current
+    setRefreshing(true)
     const { data, error } = await supabase.auth.getUser()
     if (seq !== loadSeq.current) return
     const user = data.user
     if (error || !user) {
+      setRefreshing(false)
+      if (readyRef.current) {
+        setRefreshError(REFRESH_ERROR)
+        return
+      }
       setGate({ status: 'signed_out' })
       return
     }
@@ -70,14 +70,24 @@ export function DashboardLayout() {
     ])
 
     if (seq !== loadSeq.current) return
+    if (memberRes.error && readyRef.current) {
+      setRefreshing(false)
+      setRefreshError(REFRESH_ERROR)
+      return
+    }
+
     const claimedRole = staffRes.data?.role
     const staffRole = !staffRes.error && isStaffRole(claimedRole) ? claimedRole : null
     const member = memberRes.data as MemberRow | null
     if (staffRole && (!member || member.status === 'suspended')) {
+      readyRef.current = null
+      setRefreshing(false)
       setGate({ status: 'staff_home' })
       return
     }
     if (!member || member.status === 'suspended') {
+      readyRef.current = null
+      setRefreshing(false)
       if (member?.status === 'suspended') {
         setGate({ status: 'suspended', email: user.email || member.email })
         return
@@ -89,19 +99,29 @@ export function DashboardLayout() {
       return
     }
 
-    const profile = await loadOwnProfile(user.id)
+    const loaded = await loadOwnProfile(user.id)
 
     if (seq !== loadSeq.current) return
+    if (loaded.error && readyRef.current) {
+      setRefreshing(false)
+      setRefreshError(REFRESH_ERROR)
+      return
+    }
+
     const room: MemberRoom = {
       userId: user.id,
       email: user.email || member.email,
       staffRole,
       member,
-      profile,
+      profile: loaded.profile,
       reload: async () => {
         await loadRef.current()
       },
     }
+    readyRef.current = room
+    setRefreshError('')
+    setUpdatedAt(new Date())
+    setRefreshing(false)
     setGate({ status: 'ready', room })
   }, [])
 
@@ -123,9 +143,18 @@ export function DashboardLayout() {
     await supabase.auth.signOut()
   }
 
+  const status = {
+    refreshError,
+    refreshing,
+    updatedAt,
+    retry: () => {
+      void load()
+    },
+  }
+
   if (gate.status === 'loading') {
     return (
-      <div className="flex min-h-dvh items-center justify-center bg-pearl text-ink">
+      <div className="shell-safe-top shell-safe-x flex min-h-dvh items-center justify-center bg-pearl text-ink">
         <p className="text-ink/50">Loading…</p>
       </div>
     )
@@ -141,19 +170,21 @@ export function DashboardLayout() {
 
   if (gate.status === 'suspended' || gate.status === 'forbidden') {
     return (
-      <div className="min-h-dvh bg-pearl text-ink">
-        <div className="mx-auto max-w-lg px-5 py-20">
+      <div className="shell-safe-top shell-safe-x shell-safe-bottom min-h-dvh bg-pearl px-5 py-16 text-ink">
+        <div className="mx-auto max-w-lg">
           <p className="text-[0.72rem] font-semibold tracking-[0.14em] text-brass uppercase">
             Board Arabia
           </p>
-          <h1 className="mt-3 font-display text-[2.2rem] font-bold tracking-[-0.03em]">
-            {gate.status === 'suspended' ? 'Membership is paused' : 'Invitation required'}
-          </h1>
-          <p className="mt-4 text-[1.02rem] leading-relaxed text-ink/65">
-            {gate.status === 'suspended'
-              ? 'This seat cannot open the dashboard. Write to the membership if you believe this is a mistake.'
-              : 'The member dashboard opens only after admin admits you and you sign in with that invitation.'}
-          </p>
+          <div className="mt-4">
+            <PermissionState
+              tone="member"
+              message={
+                gate.status === 'suspended'
+                  ? 'This seat cannot open the dashboard. Write to the membership if you believe this is a mistake.'
+                  : 'Directory unlocks after admit. The member dashboard opens only after admin admits you and you sign in with that invitation.'
+              }
+            />
+          </div>
           {gate.status === 'forbidden' && gate.email && (
             <p className="mt-4 text-[0.92rem] text-ink/45">Signed in as {gate.email}.</p>
           )}
@@ -161,7 +192,7 @@ export function DashboardLayout() {
             <button
               type="button"
               onClick={() => void onSignOut()}
-              className="text-[0.75rem] font-semibold tracking-[0.08em] text-ink/50 uppercase"
+              className="inline-flex min-h-11 items-center text-[0.75rem] font-semibold tracking-[0.08em] text-ink/50 uppercase"
             >
               Sign out
             </button>
@@ -172,60 +203,24 @@ export function DashboardLayout() {
   }
 
   return (
-    <MemberContext.Provider value={gate.room}>
-      <div className="min-h-dvh bg-pearl text-ink">
-        <header className="border-b border-ink/10">
-          <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-5 md:px-8">
-            <div>
-              <p className="font-display text-[1.05rem] font-bold tracking-[-0.02em]">
-                Board Arabia
-              </p>
-              <p className="mt-1 text-[0.68rem] font-semibold tracking-[0.14em] text-ink/40 uppercase">
-                {memberRoomLabel(gate.room.member.seat)}
-              </p>
-            </div>
-            <div className="flex items-center gap-4">
-              {showRoleSwitch(gate.room.staffRole, gate.room.member.status).toAdmin && (
-                <Link
-                  to="/admin"
-                  className="text-[0.72rem] font-semibold tracking-[0.08em] text-brass uppercase hover:text-ink"
-                >
-                  Admin
-                </Link>
-              )}
-              <button
-                type="button"
-                onClick={() => void onSignOut()}
-                className="text-[0.72rem] font-semibold tracking-[0.08em] text-ink/45 uppercase hover:text-ink"
-              >
-                Sign out
-              </button>
-            </div>
-          </div>
-        </header>
-
-        <div className="mx-auto grid max-w-6xl md:grid-cols-[13.5rem_1fr]">
-          <nav className="flex gap-1 overflow-x-auto border-b border-ink/10 px-3 py-2 md:flex-col md:gap-0 md:overflow-visible md:border-r md:border-b-0 md:px-0 md:py-8">
-            {NAV.map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                end={item.end}
-                className={({ isActive }) =>
-                  `shrink-0 px-3 py-2.5 text-[0.92rem] md:px-6 ${
-                    isActive ? 'bg-ink text-pearl' : 'text-ink/65 hover:text-ink'
-                  }`
-                }
-              >
-                {item.label}
-              </NavLink>
-            ))}
-          </nav>
-          <main className="px-5 py-10 md:px-10 md:py-12">
-            <Outlet />
-          </main>
-        </div>
-      </div>
-    </MemberContext.Provider>
+    <DashboardStatusContext.Provider value={status}>
+      <MemberContext.Provider value={gate.room}>
+        <AppShell
+          tone="member"
+          destinations={MEMBER_DESTINATIONS}
+          secondary={MEMBER_SECONDARY}
+          updatedLabel={formatUpdated(updatedAt)}
+          roleSwitch={
+            showRoleSwitch(gate.room.staffRole, gate.room.member.status).toAdmin
+              ? { label: 'Switch to admin', to: '/admin' }
+              : null
+          }
+          onSignOut={() => void onSignOut()}
+          accountLabel={gate.room.email}
+        >
+          <Outlet />
+        </AppShell>
+      </MemberContext.Provider>
+    </DashboardStatusContext.Provider>
   )
 }

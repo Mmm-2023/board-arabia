@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { applyInviteUrl, whatsAppInviteUrl } from '../../lib/inviteLink'
 import { sendMemberInvite, supabase } from '../../lib/supabase'
-import { useNoIndex } from '../../lib/usePageTitle'
+import { CardSkeleton } from '../../shell/ViewState'
+import { MEMBER_VIEWS } from '../../shell/viewCopy'
 import { useMember } from './context'
 
 type SentInvite = {
@@ -15,7 +16,7 @@ type SentInvite = {
   expires_at: string
 }
 
-export function InvitesPage() {
+export function InvitesPage({ embedded = false }: { embedded?: boolean }) {
   const { member, reload, userId } = useMember()
   const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
@@ -24,7 +25,7 @@ export function InvitesPage() {
   const [error, setError] = useState('')
   const [sent, setSent] = useState<SentInvite[]>([])
   const [listError, setListError] = useState('')
-  useNoIndex('Invites | Board Arabia')
+  const [loadingList, setLoadingList] = useState(true)
 
   const loadSent = useCallback(async () => {
     const { data, error: queryError } = await supabase
@@ -32,8 +33,9 @@ export function InvitesPage() {
       .select('id, token, channel, status, recipient_email, recipient_phone, created_at, expires_at')
       .eq('inviter_member_id', userId)
       .order('created_at', { ascending: false })
+    setLoadingList(false)
     if (queryError) {
-      setListError(queryError.message)
+      setListError(MEMBER_VIEWS.network.error)
       return
     }
     setListError('')
@@ -49,8 +51,9 @@ export function InvitesPage() {
       .order('created_at', { ascending: false })
       .then(({ data, error: queryError }) => {
         if (cancelled) return
+        setLoadingList(false)
         if (queryError) {
-          setListError(queryError.message)
+          setListError(MEMBER_VIEWS.network.error)
           return
         }
         setListError('')
@@ -114,15 +117,22 @@ export function InvitesPage() {
 
   return (
     <div className="max-w-3xl">
-      <p className="text-[0.72rem] font-semibold tracking-[0.14em] text-brass uppercase">
+      {!embedded && (
+        <>
+          <p className="text-[0.72rem] font-semibold tracking-[0.14em] text-brass uppercase">
+            Network
+          </p>
+          <h1 className="mt-3 font-display text-[2.4rem] font-bold tracking-[-0.04em] text-balance md:text-[3rem]">
+            Network
+          </h1>
+        </>
+      )}
+      <h2 className="text-[0.72rem] font-semibold tracking-[0.14em] text-ink/40 uppercase">
         Invites
-      </p>
-      <h1 className="mt-3 font-display text-[2.4rem] font-bold tracking-[-0.04em] text-balance md:text-[3rem]">
-        Two invites
-      </h1>
-      <p className="mt-4 max-w-xl text-[1.02rem] leading-relaxed text-ink/70">
-        You have {remaining} of {member.invites_granted} invites remaining. Each send uses one.
-        Unused invites do not refill. The person you invite still goes through review.
+      </h2>
+      <p className="mt-3 max-w-xl text-[1.02rem] leading-relaxed text-ink/70">
+        {MEMBER_VIEWS.network.invites} {remaining} of {member.invites_granted} remaining. Each send
+        uses one. Unused invites do not refill. The person you invite still goes through review.
       </p>
       {blocked && (
         <p className="mt-4 border border-ink/10 bg-white/60 px-4 py-3 text-[0.95rem] text-ink/70">
@@ -195,8 +205,16 @@ export function InvitesPage() {
         <h2 className="text-[0.72rem] font-semibold tracking-[0.14em] text-ink/40 uppercase">
           Sent
         </h2>
-        {listError && <p className="mt-3 text-[0.95rem] text-red-800">{listError}</p>}
-        {sent.length === 0 && !listError && (
+        {loadingList && <div className="mt-4"><CardSkeleton tone="member" label="Loading invites" /></div>}
+        {listError && (
+          <p className="mt-3 text-[0.95rem] text-red-800" role="alert">
+            {listError}{' '}
+            <button type="button" className="underline" onClick={() => void loadSent()}>
+              {MEMBER_VIEWS.network.retry}
+            </button>
+          </p>
+        )}
+        {sent.length === 0 && !listError && !loadingList && (
           <p className="mt-3 text-[0.95rem] text-ink/50">No invites sent yet.</p>
         )}
         <ul className="mt-4 space-y-3">

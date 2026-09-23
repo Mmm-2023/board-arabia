@@ -1,177 +1,212 @@
-import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { fetchFoundingCapacity } from '../../lib/supabase'
-import { initials, seatLabel, type FoundingCapacity } from '../../lib/member'
+import { initials, seatLabel } from '../../lib/member'
 import { useNoIndex } from '../../lib/usePageTitle'
-import { useMember } from './context'
+import { ErrorBanner, HomeSkeleton, toneClasses } from '../../shell/ViewState'
+import { MEMBER_VIEWS } from '../../shell/viewCopy'
+import { useDashboardStatus, useMember } from './context'
 
 export function DashboardHome() {
   const { member, profile, email } = useMember()
-  const [capacity, setCapacity] = useState<FoundingCapacity | null>(null)
-  const [capacityError, setCapacityError] = useState('')
-  const name = profile?.full_name?.trim() || 'Founding member'
+  const status = useDashboardStatus()
+  const name = profile?.full_name?.trim() || ''
+  const incomplete = name.length === 0
+  const styles = toneClasses('member')
   useNoIndex('Home | Board Arabia')
 
-  useEffect(() => {
-    let cancelled = false
-    void fetchFoundingCapacity().then((result) => {
-      if (cancelled) return
-      if ('error' in result) {
-        setCapacityError(result.error)
-        return
-      }
-      setCapacity(result)
-    })
-    return () => {
-      cancelled = true
-    }
-  }, [])
+  if (status.refreshing && !status.updatedAt) {
+    return <HomeSkeleton tone="member" />
+  }
 
-  const filled = capacity ? capacity.ksa + capacity.intl : null
-  const remain = capacity ? Math.max(capacity.total_cap - (filled ?? 0), 0) : null
+  const attention = attentionItems(member.must_set_password, member.invites_remaining)
+  const primary = primaryAction(incomplete, member.must_set_password, member.invites_remaining)
+  const included =
+    Boolean(profile?.include_in_public_aggregates) && Boolean(profile?.capacity_verified)
 
   return (
     <div className="max-w-3xl">
-      <p className="text-[0.72rem] font-semibold tracking-[0.14em] text-brass uppercase">
-        Home
-      </p>
-      <h1 className="mt-3 font-display text-[2.4rem] font-bold tracking-[-0.04em] text-balance md:text-[3rem]">
-        {name}
-      </h1>
-      <p className="mt-3 font-serif text-[1.35rem] text-ink/70 italic">
-        {seatLabel(member.seat)} seat
-      </p>
-      {profile?.headline && (
-        <p className="mt-2 text-[1rem] text-ink/55">{profile.headline}</p>
+      {status.refreshError && (
+        <div className="mb-6">
+          <ErrorBanner
+            tone="member"
+            message={status.refreshError}
+            onRetry={status.retry}
+            retryLabel={MEMBER_VIEWS.home.retry}
+          />
+        </div>
       )}
 
-      {member.must_set_password && (
-        <p className="mt-6 border border-brass/50 bg-white/60 px-4 py-3 text-[0.95rem] text-ink/75">
-          Set a password before you leave this session.{' '}
-          <Link to="/dashboard/profile#password" className="border-b border-brass text-ink">
-            Profile
-          </Link>
-        </p>
-      )}
-
-      <div className="mt-10 grid gap-4 md:grid-cols-2">
-        <article
-          aria-label="Founding badge placeholder"
-          className="flex min-h-64 flex-col justify-between border border-brass/50 bg-ink px-6 py-6 text-pearl"
-        >
-          <div className="flex items-start justify-between gap-4">
-            <p className="text-[0.68rem] font-semibold tracking-[0.16em] text-brass-bright uppercase">
-              Founding member
-            </p>
-            <p className="text-[0.68rem] tracking-[0.12em] text-pearl/45 uppercase">
-              Placeholder
-            </p>
-          </div>
-          <p className="font-display text-[3.4rem] leading-none font-bold tracking-[-0.04em]">
-            {initials(profile?.full_name ?? null, email)}
+      {incomplete ? (
+        <section aria-label="Needs attention">
+          <p className="text-[0.72rem] font-semibold tracking-[0.14em] text-brass uppercase">
+            Home
           </p>
-          <div>
-            <p className="font-display text-[1.2rem] font-semibold tracking-[-0.02em]">
-              {name}
-            </p>
-            <p className="mt-1 text-[0.92rem] text-pearl/65">{seatLabel(member.seat)}</p>
-            <p className="mt-4 font-serif text-[1rem] text-pearl/50 italic">
-              The mark is not issued from this page.
-            </p>
+          <h1 className="mt-3 font-display text-[2.2rem] font-bold tracking-[-0.04em] text-balance md:text-[2.8rem]">
+            {MEMBER_VIEWS.home.empty}
+          </h1>
+          <Link
+            to="/dashboard/profile"
+            className={`mt-6 inline-flex min-h-11 items-center px-4 text-[0.75rem] font-semibold tracking-[0.08em] uppercase ${styles.primary}`}
+          >
+            {MEMBER_VIEWS.home.emptyCta}
+          </Link>
+          <div className="mt-8" aria-hidden="true">
+            <HomeSkeleton tone="member" pulse={false} />
           </div>
-        </article>
-
-        <section className="border border-ink/10 bg-white/50 px-6 py-6">
-          <h2 className="text-[0.72rem] font-semibold tracking-[0.14em] text-ink/40 uppercase">
-            Founding hundred
-          </h2>
-          {capacity ? (
-            <div className="mt-5 space-y-5">
-              <Meter
-                label="Saudi Arabia"
-                value={capacity.ksa}
-                cap={capacity.ksa_cap}
-                own={member.seat === 'ksa'}
-              />
-              <Meter
-                label="International"
-                value={capacity.intl}
-                cap={capacity.intl_cap}
-                own={member.seat === 'intl'}
-              />
-              <p className="text-[0.98rem] leading-relaxed text-ink/65">
-                {remain} {remain === 1 ? 'place remains' : 'places remain'} of {capacity.total_cap}.
-              </p>
-            </div>
-          ) : (
-            <p className="mt-4 text-[0.95rem] text-ink/50">
-              {capacityError || 'Loading capacity…'}
-            </p>
-          )}
         </section>
-      </div>
+      ) : (
+        <>
+          <p className="text-[0.72rem] font-semibold tracking-[0.14em] text-brass uppercase">
+            Home
+          </p>
+          <h1 className="mt-3 font-display text-[2.2rem] font-bold tracking-[-0.04em] text-balance md:text-[2.8rem]">
+            {name}
+          </h1>
 
-      <section className="mt-4 border border-ink/10 px-6 py-6">
-        <h2 className="text-[0.72rem] font-semibold tracking-[0.14em] text-ink/40 uppercase">
-          Invites
-        </h2>
-        <p className="mt-3 max-w-xl text-[1.02rem] leading-relaxed text-ink/65">
-          {member.invites_remaining} of {member.invites_granted} remaining. Each admitted member
-          receives two. Unused invites do not refill.
-        </p>
-        <Link
-          to="/dashboard/invites"
-          className="mt-4 inline-block text-[0.75rem] font-semibold tracking-[0.08em] text-brass uppercase"
-        >
-          Send an invite
-        </Link>
-      </section>
+          {attention.length > 0 && (
+            <section aria-label="Needs attention" className="mt-8 space-y-3">
+              <h2 className="text-[0.72rem] font-semibold tracking-[0.14em] text-ink/40 uppercase">
+                Needs attention
+              </h2>
+              <ul className="space-y-3">
+                {attention.map((item) => (
+                  <li key={item.title} className={`${styles.panel} px-4 py-4`}>
+                    <p className="text-[1rem] text-ink">{item.title}</p>
+                    <p className={`mt-1 text-[0.95rem] ${styles.muted}`}>{item.body}</p>
+                    <Link
+                      to={item.to}
+                      className="mt-3 inline-flex min-h-11 items-center text-[0.75rem] font-semibold tracking-[0.08em] text-brass uppercase"
+                    >
+                      {item.cta}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
 
-      <section className="mt-4 border border-ink/10 px-6 py-6">
-        <h2 className="text-[0.72rem] font-semibold tracking-[0.14em] text-ink/40 uppercase">
-          Next majlis
-        </h2>
-        <p className="mt-3 max-w-xl text-[1.02rem] leading-relaxed text-ink/65">
-          Quarterly dates are circulated to members. Nothing is scheduled in this shell.
-        </p>
-        <Link
-          to="/dashboard/events"
-          className="mt-4 inline-block text-[0.75rem] font-semibold tracking-[0.08em] text-brass uppercase"
-        >
-          Events
-        </Link>
-      </section>
+          <section aria-label="Status" className="mt-8">
+            <h2 className="text-[0.72rem] font-semibold tracking-[0.14em] text-ink/40 uppercase">
+              Status
+            </h2>
+            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+              <article className={`${styles.panel} px-4 py-4`}>
+                <p className={`text-[0.72rem] font-semibold tracking-[0.12em] uppercase ${styles.quiet}`}>
+                  Founding seat
+                </p>
+                <p className="mt-2 font-display text-[1.35rem] font-semibold tracking-[-0.03em]">
+                  {seatLabel(member.seat)}
+                </p>
+                <p
+                  className="mt-3 inline-flex min-h-11 min-w-11 items-center justify-center border border-brass/50 bg-ink px-3 font-display text-[1rem] font-bold text-pearl"
+                  aria-label="Badge mark placeholder"
+                >
+                  {initials(profile?.full_name ?? null, email)}
+                </p>
+              </article>
+              <article className={`${styles.panel} px-4 py-4`}>
+                <p className={`text-[0.72rem] font-semibold tracking-[0.12em] uppercase ${styles.quiet}`}>
+                  Availability
+                </p>
+                <p className="mt-2 font-display text-[1.35rem] font-semibold tracking-[-0.03em]">
+                  Not set
+                </p>
+                <p className={`mt-2 text-[0.92rem] ${styles.muted}`}>
+                  Open, Selective, or At capacity will show here once you can set it.
+                </p>
+              </article>
+              <article className={`${styles.panel} px-4 py-4`}>
+                <p className={`text-[0.72rem] font-semibold tracking-[0.12em] uppercase ${styles.quiet}`}>
+                  Invites remaining
+                </p>
+                <p className="mt-2 font-display text-[1.35rem] font-semibold tracking-[-0.03em]">
+                  {member.invites_remaining} / {member.invites_granted}
+                </p>
+              </article>
+              <article className={`${styles.panel} px-4 py-4`}>
+                <p className={`text-[0.72rem] font-semibold tracking-[0.12em] uppercase ${styles.quiet}`}>
+                  Your capacity included in platform totals
+                </p>
+                <p className="mt-2 font-display text-[1.35rem] font-semibold tracking-[-0.03em]">
+                  {included ? 'Yes' : 'No'}
+                </p>
+              </article>
+            </div>
+          </section>
+
+          <section aria-label="Next actions" className="mt-8">
+            <h2 className="text-[0.72rem] font-semibold tracking-[0.14em] text-ink/40 uppercase">
+              Next actions
+            </h2>
+            <Link
+              to={primary.to}
+              className={`mt-4 inline-flex min-h-11 items-center px-4 text-[0.75rem] font-semibold tracking-[0.08em] uppercase ${styles.primary}`}
+            >
+              {primary.label}
+            </Link>
+            <ul className="mt-4 flex flex-wrap gap-x-5 gap-y-2">
+              <li>
+                <Link to="/dashboard/directory" className="inline-flex min-h-11 items-center text-[0.95rem] text-ink/70">
+                  Directory
+                </Link>
+              </li>
+              <li>
+                <Link to="/dashboard/network" className="inline-flex min-h-11 items-center text-[0.95rem] text-ink/70">
+                  Network
+                </Link>
+              </li>
+              <li>
+                <Link to="/dashboard/profile" className="inline-flex min-h-11 items-center text-[0.95rem] text-ink/70">
+                  Profile
+                </Link>
+              </li>
+            </ul>
+          </section>
+
+          <section aria-label="Context" className="mt-10 border-t border-ink/10 pt-8">
+            <h2 className="text-[0.72rem] font-semibold tracking-[0.14em] text-ink/40 uppercase">
+              Context
+            </h2>
+            <p className={`mt-3 max-w-xl text-[1rem] leading-relaxed ${styles.muted}`}>
+              Directory, mandates, and introductions stay inside this membership. Nothing on this
+              page lists another member.
+            </p>
+            <p className={`mt-3 max-w-xl text-[1rem] leading-relaxed ${styles.muted}`}>
+              A LinkedIn announce will live with your profile. This page does not post one.
+            </p>
+          </section>
+        </>
+      )}
     </div>
   )
 }
 
-function Meter({
-  label,
-  value,
-  cap,
-  own,
-}: {
-  label: string
-  value: number
-  cap: number
-  own: boolean
-}) {
-  const width = cap > 0 ? Math.min(100, Math.round((value / cap) * 100)) : 0
-  return (
-    <div>
-      <div className="flex items-baseline justify-between gap-3">
-        <p className="text-[0.95rem] text-ink">
-          {label}
-          {own ? ' · your seat' : ''}
-        </p>
-        <p className="font-display text-[1.05rem] font-semibold tracking-[-0.02em]">
-          {value}
-          <span className="text-ink/35"> / {cap}</span>
-        </p>
-      </div>
-      <div className="mt-2 h-px w-full bg-ink/10">
-        <div className="h-px bg-brass" style={{ width: `${width}%` }} />
-      </div>
-    </div>
-  )
+function attentionItems(mustSetPassword: boolean, invitesRemaining: number) {
+  const items: { title: string; body: string; to: string; cta: string }[] = []
+  if (mustSetPassword) {
+    items.push({
+      title: 'Set your password',
+      body: 'Replace the invitation before you leave this session.',
+      to: '/dashboard/profile#password',
+      cta: 'Complete profile',
+    })
+  }
+  if (invitesRemaining > 0) {
+    items.push({
+      title: 'Invite wallet',
+      body: `${invitesRemaining} peer invite${invitesRemaining === 1 ? '' : 's'} remaining.`,
+      to: '/dashboard/network',
+      cta: 'Send invite',
+    })
+  }
+  return items
+}
+
+function primaryAction(incomplete: boolean, mustSetPassword: boolean, invitesRemaining: number) {
+  if (incomplete || mustSetPassword) {
+    return { label: 'Complete profile', to: '/dashboard/profile' }
+  }
+  if (invitesRemaining > 0) {
+    return { label: 'Send invite', to: '/dashboard/network' }
+  }
+  return { label: 'Open mandates', to: '/dashboard/mandates' }
 }

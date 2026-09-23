@@ -1,6 +1,5 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { AboutPage } from './pages/AboutPage'
-import { AdminPage } from './pages/AdminPage'
 import { ApplyPage } from './pages/ApplyPage'
 import { AuthConfirmPage } from './pages/AuthConfirmPage'
 import { ForCapitalPage } from './pages/ForCapitalPage'
@@ -11,11 +10,20 @@ import { LoginPage } from './pages/LoginPage'
 import { PartnersPage } from './pages/PartnersPage'
 import { PrivacyPage } from './pages/PrivacyPage'
 import { TermsPage } from './pages/TermsPage'
+import { AdminLayout } from './pages/admin/AdminLayout'
+import { AdminHome } from './pages/admin/AdminHome'
+import { ApplicationsPage } from './pages/admin/ApplicationsPage'
+import { CapacityPage } from './pages/admin/CapacityPage'
+import { EmailPage } from './pages/admin/EmailPage'
+import { PeoplePage } from './pages/admin/PeoplePage'
+import { SettingsPage } from './pages/admin/SettingsPage'
 import { DashboardHome } from './pages/dashboard/DashboardHome'
 import { DashboardLayout } from './pages/dashboard/DashboardLayout'
 import { DirectoryPage } from './pages/dashboard/DirectoryPage'
-import { InvitesPage } from './pages/dashboard/InvitesPage'
+import { HelpPage } from './pages/dashboard/HelpPage'
+import { MandatesPage } from './pages/dashboard/MandatesPage'
 import { ModulePage } from './pages/dashboard/ModulePage'
+import { NetworkPage } from './pages/dashboard/NetworkPage'
 import { ProfilePage } from './pages/dashboard/ProfilePage'
 
 export default function App() {
@@ -33,19 +41,27 @@ export default function App() {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/auth/confirm" element={<AuthConfirmPage />} />
       <Route path="/auth/reset" element={<AuthConfirmPage />} />
-      <Route path="/admin" element={<AdminPage />} />
-      <Route path="/admin/*" element={<AdminPage />} />
-      <Route path="/ops" element={<AdminPage />} />
-      <Route path="/ops/*" element={<AdminPage />} />
+      <Route path="/admin" element={<AdminLayout />}>
+        <Route index element={<AdminHome />} />
+        <Route path="applications" element={<ApplicationsPage />} />
+        <Route path="people" element={<PeoplePage />} />
+        <Route path="capacity" element={<CapacityPage />} />
+        <Route path="settings" element={<SettingsPage />} />
+        <Route path="email" element={<EmailPage />} />
+      </Route>
+      <Route path="/ops/*" element={<Navigate to="/admin" replace />} />
+      <Route path="/ops" element={<Navigate to="/admin" replace />} />
       <Route path="/dashboard" element={<DashboardLayout />}>
         <Route index element={<DashboardHome />} />
-        <Route path="invites" element={<InvitesPage />} />
-        <Route path="profile" element={<ProfilePage />} />
         <Route path="directory" element={<DirectoryPage />} />
-        <Route path="mandates" element={<ModulePage id="mandates" />} />
-        <Route path="intros" element={<ModulePage id="intros" />} />
+        <Route path="mandates" element={<MandatesPage />} />
+        <Route path="network" element={<NetworkPage />} />
+        <Route path="profile" element={<ProfilePage />} />
+        <Route path="invites" element={<Navigate to="/dashboard/network" replace />} />
+        <Route path="intros" element={<Navigate to="/dashboard/network" replace />} />
         <Route path="rooms" element={<ModulePage id="rooms" />} />
         <Route path="events" element={<ModulePage id="events" />} />
+        <Route path="help" element={<HelpPage />} />
       </Route>
       {/* Legacy book/verify routes redirect. Public calendar CTA removed. */}
       <Route path="/book" element={<Navigate to="/apply" replace />} />
