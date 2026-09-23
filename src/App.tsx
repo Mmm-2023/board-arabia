@@ -13,6 +13,7 @@ import { PrivacyPage } from './pages/PrivacyPage'
 import { TermsPage } from './pages/TermsPage'
 import { DashboardHome } from './pages/dashboard/DashboardHome'
 import { DashboardLayout } from './pages/dashboard/DashboardLayout'
+import { DirectoryPage } from './pages/dashboard/DirectoryPage'
 import { InvitesPage } from './pages/dashboard/InvitesPage'
 import { ModulePage } from './pages/dashboard/ModulePage'
 import { ProfilePage } from './pages/dashboard/ProfilePage'
@@ -38,7 +39,7 @@ export default function App() {
         <Route index element={<DashboardHome />} />
         <Route path="invites" element={<InvitesPage />} />
         <Route path="profile" element={<ProfilePage />} />
-        <Route path="directory" element={<ModulePage id="directory" />} />
+        <Route path="directory" element={<DirectoryPage />} />
         <Route path="mandates" element={<ModulePage id="mandates" />} />
         <Route path="intros" element={<ModulePage id="intros" />} />
         <Route path="rooms" element={<ModulePage id="rooms" />} />

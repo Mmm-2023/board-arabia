@@ -4,6 +4,7 @@ import type { ProfileRow } from '../../lib/member'
 import { supabase } from '../../lib/supabase'
 import { useNoIndex } from '../../lib/usePageTitle'
 import { useMember } from './context'
+import { MemberAvatar } from './MemberAvatar'
 
 const fieldClass =
   'mt-2 w-full border border-ink/15 bg-white/70 px-4 py-3 text-[1rem] text-ink outline-none placeholder:text-ink/30 focus:border-brass'
@@ -120,6 +121,8 @@ export function ProfilePage() {
         Visible to you. The directory is not open, and this page does not publish a profile.
       </p>
       <p className="mt-4 text-[0.92rem] text-ink/45">{email}</p>
+
+      <MemberAvatar />
 
       <form onSubmit={onSaveProfile} className="mt-10 space-y-5">
         <Field label="Name" value={fullName} onChange={setFullName} autoComplete="name" />

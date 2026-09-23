@@ -208,6 +208,7 @@ export type Database = {
           capacity_currency: string
           include_in_public_aggregates: boolean
           capacity_verified: boolean
+          avatar_path: string | null
           updated_at: string
         }
         Insert: {
@@ -225,6 +226,7 @@ export type Database = {
           capacity_currency?: string
           include_in_public_aggregates?: boolean
           capacity_verified?: boolean
+          avatar_path?: string | null
           updated_at?: string
         }
         Update: {
@@ -242,6 +244,7 @@ export type Database = {
           capacity_currency?: string
           include_in_public_aggregates?: boolean
           capacity_verified?: boolean
+          avatar_path?: string | null
           updated_at?: string
         }
         Relationships: []
