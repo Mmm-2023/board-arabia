@@ -1,12 +1,14 @@
 /** Board Arabia outbound mail via Google Workspace Gmail API.
- * From: noreply@boardarabia.com. Reply-To: cindy@nammco.com.
+ * From: cindy@nammco.com. Reply-To: cindy@nammco.com.
+ * noreply@boardarabia.com is parked until later.
  * Secrets live only in Supabase Edge Function secrets.
  * Dry-run when those secrets are missing. No Resend.
+ * Board Arabia footer only. No nammco banner or signature.
  */
 
 export const ADMIN_NOTIFY_EMAIL = 'michael@nammco.com'
 export const WORKSPACE_MAILBOX = 'cindy@nammco.com'
-export const PRODUCT_FROM = 'noreply@boardarabia.com'
+export const PRODUCT_FROM = 'cindy@nammco.com'
 const GMAIL_SEND_SCOPE = 'https://www.googleapis.com/auth/gmail.send'
 const TOKEN_URL = 'https://oauth2.googleapis.com/token'
 const GMAIL_SEND_URL = 'https://gmail.googleapis.com/gmail/v1/users/me/messages/send'
@@ -36,10 +38,16 @@ export function publicSite(): string {
   return raw.replace(/\/$/, '')
 }
 
+/** noreply@boardarabia.com stays parked. Product mail sends as cindy. */
+function isParkedFrom(value: string): boolean {
+  return /noreply@boardarabia\.com/i.test(value)
+}
+
 export function workspaceFromAddress(): string {
   const raw = readEnv('GMAIL_FROM')?.trim()
   if (!raw) return `"Board Arabia" <${PRODUCT_FROM}>`
   const clean = sanitizeHeader(raw)
+  if (!clean || isParkedFrom(clean)) return `"Board Arabia" <${PRODUCT_FROM}>`
   if (clean.includes('<')) return clean
   return `"Board Arabia" <${clean}>`
 }
@@ -101,7 +109,8 @@ export async function sendEmail(opts: {
   text: string
   from?: string
 }): Promise<SendResult> {
-  const from = opts.from ? sanitizeHeader(opts.from) : workspaceFromAddress()
+  const requested = opts.from ? sanitizeHeader(opts.from) : ''
+  const from = !requested || isParkedFrom(requested) ? workspaceFromAddress() : requested
   const to = sanitizeHeader(opts.to)
   const subject = sanitizeHeader(opts.subject)
   const signatureHit = marketingSignatureHit(opts.text, opts.html)
