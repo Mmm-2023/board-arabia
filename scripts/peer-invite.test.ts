@@ -45,8 +45,9 @@ test('peer invite mail is Board Arabia only', () => {
     text: mail.text,
     html: mail.html,
   })
-  assert.match(raw, /From: "Board Arabia" <noreply@boardarabia.com>/)
+  assert.match(raw, /From: "Board Arabia" <cindy@nammco.com>/)
   assert.match(raw, /Reply-To: cindy@nammco.com/)
+  assert.equal(/noreply@boardarabia\.com/i.test(raw), false)
   assert.equal(raw.includes('\u2014'), false)
 })
 

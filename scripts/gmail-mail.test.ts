@@ -64,7 +64,7 @@ test('dry-run when Gmail credentials are missing', async () => {
   assert.equal(result.provider, 'gmail')
 })
 
-test('Accept message is from noreply and replies to cindy', () => {
+test('Accept message is from cindy and replies to cindy', () => {
   clearMailEnv()
   const raw = buildRfc822({
     from: workspaceFromAddress(),
@@ -73,13 +73,33 @@ test('Accept message is from noreply and replies to cindy', () => {
     text: acceptText,
     html: '<p>Your Board Arabia application has been accepted.</p>',
   })
-  assert.match(raw, /From: "Board Arabia" <noreply@boardarabia.com>/)
+  assert.match(raw, /From: "Board Arabia" <cindy@nammco.com>/)
   assert.match(raw, /Reply-To: cindy@nammco.com/)
-  assert.equal(PRODUCT_FROM, 'noreply@boardarabia.com')
+  assert.equal(PRODUCT_FROM, 'cindy@nammco.com')
+  assert.equal(/noreply@boardarabia\.com/i.test(raw), false)
   assert.equal(raw.includes('\u2014'), false)
   assert.equal(/resend/i.test(raw), false)
   assert.equal(/calendar\.app\.google/i.test(raw), false)
   assert.equal(WORKSPACE_MAILBOX, 'cindy@nammco.com')
+})
+
+test('a parked noreply GMAIL_FROM still sends as cindy', () => {
+  clearMailEnv()
+  process.env.GMAIL_FROM = '"Board Arabia" <noreply@boardarabia.com>'
+  assert.equal(workspaceFromAddress(), '"Board Arabia" <cindy@nammco.com>')
+  const raw = buildRfc822({
+    from: workspaceFromAddress(),
+    to: 'person@example.com',
+    subject: 'Board Arabia: next step (private booking)',
+    text: acceptText,
+    html: acceptHtml,
+  })
+  assert.match(raw, /From: "Board Arabia" <cindy@nammco.com>/)
+  assert.match(raw, /Reply-To: cindy@nammco.com/)
+  assert.equal(/noreply@boardarabia\.com/i.test(raw), false)
+  assert.equal(raw.includes('\u2014'), false)
+  assert.equal(/resend/i.test(raw), false)
+  assert.equal(/calendar\.app\.google/i.test(raw), false)
 })
 
 test('configured client posts the Accept message to the Gmail API', async () => {
@@ -116,8 +136,9 @@ test('configured client posts the Accept message to the Gmail API', async () => 
     assert.ok(gmailCall)
     const raw = JSON.parse(gmailCall.body).raw as string
     const decoded = Buffer.from(raw.replaceAll('-', '+').replaceAll('_', '/'), 'base64').toString('utf8')
-    assert.match(decoded, /From: "Board Arabia" <noreply@boardarabia.com>/)
+    assert.match(decoded, /From: "Board Arabia" <cindy@nammco.com>/)
     assert.match(decoded, /Reply-To: cindy@nammco.com/)
+    assert.equal(/noreply@boardarabia\.com/i.test(decoded), false)
     const plain = decoded
       .split('Content-Transfer-Encoding: base64\r\n\r\n')[1]
       ?.split('\r\n--')[0]
