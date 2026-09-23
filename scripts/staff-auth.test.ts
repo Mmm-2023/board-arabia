@@ -127,6 +127,7 @@ test('admin Edge functions call requireStaff and do not trust metadata', () => {
     'supabase/functions/invite-master/index.ts',
     'supabase/functions/set-member-status/index.ts',
     'supabase/functions/notify-application/index.ts',
+    'supabase/functions/invite-sponsor/index.ts',
   ]
   const gate = readFileSync('supabase/functions/_shared/require_staff.ts', 'utf8')
   assert.match(gate, /auth\.getUser\(token\)/)

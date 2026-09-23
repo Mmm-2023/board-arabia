@@ -104,7 +104,7 @@ export type Database = {
           user_id: string
           application_id: string | null
           email: string
-          seat: 'ksa' | 'intl'
+          seat: 'ksa' | 'intl' | 'sponsor'
           status: 'invited' | 'active' | 'suspended'
           must_set_password: boolean
           invited_at: string
@@ -118,7 +118,7 @@ export type Database = {
           user_id: string
           application_id?: string | null
           email: string
-          seat: 'ksa' | 'intl'
+          seat: 'ksa' | 'intl' | 'sponsor'
           status?: 'invited' | 'active' | 'suspended'
           must_set_password?: boolean
           invited_at?: string
@@ -132,7 +132,7 @@ export type Database = {
           user_id?: string
           application_id?: string | null
           email?: string
-          seat?: 'ksa' | 'intl'
+          seat?: 'ksa' | 'intl' | 'sponsor'
           status?: 'invited' | 'active' | 'suspended'
           must_set_password?: boolean
           invited_at?: string

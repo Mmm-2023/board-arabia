@@ -53,7 +53,12 @@ Deno.serve(async (req) => {
     .from('members')
     .update({ status: nextStatus, updated_at: new Date().toISOString() })
     .eq('user_id', userId)
-  if (updateError) return jsonResponse(req, { error: updateError.message }, 500)
+  if (updateError) {
+    if (updateError.message.includes('sponsor_cap')) {
+      return jsonResponse(req, { error: 'Sponsor seats are full (3).' }, 409)
+    }
+    return jsonResponse(req, { error: updateError.message }, 500)
+  }
 
   return jsonResponse(req, {
     ok: true,
