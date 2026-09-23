@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { resolveAfterLogin } from '../lib/memberGate'
 import { readRecoveryLocation } from '../lib/recovery'
 import {
   clearPasswordRecovery,
@@ -60,7 +61,13 @@ export function AuthConfirmPage() {
           return
         }
         clearPasswordRecovery()
-        navigate(safeNext(searchParams.get('next')), { replace: true })
+        const userId = (await supabase.auth.getUser()).data.user?.id
+        if (!userId) {
+          setError('This sign-in link is missing or has expired.')
+          setPhase('error')
+          return
+        }
+        navigate(await resolveAfterLogin(userId, searchParams.get('next')), { replace: true })
         return
       }
 
@@ -107,7 +114,13 @@ export function AuthConfirmPage() {
           setPhase('set_password')
           return
         }
-        navigate(safeNext(searchParams.get('next')), { replace: true })
+        const userId = (await supabase.auth.getUser()).data.user?.id
+        if (!userId) {
+          setError('This sign-in link is missing or has expired.')
+          setPhase('error')
+          return
+        }
+        navigate(await resolveAfterLogin(userId, searchParams.get('next')), { replace: true })
         return
       }
 
@@ -126,8 +139,10 @@ export function AuthConfirmPage() {
 
       const { data } = await supabase.auth.getSession()
       if (cancelled) return
-      if (data.session) {
-        navigate(safeNext(searchParams.get('next')), { replace: true })
+      if (data.session?.user.id) {
+        navigate(await resolveAfterLogin(data.session.user.id, searchParams.get('next')), {
+          replace: true,
+        })
         return
       }
       setError('This sign-in link is missing or has expired.')
@@ -257,9 +272,3 @@ function otpType(raw: string | null): OtpType | null {
   return null
 }
 
-function safeNext(raw: string | null): string {
-  if (!raw) return '/dashboard'
-  if (!raw.startsWith('/') || raw.startsWith('//')) return '/dashboard'
-  if (raw.startsWith('/login')) return '/dashboard'
-  return raw
-}

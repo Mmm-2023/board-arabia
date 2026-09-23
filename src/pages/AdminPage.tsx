@@ -11,6 +11,11 @@ import {
 } from '../lib/capacity'
 import { seatLabel, type FoundingCapacity, type FoundingSeat } from '../lib/member'
 import {
+  clientAdminGate,
+  isStaffRole,
+  showRoleSwitch,
+} from '../../supabase/functions/_shared/staff_auth.ts'
+import {
   admitMember,
   decideApplication,
   fetchFoundingCapacity,
@@ -41,7 +46,8 @@ type PersonTier = (typeof PEOPLE_TIERS)[number]
 
 export function AdminPage() {
   const [session, setSession] = useState<Session | null | undefined>(undefined)
-  const [isStaff, setIsStaff] = useState(false)
+  const [staffRole, setStaffRole] = useState<string | null>(null)
+  const [ownMemberStatus, setOwnMemberStatus] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [apps, setApps] = useState<Application[]>([])
   const [members, setMembers] = useState<MemberAdminRow[]>([])
@@ -75,7 +81,8 @@ export function AdminPage() {
 
   const refreshStaffAndApps = useCallback(async (active: Session | null, opts?: { silent?: boolean }) => {
     if (!active) {
-      setIsStaff(false)
+      setStaffRole(null)
+      setOwnMemberStatus(null)
       setApps([])
       setMembers([])
       setPeerInvites([])
@@ -87,29 +94,30 @@ export function AdminPage() {
     }
 
     if (!opts?.silent) setLoading(true)
-    const { data: staffRow, error: staffError } = await supabase
-      .from('staff_users')
-      .select('user_id')
-      .eq('user_id', active.user.id)
-      .maybeSingle()
+    const [staffRes, ownMemberRes] = await Promise.all([
+      supabase.from('staff_users').select('role').eq('user_id', active.user.id).maybeSingle(),
+      supabase.from('members').select('status').eq('user_id', active.user.id).maybeSingle(),
+    ])
 
-    if (staffError || !staffRow) {
-      setIsStaff(false)
+    const claimedRole = staffRes.data?.role
+    if (staffRes.error || !isStaffRole(claimedRole)) {
+      setStaffRole(null)
+      setOwnMemberStatus(null)
       setApps([])
       setMembers([])
       setPeerInvites([])
       setEvents([])
       setStaffRows([])
       setProfileByUser({})
-      setListError(
-        staffError?.message ||
-          'Signed in, but this account is not in staff_users. See README for promotion SQL.',
-      )
+      setListError('')
       setLoading(false)
       return
     }
 
-    const [capacityResult, appsRes, membersRes, invitesRes, eventsRes, staffRes, profilesRes] = await Promise.all([
+    setStaffRole(claimedRole)
+    setOwnMemberStatus(ownMemberRes.data?.status ?? null)
+
+    const [capacityResult, appsRes, membersRes, invitesRes, eventsRes, directoryRes, profilesRes] = await Promise.all([
       fetchFoundingCapacity(),
       supabase.from('applications').select('*').order('created_at', { ascending: false }),
       supabase
@@ -138,7 +146,7 @@ export function AdminPage() {
     setMembers((membersRes.data ?? []) as MemberAdminRow[])
     setPeerInvites((invitesRes.data ?? []) as MemberInviteAdminRow[])
     setEvents((eventsRes.data ?? []) as EmailEventAdminRow[])
-    setStaffRows((staffRes.data ?? []) as StaffDirectoryRow[])
+    setStaffRows((directoryRes.data ?? []) as StaffDirectoryRow[])
     const nextProfiles: typeof profileByUser = {}
     for (const row of profilesRes.data ?? []) {
       nextProfiles[row.user_id] = row
@@ -150,13 +158,12 @@ export function AdminPage() {
       membersRes.error,
       invitesRes.error,
       eventsRes.error,
-      staffRes.error,
+      directoryRes.error,
       profilesRes.error,
     ].filter(
       (item) => item != null,
     )
     setListError(problems.map((item) => item.message).join(' '))
-    setIsStaff(true)
     setLoading(false)
   }, [])
 
@@ -175,12 +182,12 @@ export function AdminPage() {
   }, [refreshStaffAndApps])
 
   useEffect(() => {
-    if (!session || !isStaff) return
+    if (!session || !isStaffRole(staffRole)) return
     const id = window.setInterval(() => {
       void refreshStaffAndApps(session, { silent: true })
     }, 30000)
     return () => window.clearInterval(id)
-  }, [session, isStaff, refreshStaffAndApps])
+  }, [session, staffRole, refreshStaffAndApps])
 
   async function onSignOut() {
     await supabase.auth.signOut()
@@ -385,22 +392,23 @@ export function AdminPage() {
     if (session) void refreshStaffAndApps(session, { silent: true })
   }
 
-  const signedInEmail = session?.user.email?.toLowerCase() || ''
-  const memberSwitcher = members.some(
-    (member) => member.email.toLowerCase() === signedInEmail && member.status !== 'suspended',
-  )
-
-  if (session === undefined) {
+  if (session === undefined || loading) {
     return (
-      <div className="flex min-h-dvh items-center justify-center bg-ink text-pearl">
-        <p className="text-stone/70">Loading…</p>
+      <div className="flex min-h-dvh items-center justify-center bg-pearl text-ink">
+        <p className="text-ink/50">Loading…</p>
       </div>
     )
   }
 
-  if (!session) {
+  if (!session || clientAdminGate(true, staffRole) === 'login') {
     return <Navigate to="/login?next=/admin" replace />
   }
+
+  if (clientAdminGate(true, staffRole) !== 'allow') {
+    return <Navigate to="/dashboard" replace />
+  }
+
+  const memberSwitch = showRoleSwitch(staffRole, ownMemberStatus).toMember
 
   return (
     <div className="min-h-dvh bg-ink text-pearl">
@@ -415,7 +423,7 @@ export function AdminPage() {
             </p>
           </div>
           <div className="flex items-center gap-4">
-            {memberSwitcher && (
+            {memberSwitch && (
               <Link
                 to="/dashboard"
                 className="text-[0.75rem] font-semibold tracking-[0.06em] text-brass-bright uppercase transition-colors hover:text-pearl"
@@ -435,18 +443,6 @@ export function AdminPage() {
       </header>
 
       <main className="mx-auto max-w-5xl px-5 py-10 md:px-8 md:py-14">
-        {loading ? (
-          <p className="text-stone/70">Loading…</p>
-        ) : !isStaff ? (
-          <div className="max-w-lg">
-            <h1 className="font-display text-[1.8rem] font-bold">Not authorized</h1>
-            <p className="mt-3 text-stone/70">{listError}</p>
-            <p className="mt-4 text-[0.9rem] text-stone/55">
-              Signed in as {session.user.email}. Promote this user into{' '}
-              <code className="text-brass-bright">staff_users</code> (see README).
-            </p>
-          </div>
-        ) : (
           <div>
             <div className="flex flex-wrap items-end justify-between gap-4">
               <div>
@@ -859,7 +855,6 @@ export function AdminPage() {
               </div>
             </section>
           </div>
-        )}
       </main>
     </div>
   )
@@ -877,7 +872,7 @@ function peopleInTier(
   }
   if (tier === 'Admin') {
     return staffRows
-      .filter((row) => row.role !== 'master')
+      .filter((row) => row.role === 'staff')
       .map((row) => ({ email: row.email, detail: new Date(row.created_at).toLocaleString() }))
   }
   if (tier === 'Founding Member') {

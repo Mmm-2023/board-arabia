@@ -81,13 +81,13 @@ Legacy `/book` and `/verify` redirect to `/apply`.
 7. **Suspend / Restore** → Edge Function `set-member-status`. This screen does not demote staff. The master mailbox and the last master cannot be demoted or deleted.
 8. **Sign out** on admin clears the session.
 
-`ADMIN_NOTIFY_EMAIL` (example `staff@example.com`) is the intended master (staff admin and, when admitted, member dashboard). Another staff account may remain staff. A person can hold both `staff_users` and `members`.
+`ADMIN_NOTIFY_EMAIL` (example `staff@example.com`) is the intended master (staff admin and, when admitted, member dashboard). Another staff account may remain staff. A person can hold both `staff_users` and `members`, and only that overlap may switch between admin and the member dashboard. A member-only test account must not be inserted into `staff_users`.
 
 ## Member flow
 
 1. **Member login:** https://boardarabia.com/login?next=/dashboard
 2. Open the one-time link from Admit or Direct invite, or use the one-time code or the password you set.
-3. **Dashboard** (`/dashboard`). Home shows a founding-badge placeholder, your seat, capacity toward 100, and invites remaining. **Invites** (`/dashboard/invites`) sends the two peer invites by email or WhatsApp. Profile edits your own row. Directory, Mandates, Intros, Rooms, and Events are empty shells. Staff who are also members see a Staff admin link.
+3. **Dashboard** (`/dashboard`). Home shows a founding-badge placeholder, your seat, capacity toward 100, and invites remaining. **Invites** (`/dashboard/invites`) sends the two peer invites by email or WhatsApp. Profile edits your own row. Directory, Mandates, Intros, Rooms, and Events are empty shells. The Admin link is shown only when this signed-in user is in `staff_users` with role `staff` or `master` and also has a live member row. Members do not see it.
 4. **Peer invites.** Admit grants exactly 2 (`invites_remaining`). Each send uses one. Unused invites do not refill. Email uses Edge `send-member-invite` and Workspace mail. WhatsApp returns a `wa.me` link with the apply URL. The invitee is still reviewed.
 5. Accounts are invite-only. A signed-in user who is not in `members` does not see the room. Staff `/login` with no `next` still goes to `/admin`.
 
@@ -99,7 +99,7 @@ The public site must **never** show the booking URL. It is emailed only on Accep
 
 `ADMIN_NOTIFY_EMAIL` (example `staff@example.com`) is the intended master. There may be no auth user yet. An existing staff account signs in at https://boardarabia.com/login, opens `/admin`, and uses **Invite / promote Michael**. That promotes the `ADMIN_NOTIFY_EMAIL` mailbox to master staff and admits the Saudi Arabia founding seat. The Edge Function uses that secret when the request omits an email, and fails closed when the secret is unset.
 
-Another staff account may remain staff. Do not delete that row from this screen.
+Another staff account may remain staff. Do not delete that row from this screen. Do not add a member-only test inbox to `staff_users`. That inbox stays a member.
 
 **After the one-time link is used and a password is set:**
 
@@ -242,7 +242,7 @@ Evidence tags: **VERIFIED** = proved against live project / staging; **INFERRED*
 | Invite-only `/dashboard` | **VERIFIED PASS** | Signed-out redirects to `/login?next=/dashboard`. No `members` row → invitation required. No public signup form |
 | No anon directory scrape | **VERIFIED PASS** | Directory shell does not query other members. Anon `select` on `members` and `profiles` is permission denied. `founding_capacity()` returns counts to a member or staff user only |
 | Peer invite wallet | **INFERRED** until the migration is on the live project | `member_invites` has no anon grant. Lookup is `lookup_member_invite(token)` and returns a label only. `issue_member_invite` and `release_member_invite` are service_role only. Wallet updates cannot raise `invites_remaining` without the release flag |
-| `/dashboard` vs `/admin` | **VERIFIED PASS** | `/admin` still requires `staff_users`. `/dashboard` requires `members` and blocks `suspended`. Staff `/login` without `next` still resolves to `/admin` |
+| `/dashboard` vs `/admin` | **INFERRED** until this PR is on Pages | Non-staff, including members, are sent to `/dashboard` and `/admin` redirects there without admin chrome. Staff and master still open `/admin`. The switcher renders only when `staff_users.role` is `staff` or `master` and a live `members` row exists |
 | Member invite secrets | **VERIFIED PASS** for storage; live send needs Workspace secrets | `email_events` stores mode and seat flags only (no otp, token, or password keys). A dry-run link is returned only in the signed-in staff HTTP response. Live mail is the Gmail API using `GMAIL_FROM` once `GMAIL_CLIENT_ID`, `GMAIL_CLIENT_SECRET`, `GMAIL_REFRESH_TOKEN`, and `GMAIL_FROM` are set on the Edge Function |
 | No public booking CTA / PII | **VERIFIED PASS** | Client/dist grep: 0× `calendar.app.google`; apply form has no applicant list |
 | RLS `platform_stats` | **INFERRED** until the migration is applied on `iirqbizwanyhgkhanntq` | Anon and authenticated get SELECT only. No insert, update, or delete grant. Money columns are written already rounded, or null when fewer than 5 contributors. Exact sums are not stored |
@@ -252,7 +252,7 @@ Evidence tags: **VERIFIED** = proved against live project / staging; **INFERRED*
 | Notify no cross-applicant leak | **INFERRED PASS** | Templates built from single row id only |
 | Leaked-password protection (Auth) | **SKIPPED BY MICHAEL** | 22 Sep 2026, via Sasha. No Supabase Pro upgrade. Do not re-ask |
 | Live Workspace delivery | Dry-run until Gmail secrets exist | Edge calls `gmail.googleapis.com` users.messages.send. From and Reply-To come from `GMAIL_FROM`. `noreply@boardarabia.com` is parked until later. Dry-run while `GMAIL_REFRESH_TOKEN` (or the service-account JSON) is unset. Live send fails closed when `GMAIL_FROM` is missing |
-| `staff_users_claim_first` | **GAP** | Safe while Michael present; drop later if desired |
+| `staff_users_claim_first` | **VERIFIED CLOSED** on `iirqbizwanyhgkhanntq` | Own-row SELECT made `NOT EXISTS` true for every new session, so a member could insert themselves. Migration `20260923120000_staff_only_admin_lock.sql` is applied. Authenticated INSERT is permission denied (`42501`). `list_staff_directory` and `staff_set_member_capacity` return `not_allowed` for the member account and succeed for master. |
 | Legacy `notify-application` | **GAP** | Prefer `submit-application` only |
 
 App path does **not** call ops access-code RPCs. Decisions are Edge Function + JWT + `staff_users` only.

@@ -1,4 +1,4 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1'
+import { requireStaff } from '../_shared/require_staff.ts'
 import { applicationAck } from '../_shared/transactional_copy.ts'
 import {
   adminNotifyEmail,
@@ -18,9 +18,9 @@ Deno.serve(async (req) => {
     return jsonResponse(req, { error: 'Method not allowed' }, 405)
   }
 
-  const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-  const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-  const admin = createClient(supabaseUrl, serviceKey)
+  const gate = await requireStaff(req, (body, status) => jsonResponse(req, body, status))
+  if (gate instanceof Response) return gate
+  const { admin } = gate
 
   let applicationId = ''
   try {

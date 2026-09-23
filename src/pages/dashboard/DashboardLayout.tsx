@@ -1,5 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, NavLink, Navigate, Outlet } from 'react-router-dom'
+import {
+  isStaffRole,
+  memberRoomLabel,
+  showRoleSwitch,
+} from '../../../supabase/functions/_shared/staff_auth.ts'
 import { supabase } from '../../lib/supabase'
 import type { MemberRow, ProfileRow } from '../../lib/member'
 import { useNoIndex } from '../../lib/usePageTitle'
@@ -19,8 +24,9 @@ const NAV = [
 type Gate =
   | { status: 'loading' }
   | { status: 'signed_out' }
-  | { status: 'forbidden'; email: string; isStaff: boolean }
+  | { status: 'forbidden'; email: string }
   | { status: 'suspended'; email: string }
+  | { status: 'staff_home' }
   | { status: 'ready'; room: MemberRoom }
 
 export function DashboardLayout() {
@@ -40,7 +46,7 @@ export function DashboardLayout() {
     }
 
     const [staffRes, memberRes] = await Promise.all([
-      supabase.from('staff_users').select('user_id').eq('user_id', user.id).maybeSingle(),
+      supabase.from('staff_users').select('role').eq('user_id', user.id).maybeSingle(),
       supabase
         .from('members')
         .select('user_id, email, seat, status, must_set_password, invites_remaining, invites_granted')
@@ -49,7 +55,13 @@ export function DashboardLayout() {
     ])
 
     if (seq !== loadSeq.current) return
+    const claimedRole = staffRes.data?.role
+    const staffRole = !staffRes.error && isStaffRole(claimedRole) ? claimedRole : null
     const member = memberRes.data as MemberRow | null
+    if (staffRole && (!member || member.status === 'suspended')) {
+      setGate({ status: 'staff_home' })
+      return
+    }
     if (!member || member.status === 'suspended') {
       if (member?.status === 'suspended') {
         setGate({ status: 'suspended', email: user.email || member.email })
@@ -58,7 +70,6 @@ export function DashboardLayout() {
       setGate({
         status: 'forbidden',
         email: user.email || '',
-        isStaff: Boolean(staffRes.data),
       })
       return
     }
@@ -75,7 +86,7 @@ export function DashboardLayout() {
     const room: MemberRoom = {
       userId: user.id,
       email: user.email || member.email,
-      isStaff: Boolean(staffRes.data),
+      staffRole,
       member,
       profile: (profile as ProfileRow | null) ?? null,
       reload: async () => {
@@ -115,6 +126,10 @@ export function DashboardLayout() {
     return <Navigate to="/login?next=/dashboard" replace />
   }
 
+  if (gate.status === 'staff_home') {
+    return <Navigate to="/admin" replace />
+  }
+
   if (gate.status === 'suspended' || gate.status === 'forbidden') {
     return (
       <div className="min-h-dvh bg-pearl text-ink">
@@ -134,14 +149,6 @@ export function DashboardLayout() {
             <p className="mt-4 text-[0.92rem] text-ink/45">Signed in as {gate.email}.</p>
           )}
           <div className="mt-8 flex flex-wrap gap-4">
-            {gate.status === 'forbidden' && gate.isStaff && (
-              <Link
-                to="/admin"
-                className="bg-ink px-4 py-3 text-[0.75rem] font-semibold tracking-[0.08em] text-pearl uppercase"
-              >
-                Admin
-              </Link>
-            )}
             <button
               type="button"
               onClick={() => void onSignOut()}
@@ -165,11 +172,11 @@ export function DashboardLayout() {
                 Board Arabia
               </p>
               <p className="mt-1 text-[0.68rem] font-semibold tracking-[0.14em] text-ink/40 uppercase">
-                Member
+                {memberRoomLabel(gate.room.member.seat)}
               </p>
             </div>
             <div className="flex items-center gap-4">
-              {gate.room.isStaff && (
+              {showRoleSwitch(gate.room.staffRole, gate.room.member.status).toAdmin && (
                 <Link
                   to="/admin"
                   className="text-[0.72rem] font-semibold tracking-[0.08em] text-brass uppercase hover:text-ink"

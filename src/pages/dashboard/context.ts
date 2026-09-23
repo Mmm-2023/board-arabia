@@ -1,10 +1,11 @@
 import { createContext, useContext } from 'react'
+import type { StaffRole } from '../../../supabase/functions/_shared/staff_auth.ts'
 import type { MemberRow, ProfileRow } from '../../lib/member'
 
 export type MemberRoom = {
   userId: string
   email: string
-  isStaff: boolean
+  staffRole: StaffRole | null
   member: MemberRow
   profile: ProfileRow | null
   reload: () => Promise<void>
