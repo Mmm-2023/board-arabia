@@ -1,4 +1,4 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1'
+import { requireStaff } from '../_shared/require_staff.ts'
 import { acceptMail, rejectMail } from '../_shared/transactional_copy.ts'
 import {
   privateBookingLink,
@@ -16,31 +16,9 @@ Deno.serve(async (req) => {
     return jsonResponse(req, { error: 'Method not allowed' }, 405)
   }
 
-  const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-  const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-  const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!
-
-  const authHeader = req.headers.get('Authorization') || ''
-  const userClient = createClient(supabaseUrl, anonKey, {
-    global: { headers: { Authorization: authHeader } },
-  })
-  const {
-    data: { user },
-    error: userError,
-  } = await userClient.auth.getUser()
-  if (userError || !user) {
-    return jsonResponse(req, { error: 'Unauthorized' }, 401)
-  }
-
-  const admin = createClient(supabaseUrl, serviceKey)
-  const { data: staff } = await admin
-    .from('staff_users')
-    .select('user_id')
-    .eq('user_id', user.id)
-    .maybeSingle()
-  if (!staff) {
-    return jsonResponse(req, { error: 'Not staff' }, 403)
-  }
+  const gate = await requireStaff(req, (body, status) => jsonResponse(req, body, status))
+  if (gate instanceof Response) return gate
+  const { user, admin } = gate
 
   let applicationId = ''
   let decision = ''

@@ -1,36 +1,14 @@
-import { supabase } from './supabase'
+import { postLoginDestination } from '../../supabase/functions/_shared/staff_auth.ts'
+import { readCallerAccess } from './requireStaff'
 
-/** Staff with no explicit member destination still land on /admin. */
-export async function resolveAfterLogin(userId: string, requested: string) {
-  const { data: staff } = await supabase
-    .from('staff_users')
-    .select('user_id')
-    .eq('user_id', userId)
-    .maybeSingle()
-
-  if (staff) {
-    if (requested.startsWith('/dashboard')) {
-      const { data: member } = await supabase
-        .from('members')
-        .select('status')
-        .eq('user_id', userId)
-        .maybeSingle()
-      if (member && member.status !== 'suspended') return requested
-      return '/admin'
-    }
-    return requested
-  }
-
-  const { data: member } = await supabase
-    .from('members')
-    .select('status')
-    .eq('user_id', userId)
-    .maybeSingle()
-
-  if (member) {
-    if (requested.startsWith('/dashboard')) return requested
-    return '/dashboard'
-  }
-
-  return requested
+/** Staff go to /admin. A live member who is also staff may open /dashboard.
+ * Everyone else, including members, founding, and sponsor, goes to /dashboard.
+ */
+export async function resolveAfterLogin(userId: string, requested: string | null) {
+  const access = await readCallerAccess(userId)
+  return postLoginDestination({
+    role: access.role,
+    memberStatus: access.memberStatus,
+    requested,
+  })
 }
