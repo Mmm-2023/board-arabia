@@ -198,13 +198,13 @@ function InterestForm() {
             />
           </div>
           {error && (
-            <p className="text-[0.9rem] text-red-800" role="alert">
+            <p className="text-[0.9rem] text-[var(--ba-error)]" role="alert">
               {error}
             </p>
           )}
           <button
             type="submit"
-            className="inline-flex items-center justify-center bg-ink px-7 py-3.5 text-[0.78rem] font-semibold tracking-[0.08em] text-pearl uppercase transition-colors hover:bg-ink-soft"
+            className="ba-primary inline-flex items-center justify-center px-7 py-3.5 text-[0.78rem] font-semibold tracking-[0.08em] uppercase transition-colors"
           >
             Partner with us
           </button>

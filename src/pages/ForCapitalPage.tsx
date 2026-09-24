@@ -95,7 +95,7 @@ export function ForCapitalPage() {
           <ol className="mt-14 grid gap-10 md:grid-cols-2 lg:grid-cols-4">
             {PATH.map((step) => (
               <li key={step.n}>
-                <span className="font-display text-[0.8rem] font-semibold tracking-[0.18em] text-brass">
+                <span className="font-display text-[0.8rem] font-semibold tracking-[0.18em] text-brass-bright">
                   {step.n}
                 </span>
                 <h3 className="mt-3 font-display text-[1.2rem] font-semibold tracking-[-0.02em]">
@@ -168,7 +168,7 @@ export function ForCapitalPage() {
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
             <Link
               to="/apply"
-              className="inline-flex items-center justify-center bg-ink px-7 py-3.5 text-[0.78rem] font-semibold tracking-[0.08em] text-pearl uppercase"
+              className="ba-primary inline-flex items-center justify-center px-7 py-3.5 text-[0.78rem] font-semibold tracking-[0.08em] uppercase"
             >
               Apply for consideration
             </Link>

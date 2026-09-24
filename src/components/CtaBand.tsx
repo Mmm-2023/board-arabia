@@ -32,7 +32,7 @@ export function CtaBand({
           </p>
           <Link
             to={to}
-            className="mt-10 inline-flex items-center justify-center bg-ink px-8 py-4 text-[0.78rem] font-semibold tracking-[0.08em] text-pearl uppercase transition-colors hover:bg-ink-soft"
+            className="ba-primary mt-10 inline-flex items-center justify-center px-8 py-4 text-[0.78rem] font-semibold tracking-[0.08em] uppercase transition-colors"
           >
             {label}
           </Link>

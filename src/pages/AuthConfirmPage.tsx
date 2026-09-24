@@ -222,14 +222,14 @@ export function AuthConfirmPage() {
               />
             </label>
             {formError && (
-              <p className="text-[0.9rem] text-red-700" role="alert">
+              <p className="text-[0.9rem] text-[var(--ba-error)]" role="alert">
                 {formError}
               </p>
             )}
             <button
               type="submit"
               disabled={saving}
-              className="w-full bg-ink px-6 py-3.5 text-[0.78rem] font-semibold tracking-[0.08em] text-pearl uppercase disabled:opacity-60"
+              className="ba-primary w-full px-6 py-3.5 text-[0.78rem] font-semibold tracking-[0.08em] uppercase disabled:opacity-60"
             >
               {saving ? 'Saving…' : 'Save password'}
             </button>

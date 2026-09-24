@@ -158,7 +158,7 @@ export function Nav({
             <li className="pt-2">
               <Link
                 to={ctaTo}
-                className="inline-flex bg-ink px-5 py-3 text-[0.75rem] font-semibold tracking-[0.08em] text-pearl uppercase"
+                className="ba-primary inline-flex px-5 py-3 text-[0.75rem] font-semibold tracking-[0.08em] uppercase"
               >
                 {ctaLabel}
               </Link>

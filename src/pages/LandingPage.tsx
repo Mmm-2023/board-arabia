@@ -73,7 +73,7 @@ function Hero() {
           className="h-[120%] w-full object-cover object-[center_30%]"
         />
         <div className="absolute inset-0 bg-gradient-to-b from-ink/45 via-ink/35 to-ink/90" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_30%_40%,transparent_0%,rgba(6,42,40,0.55)_75%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_30%_40%,transparent_0%,rgba(28,19,67,0.55)_75%)]" />
       </motion.div>
 
       <motion.div
@@ -121,7 +121,7 @@ function Hero() {
             <div className="flex shrink-0 flex-col gap-3 sm:flex-row">
               <Link
                 to="/apply"
-                className="inline-flex items-center justify-center bg-brass px-6 py-3.5 text-[0.78rem] font-semibold tracking-[0.08em] text-ink uppercase transition-colors hover:bg-brass-bright"
+                className="ba-primary inline-flex items-center justify-center px-6 py-3.5 text-[0.78rem] font-semibold tracking-[0.08em] uppercase transition-colors"
               >
                 Apply for consideration
               </Link>
@@ -326,7 +326,7 @@ function ProcessSection() {
         className="pointer-events-none absolute inset-0 opacity-[0.07]"
         style={{
           backgroundImage:
-            'linear-gradient(to right, #e6e2da 1px, transparent 1px), linear-gradient(to bottom, #e6e2da 1px, transparent 1px)',
+            'linear-gradient(to right, #e8e4f7 1px, transparent 1px), linear-gradient(to bottom, #e8e4f7 1px, transparent 1px)',
           backgroundSize: '72px 72px',
           maskImage:
             'radial-gradient(ellipse at center, black 20%, transparent 75%)',
@@ -348,7 +348,7 @@ function ProcessSection() {
           {PROCESS_STEPS.map((step, i) => (
             <li key={step.n}>
               <Reveal delay={0.05 * i}>
-                <span className="font-display text-[0.85rem] font-semibold tracking-[0.2em] text-brass">
+                <span className="font-display text-[0.85rem] font-semibold tracking-[0.2em] text-brass-bright">
                   {step.n}
                 </span>
                 <h3 className="mt-4 font-display text-[1.2rem] font-semibold tracking-[-0.02em]">
@@ -365,7 +365,7 @@ function ProcessSection() {
         <Reveal>
           <Link
             to="/how-it-works"
-            className="mt-14 inline-flex border-b border-brass pb-0.5 text-[0.78rem] font-semibold tracking-[0.1em] text-pearl uppercase"
+            className="mt-14 inline-flex border-b border-brass-bright pb-0.5 text-[0.78rem] font-semibold tracking-[0.1em] text-pearl uppercase"
           >
             Full sequence
           </Link>
@@ -391,7 +391,7 @@ function PartnersSection() {
           </p>
           <Link
             to="/partners"
-            className="mt-8 inline-flex items-center justify-center bg-ink px-7 py-3.5 text-[0.78rem] font-semibold tracking-[0.08em] text-pearl uppercase transition-colors hover:bg-ink-soft"
+            className="ba-primary mt-8 inline-flex items-center justify-center px-7 py-3.5 text-[0.78rem] font-semibold tracking-[0.08em] uppercase transition-colors"
           >
             Partner with us
           </Link>

@@ -6,25 +6,25 @@ import type { ViewStatus } from './viewCopy'
 export function toneClasses(tone: ShellTone) {
   if (tone === 'staff') {
     return {
-      muted: 'text-pearl/65',
-      quiet: 'text-pearl/45',
-      border: 'border-pearl/15',
-      panel: 'border border-pearl/15 bg-pearl/[0.03]',
-      skeleton: 'bg-pearl/10',
+      muted: 'text-pearl/80',
+      quiet: 'text-[var(--ba-lavender-mist)]',
+      border: 'border-white/15',
+      panel: 'border border-white/15 bg-white/[0.04]',
+      skeleton: 'bg-[var(--ba-lavender)]/35',
       alert: 'text-red-300',
-      primary: 'bg-brass text-ink',
-      secondary: 'border border-pearl/25 text-pearl/80',
+      primary: 'ba-primary',
+      secondary: 'border border-white/25 text-pearl',
     }
   }
   return {
-    muted: 'text-ink/65',
-    quiet: 'text-ink/45',
-    border: 'border-ink/10',
-    panel: 'border border-ink/10 bg-white/50',
-    skeleton: 'bg-ink/10',
-    alert: 'text-red-800',
-    primary: 'bg-ink text-pearl',
-    secondary: 'border border-ink/20 text-ink/75',
+    muted: 'text-[var(--ba-muted)]',
+    quiet: 'text-[var(--ba-muted)]',
+    border: 'border-[var(--ba-line)]',
+    panel: 'border border-[var(--ba-line)] bg-white',
+    skeleton: 'bg-[var(--ba-lavender)]',
+    alert: 'text-[var(--ba-error)]',
+    primary: 'ba-primary',
+    secondary: 'border border-[var(--ba-line)] bg-white text-ink hover:bg-[var(--ba-lavender-mist)]',
   }
 }
 

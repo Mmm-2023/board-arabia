@@ -48,7 +48,7 @@ export function peerMeta(rows: MemberInviteAdminRow[], app: Application) {
 export function StatusBadge({ status }: { status: ApplicationStatus }) {
   const tone =
     status === 'accepted' || status === 'verified' || status === 'admitted'
-      ? 'text-emerald-300 border-emerald-300/30'
+      ? 'border-transparent bg-[var(--ba-success)] text-[var(--ba-porcelain)]'
       : status === 'rejected' || status === 'declined'
         ? 'text-red-300 border-red-300/30'
         : 'text-brass-bright border-brass/40'

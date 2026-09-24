@@ -171,7 +171,7 @@ export function ProfilePage() {
         </label>
         <CapacityOnFile profile={profile} />
         {profileError && (
-          <p className="text-[0.92rem] text-red-700" role="alert">
+          <p className="text-[0.92rem] text-[var(--ba-error)]" role="alert">
             {profileError}
           </p>
         )}
@@ -179,7 +179,7 @@ export function ProfilePage() {
         <button
           type="submit"
           disabled={savingProfile || !profile}
-          className="bg-ink px-5 py-3 text-[0.75rem] font-semibold tracking-[0.08em] text-pearl uppercase disabled:opacity-50"
+          className="ba-primary px-5 py-3 text-[0.75rem] font-semibold tracking-[0.08em] uppercase disabled:opacity-50"
         >
           {savingProfile ? 'Saving…' : profileError ? 'Retry' : 'Save profile'}
         </button>
@@ -216,7 +216,7 @@ export function ProfilePage() {
           />
         </div>
         {passwordError && (
-          <p className="mt-4 text-[0.92rem] text-red-700" role="alert">
+          <p className="mt-4 text-[0.92rem] text-[var(--ba-error)]" role="alert">
             {passwordError}
           </p>
         )}
@@ -224,7 +224,7 @@ export function ProfilePage() {
         <button
           type="submit"
           disabled={savingPassword}
-          className="mt-6 bg-ink px-5 py-3 text-[0.75rem] font-semibold tracking-[0.08em] text-pearl uppercase disabled:opacity-50"
+          className="ba-primary mt-6 px-5 py-3 text-[0.75rem] font-semibold tracking-[0.08em] uppercase disabled:opacity-50"
         >
           {savingPassword ? 'Saving…' : 'Set password'}
         </button>

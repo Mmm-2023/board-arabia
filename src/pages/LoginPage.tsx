@@ -130,7 +130,7 @@ export function LoginPage() {
         className="pointer-events-none absolute inset-0 opacity-90"
         style={{
           background:
-            'radial-gradient(ellipse 80% 55% at 15% 10%, rgba(176,137,62,0.18), transparent 55%), radial-gradient(ellipse 70% 50% at 90% 85%, rgba(13,61,58,0.9), transparent 50%), linear-gradient(165deg, #062a28 0%, #0a3532 45%, #041f1d 100%)',
+            'radial-gradient(ellipse 80% 55% at 15% 10%, rgba(167,150,220,0.28), transparent 55%), radial-gradient(ellipse 70% 50% at 90% 85%, rgba(75,63,154,0.85), transparent 50%), linear-gradient(165deg, #1c1343 0%, #2a2158 45%, #120c2e 100%)',
         }}
       />
       <div aria-hidden className="grain absolute inset-0" />
@@ -203,7 +203,7 @@ export function LoginPage() {
             <button
               type="submit"
               disabled={submitting}
-              className="w-full bg-brass px-6 py-3.5 text-[0.78rem] font-semibold tracking-[0.08em] text-ink uppercase transition-colors hover:bg-brass-bright disabled:opacity-60"
+              className="ba-primary w-full px-6 py-3.5 text-[0.78rem] font-semibold tracking-[0.08em] uppercase transition-colors disabled:opacity-60"
             >
               {submitting ? 'Signing in…' : 'Sign in'}
             </button>

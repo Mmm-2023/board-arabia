@@ -56,7 +56,7 @@ export function AppShell({
           aria-label="Primary"
           onMouseEnter={() => setHovered(true)}
           onMouseLeave={() => setHovered(false)}
-          className={`shell-safe-y shell-safe-left sticky top-0 hidden h-dvh shrink-0 flex-col border-r md:flex ${styles.border} ${styles.page} ${
+          className={`shell-safe-y shell-safe-left sticky top-0 hidden h-dvh shrink-0 flex-col border-r md:flex ${styles.sidebarBorder} ${styles.sidebar} ${
             showLabels ? 'w-64' : 'w-[4.75rem]'
           } transition-[width] duration-200 motion-reduce:transition-none`}
         >
@@ -66,7 +66,7 @@ export function AppShell({
                 {showLabels ? 'Board Arabia' : 'BA'}
               </p>
               {showLabels && (
-                <p className={`mt-1 text-[0.68rem] font-semibold tracking-[0.14em] uppercase ${styles.muted}`}>
+                <p className="mt-1 text-[0.68rem] font-semibold tracking-[0.14em] text-[var(--ba-lavender-mist)] uppercase">
                   {tone === 'staff' ? 'Staff' : 'Member'}
                 </p>
               )}
@@ -92,7 +92,7 @@ export function AppShell({
                     data-destination={item.label}
                     className={({ isActive }) =>
                       `flex min-h-11 items-center gap-3 px-3 text-[0.95rem] ${
-                        isActive ? styles.navActive : styles.navIdle
+                        isActive ? styles.sidebarActive : styles.sidebarIdle
                       }`
                     }
                   >
@@ -113,7 +113,7 @@ export function AppShell({
                       data-nav="secondary"
                       className={({ isActive }) =>
                         `flex min-h-11 items-center px-3 text-[0.92rem] ${
-                          isActive ? styles.navActive : styles.navIdle
+                          isActive ? styles.sidebarActive : styles.sidebarIdle
                         }`
                       }
                     >
@@ -124,7 +124,7 @@ export function AppShell({
               </ul>
             )}
             {accountLabel && showLabels && (
-              <p className={`truncate px-3 text-[0.82rem] ${styles.muted}`}>{accountLabel}</p>
+              <p className="truncate px-3 text-[0.82rem] text-[var(--ba-lavender-mist)]">{accountLabel}</p>
             )}
           </div>
         </aside>
@@ -174,7 +174,7 @@ export function AppShell({
 
       <nav
         aria-label="Primary"
-        className={`shell-safe-bottom shell-safe-x fixed inset-x-0 bottom-0 z-40 border-t md:hidden ${styles.header}`}
+        className={`shell-safe-bottom shell-safe-x fixed inset-x-0 bottom-0 z-40 border-t md:hidden ${styles.tabBar}`}
       >
         <ul className="grid grid-cols-5">
           {destinations.map((item) => (
@@ -186,7 +186,7 @@ export function AppShell({
                 data-destination={item.label}
                 className={({ isActive }) =>
                   `flex min-h-11 flex-col items-center justify-center gap-0.5 px-1 py-2 text-center text-[0.68rem] leading-tight ${
-                    isActive ? styles.navActive : styles.navIdle
+                    isActive ? styles.tabActive : styles.tabIdle
                   }`
                 }
               >
@@ -257,22 +257,36 @@ function useMinWidth(px: number) {
 
 const memberTheme = {
   page: 'bg-pearl text-ink',
-  header: 'border-ink/10 bg-pearl/95',
-  muted: 'text-ink/45',
-  navIdle: 'text-ink/70 hover:bg-ink/5 hover:text-ink',
-  navActive: 'bg-ink text-pearl',
-  border: 'border-ink/10',
-  signOut: 'text-ink/55 hover:text-ink',
-  switch: 'text-brass hover:text-ink',
+  header: 'border-[var(--ba-line)] bg-pearl/95',
+  muted: 'text-[var(--ba-muted)]',
+  navIdle: 'text-ink/70 hover:bg-[var(--ba-lavender-mist)] hover:text-ink',
+  navActive: 'bg-[var(--ba-indigo)] text-[var(--ba-porcelain)]',
+  border: 'border-[var(--ba-line)]',
+  signOut: 'text-[var(--ba-muted)] hover:text-ink',
+  switch: 'text-[var(--ba-indigo)] hover:text-ink',
+  sidebar: 'bg-[var(--ba-indigo-deep)] text-[var(--ba-lavender-mist)]',
+  sidebarBorder: 'border-white/10',
+  sidebarIdle: 'text-[var(--ba-lavender-mist)] hover:bg-white/10',
+  sidebarActive: 'bg-[var(--ba-indigo)] text-[var(--ba-porcelain)]',
+  tabBar: 'border-[var(--ba-line)] bg-white',
+  tabIdle: 'text-[var(--ba-muted)]',
+  tabActive: 'text-[var(--ba-indigo)]',
 }
 
 const staffTheme = {
   page: 'bg-ink text-pearl',
-  header: 'border-pearl/10 bg-ink/95',
-  muted: 'text-pearl/45',
-  navIdle: 'text-pearl/70 hover:bg-pearl/10 hover:text-pearl',
-  navActive: 'bg-pearl text-ink',
-  border: 'border-pearl/10',
-  signOut: 'text-pearl/60 hover:text-pearl',
-  switch: 'text-brass-bright hover:text-pearl',
+  header: 'border-white/10 bg-ink/95',
+  muted: 'text-pearl/55',
+  navIdle: 'text-pearl/70 hover:bg-white/10 hover:text-pearl',
+  navActive: 'bg-[var(--ba-indigo)] text-[var(--ba-porcelain)]',
+  border: 'border-white/10',
+  signOut: 'text-pearl/70 hover:text-pearl',
+  switch: 'text-[var(--ba-lavender)] hover:text-pearl',
+  sidebar: 'bg-[var(--ba-indigo-deep)] text-[var(--ba-lavender-mist)]',
+  sidebarBorder: 'border-white/10',
+  sidebarIdle: 'text-[var(--ba-lavender-mist)] hover:bg-white/10',
+  sidebarActive: 'bg-[var(--ba-indigo)] text-[var(--ba-porcelain)]',
+  tabBar: 'border-[var(--ba-line)] bg-white',
+  tabIdle: 'text-[var(--ba-muted)]',
+  tabActive: 'text-[var(--ba-indigo)]',
 }

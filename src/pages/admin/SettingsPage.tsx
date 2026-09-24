@@ -65,7 +65,7 @@ export function SettingsPage() {
               type="button"
               disabled={room.updatingId === 'invite-michael'}
               onClick={() => void room.runInvite('invite-michael', { seat: 'ksa', admitMember: true })}
-              className="mt-4 inline-flex min-h-11 items-center bg-brass px-4 text-[0.72rem] font-semibold tracking-[0.08em] text-ink uppercase disabled:opacity-40"
+              className="ba-primary mt-4 inline-flex min-h-11 items-center px-4 text-[0.72rem] font-semibold tracking-[0.08em] uppercase disabled:opacity-40"
             >
               Invite / promote Michael
             </button>

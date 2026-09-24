@@ -3,7 +3,7 @@ import type { ReactNode } from 'react'
 type Tone = 'dark' | 'light' | 'brass'
 
 const eyebrowColor: Record<Tone, string> = {
-  dark: 'text-ink-soft/70',
+  dark: 'text-[var(--ba-muted)]',
   light: 'text-stone/85',
   brass: 'text-brass-bright/90',
 }

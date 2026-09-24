@@ -196,7 +196,7 @@ export function ApplyPage() {
             )}
             <Link
               to="/"
-              className="mt-10 inline-flex items-center justify-center bg-ink px-7 py-3.5 text-[0.78rem] font-semibold tracking-[0.08em] text-pearl uppercase transition-colors hover:bg-ink-soft"
+              className="ba-primary mt-10 inline-flex items-center justify-center px-7 py-3.5 text-[0.78rem] font-semibold tracking-[0.08em] uppercase transition-colors"
             >
               Return home
             </Link>
@@ -353,7 +353,7 @@ export function ApplyPage() {
             />
 
             {error && (
-              <p className="text-[0.9rem] text-red-800" role="alert">
+              <p className="text-[0.9rem] text-[var(--ba-error)]" role="alert">
                 {error}
               </p>
             )}
@@ -361,7 +361,7 @@ export function ApplyPage() {
             <button
               type="submit"
               disabled={submitting || inviteView.kind === 'checking'}
-              className="inline-flex items-center justify-center bg-ink px-7 py-3.5 text-[0.78rem] font-semibold tracking-[0.08em] text-pearl uppercase transition-colors hover:bg-ink-soft disabled:opacity-60"
+              className="ba-primary inline-flex items-center justify-center px-7 py-3.5 text-[0.78rem] font-semibold tracking-[0.08em] uppercase transition-colors disabled:opacity-60"
             >
               {submitting ? 'Submitting…' : 'Submit for consideration'}
             </button>
