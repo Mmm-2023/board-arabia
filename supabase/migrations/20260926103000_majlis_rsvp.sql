@@ -768,7 +768,8 @@ where e.status = 'published'
 revoke all on table public.majlis_events_sponsor from public, anon, authenticated;
 grant select on table public.majlis_events_sponsor to authenticated;
 
--- Host and staff roster. A member sees only their own row. Sponsors match nothing here.
+-- Host and staff roster. A member sees only their own row.
+-- A sponsor seat matches nothing here, including their own row. Staff keep the admin roster.
 create or replace view public.majlis_roster
 with (security_barrier = true, security_invoker = false)
 as
@@ -788,8 +789,18 @@ join public.members m on m.user_id = r.member_id
 left join public.profiles p on p.user_id = r.member_id
 where
   exists (select 1 from public.staff_users s where s.user_id = auth.uid())
-  or e.host_member_id = auth.uid()
-  or r.member_id = auth.uid();
+  or (
+    not exists (
+      select 1
+      from public.members viewer
+      where viewer.user_id = auth.uid()
+        and viewer.seat = 'sponsor'
+    )
+    and (
+      e.host_member_id = auth.uid()
+      or r.member_id = auth.uid()
+    )
+  );
 
 revoke all on table public.majlis_roster from public, anon, authenticated;
 grant select on table public.majlis_roster to authenticated;

@@ -390,7 +390,11 @@ function MemberCard({
         seats={seatLine(event.registered_count, event.capacity, event.waitlist_count)}
         venueName={event.venue_name}
         address={event.venue_address}
-        addressHint={!host && !event.venue_address ? 'The address is shared after you register.' : null}
+        addressHint={
+          !host && event.venue_visibility === 'members_on_rsvp' && !event.venue_address
+            ? 'The address is shared after you register.'
+            : null
+        }
         onRegion={onRegion}
       />
       {priority && <p className="mt-3 text-[0.92rem] text-[var(--ba-indigo)]">{priority}</p>}

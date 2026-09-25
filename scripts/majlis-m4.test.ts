@@ -203,6 +203,9 @@ test('new migration does not rewrite the live base file and keeps sponsor reads 
   assert.notEqual(sponsor, '')
   assert.equal(/venue_address|host_member_id|rejection_feedback|full_name|\bemail\b/i.test(sponsor), false)
   assert.match(sponsor, /seat = 'sponsor'/)
+  const roster = sql.split('create or replace view public.majlis_roster')[1] ?? ''
+  assert.match(roster, /viewer\.seat = 'sponsor'/)
+  assert.match(roster, /not exists/)
   assert.match(sql, /e\.host_member_id = auth\.uid\(\)/)
   for (const region of MAJLIS_REGIONS) {
     assert.equal(sql.includes(`'${region}'`), true)
@@ -221,6 +224,7 @@ test('client majlis surfaces avoid secrets, em dashes, and sponsor deny', () => 
     'src/lib/supabase.ts',
   ]
   const bundled = files.map((file) => readFileSync(path.join(root, file), 'utf8')).join('\n')
+  const page = readFileSync(path.join(root, 'src/pages/dashboard/MajlisPage.tsx'), 'utf8')
   assert.equal(bundled.includes('\u2014'), false)
   assert.equal(/nammco/i.test(bundled), false)
   assert.equal(/service_role|SUPABASE_SERVICE_ROLE|sk_live|ya29\./i.test(bundled), false)
@@ -229,8 +233,17 @@ test('client majlis surfaces avoid secrets, em dashes, and sponsor deny', () => 
   assert.match(bundled, /Cancel registration/)
   assert.match(bundled, /Founding priority until/)
   assert.match(bundled, /Regional activity for sponsors/)
+  assert.match(bundled, /aria-label="Focus filters"/)
+  assert.match(bundled, /aria-label="Region filters"/)
+  assert.match(bundled, /Map activity/)
+  assert.match(bundled, /All events/)
+  assert.match(bundled, /members_on_rsvp/)
   assert.equal(bundled.includes('PermissionState'), false)
-  const page = readFileSync(path.join(root, 'src/pages/dashboard/MajlisPage.tsx'), 'utf8')
+  assert.equal(page.includes('fetchMajlisRoster'), true)
+  const sponsorBranch = page.split('function SponsorCard')[1]?.split('function MemberCard')[0] ?? ''
+  assert.equal(sponsorBranch.includes('fetchMajlisRoster'), false)
+  assert.equal(sponsorBranch.includes('venue_address'), false)
+  assert.equal(sponsorBranch.includes('email'), false)
   for (const region of MAJLIS_REGIONS) assert.equal(page.includes('MAJLIS_REGIONS') || page.includes(region), true)
 })
 
