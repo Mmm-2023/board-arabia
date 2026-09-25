@@ -11,6 +11,7 @@ import {
 function renderShell(
   tone: 'member' | 'staff',
   roleSwitch: { label: string; to: string } | null,
+  initialMoreOpen = false,
 ) {
   const destinations = tone === 'member' ? MEMBER_DESTINATIONS : STAFF_DESTINATIONS
   const secondary = tone === 'member' ? MEMBER_SECONDARY : STAFF_SECONDARY
@@ -24,6 +25,7 @@ function renderShell(
         roleSwitch={roleSwitch}
         onSignOut={() => {}}
         accountLabel={tone === 'member' ? 'member@example.com' : 'staff@example.com'}
+        initialMoreOpen={initialMoreOpen}
       >
         <p>Shell body</p>
       </AppShell>
@@ -31,8 +33,8 @@ function renderShell(
   )
 }
 
-export function renderMemberShell() {
-  return renderShell('member', { label: 'Switch to admin', to: '/admin' })
+export function renderMemberShell(initialMoreOpen = false) {
+  return renderShell('member', { label: 'Switch to admin', to: '/admin' }, initialMoreOpen)
 }
 
 export function renderStaffShell() {

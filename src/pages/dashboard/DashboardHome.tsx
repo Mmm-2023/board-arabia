@@ -37,10 +37,10 @@ export function DashboardHome() {
 
       {incomplete ? (
         <section aria-label="Needs attention">
-          <p className="text-[0.72rem] font-semibold tracking-[0.14em] text-brass uppercase">
+          <p className="hidden text-[0.72rem] font-semibold tracking-[0.14em] text-brass uppercase md:block">
             Home
           </p>
-          <h1 className="mt-3 font-display text-[2.2rem] font-bold tracking-[-0.04em] text-balance md:text-[2.8rem]">
+          <h1 className="font-display text-2xl font-bold tracking-[-0.04em] text-balance md:mt-3 md:text-[2.8rem]">
             {MEMBER_VIEWS.home.empty}
           </h1>
           <Link
@@ -55,21 +55,21 @@ export function DashboardHome() {
         </section>
       ) : (
         <>
-          <p className="text-[0.72rem] font-semibold tracking-[0.14em] text-brass uppercase">
+          <p className="hidden text-[0.72rem] font-semibold tracking-[0.14em] text-brass uppercase md:block">
             Home
           </p>
-          <h1 className="mt-3 font-display text-[2.2rem] font-bold tracking-[-0.04em] text-balance md:text-[2.8rem]">
+          <h1 className="font-display text-2xl font-bold tracking-[-0.04em] text-balance md:mt-3 md:text-[2.8rem]">
             {name}
           </h1>
 
           {attention.length > 0 && (
-            <section aria-label="Needs attention" className="mt-8 space-y-3">
+            <section aria-label="Needs attention" className="mt-4 space-y-3 md:mt-8">
               <h2 className="text-[0.72rem] font-semibold tracking-[0.14em] text-ink/40 uppercase">
                 Needs attention
               </h2>
               <ul className="space-y-3">
                 {attention.map((item) => (
-                  <li key={item.title} className={`${styles.panel} px-4 py-4`}>
+                  <li key={item.title} className={`${styles.panel} px-4 py-3 md:py-4`}>
                     <p className="text-[1rem] text-ink">{item.title}</p>
                     <p className={`mt-1 text-[0.95rem] ${styles.muted}`}>{item.body}</p>
                     <Link
@@ -84,26 +84,30 @@ export function DashboardHome() {
             </section>
           )}
 
-          <section aria-label="Status" className="mt-8">
+          <section aria-label="Status" className="mt-5 md:mt-8">
             <h2 className="text-[0.72rem] font-semibold tracking-[0.14em] text-ink/40 uppercase">
               Status
             </h2>
             <div className="mt-3 grid gap-3 sm:grid-cols-2">
-              <article className={`${styles.panel} px-4 py-4`}>
-                <p className={`text-[0.72rem] font-semibold tracking-[0.12em] uppercase ${styles.quiet}`}>
-                  Founding seat
-                </p>
-                <p className="mt-2 font-display text-[1.35rem] font-semibold tracking-[-0.03em]">
-                  {seatLabel(member.seat)}
-                </p>
-                <p
-                  className="ba-primary mt-3 inline-flex min-h-11 min-w-11 items-center justify-center border border-[var(--ba-copper)] px-3 font-display text-[1rem] font-bold"
-                  aria-label="Badge mark placeholder"
-                >
-                  {initials(profile?.full_name ?? null, email)}
-                </p>
+              <article className={`${styles.panel} px-4 py-3 md:py-4`}>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className={`text-[0.72rem] font-semibold tracking-[0.12em] uppercase ${styles.quiet}`}>
+                      Founding seat
+                    </p>
+                    <p className="mt-1 font-display text-[1.35rem] font-semibold tracking-[-0.03em]">
+                      {seatLabel(member.seat)}
+                    </p>
+                  </div>
+                  <p
+                    className="ba-primary inline-flex h-11 w-11 shrink-0 items-center justify-center border border-[var(--ba-copper)] font-display text-[1rem] font-bold"
+                    aria-label="Badge mark placeholder"
+                  >
+                    {initials(profile?.full_name ?? null, email)}
+                  </p>
+                </div>
               </article>
-              <article className={`${styles.panel} px-4 py-4`}>
+              <article className={`${styles.panel} px-4 py-3 md:py-4`}>
                 <p className={`text-[0.72rem] font-semibold tracking-[0.12em] uppercase ${styles.quiet}`}>
                   Availability
                 </p>
@@ -114,7 +118,7 @@ export function DashboardHome() {
                   Open, Selective, or At capacity will show here once you can set it.
                 </p>
               </article>
-              <article className={`${styles.panel} px-4 py-4`}>
+              <article className={`${styles.panel} px-4 py-3 md:py-4`}>
                 <p className={`text-[0.72rem] font-semibold tracking-[0.12em] uppercase ${styles.quiet}`}>
                   Invites remaining
                 </p>
@@ -122,7 +126,7 @@ export function DashboardHome() {
                   {member.invites_remaining} / {member.invites_granted}
                 </p>
               </article>
-              <article className={`${styles.panel} px-4 py-4`}>
+              <article className={`${styles.panel} px-4 py-3 md:py-4`}>
                 <p className={`text-[0.72rem] font-semibold tracking-[0.12em] uppercase ${styles.quiet}`}>
                   Your capacity included in platform totals
                 </p>
@@ -133,7 +137,7 @@ export function DashboardHome() {
             </div>
           </section>
 
-          <section aria-label="Next actions" className="mt-8">
+          <section aria-label="Next actions" className="mt-5 md:mt-8">
             <h2 className="text-[0.72rem] font-semibold tracking-[0.14em] text-ink/40 uppercase">
               Next actions
             </h2>
