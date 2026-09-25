@@ -64,6 +64,17 @@ export const MEMBER_VIEWS = {
     clear: 'Clear filters',
     mapUnavailable: 'The regional map is not available yet.',
   },
+  dueDiligence: {
+    empty: 'No deck checked yet. Upload a PDF or PPTX to compare its claims with public sources.',
+    error: REFRESH_ERROR,
+    retry: 'Retry',
+    denied: 'Due Diligence is for members.',
+    unavailable: 'Due Diligence is not available yet. Try again later.',
+    rationale:
+      'Of the claims read from the deck, this share matched a public page we retrieved. The rest were not publicly verifiable.',
+    noScore: 'No percentage. The deck did not state a checkable claim.',
+    sourcesUnknown: 'No public page was retrieved. Sources are unknown.',
+  },
 } as const
 
 export const STAFF_VIEWS = {

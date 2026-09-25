@@ -22,3 +22,9 @@ verify_jwt = true
 # Cron uses MAJLIS_CRON_SECRET or the service role. The anon key is not enough.
 [functions.majlis-reminders]
 verify_jwt = false
+
+[functions.due-diligence-start]
+verify_jwt = true
+
+[functions.due-diligence-status]
+verify_jwt = true

@@ -258,6 +258,7 @@ const appShells = [
   'dashboard/intros',
   'dashboard/rooms',
   'dashboard/majlis',
+  'dashboard/due-diligence',
   'dashboard/events',
   'auth/confirm',
   'auth/reset',
