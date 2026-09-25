@@ -111,16 +111,18 @@ export function ProfilePage() {
 
   return (
     <div className="max-w-xl">
-      <p className="text-[0.72rem] font-semibold tracking-[0.14em] text-brass uppercase">
-        Profile
-      </p>
-      <h1 className="mt-3 font-display text-[2.4rem] font-bold tracking-[-0.04em]">
-        Your details
-      </h1>
-      <p className="mt-3 text-[1.02rem] leading-relaxed text-ink/60">
-        Visible to you. The directory is not open, and this page does not publish a profile.
-      </p>
-      <p className="mt-4 text-[0.92rem] text-ink/45">{email}</p>
+      <div className="space-y-3">
+        <p className="text-[0.72rem] font-semibold tracking-[0.14em] text-brass uppercase">
+          Profile
+        </p>
+        <h1 className="font-display text-[2.4rem] font-bold tracking-[-0.04em]">
+          Your details
+        </h1>
+        <p className="text-[1.02rem] leading-relaxed text-ink/60">
+          Visible to you. The directory is not open, and this page does not publish a profile.
+        </p>
+        <p className="text-[0.92rem] text-ink/45">{email}</p>
+      </div>
       <ProfileChecklist
         name={fullName}
         passwordSet={!member.must_set_password}
@@ -249,7 +251,7 @@ function ProfileChecklist({
   ]
   if (items.every((item) => item.done)) return null
   return (
-    <ul className="mt-6 border border-ink/10 bg-white/50 px-4 py-4" aria-label="Incomplete profile">
+    <ul className="mt-3 border border-ink/10 bg-white/50 px-5 py-5" aria-label="Incomplete profile">
       {items.map((item) => (
         <li key={item.label} className="flex min-h-11 items-center justify-between gap-3 text-[0.95rem]">
           <span>{item.label}</span>
