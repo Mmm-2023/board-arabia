@@ -13,7 +13,7 @@ const MODULES = {
     title: 'No room is open',
     body: 'A deal room opens for a live mandate, and only by admin. None are open.',
   },
-  events: {
+  majlis: {
     title: 'No majlis is scheduled',
     body: 'Quarterly dates are circulated to members. They are not listed on the public site, and none are posted in this shell yet.',
   },
@@ -37,6 +37,6 @@ export function ModulePage({ id }: { id: keyof typeof MODULES }) {
 
 function label(id: keyof typeof MODULES) {
   if (id === 'intros') return 'Introductions'
-  if (id === 'events') return 'Majlis'
+  if (id === 'majlis') return 'Majlis'
   return id.charAt(0).toUpperCase() + id.slice(1)
 }

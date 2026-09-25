@@ -33,7 +33,7 @@ export const STAFF_DESTINATIONS: readonly Destination[] = [
 
 /** Not a sixth tab. Sidebar footer on desktop, More sheet on mobile. */
 export const MEMBER_SECONDARY: readonly SecondaryLink[] = [
-  { id: 'majlis', label: 'Majlis', to: '/dashboard/events' },
+  { id: 'majlis', label: 'Majlis', to: '/dashboard/majlis' },
   { id: 'rooms', label: 'Rooms', to: '/dashboard/rooms' },
   { id: 'help', label: 'Help', to: '/dashboard/help' },
 ]
