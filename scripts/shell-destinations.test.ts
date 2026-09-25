@@ -67,7 +67,7 @@ test('section title follows the active destination', () => {
     shellSectionTitle('/dashboard/network', MEMBER_DESTINATIONS, MEMBER_SECONDARY),
     'Network',
   )
-  assert.equal(shellSectionTitle('/dashboard/events', MEMBER_DESTINATIONS, MEMBER_SECONDARY), 'Majlis')
+  assert.equal(shellSectionTitle('/dashboard/majlis', MEMBER_DESTINATIONS, MEMBER_SECONDARY), 'Majlis')
   assert.equal(shellSectionTitle('/admin/applications', STAFF_DESTINATIONS, STAFF_SECONDARY), 'Applications')
   assert.equal(shellSectionTitle('/admin/email', STAFF_DESTINATIONS, STAFF_SECONDARY), 'Email')
 })

@@ -114,6 +114,9 @@ function assertDistClean(distDir) {
   if (!fs.existsSync(path.join(distDir, 'dashboard', 'network', 'index.html'))) {
     throw new Error('missing dashboard network shell')
   }
+  if (!fs.existsSync(path.join(distDir, 'dashboard', 'majlis', 'index.html'))) {
+    throw new Error('missing dashboard majlis shell')
+  }
   if (!fs.existsSync(path.join(distDir, 'admin', 'applications', 'index.html'))) {
     throw new Error('missing admin applications shell')
   }
@@ -235,6 +238,7 @@ const appShells = [
   'dashboard/invites',
   'dashboard/intros',
   'dashboard/rooms',
+  'dashboard/majlis',
   'dashboard/events',
   'auth/confirm',
   'auth/reset',
