@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
+import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import {
   draftFromApplication,
@@ -8,6 +8,7 @@ import {
 } from '../../lib/capacity'
 import type { FoundingCapacity, FoundingSeat } from '../../lib/member'
 import type { PlatformStats } from '../../lib/platformStats'
+import { endAuthSession } from '../../lib/endSession'
 import { REFRESH_ERROR } from '../../shell/viewCopy'
 import { isStaffRole, showRoleSwitch, type StaffRole } from '../../../supabase/functions/_shared/staff_auth.ts'
 import {
@@ -92,6 +93,7 @@ export function useAdmin() {
 
 function useAdminState(): AdminRoom {
   const [session, setSession] = useState<Session | null | undefined>(undefined)
+  const signingOut = useRef(false)
   const [staffRole, setStaffRole] = useState<StaffRole | null>(null)
   const [ownMemberStatus, setOwnMemberStatus] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
@@ -213,11 +215,16 @@ function useAdminState(): AdminRoom {
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
+      if (signingOut.current) return
       setSession(data.session)
       void refreshStaffAndApps(data.session)
     })
 
     const { data: sub } = supabase.auth.onAuthStateChange((_event, next) => {
+      if (signingOut.current) {
+        setSession(null)
+        return
+      }
       setSession(next)
       void refreshStaffAndApps(next)
     })
@@ -461,7 +468,9 @@ function useAdminState(): AdminRoom {
     onMemberStatus,
     onSaveCapacity,
     signOut: async () => {
-      await supabase.auth.signOut()
+      signingOut.current = true
+      await endAuthSession(supabase)
+      setSession(null)
     },
   }
 }

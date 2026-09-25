@@ -5,6 +5,7 @@ import { AppShell } from '../../shell/AppShell'
 import { MEMBER_DESTINATIONS, MEMBER_SECONDARY, formatUpdated } from '../../shell/destinations'
 import { PermissionState } from '../../shell/ViewState'
 import { REFRESH_ERROR } from '../../shell/viewCopy'
+import { endAuthSession } from '../../lib/endSession'
 import { supabase } from '../../lib/supabase'
 import type { MemberRow, ProfileRow } from '../../lib/member'
 import { useNoIndex } from '../../lib/usePageTitle'
@@ -42,11 +43,26 @@ export function DashboardLayout() {
   const loadSeq = useRef(0)
   const loadRef = useRef<() => Promise<void>>(async () => {})
   const readyRef = useRef<MemberRoom | null>(null)
+  const signingOut = useRef(false)
   useNoIndex('Member dashboard | Board Arabia')
 
   const load = useCallback(async () => {
     const seq = ++loadSeq.current
+    if (signingOut.current) {
+      readyRef.current = null
+      setRefreshing(false)
+      setGate({ status: 'signed_out' })
+      return
+    }
     setRefreshing(true)
+    const { data: sessionData } = await supabase.auth.getSession()
+    if (seq !== loadSeq.current) return
+    if (!sessionData.session) {
+      readyRef.current = null
+      setRefreshing(false)
+      setGate({ status: 'signed_out' })
+      return
+    }
     const { data, error } = await supabase.auth.getUser()
     if (seq !== loadSeq.current) return
     const user = data.user
@@ -140,7 +156,13 @@ export function DashboardLayout() {
   }, [load])
 
   async function onSignOut() {
-    await supabase.auth.signOut()
+    if (signingOut.current) return
+    signingOut.current = true
+    loadSeq.current += 1
+    readyRef.current = null
+    await endAuthSession(supabase)
+    setRefreshing(false)
+    setGate({ status: 'signed_out' })
   }
 
   const status = {
