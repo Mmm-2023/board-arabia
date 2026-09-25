@@ -60,7 +60,8 @@ export default function App() {
         <Route path="invites" element={<Navigate to="/dashboard/network" replace />} />
         <Route path="intros" element={<Navigate to="/dashboard/network" replace />} />
         <Route path="rooms" element={<ModulePage id="rooms" />} />
-        <Route path="events" element={<ModulePage id="events" />} />
+        <Route path="majlis" element={<ModulePage id="majlis" />} />
+        <Route path="events" element={<Navigate to="/dashboard/majlis" replace />} />
         <Route path="help" element={<HelpPage />} />
       </Route>
       {/* Legacy book/verify routes redirect. Public calendar CTA removed. */}
