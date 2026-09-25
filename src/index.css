@@ -20,6 +20,8 @@
   --ba-warn: #c48a2a;
   --ba-error: #a33b3b;
   --ba-info: #4b3f9a;
+  /* Icon + label row. Safe area is added on the bar, not inside this token. */
+  --ba-tab-bar-height: 4rem;
 }
 
 @theme {
@@ -123,16 +125,20 @@
 }
 
 .shell-main {
-  padding-top: 1.5rem;
-  padding-bottom: calc(5.75rem + env(safe-area-inset-bottom));
+  padding-top: 1rem;
+  padding-bottom: calc(var(--ba-tab-bar-height, 56px) + env(safe-area-inset-bottom, 0px) + 1rem);
   padding-left: max(1rem, env(safe-area-inset-left));
   padding-right: max(1rem, env(safe-area-inset-right));
+}
+
+.shell-tab-bar {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 @media (min-width: 768px) {
   .shell-main {
     padding-top: 2rem;
-    padding-bottom: max(2rem, env(safe-area-inset-bottom));
+    padding-bottom: max(2rem, env(safe-area-inset-bottom, 0px));
     padding-left: max(2rem, env(safe-area-inset-left));
     padding-right: max(2rem, env(safe-area-inset-right));
   }

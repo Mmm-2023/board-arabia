@@ -15,6 +15,23 @@ test('desktop sidebar and mobile tabs share the locked destinations', async () =
     }
     assertChrome(mod.renderMemberShell(), ['Home', 'Directory', 'Mandates', 'Network', 'Profile'], 'Switch to admin')
     assertChrome(mod.renderStaffShell(), ['Home', 'Applications', 'People', 'Capacity', 'Settings'], 'Switch to member')
+    const sheet = mod.renderMemberShell(true)
+    const more = sheet.slice(sheet.indexOf('id="shell-more"'))
+    const order = ['Majlis', 'Rooms', 'Help', 'Sign out']
+    let cursor = 0
+    for (const label of order) {
+      const at = more.indexOf(label, cursor)
+      assert.ok(at > cursor, `${label} should follow the previous More row`)
+      cursor = at + label.length
+    }
+    for (const tab of ['Home', 'Directory', 'Mandates', 'Network', 'Profile']) {
+      assert.equal(more.includes(`data-destination="${tab}"`), false, tab)
+    }
+    assert.match(sheet, /min-h-11 min-w-11/)
+    assert.match(sheet, /aria-label="More"/)
+    assert.match(sheet, /data-nav="sign-out"/)
+    assert.match(sheet, /md:hidden/)
+    assert.match(sheet, /hidden min-h-11 items-center px-2[^"]*md:inline-flex/)
   } finally {
     await vite.close()
   }

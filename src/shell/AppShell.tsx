@@ -15,6 +15,7 @@ export function AppShell({
   onSignOut,
   accountLabel,
   children,
+  initialMoreOpen = false,
 }: {
   tone: ShellTone
   destinations: readonly Destination[]
@@ -24,13 +25,14 @@ export function AppShell({
   onSignOut: () => void
   accountLabel: string
   children: ReactNode
+  initialMoreOpen?: boolean
 }) {
   const location = useLocation()
   const desktop = useMinWidth(1024)
   const [hovered, setHovered] = useState(false)
   const [pinned, setPinned] = useState(false)
   const [morePath, setMorePath] = useState(location.pathname)
-  const [moreOpen, setMoreOpen] = useState(false)
+  const [moreOpen, setMoreOpen] = useState(initialMoreOpen)
   if (location.pathname !== morePath) {
     setMorePath(location.pathname)
     setMoreOpen(false)
@@ -140,29 +142,44 @@ export function AppShell({
 
         <div className="flex min-w-0 flex-1 flex-col">
           <header className={`shell-safe-top shell-safe-x sticky top-0 z-30 border-b backdrop-blur ${styles.header}`}>
-            <div className="flex min-h-14 flex-wrap items-center justify-between gap-x-3 gap-y-2 px-4 py-2 md:px-6">
-              <p className="min-w-0 font-display text-[1.15rem] font-semibold tracking-[-0.02em]">
+            <div className="flex min-h-14 items-center justify-between gap-3 px-2 py-1 md:px-6 md:py-2">
+              <Link
+                to={home}
+                aria-label="Board Arabia"
+                className="flex min-w-0 items-center gap-2 px-2 py-1 md:hidden"
+              >
+                <img
+                  src={`${import.meta.env.BASE_URL}favicon.svg`}
+                  alt=""
+                  width={32}
+                  height={32}
+                  className="h-8 w-8 shrink-0"
+                />
+                <span className="truncate font-display text-[0.95rem] font-bold tracking-[-0.02em]">
+                  Board Arabia
+                </span>
+              </Link>
+              <p className="hidden min-w-0 font-display text-[1.15rem] font-semibold tracking-[-0.02em] md:block">
                 {title}
               </p>
-              <div className="flex flex-wrap items-center justify-end gap-2">
-                {secondary.length > 0 && (
-                  <button
-                    type="button"
-                    className={`inline-flex min-h-11 items-center px-3 text-[0.75rem] font-semibold tracking-[0.08em] uppercase md:hidden ${styles.switch}`}
-                    aria-expanded={moreOpen}
-                    aria-controls="shell-more"
-                    onClick={() => setMoreOpen((value) => !value)}
-                  >
-                    More
-                  </button>
-                )}
+              <div className="flex shrink-0 items-center justify-end gap-2">
+                <button
+                  type="button"
+                  className={`inline-flex min-h-11 min-w-11 items-center justify-center px-3 text-[0.95rem] font-semibold md:hidden ${styles.switch}`}
+                  aria-expanded={moreOpen}
+                  aria-controls="shell-more"
+                  aria-label="More"
+                  onClick={() => setMoreOpen((value) => !value)}
+                >
+                  More
+                </button>
                 {updatedLabel && (
-                  <p className={`px-1 text-[0.75rem] ${styles.muted}`}>{updatedLabel}</p>
+                  <p className={`hidden px-1 text-[0.75rem] md:block ${styles.muted}`}>{updatedLabel}</p>
                 )}
                 {roleSwitch && (
                   <Link
                     to={roleSwitch.to}
-                    className={`inline-flex min-h-11 items-center px-2 text-[0.75rem] font-semibold tracking-[0.06em] uppercase ${styles.switch}`}
+                    className={`hidden min-h-11 items-center px-2 text-[0.75rem] font-semibold tracking-[0.06em] uppercase md:inline-flex ${styles.switch}`}
                   >
                     {roleSwitch.label}
                   </Link>
@@ -170,7 +187,7 @@ export function AppShell({
                 <button
                   type="button"
                   onClick={onSignOut}
-                  className={`inline-flex min-h-11 items-center px-2 text-[0.75rem] font-semibold tracking-[0.06em] uppercase ${styles.signOut}`}
+                  className={`hidden min-h-11 items-center px-2 text-[0.75rem] font-semibold tracking-[0.06em] uppercase md:inline-flex ${styles.signOut}`}
                 >
                   Sign out
                 </button>
@@ -183,18 +200,18 @@ export function AppShell({
 
       <nav
         aria-label="Primary"
-        className={`shell-safe-bottom shell-safe-x fixed inset-x-0 bottom-0 z-40 border-t md:hidden ${styles.tabBar}`}
+        className={`shell-tab-bar shell-safe-bottom shell-safe-x fixed inset-x-0 bottom-0 z-40 border-t md:hidden ${styles.tabBar}`}
       >
-        <ul className="grid grid-cols-5">
+        <ul className="grid min-h-[var(--ba-tab-bar-height,56px)] grid-cols-5">
           {destinations.map((item) => (
-            <li key={item.to}>
+            <li key={item.to} className="min-w-0">
               <NavLink
                 to={item.to}
                 end={item.end}
                 data-nav="primary"
                 data-destination={item.label}
                 className={({ isActive }) =>
-                  `flex min-h-11 flex-col items-center justify-center gap-0.5 px-1 py-2 text-center text-[0.68rem] leading-tight ${
+                  `flex min-h-11 w-full flex-col items-center justify-center gap-0.5 px-1 py-1.5 text-center text-[0.68rem] leading-tight ${
                     isActive ? styles.tabActive : styles.tabIdle
                   }`
                 }
@@ -220,28 +237,50 @@ export function AppShell({
             role="dialog"
             aria-modal="true"
             aria-label="More"
-            className={`shell-safe-bottom absolute inset-x-0 bottom-0 border-t px-4 pt-4 pb-4 ${styles.border} ${styles.page}`}
+            className={`shell-tab-bar shell-safe-bottom absolute inset-x-0 bottom-0 border-t px-4 pt-4 ${styles.border} ${styles.page}`}
           >
-            <ul className="space-y-1">
+            <div className="px-3 pb-2">
+              <p className="font-display text-[1.15rem] font-semibold tracking-[-0.02em]">More</p>
+              {updatedLabel && <p className={`mt-1 text-[0.75rem] ${styles.muted}`}>{updatedLabel}</p>}
+            </div>
+            <ul>
               {secondary.map((item) => (
                 <li key={item.to}>
                   <NavLink
                     to={item.to}
                     data-nav="secondary"
                     className={({ isActive }) =>
-                      `flex min-h-11 items-center px-3 text-[1rem] ${
+                      `flex min-h-11 w-full items-center px-3 text-[1rem] ${
                         isActive ? styles.navActive : styles.navIdle
                       }`
                     }
+                    onClick={() => setMoreOpen(false)}
                   >
                     {item.label}
                   </NavLink>
                 </li>
               ))}
+              {roleSwitch && (
+                <li>
+                  <Link
+                    to={roleSwitch.to}
+                    className={`flex min-h-11 w-full items-center px-3 text-[1rem] ${styles.navIdle}`}
+                    onClick={() => setMoreOpen(false)}
+                  >
+                    {roleSwitch.label}
+                  </Link>
+                </li>
+              )}
             </ul>
-            {accountLabel && (
-              <p className={`mt-3 px-3 text-[0.85rem] ${styles.muted}`}>{accountLabel}</p>
-            )}
+            <div className={`my-2 border-t ${styles.border}`} role="separator" />
+            <button
+              type="button"
+              onClick={onSignOut}
+              data-nav="sign-out"
+              className={`flex min-h-11 w-full items-center px-3 text-left text-[1rem] ${styles.signOut}`}
+            >
+              Sign out
+            </button>
           </div>
         </div>
       )}
