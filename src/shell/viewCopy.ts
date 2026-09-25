@@ -59,9 +59,10 @@ export const MEMBER_VIEWS = {
     empty: 'No majlis is published yet.',
     error: REFRESH_ERROR,
     retry: 'Retry',
-    denied: 'Majlis hosting is for members. A sponsor seat cannot apply.',
-    filtered: '',
-    clear: '',
+    denied: 'Majlis is for members.',
+    filtered: 'No majlis matches these filters.',
+    clear: 'Clear filters',
+    mapUnavailable: 'The regional map is not available yet.',
   },
 } as const
 
@@ -98,6 +99,9 @@ export const STAFF_VIEWS = {
   },
   majlis: {
     empty: 'No majlis is waiting for review.',
+    emptyEvents: 'No majlis events yet.',
+    filtered: 'No majlis matches these filters.',
+    clear: 'Clear filters',
     error: REFRESH_ERROR,
     retry: 'Retry',
     denied: 'The majlis queue is for staff.',

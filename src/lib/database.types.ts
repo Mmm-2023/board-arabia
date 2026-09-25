@@ -371,11 +371,61 @@ export type Database = {
           venue_name: string
           venue_address: string | null
           venue_visibility: string
-          status: 'pending_approval' | 'published' | 'rejected'
+          status: 'pending_approval' | 'published' | 'rejected' | 'cancelled' | 'hidden'
           rejection_feedback: string | null
           admin_note: string | null
           approved_at: string | null
           created_at: string
+          map_lat: number | null
+          map_lng: number | null
+          rsvp_opens_at: string | null
+          founding_priority_ends_at: string | null
+          featured: boolean
+          sponsor_label: string | null
+          cancelled_at: string | null
+          cancel_reason: string | null
+          registered_count: number
+          waitlist_count: number
+          my_rsvp_status: 'registered' | 'waitlist' | 'cancelled' | null
+          my_waitlist_position: number | null
+        }
+        Relationships: []
+      }
+      majlis_events_sponsor: {
+        Row: {
+          id: string
+          title: string
+          description: string
+          region: string
+          focus_tags: string[]
+          starts_at: string
+          ends_at: string
+          timezone: string
+          capacity: number
+          venue_name: string
+          status: 'published'
+          map_lat: number | null
+          map_lng: number | null
+          rsvp_opens_at: string | null
+          founding_priority_ends_at: string | null
+          featured: boolean
+          sponsor_label: string | null
+          registered_count: number
+          waitlist_count: number
+        }
+        Relationships: []
+      }
+      majlis_roster: {
+        Row: {
+          id: string
+          event_id: string
+          member_id: string
+          status: 'registered' | 'waitlist' | 'cancelled'
+          waitlist_position: number | null
+          registered_at: string
+          cancelled_at: string | null
+          email: string
+          full_name: string | null
         }
         Relationships: []
       }

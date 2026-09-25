@@ -1,4 +1,4 @@
-import { rejectionFeedbackError } from '../_shared/majlis.ts'
+import { FOUNDING_PRIORITY_MS, regionGeotag, rejectionFeedbackError } from '../_shared/majlis.ts'
 import { corsHeaders, jsonResponse } from '../_shared/mail.ts'
 import { requireStaff } from '../_shared/require_staff.ts'
 
@@ -37,8 +37,26 @@ Deno.serve(async (req) => {
     return jsonResponse(req, { error: 'The note must be 2000 characters or fewer.' }, 400)
   }
 
-  const now = new Date().toISOString()
-  const patch =
+  const opensAt = new Date()
+  const now = opensAt.toISOString()
+  const pending =
+    decision === 'accept'
+      ? await admin
+          .from('majlis_events')
+          .select('region')
+          .eq('id', eventId)
+          .eq('status', 'pending_approval')
+          .maybeSingle()
+      : null
+  if (decision === 'accept' && (pending?.error || !pending?.data)) {
+    return jsonResponse(req, { error: 'This application is no longer pending.' }, 409)
+  }
+  const geo = decision === 'accept' ? regionGeotag(String(pending?.data?.region ?? '')) : null
+  if (decision === 'accept' && !geo) {
+    return jsonResponse(req, { error: 'This majlis is missing a region geotag.' }, 400)
+  }
+
+  const basePatch =
     decision === 'accept'
       ? {
           status: 'published',
@@ -52,14 +70,35 @@ Deno.serve(async (req) => {
           rejection_feedback: trimmed,
           updated_at: now,
         }
+  const patch =
+    decision === 'accept' && geo
+      ? {
+          ...basePatch,
+          map_lat: geo.lat,
+          map_lng: geo.lng,
+          rsvp_opens_at: now,
+          founding_priority_ends_at: new Date(opensAt.getTime() + FOUNDING_PRIORITY_MS).toISOString(),
+        }
+      : basePatch
 
-  const { data: updated, error: updateError } = await admin
+  let updatedResult = await admin
     .from('majlis_events')
     .update(patch)
     .eq('id', eventId)
     .eq('status', 'pending_approval')
     .select('id, status')
     .maybeSingle()
+  if (updatedResult.error && decision === 'accept' && missingPublishColumns(updatedResult.error.message)) {
+    updatedResult = await admin
+      .from('majlis_events')
+      .update(basePatch)
+      .eq('id', eventId)
+      .eq('status', 'pending_approval')
+      .select('id, status')
+      .maybeSingle()
+  }
+  const updated = updatedResult.data
+  const updateError = updatedResult.error
   if (updateError) return jsonResponse(req, { error: 'Could not update the majlis.' }, 500)
   if (!updated) {
     return jsonResponse(req, { error: 'This application is no longer pending.' }, 409)
@@ -79,3 +118,7 @@ Deno.serve(async (req) => {
     message: decision === 'accept' ? 'Published on the member feed.' : 'Application rejected.',
   })
 })
+
+function missingPublishColumns(message: string): boolean {
+  return /does not exist|schema cache|Could not find the/i.test(message)
+}
