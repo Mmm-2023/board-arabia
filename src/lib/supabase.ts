@@ -447,6 +447,103 @@ export async function fetchPlatformStats(): Promise<PlatformStats | null> {
   return parsePlatformStats(data)
 }
 
+export type MajlisEventRow = {
+  id: string
+  host_member_id: string
+  title: string
+  description: string
+  region: string
+  focus_tags: string[]
+  starts_at: string
+  ends_at: string
+  timezone: string
+  capacity: number
+  venue_name: string
+  venue_address: string | null
+  venue_visibility: string
+  status: 'pending_approval' | 'published' | 'rejected'
+  rejection_feedback: string | null
+  admin_note: string | null
+  approved_at: string | null
+  created_at: string
+}
+
+const MAJLIS_COLUMNS =
+  'id, host_member_id, title, description, region, focus_tags, starts_at, ends_at, timezone, capacity, venue_name, venue_address, venue_visibility, status, rejection_feedback, admin_note, approved_at, created_at'
+
+export async function fetchMajlisEvents(): Promise<
+  { error: string } | { events: MajlisEventRow[] }
+> {
+  const { data, error } = await supabase
+    .from('majlis_events_member')
+    .select(MAJLIS_COLUMNS)
+    .order('starts_at', { ascending: true })
+  if (error) return { error: error.message }
+  return { events: (data ?? []) as MajlisEventRow[] }
+}
+
+export async function applyForMajlis(input: {
+  title: string
+  description: string
+  region: string
+  focusTags: string[]
+  startsAtUtc: string
+  endsAtUtc: string
+  capacity: number
+  venueName: string
+  venueAddress: string
+}): Promise<{ error?: string; id?: string; status?: string }> {
+  try {
+    const res = await fetch(`${functionsBase}/majlis-apply`, {
+      method: 'POST',
+      headers: await staffHeaders(),
+      body: JSON.stringify({
+        title: input.title,
+        description: input.description,
+        region: input.region,
+        focus_tags: input.focusTags,
+        starts_at: input.startsAtUtc,
+        ends_at: input.endsAtUtc,
+        capacity: input.capacity,
+        venue_name: input.venueName,
+        venue_address: input.venueAddress,
+      }),
+    })
+    const body = (await res.json().catch(() => ({}))) as {
+      error?: string
+      id?: string
+      status?: string
+    }
+    if (!res.ok) return { error: body.error || `Submit failed (${res.status})` }
+    return { id: body.id, status: body.status }
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : 'Submit failed' }
+  }
+}
+
+export async function decideMajlis(
+  eventId: string,
+  decision: 'accept' | 'reject',
+  note: string,
+): Promise<{ error?: string; message?: string; status?: string }> {
+  try {
+    const res = await fetch(`${functionsBase}/majlis-approve`, {
+      method: 'POST',
+      headers: await staffHeaders(),
+      body: JSON.stringify({ event_id: eventId, decision, note }),
+    })
+    const body = (await res.json().catch(() => ({}))) as {
+      error?: string
+      message?: string
+      status?: string
+    }
+    if (!res.ok) return { error: body.error || `Decision failed (${res.status})` }
+    return { message: body.message, status: body.status }
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : 'Decision failed' }
+  }
+}
+
 export async function fetchFoundingCapacity(): Promise<
   { error: string } | FoundingCapacity
 > {

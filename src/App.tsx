@@ -15,12 +15,14 @@ import { AdminHome } from './pages/admin/AdminHome'
 import { ApplicationsPage } from './pages/admin/ApplicationsPage'
 import { CapacityPage } from './pages/admin/CapacityPage'
 import { EmailPage } from './pages/admin/EmailPage'
+import { AdminMajlisPage } from './pages/admin/MajlisPage'
 import { PeoplePage } from './pages/admin/PeoplePage'
 import { SettingsPage } from './pages/admin/SettingsPage'
 import { DashboardHome } from './pages/dashboard/DashboardHome'
 import { DashboardLayout } from './pages/dashboard/DashboardLayout'
 import { DirectoryPage } from './pages/dashboard/DirectoryPage'
 import { HelpPage } from './pages/dashboard/HelpPage'
+import { MajlisPage } from './pages/dashboard/MajlisPage'
 import { MandatesPage } from './pages/dashboard/MandatesPage'
 import { ModulePage } from './pages/dashboard/ModulePage'
 import { NetworkPage } from './pages/dashboard/NetworkPage'
@@ -48,6 +50,7 @@ export default function App() {
         <Route path="capacity" element={<CapacityPage />} />
         <Route path="settings" element={<SettingsPage />} />
         <Route path="email" element={<EmailPage />} />
+        <Route path="majlis" element={<AdminMajlisPage />} />
       </Route>
       <Route path="/ops/*" element={<Navigate to="/admin" replace />} />
       <Route path="/ops" element={<Navigate to="/admin" replace />} />
@@ -60,7 +63,7 @@ export default function App() {
         <Route path="invites" element={<Navigate to="/dashboard/network" replace />} />
         <Route path="intros" element={<Navigate to="/dashboard/network" replace />} />
         <Route path="rooms" element={<ModulePage id="rooms" />} />
-        <Route path="majlis" element={<ModulePage id="majlis" />} />
+        <Route path="majlis" element={<MajlisPage />} />
         <Route path="events" element={<Navigate to="/dashboard/majlis" replace />} />
         <Route path="help" element={<HelpPage />} />
       </Route>
