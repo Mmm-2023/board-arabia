@@ -123,6 +123,59 @@ export function admitMail(opts: {
   }
 }
 
+/** Sponsor invite. Same sign-in path as admit. No booking or calendar link. */
+export function sponsorInviteMail(opts: {
+  greeting: string
+  loginUrl: string
+  confirmUrl: string | null
+  issued: Issued
+}): { subject: string; text: string; html: string } {
+  const name = opts.greeting.trim() || 'there'
+  const lines = [
+    `Hello ${name},`,
+    '',
+    'You are invited to Board Arabia as a sponsor.',
+    '',
+  ]
+  const parts = [
+    `<p>Hello ${escapeHtml(name)},</p>`,
+    '<p>You are invited to Board Arabia as a sponsor.</p>',
+  ]
+  if (opts.issued.mode === 'magic_link' && opts.confirmUrl) {
+    lines.push('Open this one-time link to sign in. It expires and works once:', '', opts.confirmUrl, '')
+    parts.push(
+      '<p>Open this one-time link to sign in. It expires and works once:</p>',
+      `<p><a href="${escapeHtml(opts.confirmUrl)}">${escapeHtml(opts.confirmUrl)}</a></p>`,
+    )
+    if (opts.issued.otp) {
+      lines.push(`Or sign in at ${opts.loginUrl} with this one-time code:`, '', opts.issued.otp, '')
+      parts.push(
+        `<p>Or sign in at <a href="${escapeHtml(opts.loginUrl)}">${escapeHtml(opts.loginUrl)}</a> with this one-time code:</p>`,
+        `<p><strong>${escapeHtml(opts.issued.otp)}</strong></p>`,
+      )
+    }
+  } else if (opts.issued.mode === 'temp_password') {
+    lines.push(`Sign in at ${opts.loginUrl}`, '', `Temporary password: ${opts.issued.tempPassword}`, '')
+    parts.push(
+      `<p>Sign in at <a href="${escapeHtml(opts.loginUrl)}">${escapeHtml(opts.loginUrl)}</a></p>`,
+      `<p>Temporary password: <strong>${escapeHtml(opts.issued.tempPassword)}</strong></p>`,
+    )
+  }
+  lines.push(
+    'After you arrive, set a password and review your profile.',
+    '',
+    'This invitation is personal. The member dashboard is not public.',
+  )
+  parts.push(
+    '<p>After you arrive, set a password and review your profile.</p>',
+    '<p>This invitation is personal. The member dashboard is not public.</p>',
+  )
+  return {
+    subject: 'Board Arabia: your sponsor invitation',
+    ...boardMail(lines.join('\n'), parts.join('\n')),
+  }
+}
+
 /** Password reset. Sent from the Workspace mailbox. Footer is Board Arabia only. */
 export function passwordResetMail(confirmUrl: string): { subject: string; text: string; html: string } {
   const sealed = boardMail(

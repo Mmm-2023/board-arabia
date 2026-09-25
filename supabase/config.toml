@@ -1,0 +1,5 @@
+# Gateway check for the staff sponsor invite.
+# A member JWT is still a valid token, so the function also calls requireStaff.
+
+[functions.invite-sponsor]
+verify_jwt = true

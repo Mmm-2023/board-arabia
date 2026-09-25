@@ -45,7 +45,7 @@ Site: https://boardarabia.com/
 - Vite + React + TypeScript + Tailwind CSS v4
 - Supabase project `iirqbizwanyhgkhanntq` (`applications`; `staff_users`; `members`; `profiles`; `member_invites`; `email_events`)
 - Application status: `pending` | `accepted` | `rejected` | `admitted` (also allows legacy `verified` | `declined`)
-- Member role is `members` + `profiles`, not `staff_users`. Seats are `ksa` or `intl`, 50 each.
+- Member role is `members` + `profiles`, not `staff_users`. Founding seats are `ksa` or `intl`, 50 each. Sponsor is a third `members.seat` with a cap of 3 invited or active. Sponsors are not staff and do not take a founding seat.
 - Email: Supabase Edge Functions call the **Gmail API**. From and Reply-To come from `GMAIL_FROM` (example `ops@example.com`). `noreply@boardarabia.com` is parked until later. Dry-run audit when Workspace credentials are unset. A live send fails closed when `GMAIL_FROM` is missing. No Resend.
 - On Accept, email the candidate a private booking link (server-side only). Never a public calendar CTA. `calendar_slot` may be set to `private_invite_emailed`.
 
@@ -183,8 +183,8 @@ Payload columns are not granted to the staff client. The admin list never select
 1. In Google Cloud, enable the Gmail API and create an OAuth client.
 2. Consent once as the `GMAIL_FROM` mailbox (example `ops@example.com`) with scope `https://www.googleapis.com/auth/gmail.send` and copy the refresh token.
 3. Supabase → Project Settings → Edge Functions → Secrets: paste `GMAIL_CLIENT_ID`, `GMAIL_CLIENT_SECRET`, and `GMAIL_REFRESH_TOKEN`.
-4. Deploy the Edge Functions (`submit-application`, `notify-application`, `decide-application`, `admit-member`, `send-member-invite`, `invite-master`, `set-member-status`, `request-password-reset`). `send-member-invite` keeps JWT verification on.
-5. Apply `supabase/migrations/20260922190000_staff_master_admin_read.sql` if it is not already on project `iirqbizwanyhgkhanntq`, then `supabase/migrations/20260922201000_member_invite_wallet.sql` (invite wallet, `member_invites`, apply attribution, anon lookup RPC). Do not seed members.
+4. Deploy the Edge Functions (`submit-application`, `notify-application`, `decide-application`, `admit-member`, `send-member-invite`, `invite-master`, `set-member-status`, `request-password-reset`, `invite-sponsor`). `send-member-invite` and `invite-sponsor` keep JWT verification on. `invite-sponsor` is staff-only.
+5. Apply `supabase/migrations/20260922190000_staff_master_admin_read.sql` if it is not already on project `iirqbizwanyhgkhanntq`, then `supabase/migrations/20260922201000_member_invite_wallet.sql` (invite wallet, `member_invites`, apply attribution, anon lookup RPC), then `supabase/migrations/20260923170000_sponsor_seat.sql` (sponsor seat, cap 3, `claim_sponsor_seat`). Do not seed members.
 
 ### Dry-run invite (Workspace credentials not set)
 
