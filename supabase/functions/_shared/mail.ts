@@ -121,6 +121,7 @@ export async function sendEmail(opts: {
   html: string
   text: string
   from?: string
+  attachments?: MailAttachment[]
 }): Promise<SendResult> {
   const requested = opts.from ? sanitizeHeader(opts.from) : ''
   const from = !requested || isParkedFrom(requested) ? workspaceFromAddress() : requested
@@ -204,6 +205,7 @@ export async function sendEmail(opts: {
       subject,
       text: opts.text,
       html: opts.html,
+      attachments: opts.attachments,
     }),
   )
 
@@ -326,6 +328,12 @@ function looksSecret(value: string): boolean {
   return /token_hash=|ya29\.|refresh_token|private_key|BEGIN /i.test(value)
 }
 
+export type MailAttachment = {
+  filename: string
+  contentType: string
+  content: string
+}
+
 export function buildRfc822(opts: {
   from: string
   to: string
@@ -333,31 +341,62 @@ export function buildRfc822(opts: {
   subject: string
   text: string
   html: string
+  attachments?: MailAttachment[]
 }): string {
-  const boundary = `ba_${crypto.randomUUID().replaceAll('-', '')}`
   const replyTo = sanitizeHeader(opts.replyTo || productFromMailbox())
-  const lines = [
+  const headers = [
     `From: ${sanitizeHeader(opts.from)}`,
     `To: ${sanitizeHeader(opts.to)}`,
     `Reply-To: ${replyTo}`,
     `Subject: ${encodeSubject(sanitizeHeader(opts.subject))}`,
     'MIME-Version: 1.0',
+  ]
+  const alternative = alternativeBody(opts.text, opts.html)
+  const attachments = (opts.attachments ?? []).filter((item) => item.content)
+  if (attachments.length === 0) {
+    return [...headers, alternative, ''].join('\r\n')
+  }
+  const mixed = `mix_${crypto.randomUUID().replaceAll('-', '')}`
+  const lines = [
+    ...headers,
+    `Content-Type: multipart/mixed; boundary="${mixed}"`,
+    '',
+    `--${mixed}`,
+    alternative,
+  ]
+  for (const item of attachments) {
+    const filename = item.filename.replace(/[^A-Za-z0-9._-]/g, '') || 'majlis.ics'
+    const type = item.contentType.replace(/[\r\n;"]/g, '') || 'text/calendar'
+    lines.push(
+      `--${mixed}`,
+      `Content-Type: ${type}`,
+      'Content-Transfer-Encoding: base64',
+      `Content-Disposition: attachment; filename="${filename}"`,
+      '',
+      wrapBase64(utf8Bytes(item.content)),
+    )
+  }
+  lines.push(`--${mixed}--`, '')
+  return lines.join('\r\n')
+}
+
+function alternativeBody(text: string, html: string): string {
+  const boundary = `ba_${crypto.randomUUID().replaceAll('-', '')}`
+  return [
     `Content-Type: multipart/alternative; boundary="${boundary}"`,
     '',
     `--${boundary}`,
     'Content-Type: text/plain; charset=UTF-8',
     'Content-Transfer-Encoding: base64',
     '',
-    wrapBase64(utf8Bytes(opts.text)),
+    wrapBase64(utf8Bytes(text)),
     `--${boundary}`,
     'Content-Type: text/html; charset=UTF-8',
     'Content-Transfer-Encoding: base64',
     '',
-    wrapBase64(utf8Bytes(opts.html)),
+    wrapBase64(utf8Bytes(html)),
     `--${boundary}--`,
-    '',
-  ]
-  return lines.join('\r\n')
+  ].join('\r\n')
 }
 
 function refreshCreds(): { clientId: string; clientSecret: string; refreshToken: string } | null {

@@ -447,6 +447,9 @@ export async function fetchPlatformStats(): Promise<PlatformStats | null> {
   return parsePlatformStats(data)
 }
 
+export type MajlisStatus = 'pending_approval' | 'published' | 'rejected' | 'cancelled' | 'hidden'
+export type MajlisRsvpStatus = 'registered' | 'waitlist' | 'cancelled'
+
 export type MajlisEventRow = {
   id: string
   host_member_id: string
@@ -461,25 +464,149 @@ export type MajlisEventRow = {
   venue_name: string
   venue_address: string | null
   venue_visibility: string
-  status: 'pending_approval' | 'published' | 'rejected'
+  status: MajlisStatus
   rejection_feedback: string | null
   admin_note: string | null
   approved_at: string | null
   created_at: string
+  map_lat: number | null
+  map_lng: number | null
+  rsvp_opens_at: string | null
+  founding_priority_ends_at: string | null
+  featured: boolean
+  sponsor_label: string | null
+  cancelled_at: string | null
+  cancel_reason: string | null
+  registered_count: number
+  waitlist_count: number
+  my_rsvp_status: MajlisRsvpStatus | null
+  my_waitlist_position: number | null
 }
 
-const MAJLIS_COLUMNS =
+export type MajlisSponsorEvent = {
+  id: string
+  title: string
+  description: string
+  region: string
+  focus_tags: string[]
+  starts_at: string
+  ends_at: string
+  timezone: string
+  capacity: number
+  venue_name: string
+  status: 'published'
+  map_lat: number | null
+  map_lng: number | null
+  rsvp_opens_at: string | null
+  founding_priority_ends_at: string | null
+  featured: boolean
+  sponsor_label: string | null
+  registered_count: number
+  waitlist_count: number
+}
+
+export type MajlisRosterRow = {
+  id: string
+  event_id: string
+  member_id: string
+  status: MajlisRsvpStatus
+  waitlist_position: number | null
+  registered_at: string
+  cancelled_at: string | null
+  email: string
+  full_name: string | null
+}
+
+const MAJLIS_BASE =
   'id, host_member_id, title, description, region, focus_tags, starts_at, ends_at, timezone, capacity, venue_name, venue_address, venue_visibility, status, rejection_feedback, admin_note, approved_at, created_at'
+const MAJLIS_EXTRA =
+  'map_lat, map_lng, rsvp_opens_at, founding_priority_ends_at, featured, sponsor_label, cancelled_at, cancel_reason, registered_count, waitlist_count, my_rsvp_status, my_waitlist_position'
+const MAJLIS_COLUMNS = `${MAJLIS_BASE}, ${MAJLIS_EXTRA}`
+const SPONSOR_COLUMNS =
+  'id, title, description, region, focus_tags, starts_at, ends_at, timezone, capacity, venue_name, status, map_lat, map_lng, rsvp_opens_at, founding_priority_ends_at, featured, sponsor_label, registered_count, waitlist_count'
+
+function shapeMissing(message: string): boolean {
+  return /does not exist|schema cache|Could not find the/i.test(message)
+}
+
+function num(value: unknown): number | null {
+  if (value == null || value === '') return null
+  const parsed = Number(value)
+  return Number.isFinite(parsed) ? parsed : null
+}
+
+function normalizeEvent(row: MajlisEventRow): MajlisEventRow {
+  return {
+    ...row,
+    focus_tags: row.focus_tags ?? [],
+    map_lat: num(row.map_lat),
+    map_lng: num(row.map_lng),
+    rsvp_opens_at: row.rsvp_opens_at ?? null,
+    founding_priority_ends_at: row.founding_priority_ends_at ?? null,
+    featured: Boolean(row.featured),
+    sponsor_label: row.sponsor_label ?? null,
+    cancelled_at: row.cancelled_at ?? null,
+    cancel_reason: row.cancel_reason ?? null,
+    registered_count: num(row.registered_count) ?? 0,
+    waitlist_count: num(row.waitlist_count) ?? 0,
+    my_rsvp_status: row.my_rsvp_status ?? null,
+    my_waitlist_position: num(row.my_waitlist_position),
+  }
+}
 
 export async function fetchMajlisEvents(): Promise<
   { error: string } | { events: MajlisEventRow[] }
 > {
-  const { data, error } = await supabase
+  const extended = await supabase
     .from('majlis_events_member')
     .select(MAJLIS_COLUMNS)
     .order('starts_at', { ascending: true })
+  if (!extended.error) {
+    return { events: ((extended.data ?? []) as MajlisEventRow[]).map(normalizeEvent) }
+  }
+  if (!shapeMissing(extended.error.message)) return { error: extended.error.message }
+  const basic = await supabase
+    .from('majlis_events_member')
+    .select(MAJLIS_BASE)
+    .order('starts_at', { ascending: true })
+  if (basic.error) return { error: basic.error.message }
+  return { events: ((basic.data ?? []) as MajlisEventRow[]).map((row) => normalizeEvent(row)) }
+}
+
+export async function fetchSponsorMajlis(): Promise<
+  { error: string } | { events: MajlisSponsorEvent[]; unavailable?: boolean }
+> {
+  const { data, error } = await supabase
+    .from('majlis_events_sponsor')
+    .select(SPONSOR_COLUMNS)
+    .order('starts_at', { ascending: true })
+  if (error) {
+    if (shapeMissing(error.message)) return { events: [], unavailable: true }
+    return { error: error.message }
+  }
+  return {
+    events: ((data ?? []) as MajlisSponsorEvent[]).map((row) => ({
+      ...row,
+      focus_tags: row.focus_tags ?? [],
+      map_lat: num(row.map_lat),
+      map_lng: num(row.map_lng),
+      featured: Boolean(row.featured),
+      registered_count: num(row.registered_count) ?? 0,
+      waitlist_count: num(row.waitlist_count) ?? 0,
+    })),
+  }
+}
+
+export async function fetchMajlisRoster(eventId: string): Promise<
+  { error: string } | { rows: MajlisRosterRow[] }
+> {
+  const { data, error } = await supabase
+    .from('majlis_roster')
+    .select('id, event_id, member_id, status, waitlist_position, registered_at, cancelled_at, email, full_name')
+    .eq('event_id', eventId)
+    .order('registered_at', { ascending: true })
   if (error) return { error: error.message }
-  return { events: (data ?? []) as MajlisEventRow[] }
+  return { rows: (data ?? []) as MajlisRosterRow[] }
 }
 
 export async function applyForMajlis(input: {
@@ -518,6 +645,69 @@ export async function applyForMajlis(input: {
     return { id: body.id, status: body.status }
   } catch (err) {
     return { error: err instanceof Error ? err.message : 'Submit failed' }
+  }
+}
+
+export async function rsvpMajlis(
+  eventId: string,
+  action: 'register' | 'cancel',
+): Promise<{ error?: string; status?: MajlisRsvpStatus; waitlist_position?: number | null }> {
+  try {
+    const res = await fetch(`${functionsBase}/majlis-rsvp`, {
+      method: 'POST',
+      headers: await staffHeaders(),
+      body: JSON.stringify({ event_id: eventId, action }),
+    })
+    const body = (await res.json().catch(() => ({}))) as {
+      error?: string
+      status?: MajlisRsvpStatus
+      waitlist_position?: number | null
+    }
+    if (!res.ok) return { error: body.error || `Registration failed (${res.status})` }
+    return { status: body.status, waitlist_position: body.waitlist_position }
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : 'Registration failed' }
+  }
+}
+
+export async function downloadMajlisIcs(eventId: string): Promise<{ error?: string }> {
+  try {
+    const res = await fetch(`${functionsBase}/majlis-ics`, {
+      method: 'POST',
+      headers: await staffHeaders(),
+      body: JSON.stringify({ event_id: eventId }),
+    })
+    if (!res.ok) {
+      const body = (await res.json().catch(() => ({}))) as { error?: string }
+      return { error: body.error || `Calendar download failed (${res.status})` }
+    }
+    const blob = await res.blob()
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = 'majlis.ics'
+    link.click()
+    URL.revokeObjectURL(url)
+    return {}
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : 'Calendar download failed' }
+  }
+}
+
+export async function majlisAdminAction(
+  body: Record<string, unknown>,
+): Promise<{ error?: string; message?: string }> {
+  try {
+    const res = await fetch(`${functionsBase}/majlis-admin-action`, {
+      method: 'POST',
+      headers: await staffHeaders(),
+      body: JSON.stringify(body),
+    })
+    const payload = (await res.json().catch(() => ({}))) as { error?: string }
+    if (!res.ok) return { error: payload.error || `Update failed (${res.status})` }
+    return { message: 'Saved.' }
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : 'Update failed' }
   }
 }
 
