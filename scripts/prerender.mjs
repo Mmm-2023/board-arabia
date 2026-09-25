@@ -82,6 +82,16 @@ function assertPage(route, html) {
   if (route === '/' && /\$\d/.test(html)) {
     errors.push('home prerender contains a dollar figure')
   }
+  if (/images\.unsplash\.com/i.test(html)) errors.push('unsplash url')
+  if (/Riyadh skyline/i.test(html)) errors.push('skyline share alt')
+  if (!html.includes('https://boardarabia.com/og-board-arabia.png')) errors.push('og image')
+  if (!html.includes('Board Arabia Najdi diamond mark on Night Indigo')) errors.push('og alt')
+  if (!html.includes('property="og:image:width" content="1200"')) errors.push('og width')
+  if (!html.includes('property="og:image:height" content="630"')) errors.push('og height')
+  if (!html.includes('property="og:image:type" content="image/png"')) errors.push('og type')
+  if (!html.includes('property="og:title" content="Board Arabia"')) errors.push('og title')
+  if (!html.includes('name="theme-color" content="#1C1343"')) errors.push('theme-color')
+  if ((html.match(/property="og:image"/g) || []).length !== 1) errors.push('og:image count')
 
   if (errors.length) throw new Error(`${route}: ${errors.join('; ')}`)
   return { title, description }
@@ -137,26 +147,34 @@ function writeSitemap() {
   fs.writeFileSync(path.join(dist, 'sitemap.xml'), xml)
 }
 
+function stripShareTags(html) {
+  return html.replace(/\n?\s*<meta\s+(?:property="og:[^"]+"|name="twitter:[^"]+")[^>]*>/g, '')
+}
+
 function documentFor(shell, rendered) {
   const title = escapeAttr(rendered.title)
   const description = escapeAttr(rendered.description)
   const canonical = escapeAttr(rendered.canonical)
   const image = escapeAttr(rendered.image)
+  shell = stripShareTags(shell)
   const seo = [
     `<link rel="canonical" href="${canonical}" />`,
     `<meta property="og:type" content="website" />`,
     `<meta property="og:site_name" content="Board Arabia" />`,
     `<meta property="og:locale" content="en_US" />`,
-    `<meta property="og:title" content="${title}" />`,
-    `<meta property="og:description" content="${description}" />`,
+    `<meta property="og:title" content="${escapeAttr(rendered.ogTitle)}" />`,
+    `<meta property="og:description" content="${escapeAttr(rendered.ogDescription)}" />`,
     `<meta property="og:url" content="${canonical}" />`,
     `<meta property="og:image" content="${image}" />`,
-    `<meta property="og:image:alt" content="Riyadh skyline at dusk" />`,
+    `<meta property="og:image:width" content="${escapeAttr(rendered.imageWidth)}" />`,
+    `<meta property="og:image:height" content="${escapeAttr(rendered.imageHeight)}" />`,
+    `<meta property="og:image:type" content="${escapeAttr(rendered.imageType)}" />`,
+    `<meta property="og:image:alt" content="${escapeAttr(rendered.imageAlt)}" />`,
     `<meta name="twitter:card" content="summary_large_image" />`,
-    `<meta name="twitter:title" content="${title}" />`,
-    `<meta name="twitter:description" content="${description}" />`,
+    `<meta name="twitter:title" content="${escapeAttr(rendered.ogTitle)}" />`,
+    `<meta name="twitter:description" content="${escapeAttr(rendered.ogDescription)}" />`,
     `<meta name="twitter:image" content="${image}" />`,
-    `<meta name="twitter:image:alt" content="Riyadh skyline at dusk" />`,
+    `<meta name="twitter:image:alt" content="${escapeAttr(rendered.imageAlt)}" />`,
     `<script id="board-arabia-ld" type="application/ld+json">${rendered.jsonLd}</script>`,
   ].join('\n    ')
 

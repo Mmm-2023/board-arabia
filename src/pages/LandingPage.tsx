@@ -11,9 +11,6 @@ import { Seo } from '../components/Seo'
 import { DisplayHeading, Eyebrow } from '../components/Type'
 import { MEMBER_TOOLS, PARTNER_CATEGORIES, PROCESS_STEPS } from '../content/marketing'
 
-const HERO_IMAGE =
-  'https://images.unsplash.com/photo-1586724237569-f3d0c1dee8c6?auto=format&fit=crop&w=2400&q=80'
-
 const PATHS = [
   'Chairpersons',
   'Board advisors',
@@ -56,25 +53,19 @@ function Hero() {
     target: ref,
     offset: ['start start', 'end start'],
   })
-  const imageY = useTransform(scrollYProgress, [0, 1], ['0%', '14%'])
   const contentY = useTransform(scrollYProgress, [0, 1], ['0%', '6%'])
   const opacity = useTransform(scrollYProgress, [0, 0.7], [1, 0.45])
 
   return (
     <section id="top" ref={ref} className="relative min-h-dvh overflow-hidden bg-ink">
-      <motion.div style={{ y: imageY }} className="absolute inset-0">
-        <img
-          src={HERO_IMAGE}
-          alt="Modern skyline over Riyadh at dusk"
-          width={2400}
-          height={1350}
-          fetchPriority="high"
-          decoding="async"
-          className="h-[120%] w-full object-cover object-[center_30%]"
-        />
-        <div className="absolute inset-0 bg-gradient-to-b from-ink/45 via-ink/35 to-ink/90" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_30%_40%,transparent_0%,rgba(28,19,67,0.55)_75%)]" />
-      </motion.div>
+      <div
+        aria-hidden
+        className="absolute inset-0"
+        style={{
+          background:
+            'radial-gradient(ellipse 80% 55% at 18% 12%, rgba(167,150,220,0.28), transparent 55%), radial-gradient(ellipse 70% 50% at 88% 82%, rgba(75,63,154,0.85), transparent 50%), linear-gradient(165deg, #1C1343 0%, #2a2158 42%, #120c2e 100%)',
+        }}
+      />
 
       <motion.div
         style={{ y: contentY, opacity }}

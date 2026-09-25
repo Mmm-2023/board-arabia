@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { Link, NavLink, useLocation } from 'react-router-dom'
+import { BrandLockup } from '../components/BrandLockup'
 import type { Destination, SecondaryLink, ShellTone } from './destinations'
 import { shellSectionTitle } from './destinations'
 import { DestinationIcon } from './icons'
@@ -63,25 +64,7 @@ export function AppShell({
           } transition-[width] duration-200 motion-reduce:transition-none`}
         >
           <div className="flex items-center justify-between gap-2 px-3 py-4">
-            <Link to={home} aria-label="Board Arabia" className="flex min-w-0 items-center gap-2 px-1">
-              <img
-                src={`${import.meta.env.BASE_URL}favicon.svg`}
-                alt=""
-                width={32}
-                height={32}
-                className="h-8 w-8 shrink-0"
-              />
-              {showLabels && (
-                <span className="min-w-0">
-                  <p className="truncate font-display text-[1.02rem] font-bold tracking-[-0.02em]">
-                    Board Arabia
-                  </p>
-                  <p className="mt-1 text-[0.68rem] font-semibold tracking-[0.14em] text-[var(--ba-lavender-mist)] uppercase">
-                    {tone === 'staff' ? 'Staff' : 'Member'}
-                  </p>
-                </span>
-              )}
-            </Link>
+            <BrandLockup to={home} tone="on-dark" markOnly={!showLabels} />
             <button
               type="button"
               className={`inline-flex min-h-11 min-w-11 items-center justify-center lg:hidden ${styles.muted}`}
@@ -143,22 +126,9 @@ export function AppShell({
         <div className="flex min-w-0 flex-1 flex-col">
           <header className={`shell-safe-top shell-safe-x sticky top-0 z-30 border-b backdrop-blur ${styles.header}`}>
             <div className="flex min-h-14 items-center justify-between gap-3 px-2 py-1 md:px-6 md:py-2">
-              <Link
-                to={home}
-                aria-label="Board Arabia"
-                className="flex min-w-0 items-center gap-2 px-2 py-1 md:hidden"
-              >
-                <img
-                  src={`${import.meta.env.BASE_URL}favicon.svg`}
-                  alt=""
-                  width={32}
-                  height={32}
-                  className="h-8 w-8 shrink-0"
-                />
-                <span className="truncate font-display text-[0.95rem] font-bold tracking-[-0.02em]">
-                  Board Arabia
-                </span>
-              </Link>
+              <div className="min-w-0 md:hidden">
+                <BrandLockup to={home} tone={tone === 'staff' ? 'on-dark' : 'on-light'} />
+              </div>
               <p className="hidden min-w-0 font-display text-[1.15rem] font-semibold tracking-[-0.02em] md:block">
                 {title}
               </p>

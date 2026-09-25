@@ -2,7 +2,13 @@ import { useEffect } from 'react'
 import {
   canonicalUrl,
   MARKETING_PAGES,
+  OG_DESCRIPTION,
   OG_IMAGE,
+  OG_IMAGE_ALT,
+  OG_IMAGE_HEIGHT,
+  OG_IMAGE_TYPE,
+  OG_IMAGE_WIDTH,
+  OG_TITLE,
   pageGraph,
   type MarketingPath,
 } from '../content/seo'
@@ -43,16 +49,19 @@ export function Seo({ path }: { path: MarketingPath }) {
     upsertMeta('property', 'og:type', 'website')
     upsertMeta('property', 'og:site_name', 'Board Arabia')
     upsertMeta('property', 'og:locale', 'en_US')
-    upsertMeta('property', 'og:title', page.title)
-    upsertMeta('property', 'og:description', page.description)
+    upsertMeta('property', 'og:title', OG_TITLE)
+    upsertMeta('property', 'og:description', OG_DESCRIPTION)
     upsertMeta('property', 'og:url', url)
     upsertMeta('property', 'og:image', OG_IMAGE)
-    upsertMeta('property', 'og:image:alt', 'Riyadh skyline at dusk')
+    upsertMeta('property', 'og:image:width', OG_IMAGE_WIDTH)
+    upsertMeta('property', 'og:image:height', OG_IMAGE_HEIGHT)
+    upsertMeta('property', 'og:image:type', OG_IMAGE_TYPE)
+    upsertMeta('property', 'og:image:alt', OG_IMAGE_ALT)
     upsertMeta('name', 'twitter:card', 'summary_large_image')
-    upsertMeta('name', 'twitter:title', page.title)
-    upsertMeta('name', 'twitter:description', page.description)
+    upsertMeta('name', 'twitter:title', OG_TITLE)
+    upsertMeta('name', 'twitter:description', OG_DESCRIPTION)
     upsertMeta('name', 'twitter:image', OG_IMAGE)
-    upsertMeta('name', 'twitter:image:alt', 'Riyadh skyline at dusk')
+    upsertMeta('name', 'twitter:image:alt', OG_IMAGE_ALT)
 
     let script = document.getElementById(JSON_LD_ID) as HTMLScriptElement | null
     if (!script) {
