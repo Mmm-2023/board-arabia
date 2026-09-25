@@ -68,7 +68,7 @@ export function HowItWorksPage() {
           </ul>
           <Link
             to="/apply"
-            className="mt-10 inline-flex items-center justify-center bg-brass px-7 py-3.5 text-[0.78rem] font-semibold tracking-[0.08em] text-ink uppercase hover:bg-brass-bright"
+            className="ba-primary mt-10 inline-flex items-center justify-center px-7 py-3.5 text-[0.78rem] font-semibold tracking-[0.08em] uppercase"
           >
             Apply for consideration
           </Link>

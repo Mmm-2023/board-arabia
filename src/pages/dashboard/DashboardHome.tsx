@@ -97,7 +97,7 @@ export function DashboardHome() {
                   {seatLabel(member.seat)}
                 </p>
                 <p
-                  className="mt-3 inline-flex min-h-11 min-w-11 items-center justify-center border border-brass/50 bg-ink px-3 font-display text-[1rem] font-bold text-pearl"
+                  className="ba-primary mt-3 inline-flex min-h-11 min-w-11 items-center justify-center border border-[var(--ba-copper)] px-3 font-display text-[1rem] font-bold"
                   aria-label="Badge mark placeholder"
                 >
                   {initials(profile?.full_name ?? null, email)}

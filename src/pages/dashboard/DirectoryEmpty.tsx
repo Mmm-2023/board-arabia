@@ -13,7 +13,7 @@ export type SeatCountState =
   | { status: 'error' }
 
 const primaryClass =
-  'inline-flex w-full items-center justify-center bg-ink px-5 py-3 text-center text-[0.75rem] font-semibold tracking-[0.08em] text-pearl uppercase lg:w-auto'
+  'ba-primary inline-flex w-full items-center justify-center px-5 py-3 text-center text-[0.75rem] font-semibold tracking-[0.08em] uppercase lg:w-auto'
 const secondaryClass =
   'inline-flex w-full items-center justify-center border border-ink/20 bg-white/40 px-5 py-3 text-center text-[0.75rem] font-semibold tracking-[0.08em] text-ink uppercase lg:w-auto'
 
@@ -84,10 +84,10 @@ export function DirectoryEmpty({
         {Array.from({ length: DIRECTORY_GHOST_COUNT }, (_, index) => (
           <li
             key={index}
-            className={`border border-ink/10 bg-white/45 px-5 py-5 ${index === 3 ? 'hidden lg:block' : ''}`}
+            className={`border border-[var(--ba-line)] bg-[var(--ba-lavender-mist)] px-5 py-5 ${index === 3 ? 'hidden lg:block' : ''}`}
           >
             <div className="flex items-start justify-between gap-4">
-              <div className="h-12 w-12 rounded-full bg-ink/10" />
+              <div className="h-12 w-12 rounded-full bg-[var(--ba-lavender)]" />
               <div className="text-right">
                 <p className="text-[0.68rem] font-semibold tracking-[0.12em] text-ink/30 uppercase">
                   {DIRECTORY_COPY.seat}
@@ -95,7 +95,7 @@ export function DirectoryEmpty({
                 <p className="mt-1 text-[0.85rem] text-ink/25">{DIRECTORY_COPY.seatPlaceholder}</p>
               </div>
             </div>
-            <div className="mt-4 h-3 w-2/3 bg-ink/10" />
+            <div className="mt-4 h-3 w-2/3 bg-[var(--ba-lavender)]" />
             <dl className="mt-5 space-y-3">
               <GhostField label={DIRECTORY_COPY.sector} value={DIRECTORY_COPY.sector} />
               <GhostField label={DIRECTORY_COPY.city} value={DIRECTORY_COPY.city} />

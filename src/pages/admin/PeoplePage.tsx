@@ -85,7 +85,7 @@ export function PeoplePage() {
           <button
             type="submit"
             disabled={room.updatingId === 'invite-direct' || !inviteEmail.trim()}
-            className="inline-flex min-h-11 items-center bg-brass px-4 text-[0.72rem] font-semibold tracking-[0.08em] text-ink uppercase disabled:opacity-40"
+            className="ba-primary inline-flex min-h-11 items-center px-4 text-[0.72rem] font-semibold tracking-[0.08em] uppercase disabled:opacity-40"
           >
             Send invite
           </button>

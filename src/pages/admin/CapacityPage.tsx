@@ -77,7 +77,7 @@ function Meter({ label, value, cap }: { label: string; value: number; cap: numbe
         </p>
       </div>
       <div className="mt-2 h-1.5 bg-pearl/10" aria-hidden="true">
-        <div className="h-1.5 bg-brass" style={{ width: `${width}%` }} />
+        <div className="h-1.5 bg-[var(--ba-copper)]" style={{ width: `${width}%` }} />
       </div>
     </div>
   )

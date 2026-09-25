@@ -190,7 +190,7 @@ function DashboardPreview() {
             <li
               key={item}
               className={`px-5 py-3 text-[0.92rem] ${
-                index === 0 ? 'bg-ink text-pearl' : 'text-ink/70'
+                index === 0 ? 'ba-primary' : 'text-ink/70'
               }`}
             >
               {item}

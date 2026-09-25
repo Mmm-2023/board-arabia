@@ -50,7 +50,7 @@ export function ApplicationsPage() {
             onClick={() => setFilter(item.id)}
             className={`inline-flex min-h-11 items-center border px-3 text-[0.75rem] font-semibold tracking-[0.06em] uppercase ${
               filter === item.id
-                ? 'border-brass bg-brass text-ink'
+                ? 'ba-primary border-transparent'
                 : 'border-pearl/20 text-pearl/70'
             }`}
           >
@@ -191,7 +191,7 @@ export function ApplicationsPage() {
                   onClick={() => void room.onAccept(app.id)}
                   className={`inline-flex min-h-11 items-center px-3 text-[0.68rem] font-semibold tracking-[0.06em] uppercase transition-colors disabled:opacity-40 ${
                     app.status === 'accepted' || app.status === 'verified'
-                      ? 'bg-brass text-ink'
+                      ? 'ba-primary'
                       : 'border border-pearl/20 text-pearl/70 hover:border-pearl/40 hover:text-pearl'
                   }`}
                 >
@@ -234,7 +234,7 @@ export function ApplicationsPage() {
                   onClick={() => setRejecting(app)}
                   className={`inline-flex min-h-11 items-center px-3 text-[0.68rem] font-semibold tracking-[0.06em] uppercase transition-colors disabled:opacity-40 sm:ml-4 ${
                     app.status === 'rejected' || app.status === 'declined'
-                      ? 'bg-brass text-ink'
+                      ? 'ba-primary'
                       : 'border border-pearl/20 text-pearl/70 hover:border-pearl/40 hover:text-pearl'
                   }`}
                 >

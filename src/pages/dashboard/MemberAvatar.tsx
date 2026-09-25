@@ -11,7 +11,7 @@ type LoadedPhoto = {
 }
 
 const actionClass =
-  'inline-flex min-h-11 items-center justify-center bg-ink px-4 py-2.5 text-[0.75rem] font-semibold tracking-[0.08em] text-pearl uppercase disabled:opacity-40'
+  'ba-primary inline-flex min-h-11 items-center justify-center px-4 py-2.5 text-[0.75rem] font-semibold tracking-[0.08em] uppercase disabled:opacity-40'
 const quietClass =
   'inline-flex min-h-11 items-center justify-center px-4 py-2.5 text-[0.75rem] font-semibold tracking-[0.08em] text-ink/55 uppercase disabled:opacity-40'
 
@@ -167,7 +167,7 @@ export function MemberAvatar() {
           <p className="mt-3 max-w-sm text-[0.95rem] leading-relaxed text-ink/60">{AVATAR_COPY.helper}</p>
         )}
         {uploadError ? (
-          <p className="mt-3 max-w-sm text-[0.95rem] leading-relaxed text-red-700" role="alert">
+          <p className="mt-3 max-w-sm text-[0.95rem] leading-relaxed text-[var(--ba-error)]" role="alert">
             {AVATAR_COPY.uploadError}{' '}
             <button
               type="button"

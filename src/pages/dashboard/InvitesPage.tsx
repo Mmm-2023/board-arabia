@@ -160,7 +160,7 @@ export function InvitesPage({ embedded = false }: { embedded?: boolean }) {
         <button
           type="submit"
           disabled={blocked || busy !== null}
-          className="mt-4 bg-ink px-5 py-3 text-[0.75rem] font-semibold tracking-[0.08em] text-pearl uppercase disabled:opacity-40"
+          className="ba-primary mt-4 px-5 py-3 text-[0.75rem] font-semibold tracking-[0.08em] uppercase disabled:opacity-40"
         >
           {busy === 'email' ? 'Sending…' : 'Send email invite'}
         </button>
@@ -195,7 +195,7 @@ export function InvitesPage({ embedded = false }: { embedded?: boolean }) {
       </form>
 
       {error && (
-        <p className="mt-4 text-[0.95rem] text-red-800" role="alert">
+        <p className="mt-4 text-[0.95rem] text-[var(--ba-error)]" role="alert">
           {error}
         </p>
       )}
@@ -207,7 +207,7 @@ export function InvitesPage({ embedded = false }: { embedded?: boolean }) {
         </h2>
         {loadingList && <div className="mt-4"><CardSkeleton tone="member" label="Loading invites" /></div>}
         {listError && (
-          <p className="mt-3 text-[0.95rem] text-red-800" role="alert">
+          <p className="mt-3 text-[0.95rem] text-[var(--ba-error)]" role="alert">
             {listError}{' '}
             <button type="button" className="underline" onClick={() => void loadSent()}>
               {MEMBER_VIEWS.network.retry}

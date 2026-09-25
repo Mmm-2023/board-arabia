@@ -1,18 +1,40 @@
 @import "tailwindcss";
 
+/* Board Arabia locked palette. Legacy names point at these tokens. */
+:root {
+  --ba-indigo: #4b3f9a;
+  --ba-indigo-deep: #1c1343;
+  --ba-indigo-mid: #6c60c0;
+  --ba-lavender: #a796dc;
+  --ba-lavender-mist: #e8e4f7;
+  --ba-copper: #b8896a;
+  --ba-copper-deep: #8e6548;
+  --ba-sadu-green: #3a8a4c;
+  --ba-porcelain: #f6f5fb;
+  --ba-white: #ffffff;
+  --ba-line: #ddd7ec;
+  --ba-muted: #5c5678;
+  --ba-ink: #1c1343;
+  --ba-ink-inverse: #f6f5fb;
+  --ba-success: #2f6b45;
+  --ba-warn: #c48a2a;
+  --ba-error: #a33b3b;
+  --ba-info: #4b3f9a;
+}
+
 @theme {
   --font-display: "Syne", sans-serif;
   --font-serif: "Instrument Serif", serif;
   --font-body: "Figtree", sans-serif;
 
-  --color-ink: #062a28;
-  --color-ink-soft: #0d3d3a;
-  --color-stone: #e6e2da;
-  --color-stone-deep: #d2cdc3;
-  --color-pearl: #f3f1ec;
-  --color-brass: #b0893e;
-  --color-brass-bright: #c9a24d;
-  --color-mist: #9aa8a4;
+  --color-ink: var(--ba-ink);
+  --color-ink-soft: var(--ba-indigo);
+  --color-stone: var(--ba-lavender-mist);
+  --color-stone-deep: var(--ba-line);
+  --color-pearl: var(--ba-porcelain);
+  --color-brass: var(--ba-indigo);
+  --color-brass-bright: var(--ba-lavender);
+  --color-mist: var(--ba-muted);
 }
 
 @layer base {
@@ -21,7 +43,7 @@
   }
 
   :focus-visible {
-    outline: 2px solid var(--color-brass);
+    outline: 2px solid var(--ba-copper);
     outline-offset: 3px;
   }
 
@@ -41,8 +63,20 @@
   }
 
   ::selection {
-    background: color-mix(in oklab, var(--color-brass) 35%, transparent);
-    color: var(--color-ink);
+    background: color-mix(in oklab, var(--ba-lavender) 45%, transparent);
+    color: var(--ba-ink);
+  }
+}
+
+@layer components {
+  .ba-primary {
+    border-radius: 6px;
+    background-color: var(--ba-indigo);
+    color: var(--ba-porcelain);
+  }
+
+  .ba-primary:hover:not(:disabled) {
+    background-color: var(--ba-indigo-mid);
   }
 }
 
