@@ -125,12 +125,16 @@
 .shell-main {
   padding-top: 1.5rem;
   padding-bottom: calc(5.75rem + env(safe-area-inset-bottom));
+  padding-left: max(1rem, env(safe-area-inset-left));
+  padding-right: max(1rem, env(safe-area-inset-right));
 }
 
 @media (min-width: 768px) {
   .shell-main {
     padding-top: 2rem;
     padding-bottom: max(2rem, env(safe-area-inset-bottom));
+    padding-left: max(2rem, env(safe-area-inset-left));
+    padding-right: max(2rem, env(safe-area-inset-right));
   }
 }
 
