@@ -21,6 +21,7 @@ import { SettingsPage } from './pages/admin/SettingsPage'
 import { DashboardHome } from './pages/dashboard/DashboardHome'
 import { DashboardLayout } from './pages/dashboard/DashboardLayout'
 import { DirectoryPage } from './pages/dashboard/DirectoryPage'
+import { DueDiligencePage } from './pages/dashboard/DueDiligencePage'
 import { HelpPage } from './pages/dashboard/HelpPage'
 import { MajlisPage } from './pages/dashboard/MajlisPage'
 import { MandatesPage } from './pages/dashboard/MandatesPage'
@@ -62,6 +63,8 @@ export default function App() {
         <Route path="profile" element={<ProfilePage />} />
         <Route path="invites" element={<Navigate to="/dashboard/network" replace />} />
         <Route path="intros" element={<Navigate to="/dashboard/network" replace />} />
+        <Route path="due-diligence" element={<DueDiligencePage />} />
+        <Route path="due-diligence/:reportId" element={<DueDiligencePage />} />
         <Route path="rooms" element={<ModulePage id="rooms" />} />
         <Route path="majlis" element={<MajlisPage />} />
         <Route path="events" element={<Navigate to="/dashboard/majlis" replace />} />

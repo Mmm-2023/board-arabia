@@ -354,6 +354,126 @@ export type Database = {
         }
         Relationships: []
       }
+      due_diligence_decks: {
+        Row: {
+          id: string
+          member_id: string
+          storage_path: string
+          file_name: string
+          mime_type: string
+          byte_size: number
+          company_url: string | null
+          created_at: string
+        }
+        Insert: {
+          id: string
+          member_id: string
+          storage_path: string
+          file_name: string
+          mime_type: string
+          byte_size: number
+          company_url?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          member_id?: string
+          storage_path?: string
+          file_name?: string
+          mime_type?: string
+          byte_size?: number
+          company_url?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
+      due_diligence_jobs: {
+        Row: {
+          id: string
+          deck_id: string
+          member_id: string
+          status: 'queued' | 'reading' | 'checking' | 'writing' | 'ready' | 'failed'
+          progress: number
+          error: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          deck_id: string
+          member_id: string
+          status?: 'queued' | 'reading' | 'checking' | 'writing' | 'ready' | 'failed'
+          progress?: number
+          error?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          deck_id?: string
+          member_id?: string
+          status?: 'queued' | 'reading' | 'checking' | 'writing' | 'ready' | 'failed'
+          progress?: number
+          error?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      due_diligence_reports: {
+        Row: {
+          id: string
+          job_id: string
+          deck_id: string
+          member_id: string
+          file_name: string
+          company_label: string
+          sector_label: string
+          ask_label: string
+          disclaimer: string
+          publicly_consistent_pct: number | null
+          not_publicly_verifiable_pct: number | null
+          claims: Json
+          sources: Json
+          next_steps: Json
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          job_id: string
+          deck_id: string
+          member_id: string
+          file_name: string
+          company_label: string
+          sector_label: string
+          ask_label: string
+          disclaimer: string
+          publicly_consistent_pct?: number | null
+          not_publicly_verifiable_pct?: number | null
+          claims: Json
+          sources: Json
+          next_steps: Json
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          job_id?: string
+          deck_id?: string
+          member_id?: string
+          file_name?: string
+          company_label?: string
+          sector_label?: string
+          ask_label?: string
+          disclaimer?: string
+          publicly_consistent_pct?: number | null
+          not_publicly_verifiable_pct?: number | null
+          claims?: Json
+          sources?: Json
+          next_steps?: Json
+          created_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       majlis_events_member: {
@@ -459,6 +579,10 @@ export type Database = {
         Returns: Json
       }
       majlis_consume_apply_slot: {
+        Args: { p_member: string }
+        Returns: undefined
+      }
+      due_diligence_consume_run: {
         Args: { p_member: string }
         Returns: undefined
       }
