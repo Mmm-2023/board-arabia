@@ -5,7 +5,14 @@ import {
   canonicalUrl,
   MARKETING_PAGES,
   OG_IMAGE,
+  OG_IMAGE_ALT,
+  OG_IMAGE_HEIGHT,
+  OG_IMAGE_TYPE,
+  OG_IMAGE_WIDTH,
+  OG_SHARE_DESCRIPTION,
+  OG_SHARE_TITLE,
   pageGraph,
+  SITE_ORIGIN,
   type MarketingPath,
 } from './content/seo'
 
@@ -24,6 +31,7 @@ export function render(url: string) {
     </MemoryRouter>,
   )
 
+  const home = path === '/'
   return {
     body,
     title: page.title,
@@ -31,5 +39,12 @@ export function render(url: string) {
     canonical: canonicalUrl(path),
     jsonLd: JSON.stringify(pageGraph(page)),
     image: OG_IMAGE,
+    imageAlt: OG_IMAGE_ALT,
+    imageWidth: OG_IMAGE_WIDTH,
+    imageHeight: OG_IMAGE_HEIGHT,
+    imageType: OG_IMAGE_TYPE,
+    ogTitle: home ? OG_SHARE_TITLE : page.title,
+    ogDescription: home ? OG_SHARE_DESCRIPTION : page.description,
+    ogUrl: home ? SITE_ORIGIN : canonicalUrl(path),
   }
 }

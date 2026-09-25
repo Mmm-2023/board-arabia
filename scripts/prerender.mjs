@@ -82,6 +82,54 @@ function assertPage(route, html) {
   if (route === '/' && /\$\d/.test(html)) {
     errors.push('home prerender contains a dollar figure')
   }
+  const ogImage = tagAttr(html, /<meta[^>]*property="og:image"[^>]*>/i)
+  const twitterImage = tagAttr(html, /<meta[^>]*name="twitter:image"[^>]*>/i)
+  const branded = 'https://boardarabia.com/og-board-arabia.png'
+  if (ogImage !== branded) errors.push(`og:image ${ogImage}`)
+  if (twitterImage !== branded) errors.push(`twitter:image ${twitterImage}`)
+  if (/unsplash/i.test(ogImage + twitterImage)) errors.push('unsplash share image')
+  const ogAlt = tagAttr(html, /<meta[^>]*property="og:image:alt"[^>]*>/i)
+  const twitterAlt = tagAttr(html, /<meta[^>]*name="twitter:image:alt"[^>]*>/i)
+  if (ogAlt !== 'Board Arabia mark on Night Indigo') errors.push(`og:image:alt ${ogAlt}`)
+  if (twitterAlt !== ogAlt) errors.push('twitter image alt mismatch')
+  if (tagAttr(html, /<meta[^>]*property="og:image:width"[^>]*>/i) !== '1200') {
+    errors.push('og:image:width')
+  }
+  if (tagAttr(html, /<meta[^>]*property="og:image:height"[^>]*>/i) !== '630') {
+    errors.push('og:image:height')
+  }
+  if (tagAttr(html, /<meta[^>]*property="og:image:type"[^>]*>/i) !== 'image/png') {
+    errors.push('og:image:type')
+  }
+  if (route === '/') {
+    const shareTitle = 'Board Arabia'
+    const shareDescription =
+      'Reviewed founding membership for chairpersons, board advisors, and aspiring NEDs. Saudi, GCC, and international. Apply for consideration.'
+    if (tagAttr(html, /<meta[^>]*property="og:title"[^>]*>/i) !== shareTitle) {
+      errors.push('home og:title')
+    }
+    if (tagAttr(html, /<meta[^>]*name="twitter:title"[^>]*>/i) !== shareTitle) {
+      errors.push('home twitter:title')
+    }
+    if (tagAttr(html, /<meta[^>]*property="og:description"[^>]*>/i) !== shareDescription) {
+      errors.push('home og:description')
+    }
+    if (tagAttr(html, /<meta[^>]*name="twitter:description"[^>]*>/i) !== shareDescription) {
+      errors.push('home twitter:description')
+    }
+    if (tagAttr(html, /<meta[^>]*property="og:url"[^>]*>/i) !== 'https://boardarabia.com') {
+      errors.push('home og:url')
+    }
+    if (tagAttr(html, /<meta[^>]*property="og:site_name"[^>]*>/i) !== 'Board Arabia') {
+      errors.push('og:site_name')
+    }
+    if (tagAttr(html, /<meta[^>]*property="og:type"[^>]*>/i) !== 'website') {
+      errors.push('og:type')
+    }
+    if (tagAttr(html, /<meta[^>]*name="twitter:card"[^>]*>/i) !== 'summary_large_image') {
+      errors.push('twitter:card')
+    }
+  }
 
   if (errors.length) throw new Error(`${route}: ${errors.join('; ')}`)
   return { title, description }
@@ -123,6 +171,9 @@ function assertDistClean(distDir) {
   if (!fs.existsSync(path.join(distDir, 'auth', 'confirm', 'index.html'))) {
     throw new Error('missing auth confirm shell')
   }
+  if (!fs.existsSync(path.join(distDir, 'og-board-arabia.png'))) {
+    throw new Error('missing branded og image')
+  }
 }
 
 function writeSitemap() {
@@ -142,21 +193,28 @@ function documentFor(shell, rendered) {
   const description = escapeAttr(rendered.description)
   const canonical = escapeAttr(rendered.canonical)
   const image = escapeAttr(rendered.image)
+  const imageAlt = escapeAttr(rendered.imageAlt)
+  const ogTitle = escapeAttr(rendered.ogTitle)
+  const ogDescription = escapeAttr(rendered.ogDescription)
+  const ogUrl = escapeAttr(rendered.ogUrl)
   const seo = [
     `<link rel="canonical" href="${canonical}" />`,
     `<meta property="og:type" content="website" />`,
     `<meta property="og:site_name" content="Board Arabia" />`,
     `<meta property="og:locale" content="en_US" />`,
-    `<meta property="og:title" content="${title}" />`,
-    `<meta property="og:description" content="${description}" />`,
-    `<meta property="og:url" content="${canonical}" />`,
+    `<meta property="og:title" content="${ogTitle}" />`,
+    `<meta property="og:description" content="${ogDescription}" />`,
+    `<meta property="og:url" content="${ogUrl}" />`,
     `<meta property="og:image" content="${image}" />`,
-    `<meta property="og:image:alt" content="Riyadh skyline at dusk" />`,
+    `<meta property="og:image:width" content="${rendered.imageWidth}" />`,
+    `<meta property="og:image:height" content="${rendered.imageHeight}" />`,
+    `<meta property="og:image:type" content="${rendered.imageType}" />`,
+    `<meta property="og:image:alt" content="${imageAlt}" />`,
     `<meta name="twitter:card" content="summary_large_image" />`,
-    `<meta name="twitter:title" content="${title}" />`,
-    `<meta name="twitter:description" content="${description}" />`,
+    `<meta name="twitter:title" content="${ogTitle}" />`,
+    `<meta name="twitter:description" content="${ogDescription}" />`,
     `<meta name="twitter:image" content="${image}" />`,
-    `<meta name="twitter:image:alt" content="Riyadh skyline at dusk" />`,
+    `<meta name="twitter:image:alt" content="${imageAlt}" />`,
     `<script id="board-arabia-ld" type="application/ld+json">${rendered.jsonLd}</script>`,
   ].join('\n    ')
 

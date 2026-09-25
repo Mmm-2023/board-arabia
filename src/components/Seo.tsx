@@ -3,7 +3,14 @@ import {
   canonicalUrl,
   MARKETING_PAGES,
   OG_IMAGE,
+  OG_IMAGE_ALT,
+  OG_IMAGE_HEIGHT,
+  OG_IMAGE_TYPE,
+  OG_IMAGE_WIDTH,
+  OG_SHARE_DESCRIPTION,
+  OG_SHARE_TITLE,
   pageGraph,
+  SITE_ORIGIN,
   type MarketingPath,
 } from '../content/seo'
 
@@ -43,16 +50,22 @@ export function Seo({ path }: { path: MarketingPath }) {
     upsertMeta('property', 'og:type', 'website')
     upsertMeta('property', 'og:site_name', 'Board Arabia')
     upsertMeta('property', 'og:locale', 'en_US')
-    upsertMeta('property', 'og:title', page.title)
-    upsertMeta('property', 'og:description', page.description)
-    upsertMeta('property', 'og:url', url)
+    const shareTitle = page.path === '/' ? OG_SHARE_TITLE : page.title
+    const shareDescription = page.path === '/' ? OG_SHARE_DESCRIPTION : page.description
+    const shareUrl = page.path === '/' ? SITE_ORIGIN : url
+    upsertMeta('property', 'og:title', shareTitle)
+    upsertMeta('property', 'og:description', shareDescription)
+    upsertMeta('property', 'og:url', shareUrl)
     upsertMeta('property', 'og:image', OG_IMAGE)
-    upsertMeta('property', 'og:image:alt', 'Riyadh skyline at dusk')
+    upsertMeta('property', 'og:image:width', OG_IMAGE_WIDTH)
+    upsertMeta('property', 'og:image:height', OG_IMAGE_HEIGHT)
+    upsertMeta('property', 'og:image:type', OG_IMAGE_TYPE)
+    upsertMeta('property', 'og:image:alt', OG_IMAGE_ALT)
     upsertMeta('name', 'twitter:card', 'summary_large_image')
-    upsertMeta('name', 'twitter:title', page.title)
-    upsertMeta('name', 'twitter:description', page.description)
+    upsertMeta('name', 'twitter:title', shareTitle)
+    upsertMeta('name', 'twitter:description', shareDescription)
     upsertMeta('name', 'twitter:image', OG_IMAGE)
-    upsertMeta('name', 'twitter:image:alt', 'Riyadh skyline at dusk')
+    upsertMeta('name', 'twitter:image:alt', OG_IMAGE_ALT)
 
     let script = document.getElementById(JSON_LD_ID) as HTMLScriptElement | null
     if (!script) {
