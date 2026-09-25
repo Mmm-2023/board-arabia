@@ -114,7 +114,7 @@ export function MemberAvatar() {
   const hasPhoto = Boolean(signedUrl)
 
   return (
-    <div className="flex items-start gap-4">
+    <div className="flex items-center gap-3">
       {hasPhoto ? (
         <img
           src={signedUrl ?? undefined}
@@ -128,11 +128,11 @@ export function MemberAvatar() {
       ) : (
         <div className="h-28 w-28 shrink-0 rounded-full bg-ink/10" aria-hidden="true" />
       )}
-      <div className="min-w-0 flex-1 pt-1">
+      <div className="min-w-0 flex-1">
         <p className="text-[0.72rem] font-semibold tracking-[0.08em] text-ink/45 uppercase">
           {AVATAR_COPY.section}
         </p>
-        <div className="mt-3 flex flex-col items-start gap-2 sm:flex-row sm:flex-wrap">
+        <div className="mt-2 flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:flex-wrap">
           {path ? (
             <>
               <button

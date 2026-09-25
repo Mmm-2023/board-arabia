@@ -168,7 +168,7 @@ export function AppShell({
               </div>
             </div>
           </header>
-          <main className="shell-main shell-safe-x px-4 md:px-8">{children}</main>
+          <main className="shell-main">{children}</main>
         </div>
       </div>
 
