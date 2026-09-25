@@ -39,11 +39,13 @@ test('endAuthSession leaves no usable access token when global sign-out fails', 
   let localCalls = 0
   await endAuthSession(
     {
-      async signOut(options) {
-        if (options?.scope === 'global') return { error: { message: 'network' } }
-        localCalls += 1
-        local.removeItem('sb-project-auth-token')
-        return { error: null }
+      auth: {
+        async signOut(options) {
+          if (options?.scope === 'global') return { error: { message: 'network' } }
+          localCalls += 1
+          local.removeItem('sb-project-auth-token')
+          return { error: null }
+        },
       },
     },
     [local, session],
@@ -60,8 +62,10 @@ test('endAuthSession still wipes tokens when signOut throws', async () => {
   })
   await endAuthSession(
     {
-      async signOut() {
-        throw new Error('lock')
+      auth: {
+        async signOut() {
+          throw new Error('lock')
+        },
       },
     },
     [local],

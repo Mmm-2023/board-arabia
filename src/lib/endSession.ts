@@ -1,7 +1,8 @@
-type SignOutResult = { error: { message: string } | null }
+import type { SupabaseClient } from '@supabase/supabase-js'
 
+/** The real client exposes sign-out on `auth`, not on the client root. */
 type SignOutClient = {
-  signOut: (options?: { scope?: 'global' | 'local' | 'others' }) => Promise<SignOutResult>
+  auth: Pick<SupabaseClient['auth'], 'signOut'>
 }
 
 type TokenStore = {
@@ -53,11 +54,11 @@ export async function endAuthSession(
   stores: Array<TokenStore | null | undefined> = browserTokenStores(),
 ): Promise<void> {
   try {
-    const globalResult = await client.signOut({ scope: 'global' })
-    if (globalResult.error) await client.signOut({ scope: 'local' })
+    const globalResult = await client.auth.signOut({ scope: 'global' })
+    if (globalResult.error) await client.auth.signOut({ scope: 'local' })
   } catch {
     try {
-      await client.signOut({ scope: 'local' })
+      await client.auth.signOut({ scope: 'local' })
     } catch {
       // Storage wipe below still removes a token the client failed to drop.
     }
