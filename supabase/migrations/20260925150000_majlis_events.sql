@@ -41,13 +41,8 @@ create table public.majlis_events (
       'Qassim'
     )
   ),
-  constraint majlis_events_focus_tags_check check (
+  constraint majlis_events_focus_tags_card_check check (
     cardinality(focus_tags) between 1 and 8
-    and not exists (
-      select 1
-      from unnest(focus_tags) as tag
-      where tag is null or char_length(trim(tag)) < 1 or char_length(trim(tag)) > 40
-    )
   ),
   constraint majlis_events_time_check check (ends_at > starts_at),
   constraint majlis_events_timezone_check check (timezone = 'Asia/Riyadh'),
@@ -123,6 +118,33 @@ drop trigger if exists majlis_events_guard_client_write on public.majlis_events;
 create trigger majlis_events_guard_client_write
   before insert or update on public.majlis_events
   for each row execute function private.majlis_events_guard_client_write();
+
+create or replace function private.majlis_events_guard_focus_tags()
+returns trigger
+language plpgsql
+set search_path = public
+as $$
+declare
+  tag text;
+begin
+  if new.focus_tags is null or cardinality(new.focus_tags) < 1 or cardinality(new.focus_tags) > 8 then
+    raise exception 'focus_tags_invalid' using errcode = '23514';
+  end if;
+  foreach tag in array new.focus_tags loop
+    if tag is null or char_length(trim(tag)) < 1 or char_length(trim(tag)) > 40 then
+      raise exception 'focus_tags_invalid' using errcode = '23514';
+    end if;
+  end loop;
+  return new;
+end;
+$$;
+
+revoke all on function private.majlis_events_guard_focus_tags() from public, anon, authenticated;
+
+drop trigger if exists majlis_events_guard_focus_tags on public.majlis_events;
+create trigger majlis_events_guard_focus_tags
+  before insert or update on public.majlis_events
+  for each row execute function private.majlis_events_guard_focus_tags();
 
 alter table public.majlis_events enable row level security;
 alter table public.majlis_events force row level security;
