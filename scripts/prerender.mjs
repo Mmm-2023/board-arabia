@@ -228,6 +228,7 @@ const appShells = [
   'admin/capacity',
   'admin/settings',
   'admin/email',
+  'admin/majlis',
   'ops',
   'dashboard',
   'dashboard/profile',

@@ -355,7 +355,31 @@ export type Database = {
         Relationships: []
       }
     }
-    Views: Record<string, never>
+    Views: {
+      majlis_events_member: {
+        Row: {
+          id: string
+          host_member_id: string
+          title: string
+          description: string
+          region: string
+          focus_tags: string[]
+          starts_at: string
+          ends_at: string
+          timezone: string
+          capacity: number
+          venue_name: string
+          venue_address: string | null
+          venue_visibility: string
+          status: 'pending_approval' | 'published' | 'rejected'
+          rejection_feedback: string | null
+          admin_note: string | null
+          approved_at: string | null
+          created_at: string
+        }
+        Relationships: []
+      }
+    }
     Functions: {
       founding_capacity: {
         Args: Record<string, never>
@@ -383,6 +407,10 @@ export type Database = {
       lookup_member_invite: {
         Args: { p_token: string }
         Returns: Json
+      }
+      majlis_consume_apply_slot: {
+        Args: { p_member: string }
+        Returns: undefined
       }
     }
     Enums: Record<string, never>

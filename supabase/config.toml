@@ -3,3 +3,9 @@
 
 [functions.invite-sponsor]
 verify_jwt = true
+
+[functions.majlis-apply]
+verify_jwt = true
+
+[functions.majlis-approve]
+verify_jwt = true

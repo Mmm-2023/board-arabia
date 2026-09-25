@@ -55,6 +55,14 @@ export const MEMBER_VIEWS = {
     saveError: 'Could not save. Retry.',
     denied: 'Profile is for admitted members.',
   },
+  majlis: {
+    empty: 'No majlis is published yet.',
+    error: REFRESH_ERROR,
+    retry: 'Retry',
+    denied: 'Majlis hosting is for members. A sponsor seat cannot apply.',
+    filtered: '',
+    clear: '',
+  },
 } as const
 
 export const STAFF_VIEWS = {
@@ -87,6 +95,12 @@ export const STAFF_VIEWS = {
     error: REFRESH_ERROR,
     retry: 'Retry',
     denied: 'Capacity totals are for staff.',
+  },
+  majlis: {
+    empty: 'No majlis is waiting for review.',
+    error: REFRESH_ERROR,
+    retry: 'Retry',
+    denied: 'The majlis queue is for staff.',
   },
   settings: {
     booking: 'The private booking link is emailed on Accept. It is not shown on this page.',
