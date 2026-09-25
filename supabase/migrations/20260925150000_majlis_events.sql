@@ -41,7 +41,7 @@ create table public.majlis_events (
       'Qassim'
     )
   ),
-  constraint majlis_events_focus_tags_check check (
+  constraint majlis_events_focus_tags_card_check check (
     cardinality(focus_tags) between 1 and 8
   ),
   constraint majlis_events_time_check check (ends_at > starts_at),
