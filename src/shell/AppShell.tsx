@@ -61,14 +61,23 @@ export function AppShell({
           } transition-[width] duration-200 motion-reduce:transition-none`}
         >
           <div className="flex items-center justify-between gap-2 px-3 py-4">
-            <Link to={home} className="min-w-0 px-1">
-              <p className="font-display text-[1.02rem] font-bold tracking-[-0.02em]">
-                {showLabels ? 'Board Arabia' : 'BA'}
-              </p>
+            <Link to={home} aria-label="Board Arabia" className="flex min-w-0 items-center gap-2 px-1">
+              <img
+                src={`${import.meta.env.BASE_URL}favicon.svg`}
+                alt=""
+                width={32}
+                height={32}
+                className="h-8 w-8 shrink-0"
+              />
               {showLabels && (
-                <p className="mt-1 text-[0.68rem] font-semibold tracking-[0.14em] text-[var(--ba-lavender-mist)] uppercase">
-                  {tone === 'staff' ? 'Staff' : 'Member'}
-                </p>
+                <span className="min-w-0">
+                  <p className="truncate font-display text-[1.02rem] font-bold tracking-[-0.02em]">
+                    Board Arabia
+                  </p>
+                  <p className="mt-1 text-[0.68rem] font-semibold tracking-[0.14em] text-[var(--ba-lavender-mist)] uppercase">
+                    {tone === 'staff' ? 'Staff' : 'Member'}
+                  </p>
+                </span>
               )}
             </Link>
             <button
