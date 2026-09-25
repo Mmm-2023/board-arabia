@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom'
+import { BrandLockup } from '../components/BrandLockup'
 import { resolveAfterLogin } from '../lib/memberGate'
 import { sendPasswordReset, supabase } from '../lib/supabase'
 import { useNoIndex } from '../lib/usePageTitle'
@@ -137,12 +138,7 @@ export function LoginPage() {
 
       <header className="relative z-10 border-b border-pearl/10">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-5 py-5 md:px-8">
-          <Link
-            to="/"
-            className="font-display text-[1.05rem] font-bold tracking-[-0.02em]"
-          >
-            Board Arabia
-          </Link>
+          <BrandLockup to="/" tone="on-dark" />
           <Link
             to="/"
             className="text-[0.72rem] font-semibold tracking-[0.06em] text-pearl/55 uppercase transition-colors hover:text-pearl"

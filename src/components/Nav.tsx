@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
+import { BrandLockup } from './BrandLockup'
 import { MEMBER_LOGIN, NAV_LINKS } from '../content/marketing'
 
 export function Nav({
@@ -45,14 +46,7 @@ export function Nav({
       }`}
     >
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-5 md:h-20 md:px-10">
-        <Link
-          to="/"
-          className={`font-display shrink-0 text-[1.05rem] font-bold tracking-[-0.02em] transition-colors ${
-            darkNav ? 'text-ink' : 'text-pearl'
-          }`}
-        >
-          Board Arabia
-        </Link>
+        <BrandLockup to="/" tone={darkNav ? 'on-light' : 'on-dark'} />
 
         <nav className="hidden items-center gap-7 lg:flex" aria-label="Primary">
           {NAV_LINKS.map((item) => {

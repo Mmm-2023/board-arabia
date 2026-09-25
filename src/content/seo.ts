@@ -1,7 +1,21 @@
 export const SITE_ORIGIN = 'https://boardarabia.com'
 
-export const OG_IMAGE =
-  'https://images.unsplash.com/photo-1586724237569-f3d0c1dee8c6?auto=format&fit=crop&w=1200&h=630&q=80'
+export const OG_TITLE = 'Board Arabia'
+
+export const OG_DESCRIPTION =
+  'Reviewed founding membership for chairpersons, board advisors, and aspiring NEDs. Saudi, GCC, and international. Apply for consideration.'
+
+export const OG_IMAGE = `${SITE_ORIGIN}/og-board-arabia.png`
+
+export const OG_IMAGE_ALT = 'Board Arabia Najdi diamond mark on Night Indigo'
+
+export const OG_IMAGE_WIDTH = '1200'
+
+export const OG_IMAGE_HEIGHT = '630'
+
+export const OG_IMAGE_TYPE = 'image/png'
+
+export const THEME_COLOR = '#1C1343'
 
 export const MARKETING_PATHS = [
   '/',

@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { BrandLockup } from './BrandLockup'
 import { MEMBER_LOGIN } from '../content/marketing'
 
 const LINKS = [
@@ -18,9 +19,7 @@ export function Footer() {
     <footer className="border-t border-ink/10 bg-pearl">
       <div className="mx-auto grid max-w-7xl gap-10 px-5 py-14 md:grid-cols-[1.4fr_1fr] md:px-10 md:py-16">
         <div>
-          <p className="font-display text-[1.4rem] font-bold tracking-[-0.03em] text-ink">
-            Board Arabia
-          </p>
+          <BrandLockup to="/" tone="on-light" />
           <p className="mt-3 max-w-sm text-[0.98rem] leading-relaxed text-ink/55">
             A selective founding membership for Saudi and international
             chairpersons and board advisors.

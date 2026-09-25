@@ -63,4 +63,8 @@ function assertChrome(html: string, labels: string[], roleSwitch: string) {
   assert.equal(/calendar\.app\.google/i.test(html), false)
   assert.equal(/nammco/i.test(html), false)
   assert.equal((html.match(/data-nav="primary"/g) || []).length, labels.length * 2)
+  assert.match(html, /favicon\.svg/)
+  assert.match(html, /Founding membership/)
+  assert.match(html, /font-serif/)
+  assert.equal(html.includes('M11.1'), false)
 }
