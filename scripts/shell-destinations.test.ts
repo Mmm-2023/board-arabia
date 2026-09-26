@@ -53,7 +53,7 @@ test('secondary links are not a sixth primary', () => {
   for (const item of STAFF_SECONDARY) assert.equal(staffLabels.has(item.label), false)
   assert.deepEqual(
     MEMBER_SECONDARY.map((item) => item.label),
-    ['Due Diligence', 'Majlis', 'Rooms', 'Help'],
+    ['AI Due Diligence', 'Majlis', 'Rooms', 'Help'],
   )
   assert.deepEqual(
     STAFF_SECONDARY.map((item) => item.label),
@@ -70,7 +70,7 @@ test('section title follows the active destination', () => {
   assert.equal(shellSectionTitle('/dashboard/majlis', MEMBER_DESTINATIONS, MEMBER_SECONDARY), 'Majlis')
   assert.equal(
     shellSectionTitle('/dashboard/due-diligence', MEMBER_DESTINATIONS, MEMBER_SECONDARY),
-    'Due Diligence',
+    'AI Due Diligence',
   )
   assert.equal(
     shellSectionTitle(
@@ -78,7 +78,7 @@ test('section title follows the active destination', () => {
       MEMBER_DESTINATIONS,
       MEMBER_SECONDARY,
     ),
-    'Due Diligence',
+    'AI Due Diligence',
   )
   assert.equal(shellSectionTitle('/admin/applications', STAFF_DESTINATIONS, STAFF_SECONDARY), 'Applications')
   assert.equal(shellSectionTitle('/admin/email', STAFF_DESTINATIONS, STAFF_SECONDARY), 'Email')

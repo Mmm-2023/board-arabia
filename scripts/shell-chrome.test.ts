@@ -17,7 +17,7 @@ test('desktop sidebar and mobile tabs share the locked destinations', async () =
     assertChrome(mod.renderStaffShell(), ['Home', 'Applications', 'People', 'Capacity', 'Settings'], 'Switch to member')
     const sheet = mod.renderMemberShell(true)
     const more = sheet.slice(sheet.indexOf('id="shell-more"'))
-    const order = ['Due Diligence', 'Majlis', 'Rooms', 'Help', 'Sign out']
+    const order = ['AI Due Diligence', 'Majlis', 'Rooms', 'Help', 'Sign out']
     let cursor = 0
     for (const label of order) {
       const at = more.indexOf(label, cursor)
