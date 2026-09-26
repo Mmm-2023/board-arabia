@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
+import { Link } from 'react-router-dom'
 import { applyInviteUrl, whatsAppInviteUrl } from '../../lib/inviteLink'
 import { sendMemberInvite, supabase } from '../../lib/supabase'
 import { CardSkeleton } from '../../shell/ViewState'
@@ -134,12 +135,23 @@ export function InvitesPage({ embedded = false }: { embedded?: boolean }) {
         {MEMBER_VIEWS.network.invites} {remaining} of {member.invites_granted} remaining. Each send
         uses one. Unused invites do not refill. The person you invite still goes through review.
       </p>
-      {blocked && (
-        <p className="mt-4 border border-ink/10 bg-white/60 px-4 py-3 text-[0.95rem] text-ink/70">
-          Both invites are used. A third send is blocked.
-        </p>
-      )}
-
+      {blocked ? (
+        <div
+          className="mt-4 border border-ink/10 bg-white/60 px-4 py-3 text-[0.95rem] leading-relaxed text-ink/70"
+          role="status"
+        >
+          <p>Both peer invites are used. Unused invites do not refill.</p>
+          <p className="mt-2 flex flex-wrap gap-x-4">
+            <Link to="/dashboard/help" className="inline-flex min-h-11 items-center underline">
+              Help
+            </Link>
+            <Link to="/dashboard/profile" className="inline-flex min-h-11 items-center underline">
+              Profile
+            </Link>
+          </p>
+        </div>
+      ) : (
+        <>
       <form onSubmit={(event) => void onEmail(event)} className="mt-10 border border-ink/10 px-5 py-5">
         <h2 className="text-[0.72rem] font-semibold tracking-[0.14em] text-ink/40 uppercase">
           Email
@@ -193,6 +205,8 @@ export function InvitesPage({ embedded = false }: { embedded?: boolean }) {
           {busy === 'whatsapp' ? 'Opening…' : 'Open WhatsApp'}
         </button>
       </form>
+        </>
+      )}
 
       {error && (
         <p className="mt-4 text-[0.95rem] text-[var(--ba-error)]" role="alert">
