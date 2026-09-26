@@ -183,6 +183,8 @@ test('desk status never stacks the empty state with an error', () => {
   assert.equal(/reports\.length === 0 \?/.test(page), false)
   assert.match(page, /AI Due Diligence/)
   assert.match(page, /Check this deck/)
+  assert.match(page, /\{progress\}%/)
+  assert.match(page, /hidden text-\[0\.72rem\][^"]*md:block/)
 })
 
 test('stored notes reject a percentage pair that does not add up', () => {

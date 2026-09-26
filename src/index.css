@@ -19,8 +19,8 @@
   --ba-warn: #c48a2a;
   --ba-error: #a33b3b;
   --ba-info: #4b3f9a;
-  /* Icon + label row. Safe area is added on the bar, not inside this token. */
-  --ba-tab-bar-height: 4rem;
+  /* Icon + label row, including a two-line label. Safe area is added on the bar. */
+  --ba-tab-bar-height: 4.75rem;
 }
 
 @theme {

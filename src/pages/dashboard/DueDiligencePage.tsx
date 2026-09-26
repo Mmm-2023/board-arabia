@@ -178,10 +178,12 @@ function Desk() {
 
   return (
     <div className="max-w-3xl">
-      <p className="text-[0.72rem] font-semibold tracking-[0.14em] text-brass uppercase">
+      <p className="hidden text-[0.72rem] font-semibold tracking-[0.14em] text-brass uppercase md:block">
         AI Due Diligence
       </p>
-      <h1 className="mt-3 font-display text-[2.2rem] font-bold tracking-[-0.03em]">AI Due Diligence</h1>
+      <h1 className="font-display text-[1.75rem] leading-tight font-bold tracking-[-0.03em] text-balance md:mt-3 md:text-[2.2rem]">
+        AI Due Diligence
+      </h1>
       <p className="mt-3 max-w-xl text-[1rem] leading-relaxed text-ink/65">
         Upload a pitch deck. Board Arabia compares its claims with public pages and leaves the
         decision with you.
@@ -209,16 +211,19 @@ function Desk() {
         ) : null}
         {phase === 'running' ? (
           <div className="border border-[var(--ba-line)] bg-white px-4 py-4" aria-live="polite">
-            <p className="text-[0.95rem] text-ink">{stage || 'Queued'}</p>
+            <p className="text-[1rem] leading-snug text-ink">
+              {stage || 'Queued'}
+              <span className="text-[var(--ba-muted)]"> · {progress}%</span>
+            </p>
             <div
               role="progressbar"
               aria-valuemin={0}
               aria-valuemax={100}
               aria-valuenow={progress}
-              aria-label={stage || 'Queued'}
-              className="mt-3 h-2 bg-[var(--ba-lavender-mist)]"
+              aria-label={`${stage || 'Queued'}, ${progress} percent`}
+              className="mt-3 h-3 bg-[var(--ba-lavender-mist)]"
             >
-              <div className="h-2 bg-[var(--ba-indigo)]" style={{ width: `${progress}%` }} />
+              <div className="h-3 bg-[var(--ba-indigo)]" style={{ width: `${progress}%` }} />
             </div>
           </div>
         ) : null}
@@ -367,10 +372,10 @@ function ReportView({ reportId }: { reportId: string }) {
 
   return (
     <div className="max-w-5xl">
-      <p className="text-[0.72rem] font-semibold tracking-[0.14em] text-brass uppercase">
+      <p className="hidden text-[0.72rem] font-semibold tracking-[0.14em] text-brass uppercase md:block">
         AI Due Diligence
       </p>
-      <h1 className="mt-3 font-display text-[2.2rem] font-bold tracking-[-0.03em]">
+      <h1 className="font-display text-[1.75rem] leading-tight font-bold tracking-[-0.03em] text-balance md:mt-3 md:text-[2.2rem]">
         {ready ? ready.report.company_label : 'AI Due Diligence'}
       </h1>
       <Link

@@ -12,11 +12,12 @@ function renderShell(
   tone: 'member' | 'staff',
   roleSwitch: { label: string; to: string } | null,
   initialMoreOpen = false,
+  path?: string,
 ) {
   const destinations = tone === 'member' ? MEMBER_DESTINATIONS : STAFF_DESTINATIONS
   const secondary = tone === 'member' ? MEMBER_SECONDARY : STAFF_SECONDARY
   return renderToStaticMarkup(
-    <MemoryRouter initialEntries={[destinations[0]?.to ?? '/']}>
+    <MemoryRouter initialEntries={[path ?? destinations[0]?.to ?? '/']}>
       <AppShell
         tone={tone}
         destinations={destinations}
@@ -33,8 +34,8 @@ function renderShell(
   )
 }
 
-export function renderMemberShell(initialMoreOpen = false) {
-  return renderShell('member', { label: 'Switch to admin', to: '/admin' }, initialMoreOpen)
+export function renderMemberShell(initialMoreOpen = false, path?: string) {
+  return renderShell('member', { label: 'Switch to admin', to: '/admin' }, initialMoreOpen, path)
 }
 
 export function renderStaffShell() {
