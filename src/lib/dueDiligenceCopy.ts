@@ -55,6 +55,45 @@ export const DD_COPY = {
   errorGeneric: 'Something went wrong on this check. Try again, or open a past report if you have one.',
 } as const
 
+/** Member report chrome. Paste-ready. No em dash. */
+export const REPORT_COPY = {
+  nav: 'AI Due Diligence',
+  back: 'All checks',
+  preparedLabel: 'Prepared',
+  documentsLabel: 'Documents reviewed',
+  sectionOverview: 'Assessment overview',
+  sectionScorecard: 'Area scorecard',
+  sectionSummary: 'Overall summary',
+  sectionSources: 'Sources',
+  sectionNext: 'Next steps',
+  metaCompany: 'Company',
+  metaSector: 'Sector',
+  metaAim: 'Aim',
+  colArea: 'Area',
+  colStatus: 'Status',
+  colReason: 'Key reason',
+  colClaim: 'Claim',
+  colSource: 'Source',
+  colFinding: 'Finding',
+  summaryConsistent: 'Publicly consistent',
+  summaryNotVerifiable: 'Not publicly verifiable',
+  summaryConsistentHelper: 'Share of checked claims that matched public sources in this run.',
+  summaryNotVerifiableHelper: 'Share of checked claims we could not match on the open web in this run.',
+  groupP1: 'Priority 1 \u00b7 Confirm what is public',
+  groupP2: 'Priority 2 \u00b7 Fill evidence gaps',
+  groupNote: 'How to use this',
+  copyAsk: 'Copy ask',
+  copied: 'Copied',
+  more: 'More asks',
+  closingNote:
+    'This note is a public-source assist. It is not formal due diligence and it is not legal advice. You decide the next conversation.',
+  sourcesEmpty: 'No public URLs were attached to this report.',
+  nextEmpty:
+    'No follow-up asks were generated. Use the overview and findings to guide your next conversation.',
+  showMore: 'Show more',
+  showLess: 'Show less',
+} as const
+
 const DESK_ERROR_REPLACEMENTS: Record<string, string> = {
   [MEMBER_MESSAGES.start]: DD_COPY.errorStart,
   [MEMBER_MESSAGES.finish]: DD_COPY.errorGeneric,

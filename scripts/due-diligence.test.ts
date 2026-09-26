@@ -3,13 +3,25 @@ import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import test from 'node:test'
 import { createServer } from 'vite'
-import { DD_COPY, deskProgressLine, presentDeskError } from '../src/lib/dueDiligenceCopy.ts'
+import { DD_COPY, deskProgressLine, presentDeskError, REPORT_COPY } from '../src/lib/dueDiligenceCopy.ts'
 import { deskPhase } from '../src/lib/dueDiligencePhase.ts'
+import {
+  HOMEPAGE_STEP,
+  IP_STEP,
+  LEGAL_NAME_STEP,
+  MARKET_STEP,
+  NEXT_STEP_VISIBLE_MAX,
+  presentNextSteps,
+  TRACTION_STEP,
+  visibleNextSteps,
+  WHO_PUBLIC_STEP,
+} from '../src/lib/dueDiligenceNextSteps.ts'
 import { MEMBER_VIEWS } from '../src/shell/viewCopy.ts'
 import {
   buildReport,
   containsVerdictLanguage,
   presentReport,
+  type BuiltReport,
   DECK_MAX_BYTES,
   deckStoragePath,
   DUE_DILIGENCE_DISCLAIMER,
@@ -337,8 +349,11 @@ test('deck path and file sniff stay on the member prefix', () => {
 test('member copy uses the locked score language', () => {
   const ui = [
     readFileSync(path.join(root, 'src/pages/dashboard/DueDiligencePage.tsx'), 'utf8'),
+    readFileSync(path.join(root, 'src/pages/dashboard/DueDiligenceReport.tsx'), 'utf8'),
     readFileSync(path.join(root, 'src/lib/dueDiligenceCopy.ts'), 'utf8'),
+    readFileSync(path.join(root, 'src/lib/dueDiligenceNextSteps.ts'), 'utf8'),
     JSON.stringify(DD_COPY),
+    JSON.stringify(REPORT_COPY),
     JSON.stringify(MEMBER_VIEWS.dueDiligence),
     JSON.stringify(MEMBER_MESSAGES),
     JSON.stringify(VERDICT_LABEL),
@@ -513,8 +528,10 @@ test('migration locks RLS, storage, and the run limit without secrets', () => {
   assert.equal(/\b(valid|invalid|investable|fraud)\b/i.test(sql), false)
   const added = [
     'src/pages/dashboard/DueDiligencePage.tsx',
+    'src/pages/dashboard/DueDiligenceReport.tsx',
     'src/lib/dueDiligence.ts',
     'src/lib/dueDiligenceCopy.ts',
+    'src/lib/dueDiligenceNextSteps.ts',
     'supabase/functions/due-diligence-start/index.ts',
     'supabase/functions/due-diligence-status/index.ts',
     'supabase/functions/due-diligence-start/run.ts',
@@ -547,6 +564,179 @@ test('due diligence routes stay in the authenticated shell', async () => {
       assert.match(html, /Loading/)
       assert.equal(html.includes('Apply for consideration'), false, entry)
     }
+  } finally {
+    await vite.close()
+  }
+})
+
+const GENERIC_STEPS = [
+  'Ask which customers or figures already appear on a public page or filing.',
+  'Ask which public source states the market figure.',
+  'Ask which public page supports this point.',
+  'This note is a public-source assist. You decide the next conversation.',
+]
+
+test('generic next steps become the default checklist and a separate note', () => {
+  const presented = presentNextSteps(GENERIC_STEPS)
+  assert.deepEqual(
+    presented.items.map((item) => item.title),
+    [
+      LEGAL_NAME_STEP.title,
+      HOMEPAGE_STEP.title,
+      WHO_PUBLIC_STEP.title,
+      MARKET_STEP.title,
+      TRACTION_STEP.title,
+    ],
+  )
+  assert.deepEqual(
+    presented.items.map((item) => item.ask),
+    [LEGAL_NAME_STEP.ask, HOMEPAGE_STEP.ask, WHO_PUBLIC_STEP.ask, MARKET_STEP.ask, TRACTION_STEP.ask],
+  )
+  assert.equal(presented.closingNote, REPORT_COPY.closingNote)
+  assert.equal(
+    presented.items.some((item) => item.ask.includes('supports this point')),
+    false,
+  )
+  assert.equal(visibleNextSteps(presented.items, false).length, NEXT_STEP_VISIBLE_MAX)
+  for (const item of presented.items) {
+    assert.ok(item.title.split(/\s+/).length <= 6, item.title)
+  }
+})
+
+test('a weak offer area adds the IP ask after the default five', () => {
+  const presented = presentNextSteps(GENERIC_STEPS, [
+    { area: 'Offer and intellectual property', label: 'insufficient_public_data' },
+  ])
+  assert.equal(presented.items.length, 6)
+  assert.equal(presented.items[5]?.id, IP_STEP.id)
+  assert.equal(presented.items[5]?.ask, IP_STEP.ask)
+  assert.equal(visibleNextSteps(presented.items, false).length, 5)
+  assert.equal(visibleNextSteps(presented.items, true).length, 6)
+})
+
+test('a specific ask drops the vague supports line and keeps its own row', () => {
+  const presented = presentNextSteps([
+    'Ask for a public registry filing or a public profile for the named people.',
+    'Ask which public page supports this point.',
+    'This note is a public-source assist. You decide the next conversation.',
+  ])
+  assert.deepEqual(
+    presented.items.map((item) => item.id),
+    [WHO_PUBLIC_STEP.id],
+  )
+  assert.equal(presented.items[0]?.ask, WHO_PUBLIC_STEP.ask)
+  assert.equal(presented.closingNote, REPORT_COPY.closingNote)
+})
+
+test('an orientation note is never a checklist row', () => {
+  const presented = presentNextSteps([
+    'Public pages can be incomplete. Ask management what is not on the public record.',
+    'This note is a public-source assist. You decide the next conversation.',
+  ])
+  assert.equal(presented.items.length, 1)
+  assert.equal(presented.items[0]?.title, 'Ask what is not public')
+  assert.equal(
+    presented.items.some((item) => item.ask.startsWith('This note is a public-source assist')),
+    false,
+  )
+  const empty = presentNextSteps(['This note is a public-source assist. You decide the next conversation.'])
+  assert.deepEqual(empty.items, [])
+  assert.equal(empty.closingNote, REPORT_COPY.closingNote)
+})
+
+test('the ready report uses status pills, summary helpers, and a grouped checklist', async () => {
+  const report: BuiltReport = {
+    company_label: 'Northwind Logistics',
+    sector_label: 'Logistics',
+    ask_label: 'Raising a seed round',
+    disclaimer: DUE_DILIGENCE_DISCLAIMER,
+    publicly_consistent_pct: 25,
+    not_publicly_verifiable_pct: 75,
+    claims: [
+      {
+        text: 'Northwind serves 120 enterprise customers across the Gulf today.',
+        kind: 'traction',
+        verdict: 'publicly_consistent',
+        note: 'This wording appears on a public page retrieved for this check.',
+        sources: [{ title: 'Northwind public page', url: 'https://example.com/northwind' }],
+      },
+      {
+        text: 'The global logistics market is 900 billion dollars this year.',
+        kind: 'market',
+        verdict: 'conflict_with_public_sources',
+        note: 'A public page retrieved for this check states a different figure for this point.',
+        sources: [],
+      },
+      {
+        text: 'Our founder Sara Nasser previously led public listings abroad.',
+        kind: 'team',
+        verdict: 'insufficient_public_data',
+        note: 'Public pages were too thin to compare this point with the deck.',
+        sources: [],
+      },
+      {
+        text: 'Patent pending on route packing software for Gulf lanes.',
+        kind: 'ip',
+        verdict: 'not_publicly_verifiable',
+        note: 'Not found on the public pages retrieved for this check at all.',
+        sources: [],
+      },
+    ],
+    sources: [{ title: 'Northwind public page', url: 'https://example.com/northwind' }],
+    next_steps: GENERIC_STEPS,
+  }
+  const vite = await createServer({
+    server: { middlewareMode: true },
+    appType: 'custom',
+    logLevel: 'error',
+  })
+  try {
+    const mod = (await vite.ssrLoadModule('/src/shell/renderDueReport.tsx')) as {
+      renderDueReport: (value: BuiltReport, fileName: string, preparedAt: string) => string
+    }
+    const html = mod.renderDueReport(report, 'Northwind.pdf', '2026-09-26T12:00:00.000Z')
+    assert.ok(html.includes(DUE_DILIGENCE_DISCLAIMER))
+    assert.ok(html.includes(REPORT_COPY.summaryConsistentHelper))
+    assert.ok(html.includes(REPORT_COPY.summaryNotVerifiableHelper))
+    assert.ok(html.includes('dd-summary-consistent'))
+    assert.ok(html.includes('dd-summary-neutral'))
+    assert.equal(html.includes('dd-pill-conflict'), true)
+    assert.equal(html.includes('dd-pill-insufficient'), true)
+    assert.equal(html.includes('dd-pill-neutral'), true)
+    assert.equal(html.includes('dd-pill-consistent'), true)
+    assert.ok(html.includes('data-dd-pill="publicly_consistent"'))
+    assert.ok(html.includes('data-dd-pill="not_publicly_verifiable"'))
+    assert.ok(html.includes('data-dd-pill="insufficient_public_data"'))
+    assert.ok(html.includes('data-dd-pill="conflict_with_public_sources"'))
+    assert.ok(html.includes(REPORT_COPY.metaAim))
+    assert.equal(html.includes('>Ask<'), false)
+    assert.ok(html.includes('data-scorecard="cards"'))
+    assert.ok(html.includes('md:hidden'))
+    assert.ok(html.includes('data-scorecard="table"'))
+    assert.ok(html.includes('hidden overflow-x-auto'))
+    const cards = html.slice(html.indexOf('data-scorecard="cards"'), html.indexOf('data-scorecard="table"'))
+    assert.equal(cards.includes('grid-cols-3'), false)
+    assert.ok(html.includes(REPORT_COPY.more))
+    assert.ok(html.includes('Priority 1'))
+    assert.ok(html.includes('Confirm what is public'))
+    assert.ok(html.includes('Priority 2'))
+    assert.ok(html.includes('Fill evidence gaps'))
+    assert.ok(html.includes(REPORT_COPY.groupNote))
+    assert.ok(html.includes(REPORT_COPY.closingNote))
+    assert.ok(html.includes(REPORT_COPY.copyAsk))
+    assert.ok(html.includes('type="checkbox"'))
+    assert.ok(html.includes('data-next-note="true"'))
+    assert.equal(html.includes('list-decimal'), false)
+    assert.ok(html.includes('https://example.com/northwind'))
+    assert.ok(html.includes('rel="noopener noreferrer"'))
+    const noteAt = html.indexOf('data-next-note="true"')
+    assert.equal(html.slice(noteAt).includes('type="checkbox"'), false)
+    assert.equal(html.includes('\u2014'), false)
+    assert.equal(html.includes('\u2013'), false)
+    assert.equal(/\b(valid|invalid|investable|approved|rejected|fraud|PASS|FAIL)\b/.test(html), false)
+    const summaryAt = html.indexOf(REPORT_COPY.sectionSummary)
+    const scorecardAt = html.indexOf(REPORT_COPY.sectionScorecard)
+    assert.ok(summaryAt > 0 && summaryAt < scorecardAt)
   } finally {
     await vite.close()
   }

@@ -72,10 +72,7 @@ export const MEMBER_VIEWS = {
     denied: 'AI Due Diligence is for members.',
     unavailable: 'AI Due Diligence is not available yet. Try again later.',
     ready: DD_COPY.fileChosen,
-    rationale:
-      'Of the claims read from the deck, this share matched a public page we retrieved. The rest were not publicly verifiable.',
     noScore: 'No percentage. The deck did not state a checkable claim.',
-    sourcesUnknown: 'No public page was retrieved. Sources are unknown.',
   },
 } as const
 
