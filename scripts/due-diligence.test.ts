@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import test from 'node:test'
 import { createServer } from 'vite'
+import { DD_COPY, deskProgressLine, presentDeskError } from '../src/lib/dueDiligenceCopy.ts'
 import { deskPhase } from '../src/lib/dueDiligencePhase.ts'
 import { MEMBER_VIEWS } from '../src/shell/viewCopy.ts'
 import {
@@ -177,14 +178,106 @@ test('desk status never stacks the empty state with an error', () => {
     deskPhase({ loadState: 'ready', activeJob: false, jobError: false, fileChosen: false, reportCount: 2 }),
     'idle',
   )
+  assert.equal(
+    deskPhase({
+      loadState: 'ready',
+      activeJob: false,
+      jobError: false,
+      formError: true,
+      fileChosen: true,
+      reportCount: 0,
+    }),
+    'job-error',
+  )
   const page = readFileSync(path.join(root, 'src/pages/dashboard/DueDiligencePage.tsx'), 'utf8')
+  const copy = readFileSync(path.join(root, 'src/lib/dueDiligenceCopy.ts'), 'utf8')
   assert.match(page, /phase === 'idle-empty'/)
   assert.match(page, /phase === 'job-error'/)
   assert.equal(/reports\.length === 0 \?/.test(page), false)
   assert.match(page, /AI Due Diligence/)
-  assert.match(page, /Check this deck/)
+  assert.match(copy, /Check this deck/)
   assert.match(page, /\{progress\}%/)
   assert.match(page, /hidden text-\[0\.72rem\][^"]*md:block/)
+  assert.equal(page.includes('Ready to check this deck'), false)
+  assert.equal(copy.includes('Ready to check this deck'), false)
+})
+
+test('desk progress and errors use the member strings', () => {
+  assert.equal(deskProgressLine('Reading the deck'), DD_COPY.statusReading)
+  assert.equal(deskProgressLine('Checking public sources'), DD_COPY.statusResearching)
+  assert.equal(deskProgressLine('Writing the note'), DD_COPY.statusWriting)
+  assert.equal(deskProgressLine('Queued'), DD_COPY.ctaRunning)
+  assert.equal(deskProgressLine('Working'), DD_COPY.statusRunning)
+  assert.equal(presentDeskError(MEMBER_MESSAGES.start), DD_COPY.errorStart)
+  assert.equal(presentDeskError(MEMBER_MESSAGES.unreadable), DD_COPY.errorUnreadable)
+  assert.equal(presentDeskError(MEMBER_MESSAGES.scanned), DD_COPY.errorUnreadable)
+  assert.equal(presentDeskError(MEMBER_MESSAGES.rate), DD_COPY.errorRate)
+  assert.equal(presentDeskError(MEMBER_MESSAGES.finish), DD_COPY.errorGeneric)
+  assert.equal(presentDeskError(DD_COPY.errorNetwork), DD_COPY.errorNetwork)
+  assert.equal(presentDeskError(MEMBER_MESSAGES.url), MEMBER_MESSAGES.url)
+  assert.equal(MEMBER_VIEWS.dueDiligence.empty, DD_COPY.emptyHistory)
+  assert.equal(MEMBER_VIEWS.dueDiligence.ready, DD_COPY.fileChosen)
+})
+
+test('desk screen keeps one status and puts the error under the check button', async () => {
+  const vite = await createServer({
+    server: { middlewareMode: true },
+    appType: 'custom',
+    logLevel: 'error',
+  })
+  try {
+    const mod = (await vite.ssrLoadModule('/src/shell/renderDueDesk.tsx')) as {
+      renderDueDeskStates: () => { idle: string; chosen: string; error: string; running: string }
+    }
+    const { idle, chosen, error, running } = mod.renderDueDeskStates()
+    assert.ok(idle.includes(DD_COPY.introPrimary))
+    assert.ok(idle.includes(DD_COPY.introShort))
+    assert.ok(idle.includes(DD_COPY.introSupporting))
+    assert.ok(idle.includes(DUE_DILIGENCE_DISCLAIMER))
+    assert.ok(idle.includes(DD_COPY.doesHeading))
+    assert.ok(idle.includes(DD_COPY.willNotHeading))
+    assert.ok(idle.includes('Rate a deal as good or bad'))
+    assert.ok(idle.includes(DD_COPY.idle))
+    assert.ok(idle.includes(DD_COPY.emptyHistory))
+    assert.ok(idle.includes(DD_COPY.siteHelper))
+    assert.ok(idle.includes(DD_COPY.siteHelperShort))
+    assert.ok(idle.includes(DD_COPY.deckHint))
+    assert.ok(idle.includes('Choose a deck first'))
+    assert.ok(idle.indexOf(DD_COPY.deckLabel) < idle.indexOf(DD_COPY.ctaDisabled))
+    assert.ok(idle.indexOf(DD_COPY.ctaDisabled) < idle.indexOf(DD_COPY.siteLabel))
+    assert.equal(idle.includes(DD_COPY.errorStart), false)
+    assert.match(idle, /min-h-11 w-full/)
+
+    assert.ok(chosen.includes(DD_COPY.fileChosen))
+    assert.ok(chosen.includes('Check this deck'))
+    assert.ok(chosen.includes('GCC Partnership Proposal.pdf'))
+    assert.equal(chosen.includes(DD_COPY.emptyHistory), false)
+    assert.equal(chosen.includes(DD_COPY.errorStart), false)
+
+    assert.ok(error.indexOf('Check this deck') < error.indexOf('id="dd-action-error"'))
+    assert.ok(error.indexOf('id="dd-action-error"') < error.indexOf(DD_COPY.siteLabel))
+    assert.ok(error.includes(DD_COPY.errorStart))
+    assert.ok(error.includes(DD_COPY.errorRetry))
+    assert.equal(error.includes(DD_COPY.emptyHistory), false)
+    assert.equal(error.includes(DD_COPY.fileChosen), false)
+    assert.equal(error.includes(DD_COPY.idle), false)
+    assert.equal(error.includes('Ready to check this deck'), false)
+
+    assert.ok(running.includes(DD_COPY.statusReading))
+    assert.ok(running.includes('40%'))
+    assert.ok(running.includes(DD_COPY.progressHint))
+    assert.equal(running.includes(DD_COPY.emptyHistory), false)
+    assert.equal(running.includes(DD_COPY.errorStart), false)
+    assert.equal(running.includes(DD_COPY.fileChosen), false)
+    assert.equal(running.includes(DD_COPY.idle), false)
+
+    const blob = [idle, chosen, error, running].join('\n')
+    assert.equal(blob.includes('\u2014'), false)
+    assert.equal(blob.includes('\u2013'), false)
+    assert.equal(/\b(valid|invalid|investable|approved|rejected|fraud|invest|pass|fail)\b/i.test(blob), false)
+  } finally {
+    await vite.close()
+  }
 })
 
 test('stored notes reject a percentage pair that does not add up', () => {
@@ -237,6 +330,8 @@ test('deck path and file sniff stay on the member prefix', () => {
 test('member copy uses the locked score language', () => {
   const ui = [
     readFileSync(path.join(root, 'src/pages/dashboard/DueDiligencePage.tsx'), 'utf8'),
+    readFileSync(path.join(root, 'src/lib/dueDiligenceCopy.ts'), 'utf8'),
+    JSON.stringify(DD_COPY),
     JSON.stringify(MEMBER_VIEWS.dueDiligence),
     JSON.stringify(MEMBER_MESSAGES),
     JSON.stringify(VERDICT_LABEL),
@@ -276,6 +371,7 @@ test('migration locks RLS, storage, and the run limit without secrets', () => {
   const added = [
     'src/pages/dashboard/DueDiligencePage.tsx',
     'src/lib/dueDiligence.ts',
+    'src/lib/dueDiligenceCopy.ts',
     'supabase/functions/due-diligence-start/index.ts',
     'supabase/functions/due-diligence-status/index.ts',
     'supabase/functions/due-diligence-start/run.ts',
