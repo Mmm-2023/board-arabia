@@ -2,6 +2,7 @@
  * Plain product English for empty, loading, error, permission, and filtered-zero.
  * Strings are the locked brief. Do not add an em dash.
  */
+import { DD_COPY } from '../lib/dueDiligenceCopy.ts'
 
 export type ViewStatus = 'ready' | 'empty' | 'loading' | 'error' | 'denied' | 'filtered'
 
@@ -65,12 +66,12 @@ export const MEMBER_VIEWS = {
     mapUnavailable: 'The regional map is not available yet.',
   },
   dueDiligence: {
-    empty: 'No deck checked yet. Choose a PDF or PPTX to compare its claims with public sources.',
+    empty: DD_COPY.emptyHistory,
     error: REFRESH_ERROR,
     retry: 'Retry',
     denied: 'AI Due Diligence is for members.',
     unavailable: 'AI Due Diligence is not available yet. Try again later.',
-    ready: 'Ready to check this deck.',
+    ready: DD_COPY.fileChosen,
     rationale:
       'Of the claims read from the deck, this share matched a public page we retrieved. The rest were not publicly verifiable.',
     noScore: 'No percentage. The deck did not state a checkable claim.',
