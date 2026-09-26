@@ -219,16 +219,6 @@
   outline-offset: 3px;
 }
 
-@media (min-width: 768px) {
-  .dd-finding > .dd-finding-body {
-    display: block !important;
-  }
-
-  .dd-finding > summary {
-    pointer-events: none;
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;

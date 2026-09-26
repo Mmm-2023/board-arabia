@@ -695,6 +695,33 @@ test('the ready report uses status pills, summary helpers, and a grouped checkli
       renderDueReport: (value: BuiltReport, fileName: string, preparedAt: string) => string
     }
     const html = mod.renderDueReport(report, 'Northwind.pdf', '2026-09-26T12:00:00.000Z')
+    assert.equal(/<details[\s>]/.test(html), false)
+    for (const title of [
+      'Finding 1. Entity and company',
+      'Finding 2. Team and founders',
+      'Finding 3. Traction and partnerships',
+      'Finding 4. Market',
+      'Finding 5. Offer and intellectual property',
+    ]) {
+      const at = html.indexOf(title)
+      assert.ok(at > 0, title)
+      const body = html.slice(at, at + 2500)
+      assert.equal(body.includes('dd-finding-body'), true, title)
+    }
+    assert.ok(html.includes('Our founder Sara Nasser previously led public listings abroad.'))
+    assert.ok(html.includes('Northwind serves 120 enterprise customers across the Gulf today.'))
+    assert.ok(html.includes('The global logistics market is 900 billion dollars this year.'))
+    assert.ok(html.includes('Patent pending on route packing software for Gulf lanes.'))
+    const noTraction = {
+      ...report,
+      claims: report.claims.filter((claim) => claim.kind !== 'traction'),
+    }
+    const emptyTraction = mod.renderDueReport(noTraction, 'Northwind.pdf', '2026-09-26T12:00:00.000Z')
+    const tractionAt = emptyTraction.indexOf('Finding 3. Traction and partnerships')
+    assert.ok(tractionAt > 0)
+    assert.ok(
+      emptyTraction.slice(tractionAt, tractionAt + 2500).includes('No checkable point in this area.'),
+    )
     assert.ok(html.includes(DUE_DILIGENCE_DISCLAIMER))
     assert.ok(html.includes(REPORT_COPY.summaryConsistentHelper))
     assert.ok(html.includes(REPORT_COPY.summaryNotVerifiableHelper))
