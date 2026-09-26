@@ -1,4 +1,5 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
+import { useLocation } from 'react-router-dom'
 import { formatPrivateUsd, readNumeric } from '../../lib/capacity'
 import type { ProfileRow } from '../../lib/member'
 import { supabase } from '../../lib/supabase'
@@ -34,7 +35,30 @@ export function ProfilePage() {
   const [passwordError, setPasswordError] = useState('')
   const [savingProfile, setSavingProfile] = useState(false)
   const [savingPassword, setSavingPassword] = useState(false)
+  const { hash } = useLocation()
   useNoIndex('Profile | Board Arabia')
+
+  useEffect(() => {
+    if (hash !== '#password') return
+    let frame = 0
+    const jump = () => {
+      const form = document.getElementById('password')
+      if (!(form instanceof HTMLElement)) return
+      const scroller = form.closest('.shell-main')
+      if (scroller instanceof HTMLElement) {
+        const top =
+          form.getBoundingClientRect().top - scroller.getBoundingClientRect().top + scroller.scrollTop - 12
+        scroller.scrollTop = Math.max(0, top)
+      } else {
+        form.scrollIntoView({ block: 'start' })
+      }
+      const input = form.querySelector('input')
+      if (input instanceof HTMLInputElement) input.focus({ preventScroll: true })
+    }
+    jump()
+    frame = requestAnimationFrame(jump)
+    return () => cancelAnimationFrame(frame)
+  }, [hash])
 
   async function onSaveProfile(event: FormEvent) {
     event.preventDefault()

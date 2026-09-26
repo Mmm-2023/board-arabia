@@ -143,6 +143,38 @@
   }
 }
 
+/* Mobile: the fixed tab bar stays out of the scrollport. shell-main padding keeps the last control clear of that bar and the safe area. */
+@media (max-width: 767px) {
+  .shell-root {
+    height: 100dvh;
+    max-height: 100dvh;
+    overflow: hidden;
+  }
+
+  .shell-frame,
+  .shell-column {
+    height: 100%;
+    max-height: 100%;
+    min-height: 0;
+  }
+
+  .shell-column {
+    overflow: hidden;
+  }
+
+  .shell-main {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    /* Scrollport ends above the fixed tab bar and its safe area. Padding keeps the last control off that edge. */
+    margin-bottom: calc(var(--ba-tab-bar-height, 4.75rem) + env(safe-area-inset-bottom, 0px));
+    padding-bottom: 1rem;
+    scroll-padding-top: 1rem;
+    scroll-padding-bottom: 1rem;
+  }
+}
+
 .dd-pill {
   display: inline-flex;
   align-items: center;
