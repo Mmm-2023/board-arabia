@@ -49,6 +49,7 @@ Deno.serve(async (req) => {
 
   const companyRaw = body.company_url == null ? '' : String(body.company_url).trim()
   let companyUrl: string | null = null
+  // An empty body URL is filled from the deck text during the check and stored on the deck row.
   if (companyRaw) {
     const parsed = parsePublicHttpsUrl(companyRaw)
     if (!parsed.ok) {

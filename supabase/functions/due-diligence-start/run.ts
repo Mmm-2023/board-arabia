@@ -3,13 +3,15 @@ import {
   buildReport,
   DECK_BUCKET,
   DECK_MAX_BYTES,
-  extractDeckFacts,
+  extractCompanyUrl,
   MEMBER_MESSAGES,
+  parsePublicHttpsUrl,
   publicSearchTerms,
   sniffDeck,
   type DeckExt,
 } from '../_shared/due_diligence.ts'
 import { textFromDeck } from './extract.ts'
+import { extractDeckFactsWithOptionalLlm } from './llm.ts'
 import { retrievePublicPages } from './sources.ts'
 
 const ACTIVE = ['queued', 'reading', 'checking', 'writing']
@@ -40,13 +42,26 @@ export async function advanceDueDiligenceJob(admin: SupabaseClient, jobId: strin
 
     const text = await textFromDeck(bytes, ext)
     await mark(admin, jobId, 'checking', 55)
-    const facts = extractDeckFacts(text)
+    const storedUrl = typeof deck.data.company_url === 'string' ? deck.data.company_url.trim() : ''
+    let companyUrl: string | null = storedUrl || null
+    if (!companyUrl) {
+      const extracted = extractCompanyUrl(text)
+      if (extracted && parsePublicHttpsUrl(extracted).ok) {
+        companyUrl = extracted
+        await admin
+          .from('due_diligence_decks')
+          .update({ company_url: extracted })
+          .eq('id', job.deck_id)
+          .eq('member_id', job.member_id)
+      }
+    }
+    const facts = await extractDeckFactsWithOptionalLlm(text)
     const pages = await retrievePublicPages({
-      companyUrl: deck.data.company_url,
+      companyUrl,
       searchTerms: publicSearchTerms(facts),
     })
     await mark(admin, jobId, 'writing', 85)
-    const report = buildReport(facts, pages)
+    const report = buildReport(facts, pages, { companyUrl })
     const inserted = await admin
       .from('due_diligence_reports')
       .insert({
