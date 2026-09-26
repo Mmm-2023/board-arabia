@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
   DECK_BUCKET,
   DECK_MAX_BYTES,
+  DUE_DILIGENCE_DISCLAIMER,
   deckExtension,
   isUuid,
   MEMBER_MESSAGES,
@@ -24,7 +25,8 @@ import {
   type HistoryItem,
   type ReadFailure,
 } from '../../lib/dueDiligence'
-import { deskPhase } from '../../lib/dueDiligencePhase'
+import { DD_COPY, deskCtaLabel, deskProgressLine, presentDeskError } from '../../lib/dueDiligenceCopy'
+import { deskPhase, type DeskPhase } from '../../lib/dueDiligencePhase'
 import { supabase } from '../../lib/supabase'
 import { useNoIndex } from '../../lib/usePageTitle'
 import { CardSkeleton, EmptyState, ErrorBanner, PermissionState } from '../../shell/ViewState'
@@ -33,14 +35,18 @@ import { useMember } from './context'
 
 const fieldClass =
   'mt-1 w-full min-h-11 border border-[var(--ba-line)] bg-white px-3 text-[1rem] text-ink'
-const buttonClass =
-  'ba-primary inline-flex min-h-11 items-center justify-center px-4 text-[0.75rem] font-semibold tracking-[0.08em] uppercase disabled:opacity-40'
-const quietButtonClass =
-  'inline-flex min-h-11 items-center justify-center border border-[var(--ba-line)] bg-white px-4 text-[0.75rem] font-semibold tracking-[0.08em] text-ink uppercase disabled:opacity-40'
+const ctaClass =
+  'ba-primary inline-flex min-h-11 w-full items-center justify-center px-4 text-[1rem] font-semibold disabled:opacity-40 sm:w-auto'
+const fileButtonClass =
+  'ba-primary inline-flex min-h-11 w-full items-center justify-center px-4 text-[1rem] font-semibold disabled:opacity-40 sm:w-auto'
+const fileButtonQuietClass =
+  'inline-flex min-h-11 w-full items-center justify-center border border-[var(--ba-line)] bg-white px-4 text-[1rem] font-semibold text-ink disabled:opacity-40 sm:w-auto'
+const retryClass =
+  'mt-2 inline-flex min-h-11 w-full items-center justify-center border border-[var(--ba-line)] bg-white px-4 text-[1rem] font-semibold text-ink sm:w-auto'
 
 export function DueDiligencePage() {
   const { reportId } = useParams()
-  useNoIndex('AI Due Diligence | Board Arabia')
+  useNoIndex(DD_COPY.browserTitle)
   if (reportId) return <ReportView key={reportId} reportId={reportId} />
   return <Desk />
 }
@@ -48,7 +54,6 @@ export function DueDiligencePage() {
 function Desk() {
   const { userId } = useMember()
   const navigate = useNavigate()
-  const fileRef = useRef<HTMLInputElement>(null)
   const [loadState, setLoadState] = useState<'loading' | 'ready' | ReadFailure>('loading')
   const [reports, setReports] = useState<HistoryItem[]>([])
   const [attempt, setAttempt] = useState(0)
@@ -107,17 +112,20 @@ function Desk() {
     }
   }, [activeJobId, navigate])
 
-  async function onSubmit(event: FormEvent) {
-    event.preventDefault()
+  async function runCheck() {
     setFormError('')
     setJobError('')
     if (!file) {
-      setFormError(MEMBER_MESSAGES.file)
+      setFormError(DD_COPY.ctaDisabled)
       return
     }
     const ext = deckExtension(file.name)
-    if (!ext || file.size <= 0 || file.size > DECK_MAX_BYTES) {
-      setFormError(MEMBER_MESSAGES.file)
+    if (!ext || file.size <= 0) {
+      setFormError(MEMBER_MESSAGES.notDeck)
+      return
+    }
+    if (file.size > DECK_MAX_BYTES) {
+      setFormError(DD_COPY.errorTooLarge)
       return
     }
     const head = new Uint8Array(await file.slice(0, 4).arrayBuffer())
@@ -168,13 +176,93 @@ function Desk() {
     setActiveJobId(started.jobId)
   }
 
+  function onSubmit(event: FormEvent) {
+    event.preventDefault()
+    void runCheck()
+  }
+
+  function onRetry() {
+    if (file) {
+      void runCheck()
+      return
+    }
+    setFormError('')
+    setJobError('')
+  }
+
   const phase = deskPhase({
     loadState,
-    activeJob: Boolean(activeJobId),
+    activeJob: Boolean(activeJobId) || busy,
     jobError: Boolean(jobError),
+    formError: Boolean(formError),
     fileChosen: Boolean(file),
     reportCount: reports.length,
   })
+
+  return (
+    <DueDiligenceDeskView
+      phase={phase}
+      loadState={loadState}
+      fileName={file?.name ?? ''}
+      companyUrl={companyUrl}
+      busy={busy}
+      activeJob={Boolean(activeJobId)}
+      progress={progress}
+      progressLabel={deskProgressLine(stage)}
+      actionError={presentDeskError(formError || jobError)}
+      reports={reports}
+      onCompanyUrl={setCompanyUrl}
+      onFile={(next) => {
+        setFile(next)
+        setFormError('')
+        setJobError('')
+      }}
+      onSubmit={onSubmit}
+      onRetry={onRetry}
+      onReload={() => {
+        setLoadState('loading')
+        setAttempt((value) => value + 1)
+      }}
+    />
+  )
+}
+
+export function DueDiligenceDeskView({
+  phase,
+  loadState,
+  fileName,
+  companyUrl,
+  busy,
+  activeJob,
+  progress,
+  progressLabel,
+  actionError,
+  reports,
+  onCompanyUrl,
+  onFile,
+  onSubmit,
+  onRetry,
+  onReload,
+}: {
+  phase: DeskPhase
+  loadState: 'loading' | 'ready' | ReadFailure
+  fileName: string
+  companyUrl: string
+  busy: boolean
+  activeJob: boolean
+  progress: number
+  progressLabel: string
+  actionError: string
+  reports: HistoryItem[]
+  onCompanyUrl: (value: string) => void
+  onFile: (file: File | null) => void
+  onSubmit: (event: FormEvent) => void
+  onRetry: () => void
+  onReload: () => void
+}) {
+  const fileRef = useRef<HTMLInputElement>(null)
+  const fileChosen = Boolean(fileName)
+  const showForm = loadState === 'ready'
 
   return (
     <div className="max-w-3xl">
@@ -184,72 +272,56 @@ function Desk() {
       <h1 className="font-display text-[1.75rem] leading-tight font-bold tracking-[-0.03em] text-balance md:mt-3 md:text-[2.2rem]">
         AI Due Diligence
       </h1>
-      <p className="mt-3 max-w-xl text-[1rem] leading-relaxed text-ink/65">
-        Upload a pitch deck. Board Arabia compares its claims with public pages and leaves the
-        decision with you.
+      <p className="mt-3 max-w-xl text-[1.05rem] leading-relaxed text-ink">{DD_COPY.introPrimary}</p>
+      <p className="mt-3 max-w-xl text-[1rem] leading-relaxed text-ink/70 sm:hidden">{DD_COPY.introShort}</p>
+      <p className="mt-3 hidden max-w-xl text-[1rem] leading-relaxed text-ink/70 sm:block">
+        {DD_COPY.introSupporting}
       </p>
+      <p className="mt-3 max-w-xl text-[0.95rem] leading-relaxed text-ink/80">{DUE_DILIGENCE_DISCLAIMER}</p>
 
-      <div className="mt-8">
-        {phase === 'loading' ? <CardSkeleton tone="member" label="Loading AI Due Diligence" /> : null}
-        {phase === 'denied' ? (
-          <PermissionState tone="member" message={MEMBER_VIEWS.dueDiligence.denied} />
-        ) : null}
-        {phase === 'load-error' ? (
-          <ErrorBanner
-            tone="member"
-            message={
-              loadState === 'unavailable'
-                ? MEMBER_VIEWS.dueDiligence.unavailable
-                : MEMBER_VIEWS.dueDiligence.error
-            }
-            onRetry={() => {
-              setLoadState('loading')
-              setAttempt((value) => value + 1)
-            }}
-            retryLabel={MEMBER_VIEWS.dueDiligence.retry}
-          />
-        ) : null}
-        {phase === 'running' ? (
-          <div className="border border-[var(--ba-line)] bg-white px-4 py-4" aria-live="polite">
-            <p className="text-[1rem] leading-snug text-ink">
-              {stage || 'Queued'}
-              <span className="text-[var(--ba-muted)]"> · {progress}%</span>
-            </p>
-            <div
-              role="progressbar"
-              aria-valuemin={0}
-              aria-valuemax={100}
-              aria-valuenow={progress}
-              aria-label={`${stage || 'Queued'}, ${progress} percent`}
-              className="mt-3 h-3 bg-[var(--ba-lavender-mist)]"
-            >
-              <div className="h-3 bg-[var(--ba-indigo)]" style={{ width: `${progress}%` }} />
-            </div>
-          </div>
-        ) : null}
-        {phase === 'job-error' ? (
-          <ErrorBanner
-            tone="member"
-            message={jobError}
-            onRetry={() => setJobError('')}
-            retryLabel="Dismiss"
-          />
-        ) : null}
-        {phase === 'file-chosen' ? (
-          <p className="border border-[var(--ba-line)] bg-white px-4 py-3 text-[0.98rem] text-ink">
-            {MEMBER_VIEWS.dueDiligence.ready}
-          </p>
-        ) : null}
-        {phase === 'idle-empty' ? (
-          <EmptyState tone="member" message={MEMBER_VIEWS.dueDiligence.empty} />
-        ) : null}
-      </div>
+      <details open className="mt-6 max-w-xl border border-[var(--ba-line)] bg-white px-4 py-2">
+        <summary className="flex min-h-11 cursor-pointer list-none items-center text-[1rem] font-semibold text-ink [&::-webkit-details-marker]:hidden">
+          {DD_COPY.doesHeading}
+        </summary>
+        <ul className="mt-2 list-disc space-y-1 pl-5 text-[0.95rem] leading-relaxed text-ink/80">
+          {DD_COPY.willDo.map((item) => (
+            <li key={item}>{item}</li>
+          ))}
+        </ul>
+        <h2 className="mt-4 text-[1rem] font-semibold text-ink">{DD_COPY.willNotHeading}</h2>
+        <ul className="mt-2 list-disc space-y-1 pb-2 pl-5 text-[0.95rem] leading-relaxed text-ink/80">
+          {DD_COPY.willNot.map((item) => (
+            <li key={item}>{item}</li>
+          ))}
+        </ul>
+      </details>
 
-      {loadState === 'ready' ? (
+      {phase === 'loading' || phase === 'denied' || phase === 'load-error' ? (
+        <div className="mt-8">
+          {phase === 'loading' ? <CardSkeleton tone="member" label="Loading AI Due Diligence" /> : null}
+          {phase === 'denied' ? (
+            <PermissionState tone="member" message={MEMBER_VIEWS.dueDiligence.denied} />
+          ) : null}
+          {phase === 'load-error' ? (
+            <ErrorBanner
+              tone="member"
+              message={
+                loadState === 'unavailable'
+                  ? MEMBER_VIEWS.dueDiligence.unavailable
+                  : MEMBER_VIEWS.dueDiligence.error
+              }
+              onRetry={onReload}
+              retryLabel={MEMBER_VIEWS.dueDiligence.retry}
+            />
+          ) : null}
+        </div>
+      ) : null}
+
+      {showForm ? (
         <>
-          <form onSubmit={(event) => void onSubmit(event)} className="mt-8 max-w-xl">
+          <form onSubmit={onSubmit} className="mt-8 max-w-xl">
             <label className="block text-[0.95rem] text-ink" htmlFor="dd-file-button">
-              Pitch deck
+              {DD_COPY.deckLabel}
             </label>
             <input
               ref={fileRef}
@@ -257,52 +329,87 @@ function Desk() {
               accept=".pdf,.pptx,application/pdf,application/vnd.openxmlformats-officedocument.presentationml.presentation"
               className="sr-only"
               onChange={(event) => {
-                setFile(event.target.files?.[0] ?? null)
-                setFormError('')
-                setJobError('')
+                onFile(event.target.files?.[0] ?? null)
+                event.target.value = ''
               }}
             />
             <button
               id="dd-file-button"
               type="button"
-              className={`${file ? quietButtonClass : buttonClass} mt-2`}
-              disabled={busy || Boolean(activeJobId)}
+              className={`${fileChosen ? fileButtonQuietClass : fileButtonClass} mt-2`}
+              disabled={busy || activeJob}
               onClick={() => fileRef.current?.click()}
             >
-              Choose PDF or PPTX
+              {DD_COPY.deckButton}
             </button>
-            {file ? <p className="mt-2 truncate text-[0.92rem] text-[var(--ba-muted)]">{file.name}</p> : null}
-            <p className="mt-2 text-[0.92rem] leading-relaxed text-[var(--ba-muted)]">PDF or PPTX, up to 15 MB.</p>
+            {fileName ? <p className="mt-2 truncate text-[0.92rem] text-[var(--ba-muted)]">{fileName}</p> : null}
+            <p className="mt-2 text-[0.92rem] leading-relaxed text-[var(--ba-muted)]">{DD_COPY.deckHint}</p>
 
-            {file ? (
-              <button type="submit" className={`${buttonClass} mt-4`} disabled={busy || Boolean(activeJobId)}>
-                {busy ? 'Uploading' : 'Check this deck'}
-              </button>
-            ) : null}
+            <button
+              type="submit"
+              className={`${fileChosen ? ctaClass : fileButtonQuietClass} mt-4`}
+              disabled={busy || activeJob || !fileChosen}
+              aria-describedby={phase === 'job-error' ? 'dd-action-error' : undefined}
+            >
+              {deskCtaLabel({ busy, fileChosen })}
+            </button>
+
+            <div className="mt-3">
+              {phase === 'running' && activeJob ? (
+                <div className="border border-[var(--ba-line)] bg-white px-4 py-4" aria-live="polite">
+                  <p className="text-[1rem] leading-snug text-ink">
+                    {progressLabel}
+                    <span className="text-[var(--ba-muted)]"> · {progress}%</span>
+                  </p>
+                  <div
+                    role="progressbar"
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    aria-valuenow={progress}
+                    aria-label={`${progressLabel}, ${progress} percent`}
+                    className="mt-3 h-3 bg-[var(--ba-lavender-mist)]"
+                  >
+                    <div className="h-3 bg-[var(--ba-indigo)]" style={{ width: `${progress}%` }} />
+                  </div>
+                  <p className="mt-3 text-[0.92rem] leading-relaxed text-[var(--ba-muted)]">{DD_COPY.progressHint}</p>
+                </div>
+              ) : null}
+              {phase === 'job-error' ? (
+                <div id="dd-action-error" role="alert">
+                  <p className="text-[0.95rem] leading-relaxed text-[var(--ba-error)]">{actionError}</p>
+                  <button type="button" className={retryClass} onClick={onRetry}>
+                    {DD_COPY.errorRetry}
+                  </button>
+                </div>
+              ) : null}
+              {phase === 'file-chosen' ? (
+                <p className="text-[0.98rem] leading-relaxed text-ink">{DD_COPY.fileChosen}</p>
+              ) : null}
+              {(phase === 'idle' || phase === 'idle-empty') ? (
+                <p className="text-[0.98rem] leading-relaxed text-ink/75">{DD_COPY.idle}</p>
+              ) : null}
+            </div>
 
             <label className="mt-6 block text-[0.95rem] text-ink/80" htmlFor="dd-url">
-              Company site, optional
+              {DD_COPY.siteLabel}
             </label>
             <input
               id="dd-url"
               value={companyUrl}
-              onChange={(event) => setCompanyUrl(event.target.value)}
+              onChange={(event) => onCompanyUrl(event.target.value)}
               type="url"
               inputMode="url"
-              placeholder="https://"
+              placeholder={DD_COPY.sitePlaceholder}
               autoComplete="url"
               className={fieldClass}
-              disabled={busy || Boolean(activeJobId)}
+              disabled={busy || activeJob}
             />
-            <p className="mt-2 text-[0.92rem] leading-relaxed text-[var(--ba-muted)]">
-              A public https page. Private data rooms are not used.
+            <p className="mt-2 text-[0.92rem] leading-relaxed text-[var(--ba-muted)] sm:hidden">
+              {DD_COPY.siteHelperShort}
             </p>
-
-            {formError ? (
-              <p className="mt-4 text-[0.95rem] text-[var(--ba-error)]" role="alert">
-                {formError}
-              </p>
-            ) : null}
+            <p className="mt-2 hidden text-[0.92rem] leading-relaxed text-[var(--ba-muted)] sm:block">
+              {DD_COPY.siteHelper}
+            </p>
           </form>
 
           {reports.length > 0 ? (
@@ -330,6 +437,10 @@ function Desk() {
                 ))}
               </ul>
             </section>
+          ) : phase === 'idle-empty' ? (
+            <div className="mt-10">
+              <EmptyState tone="member" message={DD_COPY.emptyHistory} />
+            </div>
           ) : null}
         </>
       ) : null}

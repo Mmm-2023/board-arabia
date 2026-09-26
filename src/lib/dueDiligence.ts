@@ -7,6 +7,7 @@ import {
   type BuiltReport,
   type DeckExt,
 } from '../../supabase/functions/_shared/due_diligence.ts'
+import { DD_COPY } from './dueDiligenceCopy'
 import { supabase } from './supabase'
 
 export type ReadFailure = 'denied' | 'unavailable' | 'error'
@@ -138,7 +139,7 @@ export async function startDueDiligence(input: {
     }
     return { ok: true, jobId: body.job_id }
   } catch {
-    return { ok: false, error: MEMBER_MESSAGES.start, kind: 'error' }
+    return { ok: false, error: DD_COPY.errorNetwork, kind: 'error' }
   }
 }
 
