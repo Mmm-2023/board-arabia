@@ -11,10 +11,6 @@ import {
   presentReport,
   safeFileName,
   sniffDeck,
-  VERDICT_LABEL,
-  type FindingRow,
-  type PresentedReport,
-  type SourceLink,
 } from '../../../supabase/functions/_shared/due_diligence.ts'
 import {
   fetchDueDiligenceStatus,
@@ -32,6 +28,7 @@ import { useNoIndex } from '../../lib/usePageTitle'
 import { CardSkeleton, EmptyState, ErrorBanner, PermissionState } from '../../shell/ViewState'
 import { MEMBER_VIEWS } from '../../shell/viewCopy'
 import { useMember } from './context'
+import { DueDiligenceReport } from './DueDiligenceReport'
 
 const fieldClass =
   'mt-1 w-full min-h-11 border border-[var(--ba-line)] bg-white px-3 text-[1rem] text-ink'
@@ -486,7 +483,7 @@ function ReportView({ reportId }: { reportId: string }) {
       <p className="hidden text-[0.72rem] font-semibold tracking-[0.14em] text-brass uppercase md:block">
         AI Due Diligence
       </p>
-      <h1 className="font-display text-[1.75rem] leading-tight font-bold tracking-[-0.03em] text-balance md:mt-3 md:text-[2.2rem]">
+      <h1 className="font-display text-[1.75rem] leading-tight font-bold tracking-[-0.03em] break-words text-balance md:mt-3 md:text-[2.2rem]">
         {ready ? ready.report.company_label : 'AI Due Diligence'}
       </h1>
       <Link
@@ -518,246 +515,14 @@ function ReportView({ reportId }: { reportId: string }) {
       </div>
 
       {ready && presented ? (
-        <ReportBody presented={presented} preparedAt={createdAt} report={ready.report} />
+        <DueDiligenceReport
+          presented={presented}
+          preparedAt={createdAt}
+          report={ready.report}
+          reportId={reportId}
+        />
       ) : null}
     </div>
-  )
-}
-
-function ReportBody({
-  presented,
-  preparedAt,
-  report,
-}: {
-  presented: PresentedReport
-  preparedAt: string
-  report: Extract<Awaited<ReturnType<typeof loadDueDiligenceReport>>, { ok: true }>['report']
-}) {
-  return (
-    <article className="mt-6">
-      <p className="max-w-3xl text-[1.05rem] leading-relaxed text-ink">{presented.assessed_line}</p>
-      <dl className="mt-4 grid gap-3 sm:grid-cols-2">
-        <OverviewItem label="Prepared" value={formatDate(preparedAt)} />
-        <OverviewItem label="Documents reviewed" value={presented.documents_reviewed} />
-      </dl>
-      <p className="mt-4 max-w-3xl border-y border-r border-[var(--ba-line)] border-l-4 border-l-[var(--ba-copper)] bg-white px-4 py-3 text-[0.98rem] leading-relaxed text-ink/80">
-        {report.disclaimer}
-      </p>
-
-      <section className="mt-8 max-w-3xl" aria-labelledby="dd-overview">
-        <h2 id="dd-overview" className="font-display text-[1.35rem] font-semibold">
-          Assessment overview
-        </h2>
-        <p className="mt-4 text-[1rem] leading-relaxed text-ink/80">{presented.overview}</p>
-        <dl className="mt-4 grid gap-3 sm:grid-cols-3">
-          <OverviewItem label="Company" value={report.company_label} />
-          <OverviewItem label="Sector" value={report.sector_label} />
-          <OverviewItem label="Ask" value={report.ask_label} />
-        </dl>
-      </section>
-
-      <section className="mt-8" aria-labelledby="dd-scorecard">
-        <h2 id="dd-scorecard" className="font-display text-[1.35rem] font-semibold">
-          Area scorecard
-        </h2>
-        <ul className="mt-4 space-y-3 md:hidden">
-          {presented.areas.map((area) => (
-            <li key={area.area} className="border border-[var(--ba-line)] bg-white px-4 py-3">
-              <p className="text-[1rem] text-ink">{area.area}</p>
-              <p className="mt-1 text-[0.72rem] font-semibold tracking-[0.12em] text-[var(--ba-copper-deep)] uppercase">
-                {VERDICT_LABEL[area.label]}
-              </p>
-              <p className="mt-2 text-[0.95rem] leading-relaxed text-ink/75">{area.reason}</p>
-            </li>
-          ))}
-        </ul>
-        <div className="mt-4 hidden overflow-x-auto md:block">
-          <table className="w-full min-w-[40rem] border-collapse text-left">
-            <thead>
-              <tr className="border-b border-[var(--ba-line)] text-[0.72rem] tracking-[0.12em] text-[var(--ba-muted)] uppercase">
-                <th scope="col" className="px-3 py-3 font-semibold">
-                  Area
-                </th>
-                <th scope="col" className="px-3 py-3 font-semibold">
-                  Label
-                </th>
-                <th scope="col" className="px-3 py-3 font-semibold">
-                  Key reason
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {presented.areas.map((area) => (
-                <tr key={area.area} className="border-b border-[var(--ba-line)] bg-white align-top">
-                  <th scope="row" className="px-3 py-3 text-[1rem] font-semibold text-ink">
-                    {area.area}
-                  </th>
-                  <td className="px-3 py-3 text-[0.95rem] text-ink">{VERDICT_LABEL[area.label]}</td>
-                  <td className="px-3 py-3 text-[0.95rem] leading-relaxed text-ink/80">{area.reason}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      <section className="mt-8" aria-labelledby="dd-percent">
-        <h2 id="dd-percent" className="font-display text-[1.35rem] font-semibold">
-          Overall summary
-        </h2>
-        {report.publicly_consistent_pct === null ? (
-          <p className="mt-4 text-[1rem] leading-relaxed text-ink/70">{MEMBER_VIEWS.dueDiligence.noScore}</p>
-        ) : (
-          <div className="mt-4 border border-[var(--ba-line)] bg-white px-4 py-4">
-            <div className="grid gap-3 sm:grid-cols-2">
-              <PercentTile value={report.publicly_consistent_pct} label="Publicly consistent" />
-              <PercentTile value={report.not_publicly_verifiable_pct ?? 0} label="Not publicly verifiable" />
-            </div>
-            <p className="mt-3 text-[0.95rem] leading-relaxed text-[var(--ba-muted)]">
-              {MEMBER_VIEWS.dueDiligence.rationale}
-            </p>
-          </div>
-        )}
-      </section>
-
-      {presented.findings.map((section) => (
-        <section key={section.number} className="mt-8" aria-labelledby={`dd-finding-${section.number}`}>
-          <h2 id={`dd-finding-${section.number}`} className="font-display text-[1.35rem] font-semibold">
-            Finding {section.number}. {section.title}
-          </h2>
-          <p className="mt-3 max-w-3xl text-[1rem] leading-relaxed text-ink/80">{section.narrative}</p>
-          <FindingCards rows={section.rows} />
-          <FindingTable rows={section.rows} />
-        </section>
-      ))}
-
-      <section className="mt-8" aria-labelledby="dd-sources">
-        <h2 id="dd-sources" className="font-display text-[1.35rem] font-semibold">
-          Sources
-        </h2>
-        {report.sources.length === 0 ? (
-          <p className="mt-4 text-[1rem] leading-relaxed text-ink/70">{MEMBER_VIEWS.dueDiligence.sourcesUnknown}</p>
-        ) : (
-          <ul className="mt-4 space-y-2">
-            {report.sources.map((source) => (
-              <li key={source.url}>
-                <PublicLink source={source} />
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-
-      <section className="mt-8 max-w-3xl" aria-labelledby="dd-next">
-        <h2 id="dd-next" className="font-display text-[1.35rem] font-semibold">
-          Next steps
-        </h2>
-        <ol className="mt-4 list-decimal space-y-3 pl-5 text-[1rem] leading-relaxed text-ink/80">
-          {report.next_steps.map((step) => (
-            <li key={step}>{step}</li>
-          ))}
-        </ol>
-      </section>
-    </article>
-  )
-}
-
-function FindingCards({ rows }: { rows: FindingRow[] }) {
-  return (
-    <ul className="mt-4 space-y-3 md:hidden">
-      {rows.map((row) => (
-        <li key={`${row.claim}-${row.status}`} className="border border-[var(--ba-line)] bg-white px-4 py-3">
-          <Field label="Claim" value={row.claim} />
-          <Field label="Source" value={row.source} />
-          <Field label="Finding" value={row.finding} />
-          <Field label="Status" value={VERDICT_LABEL[row.status]} />
-        </li>
-      ))}
-    </ul>
-  )
-}
-
-function FindingTable({ rows }: { rows: FindingRow[] }) {
-  return (
-    <div className="mt-4 hidden overflow-x-auto md:block">
-      <table className="w-full min-w-[44rem] border-collapse text-left">
-        <thead>
-          <tr className="border-b border-[var(--ba-line)] text-[0.72rem] tracking-[0.12em] text-[var(--ba-muted)] uppercase">
-            <th scope="col" className="px-3 py-3 font-semibold">
-              Claim
-            </th>
-            <th scope="col" className="px-3 py-3 font-semibold">
-              Source
-            </th>
-            <th scope="col" className="px-3 py-3 font-semibold">
-              Finding
-            </th>
-            <th scope="col" className="px-3 py-3 font-semibold">
-              Status
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row) => (
-            <tr key={`${row.claim}-${row.status}`} className="border-b border-[var(--ba-line)] bg-white align-top">
-              <td className="px-3 py-3 text-[0.95rem] leading-relaxed text-ink">{row.claim}</td>
-              <td className="px-3 py-3 text-[0.95rem] text-ink">{row.source}</td>
-              <td className="px-3 py-3 text-[0.95rem] leading-relaxed text-ink/80">{row.finding}</td>
-              <td className="px-3 py-3 text-[0.95rem] text-ink">{VERDICT_LABEL[row.status]}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  )
-}
-
-function Field({ label, value }: { label: string; value: string }) {
-  return (
-    <p className="mt-2 text-[0.95rem] leading-relaxed text-ink">
-      <span className="text-[0.72rem] font-semibold tracking-[0.12em] text-[var(--ba-muted)] uppercase">
-        {label}.{' '}
-      </span>
-      {value}
-    </p>
-  )
-}
-
-function OverviewItem({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="border border-[var(--ba-line)] bg-white px-4 py-3">
-      <dt className="text-[0.72rem] font-semibold tracking-[0.12em] text-[var(--ba-muted)] uppercase">
-        {label}
-      </dt>
-      <dd className="mt-1 text-[1rem] text-ink">{value}</dd>
-    </div>
-  )
-}
-
-function PercentTile({ value, label }: { value: number; label: string }) {
-  return (
-    <div>
-      <p className="font-display text-[2rem] font-semibold tracking-[-0.03em] text-[var(--ba-indigo)]">
-        {value}%
-      </p>
-      <p className="mt-1 text-[0.95rem] text-ink">{label}</p>
-    </div>
-  )
-}
-
-function PublicLink({ source }: { source: SourceLink }) {
-  const parsed = parsePublicHttpsUrl(source.url)
-  if (!parsed.ok) return <span className="text-[0.95rem] text-ink">{source.title}</span>
-  const href = `${parsed.url.origin}${parsed.url.pathname}`
-  return (
-    <a
-      href={href}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="inline-flex min-h-11 items-center text-[0.95rem] text-[var(--ba-indigo)] underline underline-offset-2"
-    >
-      {source.title}
-    </a>
   )
 }
 
@@ -765,10 +530,4 @@ function formatWhen(iso: string) {
   const date = new Date(iso)
   if (Number.isNaN(date.getTime())) return ''
   return date.toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' })
-}
-
-function formatDate(iso: string) {
-  const date = new Date(iso)
-  if (Number.isNaN(date.getTime())) return ''
-  return date.toLocaleDateString('en-GB', { dateStyle: 'long' })
 }
