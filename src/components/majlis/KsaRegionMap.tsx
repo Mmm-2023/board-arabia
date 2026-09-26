@@ -34,82 +34,111 @@ export function KsaRegionMap({
   counts,
   selected,
   onSelect,
+  comingSoon = true,
 }: {
   counts: Record<string, number>
   selected: string | null
-  onSelect: (region: string | null) => void
+  onSelect?: (region: string | null) => void
+  comingSoon?: boolean
 }) {
-  return (
-    <div className="overflow-x-auto border border-[var(--ba-line)] bg-[var(--ba-porcelain)] p-3">
-      <svg
-        viewBox="0 0 640 480"
-        role="group"
-        aria-label="Map of the 13 regions of Saudi Arabia"
-        className="h-auto min-h-[280px] w-full"
-      >
-        <path
-          d="M90 150 L150 70 L250 48 L360 70 L470 110 L520 180 L490 280 L400 360 L300 420 L220 400 L160 340 L90 240 Z"
-          fill="var(--ba-lavender-mist)"
-          stroke="var(--ba-indigo)"
-          strokeWidth="1.5"
-        />
-        {MAJLIS_REGIONS.map((name) => {
-          const geo = REGION_GEOTAG[name]
-          const point = project(geo.lat, geo.lng)
-          const nudge = NUDGE[name] ?? { dx: 0, dy: 0 }
-          const count = counts[name] ?? 0
-          const active = selected === name
-          const label = linesFor(name)
-          return (
-            <g
-              key={name}
-              role="button"
-              tabIndex={0}
-              aria-pressed={active}
-              aria-label={`${name}, ${count} published`}
-              className="cursor-pointer"
-              onClick={() => onSelect(active ? null : name)}
-              onKeyDown={(event) => {
-                if (event.key !== 'Enter' && event.key !== ' ') return
-                event.preventDefault()
-                onSelect(active ? null : name)
-              }}
+  const graphic = (
+    <svg
+      viewBox="0 0 640 480"
+      role={comingSoon ? undefined : 'group'}
+      aria-hidden={comingSoon ? true : undefined}
+      aria-label={comingSoon ? undefined : 'Map of the 13 regions of Saudi Arabia'}
+      className="h-auto min-h-[240px] w-full sm:min-h-[280px]"
+    >
+      <path
+        d="M90 150 L150 70 L250 48 L360 70 L470 110 L520 180 L490 280 L400 360 L300 420 L220 400 L160 340 L90 240 Z"
+        fill="var(--ba-lavender-mist)"
+        stroke="var(--ba-indigo)"
+        strokeWidth="1.5"
+      />
+      {MAJLIS_REGIONS.map((name) => {
+        const geo = REGION_GEOTAG[name]
+        const point = project(geo.lat, geo.lng)
+        const nudge = NUDGE[name] ?? { dx: 0, dy: 0 }
+        const count = counts[name] ?? 0
+        const active = selected === name
+        const label = linesFor(name)
+        const marks = (
+          <>
+            <circle
+              cx={point.x}
+              cy={point.y}
+              r={26}
+              fill={active ? 'var(--ba-indigo)' : count > 0 ? 'var(--ba-indigo-mid)' : 'var(--ba-white)'}
+              stroke={active ? 'var(--ba-copper)' : 'var(--ba-indigo)'}
+              strokeWidth={active ? 3 : 1.5}
+            />
+            <text
+              x={point.x}
+              y={point.y + 4}
+              textAnchor="middle"
+              fill={count > 0 || active ? 'var(--ba-porcelain)' : 'var(--ba-indigo)'}
+              fontSize="13"
+              fontWeight="700"
             >
-              <circle
-                cx={point.x}
-                cy={point.y}
-                r={26}
-                fill={active ? 'var(--ba-indigo)' : count > 0 ? 'var(--ba-indigo-mid)' : 'var(--ba-white)'}
-                stroke={active ? 'var(--ba-copper)' : 'var(--ba-indigo)'}
-                strokeWidth={active ? 3 : 1.5}
-              />
-              <text
-                x={point.x}
-                y={point.y + 4}
-                textAnchor="middle"
-                fill={count > 0 || active ? 'var(--ba-porcelain)' : 'var(--ba-indigo)'}
-                fontSize="13"
-                fontWeight="700"
-              >
-                {count}
-              </text>
-              <text
-                x={point.x + nudge.dx}
-                y={point.y + 40 + nudge.dy}
-                textAnchor="middle"
-                fill="var(--ba-indigo-deep)"
-                fontSize="11"
-              >
-                {label.map((line, index) => (
-                  <tspan key={line} x={point.x + nudge.dx} dy={index === 0 ? 0 : 12}>
-                    {line}
-                  </tspan>
-                ))}
-              </text>
-            </g>
-          )
-        })}
-      </svg>
-    </div>
+              {count}
+            </text>
+            <text
+              x={point.x + nudge.dx}
+              y={point.y + 40 + nudge.dy}
+              textAnchor="middle"
+              fill="var(--ba-indigo-deep)"
+              fontSize="11"
+            >
+              {label.map((line, index) => (
+                <tspan key={line} x={point.x + nudge.dx} dy={index === 0 ? 0 : 12}>
+                  {line}
+                </tspan>
+              ))}
+            </text>
+          </>
+        )
+        if (comingSoon || !onSelect) {
+          return <g key={name}>{marks}</g>
+        }
+        return (
+          <g
+            key={name}
+            role="button"
+            tabIndex={0}
+            aria-pressed={active}
+            aria-label={`${name}, ${count} published`}
+            className="cursor-pointer"
+            onClick={() => onSelect(active ? null : name)}
+            onKeyDown={(event) => {
+              if (event.key !== 'Enter' && event.key !== ' ') return
+              event.preventDefault()
+              onSelect(active ? null : name)
+            }}
+          >
+            {marks}
+          </g>
+        )
+      })}
+    </svg>
   )
+
+  if (comingSoon) {
+    return (
+      <div className="relative overflow-hidden border border-[var(--ba-line)] bg-[var(--ba-porcelain)]">
+        <div className="pointer-events-none select-none blur-lg saturate-50" aria-hidden="true">
+          {graphic}
+        </div>
+        <div className="absolute inset-0 flex items-center justify-center p-4">
+          <div className="max-w-sm border border-[var(--ba-line)] bg-[var(--ba-porcelain)] px-5 py-4 text-center text-ink shadow-sm">
+            <p className="text-[0.72rem] font-semibold tracking-[0.14em] text-[var(--ba-copper-deep)] uppercase">
+              Coming soon
+            </p>
+            <p className="mt-2 text-[0.98rem] leading-relaxed">The regional map is not available yet.</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  return <div className="overflow-x-auto border border-[var(--ba-line)] bg-[var(--ba-porcelain)] p-3">{graphic}</div>
 }

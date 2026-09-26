@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import {
   MAJLIS_REGIONS,
   countPublishedByRegion,
   formatMajlisWhen,
-  isMajlisRegion,
+  formatRiyadhStamp,
   parseFocusTags,
   rejectionFeedbackError,
   utcToRiyadhWall,
@@ -75,7 +75,9 @@ export function AdminMajlisPage() {
   }, [attempt])
 
   const all = events ?? EMPTY_EVENTS
-  const pending = all.filter((event) => event.status === 'pending_approval')
+  const pending = all
+    .filter((event) => event.status === 'pending_approval')
+    .sort((a, b) => a.created_at.localeCompare(b.created_at))
   const published = all.filter((event) => event.status === 'published')
   const counts = countPublishedByRegion(MAJLIS_REGIONS, published)
   const tags = useMemo(() => {
@@ -135,28 +137,34 @@ export function AdminMajlisPage() {
   return (
     <div>
       <h1 className="font-display text-[2rem] font-semibold tracking-[-0.03em]">Majlis</h1>
-      <p className="mt-2 text-[0.95rem] text-stone/65">
-        Accept publishes the majlis on the member feed and the map. Reject needs feedback.
+      <p className="mt-2 max-w-3xl text-[0.95rem] leading-relaxed text-stone/65">
+        Host applications waiting for review are first. Accept publishes the majlis on the member feed. Reject needs feedback.
       </p>
 
-      <section className="mt-8" aria-labelledby="admin-majlis-map">
-        <h2 id="admin-majlis-map" className="font-display text-[1.35rem] font-semibold">
-          Map activity
-        </h2>
-        <p className="mt-2 text-[0.92rem] text-pearl/55">{published.length} published</p>
-        <div className="mt-4">
-          <KsaRegionMap
-            counts={counts}
-            selected={region || null}
-            onSelect={(next) => setRegion(next && isMajlisRegion(next) ? next : '')}
-          />
+      <section
+        id="admin-majlis-pending"
+        className="mt-6 scroll-mt-24 border border-[var(--ba-copper)] bg-[var(--ba-copper)]/15 px-4 py-4 sm:px-5"
+        aria-labelledby="admin-majlis-pending-title"
+      >
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+          <h2 id="admin-majlis-pending-title" className="font-display text-[1.35rem] font-semibold">
+            Needs attention
+          </h2>
+          {events !== null && !error && (
+            <p className="inline-flex min-h-11 items-center gap-2 text-[0.72rem] font-semibold tracking-[0.08em] uppercase">
+              <span
+                className="inline-flex h-8 min-w-8 items-center justify-center bg-[var(--ba-copper)] px-2 text-[0.95rem] text-ink"
+                aria-hidden="true"
+              >
+                {pending.length}
+              </span>
+              <span>{pending.length === 1 ? 'Pending approval' : 'Pending approvals'}</span>
+            </p>
+          )}
         </div>
-      </section>
-
-      <section className="mt-10" aria-labelledby="admin-majlis-pending">
-        <h2 id="admin-majlis-pending" className="font-display text-[1.35rem] font-semibold">
-          Pending queue
-        </h2>
+        <p className="mt-2 max-w-3xl text-[0.95rem] leading-relaxed text-pearl/80">
+          This is the host submission queue. Accept or reject each application here.
+        </p>
         {events === null ? (
           <div className="mt-4">
             <CardSkeleton tone="staff" label="Loading majlis queue" />
@@ -178,6 +186,19 @@ export function AdminMajlisPage() {
             ))}
           </ul>
         )}
+      </section>
+
+      <section className="mt-10" aria-labelledby="admin-majlis-map">
+        <h2 id="admin-majlis-map" className="font-display text-[1.35rem] font-semibold">
+          Map activity
+        </h2>
+        <p className="mt-2 text-[0.92rem] text-pearl/55">{published.length} published</p>
+        <p className="mt-2 max-w-3xl text-[0.95rem] leading-relaxed text-pearl/70">
+          The regional map is not open yet. Filter events by region in All events.
+        </p>
+        <div className="mt-4">
+          <KsaRegionMap counts={counts} selected={null} comingSoon />
+        </div>
       </section>
 
       <section className="mt-10" aria-labelledby="admin-majlis-all">
@@ -284,7 +305,7 @@ function Field({ label, value }: { label: string; value: string }) {
   return (
     <div>
       <dt className="text-pearl/40">{label}</dt>
-      <dd className="mt-0.5">{value}</dd>
+      <dd className="mt-0.5 break-words">{value}</dd>
     </div>
   )
 }
@@ -319,12 +340,19 @@ function PendingCard({ event, host, onDone }: { event: MajlisEventRow; host: str
   const [note, setNote] = useState('')
   const [busy, setBusy] = useState(false)
   const [actionError, setActionError] = useState('')
+  const noteRef = useRef<HTMLTextAreaElement>(null)
   const rejectBlocked = acting === 'reject' && rejectionFeedbackError(note) !== null
+
+  useEffect(() => {
+    if (!acting) return
+    noteRef.current?.focus()
+  }, [acting])
 
   async function confirm() {
     if (!acting) return
-    if (acting === 'reject' && rejectionFeedbackError(note)) {
-      setActionError('Rejection feedback is required.')
+    const feedbackError = acting === 'reject' ? rejectionFeedbackError(note) : null
+    if (feedbackError) {
+      setActionError(feedbackError)
       return
     }
     setBusy(true)
@@ -341,23 +369,29 @@ function PendingCard({ event, host, onDone }: { event: MajlisEventRow; host: str
   }
 
   return (
-    <article className="border border-pearl/10 bg-pearl/[0.03] px-5 py-5">
-      <p className="font-display text-[1.15rem] font-semibold">{event.title}</p>
-      <p className="mt-2 text-[0.95rem] text-stone/75">{event.description}</p>
-      <dl className="mt-4 grid gap-3 text-[0.92rem] md:grid-cols-2">
+    <article className="border border-[var(--ba-copper)] bg-ink px-4 py-4 sm:px-5 sm:py-5">
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <p className="font-display text-[1.15rem] font-semibold">{event.title}</p>
+        <p className="inline-flex min-h-11 items-center border border-[var(--ba-copper)] px-3 text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--ba-copper)] uppercase">
+          Pending approval
+        </p>
+      </div>
+      <p className="mt-2 text-[0.95rem] leading-relaxed text-stone/75">{event.description}</p>
+      <dl className="mt-4 grid gap-3 text-[0.92rem] sm:grid-cols-2">
         <Field label="Host" value={host} />
+        <Field label="Submitted" value={formatRiyadhStamp(event.created_at) || 'Unknown'} />
         <Field label="Region" value={event.region} />
         <Field label="When" value={formatMajlisWhen(event.starts_at, event.ends_at)} />
         <Field label="Capacity" value={String(event.capacity)} />
         <Field label="Venue" value={event.venue_name} />
         <Field label="Address" value={event.venue_address || 'Not shown'} />
       </dl>
-      <p className="mt-3 text-[0.92rem] text-stone/80">{event.focus_tags.join(', ')}</p>
-      <div className="mt-5 flex flex-wrap gap-2">
-        <button type="button" className={primaryBtn} onClick={() => { setActing('accept'); setNote(''); setActionError('') }}>
+      <p className="mt-3 break-words text-[0.92rem] text-stone/80">{event.focus_tags.join(', ')}</p>
+      <div className="mt-5 grid gap-2 sm:flex sm:flex-wrap">
+        <button type="button" className={`${primaryBtn} w-full justify-center sm:w-auto`} onClick={() => { setActing('accept'); setNote(''); setActionError('') }}>
           Accept
         </button>
-        <button type="button" className={quietBtn} onClick={() => { setActing('reject'); setNote(''); setActionError('') }}>
+        <button type="button" className={`${quietBtn} w-full justify-center sm:w-auto`} onClick={() => { setActing('reject'); setNote(''); setActionError('') }}>
           Reject
         </button>
       </div>
@@ -376,6 +410,7 @@ function PendingCard({ event, host, onDone }: { event: MajlisEventRow; host: str
             <label className="mt-4 block text-[0.92rem]" htmlFor="majlis-decision-note">
               {acting === 'accept' ? 'Note (optional)' : 'Feedback (required)'}
               <textarea
+                ref={noteRef}
                 id="majlis-decision-note"
                 className="mt-1 min-h-28 w-full border border-white/20 bg-transparent px-3 py-2 text-[1rem]"
                 value={note}
@@ -383,13 +418,16 @@ function PendingCard({ event, host, onDone }: { event: MajlisEventRow; host: str
                 required={acting === 'reject'}
               />
             </label>
+            {acting === 'reject' && rejectionFeedbackError(note) && note.trim().length > 0 && (
+              <p className="mt-3 text-[0.95rem] text-red-300">{rejectionFeedbackError(note)}</p>
+            )}
             {actionError && <p className="mt-3 text-[0.95rem] text-red-300" role="alert">{actionError}</p>}
-            <div className="mt-6 flex flex-wrap gap-3">
-              <button type="button" disabled={busy} className={quietBtn} onClick={() => setActing(null)}>
+            <div className="mt-6 grid gap-2 sm:flex sm:flex-wrap">
+              <button type="button" disabled={busy} className={`${quietBtn} w-full justify-center sm:w-auto`} onClick={() => setActing(null)}>
                 Cancel
               </button>
-              <button type="button" disabled={busy || rejectBlocked} className={primaryBtn} onClick={() => void confirm()}>
-                {acting === 'accept' ? 'Publish' : 'Reject'}
+              <button type="button" disabled={busy || rejectBlocked} className={`${primaryBtn} w-full justify-center sm:w-auto`} onClick={() => void confirm()}>
+                {busy ? 'Saving' : acting === 'accept' ? 'Publish' : 'Reject'}
               </button>
             </div>
           </div>

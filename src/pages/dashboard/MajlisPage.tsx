@@ -136,7 +136,9 @@ export function MajlisPage() {
   const loading = sponsor ? sponsorEvents === null : events === null
   const mine = sponsor
     ? []
-    : (events ?? []).filter((event) => event.host_member_id === userId && event.status !== 'published')
+    : (events ?? [])
+        .filter((event) => event.host_member_id === userId && event.status !== 'published')
+        .sort((a, b) => b.created_at.localeCompare(a.created_at))
 
   return (
     <div className="max-w-5xl">
@@ -144,21 +146,67 @@ export function MajlisPage() {
       <p className="mt-2 max-w-3xl text-[0.98rem] leading-relaxed text-[var(--ba-muted)]">
         {sponsor
           ? 'Regional activity for sponsors. Guest names and contact details stay with the host.'
-          : 'Approved gatherings are listed here. Apply to host, then wait for staff review.'}
+          : 'Apply to host, then follow the status under Your applications. Published gatherings are listed below.'}
       </p>
 
-      <section className="mt-8" aria-labelledby="majlis-map-title">
+      {!sponsor && (
+        <nav aria-label="On this page" className="mt-5 grid gap-2 sm:flex sm:flex-wrap">
+          <PageJump href="#majlis-mine">Your applications</PageJump>
+          <PageJump href="#majlis-apply">Apply to host</PageJump>
+          <PageJump href="#majlis-feed">Published</PageJump>
+        </nav>
+      )}
+
+      {!sponsor && (
+        <section id="majlis-mine" className="mt-8 scroll-mt-24" aria-labelledby="majlis-mine-title">
+          <h2 id="majlis-mine-title" className="font-display text-[1.35rem] font-semibold">
+            Your applications
+          </h2>
+          {loading ? (
+            <p className="mt-3 text-[0.98rem] text-[var(--ba-muted)]">Loading your applications.</p>
+          ) : error ? (
+            <p className="mt-3 text-[0.98rem] text-[var(--ba-error)]" role="alert">
+              {MEMBER_VIEWS.majlis.error}
+            </p>
+          ) : (
+            <p className="mt-2 text-[0.98rem] text-[var(--ba-muted)]">{applicationSummary(mine)}</p>
+          )}
+          {events !== null && !error && mine.length > 0 && (
+            <ul className="mt-4 space-y-3">
+              {mine.map((event) => (
+                <li key={event.id}>
+                  <ApplicationCard event={event} userId={userId} />
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      )}
+
+      {!sponsor && (
+        <ApplyForm
+          onCreated={() => {
+            setEvents(null)
+            setAttempt((value) => value + 1)
+          }}
+        />
+      )}
+
+      <section className="mt-10 scroll-mt-24" aria-labelledby="majlis-map-title">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <h2 id="majlis-map-title" className="font-display text-[1.35rem] font-semibold">
             Regions
           </h2>
           <p className="text-[0.92rem] text-[var(--ba-muted)]">{published.length} published</p>
         </div>
+        <p className="mt-2 text-[0.95rem] text-[var(--ba-muted)]">
+          Filter the published list by region. The map is not open yet.
+        </p>
         {unavailable && (
           <p className="mt-3 text-[0.95rem] text-[var(--ba-muted)]">{MEMBER_VIEWS.majlis.mapUnavailable}</p>
         )}
         <div className="mt-4">
-          <KsaRegionMap counts={counts} selected={region || null} onSelect={(next) => setFilter({ region: next })} />
+          <KsaRegionMap counts={counts} selected={null} comingSoon />
         </div>
         <div className="mt-4 flex flex-wrap gap-2" role="group" aria-label="Region filters">
           <Chip pressed={!region} onClick={() => setFilter({ region: null })}>
@@ -188,7 +236,7 @@ export function MajlisPage() {
         )}
       </section>
 
-      <section className="mt-8" aria-labelledby="majlis-feed-title">
+      <section id="majlis-feed" className="mt-8 scroll-mt-24" aria-labelledby="majlis-feed-title">
         <h2 id="majlis-feed-title" className="font-display text-[1.35rem] font-semibold">
           Published
         </h2>
@@ -255,35 +303,29 @@ export function MajlisPage() {
         )}
       </section>
 
-      {!sponsor && (
-        <>
-          <section className="mt-10" aria-labelledby="majlis-mine-title">
-            <h2 id="majlis-mine-title" className="font-display text-[1.35rem] font-semibold">
-              Your applications
-            </h2>
-            {events !== null && !error && mine.length === 0 && (
-              <p className="mt-3 text-[0.98rem] text-[var(--ba-muted)]">You have no applications yet.</p>
-            )}
-            {mine.length > 0 && (
-              <ul className="mt-4 space-y-3">
-                {mine.map((event) => (
-                  <li key={event.id}>
-                    <ApplicationCard event={event} userId={userId} />
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
-          <ApplyForm
-            onCreated={() => {
-              setEvents(null)
-              setAttempt((value) => value + 1)
-            }}
-          />
-        </>
-      )}
     </div>
   )
+}
+
+function PageJump({ href, children }: { href: string; children: string }) {
+  return (
+    <a
+      href={href}
+      className="inline-flex min-h-11 items-center justify-center border border-[var(--ba-line)] bg-white px-3 text-[0.92rem] text-ink"
+    >
+      {children}
+    </a>
+  )
+}
+
+function applicationSummary(rows: MajlisEventRow[]): string {
+  if (rows.length === 0) return 'You have no applications yet.'
+  const pending = rows.filter((event) => event.status === 'pending_approval').length
+  const rejected = rows.filter((event) => event.status === 'rejected').length
+  const parts = [`${rows.length} ${rows.length === 1 ? 'application' : 'applications'}`]
+  if (pending > 0) parts.push(`${pending} pending approval`)
+  if (rejected > 0) parts.push(`${rejected} rejected`)
+  return `${parts.join('. ')}.`
 }
 
 function Chip({
@@ -695,7 +737,31 @@ function StatusLabel({ status }: { status: MajlisEventRow['status'] }) {
           : status === 'cancelled'
             ? 'Cancelled'
             : 'Hidden'
-  return <p className="text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--ba-indigo)] uppercase">{label}</p>
+  const tone =
+    status === 'pending_approval'
+      ? 'border-[var(--ba-copper)] bg-[var(--ba-copper)]/15 text-[var(--ba-copper-deep)]'
+      : status === 'rejected'
+        ? 'border-[var(--ba-error)] text-[var(--ba-error)]'
+        : 'border-[var(--ba-line)] text-[var(--ba-indigo)]'
+  return (
+    <p className={`inline-flex min-h-11 items-center border px-3 text-[0.72rem] font-semibold tracking-[0.08em] uppercase ${tone}`}>
+      {label}
+    </p>
+  )
+}
+
+const APPLY_STEPS = ['Details', 'When', 'Venue'] as const
+
+const APPLY_PROBE = {
+  title: 'Gathering',
+  description: 'A private gathering for members.',
+  region: 'Riyadh',
+  focusTags: ['Governance'],
+  startsAtUtc: '2099-01-02T10:00:00.000Z',
+  endsAtUtc: '2099-01-02T12:00:00.000Z',
+  capacity: 12,
+  venueName: 'Venue',
+  venueAddress: 'Address',
 }
 
 function ApplyForm({ onCreated }: { onCreated: () => void }) {
@@ -708,28 +774,57 @@ function ApplyForm({ onCreated }: { onCreated: () => void }) {
   const [capacity, setCapacity] = useState('12')
   const [venueName, setVenueName] = useState('')
   const [venueAddress, setVenueAddress] = useState('')
+  const [step, setStep] = useState(1)
   const [formError, setFormError] = useState('')
   const [busy, setBusy] = useState(false)
   const [sent, setSent] = useState(false)
 
+  function fields() {
+    return { title, description, region, tags, starts, ends, capacity, venueName, venueAddress }
+  }
+
+  function goTo(next: number) {
+    if (next > step) {
+      const message = messageForStep(step, fields())
+      if (message) {
+        showStepError(message)
+        return
+      }
+    }
+    setFormError('')
+    setStep(next)
+  }
+
+  function showStepError(message: string) {
+    setFormError(message)
+    setStep(stepForError(message))
+  }
+
   async function onSubmit(event: FormEvent) {
     event.preventDefault()
+    if (step < 3) {
+      goTo(step + 1)
+      return
+    }
     setSent(false)
-    const startsAtUtc = riyadhWallToUtc(starts)
-    const endsAtUtc = riyadhWallToUtc(ends)
+    const message = messageForStep(3, fields())
+    if (message) {
+      showStepError(message)
+      return
+    }
     const parsed = validateMajlisApplication({
       title,
       description,
       region,
       focusTags: parseFocusTags(tags),
-      startsAtUtc: startsAtUtc ?? '',
-      endsAtUtc: endsAtUtc ?? '',
+      startsAtUtc: riyadhWallToUtc(starts) ?? '',
+      endsAtUtc: riyadhWallToUtc(ends) ?? '',
       capacity: Number(capacity),
       venueName,
       venueAddress,
     })
     if (!parsed.ok) {
-      setFormError(parsed.error)
+      showStepError(parsed.error)
       return
     }
     setBusy(true)
@@ -759,97 +854,278 @@ function ApplyForm({ onCreated }: { onCreated: () => void }) {
     setCapacity('12')
     setVenueName('')
     setVenueAddress('')
+    setStep(1)
     setSent(true)
     onCreated()
+    document.getElementById('majlis-apply')?.scrollIntoView({ block: 'start' })
+  }
+
+  function hostAnother() {
+    setSent(false)
+    setFormError('')
+    setStep(1)
   }
 
   return (
-    <section className="mt-10 max-w-3xl" aria-labelledby="majlis-apply-title">
+    <section id="majlis-apply" className="mt-8 max-w-3xl scroll-mt-24" aria-labelledby="majlis-apply-title">
       <h2 id="majlis-apply-title" className="font-display text-[1.35rem] font-semibold">
         Apply to host
       </h2>
       <p className="mt-2 text-[0.95rem] leading-relaxed text-[var(--ba-muted)]">
-        Times are Asia/Riyadh. The application stays pending until staff accept it.
+        Three short steps. Times are Asia/Riyadh. The application stays pending until staff accept it.
       </p>
-      <form className="mt-4 grid gap-4" onSubmit={(event) => void onSubmit(event)}>
-        <label className="block text-[0.92rem]">
-          Title
-          <input className={fieldClass} value={title} onChange={(event) => setTitle(event.target.value)} required />
-        </label>
-        <label className="block text-[0.92rem]">
-          Description
-          <textarea
-            className={`${fieldClass} min-h-28 py-2`}
-            value={description}
-            onChange={(event) => setDescription(event.target.value)}
-            required
-          />
-        </label>
-        <label className="block text-[0.92rem]">
-          Region
-          <select className={fieldClass} value={region} onChange={(event) => setRegion(event.target.value)} required>
-            <option value="">Choose a region</option>
-            {MAJLIS_REGIONS.map((name) => (
-              <option key={name} value={name}>
-                {name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="block text-[0.92rem]">
-          Focus tags
-          <input
-            className={fieldClass}
-            value={tags}
-            onChange={(event) => setTags(event.target.value)}
-            placeholder="Governance, Audit"
-            required
-          />
-        </label>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <label className="block text-[0.92rem]">
-            Starts (Asia/Riyadh)
-            <input className={fieldClass} type="datetime-local" value={starts} onChange={(event) => setStarts(event.target.value)} required />
-          </label>
-          <label className="block text-[0.92rem]">
-            Ends (Asia/Riyadh)
-            <input className={fieldClass} type="datetime-local" value={ends} onChange={(event) => setEnds(event.target.value)} required />
-          </label>
-        </div>
-        <label className="block text-[0.92rem]">
-          Capacity
-          <input
-            className={fieldClass}
-            type="number"
-            min={1}
-            max={500}
-            step={1}
-            value={capacity}
-            onChange={(event) => setCapacity(event.target.value)}
-            required
-          />
-        </label>
-        <label className="block text-[0.92rem]">
-          Venue name
-          <input className={fieldClass} value={venueName} onChange={(event) => setVenueName(event.target.value)} required />
-        </label>
-        <label className="block text-[0.92rem]">
-          Venue address
-          <input className={fieldClass} value={venueAddress} onChange={(event) => setVenueAddress(event.target.value)} required />
-        </label>
-        <p className="text-[0.88rem] text-[var(--ba-muted)]">
-          The venue name is shown on the published majlis. The address is shown after a member registers.
-        </p>
-        {formError && (
-          <p className="text-[0.95rem] text-[var(--ba-error)]" role="alert">
-            {formError}
+      {sent ? (
+        <div className="mt-4 border border-[var(--ba-line)] bg-white px-4 py-4" role="status">
+          <p className="font-display text-[1.15rem] font-semibold">Application submitted.</p>
+          <p className="mt-2 text-[0.98rem] leading-relaxed">
+            Status: pending approval. Staff will accept or reject it. Follow it under Your applications.
           </p>
-        )}
-        {sent && <p className="text-[0.95rem]">Application submitted. Status: pending approval.</p>}
-        <button type="submit" disabled={busy} className={`${primaryBtn} w-fit`}>
-          {busy ? 'Submitting' : 'Submit application'}
-        </button>
-      </form>
+          <div className="mt-4 grid gap-2 sm:flex sm:flex-wrap">
+            <a href="#majlis-mine" className={`${primaryBtn} w-full justify-center sm:w-auto`}>
+              Your applications
+            </a>
+            <button type="button" className={`${quietBtn} w-full justify-center sm:w-auto`} onClick={hostAnother}>
+              Host another
+            </button>
+          </div>
+        </div>
+      ) : (
+        <form className="mt-4" onSubmit={(event) => void onSubmit(event)}>
+          <ol className="grid grid-cols-3 gap-2" aria-label="Application steps">
+            {APPLY_STEPS.map((label, index) => {
+              const number = index + 1
+              const current = step === number
+              const done = step > number
+              return (
+                <li key={label}>
+                  <button
+                    type="button"
+                    aria-current={current ? 'step' : undefined}
+                    disabled={!done && !current}
+                    onClick={() => goTo(number)}
+                    className={`flex min-h-11 w-full items-center justify-center px-2 text-center text-[0.82rem] ${
+                      current
+                        ? 'bg-[var(--ba-indigo)] text-[var(--ba-porcelain)]'
+                        : done
+                          ? 'border border-[var(--ba-indigo)] bg-white text-ink'
+                          : 'border border-[var(--ba-line)] bg-white text-[var(--ba-muted)]'
+                    }`}
+                  >
+                    {number}. {label}
+                  </button>
+                </li>
+              )
+            })}
+          </ol>
+          <p className="mt-4 text-[0.82rem] font-semibold tracking-[0.08em] text-[var(--ba-muted)] uppercase">
+            Step {step} of 3
+          </p>
+          <div className="mt-3 grid gap-4">
+            {step === 1 && (
+              <>
+                <p className="text-[0.95rem] leading-relaxed text-[var(--ba-muted)]">Name the gathering and the focus.</p>
+                <label className="block text-[0.92rem]">
+                  Title
+                  <input className={fieldClass} value={title} onChange={(event) => setTitle(event.target.value)} />
+                </label>
+                <label className="block text-[0.92rem]">
+                  Description
+                  <textarea
+                    className={`${fieldClass} min-h-28 py-2`}
+                    value={description}
+                    onChange={(event) => setDescription(event.target.value)}
+                  />
+                </label>
+                <label className="block text-[0.92rem]">
+                  Focus tags
+                  <input
+                    className={fieldClass}
+                    value={tags}
+                    onChange={(event) => setTags(event.target.value)}
+                    placeholder="Governance, Audit"
+                  />
+                </label>
+                <p className="text-[0.88rem] text-[var(--ba-muted)]">Separate tags with commas. Use 1 to 8 tags.</p>
+              </>
+            )}
+            {step === 2 && (
+              <>
+                <p className="text-[0.95rem] leading-relaxed text-[var(--ba-muted)]">
+                  Choose one region. Times are Asia/Riyadh.
+                </p>
+                <label className="block text-[0.92rem]">
+                  Region
+                  <select className={fieldClass} value={region} onChange={(event) => setRegion(event.target.value)}>
+                    <option value="">Choose a region</option>
+                    {MAJLIS_REGIONS.map((name) => (
+                      <option key={name} value={name}>
+                        {name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <label className="block min-w-0 text-[0.92rem]">
+                    Starts (Asia/Riyadh)
+                    <input
+                      className={`${fieldClass} min-w-0 max-w-full`}
+                      type="datetime-local"
+                      value={starts}
+                      onChange={(event) => setStarts(event.target.value)}
+                    />
+                  </label>
+                  <label className="block min-w-0 text-[0.92rem]">
+                    Ends (Asia/Riyadh)
+                    <input
+                      className={`${fieldClass} min-w-0 max-w-full`}
+                      type="datetime-local"
+                      value={ends}
+                      onChange={(event) => setEnds(event.target.value)}
+                    />
+                  </label>
+                </div>
+                <label className="block text-[0.92rem]">
+                  Capacity
+                  <input
+                    className={fieldClass}
+                    type="number"
+                    min={1}
+                    max={500}
+                    step={1}
+                    inputMode="numeric"
+                    value={capacity}
+                    onChange={(event) => setCapacity(event.target.value)}
+                  />
+                </label>
+              </>
+            )}
+            {step === 3 && (
+              <>
+                <p className="text-[0.95rem] leading-relaxed text-[var(--ba-muted)]">
+                  The venue name is shown on the published majlis. The address is shown after a member registers.
+                </p>
+                <label className="block text-[0.92rem]">
+                  Venue name
+                  <input className={fieldClass} value={venueName} onChange={(event) => setVenueName(event.target.value)} />
+                </label>
+                <label className="block text-[0.92rem]">
+                  Venue address
+                  <input className={fieldClass} value={venueAddress} onChange={(event) => setVenueAddress(event.target.value)} />
+                </label>
+                <dl className="grid gap-2 border border-[var(--ba-line)] bg-white px-4 py-3 text-[0.95rem] sm:grid-cols-2">
+                  <div>
+                    <dt className="text-[var(--ba-muted)]">Title</dt>
+                    <dd className="break-words">{title.trim() || 'Not set'}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-[var(--ba-muted)]">Region</dt>
+                    <dd>{region || 'Not set'}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-[var(--ba-muted)]">When</dt>
+                    <dd className="break-words">{starts && ends ? `${starts.replace('T', ' ')} to ${ends.replace('T', ' ')}` : 'Not set'}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-[var(--ba-muted)]">Focus</dt>
+                    <dd className="break-words">{tags.trim() || 'Not set'}</dd>
+                  </div>
+                </dl>
+              </>
+            )}
+          </div>
+          {formError && (
+            <p className="mt-4 text-[0.95rem] text-[var(--ba-error)]" role="alert">
+              {formError}
+            </p>
+          )}
+          <div className="mt-4 grid gap-2 sm:flex sm:flex-wrap">
+            {step > 1 && (
+              <button type="button" className={`${quietBtn} w-full justify-center sm:w-auto`} onClick={() => goTo(step - 1)}>
+                Back
+              </button>
+            )}
+            {step < 3 ? (
+              <button type="submit" className={`${primaryBtn} w-full justify-center sm:order-last sm:w-auto`}>
+                Continue
+              </button>
+            ) : (
+              <button type="submit" disabled={busy} className={`${primaryBtn} w-full justify-center sm:order-last sm:w-auto`}>
+                {busy ? 'Submitting' : 'Submit application'}
+              </button>
+            )}
+          </div>
+        </form>
+      )}
     </section>
   )
+}
+
+function messageForStep(
+  step: number,
+  fields: {
+    title: string
+    description: string
+    region: string
+    tags: string
+    starts: string
+    ends: string
+    capacity: string
+    venueName: string
+    venueAddress: string
+  },
+): string {
+  const focusTags = parseFocusTags(fields.tags)
+  if (step === 1) {
+    const parsed = validateMajlisApplication({
+      ...APPLY_PROBE,
+      title: fields.title,
+      description: fields.description,
+      focusTags: focusTags.length > 0 ? focusTags : APPLY_PROBE.focusTags,
+    })
+    if (!parsed.ok) return parsed.error
+    if (focusTags.length < 1 || focusTags.length > 8) return 'Add 1 to 8 focus tags.'
+    return ''
+  }
+  if (step === 2) {
+    const parsed = validateMajlisApplication({
+      ...APPLY_PROBE,
+      region: fields.region,
+      startsAtUtc: riyadhWallToUtc(fields.starts) ?? '',
+      endsAtUtc: riyadhWallToUtc(fields.ends) ?? '',
+      capacity: Number(fields.capacity),
+    })
+    if (!parsed.ok) return parsed.error
+    return ''
+  }
+  const parsed = validateMajlisApplication({
+    title: fields.title,
+    description: fields.description,
+    region: fields.region,
+    focusTags,
+    startsAtUtc: riyadhWallToUtc(fields.starts) ?? '',
+    endsAtUtc: riyadhWallToUtc(fields.ends) ?? '',
+    capacity: Number(fields.capacity),
+    venueName: fields.venueName,
+    venueAddress: fields.venueAddress,
+  })
+  return parsed.ok ? '' : parsed.error
+}
+
+function stepForError(message: string): number {
+  if (
+    message.startsWith('Add a title') ||
+    message.startsWith('Add a description') ||
+    message.includes('focus tag')
+  ) {
+    return 1
+  }
+  if (
+    message.startsWith('Choose one region') ||
+    message.startsWith('Enter a start') ||
+    message.startsWith('End time') ||
+    message.startsWith('Capacity')
+  ) {
+    return 2
+  }
+  return 3
 }
