@@ -3,10 +3,12 @@ import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import test from 'node:test'
 import { createServer } from 'vite'
+import { deskPhase } from '../src/lib/dueDiligencePhase.ts'
 import { MEMBER_VIEWS } from '../src/shell/viewCopy.ts'
 import {
   buildReport,
   containsVerdictLanguage,
+  presentReport,
   DECK_MAX_BYTES,
   deckStoragePath,
   DUE_DILIGENCE_DISCLAIMER,
@@ -14,6 +16,7 @@ import {
   htmlToText,
   isPublicIp,
   MEMBER_MESSAGES,
+  memberFacingMessage,
   parsePublicHttpsUrl,
   publicSearchTerms,
   readStoredReport,
@@ -66,10 +69,10 @@ test('public comparison cites only a page that actually supports the claim', () 
   assert.equal(traction?.verdict, 'publicly_consistent')
   assert.equal(traction?.sources[0]?.url, 'https://en.wikipedia.org/wiki/Northwind_Logistics')
   const market = report.claims.find((claim) => claim.text.includes('900 billion'))
-  assert.equal(market?.verdict, 'not_found')
+  assert.equal(market?.verdict, 'not_publicly_verifiable')
   assert.deepEqual(market?.sources, [])
   const ip = report.claims.find((claim) => claim.kind === 'ip')
-  assert.equal(ip?.verdict, 'not_found')
+  assert.equal(ip?.verdict, 'not_publicly_verifiable')
   assert.equal(report.sources.length, 1)
   assert.ok(report.next_steps.length >= 2)
   const blob = JSON.stringify(report)
@@ -81,7 +84,7 @@ test('thin public sources stay needs follow-up and do not invent a percentage of
   const facts = extractDeckFacts(DECK)
   const report = buildReport(facts, [])
   assert.ok(report.claims.length > 0)
-  assert.equal(report.claims.every((claim) => claim.verdict === 'needs_follow_up'), true)
+  assert.equal(report.claims.every((claim) => claim.verdict === 'insufficient_public_data'), true)
   assert.equal(report.sources.length, 0)
   assert.equal(report.claims.every((claim) => claim.sources.length === 0), true)
   assert.notEqual(report.publicly_consistent_pct, null)
@@ -99,6 +102,91 @@ test('no checkable claims leaves both percentages empty', () => {
   assert.match(report.next_steps[0] || '', /did not state a checkable claim/)
 })
 
+test('a different public figure is a conflict, not a deal verdict', () => {
+  const facts = extractDeckFacts(DECK)
+  const report = buildReport(facts, [
+    {
+      title: 'Northwind Logistics',
+      url: 'https://en.wikipedia.org/wiki/Northwind_Logistics',
+      text: 'The global logistics market is $90 billion according to the public page.',
+    },
+  ])
+  const market = report.claims.find((claim) => claim.text.includes('900 billion'))
+  assert.equal(market?.verdict, 'conflict_with_public_sources')
+  assert.match(market?.note || '', /different figure/)
+  const presented = presentReport(report, 'Northwind.pdf')
+  assert.equal(presented.areas.length, 5)
+  assert.equal(presented.findings.length, 5)
+  assert.deepEqual(
+    presented.areas.map((area) => area.area),
+    [
+      'Entity and company',
+      'Team and founders',
+      'Traction and partnerships',
+      'Market',
+      'Offer and intellectual property',
+    ],
+  )
+  assert.equal(presented.areas.find((area) => area.area === 'Market')?.label, 'conflict_with_public_sources')
+  assert.equal(presented.findings[0]?.number, 1)
+  assert.ok(presented.findings.every((section) => section.rows.length > 0))
+  assert.match(presented.overview, /publicly consistent/)
+  assert.match(presented.overview, /not publicly verifiable/)
+  assert.equal(presented.documents_reviewed, 'Northwind.pdf')
+  const blob = JSON.stringify(presented)
+  assert.equal(blob.includes('\u2014'), false)
+  assert.equal(/\b(valid|invalid|investable|approved|rejected|fraud|invest|pass|fail)\b/i.test(blob), false)
+  assert.equal(/red flag|do not engage/i.test(blob), false)
+})
+
+test('older saved notes still open when verdict labels change', () => {
+  const good = buildReport(extractDeckFacts(DECK), [])
+  const stored = readStoredReport({
+    ...good,
+    claims: good.claims.map((claim) => ({ ...claim, verdict: 'not_found' })),
+  })
+  assert.ok(stored)
+  assert.equal(stored?.claims.every((claim) => claim.verdict === 'not_publicly_verifiable'), true)
+  const followUp = readStoredReport({
+    ...good,
+    claims: good.claims.map((claim) => ({ ...claim, verdict: 'needs_follow_up' })),
+  })
+  assert.equal(followUp?.claims[0]?.verdict, 'insufficient_public_data')
+  const presented = presentReport(stored || good, 'Northwind.pdf')
+  assert.equal(presented.areas.length, 5)
+})
+
+test('desk status never stacks the empty state with an error', () => {
+  assert.equal(
+    deskPhase({ loadState: 'ready', activeJob: false, jobError: true, fileChosen: true, reportCount: 0 }),
+    'job-error',
+  )
+  assert.equal(
+    deskPhase({ loadState: 'ready', activeJob: false, jobError: false, fileChosen: true, reportCount: 0 }),
+    'file-chosen',
+  )
+  assert.equal(
+    deskPhase({ loadState: 'ready', activeJob: true, jobError: true, fileChosen: true, reportCount: 0 }),
+    'running',
+  )
+  assert.equal(
+    deskPhase({ loadState: 'ready', activeJob: false, jobError: false, fileChosen: false, reportCount: 0 }),
+    'idle-empty',
+  )
+  assert.equal(
+    deskPhase({ loadState: 'ready', activeJob: false, jobError: false, fileChosen: false, reportCount: 2 }),
+    'idle',
+  )
+  const page = readFileSync(path.join(root, 'src/pages/dashboard/DueDiligencePage.tsx'), 'utf8')
+  assert.match(page, /phase === 'idle-empty'/)
+  assert.match(page, /phase === 'job-error'/)
+  assert.equal(/reports\.length === 0 \?/.test(page), false)
+  assert.match(page, /AI Due Diligence/)
+  assert.match(page, /Check this deck/)
+  assert.match(page, /\{progress\}%/)
+  assert.match(page, /hidden text-\[0\.72rem\][^"]*md:block/)
+})
+
 test('stored notes reject a percentage pair that does not add up', () => {
   const good = buildReport(extractDeckFacts(DECK), [])
   assert.ok(readStoredReport(good))
@@ -106,6 +194,15 @@ test('stored notes reject a percentage pair that does not add up', () => {
     readStoredReport({ ...good, publicly_consistent_pct: 40, not_publicly_verifiable_pct: 40 }),
     null,
   )
+})
+
+test('an older unreadable deck message stays specific', () => {
+  assert.equal(
+    memberFacingMessage('Could not read this deck. Upload a text-based PDF or PPTX.', MEMBER_MESSAGES.finish),
+    MEMBER_MESSAGES.unreadable,
+  )
+  assert.equal(memberFacingMessage('internal stack', MEMBER_MESSAGES.finish), MEMBER_MESSAGES.finish)
+  assert.match(MEMBER_MESSAGES.scanned, /cannot read text inside images/)
 })
 
 test('public https guard blocks private hosts and odd ports', () => {
@@ -145,13 +242,16 @@ test('member copy uses the locked score language', () => {
     JSON.stringify(VERDICT_LABEL),
     DUE_DILIGENCE_DISCLAIMER,
   ].join('\n')
+  assert.match(ui, /AI Due Diligence/)
   assert.match(ui, /Publicly consistent/)
-  assert.match(ui, /Not found in public sources/)
-  assert.match(ui, /Needs follow-up/)
   assert.match(ui, /Not publicly verifiable/)
+  assert.match(ui, /Conflict with public sources/)
+  assert.match(ui, /Insufficient public data/)
+  assert.match(ui, /cannot read text inside images/)
   assert.equal(ui.includes('\u2014'), false)
   assert.equal(ui.includes('\u2013'), false)
-  assert.equal(/\b(valid|invalid|investable|approved|rejected|fraud|invest|pass)\b/i.test(ui), false)
+  assert.equal(/\b(valid|invalid|investable|approved|rejected|fraud|invest|pass|fail)\b/i.test(ui), false)
+  assert.equal(/red flag|do not engage/i.test(ui), false)
   assert.equal(/nammco/i.test(ui), false)
   assert.equal(/#[0-9a-f]{6}/i.test(ui), false)
   assert.equal(/calendar\.app\.google/i.test(ui), false)

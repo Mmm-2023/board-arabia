@@ -13,7 +13,9 @@ export const DUE_DILIGENCE_DISCLAIMER =
 export const MEMBER_MESSAGES = {
   file: 'Use a PDF or PPTX under 15 MB.',
   notDeck: 'The uploaded file is not a PDF or PPTX.',
-  unreadable: 'Could not read this deck. Upload a text-based PDF or PPTX.',
+  unreadable: 'Could not read this deck. Upload a PDF with selectable text, or a PPTX.',
+  scanned:
+    'This deck looks like scanned images. Board Arabia cannot read text inside images. Upload a PDF with selectable text, or a PPTX.',
   rate: 'Too many checks today. Try again tomorrow.',
   inflight: 'A check is already running.',
   membersOnly: 'Only members can run a check.',
@@ -28,13 +30,22 @@ export const MEMBER_MESSAGES = {
 
 const SAFE_MESSAGES = new Set<string>(Object.values(MEMBER_MESSAGES))
 
+const LEGACY_MESSAGES: Record<string, string> = {
+  'Could not read this deck. Upload a text-based PDF or PPTX.': MEMBER_MESSAGES.unreadable,
+}
+
 export function memberFacingMessage(raw: string | null | undefined, fallback: string): string {
   if (!raw) return fallback
+  if (LEGACY_MESSAGES[raw]) return LEGACY_MESSAGES[raw]
   return SAFE_MESSAGES.has(raw) ? raw : fallback
 }
 
 export type ClaimKind = 'team' | 'traction' | 'market' | 'ip' | 'other'
-export type ClaimVerdict = 'publicly_consistent' | 'not_found' | 'needs_follow_up'
+export type ClaimVerdict =
+  | 'publicly_consistent'
+  | 'not_publicly_verifiable'
+  | 'conflict_with_public_sources'
+  | 'insufficient_public_data'
 export type DeckExt = 'pdf' | 'pptx'
 
 export type DeckClaim = {
@@ -82,15 +93,53 @@ export type BuiltReport = {
 
 export const VERDICT_LABEL: Record<ClaimVerdict, string> = {
   publicly_consistent: 'Publicly consistent',
-  not_found: 'Not found in public sources',
-  needs_follow_up: 'Needs follow-up',
+  not_publicly_verifiable: 'Not publicly verifiable',
+  conflict_with_public_sources: 'Conflict with public sources',
+  insufficient_public_data: 'Insufficient public data',
 }
 
 const VERDICT_NOTE: Record<ClaimVerdict, string> = {
-  publicly_consistent: 'This wording appears in a public page retrieved for this check.',
-  not_found: 'Not found in the public pages retrieved for this check.',
-  needs_follow_up: 'Public pages were thin, so this needs follow-up.',
+  publicly_consistent: 'This wording appears on a public page retrieved for this check.',
+  not_publicly_verifiable: 'Not found on the public pages retrieved for this check.',
+  conflict_with_public_sources: 'A public page retrieved for this check states a different figure for this point.',
+  insufficient_public_data: 'Public pages were too thin to compare this point.',
 }
+
+export type AreaScore = {
+  area: string
+  label: ClaimVerdict
+  reason: string
+}
+
+export type FindingRow = {
+  claim: string
+  source: string
+  finding: string
+  status: ClaimVerdict
+}
+
+export type FindingSection = {
+  number: number
+  title: string
+  narrative: string
+  rows: FindingRow[]
+}
+
+export type PresentedReport = {
+  assessed_line: string
+  documents_reviewed: string
+  overview: string
+  areas: AreaScore[]
+  findings: FindingSection[]
+}
+
+const AREA_SPECS: { title: string; kinds: ClaimKind[] | null }[] = [
+  { title: 'Entity and company', kinds: null },
+  { title: 'Team and founders', kinds: ['team'] },
+  { title: 'Traction and partnerships', kinds: ['traction'] },
+  { title: 'Market', kinds: ['market'] },
+  { title: 'Offer and intellectual property', kinds: ['ip', 'other'] },
+]
 
 const FOLLOW_UP: Record<ClaimKind, string> = {
   team: 'Ask for a public registry filing or a public profile for the named people.',
@@ -312,6 +361,63 @@ export function buildReport(facts: DeckFacts, pages: RetrievedPage[]): BuiltRepo
   }
 }
 
+export function presentReport(report: BuiltReport, fileName: string): PresentedReport {
+  const documents = fileName.replace(/\s+/g, ' ').trim() || 'Pitch deck'
+  const assessed =
+    report.company_label === NOT_STATED
+      ? 'Public-source check of claims in the pitch deck.'
+      : `Public-source check of claims for ${report.company_label}.`
+  const areas = AREA_SPECS.map((spec) => {
+    if (!spec.kinds) return { area: spec.title, ...entityScore(report) }
+    return { area: spec.title, ...rollupArea(report.claims.filter((claim) => spec.kinds?.includes(claim.kind))) }
+  })
+  const findings = areas.map((area, index) => {
+    const spec = AREA_SPECS[index]
+    const claims = spec?.kinds ? report.claims.filter((claim) => spec.kinds?.includes(claim.kind)) : []
+    const rows: FindingRow[] =
+      !spec?.kinds
+        ? [
+            {
+              claim:
+                report.company_label === NOT_STATED
+                  ? 'The deck did not name a company.'
+                  : `Company name: ${report.company_label}`,
+              source: 'Pitch deck',
+              finding: area.reason,
+              status: area.label,
+            },
+          ]
+        : claims.length > 0
+          ? claims.map((claim) => ({
+              claim: claim.text,
+              source: 'Pitch deck',
+              finding: claim.note,
+              status: claim.verdict,
+            }))
+          : [
+              {
+                claim: 'No checkable point in this area.',
+                source: 'Pitch deck',
+                finding: area.reason,
+                status: area.label,
+              },
+            ]
+    return {
+      number: index + 1,
+      title: area.area,
+      narrative: narrativeFor(area.area, area.label),
+      rows,
+    }
+  })
+  return {
+    assessed_line: assessed,
+    documents_reviewed: documents,
+    overview: overviewText(report, documents),
+    areas,
+    findings,
+  }
+}
+
 export function diligencePercents(claims: { verdict: ClaimVerdict }[]): {
   consistent: number | null
   notVerifiable: number | null
@@ -361,29 +467,125 @@ function scoreClaim(claim: DeckClaim, pages: RetrievedPage[]): ReportClaim {
   if (pages.length === 0) {
     return {
       ...claim,
-      verdict: 'needs_follow_up',
-      note: VERDICT_NOTE.needs_follow_up,
+      verdict: 'insufficient_public_data',
+      note: VERDICT_NOTE.insufficient_public_data,
       sources: [],
     }
   }
   const matched = pages.filter((page) => pageSupportsClaim(claim.text, page.text))
-  if (matched.length === 0) {
+  if (matched.length > 0) {
     return {
       ...claim,
-      verdict: 'not_found',
-      note: VERDICT_NOTE.not_found,
-      sources: [],
+      verdict: 'publicly_consistent',
+      note: VERDICT_NOTE.publicly_consistent,
+      sources: matched.slice(0, 3).map(sourceFromPage),
+    }
+  }
+  const conflict = pages.find((page) => pageConflicts(claim.text, page.text))
+  if (conflict) {
+    return {
+      ...claim,
+      verdict: 'conflict_with_public_sources',
+      note: VERDICT_NOTE.conflict_with_public_sources,
+      sources: [sourceFromPage(conflict)],
     }
   }
   return {
     ...claim,
-    verdict: 'publicly_consistent',
-    note: VERDICT_NOTE.publicly_consistent,
-    sources: matched.slice(0, 3).map((page) => ({
-      title: page.title.replace(/\s+/g, ' ').trim().slice(0, 120) || page.url,
-      url: publicUrlWithoutQuery(page.url),
-    })),
+    verdict: 'not_publicly_verifiable',
+    note: VERDICT_NOTE.not_publicly_verifiable,
+    sources: [],
   }
+}
+
+function sourceFromPage(page: RetrievedPage): SourceLink {
+  return {
+    title: page.title.replace(/\s+/g, ' ').trim().slice(0, 120) || page.url,
+    url: publicUrlWithoutQuery(page.url),
+  }
+}
+
+function pageConflicts(claim: string, page: string): boolean {
+  const figures = significantFigures(claim)
+  if (figures.length === 0) return false
+  const claimTokens = distinctiveTokens(claim)
+  const sentences = page.split(/\n+|(?<=[.!?])\s+/)
+  for (const sentence of sentences) {
+    const sentenceTokens = new Set(distinctiveTokens(sentence))
+    const hits = claimTokens.filter((token) => sentenceTokens.has(token))
+    if (hits.length < 3) continue
+    if (figures.some((figure) => figureInPage(figure, sentence))) continue
+    const other = significantFigures(sentence)
+    if (other.some((figure) => !figures.some((item) => item.digits === figure.digits && item.scale === figure.scale))) {
+      return true
+    }
+  }
+  return false
+}
+
+function entityScore(report: BuiltReport): { label: ClaimVerdict; reason: string } {
+  if (report.company_label === NOT_STATED) {
+    return { label: 'insufficient_public_data', reason: 'The deck did not name a company.' }
+  }
+  if (report.sources.length === 0) {
+    return {
+      label: 'insufficient_public_data',
+      reason: 'No public page was retrieved to compare the company name.',
+    }
+  }
+  const needle = report.company_label.toLowerCase()
+  const hit = report.sources.some((source) => source.title.toLowerCase().includes(needle))
+  if (hit) {
+    return {
+      label: 'publicly_consistent',
+      reason: 'The company name appears on a public page retrieved for this check.',
+    }
+  }
+  return {
+    label: 'not_publicly_verifiable',
+    reason: 'The company name was not found on the public pages retrieved for this check.',
+  }
+}
+
+function rollupArea(claims: ReportClaim[]): { label: ClaimVerdict; reason: string } {
+  if (claims.length === 0) {
+    return {
+      label: 'insufficient_public_data',
+      reason: 'The deck did not state a checkable point in this area.',
+    }
+  }
+  const conflict = claims.find((claim) => claim.verdict === 'conflict_with_public_sources')
+  if (conflict) return { label: 'conflict_with_public_sources', reason: conflict.note }
+  if (claims.every((claim) => claim.verdict === 'publicly_consistent')) {
+    return { label: 'publicly_consistent', reason: VERDICT_NOTE.publicly_consistent }
+  }
+  if (claims.every((claim) => claim.verdict === 'insufficient_public_data')) {
+    return { label: 'insufficient_public_data', reason: VERDICT_NOTE.insufficient_public_data }
+  }
+  return {
+    label: 'not_publicly_verifiable',
+    reason: 'Not found on the public pages retrieved for this check.',
+  }
+}
+
+function narrativeFor(title: string, label: ClaimVerdict): string {
+  if (label === 'publicly_consistent') return `${title} lines up with a public page retrieved for this check.`
+  if (label === 'conflict_with_public_sources') {
+    return `${title} includes a figure that a public page states differently.`
+  }
+  if (label === 'not_publicly_verifiable') {
+    return `${title} includes points that were not found on the public pages retrieved for this check.`
+  }
+  return `${title} did not have enough public material to compare.`
+}
+
+function overviewText(report: BuiltReport, documents: string): string {
+  const sector = report.sector_label === NOT_STATED ? '' : ` Sector in the deck: ${report.sector_label}.`
+  const ask = report.ask_label === NOT_STATED ? '' : ` Ask in the deck: ${report.ask_label}.`
+  if (report.publicly_consistent_pct === null || report.not_publicly_verifiable_pct === null) {
+    return `This assessment reads ${documents} for ${report.company_label}.${sector}${ask} The deck did not state a checkable claim, so there is no percentage. Public sources only. You decide what to do next.`
+  }
+  return `This assessment reads ${documents} for ${report.company_label} and compares the claims with public pages.${sector}${ask} ${report.publicly_consistent_pct}% of the checkable claims were publicly consistent. ${report.not_publicly_verifiable_pct}% were not publicly verifiable. Where a public page states a different figure, the scorecard says conflict with public sources. This is not legal advice. You decide what to do next.`
 }
 
 function pageSupportsClaim(claim: string, page: string): boolean {
@@ -574,13 +776,14 @@ function readClaims(value: unknown): ReportClaim[] | null {
     if (!item || typeof item !== 'object') return null
     const row = item as Record<string, unknown>
     if (typeof row.text !== 'string' || row.text.length < 8 || row.text.length > 400) return null
-    if (!isKind(row.kind) || !isVerdict(row.verdict) || typeof row.note !== 'string') return null
+    const verdict = normalizeVerdict(row.verdict)
+    if (!isKind(row.kind) || !verdict || typeof row.note !== 'string') return null
     const sources = readSources(row.sources)
     if (!sources) return null
     claims.push({
       text: row.text,
       kind: row.kind,
-      verdict: row.verdict,
+      verdict,
       note: row.note,
       sources,
     })
@@ -615,6 +818,10 @@ function isKind(value: unknown): value is ClaimKind {
   return value === 'team' || value === 'traction' || value === 'market' || value === 'ip' || value === 'other'
 }
 
-function isVerdict(value: unknown): value is ClaimVerdict {
-  return value === 'publicly_consistent' || value === 'not_found' || value === 'needs_follow_up'
+function normalizeVerdict(value: unknown): ClaimVerdict | null {
+  if (value === 'publicly_consistent') return 'publicly_consistent'
+  if (value === 'not_publicly_verifiable' || value === 'not_found') return 'not_publicly_verifiable'
+  if (value === 'conflict_with_public_sources') return 'conflict_with_public_sources'
+  if (value === 'insufficient_public_data' || value === 'needs_follow_up') return 'insufficient_public_data'
+  return null
 }

@@ -7,11 +7,12 @@ import {
   isUuid,
   MEMBER_MESSAGES,
   parsePublicHttpsUrl,
+  presentReport,
   safeFileName,
   sniffDeck,
   VERDICT_LABEL,
-  type ClaimKind,
-  type ReportClaim,
+  type FindingRow,
+  type PresentedReport,
   type SourceLink,
 } from '../../../supabase/functions/_shared/due_diligence.ts'
 import {
@@ -23,6 +24,7 @@ import {
   type HistoryItem,
   type ReadFailure,
 } from '../../lib/dueDiligence'
+import { deskPhase } from '../../lib/dueDiligencePhase'
 import { supabase } from '../../lib/supabase'
 import { useNoIndex } from '../../lib/usePageTitle'
 import { CardSkeleton, EmptyState, ErrorBanner, PermissionState } from '../../shell/ViewState'
@@ -33,18 +35,12 @@ const fieldClass =
   'mt-1 w-full min-h-11 border border-[var(--ba-line)] bg-white px-3 text-[1rem] text-ink'
 const buttonClass =
   'ba-primary inline-flex min-h-11 items-center justify-center px-4 text-[0.75rem] font-semibold tracking-[0.08em] uppercase disabled:opacity-40'
-
-const KIND_LABEL: Record<ClaimKind, string> = {
-  team: 'Team',
-  traction: 'Traction',
-  market: 'Market',
-  ip: 'IP',
-  other: 'Other',
-}
+const quietButtonClass =
+  'inline-flex min-h-11 items-center justify-center border border-[var(--ba-line)] bg-white px-4 text-[0.75rem] font-semibold tracking-[0.08em] text-ink uppercase disabled:opacity-40'
 
 export function DueDiligencePage() {
   const { reportId } = useParams()
-  useNoIndex('Due Diligence | Board Arabia')
+  useNoIndex('AI Due Diligence | Board Arabia')
   if (reportId) return <ReportView key={reportId} reportId={reportId} />
   return <Desk />
 }
@@ -91,12 +87,7 @@ function Desk() {
     async function tick() {
       const result = await fetchDueDiligenceStatus(activeJobId as string)
       if (cancelled) return
-      if (!result.ok) {
-        setJobError(
-          result.kind === 'unavailable' ? MEMBER_VIEWS.dueDiligence.unavailable : result.error,
-        )
-        return
-      }
+      if (!result.ok) return
       setProgress(result.progress)
       setStage(result.stage)
       if (result.reportId) {
@@ -119,6 +110,7 @@ function Desk() {
   async function onSubmit(event: FormEvent) {
     event.preventDefault()
     setFormError('')
+    setJobError('')
     if (!file) {
       setFormError(MEMBER_MESSAGES.file)
       return
@@ -176,23 +168,33 @@ function Desk() {
     setActiveJobId(started.jobId)
   }
 
+  const phase = deskPhase({
+    loadState,
+    activeJob: Boolean(activeJobId),
+    jobError: Boolean(jobError),
+    fileChosen: Boolean(file),
+    reportCount: reports.length,
+  })
+
   return (
     <div className="max-w-3xl">
-      <p className="text-[0.72rem] font-semibold tracking-[0.14em] text-brass uppercase">
-        Due Diligence
+      <p className="hidden text-[0.72rem] font-semibold tracking-[0.14em] text-brass uppercase md:block">
+        AI Due Diligence
       </p>
-      <h1 className="mt-3 font-display text-[2.2rem] font-bold tracking-[-0.03em]">Due Diligence</h1>
+      <h1 className="font-display text-[1.75rem] leading-tight font-bold tracking-[-0.03em] text-balance md:mt-3 md:text-[2.2rem]">
+        AI Due Diligence
+      </h1>
       <p className="mt-3 max-w-xl text-[1rem] leading-relaxed text-ink/65">
         Upload a pitch deck. Board Arabia compares its claims with public pages and leaves the
         decision with you.
       </p>
 
       <div className="mt-8">
-        {loadState === 'loading' ? <CardSkeleton tone="member" label="Loading due diligence" /> : null}
-        {loadState === 'denied' ? (
+        {phase === 'loading' ? <CardSkeleton tone="member" label="Loading AI Due Diligence" /> : null}
+        {phase === 'denied' ? (
           <PermissionState tone="member" message={MEMBER_VIEWS.dueDiligence.denied} />
         ) : null}
-        {loadState === 'error' || loadState === 'unavailable' ? (
+        {phase === 'load-error' ? (
           <ErrorBanner
             tone="member"
             message={
@@ -207,40 +209,44 @@ function Desk() {
             retryLabel={MEMBER_VIEWS.dueDiligence.retry}
           />
         ) : null}
-        {loadState === 'ready' && reports.length === 0 ? (
+        {phase === 'running' ? (
+          <div className="border border-[var(--ba-line)] bg-white px-4 py-4" aria-live="polite">
+            <p className="text-[1rem] leading-snug text-ink">
+              {stage || 'Queued'}
+              <span className="text-[var(--ba-muted)]"> · {progress}%</span>
+            </p>
+            <div
+              role="progressbar"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={progress}
+              aria-label={`${stage || 'Queued'}, ${progress} percent`}
+              className="mt-3 h-3 bg-[var(--ba-lavender-mist)]"
+            >
+              <div className="h-3 bg-[var(--ba-indigo)]" style={{ width: `${progress}%` }} />
+            </div>
+          </div>
+        ) : null}
+        {phase === 'job-error' ? (
+          <ErrorBanner
+            tone="member"
+            message={jobError}
+            onRetry={() => setJobError('')}
+            retryLabel="Dismiss"
+          />
+        ) : null}
+        {phase === 'file-chosen' ? (
+          <p className="border border-[var(--ba-line)] bg-white px-4 py-3 text-[0.98rem] text-ink">
+            {MEMBER_VIEWS.dueDiligence.ready}
+          </p>
+        ) : null}
+        {phase === 'idle-empty' ? (
           <EmptyState tone="member" message={MEMBER_VIEWS.dueDiligence.empty} />
         ) : null}
       </div>
 
       {loadState === 'ready' ? (
         <>
-          {activeJobId ? (
-            <div className="mt-6 border border-[var(--ba-line)] bg-white px-4 py-4" aria-live="polite">
-              <p className="text-[0.95rem] text-ink">{stage || 'Queued'}</p>
-              <div
-                role="progressbar"
-                aria-valuemin={0}
-                aria-valuemax={100}
-                aria-valuenow={progress}
-                aria-label={stage || 'Queued'}
-                className="mt-3 h-2 bg-[var(--ba-lavender-mist)]"
-              >
-                <div className="h-2 bg-[var(--ba-indigo)]" style={{ width: `${progress}%` }} />
-              </div>
-            </div>
-          ) : null}
-
-          {jobError ? (
-            <div className="mt-4">
-              <ErrorBanner
-                tone="member"
-                message={jobError}
-                onRetry={() => setJobError('')}
-                retryLabel="Dismiss"
-              />
-            </div>
-          ) : null}
-
           <form onSubmit={(event) => void onSubmit(event)} className="mt-8 max-w-xl">
             <label className="block text-[0.95rem] text-ink" htmlFor="dd-file-button">
               Pitch deck
@@ -253,12 +259,13 @@ function Desk() {
               onChange={(event) => {
                 setFile(event.target.files?.[0] ?? null)
                 setFormError('')
+                setJobError('')
               }}
             />
             <button
               id="dd-file-button"
               type="button"
-              className={`${buttonClass} mt-2`}
+              className={`${file ? quietButtonClass : buttonClass} mt-2`}
               disabled={busy || Boolean(activeJobId)}
               onClick={() => fileRef.current?.click()}
             >
@@ -267,7 +274,13 @@ function Desk() {
             {file ? <p className="mt-2 truncate text-[0.92rem] text-[var(--ba-muted)]">{file.name}</p> : null}
             <p className="mt-2 text-[0.92rem] leading-relaxed text-[var(--ba-muted)]">PDF or PPTX, up to 15 MB.</p>
 
-            <label className="mt-5 block text-[0.95rem] text-ink" htmlFor="dd-url">
+            {file ? (
+              <button type="submit" className={`${buttonClass} mt-4`} disabled={busy || Boolean(activeJobId)}>
+                {busy ? 'Uploading' : 'Check this deck'}
+              </button>
+            ) : null}
+
+            <label className="mt-6 block text-[0.95rem] text-ink/80" htmlFor="dd-url">
               Company site, optional
             </label>
             <input
@@ -290,10 +303,6 @@ function Desk() {
                 {formError}
               </p>
             ) : null}
-
-            <button type="submit" className={`${buttonClass} mt-5`} disabled={busy || Boolean(activeJobId)}>
-              {busy ? 'Uploading' : 'Upload and check'}
-            </button>
           </form>
 
           {reports.length > 0 ? (
@@ -359,14 +368,15 @@ function ReportView({ reportId }: { reportId: string }) {
   }, [attempt, reportId, validId])
 
   const ready = state === 'ready' && report && report.ok ? report : null
+  const presented = ready ? presentReport(ready.report, fileName) : null
 
   return (
-    <div className="max-w-3xl">
-      <p className="text-[0.72rem] font-semibold tracking-[0.14em] text-brass uppercase">
-        Due Diligence
+    <div className="max-w-5xl">
+      <p className="hidden text-[0.72rem] font-semibold tracking-[0.14em] text-brass uppercase md:block">
+        AI Due Diligence
       </p>
-      <h1 className="mt-3 font-display text-[2.2rem] font-bold tracking-[-0.03em]">
-        {ready ? ready.report.company_label : 'Due Diligence'}
+      <h1 className="font-display text-[1.75rem] leading-tight font-bold tracking-[-0.03em] text-balance md:mt-3 md:text-[2.2rem]">
+        {ready ? ready.report.company_label : 'AI Due Diligence'}
       </h1>
       <Link
         to="/dashboard/due-diligence"
@@ -378,9 +388,7 @@ function ReportView({ reportId }: { reportId: string }) {
       <div className="mt-6">
         {state === 'loading' ? <CardSkeleton tone="member" label="Loading note" /> : null}
         {state === 'denied' ? <PermissionState tone="member" message={MEMBER_VIEWS.dueDiligence.denied} /> : null}
-        {state === 'missing' ? (
-          <EmptyState tone="member" message={MEMBER_MESSAGES.missing} />
-        ) : null}
+        {state === 'missing' ? <EmptyState tone="member" message={MEMBER_MESSAGES.missing} /> : null}
         {state === 'error' || state === 'unavailable' ? (
           <ErrorBanner
             tone="member"
@@ -398,98 +406,209 @@ function ReportView({ reportId }: { reportId: string }) {
         ) : null}
       </div>
 
-      {ready ? (
-        <article className="mt-6">
-          <p className="text-[0.92rem] text-[var(--ba-muted)]">
-            {fileName} · {formatWhen(createdAt)}
-          </p>
-          <p className="mt-4 border-y border-r border-[var(--ba-line)] border-l-4 border-l-[var(--ba-copper)] bg-white px-4 py-3 text-[0.98rem] leading-relaxed text-ink/80">
-            {ready.report.disclaimer}
-          </p>
-
-          <section className="mt-8" aria-labelledby="dd-overview">
-            <h2 id="dd-overview" className="font-display text-[1.35rem] font-semibold">
-              Overview
-            </h2>
-            <dl className="mt-4 grid gap-3 sm:grid-cols-3">
-              <OverviewItem label="Company" value={ready.report.company_label} />
-              <OverviewItem label="Sector" value={ready.report.sector_label} />
-              <OverviewItem label="Ask" value={ready.report.ask_label} />
-            </dl>
-          </section>
-
-          <section className="mt-8" aria-labelledby="dd-percent">
-            <h2 id="dd-percent" className="font-display text-[1.35rem] font-semibold">
-              Public comparison
-            </h2>
-            {ready.report.publicly_consistent_pct === null ? (
-              <p className="mt-4 text-[1rem] leading-relaxed text-ink/70">{MEMBER_VIEWS.dueDiligence.noScore}</p>
-            ) : (
-              <>
-                <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                  <PercentTile
-                    value={ready.report.publicly_consistent_pct}
-                    label="Publicly consistent"
-                  />
-                  <PercentTile
-                    value={ready.report.not_publicly_verifiable_pct ?? 0}
-                    label="Not publicly verifiable"
-                  />
-                </div>
-                <p className="mt-3 text-[0.95rem] leading-relaxed text-[var(--ba-muted)]">
-                  {MEMBER_VIEWS.dueDiligence.rationale}
-                </p>
-              </>
-            )}
-          </section>
-
-          <section className="mt-8" aria-labelledby="dd-claims">
-            <h2 id="dd-claims" className="font-display text-[1.35rem] font-semibold">
-              Claims
-            </h2>
-            {ready.report.claims.length === 0 ? (
-              <p className="mt-4 text-[1rem] text-ink/70">{MEMBER_VIEWS.dueDiligence.noScore}</p>
-            ) : (
-              <ul className="mt-4 space-y-3">
-                {ready.report.claims.map((claim) => (
-                  <ClaimCard key={claim.text} claim={claim} />
-                ))}
-              </ul>
-            )}
-          </section>
-
-          <section className="mt-8" aria-labelledby="dd-sources">
-            <h2 id="dd-sources" className="font-display text-[1.35rem] font-semibold">
-              Sources
-            </h2>
-            {ready.report.sources.length === 0 ? (
-              <p className="mt-4 text-[1rem] leading-relaxed text-ink/70">
-                {MEMBER_VIEWS.dueDiligence.sourcesUnknown}
-              </p>
-            ) : (
-              <ul className="mt-4 space-y-2">
-                {ready.report.sources.map((source) => (
-                  <li key={source.url}>
-                    <PublicLink source={source} />
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
-
-          <section className="mt-8" aria-labelledby="dd-next">
-            <h2 id="dd-next" className="font-display text-[1.35rem] font-semibold">
-              Next steps
-            </h2>
-            <ol className="mt-4 list-decimal space-y-3 pl-5 text-[1rem] leading-relaxed text-ink/80">
-              {ready.report.next_steps.map((step) => (
-                <li key={step}>{step}</li>
-              ))}
-            </ol>
-          </section>
-        </article>
+      {ready && presented ? (
+        <ReportBody presented={presented} preparedAt={createdAt} report={ready.report} />
       ) : null}
     </div>
+  )
+}
+
+function ReportBody({
+  presented,
+  preparedAt,
+  report,
+}: {
+  presented: PresentedReport
+  preparedAt: string
+  report: Extract<Awaited<ReturnType<typeof loadDueDiligenceReport>>, { ok: true }>['report']
+}) {
+  return (
+    <article className="mt-6">
+      <p className="max-w-3xl text-[1.05rem] leading-relaxed text-ink">{presented.assessed_line}</p>
+      <dl className="mt-4 grid gap-3 sm:grid-cols-2">
+        <OverviewItem label="Prepared" value={formatDate(preparedAt)} />
+        <OverviewItem label="Documents reviewed" value={presented.documents_reviewed} />
+      </dl>
+      <p className="mt-4 max-w-3xl border-y border-r border-[var(--ba-line)] border-l-4 border-l-[var(--ba-copper)] bg-white px-4 py-3 text-[0.98rem] leading-relaxed text-ink/80">
+        {report.disclaimer}
+      </p>
+
+      <section className="mt-8 max-w-3xl" aria-labelledby="dd-overview">
+        <h2 id="dd-overview" className="font-display text-[1.35rem] font-semibold">
+          Assessment overview
+        </h2>
+        <p className="mt-4 text-[1rem] leading-relaxed text-ink/80">{presented.overview}</p>
+        <dl className="mt-4 grid gap-3 sm:grid-cols-3">
+          <OverviewItem label="Company" value={report.company_label} />
+          <OverviewItem label="Sector" value={report.sector_label} />
+          <OverviewItem label="Ask" value={report.ask_label} />
+        </dl>
+      </section>
+
+      <section className="mt-8" aria-labelledby="dd-scorecard">
+        <h2 id="dd-scorecard" className="font-display text-[1.35rem] font-semibold">
+          Area scorecard
+        </h2>
+        <ul className="mt-4 space-y-3 md:hidden">
+          {presented.areas.map((area) => (
+            <li key={area.area} className="border border-[var(--ba-line)] bg-white px-4 py-3">
+              <p className="text-[1rem] text-ink">{area.area}</p>
+              <p className="mt-1 text-[0.72rem] font-semibold tracking-[0.12em] text-[var(--ba-copper-deep)] uppercase">
+                {VERDICT_LABEL[area.label]}
+              </p>
+              <p className="mt-2 text-[0.95rem] leading-relaxed text-ink/75">{area.reason}</p>
+            </li>
+          ))}
+        </ul>
+        <div className="mt-4 hidden overflow-x-auto md:block">
+          <table className="w-full min-w-[40rem] border-collapse text-left">
+            <thead>
+              <tr className="border-b border-[var(--ba-line)] text-[0.72rem] tracking-[0.12em] text-[var(--ba-muted)] uppercase">
+                <th scope="col" className="px-3 py-3 font-semibold">
+                  Area
+                </th>
+                <th scope="col" className="px-3 py-3 font-semibold">
+                  Label
+                </th>
+                <th scope="col" className="px-3 py-3 font-semibold">
+                  Key reason
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {presented.areas.map((area) => (
+                <tr key={area.area} className="border-b border-[var(--ba-line)] bg-white align-top">
+                  <th scope="row" className="px-3 py-3 text-[1rem] font-semibold text-ink">
+                    {area.area}
+                  </th>
+                  <td className="px-3 py-3 text-[0.95rem] text-ink">{VERDICT_LABEL[area.label]}</td>
+                  <td className="px-3 py-3 text-[0.95rem] leading-relaxed text-ink/80">{area.reason}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section className="mt-8" aria-labelledby="dd-percent">
+        <h2 id="dd-percent" className="font-display text-[1.35rem] font-semibold">
+          Overall summary
+        </h2>
+        {report.publicly_consistent_pct === null ? (
+          <p className="mt-4 text-[1rem] leading-relaxed text-ink/70">{MEMBER_VIEWS.dueDiligence.noScore}</p>
+        ) : (
+          <div className="mt-4 border border-[var(--ba-line)] bg-white px-4 py-4">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <PercentTile value={report.publicly_consistent_pct} label="Publicly consistent" />
+              <PercentTile value={report.not_publicly_verifiable_pct ?? 0} label="Not publicly verifiable" />
+            </div>
+            <p className="mt-3 text-[0.95rem] leading-relaxed text-[var(--ba-muted)]">
+              {MEMBER_VIEWS.dueDiligence.rationale}
+            </p>
+          </div>
+        )}
+      </section>
+
+      {presented.findings.map((section) => (
+        <section key={section.number} className="mt-8" aria-labelledby={`dd-finding-${section.number}`}>
+          <h2 id={`dd-finding-${section.number}`} className="font-display text-[1.35rem] font-semibold">
+            Finding {section.number}. {section.title}
+          </h2>
+          <p className="mt-3 max-w-3xl text-[1rem] leading-relaxed text-ink/80">{section.narrative}</p>
+          <FindingCards rows={section.rows} />
+          <FindingTable rows={section.rows} />
+        </section>
+      ))}
+
+      <section className="mt-8" aria-labelledby="dd-sources">
+        <h2 id="dd-sources" className="font-display text-[1.35rem] font-semibold">
+          Sources
+        </h2>
+        {report.sources.length === 0 ? (
+          <p className="mt-4 text-[1rem] leading-relaxed text-ink/70">{MEMBER_VIEWS.dueDiligence.sourcesUnknown}</p>
+        ) : (
+          <ul className="mt-4 space-y-2">
+            {report.sources.map((source) => (
+              <li key={source.url}>
+                <PublicLink source={source} />
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <section className="mt-8 max-w-3xl" aria-labelledby="dd-next">
+        <h2 id="dd-next" className="font-display text-[1.35rem] font-semibold">
+          Next steps
+        </h2>
+        <ol className="mt-4 list-decimal space-y-3 pl-5 text-[1rem] leading-relaxed text-ink/80">
+          {report.next_steps.map((step) => (
+            <li key={step}>{step}</li>
+          ))}
+        </ol>
+      </section>
+    </article>
+  )
+}
+
+function FindingCards({ rows }: { rows: FindingRow[] }) {
+  return (
+    <ul className="mt-4 space-y-3 md:hidden">
+      {rows.map((row) => (
+        <li key={`${row.claim}-${row.status}`} className="border border-[var(--ba-line)] bg-white px-4 py-3">
+          <Field label="Claim" value={row.claim} />
+          <Field label="Source" value={row.source} />
+          <Field label="Finding" value={row.finding} />
+          <Field label="Status" value={VERDICT_LABEL[row.status]} />
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+function FindingTable({ rows }: { rows: FindingRow[] }) {
+  return (
+    <div className="mt-4 hidden overflow-x-auto md:block">
+      <table className="w-full min-w-[44rem] border-collapse text-left">
+        <thead>
+          <tr className="border-b border-[var(--ba-line)] text-[0.72rem] tracking-[0.12em] text-[var(--ba-muted)] uppercase">
+            <th scope="col" className="px-3 py-3 font-semibold">
+              Claim
+            </th>
+            <th scope="col" className="px-3 py-3 font-semibold">
+              Source
+            </th>
+            <th scope="col" className="px-3 py-3 font-semibold">
+              Finding
+            </th>
+            <th scope="col" className="px-3 py-3 font-semibold">
+              Status
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row) => (
+            <tr key={`${row.claim}-${row.status}`} className="border-b border-[var(--ba-line)] bg-white align-top">
+              <td className="px-3 py-3 text-[0.95rem] leading-relaxed text-ink">{row.claim}</td>
+              <td className="px-3 py-3 text-[0.95rem] text-ink">{row.source}</td>
+              <td className="px-3 py-3 text-[0.95rem] leading-relaxed text-ink/80">{row.finding}</td>
+              <td className="px-3 py-3 text-[0.95rem] text-ink">{VERDICT_LABEL[row.status]}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+function Field({ label, value }: { label: string; value: string }) {
+  return (
+    <p className="mt-2 text-[0.95rem] leading-relaxed text-ink">
+      <span className="text-[0.72rem] font-semibold tracking-[0.12em] text-[var(--ba-muted)] uppercase">
+        {label}.{' '}
+      </span>
+      {value}
+    </p>
   )
 }
 
@@ -506,33 +625,12 @@ function OverviewItem({ label, value }: { label: string; value: string }) {
 
 function PercentTile({ value, label }: { value: number; label: string }) {
   return (
-    <div className="border border-[var(--ba-line)] bg-white px-4 py-4">
+    <div>
       <p className="font-display text-[2rem] font-semibold tracking-[-0.03em] text-[var(--ba-indigo)]">
         {value}%
       </p>
       <p className="mt-1 text-[0.95rem] text-ink">{label}</p>
     </div>
-  )
-}
-
-function ClaimCard({ claim }: { claim: ReportClaim }) {
-  return (
-    <li className="border border-[var(--ba-line)] bg-white px-4 py-4">
-      <p className="text-[0.72rem] font-semibold tracking-[0.12em] text-[var(--ba-copper-deep)] uppercase">
-        {KIND_LABEL[claim.kind]} · {VERDICT_LABEL[claim.verdict]}
-      </p>
-      <p className="mt-2 text-[1rem] leading-relaxed text-ink">{claim.text}</p>
-      <p className="mt-2 text-[0.95rem] leading-relaxed text-[var(--ba-muted)]">{claim.note}</p>
-      {claim.sources.length > 0 ? (
-        <ul className="mt-2 space-y-1">
-          {claim.sources.map((source) => (
-            <li key={source.url}>
-              <PublicLink source={source} />
-            </li>
-          ))}
-        </ul>
-      ) : null}
-    </li>
   )
 }
 
@@ -556,4 +654,10 @@ function formatWhen(iso: string) {
   const date = new Date(iso)
   if (Number.isNaN(date.getTime())) return ''
   return date.toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' })
+}
+
+function formatDate(iso: string) {
+  const date = new Date(iso)
+  if (Number.isNaN(date.getTime())) return ''
+  return date.toLocaleDateString('en-GB', { dateStyle: 'long' })
 }

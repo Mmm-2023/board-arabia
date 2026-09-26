@@ -81,9 +81,12 @@ export async function advanceDueDiligenceJob(admin: SupabaseClient, jobId: strin
       .in('status', ACTIVE)
   } catch (err) {
     const message = err instanceof Error ? err.message : ''
-    const safe = message === MEMBER_MESSAGES.unreadable || message === MEMBER_MESSAGES.notDeck
-      ? message
-      : MEMBER_MESSAGES.finish
+    const safe =
+      message === MEMBER_MESSAGES.unreadable ||
+      message === MEMBER_MESSAGES.scanned ||
+      message === MEMBER_MESSAGES.notDeck
+        ? message
+        : MEMBER_MESSAGES.finish
     await admin
       .from('due_diligence_jobs')
       .update({ status: 'failed', error: safe })

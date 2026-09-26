@@ -1,5 +1,6 @@
 import { unzipSync, strFromU8 } from 'https://esm.sh/fflate@0.8.2'
 import { MEMBER_MESSAGES, textFromOfficeXml, type DeckExt } from '../_shared/due_diligence.ts'
+import { decidePdfText, readPdfText } from '../_shared/pdf_text.ts'
 
 export function assertPptxSlides(bytes: Uint8Array) {
   let files: Record<string, Uint8Array>
@@ -20,17 +21,11 @@ export async function textFromDeck(bytes: Uint8Array, ext: DeckExt): Promise<str
 }
 
 async function textFromPdf(bytes: Uint8Array): Promise<string> {
-  try {
-    const { extractText } = await import('https://esm.sh/unpdf@1.8.1')
-    const extracted = await extractText(bytes, { mergePages: true })
-    const text = typeof extracted.text === 'string' ? extracted.text : extracted.text.join('\n')
-    if (text.trim().length >= 40) return text
-  } catch {
-    // Fall through to literal strings when the PDF reader cannot open the file.
+  const decision = decidePdfText(await readPdfText(bytes))
+  if (!decision.ok) {
+    throw new Error(decision.reason === 'scanned' ? MEMBER_MESSAGES.scanned : MEMBER_MESSAGES.unreadable)
   }
-  const literal = literalPdfText(bytes)
-  if (literal.trim().length >= 40) return literal
-  throw new Error(MEMBER_MESSAGES.unreadable)
+  return decision.text
 }
 
 function textFromPptx(bytes: Uint8Array): string {
@@ -54,22 +49,4 @@ function textFromPptx(bytes: Uint8Array): string {
 function slideNumber(name: string): number {
   const match = name.match(/slide(\d+)\.xml$/)
   return match ? Number(match[1]) : 0
-}
-
-function literalPdfText(bytes: Uint8Array): string {
-  const raw = new TextDecoder('latin1').decode(bytes)
-  const parts: string[] = []
-  const re = /\((?:\\\)|\\.|[^\\)]){3,}\)(?=\s*Tj)/g
-  for (const match of raw.matchAll(re)) {
-    const inner = match[0].slice(1, -1)
-    const text = inner
-      .replace(/\\n/g, ' ')
-      .replace(/\\r/g, ' ')
-      .replace(/\\t/g, ' ')
-      .replace(/\\\(/g, '(')
-      .replace(/\\\)/g, ')')
-      .replace(/\\\\/g, '\\')
-    if (/[A-Za-z]{3,}/.test(text)) parts.push(text)
-  }
-  return parts.join(' ')
 }

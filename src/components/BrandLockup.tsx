@@ -25,7 +25,7 @@ export function BrandLockup({
 }) {
   const colors = toneClass[tone]
   return (
-    <Link to={to} aria-label="Board Arabia" className="flex min-w-0 items-center gap-2.5">
+    <Link to={to} aria-label="Board Arabia" className="flex min-h-11 min-w-0 items-center gap-2.5">
       <img
         src={`${import.meta.env.BASE_URL}favicon.svg`}
         alt=""

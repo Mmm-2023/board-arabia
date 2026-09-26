@@ -42,14 +42,23 @@ export function AppShell({
   const title = shellSectionTitle(location.pathname, destinations, secondary)
   const styles = tone === 'staff' ? staffTheme : memberTheme
   const home = destinations[0]?.to ?? '/'
+  const secondaryActive = secondary.some(
+    (item) => location.pathname === item.to || location.pathname.startsWith(`${item.to}/`),
+  )
+  const moreCurrent = moreOpen || secondaryActive
 
   useEffect(() => {
     if (!moreOpen) return
     function onKey(event: KeyboardEvent) {
       if (event.key === 'Escape') setMoreOpen(false)
     }
+    const previous = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
     window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
+    return () => {
+      document.body.style.overflow = previous
+      window.removeEventListener('keydown', onKey)
+    }
   }, [moreOpen])
 
   return (
@@ -133,16 +142,6 @@ export function AppShell({
                 {title}
               </p>
               <div className="flex shrink-0 items-center justify-end gap-2">
-                <button
-                  type="button"
-                  className={`inline-flex min-h-11 min-w-11 items-center justify-center px-3 text-[0.95rem] font-semibold md:hidden ${styles.switch}`}
-                  aria-expanded={moreOpen}
-                  aria-controls="shell-more"
-                  aria-label="More"
-                  onClick={() => setMoreOpen((value) => !value)}
-                >
-                  More
-                </button>
                 {updatedLabel && (
                   <p className={`hidden px-1 text-[0.75rem] md:block ${styles.muted}`}>{updatedLabel}</p>
                 )}
@@ -172,7 +171,7 @@ export function AppShell({
         aria-label="Primary"
         className={`shell-tab-bar shell-safe-bottom shell-safe-x fixed inset-x-0 bottom-0 z-40 border-t md:hidden ${styles.tabBar}`}
       >
-        <ul className="grid min-h-[var(--ba-tab-bar-height,56px)] grid-cols-5">
+        <ul className="grid min-h-[var(--ba-tab-bar-height,76px)] grid-cols-6">
           {destinations.map((item) => (
             <li key={item.to} className="min-w-0">
               <NavLink
@@ -181,16 +180,33 @@ export function AppShell({
                 data-nav="primary"
                 data-destination={item.label}
                 className={({ isActive }) =>
-                  `flex min-h-11 w-full flex-col items-center justify-center gap-0.5 px-1 py-1.5 text-center text-[0.68rem] leading-tight ${
+                  `flex min-h-11 w-full flex-col items-center justify-center gap-0.5 px-0.5 py-1.5 text-center text-[0.65rem] leading-tight ${
                     isActive ? styles.tabActive : styles.tabIdle
                   }`
                 }
               >
                 <DestinationIcon id={item.id} />
-                <span>{item.label}</span>
+                <span className="max-w-full text-balance">{item.label}</span>
               </NavLink>
             </li>
           ))}
+          <li className="min-w-0">
+            <button
+              type="button"
+              data-nav="more"
+              data-more-current={moreCurrent ? 'true' : 'false'}
+              className={`flex min-h-11 min-w-11 w-full flex-col items-center justify-center gap-0.5 px-0.5 py-1.5 text-center text-[0.65rem] leading-tight ${
+                moreCurrent ? styles.tabActive : styles.tabIdle
+              }`}
+              aria-expanded={moreOpen}
+              aria-controls="shell-more"
+              aria-label="More"
+              onClick={() => setMoreOpen((value) => !value)}
+            >
+              <MoreIcon />
+              <span>More</span>
+            </button>
+          </li>
         </ul>
       </nav>
 
@@ -207,11 +223,24 @@ export function AppShell({
             role="dialog"
             aria-modal="true"
             aria-label="More"
-            className={`shell-tab-bar shell-safe-bottom absolute inset-x-0 bottom-0 border-t px-4 pt-4 ${styles.border} ${styles.page}`}
+            className={`shell-tab-bar shell-safe-bottom absolute inset-x-0 bottom-0 max-h-[min(32rem,85dvh)] overflow-y-auto border-t px-4 pt-4 ${styles.border} ${styles.page}`}
           >
-            <div className="px-3 pb-2">
-              <p className="font-display text-[1.15rem] font-semibold tracking-[-0.02em]">More</p>
-              {updatedLabel && <p className={`mt-1 text-[0.75rem] ${styles.muted}`}>{updatedLabel}</p>}
+            <div className="flex items-start justify-between gap-3 px-3 pb-2">
+              <div className="min-w-0">
+                <p className="font-display text-[1.15rem] font-semibold tracking-[-0.02em]">More</p>
+                <p className={`mt-1 text-[0.95rem] leading-relaxed ${styles.muted}`}>
+                  {secondary.map((item) => item.label).join(', ')}.
+                </p>
+                {updatedLabel && <p className={`mt-1 text-[0.75rem] ${styles.muted}`}>{updatedLabel}</p>}
+              </div>
+              <button
+                type="button"
+                className={`inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center px-3 text-[0.95rem] font-semibold ${styles.switch}`}
+                aria-label="Close more"
+                onClick={() => setMoreOpen(false)}
+              >
+                Close
+              </button>
             </div>
             <ul>
               {secondary.map((item) => (
@@ -220,7 +249,7 @@ export function AppShell({
                     to={item.to}
                     data-nav="secondary"
                     className={({ isActive }) =>
-                      `flex min-h-11 w-full items-center px-3 text-[1rem] ${
+                      `flex min-h-11 w-full items-center px-3 py-2 text-[1rem] leading-snug ${
                         isActive ? styles.navActive : styles.navIdle
                       }`
                     }
@@ -255,6 +284,16 @@ export function AppShell({
         </div>
       )}
     </div>
+  )
+}
+
+function MoreIcon() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5 shrink-0" fill="currentColor">
+      <circle cx="6" cy="12" r="1.7" />
+      <circle cx="12" cy="12" r="1.7" />
+      <circle cx="18" cy="12" r="1.7" />
+    </svg>
   )
 }
 
