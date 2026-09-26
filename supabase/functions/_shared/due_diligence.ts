@@ -141,14 +141,6 @@ const AREA_SPECS: { title: string; kinds: ClaimKind[] | null }[] = [
   { title: 'Offer and intellectual property', kinds: ['ip', 'other'] },
 ]
 
-const FOLLOW_UP: Record<ClaimKind, string> = {
-  team: 'Ask for a public registry filing or a public profile for the named people.',
-  traction: 'Ask which customers or figures already appear on a public page or filing.',
-  market: 'Ask which public source states the market figure.',
-  ip: 'Ask for the public patent or trademark number.',
-  other: 'Ask which public page supports this point.',
-}
-
 const KIND_ORDER: ClaimKind[] = ['team', 'traction', 'market', 'ip', 'other']
 
 const STOP = new Set([
@@ -317,10 +309,34 @@ export function textFromOfficeXml(xml: string): string {
   return pieces.join(' ').replace(/\s+/g, ' ').trim()
 }
 
+export function normalizeDeckText(text: string): string {
+  let out = ''
+  for (const char of text) {
+    const code = char.charCodeAt(0)
+    if (code === 0xad) continue
+    if (code <= 8 || code === 11 || code === 12 || (code >= 14 && code <= 31) || code === 127) {
+      out += ' '
+      continue
+    }
+    out += char
+  }
+  return out
+}
+
+function hasDeckControlChar(value: string): boolean {
+  for (const char of value) {
+    const code = char.charCodeAt(0)
+    if (code <= 8 || code === 11 || code === 12 || (code >= 14 && code <= 31)) return true
+  }
+  return false
+}
+
 export function extractDeckFacts(text: string): DeckFacts {
-  const source = text.replace(/\u0000/g, ' ').slice(0, 80_000)
+  const source = normalizeDeckText(text).slice(0, 80_000)
   const company = labelFrom(source, 'company') || firstTitle(source)
-  const sector = titleCaseSector(labelFrom(source, 'sector') || sectorKeyword(source))
+  const sector = titleCaseSector(
+    labelFrom(source, 'sector') || labelFrom(source, 'industry') || sectorKeyword(source),
+  )
   const ask = askFrom(source)
   return {
     company: scrubLabel(company, 80),
@@ -330,20 +346,167 @@ export function extractDeckFacts(text: string): DeckFacts {
   }
 }
 
+const SKIP_URL_HOSTS = [
+  'wikipedia.org',
+  'wikimedia.org',
+  'wikidata.org',
+  'mediawiki.org',
+  'google.com',
+  'gstatic.com',
+  'googleapis.com',
+  'facebook.com',
+  'instagram.com',
+  'twitter.com',
+  'x.com',
+  'youtube.com',
+  'youtu.be',
+  't.co',
+  'schema.org',
+  'w3.org',
+]
+
+export function extractCompanyUrl(text: string): string | null {
+  const seen = new Set<string>()
+  const candidates: { url: string; depth: number }[] = []
+  for (const match of text.matchAll(/https:\/\/[^\s<>"')\]]+/gi)) {
+    const cleaned = (match[0] || '').replace(/[),.;]+$/g, '')
+    const parsed = parsePublicHttpsUrl(cleaned)
+    if (!parsed.ok) continue
+    const host = parsed.url.hostname.toLowerCase()
+    if (SKIP_URL_HOSTS.some((suffix) => host === suffix || host.endsWith(`.${suffix}`))) continue
+    if (host === 'linkedin.com' || host.endsWith('.linkedin.com')) {
+      if (!/\/company\//i.test(parsed.url.pathname)) continue
+    }
+    if (/\.(pdf|png|jpe?g|gif|webp|zip|pptx?)$/i.test(parsed.url.pathname)) continue
+    const url = `${parsed.url.origin}${parsed.url.pathname}`
+    if (seen.has(url)) continue
+    seen.add(url)
+    const depth = parsed.url.pathname.split('/').filter(Boolean).length
+    candidates.push({ url, depth })
+  }
+  candidates.sort((a, b) => a.depth - b.depth)
+  return candidates[0]?.url ?? null
+}
+
+export function relatedCompanyUrls(companyUrl: string): string[] {
+  const parsed = parsePublicHttpsUrl(companyUrl)
+  if (!parsed.ok) return []
+  const path = parsed.url.pathname.replace(/\/+$/, '')
+  if (path) return []
+  return ['/about', '/team'].map((suffix) => `${parsed.url.origin}${suffix}`)
+}
+
+export function wikiHitMatchesTerm(hitLabel: string, term: string): boolean {
+  const hit = new Set(distinctiveTokens(hitLabel))
+  const shared = distinctiveTokens(term).filter((token) => hit.has(token))
+  return shared.length >= 2
+}
+
+const WEAK_HOST_TOKENS = new Set([
+  'capital',
+  'group',
+  'holdings',
+  'partners',
+  'global',
+  'ventures',
+  'international',
+  'services',
+  'limited',
+])
+
+export function publicHitMatchesTerm(title: string, url: string, term: string): boolean {
+  const parsed = parsePublicHttpsUrl(url)
+  if (!parsed.ok) return false
+  if (isReferenceHost(parsed.url.hostname)) return wikiHitMatchesTerm(title, term)
+  if (wikiHitMatchesTerm(title, term)) return true
+  const host = parsed.url.hostname.toLowerCase().replace(/^www\./, '')
+  return distinctiveTokens(term).some(
+    (token) => token.length >= 5 && !WEAK_HOST_TOKENS.has(token) && host.includes(token),
+  )
+}
+
+export function factsFromModelJson(raw: unknown, deckText: string): DeckFacts | null {
+  if (!raw || typeof raw !== 'object') return null
+  const row = raw as Record<string, unknown>
+  const deck = comparableDeck(deckText)
+  const companyRaw = modelField(row.company, deck, 80)
+  const company = companyRaw && !GENERIC_DECK_TITLE.test(companyRaw) ? companyRaw : ''
+  const sectorRaw = modelField(row.sector, deck, 60)
+  const sector = sectorRaw && sectorSupported(sectorRaw, deckText) ? sectorRaw : ''
+  const askRaw = modelField(row.ask, deck, 180)
+  const ask = askRaw && isRaiseAsk(askRaw) ? askRaw : ''
+  if (!Array.isArray(row.claims)) return null
+  const claims: DeckClaim[] = []
+  const seen = new Set<string>()
+  for (const item of row.claims) {
+    if (claims.length >= 8) break
+    if (!item || typeof item !== 'object') continue
+    const claim = item as Record<string, unknown>
+    if (typeof claim.text !== 'string') continue
+    const text = scrubMemberPunctuation(normalizeDeckText(claim.text)).slice(0, 320)
+    if (text.length < 24 || text.length > 320) continue
+    if (!deck.includes(text.toLowerCase())) continue
+    if (containsVerdictLanguage(text)) continue
+    const kind = kindOf(text)
+    if (!isClaim(text, kind)) continue
+    const key = text.toLowerCase()
+    if (seen.has(key)) continue
+    seen.add(key)
+    claims.push({ text, kind })
+  }
+  if (claims.length === 0) return null
+  return {
+    company: scrubLabel(company, 80),
+    sector: scrubLabel(titleCaseSector(sector), 60),
+    ask: scrubLabel(ask, 180),
+    claims,
+  }
+}
+
+export function mergeModelFacts(model: DeckFacts | null, heuristic: DeckFacts): DeckFacts {
+  if (!model || model.claims.length === 0) return heuristic
+  return {
+    company: model.company !== NOT_STATED ? model.company : heuristic.company,
+    sector: model.sector !== NOT_STATED ? model.sector : heuristic.sector,
+    ask: model.ask !== NOT_STATED ? model.ask : heuristic.ask,
+    claims: model.claims,
+  }
+}
+
 export function publicSearchTerms(facts: DeckFacts): string[] {
   const terms: string[] = []
-  if (facts.company !== NOT_STATED) terms.push(facts.company)
+  if (facts.company !== NOT_STATED) {
+    const company = sanitizeSearchTerm(facts.company)
+    if (company) terms.push(company)
+    const alias = legalNameAlias(company)
+    if (alias && alias.toLowerCase() !== company.toLowerCase() && distinctiveTokens(alias).length >= 2) {
+      terms.push(alias)
+    }
+  }
   const team = facts.claims.find((claim) => claim.kind === 'team')
   const name = team?.text.match(/\b([A-Z][a-z]+ [A-Z][a-z]+)\b/)?.[1]
   if (name && !containsVerdictLanguage(name)) {
-    terms.push(facts.company !== NOT_STATED ? `${name} ${facts.company}` : name)
+    terms.push(facts.company !== NOT_STATED ? `${name} ${sanitizeSearchTerm(facts.company)}` : name)
   }
-  return terms.slice(0, 2)
+  const unique: string[] = []
+  const seen = new Set<string>()
+  for (const term of terms) {
+    const key = term.toLowerCase()
+    if (!term || seen.has(key)) continue
+    seen.add(key)
+    unique.push(term)
+  }
+  return unique.slice(0, 4)
 }
 
-export function buildReport(facts: DeckFacts, pages: RetrievedPage[]): BuiltReport {
+export function buildReport(
+  facts: DeckFacts,
+  pages: RetrievedPage[],
+  options?: { companyUrl?: string | null },
+): BuiltReport {
   const usable = pages.filter((page) => parsePublicHttpsUrl(page.url).ok && page.text.trim().length >= 40)
   const claims = facts.claims.map((claim) => scoreClaim(claim, usable))
+  const companyUrl = options?.companyUrl?.trim() ? options.companyUrl.trim() : null
   const percents = diligencePercents(claims)
   return {
     company_label: facts.company,
@@ -357,7 +520,7 @@ export function buildReport(facts: DeckFacts, pages: RetrievedPage[]): BuiltRepo
       title: page.title.replace(/\s+/g, ' ').trim().slice(0, 120) || page.url,
       url: publicUrlWithoutQuery(page.url),
     })),
-    next_steps: nextStepsFor(claims),
+    next_steps: nextStepsFor(claims, { companyUrl, sourceCount: usable.length }),
   }
 }
 
@@ -598,24 +761,52 @@ function pageSupportsClaim(claim: string, page: string): boolean {
   return hits.length >= 3
 }
 
-function nextStepsFor(claims: ReportClaim[]): string[] {
-  if (claims.length === 0) {
-    return [
-      'The deck did not state a checkable claim. Share the market, traction, team, or IP points you want compared with public sources.',
-      'This note is a public-source assist. You decide the next conversation.',
-    ]
-  }
+const STEP_LEGAL =
+  'Confirm the legal name. Which exact legal name and jurisdiction should we search on public registers, and which public page or filing already shows it?'
+const STEP_HOME =
+  "Point to a public homepage. Which https page is the company's public home (or LinkedIn Company page), and can you open it without a login?"
+const STEP_PEOPLE =
+  'Name who is public. Which founders or directors already appear on a public company page, registry extract, or news item we can cite?'
+const STEP_MARKET =
+  'Cite the market figure. Which public source states the market size or growth figure used in the deck (URL or named report)?'
+const STEP_TRACTION =
+  'Show a public traction proof. Which customer, partner, or pilot is already named on a public page, press note, or filing?'
+const STEP_IP =
+  'Cite the public filing. Which public filing or page describes the IP or product claim in the deck?'
+const STEP_THIN =
+  'The deck did not state a checkable claim. Share the market, traction, team, or IP points you want compared with public sources.'
+const STEP_INCOMPLETE = 'Public pages can be incomplete. Ask management what is not on the public record.'
+const STEP_CLOSE =
+  'This note is a public-source assist. It is not formal due diligence and it is not legal advice. You decide the next conversation.'
+
+function nextStepsFor(
+  claims: ReportClaim[],
+  ctx: { companyUrl: string | null; sourceCount: number },
+): string[] {
   const steps: string[] = []
-  if (claims.every((claim) => claim.verdict === 'publicly_consistent')) {
-    steps.push('Public pages can be incomplete. Ask management what is not on the public record.')
+  const consistent = (kind: ClaimKind) =>
+    claims.some((claim) => claim.kind === kind && claim.verdict === 'publicly_consistent')
+  const weak = (kind: ClaimKind) =>
+    claims.some((claim) => claim.kind === kind && claim.verdict !== 'publicly_consistent')
+  const identityWeak = !ctx.companyUrl || ctx.sourceCount === 0
+  if (claims.length === 0) steps.push(STEP_THIN)
+  if (identityWeak) {
+    steps.push(STEP_LEGAL)
+    steps.push(STEP_HOME)
   }
-  for (const kind of KIND_ORDER) {
-    if (claims.some((claim) => claim.kind === kind && claim.verdict !== 'publicly_consistent')) {
-      steps.push(FOLLOW_UP[kind])
-    }
+  if (
+    claims.length > 0 &&
+    ctx.sourceCount > 0 &&
+    !identityWeak &&
+    claims.every((claim) => claim.verdict === 'publicly_consistent')
+  ) {
+    steps.push(STEP_INCOMPLETE)
   }
-  steps.push('This note is a public-source assist. You decide the next conversation.')
-  return steps.slice(0, 6)
+  if (weak('team') || (identityWeak && !consistent('team'))) steps.push(STEP_PEOPLE)
+  if (weak('market') || (identityWeak && !consistent('market'))) steps.push(STEP_MARKET)
+  if (weak('traction') || (identityWeak && !consistent('traction'))) steps.push(STEP_TRACTION)
+  if (weak('ip')) steps.push(STEP_IP)
+  return [...steps.slice(0, 5), STEP_CLOSE]
 }
 
 function pickClaims(text: string): DeckClaim[] {
@@ -643,23 +834,27 @@ function pickClaims(text: string): DeckClaim[] {
 }
 
 function isClaim(sentence: string, kind: ClaimKind): boolean {
+  if (looksLikeAddress(sentence) || looksLikePhone(sentence)) return false
+  if (isTitleOnly(sentence)) return false
+  if (hasDeckControlChar(sentence)) return false
   if (kind !== 'other') return true
-  return significantFigures(sentence).length > 0 || /\b(raising|raise|seeking|partnership)\b/i.test(sentence)
+  return significantFigures(sentence).length > 0 || /\b(raising|raise|seed round|series\s+[a-e])\b/i.test(sentence)
 }
 
 function kindOf(sentence: string): ClaimKind {
   if (/\b(patent|trademark|intellectual property)\b/i.test(sentence)) return 'ip'
-  if (/\b(founder|co-founder|ceo|director|cto)\b/i.test(sentence)) return 'team'
-  if (/\b(revenue|customer|customers|users|arr|gmv|partnership|growth)\b/i.test(sentence)) return 'traction'
-  if (/\b(market|tam|sector)\b/i.test(sentence) || /\b(billion|million)\b/i.test(sentence)) return 'market'
+  if (/\b(founder|co-founder|cofounder|ceo|cto)\b/i.test(sentence) || /\bdirector\b/i.test(sentence)) return 'team'
+  if (/\b(revenue|customers?|users|arr|gmv)\b/i.test(sentence)) return 'traction'
+  if (/\b(tam|billion|million)\b/i.test(sentence) || /\bmarket size\b/i.test(sentence)) return 'market'
+  if (/\bmarket\b/i.test(sentence) && significantFigures(sentence).length > 0) return 'market'
   return 'other'
 }
 
 function sentences(text: string): string[] {
-  return text
+  return normalizeDeckText(text)
     .replace(/\r/g, '\n')
     .split(/\n+|(?<=[.!?])\s+/)
-    .map((part) => part.replace(/\s+/g, ' ').trim())
+    .map((part) => scrubMemberPunctuation(part).replace(/^[*•-]+\s*/, ''))
     .filter((part) => part.length >= 24 && part.length <= 320)
 }
 
@@ -668,11 +863,22 @@ function labelFrom(text: string, label: string): string {
   return match?.[1]?.trim() || ''
 }
 
+const GENERIC_DECK_TITLE =
+  /^(?:strategic\s+)?(?:partnership\s+)?proposal$|^confidential(?:\s+deck)?$|^presentation$|^overview$|^agenda$|^introduction$|^table of contents$/i
+
 function firstTitle(text: string): string {
   const line = text
     .split('\n')
     .map((part) => part.trim())
-    .find((part) => part.length >= 2 && part.length <= 60 && !/[.!?]/.test(part) && !/\d/.test(part))
+    .find(
+      (part) =>
+        part.length >= 2 &&
+        part.length <= 60 &&
+        !/[.!?]/.test(part) &&
+        !/\d/.test(part) &&
+        !/^https?:\/\//i.test(part) &&
+        !GENERIC_DECK_TITLE.test(part),
+    )
   return line || ''
 }
 
@@ -684,30 +890,129 @@ function titleCaseSector(value: string): string {
 }
 
 function sectorKeyword(text: string): string {
-  const lower = text.toLowerCase()
-  const found = SECTORS.find((sector) => lower.includes(sector))
-  if (!found) return ''
-  return found.charAt(0).toUpperCase() + found.slice(1)
+  const lines = text
+    .split('\n')
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .slice(0, 40)
+  for (const line of lines) {
+    if (line.length > 32) continue
+    const found = SECTORS.find((sector) => new RegExp(`^${sector}$`, 'i').test(line))
+    if (found) return found.charAt(0).toUpperCase() + found.slice(1)
+  }
+  return ''
 }
 
 function askFrom(text: string): string {
-  const parts = text
+  const parts = normalizeDeckText(text)
     .replace(/\r/g, '\n')
     .split(/\n+|(?<=[.!?])\s+/)
-    .map((part) => part.replace(/\s+/g, ' ').trim())
-  const hit = parts.find(
-    (part) =>
-      part.length >= 12 &&
-      part.length <= 180 &&
-      /\b(raising|raise|seeking|seed round|series)\b/i.test(part),
-  )
+    .map((part) => scrubMemberPunctuation(part).replace(/^[*•-]+\s*/, ''))
+  const hit = parts.find((part) => isRaiseAsk(part))
   return hit || ''
 }
 
+function isRaiseAsk(part: string): boolean {
+  if (part.length < 12 || part.length > 180) return false
+  if (/\bseeking to establish\b/i.test(part)) return false
+  const money = /\$\s?\d|\b\d[\d,]*(?:\.\d+)?\s*(million|billion)\b/i.test(part)
+  const round = /\b(seed round|pre-seed|pre seed|series\s+[a-e])\b/i.test(part)
+  const raising = /\b(raising|raise)\b/i.test(part)
+  const seeking = /\bseeking\b/i.test(part)
+  if (seeking && !money) return false
+  if (seeking && money) return true
+  if ((raising || round) && (money || round)) return true
+  return false
+}
+
 function scrubLabel(value: string, max: number): string {
-  const cleaned = value.replace(/\s+/g, ' ').trim().slice(0, max)
+  const cleaned = scrubMemberPunctuation(value).slice(0, max)
   if (!cleaned || containsVerdictLanguage(cleaned)) return NOT_STATED
   return cleaned
+}
+
+function scrubMemberPunctuation(value: string): string {
+  return value.replace(/\u2014/g, ', ').replace(/\u2013/g, '-').replace(/\s+/g, ' ').trim()
+}
+
+function looksLikeAddress(sentence: string): boolean {
+  if (/\b(p\.?\s*o\.?\s*box|postal code|zip code)\b/i.test(sentence)) return true
+  if (/\b(street|avenue|road|lane|floor|suite|building|block)\b/i.test(sentence) && /\d/.test(sentence)) {
+    return true
+  }
+  if (
+    /\b(islamabad|riyadh|jeddah|dubai|abu dhabi|karachi|lahore|doha|manama)\b/i.test(sentence) &&
+    /\d/.test(sentence)
+  ) {
+    return true
+  }
+  return (
+    /\b\d{1,5}-[A-Za-z]{3,}/.test(sentence) &&
+    /\b(address|pakistan|saudi|arabia|emirates|qatar|kuwait|bahrain|oman)\b/i.test(sentence)
+  )
+}
+
+function looksLikePhone(sentence: string): boolean {
+  const digits = sentence.match(/\d/g) ?? []
+  if (/\b(tel|telephone|phone|mobile|fax|whatsapp)\b/i.test(sentence) && digits.length >= 7) return true
+  return /\+\d{1,3}(?:[\s.-]\d{2,4}){2,}/.test(sentence)
+}
+
+const CLAIM_VERB =
+  /\b(is|are|was|were|has|have|had|does|serves|serve|served|led|leads|leading|raising|raises|raised|seeking|seeks|founded|operates|operating|provides|includes|owns|builds|built|offers|announced|reached|employs|acquired|sells|sold|launched|opens|opened)\b/i
+
+function isTitleOnly(sentence: string): boolean {
+  if (sentence.length > 40) return false
+  if (significantFigures(sentence).length > 0) return false
+  if (CLAIM_VERB.test(sentence)) return false
+  return true
+}
+
+function comparableDeck(text: string): string {
+  return normalizeDeckText(text).replace(/\u2014/g, ', ').replace(/\u2013/g, '-').replace(/\s+/g, ' ').trim().toLowerCase()
+}
+
+function modelField(value: unknown, deckLower: string, max: number): string {
+  if (typeof value !== 'string') return ''
+  const cleaned = scrubMemberPunctuation(normalizeDeckText(value)).slice(0, max)
+  if (!cleaned || containsVerdictLanguage(cleaned)) return ''
+  if (!deckLower.includes(cleaned.toLowerCase())) return ''
+  return cleaned
+}
+
+function sectorSupported(sector: string, deckText: string): boolean {
+  const lower = sector.trim().toLowerCase()
+  if (!lower) return false
+  if (labelFrom(deckText, 'sector').toLowerCase().includes(lower)) return true
+  if (labelFrom(deckText, 'industry').toLowerCase().includes(lower)) return true
+  return sectorKeyword(normalizeDeckText(deckText)).toLowerCase() === lower
+}
+
+function isReferenceHost(hostname: string): boolean {
+  const host = hostname.toLowerCase().replace(/\.$/, '')
+  return (
+    host === 'wikipedia.org' ||
+    host.endsWith('.wikipedia.org') ||
+    host === 'wikidata.org' ||
+    host.endsWith('.wikidata.org') ||
+    host === 'wikimedia.org' ||
+    host.endsWith('.wikimedia.org')
+  )
+}
+
+function sanitizeSearchTerm(value: string): string {
+  return value
+    .replace(/[^\w\s.&'-]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 80)
+}
+
+function legalNameAlias(value: string): string {
+  return value
+    .replace(/\b(incorporated|inc|l\.l\.c|llc|ltd|limited|plc|gmbh|corp|corporation)\b\.?/gi, '')
+    .replace(/\s+/g, ' ')
+    .trim()
 }
 
 function distinctiveTokens(value: string): string[] {
@@ -730,6 +1035,8 @@ function significantFigures(value: string): Figure[] {
   for (const match of value.matchAll(re)) {
     const digits = (match[1] || '').replace(/,/g, '')
     const scale = match[2]?.toLowerCase() ?? null
+    // A bare calendar year is not a checkable figure.
+    if (!scale && /^19\d{2}$|^20\d{2}$/.test(digits)) continue
     if (digits.length >= 3 || scale) figures.push({ digits, scale })
   }
   return figures

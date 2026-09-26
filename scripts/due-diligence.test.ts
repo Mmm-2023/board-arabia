@@ -12,18 +12,25 @@ import {
   DECK_MAX_BYTES,
   deckStoragePath,
   DUE_DILIGENCE_DISCLAIMER,
+  extractCompanyUrl,
   extractDeckFacts,
+  factsFromModelJson,
   htmlToText,
   isPublicIp,
   MEMBER_MESSAGES,
   memberFacingMessage,
+  mergeModelFacts,
+  NOT_STATED,
   parsePublicHttpsUrl,
+  publicHitMatchesTerm,
   publicSearchTerms,
   readStoredReport,
+  relatedCompanyUrls,
   safeFileName,
   sniffDeck,
   textFromOfficeXml,
   VERDICT_LABEL,
+  wikiHitMatchesTerm,
 } from '../supabase/functions/_shared/due_diligence.ts'
 
 const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..')
@@ -257,6 +264,142 @@ test('member copy uses the locked score language', () => {
   assert.equal(/calendar\.app\.google/i.test(ui), false)
 })
 
+test('Clearlake-style wiki hit is rejected for Goldman Capital Consortium', () => {
+  const gcc = `${readFileSync(path.join(root, 'scripts/fixtures/gcc-goldman.txt'), 'utf8')}\nThe consortium\u0005serves 120 enterprise customers across three cities.\nDesk phone +92 51 123 4567 should not become a claim.\n`
+  const facts = extractDeckFacts(gcc)
+  assert.equal(facts.company, 'Goldman Capital Consortium')
+  assert.equal(facts.sector, NOT_STATED)
+  assert.equal(facts.ask, NOT_STATED)
+  assert.equal(
+    facts.claims.some((claim) => /islamabad|khayban|partnership proposal|seeking to establish|clearlake|vision 2030/i.test(claim.text)),
+    false,
+  )
+  assert.equal(
+    facts.claims.some((claim) => [...claim.text].some((char) => char.charCodeAt(0) < 32)),
+    false,
+  )
+  assert.equal(facts.claims.some((claim) => claim.text.includes('120 enterprise customers')), true)
+  assert.equal(facts.claims.some((claim) => claim.kind === 'traction' && /partnership proposal/i.test(claim.text)), false)
+  assert.equal(wikiHitMatchesTerm('Clearlake Capital', 'Goldman Capital Consortium'), false)
+  assert.equal(wikiHitMatchesTerm('Goldman Capital Consortium', 'Goldman Capital Consortium'), true)
+  assert.equal(
+    publicHitMatchesTerm(
+      'Clearlake Capital',
+      'https://en.wikipedia.org/wiki/Clearlake_Capital',
+      'Goldman Capital Consortium',
+    ),
+    false,
+  )
+  assert.equal(
+    publicHitMatchesTerm(
+      'Clearlake Capital',
+      'https://www.wikidata.org/wiki/Q123',
+      'Goldman Capital Consortium',
+    ),
+    false,
+  )
+  assert.equal(
+    publicHitMatchesTerm('Home', 'https://www.goldmancapital.example/', 'Goldman Capital Consortium'),
+    true,
+  )
+  assert.equal(
+    publicHitMatchesTerm('Clearlake Capital', 'https://clearlake.example/about', 'Goldman Capital Consortium'),
+    false,
+  )
+  assert.equal(extractCompanyUrl(gcc), 'https://www.goldmancapital.example/about')
+  assert.equal(publicSearchTerms(facts).some((term) => /clearlake/i.test(term)), false)
+  assert.ok(publicSearchTerms(facts).includes('Goldman Capital Consortium'))
+  const report = buildReport(facts, [], { companyUrl: null })
+  const steps = report.next_steps.join('\n')
+  assert.match(steps, /Confirm the legal name/)
+  assert.match(steps, /Point to a public homepage/)
+  assert.match(steps, /Name who is public/)
+  assert.match(steps, /Cite the market figure/)
+  assert.match(steps, /Show a public traction proof/)
+  assert.match(report.next_steps.at(-1) || '', /public-source assist/)
+  assert.match(report.next_steps.at(-1) || '', /not legal advice/)
+  assert.equal(steps.includes('\u2014'), false)
+  assert.equal(steps.includes('\u2013'), false)
+  assert.equal(/\b(valid|invalid|investable|approved|rejected|fraud|pass|fail)\b/i.test(steps), false)
+  assert.equal(report.sources.some((source) => /clearlake/i.test(source.title)), false)
+})
+
+test('model facts stay inside the deck text and fall back when invented', () => {
+  const invented = factsFromModelJson(
+    {
+      company: 'Clearlake Capital',
+      sector: 'Health',
+      ask: 'Facilitating market entry for companies seeking to establish a local office.',
+      claims: [{ text: 'Clearlake Capital acquired the consortium last year.', kind: 'traction' }],
+    },
+    'Goldman Capital Consortium\nThe consortium serves 120 enterprise customers across three cities.',
+  )
+  assert.equal(invented, null)
+  const supported = factsFromModelJson(
+    {
+      company: 'Northwind Logistics',
+      sector: 'Health',
+      ask: 'We are raising $4 million in a seed round.',
+      claims: [
+        { text: 'Northwind serves 120 enterprise customers across the Gulf.', kind: 'other' },
+        { text: 'Strategic Partnership Proposal', kind: 'traction' },
+      ],
+    },
+    `${DECK}\nStrategic Partnership Proposal\n`,
+  )
+  assert.ok(supported)
+  assert.equal(supported?.company, 'Northwind Logistics')
+  assert.equal(supported?.sector, NOT_STATED)
+  assert.match(supported?.ask || '', /raising \$4 million/)
+  assert.equal(supported?.claims.some((claim) => claim.text.includes('120 enterprise')), true)
+  assert.equal(supported?.claims.some((claim) => /partnership proposal/i.test(claim.text)), false)
+  assert.equal(supported?.claims.find((claim) => claim.text.includes('120 enterprise'))?.kind, 'traction')
+  const merged = mergeModelFacts(
+    factsFromModelJson(
+      {
+        company: '',
+        sector: '',
+        ask: '',
+        claims: [{ text: 'Northwind serves 120 enterprise customers across the Gulf.', kind: 'traction' }],
+      },
+      DECK,
+    ),
+    extractDeckFacts(DECK),
+  )
+  assert.equal(merged.company, 'Northwind Logistics')
+  assert.equal(merged.sector, 'Logistics')
+  assert.equal(extractCompanyUrl('See https://en.wikipedia.org/wiki/Clearlake_Capital only.'), null)
+  assert.deepEqual(relatedCompanyUrls('https://goldmancapital.example/'), [
+    'https://goldmancapital.example/about',
+    'https://goldmancapital.example/team',
+  ])
+  assert.deepEqual(relatedCompanyUrls('https://goldmancapital.example/about'), [])
+  const alias = extractDeckFacts('Northwind Logistics LLC\nSector: logistics\nWe are raising $4 million in a seed round.\n')
+  assert.ok(publicSearchTerms(alias).includes('Northwind Logistics LLC'))
+  assert.ok(publicSearchTerms(alias).includes('Northwind Logistics'))
+})
+
+test('search and model calls stay behind env secrets', () => {
+  const added = [
+    'supabase/functions/due-diligence-start/index.ts',
+    'supabase/functions/due-diligence-start/run.ts',
+    'supabase/functions/due-diligence-start/sources.ts',
+    'supabase/functions/due-diligence-start/llm.ts',
+  ]
+    .map((file) => readFileSync(path.join(root, file), 'utf8'))
+    .join('\n')
+  assert.match(added, /Deno\.env\.get\('BA_DD_SEARCH_API_KEY'\)/)
+  assert.match(added, /Deno\.env\.get\('BA_DD_LLM_API_KEY'\)/)
+  assert.match(added, /Deno\.env\.get\('BA_DD_LLM_MODEL'\)/)
+  assert.match(added, /Deno\.env\.get\('BA_DD_LLM_BASE_URL'\)/)
+  assert.match(added, /extractCompanyUrl/)
+  assert.match(added, /wikiHitMatchesTerm/)
+  assert.match(added, /company_url: extracted/)
+  assert.equal(/BA_DD_(LLM|SEARCH)_[A-Z_]*\s*=\s*['"][^'"]+['"]/.test(added), false)
+  assert.equal(/sk-[A-Za-z0-9]{10,}/.test(added), false)
+  assert.equal(/X-Subscription-Token['"]?\s*:\s*['"][A-Za-z0-9]{8,}['"]/.test(added), false)
+})
+
 test('migration locks RLS, storage, and the run limit without secrets', () => {
   const sql = readFileSync(
     path.join(root, 'supabase/migrations/20260926220000_due_diligence.sql'),
@@ -280,6 +423,7 @@ test('migration locks RLS, storage, and the run limit without secrets', () => {
     'supabase/functions/due-diligence-status/index.ts',
     'supabase/functions/due-diligence-start/run.ts',
     'supabase/functions/due-diligence-start/sources.ts',
+    'supabase/functions/due-diligence-start/llm.ts',
   ]
     .map((file) => readFileSync(path.join(root, file), 'utf8'))
     .join('\n')
