@@ -1,7 +1,9 @@
 import { motion, useScroll, useTransform } from 'motion/react'
 import { useRef } from 'react'
 import { Link } from 'react-router-dom'
+import { BrandLockup } from '../components/BrandLockup'
 import { CtaBand } from '../components/CtaBand'
+import { SaduRail } from '../components/SaduRail'
 import { StatsStrip } from '../components/StatsStrip'
 import { FaqList } from '../components/FaqList'
 import { Footer } from '../components/Footer'
@@ -66,22 +68,14 @@ function Hero() {
             'radial-gradient(ellipse 80% 55% at 18% 12%, rgba(167,150,220,0.28), transparent 55%), radial-gradient(ellipse 70% 50% at 88% 82%, rgba(75,63,154,0.85), transparent 50%), linear-gradient(165deg, #1C1343 0%, #2a2158 42%, #120c2e 100%)',
         }}
       />
+      <SaduRail hero />
 
       <motion.div
         style={{ y: contentY, opacity }}
-        className="relative z-10 mx-auto flex min-h-dvh max-w-7xl flex-col px-5 pb-12 pt-28 sm:px-6 md:px-10 md:pb-16 md:pt-32"
+        className="relative z-10 mx-auto flex min-h-dvh max-w-7xl flex-col px-5 pb-12 pt-28 sm:px-6 md:pt-32 md:pb-16 md:pl-10 md:pr-28"
       >
         <div className="mt-auto max-w-4xl pb-2 md:pb-4">
-          <motion.p
-            initial={{ opacity: 1, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
-            className="mb-4 font-serif text-[1.1rem] italic text-stone/85 md:text-[1.25rem]"
-          >
-            Founding membership
-          </motion.p>
-
-          <motion.h1
+          <motion.div
             initial={{ opacity: 1, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{
@@ -89,12 +83,9 @@ function Hero() {
               delay: 0.18,
               ease: [0.22, 1, 0.36, 1],
             }}
-            className="font-display text-[clamp(3.4rem,11vw,8.5rem)] font-extrabold leading-[0.88] tracking-[-0.045em] text-pearl"
           >
-            Board
-            <br />
-            Arabia
-          </motion.h1>
+            <BrandLockup tone="on-dark" size="hero" heading />
+          </motion.div>
 
           <motion.div
             initial={{ opacity: 1, y: 16 }}
@@ -175,6 +166,7 @@ function WhySection() {
 
   return (
     <section id="why" className="grain relative overflow-hidden bg-pearl py-24 md:py-32">
+      <SaduRail quiet />
       <div className="relative mx-auto max-w-7xl px-5 md:px-10">
         <Reveal>
           <Eyebrow>Why Board Arabia</Eyebrow>
@@ -211,7 +203,8 @@ function WhySection() {
 
 function FoundingSection() {
   return (
-    <section id="founding" className="bg-stone">
+    <section id="founding" className="relative bg-stone">
+      <SaduRail quiet />
       <div className="mx-auto grid max-w-7xl md:grid-cols-2">
         <div className="bg-ink px-5 py-20 text-pearl md:px-10 md:py-28">
           <Reveal>
@@ -312,6 +305,7 @@ function ToolsSection() {
 function ProcessSection() {
   return (
     <section id="process" className="relative bg-ink py-24 text-pearl md:py-32">
+      <SaduRail quiet />
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 opacity-[0.07]"
@@ -370,7 +364,8 @@ function PartnersSection() {
   const sample = PARTNER_CATEGORIES.slice(0, 6)
 
   return (
-    <section id="partners" className="bg-pearl py-24 md:py-32">
+    <section id="partners" className="relative bg-pearl py-24 md:py-32">
+      <SaduRail quiet />
       <div className="mx-auto grid max-w-7xl gap-14 px-5 md:px-10 lg:grid-cols-[1.1fr_0.9fr] lg:gap-20">
         <Reveal>
           <Eyebrow>Founding Ecosystem Partners</Eyebrow>
