@@ -7,7 +7,7 @@
 
 ## What shipped
 
-One SVG, `public/brand/ba-sadu-rail.svg`, traced from the art reference and filled with locked tokens (`--ba-indigo`, `--ba-sadu-green`, `--ba-lavender-mist`). `.ba-sadu-rail` is the 64px landing hero edge. `.ba-sadu-rail--quiet` is the same file at 32px on `/for-members`, `/for-capital`, `/partners`, and the landing Why, Founding, Process, and Partners bands. Below 768px the rail is hidden. The hero title uses the existing Najdi mark and serif lockup. Apply, Directory, dashboard chrome, `src/index.css`, Edge functions, and migrations were not changed.
+One SVG, `public/brand/ba-sadu-rail.svg`, traced from the art reference and filled with locked tokens (`--ba-indigo`, `--ba-sadu-green`, `--ba-lavender-mist`). `.ba-sadu-rail` is the 64px landing hero edge. `.ba-sadu-rail--quiet` is the same file at 32px on `/for-members`, `/for-capital`, `/partners`, and the landing Why, Founding, Process, and Partners bands. Below 768px the rail is hidden. The hero title uses the same Najdi mark, Instrument Serif “Board Arabia”, and tracked “Founding membership” line as the header, at 3x on desktop and 1.55x on a 390px screen. Light type on the dark hero. The ultra-bold stacked sans is gone. Apply, Directory, dashboard chrome, `src/index.css`, Edge functions, and migrations were not changed.
 
 ## Secrets
 

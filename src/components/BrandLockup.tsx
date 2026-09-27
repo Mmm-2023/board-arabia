@@ -27,12 +27,14 @@ const sizeClass: Record<
     px: 32,
   },
   hero: {
-    root: 'gap-3.5 md:gap-5',
-    mark: 'h-14 w-14 md:h-20 md:w-20',
-    name: 'font-normal text-[clamp(2.15rem,4.6vw,3.375rem)]',
-    line: 'mt-2 text-[clamp(0.72rem,1.35vw,1.05rem)]',
+    // Same ratios as nav: mark 32, name 1.35rem, line 0.62rem, gap 10px.
+    // Mobile is 1.55x so the tracked subtitle stays inside a 390px column.
+    root: 'gap-3 md:gap-8',
+    mark: 'h-12 w-12 md:h-24 md:w-24',
+    name: 'font-normal text-[2.0925rem] md:text-[4.05rem]',
+    line: 'mt-1.5 text-[0.961rem] md:mt-3 md:text-[1.86rem]',
     clip: 'whitespace-nowrap',
-    px: 80,
+    px: 96,
   },
 }
 
