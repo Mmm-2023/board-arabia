@@ -18,8 +18,10 @@ const allowedHex = new Set(['#4b3f9a', '#3a8a4c', '#e8e4f7', '#1c1343'])
 test('sadu rail svg uses locked token fills only', () => {
   assert.match(svg, /viewBox="0 0 16 64"/)
   assert.match(svg, /var\(--ba-indigo, #4B3F9A\)/)
+  assert.match(svg, /var\(--ba-indigo-deep, #1C1343\)/)
   assert.match(svg, /var\(--ba-sadu-green, #3A8A4C\)/)
   assert.match(svg, /var\(--ba-lavender-mist, #E8E4F7\)/)
+  assert.doesNotMatch(svg, /#fff\b|#ffffff|#f6f5fb|\bwhite\b/i)
   const hexes = svg.match(/#[0-9A-Fa-f]{3,8}/g) ?? []
   assert.ok(hexes.length > 0)
   for (const hex of hexes) {
@@ -34,6 +36,7 @@ test('rail utility is full width, quiet half width, and hidden on small screens'
   assert.match(css, /\.ba-sadu-rail--hero \{[\s\S]*top: 5rem/)
   assert.match(css, /max-width: 767px[\s\S]*display: none/)
   assert.match(css, /--ba-sadu-green:\s*#3a8a4c/i)
+  assert.match(css, /background-color:\s*var\(--ba-lavender-mist,\s*#e8e4f7\)/i)
   assert.match(rail, /ba-sadu-rail--quiet/)
   assert.match(rail, /aria-hidden="true"/)
   assert.match(rail, /pointer-events: none|ba-sadu-rail/)

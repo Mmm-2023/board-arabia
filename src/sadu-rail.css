@@ -12,6 +12,7 @@
   width: 64px;
   overflow: hidden;
   user-select: none;
+  background-color: var(--ba-lavender-mist, #e8e4f7);
 }
 
 .ba-sadu-rail--quiet {
