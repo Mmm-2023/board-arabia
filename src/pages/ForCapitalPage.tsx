@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { CtaBand } from '../components/CtaBand'
 import { MarketingLayout } from '../components/MarketingLayout'
+import { SaduRail } from '../components/SaduRail'
 
 const AUDIENCES = [
   {
@@ -47,7 +48,9 @@ const PATH = [
 export function ForCapitalPage() {
   return (
     <MarketingLayout path="/for-capital">
-      <header className="mx-auto max-w-7xl px-5 pt-12 pb-6 md:px-10 md:pt-20">
+      <header className="relative">
+        <SaduRail quiet />
+        <div className="mx-auto max-w-7xl px-5 pt-12 pb-6 md:px-10 md:pt-20">
         <p className="mb-4 font-serif text-[1.2rem] italic text-ink-soft/70">
           For capital
         </p>
@@ -59,6 +62,7 @@ export function ForCapitalPage() {
           equity, and venture capital reach members via structured, admin-gated
           mandates so outreach stays credentialled and discreet.
         </p>
+        </div>
       </header>
 
       <section className="mx-auto max-w-7xl px-5 py-12 md:px-10 md:py-16">

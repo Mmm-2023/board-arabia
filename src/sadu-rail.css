@@ -1,0 +1,36 @@
+:root {
+  --ba-sadu-green: #3a8a4c;
+}
+
+/* Right-edge textile. Widths match SaduRail (64px hero, 32px quiet). */
+.ba-sadu-rail {
+  pointer-events: none;
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 64px;
+  overflow: hidden;
+  user-select: none;
+}
+
+.ba-sadu-rail--quiet {
+  width: 32px;
+}
+
+/* Landing hero: clear the fixed nav so the Apply link stays uncovered. */
+.ba-sadu-rail--hero {
+  top: 5rem;
+}
+
+.ba-sadu-rail svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+@media (max-width: 767px) {
+  .ba-sadu-rail {
+    display: none;
+  }
+}

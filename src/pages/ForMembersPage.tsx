@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { CtaBand } from '../components/CtaBand'
 import { MarketingLayout } from '../components/MarketingLayout'
+import { SaduRail } from '../components/SaduRail'
 
 const TOOLS = [
   {
@@ -80,7 +81,9 @@ const TOOLS = [
 export function ForMembersPage() {
   return (
     <MarketingLayout path="/for-members">
-      <header className="mx-auto max-w-7xl px-5 pt-12 pb-4 md:px-10 md:pt-20">
+      <header className="relative">
+        <SaduRail quiet />
+        <div className="mx-auto max-w-7xl px-5 pt-12 pb-4 md:px-10 md:pt-20">
         <p className="mb-4 font-serif text-[1.2rem] italic text-ink-soft/70">
           For members
         </p>
@@ -105,6 +108,7 @@ export function ForMembersPage() {
             </li>
           ))}
         </ul>
+        </div>
       </header>
 
       <section className="mx-auto max-w-7xl px-5 py-12 md:px-10 md:py-16" aria-labelledby="dashboard-preview">

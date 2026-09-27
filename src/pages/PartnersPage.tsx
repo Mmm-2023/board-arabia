@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { MarketingLayout } from '../components/MarketingLayout'
+import { SaduRail } from '../components/SaduRail'
 import { PARTNER_CATEGORIES, PARTNER_EMAIL } from '../content/marketing'
 
 const RULES = [
@@ -28,7 +29,9 @@ const RULES = [
 export function PartnersPage() {
   return (
     <MarketingLayout path="/partners">
-      <header className="mx-auto max-w-7xl px-5 pt-12 md:px-10 md:pt-20">
+      <header className="relative">
+        <SaduRail quiet />
+        <div className="mx-auto max-w-7xl px-5 pt-12 md:px-10 md:pt-20">
         <p className="mb-4 font-serif text-[1.2rem] italic text-ink-soft/70">
           Founding Ecosystem Partners
         </p>
@@ -42,6 +45,7 @@ export function PartnersPage() {
           There is no fee schedule here, and there is no directory of partner
           names.
         </p>
+        </div>
       </header>
 
       <section className="mx-auto max-w-7xl px-5 py-16 md:px-10 md:py-20">
