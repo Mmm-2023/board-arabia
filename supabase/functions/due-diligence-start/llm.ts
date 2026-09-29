@@ -8,6 +8,29 @@ import {
 
 const DEFAULT_MODEL = 'gpt-4o-mini'
 const DEFAULT_BASE = 'https://api.openai.com/v1'
+const XAI_CHAT_URL = 'https://api.x.ai/v1/chat/completions'
+
+function edgeEnv(name: string): string {
+  const Deno = (globalThis as { Deno?: { env: { get: (key: string) => string | undefined } } }).Deno
+  if (!Deno?.env?.get) return ''
+  if (name === 'BA_DD_LLM_API_KEY') return Deno.env.get('BA_DD_LLM_API_KEY')?.trim() || ''
+  if (name === 'BA_DD_LLM_MODEL') return Deno.env.get('BA_DD_LLM_MODEL')?.trim() || ''
+  if (name === 'BA_DD_LLM_BASE_URL') return Deno.env.get('BA_DD_LLM_BASE_URL')?.trim() || ''
+  if (name === 'BA_DD_LLM_PROVIDER') return Deno.env.get('BA_DD_LLM_PROVIDER')?.trim() || ''
+  return Deno.env.get(name)?.trim() || ''
+}
+
+export function llmChatTarget(): { url: string; model: string } | null {
+  const provider = edgeEnv('BA_DD_LLM_PROVIDER').toLowerCase()
+  const model = edgeEnv('BA_DD_LLM_MODEL')
+  if (provider === 'xai') {
+    if (!model) return null
+    return { url: XAI_CHAT_URL, model }
+  }
+  const endpoint = llmEndpoint()
+  if (!endpoint) return null
+  return { url: endpoint.toString(), model: model || DEFAULT_MODEL }
+}
 
 const SYSTEM = [
   'You extract structured facts from pitch deck text. Reply with one JSON object and no markdown.',
@@ -33,7 +56,7 @@ export type FactExtraction = {
 
 export async function extractDeckFactsWithOptionalLlm(text: string, fileName = ''): Promise<FactExtraction> {
   const heuristic = extractDeckFacts(text, fileName)
-  const key = Deno.env.get('BA_DD_LLM_API_KEY')?.trim()
+  const key = edgeEnv('BA_DD_LLM_API_KEY')
   if (!key) {
     return {
       facts: heuristic,
@@ -74,17 +97,16 @@ export async function extractDeckFactsWithOptionalLlm(text: string, fileName = '
 }
 
 async function requestFacts(text: string, key: string): Promise<unknown | null> {
-  const endpoint = llmEndpoint()
-  if (!endpoint) return null
-  const model = Deno.env.get('BA_DD_LLM_MODEL')?.trim() || DEFAULT_MODEL
-  const response = await fetch(endpoint, {
+  const target = llmChatTarget()
+  if (!target) return null
+  const response = await fetch(target.url, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${key}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model,
+      model: target.model,
       temperature: 0,
       max_tokens: 900,
       response_format: { type: 'json_object' },
@@ -103,7 +125,7 @@ async function requestFacts(text: string, key: string): Promise<unknown | null> 
 }
 
 function llmEndpoint(): URL | null {
-  const base = (Deno.env.get('BA_DD_LLM_BASE_URL')?.trim() || DEFAULT_BASE).replace(/\/$/, '')
+  const base = (edgeEnv('BA_DD_LLM_BASE_URL') || DEFAULT_BASE).replace(/\/$/, '')
   let endpoint: URL
   try {
     endpoint = new URL(`${base}/chat/completions`)
