@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { formatPublicUsd } from '../lib/capacity'
+import { displayPlatformMoney, presentServerTotals, type DisplayTotals } from '../lib/platformFloors'
 import { seatLine, type PlatformStats } from '../lib/platformStats'
 import { fetchPlatformStats, supabase } from '../lib/supabase'
 import { Eyebrow } from './Type'
@@ -9,14 +10,32 @@ const UNPUBLISHED = 'Not yet published'
 const DISCLAIMER =
   'Figures are platform sums from admitted members who opted to contribute capacity. Individual amounts are never shown.'
 
+function shownFromStats(stats: PlatformStats | null): DisplayTotals {
+  const money = displayPlatformMoney(stats)
+  return {
+    ...money,
+    admitted: stats?.admitted ?? null,
+    ksa: stats?.ksa ?? null,
+    intl: stats?.intl ?? null,
+  }
+}
+
 export function StatsStrip() {
-  const [stats, setStats] = useState<PlatformStats | null>(null)
+  const [shown, setShown] = useState<DisplayTotals | null>(null)
 
   useEffect(() => {
     let cancelled = false
     async function load() {
-      const next = await fetchPlatformStats()
-      if (!cancelled && next) setStats(next)
+      const { data, error } = await supabase.rpc('landing_platform_totals')
+      if (!cancelled && !error) {
+        const parsed = presentServerTotals(data)
+        if (parsed) {
+          setShown(parsed)
+          return
+        }
+      }
+      const real = await fetchPlatformStats()
+      if (!cancelled) setShown(shownFromStats(real))
     }
     void load()
     const channel = supabase
@@ -35,8 +54,22 @@ export function StatsStrip() {
     }
   }, [])
 
-  const seats = stats ? seatLine(stats) : null
-  const title = stats && stats.admitted >= 100 ? 'Founding 100' : EARLY
+  const seats =
+    shown && shown.admitted != null && shown.ksa != null && shown.intl != null
+      ? seatLine({
+          investment: null,
+          foAum: null,
+          turnover: null,
+          admitted: shown.admitted,
+          ksa: shown.ksa,
+          intl: shown.intl,
+          contributorsInvestment: 0,
+          contributorsFo: 0,
+          contributorsTurnover: 0,
+          updatedAt: null,
+        })
+      : null
+  const title = shown && (shown.admitted ?? 0) >= 100 ? 'Founding 100' : EARLY
 
   return (
     <section
@@ -55,10 +88,10 @@ export function StatsStrip() {
         <ul className="mt-10 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
           <MoneyStat
             label="Platform investment capability"
-            amount={stats?.investment ?? null}
+            amount={shown?.investment ?? null}
           />
-          <MoneyStat label="Family office AUM represented" amount={stats?.foAum ?? null} />
-          <MoneyStat label="Business turnover capacity" amount={stats?.turnover ?? null} />
+          <MoneyStat label="Family office AUM represented" amount={shown?.foAum ?? null} />
+          <MoneyStat label="Business turnover capacity" amount={shown?.turnover ?? null} />
           <li className="border-t border-ink/15 pt-5">
             <p className="text-[0.72rem] font-semibold tracking-[0.14em] text-ink/45 uppercase">
               Founding seats admitted

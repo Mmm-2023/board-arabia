@@ -160,7 +160,7 @@ export const FAQ: FaqItem[] = [
   {
     question: 'What do the platform totals mean?',
     answer:
-      'Platform totals are sums from admitted members who chose to contribute capacity and whose figures the desk has verified. A money total stays unpublished until at least five members contribute to that figure, and the published sum is rounded. Names, photos, and individual amounts are never shown.',
+      'Platform totals show aggregate investment capability, family office assets, and business turnover. Founding seats are the count of admitted members. Names, photos, and individual amounts are never shown.',
   },
 ]
 
