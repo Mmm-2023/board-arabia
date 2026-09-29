@@ -1,9 +1,11 @@
 /**
- * Edge-safe PDF text read. No pdf.js bundle.
- * Inflates FlateDecode streams, follows classic xref and xref streams,
- * reads object streams, and applies ToUnicode when a font provides one.
- * Literal (text) Tj strings stay as a fallback for uncompressed decks.
+ * Edge-safe PDF text read. No pdf.js bundle and no remote imports.
+ * Inflates FlateDecode with the vendored fflate build, follows classic xref
+ * and xref streams, reads object streams, and applies ToUnicode, WinAnsi,
+ * and MacRoman. Literal (text) Tj strings stay as a fallback.
  */
+
+import { Inflate, Unzlib } from './fflate-browser.js'
 
 export type PdfRead = {
   text: string
@@ -39,7 +41,32 @@ type CMap = {
   maps: { len: number; start: number; end: number; mode: 'inc' | 'list'; base: string; list?: string[] }[]
 }
 
-type FontDec = { cmap: CMap | null; encoding: string; differences: Map<number, string> }
+type FontDec = {
+  cmap: CMap | null
+  encoding: string
+  differences: Map<number, string>
+  widths: Map<number, number>
+  missingWidth: number
+}
+
+type TextState = {
+  tlmX: number
+  tlmY: number
+  tmX: number
+  tmY: number
+  endX: number
+  endY: number
+  emitted: boolean
+  fontSize: number
+  leading: number
+  charSpace: number
+  wordSpace: number
+  horiz: number
+  font: FontDec | null
+}
+
+type FlateStream = { push(chunk: Uint8Array, final?: boolean): void }
+type FlateCtor = new (cb: (chunk: Uint8Array, final: boolean) => void) => FlateStream
 
 const WINANSI: Record<number, string> = {
   0x80: '\u20ac',
@@ -61,7 +88,7 @@ const WINANSI: Record<number, string> = {
   0x94: '\u201d',
   0x95: '\u2022',
   0x96: '\u2013',
-  0x97: '\u2014',
+  0x97: '-',
   0x98: '\u02dc',
   0x99: '\u2122',
   0x9a: '\u0161',
@@ -80,12 +107,12 @@ export async function readPdfText(bytes: Uint8Array): Promise<PdfRead> {
       return { text: literal, textOps: literal.trim().length >= 40 ? 1 : 0, imageOps: 0, encrypted: false }
     }
     const walked = await walkPages(doc)
-    let text = walked.text
+    let text = joinWrappedLines(walked.text)
     let textOps = walked.textOps
     const literalRaw = literalPdfText(bytes)
     const literalStreams = literalPdfText(doc.streamBytes)
-    const literal = longerText(literalRaw, literalStreams)
-    if (textLength(literal) > textLength(text)) {
+    const literal = mapSymbols(joinWrappedLines(longerText(literalRaw, literalStreams)))
+    if (textLength(text) < 40 && textLength(literal) > textLength(text)) {
       text = literal
       if (textLength(literal) >= 40) textOps = Math.max(textOps, 1)
     }
@@ -136,7 +163,7 @@ async function openPdf(bytes: Uint8Array): Promise<Opened | null> {
         cache.set(n, value)
         return value
       }
-      const value = await parseAt(bytes, entry.offset, decodedStreams)
+      const value = await parseAt(bytes, entry.offset, decodedStreams, load)
       cache.set(n, value)
       return value
     } catch {
@@ -239,48 +266,110 @@ async function pullContent(
   load: (n: number) => Promise<PdfVal | null>,
   depth: number,
 ): Promise<{ text: string; textOps: number; imageOps: number }> {
-  let text = ''
+  const buf = { text: '' }
   let textOps = 0
   let imageOps = 0
-  let font: FontDec | null = fonts.values().next().value ?? null
+  const state = freshText(fonts.values().next().value ?? null)
   const stack: Token[] = []
+  const popNum = () => {
+    const item = stack.pop()
+    return item && item.t === 'num' ? item.v : 0
+  }
   for (const token of tokenizeContent(stream)) {
     if (token.t !== 'op') {
       stack.push(token)
       continue
     }
     const op = token.v
+    if (op === 'BT') {
+      state.tlmX = 0
+      state.tlmY = 0
+      state.tmX = 0
+      state.tmY = 0
+      continue
+    }
+    if (op === 'ET') continue
     if (op === 'Tf') {
-      const size = stack.pop()
+      const size = popNum()
       const name = stack.pop()
-      if (name && name.t === 'name') font = fonts.get(name.v) ?? font
-      void size
+      if (name && name.t === 'name') state.font = fonts.get(name.v) ?? state.font
+      if (size > 0) state.fontSize = size
+      continue
+    }
+    if (op === 'Tc') {
+      state.charSpace = popNum()
+      continue
+    }
+    if (op === 'Tw') {
+      state.wordSpace = popNum()
+      continue
+    }
+    if (op === 'Tz') {
+      const scale = popNum()
+      state.horiz = scale > 0 ? scale / 100 : 1
+      continue
+    }
+    if (op === 'TL') {
+      state.leading = popNum()
+      continue
+    }
+    if (op === 'Td' || op === 'TD') {
+      const ty = popNum()
+      const tx = popNum()
+      state.tlmX += tx
+      state.tlmY += ty
+      state.tmX = state.tlmX
+      state.tmY = state.tlmY
+      if (op === 'TD') state.leading = -ty
+      continue
+    }
+    if (op === 'Tm') {
+      const f = popNum()
+      const e = popNum()
+      popNum()
+      popNum()
+      popNum()
+      popNum()
+      state.tlmX = e
+      state.tlmY = f
+      state.tmX = e
+      state.tmY = f
+      continue
+    }
+    if (op === 'T*') {
+      state.tlmY -= state.leading
+      state.tmX = state.tlmX
+      state.tmY = state.tlmY
       continue
     }
     if (op === 'Tj' || op === "'" || op === '"') {
-      if (op === '"') stack.pop()
-      if (op === '"') stack.pop()
       const item = stack.pop()
-      if (item && item.t === 'str') {
-        textOps += 1
-        text += showText(item.v, font)
+      if (op === '"') {
+        state.charSpace = popNum()
+        state.wordSpace = popNum()
       }
-      if (op === "'" || op === '"') text += '\n'
+      if (op === "'" || op === '"') {
+        state.tlmY -= state.leading
+        state.tmX = state.tlmX
+        state.tmY = state.tlmY
+      }
+      if (item && item.t === 'str') {
+        const before = buf.text.length
+        emitShown(state, buf, item.v)
+        if (buf.text.length > before) textOps += 1
+      }
       continue
     }
     if (op === 'TJ') {
       const item = stack.pop()
       if (item && item.t === 'arr') {
-        textOps += 1
+        const before = buf.text.length
         for (const part of item.v) {
-          if (part.t === 'str') text += showText(part.v, font)
-          else if (part.t === 'num' && part.v <= -80) text += ' '
+          if (part.t === 'str') emitShown(state, buf, part.v)
+          else if (part.t === 'num') state.tmX += (-part.v / 1000) * state.fontSize * state.horiz
         }
+        if (buf.text.length > before) textOps += 1
       }
-      continue
-    }
-    if (op === 'Td' || op === 'TD' || op === 'T*') {
-      if (text && !text.endsWith('\n')) text += '\n'
       continue
     }
     if (op === 'Do') {
@@ -301,7 +390,11 @@ async function pullContent(
         const nestedFonts = res ? await fontMap(res, load) : fonts
         const nestedXo = res ? await xobjectMap(res, load) : xobjects
         const nested = await pullContent(data, nestedFonts, nestedXo, load, depth + 1)
-        text += nested.text
+        if (nested.text) {
+          if (buf.text && !/[\n\v]$/.test(buf.text)) buf.text += '\n'
+          buf.text += nested.text
+          state.emitted = true
+        }
         textOps += nested.textOps
         imageOps += nested.imageOps
       }
@@ -309,27 +402,137 @@ async function pullContent(
     }
     if (op === 'BI') imageOps += 1
   }
-  return { text, textOps, imageOps }
+  return { text: buf.text, textOps, imageOps }
+}
+
+function freshText(font: FontDec | null): TextState {
+  return {
+    tlmX: 0,
+    tlmY: 0,
+    tmX: 0,
+    tmY: 0,
+    endX: 0,
+    endY: 0,
+    emitted: false,
+    fontSize: 12,
+    leading: 0,
+    charSpace: 0,
+    wordSpace: 0,
+    horiz: 1,
+    font,
+  }
+}
+
+function emitShown(state: TextState, buf: { text: string }, bytes: Uint8Array) {
+  const glyph = showText(bytes, state.font)
+  const advance = textAdvance(bytes, state)
+  if (state.emitted && glyph) {
+    const kind = verticalBreak(Math.abs(state.tmY - state.endY), state.fontSize)
+    if (kind === 'hard' && !/[\n\v]$/.test(buf.text)) buf.text += '\n'
+    else if (kind === 'soft' && !/[\n\v]$/.test(buf.text)) buf.text += '\v'
+    else if (kind === 'none') {
+      const gap = state.tmX - state.endX
+      if (
+        gap > spaceThreshold(state.fontSize) &&
+        glyph.trim() &&
+        buf.text &&
+        !/\s$/.test(buf.text) &&
+        !/^\s/.test(glyph)
+      ) {
+        buf.text += ' '
+      }
+    }
+  }
+  buf.text += glyph
+  state.endX = state.tmX + advance
+  state.endY = state.tmY
+  state.tmX = state.endX
+  if (glyph) state.emitted = true
+}
+
+function verticalBreak(gap: number, fontSize: number): 'none' | 'soft' | 'hard' {
+  const min = Math.max(fontSize * 0.35, 1)
+  if (gap < min) return 'none'
+  if (gap < fontSize * 1.55) return 'soft'
+  return 'hard'
+}
+
+function spaceThreshold(fontSize: number): number {
+  return Math.max(fontSize * 0.14, 0.5)
+}
+
+function textAdvance(bytes: Uint8Array, state: TextState): number {
+  let width = 0
+  for (const code of glyphCodes(bytes, state.font)) {
+    const w0 = state.font?.widths.get(code) ?? state.font?.missingWidth ?? 0
+    const word = code === 32 ? state.wordSpace : 0
+    width += (w0 * state.fontSize + state.charSpace + word) * state.horiz
+  }
+  return width
+}
+
+function glyphCodes(bytes: Uint8Array, font: FontDec | null): number[] {
+  const spaces = font?.cmap?.spaces ?? []
+  const wideOnly = spaces.length > 0 && spaces.every((space) => space.len >= 2)
+  const identity = font?.encoding === 'Identity-H' || font?.encoding === 'Identity-V'
+  if (wideOnly || (identity && spaces.length === 0)) {
+    const codes: number[] = []
+    for (let i = 0; i + 1 < bytes.length; i += 2) codes.push(((bytes[i] ?? 0) << 8) | (bytes[i + 1] ?? 0))
+    return codes
+  }
+  return [...bytes]
+}
+
+function joinWrappedLines(text: string): string {
+  const parts = text.split(/(\n|\v)/)
+  const lines: string[] = []
+  let soft = false
+  for (const part of parts) {
+    if (part === '\n') {
+      soft = false
+      continue
+    }
+    if (part === '\v') {
+      soft = true
+      continue
+    }
+    const line = part.replace(/[ \t]+/g, ' ').trim()
+    if (!line) continue
+    const prev = lines[lines.length - 1]
+    if (prev && shouldJoinLine(prev, line, soft)) lines[lines.length - 1] = `${prev} ${line}`
+    else lines.push(line)
+    soft = false
+  }
+  return lines.join('\n')
+}
+
+function shouldJoinLine(prev: string, next: string, soft: boolean): boolean {
+  if (/^[•\u2022*-]/.test(next)) return false
+  if (/[.!?…]["'”’)]?$/.test(prev)) return false
+  if (soft) return true
+  return /^[a-z]/.test(next)
 }
 
 function showText(bytes: Uint8Array, font: FontDec | null): string {
   if (font?.cmap) {
     const mapped = applyCMap(bytes, font.cmap)
-    if (mapped.trim()) return mapped
+    if (mapped) return mapSymbols(mapped)
   }
   if (font?.encoding === 'Identity-H' || font?.encoding === 'Identity-V') {
     const wide = utf16be(bytes)
-    if (wide.trim()) return wide
+    if (wide.trim()) return mapSymbols(wide)
   }
-  if (font?.differences.size) {
-    let out = ''
-    for (const byte of bytes) {
-      const diff = font.differences.get(byte)
-      out += diff ? glyphName(diff) : winAnsiChar(byte)
-    }
-    return out
+  return mapSymbols(decodeSimple(bytes, font))
+}
+
+function decodeSimple(bytes: Uint8Array, font: FontDec | null): string {
+  const mac = font?.encoding === 'MacRomanEncoding' || font?.encoding === 'MacRoman'
+  let out = ''
+  for (const byte of bytes) {
+    const diff = font?.differences.get(byte)
+    out += diff ? glyphName(diff) : mac ? macRomanChar(byte) : winAnsiChar(byte)
   }
-  return winAnsi(bytes)
+  return out
 }
 
 type Token =
@@ -587,7 +790,12 @@ function parseArray(cursor: Cursor): PdfArr {
   return { t: 'arr', v: values }
 }
 
-async function parseAt(bytes: Uint8Array, offset: number, sink: Uint8Array[]): Promise<PdfVal | null> {
+async function parseAt(
+  bytes: Uint8Array,
+  offset: number,
+  sink: Uint8Array[],
+  load?: (n: number) => Promise<PdfVal | null>,
+): Promise<PdfVal | null> {
   const cursor = new Cursor(bytes, offset)
   cursor.skipWs()
   if (!isDigit(cursor.bytes[cursor.i] ?? 0)) return null
@@ -603,19 +811,51 @@ async function parseAt(bytes: Uint8Array, offset: number, sink: Uint8Array[]): P
   cursor.i += 6
   if (cursor.bytes[cursor.i] === 0x0d) cursor.i += 1
   if (cursor.bytes[cursor.i] === 0x0a) cursor.i += 1
-  const length = numOf(value, 'Length')
+  const length = await lengthOf(value, load)
   let raw: Uint8Array
   if (length != null && length >= 0 && cursor.i + length <= bytes.length) {
     raw = bytes.subarray(cursor.i, cursor.i + length)
   } else {
-    const rest = latin1(bytes.subarray(cursor.i))
-    const end = rest.indexOf('endstream')
-    raw = bytes.subarray(cursor.i, cursor.i + Math.max(0, end))
+    raw = streamUntilEnd(bytes, cursor.i)
   }
   value.raw = raw
   const data = await decoded(value)
   if (data && sink.length < 40) sink.push(data.subarray(0, Math.min(data.length, 200_000)))
   return value
+}
+
+async function lengthOf(dict: PdfDict, load?: (n: number) => Promise<PdfVal | null>): Promise<number | null> {
+  const value = dict.v.get('Length')
+  if (!value) return null
+  if (value.t === 'num' && Number.isFinite(value.v)) return value.v
+  if (value.t === 'ref' && load) {
+    const resolved = await load(value.n)
+    if (resolved && resolved.t === 'num' && Number.isFinite(resolved.v)) return resolved.v
+  }
+  return null
+}
+
+function streamUntilEnd(bytes: Uint8Array, start: number): Uint8Array {
+  const marker = [0x65, 0x6e, 0x64, 0x73, 0x74, 0x72, 0x65, 0x61, 0x6d]
+  let end = -1
+  for (let i = start; i + marker.length <= bytes.length; i += 1) {
+    let match = true
+    for (let k = 0; k < marker.length; k += 1) {
+      if (bytes[i + k] !== marker[k]) {
+        match = false
+        break
+      }
+    }
+    if (match) {
+      end = i
+      break
+    }
+  }
+  if (end < 0) return bytes.subarray(start)
+  let cut = end
+  if (cut >= 2 && bytes[cut - 2] === 0x0d && bytes[cut - 1] === 0x0a) cut -= 2
+  else if (cut >= 1 && (bytes[cut - 1] === 0x0a || bytes[cut - 1] === 0x0d)) cut -= 1
+  return bytes.subarray(start, Math.max(start, cut))
 }
 
 async function decoded(dict: PdfDict): Promise<Uint8Array | null> {
@@ -626,7 +866,11 @@ async function decoded(dict: PdfDict): Promise<Uint8Array | null> {
   const predictor = predictorOf(dict)
   try {
     for (const filter of filters) {
-      if (filter === 'FlateDecode' || filter === 'Fl') data = await inflateZlib(data)
+      if (filter === 'FlateDecode' || filter === 'Fl') {
+        const next = inflateFlate(data)
+        if (!next.length) return null
+        data = next
+      }
       else if (filter === 'ASCIIHexDecode' || filter === 'AHx') data = hexBytes(latin1(data).replace(/\s+/g, ''))
       else if (filter === 'ASCII85Decode' || filter === 'A85') data = ascii85(data)
       else return null
@@ -659,17 +903,55 @@ function predictorOf(dict: PdfDict): number {
   return 1
 }
 
-async function inflateZlib(data: Uint8Array): Promise<Uint8Array> {
+function inflateFlate(data: Uint8Array): Uint8Array {
   try {
-    return await decompress(data, 'deflate')
+    if (looksLikeZlib(data)) {
+      const zlib = inflateKeeping(Unzlib as unknown as FlateCtor, data)
+      if (zlib.length) return zlib
+    }
+    return inflateKeeping(Inflate as unknown as FlateCtor, data)
   } catch {
-    return await decompress(data, 'deflate-raw')
+    return new Uint8Array()
   }
 }
 
-async function decompress(data: Uint8Array, format: 'deflate' | 'deflate-raw'): Promise<Uint8Array> {
-  const stream = new Blob([data]).stream().pipeThrough(new DecompressionStream(format))
-  return new Uint8Array(await new Response(stream).arrayBuffer())
+function looksLikeZlib(data: Uint8Array): boolean {
+  if (data.length < 2) return false
+  const cmf = data[0] ?? 0
+  const flg = data[1] ?? 0
+  if ((cmf & 15) !== 8 || cmf >> 4 > 7) return false
+  return ((cmf << 8) | flg) % 31 === 0
+}
+
+function inflateKeeping(ctor: FlateCtor, data: Uint8Array): Uint8Array {
+  if (!data.length) return data
+  const full = tryInflate(ctor, data)
+  if (full.ok) return full.bytes
+  let best = full.bytes
+  let lo = 0
+  let hi = data.length
+  while (hi - lo > 1) {
+    const mid = (lo + hi) >> 1
+    const part = tryInflate(ctor, data.subarray(0, mid))
+    if (part.ok) {
+      best = part.bytes
+      lo = mid
+    } else hi = mid
+  }
+  return best
+}
+
+function tryInflate(ctor: FlateCtor, data: Uint8Array): { ok: boolean; bytes: Uint8Array } {
+  const chunks: Uint8Array[] = []
+  try {
+    const stream = new ctor((chunk) => {
+      if (chunk?.length) chunks.push(chunk)
+    })
+    stream.push(data, false)
+    return { ok: true, bytes: concatBytes(chunks) }
+  } catch {
+    return { ok: false, bytes: concatBytes(chunks) }
+  }
 }
 
 async function readXrefChain(bytes: Uint8Array, entries: Map<number, XEntry>): Promise<PdfDict | null> {
@@ -808,7 +1090,31 @@ async function fontDec(font: PdfDict, load: (n: number) => Promise<PdfVal | null
     const data = await decoded(toUnicode)
     if (data) cmap = parseCMap(latin1(data))
   }
-  return { cmap, encoding, differences }
+  const scale = fontMatrixScale(font)
+  const widths = new Map<number, number>()
+  const widthsVal = await resolve(font.v.get('Widths') ?? null, load)
+  const first = numOf(font, 'FirstChar') ?? 0
+  if (widthsVal && widthsVal.t === 'arr') {
+    widthsVal.v.forEach((item, index) => {
+      if (item.t === 'num') widths.set(first + index, item.v * scale)
+    })
+  }
+  let missingWidth = 0
+  const descriptor = await resolve(font.v.get('FontDescriptor') ?? null, load)
+  if (descriptor && descriptor.t === 'dict') {
+    const missing = numOf(descriptor, 'MissingWidth')
+    if (missing != null) missingWidth = missing * scale
+  }
+  return { cmap, encoding, differences, widths, missingWidth }
+}
+
+function fontMatrixScale(font: PdfDict): number {
+  const matrix = font.v.get('FontMatrix')
+  if (matrix && matrix.t === 'arr') {
+    const scale = matrix.v[0]
+    if (scale && scale.t === 'num' && scale.v) return scale.v
+  }
+  return 0.001
 }
 
 async function xobjectMap(resources: PdfDict | null, load: (n: number) => Promise<PdfVal | null>): Promise<Map<string, PdfDict>> {
@@ -918,28 +1224,95 @@ function utf16be(bytes: Uint8Array): string {
   return out
 }
 
-function winAnsi(bytes: Uint8Array): string {
-  let out = ''
-  for (const byte of bytes) out += winAnsiChar(byte)
-  return out
-}
-
 function winAnsiChar(byte: number): string {
   return WINANSI[byte] ?? String.fromCharCode(byte)
 }
 
+const MAC_HIGH = [
+  0x00c4, 0x00c5, 0x00c7, 0x00c9, 0x00d1, 0x00d6, 0x00dc, 0x00e1, 0x00e0, 0x00e2, 0x00e4, 0x00e3, 0x00e5, 0x00e7, 0x00e9, 0x00e8,
+  0x00ea, 0x00eb, 0x00ed, 0x00ec, 0x00ee, 0x00ef, 0x00f1, 0x00f3, 0x00f2, 0x00f4, 0x00f6, 0x00f5, 0x00fa, 0x00f9, 0x00fb, 0x00fc,
+  0x2020, 0x00b0, 0x00a2, 0x00a3, 0x00a7, 0x2022, 0x00b6, 0x00df, 0x00ae, 0x00a9, 0x2122, 0x00b4, 0x00a8, 0x2260, 0x00c6, 0x00d8,
+  0x221e, 0x00b1, 0x2264, 0x2265, 0x00a5, 0x00b5, 0x2202, 0x2211, 0x220f, 0x03c0, 0x222b, 0x00aa, 0x00ba, 0x03a9, 0x00e6, 0x00f8,
+  0x00bf, 0x00a1, 0x00ac, 0x221a, 0x0192, 0x2248, 0x2206, 0x00ab, 0x00bb, 0x2026, 0x00a0, 0x00c0, 0x00c3, 0x00d5, 0x0152, 0x0153,
+  0x2013, 0x2014, 0x201c, 0x201d, 0x2018, 0x2019, 0x00f7, 0x25ca, 0x00ff, 0x0178, 0x2044, 0x20ac, 0x2039, 0x203a, 0xfb01, 0xfb02,
+  0x2021, 0x00b7, 0x201a, 0x201e, 0x2030, 0x00c2, 0x00ca, 0x00c1, 0x00cb, 0x00c8, 0x00cd, 0x00ce, 0x00cf, 0x00cc, 0x00d3, 0x00d4,
+  0xf8ff, 0x00d2, 0x00da, 0x00db, 0x00d9, 0x0131, 0x02c6, 0x02dc, 0x00af, 0x02d8, 0x02d9, 0x02da, 0x00b8, 0x02dd, 0x02db, 0x02c7,
+]
+
+function macRomanChar(byte: number): string {
+  if (byte < 0x80) return String.fromCharCode(byte)
+  const code = MAC_HIGH[byte - 0x80]
+  return code == null ? '' : String.fromCodePoint(code)
+}
+
+function mapSymbols(text: string): string {
+  return text
+    .replaceAll('\u2014', '-')
+    .replaceAll('\u00a0', ' ')
+    .replaceAll('\ufb01', 'fi')
+    .replaceAll('\ufb02', 'fl')
+    .replaceAll('\u0000', '')
+}
+
+const GLYPH_NAMES: Record<string, string> = {
+  space: ' ',
+  nbspace: ' ',
+  nonbreakingspace: ' ',
+  hyphen: '-',
+  minus: '-',
+  endash: '\u2013',
+  emdash: '-',
+  bullet: '\u2022',
+  periodcentered: '\u00b7',
+  ellipsis: '\u2026',
+  quotesingle: "'",
+  quotedbl: '"',
+  quoteleft: '\u2018',
+  quoteright: '\u2019',
+  quotedblleft: '\u201c',
+  quotedblright: '\u201d',
+  quotedblbase: '\u201e',
+  quotesinglbase: '\u201a',
+  guilsinglleft: '\u2039',
+  guilsinglright: '\u203a',
+  fi: 'fi',
+  fl: 'fl',
+  ff: 'ff',
+  ffi: 'ffi',
+  ffl: 'ffl',
+  period: '.',
+  comma: ',',
+  colon: ':',
+  semicolon: ';',
+  question: '?',
+  exclam: '!',
+  parenleft: '(',
+  parenright: ')',
+  slash: '/',
+  ampersand: '&',
+  at: '@',
+  numbersign: '#',
+  dollar: '$',
+  percent: '%',
+  asterisk: '*',
+  plus: '+',
+  equal: '=',
+  zero: '0',
+  one: '1',
+  two: '2',
+  three: '3',
+  four: '4',
+  five: '5',
+  six: '6',
+  seven: '7',
+  eight: '8',
+  nine: '9',
+}
+
 function glyphName(name: string): string {
-  if (/^uni[0-9A-Fa-f]{4}$/.test(name)) return String.fromCharCode(Number.parseInt(name.slice(3), 16))
+  if (/^uni[0-9A-Fa-f]{4}$/.test(name)) return mapSymbols(String.fromCharCode(Number.parseInt(name.slice(3), 16)))
   if (name.length === 1) return name
-  const known: Record<string, string> = {
-    space: ' ',
-    hyphen: '-',
-    period: '.',
-    comma: ',',
-    colon: ':',
-    semicolon: ';',
-  }
-  return known[name] ?? ''
+  return GLYPH_NAMES[name] ?? ''
 }
 
 function ascii85(data: Uint8Array): Uint8Array {
@@ -982,13 +1355,16 @@ function hexBytes(hex: string): Uint8Array {
 }
 
 function decodeLiteral(inner: string): string {
-  return inner
-    .replace(/\\n/g, '\n')
-    .replace(/\\r/g, '\n')
-    .replace(/\\t/g, ' ')
-    .replace(/\\\(/g, '(')
-    .replace(/\\\)/g, ')')
-    .replace(/\\\\/g, '\\')
+  return mapSymbols(
+    inner
+      .replace(/\\([0-7]{1,3})/g, (_, octal: string) => winAnsiChar(Number.parseInt(octal, 8) & 0xff))
+      .replace(/\\n/g, '\n')
+      .replace(/\\r/g, '\n')
+      .replace(/\\t/g, ' ')
+      .replace(/\\\(/g, '(')
+      .replace(/\\\)/g, ')')
+      .replace(/\\\\/g, '\\'),
+  )
 }
 
 function numOf(dict: PdfDict, key: string): number | null {
