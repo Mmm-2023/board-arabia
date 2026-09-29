@@ -1,15 +1,15 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { MemoryRouter } from 'react-router-dom'
-import { northwindFixtureReport } from '../fixtures/northwind-assessment.ts'
+import { degradedCoverReport, STAMPED_FILE } from '../fixtures/degraded-cover.ts'
 import { DueDiligenceReport } from '../../src/pages/dashboard/DueDiligenceReport.tsx'
 import { AppShell } from '../../src/shell/AppShell.tsx'
 import { MEMBER_DESTINATIONS, MEMBER_SECONDARY } from '../../src/shell/destinations.ts'
 import { presentReport } from '../../supabase/functions/_shared/due_diligence.ts'
 import './preview.css'
 
-const report = northwindFixtureReport()
-const presented = presentReport(report, 'Northwind-logistics.pdf')
+const report = degradedCoverReport()
+const presented = presentReport(report, STAMPED_FILE)
 
 function Preview() {
   return (

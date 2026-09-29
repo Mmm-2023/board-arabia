@@ -16,18 +16,24 @@ import {
   visibleNextSteps,
   WHO_PUBLIC_STEP,
 } from '../src/lib/dueDiligenceNextSteps.ts'
+import { degradedCoverReport, STAMPED_DECK, STAMPED_FILE } from './fixtures/degraded-cover.ts'
+import { extractDeckFactsWithOptionalLlm } from '../supabase/functions/due-diligence-start/llm.ts'
 import { northwindFixtureReport } from './fixtures/northwind-assessment.ts'
 import { MEMBER_VIEWS } from '../src/shell/viewCopy.ts'
 import {
   assessmentLog,
   buildReport,
+  companyFromFileName,
   containsVerdictLanguage,
+  degradedBannerText,
   DEGRADED_NOTE_MODEL,
   DEGRADED_NOTE_SEARCH,
   independentSearchTerms,
   INDEPENDENT_EVIDENCE_NOTE,
   isBlockedPublicSourceUrl,
+  isClassificationStamp,
   isCompanyOwnedUrl,
+  isDegradedCompact,
   packReportDisclaimer,
   presentReport,
   readModelFacts,
@@ -990,3 +996,141 @@ test('the Northwind fixture shows verdict, reason, evidence, and the degraded no
     await vite.close()
   }
 })
+
+test('a stamped cover does not become the company name, and degraded mode stays compact', async () => {
+  assert.equal(isClassificationStamp('CONFIDENTIAL MANAGEMENT CASE'), true)
+  assert.equal(isClassificationStamp('Strictly confidential'), true)
+  assert.equal(isClassificationStamp('For discussion only'), true)
+  assert.equal(isClassificationStamp('Not for distribution'), true)
+  assert.equal(companyFromFileName(STAMPED_FILE), 'RHL')
+  const stampOnly = extractDeckFacts('CONFIDENTIAL MANAGEMENT CASE\nNot for distribution\n', STAMPED_FILE)
+  assert.equal(stampOnly.company, 'RHL')
+  assert.equal(/confidential|management case/i.test(stampOnly.company), false)
+
+  const facts = extractDeckFacts(STAMPED_DECK, STAMPED_FILE)
+  assert.equal(facts.company, 'Harborline Robotics')
+  assert.equal(facts.sector, 'Logistics')
+  assert.match(facts.ask, /seed round/i)
+  assert.ok(facts.claims.length > 0)
+  assert.equal(facts.claims.some((claim) => /2\.4 million|ARR/i.test(claim.text)), true)
+  assert.equal(facts.claims.some((claim) => /12 million|valuation/i.test(claim.text)), true)
+  assert.equal(facts.claims.some((claim) => /80 enterprise customers/i.test(claim.text)), true)
+  assert.equal(facts.claims.some((claim) => /40%|growth/i.test(claim.text)), true)
+  assert.equal(facts.claims.some((claim) => /Nora Hale/i.test(claim.text)), true)
+  assert.equal(facts.claims.some((claim) => isClassificationStamp(claim.text)), false)
+
+  const report = degradedCoverReport()
+  assert.equal(isDegradedCompact(report), true)
+  assert.equal(report.sources.length, 0)
+  assert.equal(report.claims.length > 0, true)
+  assert.match(degradedBannerText(report.degraded_notes || []), /language model was not used/)
+  assert.match(degradedBannerText(report.degraded_notes || []), /Independent web checks were not run/)
+  assert.match(degradedBannerText(report.degraded_notes || []), /Those checks are not available/)
+  const vite = await createServer({
+    server: { middlewareMode: true },
+    appType: 'custom',
+    logLevel: 'error',
+  })
+  try {
+    const mod = (await vite.ssrLoadModule('/src/shell/renderDueReport.tsx')) as {
+      renderDueReport: (value: BuiltReport, fileName: string, preparedAt: string) => string
+    }
+    const html = mod.renderDueReport(report, STAMPED_FILE, '2026-09-29T09:00:00.000Z')
+    assert.equal(html.split('data-dd-degraded="true"').length - 1, 1)
+    assert.equal(html.includes('data-dd-compact="true"'), true)
+    assert.equal(html.includes('data-dd-deck-summary="true"'), true)
+    assert.equal(html.includes('Harborline Robotics'), true)
+    assert.equal(html.includes('CONFIDENTIAL MANAGEMENT CASE'), false)
+    assert.equal(html.includes('No checkable point in this area.'), false)
+    assert.equal(html.includes('Area scorecard'), false)
+    assert.equal(html.includes('Finding 1'), false)
+    assert.equal(html.includes('Nora Hale'), true)
+    assert.equal(html.includes('\u2014'), false)
+    assert.equal(html.includes('\u2013'), false)
+  } finally {
+    await vite.close()
+  }
+})
+
+test('xai provider posts an OpenAI-compatible chat request and does not pick a model id', async () => {
+  const source = readFileSync(path.join(root, 'supabase/functions/due-diligence-start/llm.ts'), 'utf8')
+  assert.match(source, /https:\/\/api\.x\.ai\/v1\/chat\/completions/)
+  assert.match(source, /Deno\.env\.get\('BA_DD_LLM_PROVIDER'\)/)
+  assert.equal(/grok-\d/i.test(source), false)
+  const unitKey = 'dd-unit-test-token'
+  const xai = await captureLlmCall({
+    BA_DD_LLM_PROVIDER: 'xai',
+    BA_DD_LLM_API_KEY: unitKey,
+    BA_DD_LLM_MODEL: 'unit-model-id',
+  })
+  assert.equal(xai.calls.length, 1)
+  assert.equal(xai.calls[0]?.url, 'https://api.x.ai/v1/chat/completions')
+  assert.equal(xai.calls[0]?.method, 'POST')
+  assert.equal(xai.calls[0]?.headers.Authorization, `Bearer ${unitKey}`)
+  assert.equal(xai.calls[0]?.headers['Content-Type'], 'application/json')
+  assert.equal(xai.calls[0]?.body.model, 'unit-model-id')
+  assert.equal(xai.calls[0]?.body.temperature, 0)
+  assert.equal(xai.calls[0]?.body.response_format?.type, 'json_object')
+  assert.equal(xai.calls[0]?.body.messages?.[0]?.role, 'system')
+  assert.equal(xai.calls[0]?.body.messages?.[1]?.role, 'user')
+  assert.equal(JSON.stringify(xai.calls[0]?.body).includes('grok-'), false)
+
+  const openai = await captureLlmCall({
+    BA_DD_LLM_API_KEY: unitKey,
+  })
+  assert.equal(openai.calls.length, 1)
+  assert.equal(openai.calls[0]?.url, 'https://api.openai.com/v1/chat/completions')
+  assert.equal(openai.calls[0]?.body.model, 'gpt-4o-mini')
+
+  const missingModel = await captureLlmCall({
+    BA_DD_LLM_PROVIDER: 'xai',
+    BA_DD_LLM_API_KEY: unitKey,
+  })
+  assert.equal(missingModel.calls.length, 0)
+  assert.equal(missingModel.result.modelRan, false)
+})
+
+type LlmCall = {
+  url: string
+  method: string
+  headers: Record<string, string>
+  body: {
+    model?: string
+    temperature?: number
+    response_format?: { type?: string }
+    messages?: { role?: string }[]
+  }
+}
+
+async function captureLlmCall(env: Record<string, string>): Promise<{ calls: LlmCall[]; result: Awaited<ReturnType<typeof extractDeckFactsWithOptionalLlm>> }> {
+  const calls: LlmCall[] = []
+  const previousFetch = globalThis.fetch
+  const previousDeno = (globalThis as { Deno?: unknown }).Deno
+  ;(globalThis as { Deno?: { env: { get: (key: string) => string | undefined } } }).Deno = {
+    env: { get: (key: string) => env[key] },
+  }
+  globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+    const headerBag: Record<string, string> = {}
+    const rawHeaders = init?.headers
+    if (rawHeaders && !Array.isArray(rawHeaders) && !(rawHeaders instanceof Headers)) {
+      for (const [key, value] of Object.entries(rawHeaders)) headerBag[key] = String(value)
+    }
+    calls.push({
+      url: String(input),
+      method: init?.method || 'GET',
+      headers: headerBag,
+      body: JSON.parse(String(init?.body || '{}')) as LlmCall['body'],
+    })
+    return new Response(JSON.stringify({ choices: [{ message: { content: '{"company":"","sector":"","ask":"","claims":[]}' } }] }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    })
+  }) as typeof fetch
+  try {
+    const result = await extractDeckFactsWithOptionalLlm('Harborline Robotics\nSector: logistics\n', 'Harborline-deck.pdf')
+    return { calls, result }
+  } finally {
+    globalThis.fetch = previousFetch
+    ;(globalThis as { Deno?: unknown }).Deno = previousDeno
+  }
+}

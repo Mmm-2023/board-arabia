@@ -82,7 +82,7 @@ export async function advanceDueDiligenceJob(admin: SupabaseClient, jobId: strin
           .eq('member_id', job.member_id)
       }
     }
-    const extraction = await extractDeckFactsWithOptionalLlm(text)
+    const extraction = await extractDeckFactsWithOptionalLlm(text, String(deck.data.file_name || ''))
     modelRan = extraction.modelRan
     modelSkipReason = extraction.skipReason
     claimsReturned = extraction.claimsReturned

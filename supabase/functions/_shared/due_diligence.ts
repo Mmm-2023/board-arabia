@@ -348,19 +348,57 @@ function hasDeckControlChar(value: string): boolean {
   return false
 }
 
-export function extractDeckFacts(text: string): DeckFacts {
+export function extractDeckFacts(text: string, fileName = ''): DeckFacts {
   const source = normalizeDeckText(text).slice(0, 80_000)
-  const company = labelFrom(source, 'company') || firstTitle(source)
+  const company = companyFromDeck(source, fileName)
   const sector = titleCaseSector(
-    labelFrom(source, 'sector') || labelFrom(source, 'industry') || sectorKeyword(source),
+    labelFrom(source, 'sector') || labelFrom(source, 'industry') || sectorPhrase(source) || sectorKeyword(source),
   )
-  const ask = askFrom(source)
+  const ask = aimFrom(source)
   return {
     company: scrubLabel(company, 80),
     sector: scrubLabel(sector, 60),
     ask: scrubLabel(ask, 180),
     claims: pickClaims(source),
   }
+}
+
+export function isClassificationStamp(value: string): boolean {
+  const line = value
+    .replace(/[|•*]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+  if (!line || line.length > 80) return false
+  return STAMP_LINE.test(line)
+}
+
+export function companyFromFileName(fileName: string): string {
+  const base = fileName.replace(/^.*[/\\]/, '').replace(/\.(pdf|pptx)$/i, '')
+  const drop = new Set([
+    'seed', 'investment', 'invest', 'deck', 'pitch', 'investor', 'presentation', 'confidential',
+    'draft', 'final', 'pdf', 'pptx', 'the', 'and', 'for', 'series', 'round', 'management', 'case', 'nda',
+  ])
+  const kept = base
+    .split(/[-_\s]+/)
+    .map((part) => part.trim())
+    .filter((part) => part.length >= 2 && /[A-Za-z]/.test(part) && !drop.has(part.toLowerCase()) && !/^v\d+$/i.test(part))
+  const first = kept[0]
+  if (!first || isClassificationStamp(first)) return ''
+  if (/^[A-Z0-9]{2,4}$/.test(first)) return first
+  return first.charAt(0).toUpperCase() + first.slice(1).toLowerCase()
+}
+
+export function isDegradedCompact(report: BuiltReport): boolean {
+  const notes = report.degraded_notes ?? []
+  if (notes.length === 0) return false
+  return report.sources.length === 0 && report.claims.every((claim) => claim.sources.length === 0)
+}
+
+export function degradedBannerText(notes: readonly string[]): string {
+  const clean = cleanDegradedNotes(notes)
+  if (clean.length === 0) return ''
+  const why = clean.length > 1 ? 'Those checks are not available for this run.' : 'That check is not available for this run.'
+  return `${clean.join(' ')} ${why}`
 }
 
 const SKIP_URL_HOSTS = [
@@ -494,8 +532,10 @@ export function factsFromModelJson(raw: unknown, deckText: string): DeckFacts | 
 
 export function mergeModelFacts(model: DeckFacts | null, heuristic: DeckFacts): DeckFacts {
   if (!model || model.claims.length === 0) return heuristic
+  const company =
+    model.company !== NOT_STATED && !isClassificationStamp(model.company) ? model.company : heuristic.company
   return {
-    company: model.company !== NOT_STATED ? model.company : heuristic.company,
+    company,
     sector: model.sector !== NOT_STATED ? model.sector : heuristic.sector,
     ask: model.ask !== NOT_STATED ? model.ask : heuristic.ask,
     claims: model.claims,
@@ -945,7 +985,7 @@ function pickClaims(text: string): DeckClaim[] {
   const seen = new Set<string>()
   const candidates: DeckClaim[] = []
   for (const sentence of sentences(text)) {
-    if (containsVerdictLanguage(sentence)) continue
+    if (containsVerdictLanguage(sentence) || isClassificationStamp(sentence)) continue
     const kind = kindOf(sentence)
     if (!isClaim(sentence, kind)) continue
     const key = sentence.toLowerCase()
@@ -962,7 +1002,81 @@ function pickClaims(text: string): DeckClaim[] {
     if (picked.length >= 8) break
     if (!picked.includes(claim)) picked.push(claim)
   }
+  for (const extra of structuredClaims(text)) {
+    if (picked.length >= 8) break
+    if (picked.some((claim) => claim.text.toLowerCase() === extra.text.toLowerCase() || overlapsFact(claim, extra))) {
+      continue
+    }
+    picked.push(extra)
+  }
   return picked.slice(0, 8)
+}
+
+function structuredClaims(text: string): DeckClaim[] {
+  const claims: DeckClaim[] = []
+  const push = (raw: string, kind: ClaimKind) => {
+    const value = scrubMemberPunctuation(raw)
+    if (value.length < 24 || value.length > 320) return
+    if (containsVerdictLanguage(value) || isClassificationStamp(value)) return
+    if (claims.some((claim) => claim.text.toLowerCase() === value.toLowerCase())) return
+    claims.push({ text: value, kind })
+  }
+  const money = '\\$?\\s?\\d[\\d,]*(?:\\.\\d+)?(?:\\s?(?:million|billion|bn|m|k))?'
+  for (const match of text.matchAll(new RegExp(`\\b(ARR|annual recurring revenue|revenue)\\b[^.\\n]{0,50}?(${money})`, 'gi'))) {
+    const figure = (match[2] || '').replace(/\s+/g, ' ').trim()
+    if (!/\d/.test(figure) || !/(?:\$|million|billion|\bm\b|\bbn\b|\bk\b)/i.test(figure)) continue
+    const label = /^arr$/i.test(match[1] || '') ? 'ARR' : 'Revenue'
+    push(`Reported ${label} in the deck is ${figure}.`, 'traction')
+  }
+  for (const match of text.matchAll(new RegExp(`\\b((?:pre|post)[\\s-]?money(?:\\s+valuation)?|valuation)\\b[^.\\n]{0,40}?(${money})`, 'gi'))) {
+    const figure = (match[2] || '').replace(/\s+/g, ' ').trim()
+    if (!/\d/.test(figure) || !/(?:\$|million|billion|\bm\b|\bbn\b|\bk\b)/i.test(figure)) continue
+    const label = /post/i.test(match[1] || '') ? 'Post-money valuation' : 'Pre-money valuation'
+    push(`${label} in the deck is ${figure}.`, 'other')
+  }
+  for (const match of text.matchAll(/\b(?:raising|raise|seeking)\b[^.\n]{0,48}?(\$\s?\d[\d,]*(?:\.\d+)?(?:\s?(?:m|million|billion))?)/gi)) {
+    const figure = (match[1] || '').replace(/\s+/g, ' ').trim()
+    if (!figure) continue
+    push(`The deck states a raise of ${figure}.`, 'other')
+  }
+  for (const match of text.matchAll(/\b(\d[\d,]*)\s+((?:enterprise|paying)\s+)?(customers|users|subscribers)\b/gi)) {
+    const who = `${match[2] || ''}${match[3] || ''}`.replace(/\s+/g, ' ').trim()
+    push(`The deck states ${match[1]} ${who}.`, 'traction')
+  }
+  for (const match of text.matchAll(/\b(?:grew|growing|growth(?:\s+of)?)\b[^.\n]{0,40}?(\d{1,3}(?:\.\d+)?)\s*(?:%|percent)/gi)) {
+    push(`Reported growth in the deck is ${match[1]}%.`, 'traction')
+  }
+  for (const match of text.matchAll(/\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)\s*(?:,|-)?\s*(co-?founder|founder|ceo|cto|cfo|coo)\b/gi)) {
+    if (!/^[A-Z]/.test(match[1] || '')) continue
+    push(`${match[1]} is named as ${match[2]} in the deck.`, 'team')
+  }
+  for (const match of text.matchAll(/\b(co-?founder|founder|ceo|cto|cfo|coo)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)\b/gi)) {
+    if (!/^[A-Z]/.test(match[2] || '')) continue
+    push(`${match[2]} is named as ${match[1]} in the deck.`, 'team')
+  }
+  return claims
+}
+
+function overlapsFact(left: DeckClaim, right: DeckClaim): boolean {
+  const leftFigures = significantFigures(left.text).map((figure) => `${figure.digits}:${figure.scale || ''}`)
+  const rightFigures = significantFigures(right.text).map((figure) => `${figure.digits}:${figure.scale || ''}`)
+  if (leftFigures.length > 0 && leftFigures.some((figure) => rightFigures.includes(figure))) return true
+  const leftCount = left.text.match(/\b\d[\d,]*\b/)?.[0]
+  const rightCount = right.text.match(/\b\d[\d,]*\b/)?.[0]
+  if (
+    leftCount &&
+    leftCount === rightCount &&
+    /customers|users|subscribers/i.test(left.text) &&
+    /customers|users|subscribers/i.test(right.text)
+  ) {
+    return true
+  }
+  if (left.kind !== right.kind) return false
+  const leftPercent = left.text.match(/\d{1,3}(?:\.\d+)?\s*(?:%|percent)/i)?.[0]?.replace(/\s+/g, '')
+  const rightPercent = right.text.match(/\d{1,3}(?:\.\d+)?\s*(?:%|percent)/i)?.[0]?.replace(/\s+/g, '')
+  if (leftPercent && leftPercent.toLowerCase() === rightPercent?.toLowerCase()) return true
+  const name = left.text.match(/\b[A-Z][a-z]+ [A-Z][a-z]+\b/)
+  return Boolean(name && right.text.includes(name[0]) && left.kind === 'team')
 }
 
 function isClaim(sentence: string, kind: ClaimKind): boolean {
@@ -998,21 +1112,11 @@ function labelFrom(text: string, label: string): string {
 const GENERIC_DECK_TITLE =
   /^(?:strategic\s+)?(?:partnership\s+)?proposal$|^confidential(?:\s+deck)?$|^presentation$|^overview$|^agenda$|^introduction$|^table of contents$/i
 
-function firstTitle(text: string): string {
-  const line = text
-    .split('\n')
-    .map((part) => part.trim())
-    .find(
-      (part) =>
-        part.length >= 2 &&
-        part.length <= 60 &&
-        !/[.!?]/.test(part) &&
-        !/\d/.test(part) &&
-        !/^https?:\/\//i.test(part) &&
-        !GENERIC_DECK_TITLE.test(part),
-    )
-  return line || ''
-}
+const STAMP_LINE =
+  /^(?:strictly\s+)?(?:private(?:\s+and)?\s+)?confidential(?:\s+(?:information|management\s+case|deck))?$|^(?:strictly\s+)?private$|^management\s+case$|^confidential\s+management\s+case$|^draft(?:\s+deck)?$|^investor\s+presentation$|^pitch\s+deck$|^nda$|^for\s+discussion\s+only$|^not\s+for\s+distribution$|^internal\s+use\s+only$|^do\s+not\s+(?:distribute|copy|forward)$|^proprietary(?:\s+and\s+confidential)?$|^preliminary(?:\s+draft)?$|^commercially\s+sensitive$|^private\s+and\s+confidential$|^strictly\s+confidential$/i
+
+const COVER_BOILER =
+  /^(?:seed(?:\s+round)?|series\s+[a-e]|investment|overview|agenda|introduction|contents|thank you|appendix|team|market|product|traction|financials|the ask|ask)$/i
 
 function titleCaseSector(value: string): string {
   const lower = value.trim().toLowerCase()
@@ -1033,6 +1137,86 @@ function sectorKeyword(text: string): string {
     if (found) return found.charAt(0).toUpperCase() + found.slice(1)
   }
   return ''
+}
+
+function companyFromDeck(text: string, fileName: string): string {
+  const labeled = labelFrom(text, 'company')
+  if (labeled && !isClassificationStamp(labeled)) return labeled
+  const submitted = submittedByEntity(text)
+  if (submitted && !isClassificationStamp(submitted)) return submitted
+  const org = titleSlideOrgName(text)
+  if (org) return org
+  const brand = logoBrandText(text)
+  if (brand) return brand
+  const email = companyFromEmail(text)
+  if (email) return email
+  return companyFromFileName(fileName)
+}
+
+function coverLines(text: string): string[] {
+  return normalizeDeckText(text)
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .slice(0, 40)
+}
+
+function isSkippedCoverLine(line: string): boolean {
+  if (line.length < 2 || line.length > 60) return true
+  if (/[.!?]/.test(line)) return true
+  if (/^https?:\/\//i.test(line)) return true
+  if (/\d/.test(line)) return true
+  if (isClassificationStamp(line) || GENERIC_DECK_TITLE.test(line) || COVER_BOILER.test(line)) return true
+  if (SECTORS.some((sector) => sector.toLowerCase() === line.toLowerCase())) return true
+  return false
+}
+
+function titleSlideOrgName(text: string): string {
+  for (const line of coverLines(text)) {
+    if (isSkippedCoverLine(line)) continue
+    const words = line.split(/\s+/)
+    const org = /\b(inc|llc|ltd|limited|plc|corp|corporation|gmbh|capital|group|holdings|labs|robotics|partners|consortium)\b/i.test(line)
+    const titled = words.length >= 2 && words.every((word) => /^[A-Z0-9]/.test(word))
+    if (org || titled) return line
+  }
+  return ''
+}
+
+function logoBrandText(text: string): string {
+  for (const line of coverLines(text)) {
+    if (isSkippedCoverLine(line)) continue
+    const words = line.split(/\s+/)
+    if (words.length > 3) continue
+    if (!/^[A-Za-z0-9][A-Za-z0-9 .&'-]{1,40}$/.test(line)) continue
+    return line
+  }
+  return ''
+}
+
+function companyFromEmail(text: string): string {
+  const match = text.match(/[A-Z0-9._%+-]+@([A-Z0-9.-]+\.[A-Z]{2,})/i)
+  if (!match?.[1]) return ''
+  const host = match[1].toLowerCase().replace(/^www\./, '')
+  const free = ['gmail.com', 'googlemail.com', 'outlook.com', 'hotmail.com', 'live.com', 'yahoo.com', 'icloud.com', 'proton.me', 'protonmail.com']
+  if (free.includes(host)) return ''
+  const skip = new Set(['www', 'mail', 'email', 'info', 'hello', 'team', 'example', 'com', 'co', 'io', 'net', 'org', 'sa', 'uk'])
+  const brand = host.split('.').find((part) => part.length >= 2 && !skip.has(part))
+  if (!brand) return ''
+  if (brand.length <= 4) return brand.toUpperCase()
+  return brand.charAt(0).toUpperCase() + brand.slice(1)
+}
+
+function sectorPhrase(text: string): string {
+  const match = text.match(/\b(?:sector|industry)\s+is\s+([A-Za-z][A-Za-z &-]{2,40})/i)
+  if (!match?.[1]) return ''
+  const value = match[1].trim().toLowerCase()
+  return SECTORS.find((sector) => value.includes(sector)) || ''
+}
+
+function aimFrom(text: string): string {
+  const labeled = labelFrom(text, 'aim') || labelFrom(text, 'ask')
+  if (labeled && !isClassificationStamp(labeled) && labeled.length >= 8 && labeled.length <= 180) return labeled
+  return askFrom(text)
 }
 
 function askFrom(text: string): string {
@@ -1113,7 +1297,7 @@ function cleanModelLabel(value: unknown, max: number): string {
 
 function modelCompany(value: unknown, deckText: string): string {
   const cleaned = cleanModelLabel(value, 80)
-  if (cleaned && !GENERIC_DECK_TITLE.test(cleaned) && companyFromModelOk(cleaned, deckText)) return cleaned
+  if (cleaned && !isClassificationStamp(cleaned) && !GENERIC_DECK_TITLE.test(cleaned) && companyFromModelOk(cleaned, deckText)) return cleaned
   return submittedByEntity(deckText)
 }
 

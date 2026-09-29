@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import {
+  degradedBannerText,
+  isDegradedCompact,
   parsePublicHttpsUrl,
   VERDICT_SHORT,
   type BuiltReport,
@@ -33,23 +35,20 @@ export function DueDiligenceReport({
 }) {
   const checklist = presentNextSteps(report.next_steps, presented.areas)
   const degraded = report.degraded_notes ?? []
+  const compact = isDegradedCompact(report)
+  const banner = degradedBannerText(degraded)
 
   return (
     <article className="mt-6">
-      {degraded.length > 0 ? (
+      {banner ? (
         <div
           role="status"
           data-dd-degraded="true"
+          data-dd-compact={compact ? 'true' : 'false'}
           className="max-w-3xl rounded-xl border border-[var(--ba-line)] border-s-2 border-s-[var(--ba-copper)] bg-[var(--ba-porcelain)] px-4 py-3"
         >
           <p className="text-[0.82rem] font-semibold text-[var(--ba-copper-deep)]">{REPORT_COPY.degradedLabel}</p>
-          <ul className="mt-2 space-y-1">
-            {degraded.map((note) => (
-              <li key={note} className="text-[1rem] leading-relaxed text-ink">
-                {note}
-              </li>
-            ))}
-          </ul>
+          <p className="mt-2 text-[1rem] leading-relaxed text-ink">{banner}</p>
         </div>
       ) : null}
       <p className="mt-4 max-w-3xl text-[1.05rem] leading-relaxed text-ink">{presented.assessed_line}</p>
@@ -65,7 +64,9 @@ export function DueDiligenceReport({
         <h2 id="dd-overview" className="font-display text-[1.35rem] font-semibold">
           {REPORT_COPY.sectionOverview}
         </h2>
-        <p className="mt-4 text-[1rem] leading-relaxed text-ink/80">{presented.overview}</p>
+        <p className="mt-4 text-[1rem] leading-relaxed text-ink/80">
+          {compact ? REPORT_COPY.compactOverview : presented.overview}
+        </p>
         <dl className="mt-4 grid gap-3 sm:grid-cols-3">
           <OverviewItem label={REPORT_COPY.metaCompany} value={report.company_label} />
           <OverviewItem label={REPORT_COPY.metaSector} value={report.sector_label} />
@@ -73,6 +74,13 @@ export function DueDiligenceReport({
         </dl>
       </section>
 
+      {compact ? (
+        <>
+          <DeckSummary claims={report.claims} />
+          <NextSteps reportId={reportId} items={checklist.items} closingNote={checklist.closingNote} />
+        </>
+      ) : (
+      <>
       <section className="mt-8" aria-labelledby="dd-percent">
         <h2 id="dd-percent" className="font-display text-[1.35rem] font-semibold">
           {REPORT_COPY.sectionSummary}
@@ -171,8 +179,35 @@ export function DueDiligenceReport({
           </ul>
         )}
       </section>
+      </>
+      )}
 
     </article>
+  )
+}
+
+function DeckSummary({ claims }: { claims: BuiltReport['claims'] }) {
+  return (
+    <section className="mt-8 max-w-3xl" aria-labelledby="dd-deck-summary" data-dd-deck-summary="true">
+      <h2 id="dd-deck-summary" className="font-display text-[1.35rem] font-semibold">
+        {REPORT_COPY.sectionDeck}
+      </h2>
+      {claims.length === 0 ? (
+        <p className="mt-4 text-[1rem] leading-relaxed text-ink/70">{REPORT_COPY.claimsEmpty}</p>
+      ) : (
+        <ul className="mt-4 space-y-3">
+          {claims.map((claim) => (
+            <li key={claim.text} className="rounded-xl border border-[var(--ba-line)] bg-white px-4 py-3">
+              <p className="text-[1rem] leading-relaxed font-semibold break-words text-ink">{claim.text}</p>
+              <div className="mt-2">
+                <StatusPill verdict="insufficient_public_data" />
+              </div>
+              <p className="mt-2 text-[0.95rem] leading-relaxed text-[var(--ba-muted)]">{REPORT_COPY.unverifiedBecause}</p>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
   )
 }
 
