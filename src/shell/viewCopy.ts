@@ -87,6 +87,13 @@ export const MEMBER_VIEWS = {
     clear: 'Clear filters',
     mapUnavailable: 'The regional map is not available yet.',
   },
+  rooms: {
+    empty: 'You have no rooms yet. Create one for a mandate or a real estate opportunity.',
+    emptyCta: 'Create room',
+    error: REFRESH_ERROR,
+    retry: 'Retry',
+    denied: 'Deal rooms are for active members.',
+  },
   dueDiligence: {
     empty: DD_COPY.emptyHistory,
     error: REFRESH_ERROR,
@@ -121,6 +128,12 @@ export const STAFF_VIEWS = {
     denied: 'A sponsor login cannot open full member records here.',
     filtered: 'No matches. Clear filters.',
     clear: 'Clear filters',
+  },
+  rooms: {
+    empty: 'No deal rooms yet.',
+    error: REFRESH_ERROR,
+    retry: 'Retry',
+    denied: 'This list is for staff.',
   },
   capacity: {
     early:

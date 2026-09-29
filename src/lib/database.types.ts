@@ -605,6 +605,14 @@ export type Database = {
         Args: Record<string, never>
         Returns: Json
       }
+      list_my_deal_rooms: {
+        Args: Record<string, never>
+        Returns: Json
+      }
+      search_deal_room_directory: {
+        Args: { p_query: string }
+        Returns: Json
+      }
       list_member_home_activity: {
         Args: Record<string, never>
         Returns: Json

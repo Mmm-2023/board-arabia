@@ -58,7 +58,7 @@ test('secondary links are not a sixth primary', () => {
   )
   assert.deepEqual(
     STAFF_SECONDARY.map((item) => item.label),
-    ['Majlis', 'Email'],
+    ['Majlis', 'Rooms', 'Email'],
   )
 })
 
@@ -88,6 +88,7 @@ test('section title follows the active destination', () => {
   assert.equal(shellSectionTitle('/admin/applications', STAFF_DESTINATIONS, STAFF_SECONDARY), 'Applications')
   assert.equal(shellSectionTitle('/admin/email', STAFF_DESTINATIONS, STAFF_SECONDARY), 'Email')
   assert.equal(shellSectionTitle('/admin/majlis', STAFF_DESTINATIONS, STAFF_SECONDARY), 'Majlis')
+  assert.equal(shellSectionTitle('/admin/rooms', STAFF_DESTINATIONS, STAFF_SECONDARY), 'Rooms')
 })
 
 test('updated label has no em dash', () => {

@@ -32,6 +32,12 @@ export function AdminHome() {
   return (
     <div className="max-w-3xl">
       <h1 className="font-display text-[2.1rem] font-bold tracking-[-0.03em]">Staff home</h1>
+      <Link
+        to="/admin/rooms"
+        className="mt-4 inline-flex min-h-11 items-center text-[0.75rem] font-semibold tracking-[0.08em] text-brass-bright uppercase"
+      >
+        Deal rooms
+      </Link>
 
       <section aria-label="Needs attention" className="mt-8">
         <h2 className={`text-[0.72rem] font-semibold tracking-[0.14em] uppercase ${styles.quiet}`}>
