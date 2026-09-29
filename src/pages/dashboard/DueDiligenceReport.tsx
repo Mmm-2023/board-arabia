@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import {
   parsePublicHttpsUrl,
-  VERDICT_LABEL,
+  VERDICT_SHORT,
   type BuiltReport,
   type ClaimVerdict,
   type FindingRow,
@@ -32,10 +32,27 @@ export function DueDiligenceReport({
   reportId: string
 }) {
   const checklist = presentNextSteps(report.next_steps, presented.areas)
+  const degraded = report.degraded_notes ?? []
 
   return (
     <article className="mt-6">
-      <p className="max-w-3xl text-[1.05rem] leading-relaxed text-ink">{presented.assessed_line}</p>
+      {degraded.length > 0 ? (
+        <div
+          role="status"
+          data-dd-degraded="true"
+          className="max-w-3xl rounded-xl border border-[var(--ba-line)] border-s-2 border-s-[var(--ba-copper)] bg-[var(--ba-porcelain)] px-4 py-3"
+        >
+          <p className="text-[0.82rem] font-semibold text-[var(--ba-copper-deep)]">{REPORT_COPY.degradedLabel}</p>
+          <ul className="mt-2 space-y-1">
+            {degraded.map((note) => (
+              <li key={note} className="text-[1rem] leading-relaxed text-ink">
+                {note}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+      <p className="mt-4 max-w-3xl text-[1.05rem] leading-relaxed text-ink">{presented.assessed_line}</p>
       <dl className="mt-4 grid gap-3 sm:grid-cols-2">
         <OverviewItem label={REPORT_COPY.preparedLabel} value={formatDate(preparedAt)} />
         <OverviewItem label={REPORT_COPY.documentsLabel} value={presented.documents_reviewed} />
@@ -79,6 +96,8 @@ export function DueDiligenceReport({
           </div>
         )}
       </section>
+
+      <NextSteps reportId={reportId} items={checklist.items} closingNote={checklist.closingNote} />
 
       <section className="mt-8" aria-labelledby="dd-scorecard">
         <h2 id="dd-scorecard" className="font-display text-[1.35rem] font-semibold">
@@ -153,7 +172,6 @@ export function DueDiligenceReport({
         )}
       </section>
 
-      <NextSteps reportId={reportId} items={checklist.items} closingNote={checklist.closingNote} />
     </article>
   )
 }
@@ -185,7 +203,7 @@ function StatusPill({ verdict }: { verdict: ClaimVerdict }) {
   return (
     <span className={PILL_CLASS[verdict]} data-dd-pill={verdict}>
       <span className="dd-pill-dot" aria-hidden="true" />
-      {VERDICT_LABEL[verdict]}
+      {VERDICT_SHORT[verdict]}
     </span>
   )
 }
@@ -217,7 +235,8 @@ function FindingBlock({
               <div className="mt-2">
                 <StatusPill verdict={row.status} />
               </div>
-              <ClampText text={row.finding} className="mt-2 text-[0.95rem] leading-relaxed text-ink/80" />
+              <p className="mt-2 text-[0.82rem] font-semibold text-[var(--ba-muted)]">{REPORT_COPY.colReason}</p>
+              <ClampText text={row.finding} className="text-[0.95rem] leading-relaxed text-ink/80" />
               <div className="mt-2 text-[0.95rem] text-ink">
                 <FindingSource row={row} claims={claims} />
               </div>
@@ -273,9 +292,19 @@ function FindingSource({ row, claims }: { row: FindingRow; claims: BuiltReport['
   const links = match?.sources ?? []
   if (links.length === 0) return <span>{row.source}</span>
   return (
-    <span className="flex flex-col items-start">
+    <span className="flex flex-col items-start gap-2">
       {links.map((source) => (
-        <PublicLink key={source.url} source={source} />
+        <span key={`${source.url}-${source.quote ?? ''}`} className="flex flex-col items-start" data-dd-evidence="true">
+          {source.quote ? (
+            <>
+              <span className="text-[0.82rem] font-semibold text-[var(--ba-muted)]">{REPORT_COPY.evidenceLabel}</span>
+              <q className="mt-1 block border-s-2 border-s-[var(--ba-indigo)] ps-3 text-[0.95rem] leading-relaxed break-words text-ink">
+                {source.quote}
+              </q>
+            </>
+          ) : null}
+          <PublicLink source={source} />
+        </span>
       ))}
     </span>
   )

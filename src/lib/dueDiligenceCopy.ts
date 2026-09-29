@@ -80,6 +80,8 @@ export const REPORT_COPY = {
   colClaim: 'Claim',
   colSource: 'Source',
   colFinding: 'Finding',
+  evidenceLabel: 'Evidence',
+  degradedLabel: 'Check limits',
   summaryConsistent: 'Publicly consistent',
   summaryNotVerifiable: 'Not publicly verifiable',
   summaryConsistentHelper: 'Share of checked claims that matched public sources in this run.',

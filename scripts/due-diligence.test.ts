@@ -16,11 +16,22 @@ import {
   visibleNextSteps,
   WHO_PUBLIC_STEP,
 } from '../src/lib/dueDiligenceNextSteps.ts'
+import { northwindFixtureReport } from './fixtures/northwind-assessment.ts'
 import { MEMBER_VIEWS } from '../src/shell/viewCopy.ts'
 import {
+  assessmentLog,
   buildReport,
   containsVerdictLanguage,
+  DEGRADED_NOTE_MODEL,
+  DEGRADED_NOTE_SEARCH,
+  independentSearchTerms,
+  INDEPENDENT_EVIDENCE_NOTE,
+  isBlockedPublicSourceUrl,
+  isCompanyOwnedUrl,
+  packReportDisclaimer,
   presentReport,
+  readModelFacts,
+  searchMatchTerm,
   type BuiltReport,
   DECK_MAX_BYTES,
   deckStoragePath,
@@ -472,11 +483,11 @@ test('Clearlake-style wiki hit is rejected for Goldman Capital Consortium', () =
   assert.ok(publicSearchTerms(facts).includes('Goldman Capital Consortium'))
   const report = buildReport(facts, [], { companyUrl: null })
   const steps = report.next_steps.join('\n')
-  assert.match(steps, /Confirm the legal name/)
-  assert.match(steps, /Point to a public homepage/)
-  assert.match(steps, /Name who is public/)
-  assert.match(steps, /Cite the market figure/)
   assert.match(steps, /Show a public traction proof/)
+  assert.equal(/Confirm the legal name/.test(steps), false)
+  assert.equal(/Point to a public homepage/.test(steps), false)
+  assert.equal(/Cite the market figure/.test(steps), false)
+  assert.equal(/Name who is public/.test(steps), false)
   assert.match(report.next_steps.at(-1) || '', /public-source assist/)
   assert.match(report.next_steps.at(-1) || '', /not legal advice/)
   assert.equal(steps.includes('\u2014'), false)
@@ -510,7 +521,7 @@ test('model facts stay inside the deck text and fall back when invented', () => 
   )
   assert.ok(supported)
   assert.equal(supported?.company, 'Northwind Logistics')
-  assert.equal(supported?.sector, NOT_STATED)
+  assert.equal(supported?.sector, 'Health')
   assert.match(supported?.ask || '', /raising \$4 million/)
   assert.equal(supported?.claims.some((claim) => claim.text.includes('120 enterprise')), true)
   assert.equal(supported?.claims.some((claim) => /partnership proposal/i.test(claim.text)), false)
@@ -819,6 +830,162 @@ test('the ready report uses status pills, summary helpers, and a grouped checkli
     const summaryAt = html.indexOf(REPORT_COPY.sectionSummary)
     const scorecardAt = html.indexOf(REPORT_COPY.sectionScorecard)
     assert.ok(summaryAt > 0 && summaryAt < scorecardAt)
+    const nextAt = html.indexOf(REPORT_COPY.sectionNext)
+    assert.ok(nextAt > summaryAt && nextAt < scorecardAt)
+  } finally {
+    await vite.close()
+  }
+})
+
+test('paraphrased claims survive when they overlap the deck, invented ones do not', () => {
+  const deck = `Submitted by: Northwind Trading
+Sector: logistics
+Northwind serves 120 enterprise customers across the Gulf.
+Patent pending on route packing software.`
+  const read = readModelFacts(
+    {
+      company: '',
+      sector: '',
+      ask: '',
+      claims: [
+        { text: 'Northwind serves 120 enterprise customers in the Gulf.', kind: 'other' },
+        { text: 'Northwind serves 999 enterprise customers in the Gulf.', kind: 'traction' },
+        { text: 'Clearlake Capital acquired the consortium last year and raised a seed round.', kind: 'traction' },
+      ],
+    },
+    deck,
+  )
+  assert.equal(read.claimsReturned, 3)
+  assert.equal(read.claimsKept, 1)
+  assert.equal(read.facts?.company, 'Northwind Trading')
+  assert.equal(read.facts?.sector, 'Logistics')
+  assert.equal(read.facts?.claims[0]?.text.includes('in the Gulf'), true)
+  assert.equal(read.facts?.claims[0]?.kind, 'traction')
+})
+
+test('two shared tokens cite an independent page, and the company site does not', () => {
+  const facts = extractDeckFacts(DECK)
+  const ownedOnly = buildReport(
+    facts,
+    [
+      {
+        title: 'Northwind Logistics',
+        url: 'https://www.northwind.example/',
+        text: 'Northwind serves 120 enterprise customers across the Gulf. The global logistics market is $900 billion.',
+      },
+    ],
+    { companyUrl: 'https://northwind.example/' },
+  )
+  assert.equal(ownedOnly.sources.length, 0)
+  assert.equal(ownedOnly.claims.every((claim) => claim.verdict !== 'publicly_consistent'), true)
+  assert.equal(ownedOnly.claims.every((claim) => claim.note === INDEPENDENT_EVIDENCE_NOTE), true)
+  assert.equal(isCompanyOwnedUrl('https://www.northwind.example/about', 'https://northwind.example/'), true)
+  assert.equal(isCompanyOwnedUrl('https://news.example/northwind', 'https://northwind.example/'), false)
+  assert.equal(isBlockedPublicSourceUrl('https://files.example/dataroom/deck'), true)
+  assert.equal(isBlockedPublicSourceUrl('https://news.example/gulf-logistics'), false)
+
+  const cited = buildReport(facts, [
+    {
+      title: 'Route packing filing',
+      url: 'https://news.example/route-packing',
+      text: 'Route packing is patented according to the public record for this product line.',
+    },
+  ])
+  const ip = cited.claims.find((claim) => claim.kind === 'ip')
+  assert.equal(ip?.verdict, 'publicly_consistent')
+  assert.match(ip?.sources[0]?.quote || '', /Route packing/)
+  assert.equal(ip?.sources[0]?.url, 'https://news.example/route-packing')
+  assert.equal(ip?.note.includes('\u2014'), false)
+})
+
+test('a missing search key is stored as a member-visible degraded note', () => {
+  const report = buildReport(extractDeckFacts(DECK), [], {
+    degradedNotes: [DEGRADED_NOTE_SEARCH, DEGRADED_NOTE_MODEL],
+  })
+  assert.deepEqual(report.degraded_notes, [DEGRADED_NOTE_SEARCH, DEGRADED_NOTE_MODEL])
+  const packed = packReportDisclaimer(report.degraded_notes)
+  assert.match(packed, /Independent web checks were not run for this report/)
+  assert.equal(packed.length <= 400, true)
+  assert.equal(packed.includes('\u2014'), false)
+  const stored = readStoredReport({ ...report, disclaimer: packed })
+  assert.equal(stored?.disclaimer, DUE_DILIGENCE_DISCLAIMER)
+  assert.deepEqual(stored?.degraded_notes, [DEGRADED_NOTE_SEARCH, DEGRADED_NOTE_MODEL])
+  const line = assessmentLog({
+    jobId: '11111111-1111-4111-8111-111111111111',
+    modelRan: false,
+    modelSkipReason: 'missing_api_key',
+    claimsReturned: 3,
+    claimsKept: 2,
+    sourcesFetched: 1,
+    searchRan: false,
+    searchSkipReason: 'missing_api_key',
+  })
+  assert.match(line, /"model_ran":false/)
+  assert.match(line, /"claims_returned":3/)
+  assert.match(line, /"claims_kept":2/)
+  assert.match(line, /"sources_fetched":1/)
+  assert.equal(line.includes('Northwind serves'), false)
+  assert.equal(/sk-[A-Za-z0-9]/.test(line), false)
+  const terms = independentSearchTerms(extractDeckFacts(DECK))
+  assert.ok(terms.some((term) => term.includes('Sara Nasser')))
+  assert.ok(terms.some((term) => term.includes('site:argaam.com')))
+  assert.ok(terms.some((term) => term.includes('site:saudiexchange.sa')))
+  assert.ok(terms.some((term) => term.includes('site:misa.gov.sa')))
+  assert.equal(searchMatchTerm('Northwind Logistics site:argaam.com'), 'Northwind Logistics')
+  assert.equal(
+    publicHitMatchesTerm('Unrelated listing', 'https://www.argaam.com/en/other', searchMatchTerm('Northwind Logistics site:argaam.com')),
+    false,
+  )
+  const sources = readFileSync(path.join(root, 'supabase/functions/due-diligence-start/sources.ts'), 'utf8')
+  const run = readFileSync(path.join(root, 'supabase/functions/due-diligence-start/run.ts'), 'utf8')
+  assert.match(sources, /Mozilla\/5\.0/)
+  assert.match(sources, /isBlockedPublicSourceUrl/)
+  assert.equal(sources.includes('BoardArabia/1.0'), false)
+  assert.match(run, /assessmentLog/)
+  assert.match(run, /independentSearchTerms/)
+  assert.match(run, /DEGRADED_NOTE_SEARCH/)
+})
+
+test('the Northwind fixture shows verdict, reason, evidence, and the degraded note', async () => {
+  const report = northwindFixtureReport()
+  const traction = report.claims.find((claim) => claim.kind === 'traction')
+  const market = report.claims.find((claim) => claim.kind === 'market')
+  const team = report.claims.find((claim) => claim.kind === 'team')
+  assert.equal(traction?.verdict, 'publicly_consistent')
+  assert.equal(traction?.sources[0]?.url, 'https://news.example/gulf-logistics')
+  assert.match(traction?.sources[0]?.quote || '', /120 enterprise/)
+  assert.equal(market?.verdict, 'conflict_with_public_sources')
+  assert.match(market?.note || '', /different figure/)
+  assert.match(market?.sources[0]?.quote || '', /\$90 billion/)
+  assert.equal(team?.verdict, 'not_publicly_verifiable')
+  assert.equal(report.sources.some((source) => /northwind\.example/.test(source.url)), false)
+  assert.deepEqual(report.degraded_notes, [DEGRADED_NOTE_SEARCH])
+  const steps = report.next_steps.join('\n')
+  assert.match(steps, /Cite the market figure/)
+  assert.match(steps, /Name who is public/)
+  assert.equal(/Show a public traction proof/.test(steps), false)
+  const vite = await createServer({
+    server: { middlewareMode: true },
+    appType: 'custom',
+    logLevel: 'error',
+  })
+  try {
+    const mod = (await vite.ssrLoadModule('/src/shell/renderDueReport.tsx')) as {
+      renderDueReport: (value: BuiltReport, fileName: string, preparedAt: string) => string
+    }
+    const html = mod.renderDueReport(report, 'Northwind-logistics.pdf', '2026-09-29T09:00:00.000Z')
+    assert.ok(html.includes('data-dd-degraded="true"'))
+    assert.ok(html.includes(DEGRADED_NOTE_SEARCH))
+    assert.ok(html.includes('Consistent'))
+    assert.ok(html.includes('Not verified'))
+    assert.ok(html.includes('Contradicted'))
+    assert.ok(html.includes('data-dd-evidence="true"'))
+    assert.ok(html.includes(REPORT_COPY.evidenceLabel))
+    assert.ok(html.includes('https://news.example/gulf-logistics'))
+    assert.ok(html.includes('https://research.example/logistics-market'))
+    assert.equal(html.includes('northwind.example'), false)
+    assert.equal(html.includes('\u2014'), false)
+    assert.equal(html.includes('\u2013'), false)
   } finally {
     await vite.close()
   }

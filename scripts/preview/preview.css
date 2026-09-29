@@ -1,0 +1,13 @@
+@import "../../src/index.css";
+@source "../../src";
+@source ".";
+
+/* Preview only: let a full-page capture include the report under the mobile scroll lock. */
+.shell-root,
+.shell-frame,
+.shell-column,
+.shell-main {
+  height: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
+}

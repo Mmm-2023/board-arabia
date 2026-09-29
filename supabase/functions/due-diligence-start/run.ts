@@ -1,12 +1,18 @@
 import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1'
 import {
+  assessmentLog,
   buildReport,
   DECK_BUCKET,
   DECK_MAX_BYTES,
+  DEGRADED_NOTE_MODEL,
+  DEGRADED_NOTE_MODEL_FAILED,
+  DEGRADED_NOTE_SEARCH,
+  DEGRADED_NOTE_SEARCH_FAILED,
   extractCompanyUrl,
+  independentSearchTerms,
   MEMBER_MESSAGES,
+  packReportDisclaimer,
   parsePublicHttpsUrl,
-  publicSearchTerms,
   sniffDeck,
   type DeckExt,
 } from '../_shared/due_diligence.ts'
@@ -27,6 +33,27 @@ export async function advanceDueDiligenceJob(admin: SupabaseClient, jobId: strin
   if (claimed.error || !claimed.data) return
 
   const job = claimed.data
+  let modelRan = false
+  let modelSkipReason: string | null = 'not_started'
+  let claimsReturned = 0
+  let claimsKept = 0
+  let sourcesFetched = 0
+  let searchRan = false
+  let searchSkipReason: string | null = 'not_started'
+  const writeLog = () => {
+    console.log(
+      assessmentLog({
+        jobId,
+        modelRan,
+        modelSkipReason,
+        claimsReturned,
+        claimsKept,
+        sourcesFetched,
+        searchRan,
+        searchSkipReason,
+      }),
+    )
+  }
   try {
     const deck = await admin
       .from('due_diligence_decks')
@@ -55,13 +82,31 @@ export async function advanceDueDiligenceJob(admin: SupabaseClient, jobId: strin
           .eq('member_id', job.member_id)
       }
     }
-    const facts = await extractDeckFactsWithOptionalLlm(text)
-    const pages = await retrievePublicPages({
+    const extraction = await extractDeckFactsWithOptionalLlm(text)
+    modelRan = extraction.modelRan
+    modelSkipReason = extraction.skipReason
+    claimsReturned = extraction.claimsReturned
+    claimsKept = extraction.claimsKept
+    const facts = extraction.facts
+    const retrieval = await retrievePublicPages({
       companyUrl,
-      searchTerms: publicSearchTerms(facts),
+      searchTerms: independentSearchTerms(facts),
     })
+    sourcesFetched = retrieval.sourcesFetched
+    searchRan = retrieval.searchRan
+    searchSkipReason = retrieval.searchSkipReason
     await mark(admin, jobId, 'writing', 85)
-    const report = buildReport(facts, pages, { companyUrl })
+    const degradedNotes: string[] = []
+    if (!extraction.modelRan) {
+      degradedNotes.push(extraction.skipReason === 'missing_api_key' ? DEGRADED_NOTE_MODEL : DEGRADED_NOTE_MODEL_FAILED)
+    }
+    if (!retrieval.searchRan) {
+      degradedNotes.push(DEGRADED_NOTE_SEARCH)
+    } else if (retrieval.searchSkipReason) {
+      degradedNotes.push(DEGRADED_NOTE_SEARCH_FAILED)
+    }
+    const report = buildReport(facts, retrieval.pages, { companyUrl, degradedNotes })
+    writeLog()
     const inserted = await admin
       .from('due_diligence_reports')
       .insert({
@@ -72,7 +117,7 @@ export async function advanceDueDiligenceJob(admin: SupabaseClient, jobId: strin
         company_label: report.company_label,
         sector_label: report.sector_label,
         ask_label: report.ask_label,
-        disclaimer: report.disclaimer,
+        disclaimer: packReportDisclaimer(report.degraded_notes),
         publicly_consistent_pct: report.publicly_consistent_pct,
         not_publicly_verifiable_pct: report.not_publicly_verifiable_pct,
         claims: report.claims,
@@ -95,6 +140,9 @@ export async function advanceDueDiligenceJob(admin: SupabaseClient, jobId: strin
       .eq('id', jobId)
       .in('status', ACTIVE)
   } catch (err) {
+    if (modelSkipReason === 'not_started') modelSkipReason = 'job_failed'
+    if (searchSkipReason === 'not_started') searchSkipReason = 'job_failed'
+    writeLog()
     const message = err instanceof Error ? err.message : ''
     const safe =
       message === MEMBER_MESSAGES.unreadable ||
