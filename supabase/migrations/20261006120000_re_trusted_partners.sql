@@ -7,7 +7,7 @@
 -- Apply on the live project later. This change does not apply the migration and does not deploy.
 -- Edge redeploy: request-re-intro (changed). No new Edge function.
 --
--- Order: after 20261003120000_re_regulatory_readiness.sql.
+-- Order: after 20261005120000 (DR-B) and 20261003120000_re_regulatory_readiness.sql.
 
 alter table public.re_partners
   add column if not exists city text;
