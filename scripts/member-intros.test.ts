@@ -17,7 +17,7 @@ import { buildHeadlines } from '../src/lib/homeSnapshot.ts'
 import { resolveRedirect } from '../src/shell/redirects.ts'
 
 const migration = readFileSync(
-  new URL('../supabase/migrations/20261020120000_member_warm_intros.sql', import.meta.url),
+  new URL('../supabase/migrations/20261023120000_member_warm_intros.sql', import.meta.url),
   'utf8',
 )
 
