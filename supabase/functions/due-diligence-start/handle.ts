@@ -190,6 +190,9 @@ async function runStart(
       member_id: userId,
       status: 'queued',
       progress: 5,
+      pipeline_step: 'extract',
+      step_claim: null,
+      pipeline: {},
     })
     .select('id')
     .maybeSingle()

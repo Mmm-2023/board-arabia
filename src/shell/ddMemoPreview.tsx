@@ -1,7 +1,7 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { MemoryRouter } from 'react-router-dom'
-import { fullDraftReport, passDraftReport, publicChecksReport } from '../lib/dueDiligenceMemoFixture'
+import { fullDraftReport, passDraftReport, publicChecksReport, rangeBreachReport } from '../lib/dueDiligenceMemoFixture'
 import { DueDiligenceReport } from '../pages/dashboard/DueDiligenceReport'
 import { presentReport } from '../../supabase/functions/_shared/due_diligence.ts'
 import { AppShell } from './AppShell'
@@ -10,7 +10,13 @@ import '../index.css'
 
 const state = new URLSearchParams(window.location.search).get('state') || 'evidence'
 const report =
-  state === 'pass' ? passDraftReport() : state === 'nosearch' ? publicChecksReport() : fullDraftReport()
+  state === 'pass'
+    ? passDraftReport()
+    : state === 'nosearch'
+      ? publicChecksReport()
+      : state === 'range'
+        ? rangeBreachReport()
+        : fullDraftReport()
 const presented = presentReport(report, 'northwind-freight.pdf')
 const root = document.getElementById('root')
 if (!root) throw new Error('Missing memo preview root')

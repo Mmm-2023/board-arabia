@@ -609,6 +609,7 @@ test('migration locks RLS, storage, and the run limit without secrets', () => {
     'supabase/functions/due-diligence-start/handle.ts',
     'supabase/functions/due-diligence-start/index.ts',
     'supabase/functions/due-diligence-status/index.ts',
+    'supabase/functions/due-diligence-step/index.ts',
     'supabase/functions/due-diligence-start/run.ts',
     'supabase/functions/due-diligence-start/sources.ts',
     'supabase/functions/due-diligence-start/llm.ts',

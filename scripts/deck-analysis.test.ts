@@ -4,8 +4,11 @@ import path from 'node:path'
 import test from 'node:test'
 import { createServer } from 'vite'
 import {
+  compareRange,
   derivePosture,
+  findRangeBreaches,
   fitNumberedDeck,
+  mergeSectionDrafts,
   missingBannerLabels,
   numberDeckPages,
   parseDeckAnalysis,
@@ -16,15 +19,23 @@ import {
   SCORE_LABEL,
 } from '../supabase/functions/_shared/deck_analysis.ts'
 import {
+  afterModelAttempt,
+  claimAllowed,
   DD_PROGRESS,
   EDGE_WALL_CLOCK_MS,
   FALLBACK_MS,
   JOB_STALE_MS,
-  PRIMARY_CAP_MS,
-  PRIMARY_TTFT_MS,
-  REPAIR_MS,
-  WORKER_BUDGET_MS,
   MEMBER_MESSAGES,
+  PRIMARY_CAP_MS,
+  STEP_ANALYSIS_CAP_MS,
+  STEP_ANALYSIS_STALE_MS,
+  STEP_ANALYSIS_TTFT_MS,
+  STEP_COMPOSE_BUDGET_MS,
+  STEP_COMPOSE_REPAIR_MS,
+  STEP_COMPOSE_STALE_MS,
+  STEP_EXTRACT_BUDGET_MS,
+  STEP_EXTRACT_STALE_MS,
+  STEP_HANDOFF_STALE_MS,
   extractDeckFacts,
   isTerminalModelFailure,
   modelJobFields,
@@ -157,7 +168,7 @@ test('company name comes from the model and the heuristic is only the fallback',
   }
 })
 
-test('a failed primary call is retried once and the reason is ready for the job row', async () => {
+test('a failed primary call stays on that step and the backup is a later pass', async () => {
   const calls: { model?: string }[] = []
   const previousFetch = globalThis.fetch
   const previousDeno = (globalThis as { Deno?: unknown }).Deno
@@ -174,26 +185,31 @@ test('a failed primary call is retried once and the reason is ready for the job 
   globalThis.fetch = (async (_input: RequestInfo | URL, init?: RequestInit) => {
     const body = JSON.parse(String(init?.body || '{}')) as { model?: string }
     calls.push(body)
-    if (calls.length === 1) return new Response('no', { status: 503 })
+    if (body.model === 'unit-model-id') return new Response('no', { status: 503 })
     return new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify(fullDraftAnalysis()) } }] }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
     })
   }) as typeof fetch
   try {
-    const result = await extractDeckFactsWithOptionalLlm(FIXTURE_DECK, 'northwind-freight.pdf', `Page 1\n${FIXTURE_DECK}`)
-    assert.equal(calls.length, 2)
+    const primary = await analyzeDeckText(`Page 1\n${FIXTURE_DECK}`, { mode: 'primary' })
+    assert.equal(calls.length, 1)
     assert.equal(calls[0]?.model, 'unit-model-id')
+    assert.equal(primary.modelRan, false)
+    assert.equal(primary.modelId, 'unit-model-id')
+    assert.match(primary.skipReason || '', /primary_http_503/)
+    assert.equal(afterModelAttempt('primary', false), 'fallback')
+    const backup = await analyzeDeckText(`Page 1\n${FIXTURE_DECK}`, { mode: 'fallback' })
+    assert.equal(calls.length, 2)
     assert.equal(calls[1]?.model, FALLBACK_MODEL_ID)
-    assert.equal(result.usedFallback, true)
-    assert.equal(result.modelRan, true)
-    assert.equal(result.modelId, FALLBACK_MODEL_ID)
-    assert.match(result.skipReason || '', /primary_http_503/)
-    assert.match(result.skipReason || '', /fallback/)
-    const fields = modelJobFields({ modelId: result.modelId, skipReason: result.skipReason })
+    assert.equal(backup.usedFallback, true)
+    assert.equal(backup.modelRan, true)
+    assert.equal(backup.modelId, FALLBACK_MODEL_ID)
+    const fields = modelJobFields({ modelId: backup.modelId, skipReason: primary.skipReason })
     assert.equal(fields.model_id, FALLBACK_MODEL_ID)
     assert.match(fields.model_skip_reason || '', /primary_http_503/)
     assert.equal((fields.model_skip_reason || '').length <= 160, true)
+    assert.equal(afterModelAttempt('fallback', false), 'fail')
   } finally {
     globalThis.fetch = previousFetch
     ;(globalThis as { Deno?: unknown }).Deno = previousDeno
@@ -202,10 +218,17 @@ test('a failed primary call is retried once and the reason is ready for the job 
 
 test('the job row stores the model and a stale job is failed instead of restarted', () => {
   assert.equal(EDGE_WALL_CLOCK_MS, 150_000)
-  assert.equal(PRIMARY_TTFT_MS < PRIMARY_CAP_MS, true)
-  assert.equal(PRIMARY_CAP_MS + FALLBACK_MS + REPAIR_MS < WORKER_BUDGET_MS, true)
-  assert.equal(WORKER_BUDGET_MS < JOB_STALE_MS, true)
-  assert.equal(JOB_STALE_MS < EDGE_WALL_CLOCK_MS, true)
+  assert.equal(STEP_ANALYSIS_TTFT_MS < STEP_ANALYSIS_CAP_MS, true)
+  assert.equal(STEP_ANALYSIS_CAP_MS < STEP_ANALYSIS_STALE_MS, true)
+  assert.equal(STEP_ANALYSIS_STALE_MS < EDGE_WALL_CLOCK_MS, true)
+  assert.equal(STEP_EXTRACT_BUDGET_MS < STEP_EXTRACT_STALE_MS, true)
+  assert.equal(STEP_EXTRACT_STALE_MS < EDGE_WALL_CLOCK_MS, true)
+  assert.equal(STEP_COMPOSE_REPAIR_MS < STEP_COMPOSE_BUDGET_MS, true)
+  assert.equal(STEP_COMPOSE_BUDGET_MS < STEP_COMPOSE_STALE_MS, true)
+  assert.equal(STEP_COMPOSE_STALE_MS < EDGE_WALL_CLOCK_MS, true)
+  assert.equal(STEP_HANDOFF_STALE_MS < EDGE_WALL_CLOCK_MS, true)
+  assert.equal(STEP_ANALYSIS_CAP_MS + FALLBACK_MS > EDGE_WALL_CLOCK_MS, true)
+  assert.equal(JOB_STALE_MS, STEP_ANALYSIS_STALE_MS)
   const steps = Object.values(DD_PROGRESS)
   for (let index = 1; index < steps.length; index += 1) {
     assert.equal(steps[index] > steps[index - 1], true)
@@ -213,13 +236,44 @@ test('the job row stores the model and a stale job is failed instead of restarte
   const now = Date.parse('2026-09-29T12:00:00.000Z')
   const fresh = new Date(now - 1_000).toISOString()
   const old = new Date(now - JOB_STALE_MS - 1_000).toISOString()
+  const ago = (ms: number) => new Date(now - ms).toISOString()
   assert.equal(shouldFailStaleJob({ status: 'checking', updatedAt: fresh, createdAt: fresh, nowMs: now }), false)
   assert.equal(shouldFailStaleJob({ status: 'checking', updatedAt: old, createdAt: fresh, nowMs: now }), true)
   assert.equal(shouldFailStaleJob({ status: 'writing', updatedAt: fresh, createdAt: old, nowMs: now }), false)
   assert.equal(shouldFailStaleJob({ status: 'queued', updatedAt: old, createdAt: old, nowMs: now }), true)
   assert.equal(shouldFailStaleJob({ status: 'ready', updatedAt: old, createdAt: old, nowMs: now }), false)
   assert.equal(shouldFailStaleJob({ status: 'failed', updatedAt: old, createdAt: old, nowMs: now }), false)
+  assert.equal(
+    shouldFailStaleJob({ status: 'checking', updatedAt: ago(139_000), createdAt: ago(500_000), nowMs: now, pipelineStep: 'scores', stepClaim: 'claim-1' }),
+    false,
+  )
+  assert.equal(
+    shouldFailStaleJob({ status: 'checking', updatedAt: ago(141_000), createdAt: ago(1_000), nowMs: now, pipelineStep: 'scores', stepClaim: 'claim-1' }),
+    true,
+  )
+  assert.equal(
+    shouldFailStaleJob({ status: 'reading', updatedAt: ago(69_000), createdAt: ago(1_000), nowMs: now, pipelineStep: 'extract', stepClaim: 'claim-1' }),
+    false,
+  )
+  assert.equal(
+    shouldFailStaleJob({ status: 'reading', updatedAt: ago(71_000), createdAt: ago(400_000), nowMs: now, pipelineStep: 'extract', stepClaim: 'claim-1' }),
+    true,
+  )
+  assert.equal(
+    shouldFailStaleJob({ status: 'checking', updatedAt: ago(89_000), createdAt: ago(1_000), nowMs: now, pipelineStep: 'narrative', stepClaim: null }),
+    false,
+  )
+  assert.equal(
+    shouldFailStaleJob({ status: 'checking', updatedAt: ago(91_000), createdAt: ago(1_000), nowMs: now, pipelineStep: 'narrative', stepClaim: null }),
+    true,
+  )
+  assert.equal(claimAllowed({ status: 'checking', pipelineStep: 'scores', stepClaim: null }), true)
+  assert.equal(claimAllowed({ status: 'checking', pipelineStep: 'scores', stepClaim: 'claim-1' }), false)
+  assert.equal(claimAllowed({ status: 'ready', pipelineStep: 'compose', stepClaim: null }), false)
+  assert.equal(afterModelAttempt('primary', true), 'advance')
   assert.equal(stageLabel('checking', DD_PROGRESS.model), 'Asking the model')
+  assert.equal(stageLabel('checking', DD_PROGRESS.narrative), 'Writing the memo')
+  assert.equal(stageLabel('checking', DD_PROGRESS.model, true), 'Trying the backup model')
   assert.equal(stageLabel('checking', DD_PROGRESS.repair), 'Repairing the draft')
   assert.equal(stageLabel('checking', DD_PROGRESS.fallback), 'Trying the backup model')
   assert.equal(stageLabel('writing', DD_PROGRESS.save), 'Saving the draft')
@@ -240,6 +294,16 @@ test('the job row stores the model and a stale job is failed instead of restarte
   assert.match(run, /DD_PROGRESS/)
   assert.match(run, /isTerminalModelFailure/)
   assert.match(run, /analysis_status: 'draft'/)
+  assert.match(run, /step_claim/)
+  assert.match(run, /pipeline_step/)
+  assert.match(run, /due-diligence-step/)
+  assert.match(status, /pipeline_step/)
+  assert.match(status, /step_claim/)
+  const pipeline = readFileSync(path.join(root, 'supabase/migrations/20261022120000_due_diligence_pipeline.sql'), 'utf8')
+  assert.match(pipeline, /pipeline_step/)
+  assert.match(pipeline, /step_claim/)
+  assert.match(pipeline, /Not applied by the authoring agent/)
+  assert.equal(pipeline.includes('\u2014'), false)
   assert.match(migration, /model_skip_reason/)
   assert.match(migration, /analysis_status = 'draft'/)
   assert.match(migration, /Not applied by the authoring agent/)
@@ -300,15 +364,14 @@ test('a slow primary fails over and the fallback finishes inside the budget', as
       },
     })
     const elapsed = Date.now() - started
-    assert.deepEqual(stages, ['model', 'fallback'])
+    assert.deepEqual(stages, ['model'])
     assert.equal(models[0], 'unit-model-id')
-    assert.equal(models[1], FALLBACK_MODEL_ID)
-    assert.equal(result.modelRan, true)
-    assert.equal(result.modelId, FALLBACK_MODEL_ID)
+    assert.equal(result.modelRan, false)
+    assert.equal(result.modelId, 'unit-model-id')
     assert.match(result.skipReason || '', /ttft/)
-    assert.equal(result.analysis?.hero != null, true)
-    assert.ok(elapsed < PRIMARY_CAP_MS + FALLBACK_MS)
-    assert.ok(elapsed < WORKER_BUDGET_MS)
+    assert.equal(afterModelAttempt('primary', false), 'fallback')
+    assert.ok(elapsed < 2_000)
+    assert.ok(elapsed < STEP_ANALYSIS_CAP_MS)
   } finally {
     globalThis.fetch = previousFetch
     ;(globalThis as { Deno?: unknown }).Deno = previousDeno
@@ -348,7 +411,7 @@ test('a model call that runs out of time fails with the model id stored', async 
     const expired = await analyzeDeckText(`Page 1\n${FIXTURE_DECK}`, { deadlineAt: Date.now() - 1 })
     assert.equal(expired.modelRan, false)
     assert.match(expired.skipReason || '', /deadline/)
-    assert.equal(expired.modelId, FALLBACK_MODEL_ID)
+    assert.equal(expired.modelId, 'unit-model-id')
 
     const result = await analyzeDeckText(`Page 1\n${FIXTURE_DECK}`, {
       callTimeoutMs: 30,
@@ -356,13 +419,14 @@ test('a model call that runs out of time fails with the model id stored', async 
         stages.push(stage)
       },
     })
-    assert.deepEqual(stages, ['model', 'fallback'])
+    assert.deepEqual(stages, ['model'])
     assert.equal(result.modelRan, false)
-    assert.equal(result.modelId, FALLBACK_MODEL_ID)
+    assert.equal(result.modelId, 'unit-model-id')
     assert.match(result.skipReason || '', /primary_timeout/)
-    assert.match(result.skipReason || '', /fallback_timeout/)
+    assert.equal((result.skipReason || '').includes('fallback_timeout'), false)
     const fields = modelJobFields({ modelId: result.modelId, skipReason: result.skipReason })
-    assert.equal(fields.model_id, FALLBACK_MODEL_ID)
+    assert.equal(fields.model_id, 'unit-model-id')
+    assert.notEqual(fields.model_id, null)
     assert.match(fields.model_skip_reason || '', /timeout/)
     assert.equal(isTerminalModelFailure(result.skipReason, result.modelRan), true)
   } finally {
@@ -463,6 +527,79 @@ test('posture follows scores and red flags, and a missing hero is repaired', asy
     ;(globalThis as { Deno?: unknown }).Deno = previousDeno
   }
   assert.equal(PRIMARY_CALL_MS, PRIMARY_CAP_MS)
+  assert.equal(compareRange(15, 10, 20, 'kg', 'kg'), 'inside')
+  assert.equal(compareRange(25, 10, 20, 'kg', 'kg'), 'outside')
+  assert.equal(compareRange(10, 10, 20, 'kg', 'kg'), 'boundary')
+  assert.equal(compareRange(20, 10, 20, 'kg', 'kg'), 'boundary')
+  assert.equal(compareRange(25, 10, 20, 'g', 'kg'), 'unit_mismatch')
+  assert.equal(findRangeBreaches('The gauge reads 15 kg, which is inside the 10 to 20 kg band.').length, 0)
+  assert.equal(findRangeBreaches('The gauge reads 10 kg, which is inside the 10 to 20 kg band.').length, 0)
+  assert.equal(findRangeBreaches('The gauge reads 20 kg, which is inside the 10 to 20 kg band.').length, 0)
+  assert.equal(findRangeBreaches('The gauge reads 25 g, which is inside the 10 to 20 kg band.').length, 0)
+  assert.equal(findRangeBreaches('Overall is 2 of 5. Traction is 3 of 5.').length, 0)
+  const outside = findRangeBreaches('The gauge reads 25 kg, which is inside the 10 to 20 kg band.')
+  assert.equal(outside.length, 1)
+  assert.equal(outside[0]?.value, 25)
+  assert.equal(findRangeBreaches('The gauge reads 25 kg inside the 10-20 kg band.').length, 1)
+  assert.equal(findRangeBreaches('The gauge reads 25 kg. The operating band is between 10 and 20 kg.').length, 1)
+  const ranged = parseDeckAnalysis({
+    ...fullDraftRaw(),
+    hero: { company: 'Example Carrier', one_liner: 'A lane.', posture: 'pass', overall: 1, pre_money: null, post_money: null, currency: 'USD' },
+    snapshot: {
+      ...(fullDraftRaw().snapshot as object),
+      posture: 'pass',
+      one_liner: 'A shipped lane for example.com customers.',
+    },
+    scores: { ...(fullDraftRaw().scores as object), overall: 4 },
+    risks: [{ title: 'Thin note', severity: 'low', why: 'One line names a carrier.', evidence_that_would_retire_it: 'The policy number.' }],
+    claims: [{ claim: 'Example Carrier serves 40 sites.', page: '2', status: 'supported_in_deck', note: 'Deck-stated.' }],
+    memo_markdown: 'The gauge reads 25 kg, which is inside the 10 to 20 kg band.',
+  })
+  assert.equal(ranged?.scores.overall, 4)
+  assert.equal(ranged?.hero.overall, 4)
+  assert.equal(ranged?.hero.posture, 'evidence_required')
+  assert.match(ranged?.memo_markdown || '', /outside/)
+  assert.equal((ranged?.memo_markdown || '').includes('inside'), false)
+  assert.equal(ranged?.risks.some((risk) => risk.severity === 'high'), true)
+  assert.equal(ranged?.claims.some((claim) => claim.status === 'contradicted'), true)
+  const clean = parseDeckAnalysis({
+    ...fullDraftRaw(),
+    hero: { company: 'Example Carrier', one_liner: 'A lane.', posture: 'evidence_required', overall: 1, pre_money: null, post_money: null, currency: 'USD' },
+    snapshot: {
+      ...(fullDraftRaw().snapshot as object),
+      posture: 'pass',
+      one_liner: 'A shipped lane for example.com customers.',
+      posture_reason: 'The first step is proved.',
+    },
+    scores: {
+      story_clarity: 4,
+      unit_economics: 4,
+      model_integrity: 4,
+      traction_evidence: 4,
+      team_and_governance: 4,
+      regulatory_and_operations: 4,
+      market_and_competition: 4,
+      use_of_funds: 4,
+      valuation_fit: 4,
+      overall: 4,
+    },
+    risks: [{ title: 'Thin note', severity: 'low', why: 'One line names a carrier.', evidence_that_would_retire_it: 'The policy number.' }],
+    claims: [{ claim: 'Example Carrier serves 40 sites.', page: '2', status: 'supported_in_deck', note: 'Deck-stated.' }],
+    memo_markdown: 'Verdict: the first step is proved and the price can be discussed.',
+  })
+  assert.equal(clean?.scores.overall, 4)
+  assert.ok((clean?.scores.overall || 0) > 2)
+  assert.equal(clean?.hero.overall, 4)
+  assert.equal(clean?.hero.posture, 'pass')
+  assert.equal(clean?.snapshot.posture, 'pass')
+  const merged = parseDeckAnalysis(
+    mergeSectionDrafts(
+      { ...(clean || {}), scores: { ...(clean?.scores || {}), overall: 4 } },
+      { scores: { overall: 1 }, memo_markdown: 'Verdict: the first step is proved.', snapshot: { posture: 'pass' } },
+    ),
+  )
+  assert.equal(merged?.scores.overall, 4)
+  assert.equal(merged?.hero.overall, 4)
   const llm = readFileSync(path.join(root, 'supabase/functions/due-diligence-start/llm.ts'), 'utf8')
   assert.match(llm, /PRIMARY_CAP_MS/)
   assert.match(llm, /TtftError/)

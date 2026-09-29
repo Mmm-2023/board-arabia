@@ -2,7 +2,7 @@ import { createClient, type SupabaseClient } from 'https://esm.sh/@supabase/supa
 import { resolveDueDiligenceUser } from '../_shared/due_diligence_user.ts'
 import { assertPptxSlides } from './extract.ts'
 import { handleDueDiligenceStart, type DueDiligenceAdmin } from './handle.ts'
-import { advanceDueDiligenceJob, deferJob } from './run.ts'
+import { deferJob, runDueDiligenceStep, triggerDueDiligenceStep } from './run.ts'
 
 function createAdmin(): DueDiligenceAdmin | null {
   const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
@@ -25,7 +25,10 @@ Deno.serve((req) =>
     createAdmin,
     assertSlides: assertPptxSlides,
     scheduleJob: (admin, jobId) => {
-      deferJob(advanceDueDiligenceJob(admin as unknown as SupabaseClient, jobId))
+      deferJob((async () => {
+        const kicked = await triggerDueDiligenceStep(jobId)
+        if (!kicked) await runDueDiligenceStep(admin as unknown as SupabaseClient, jobId)
+      })())
     },
   }),
 )

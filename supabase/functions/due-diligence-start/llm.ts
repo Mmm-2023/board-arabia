@@ -8,7 +8,14 @@ import {
   rawHasHero,
   type DeckAnalysis,
 } from '../_shared/deck_analysis.ts'
-import { FALLBACK_MS, PRIMARY_CAP_MS, PRIMARY_TTFT_MS, REPAIR_MS, WORKER_BUDGET_MS } from '../_shared/due_diligence.ts'
+import {
+  FALLBACK_MS,
+  PRIMARY_CAP_MS,
+  PRIMARY_TTFT_MS,
+  REPAIR_MS,
+  STEP_ANALYSIS_CAP_MS,
+  type ModelPass,
+} from '../_shared/due_diligence.ts'
 import {
   extractDeckFacts,
   mergeModelFacts,
@@ -16,8 +23,10 @@ import {
   parsePublicHttpsUrl,
   type DeckFacts,
 } from '../_shared/due_diligence.ts'
+import { NARRATIVE_PROMPT } from './prompts/narrative_prompt.ts'
 import { REPAIR_PROMPT } from './prompts/repair_prompt.ts'
 import { SCHEMA_PROMPT } from './prompts/schema_prompt.ts'
+import { SCORES_PROMPT } from './prompts/scores_prompt.ts'
 import { SYSTEM_PROMPT } from './prompts/system_prompt.ts'
 
 const DEFAULT_MODEL = 'gpt-4o-mini'
@@ -37,6 +46,10 @@ function edgeEnv(name: string): string {
   if (name === 'BA_DD_LLM_BASE_URL') return Deno.env.get('BA_DD_LLM_BASE_URL')?.trim() || ''
   if (name === 'BA_DD_LLM_PROVIDER') return Deno.env.get('BA_DD_LLM_PROVIDER')?.trim() || ''
   return Deno.env.get(name)?.trim() || ''
+}
+
+export function plannedModelId(): string {
+  return llmChatTarget()?.model || FALLBACK_MODEL_ID
 }
 
 export function llmChatTarget(): { url: string; model: string } | null {
@@ -118,11 +131,68 @@ export async function extractDeckFactsWithOptionalLlm(
   }
 }
 
+export type SectionCall = {
+  content: string
+  modelId: string
+  ok: boolean
+  reason: string | null
+}
+
+/** One model call. Fallback and repair are separate invocations, not extra calls here. */
+export async function analyzeDeckSection(input: {
+  system: string
+  user: string
+  mode: ModelPass
+  onStage?: (stage: ModelStage, modelId: string) => Promise<void>
+  onTick?: (elapsedMs: number, modelId: string) => Promise<void>
+  deadlineAt?: number
+  callTimeoutMs?: number
+  ttftMs?: number
+  repair?: boolean
+}): Promise<SectionCall> {
+  const key = edgeEnv('BA_DD_LLM_API_KEY')
+  const target = llmChatTarget()
+  const modelId = input.mode === 'fallback' ? FALLBACK_MODEL_ID : target?.model || ''
+  if (!key) return { content: '', modelId: modelId || FALLBACK_MODEL_ID, ok: false, reason: 'missing_api_key' }
+  if (!target || !modelId) return { content: '', modelId: FALLBACK_MODEL_ID, ok: false, reason: 'missing_model' }
+  const url = input.mode === 'fallback' || target.url === XAI_CHAT_URL ? XAI_CHAT_URL : target.url
+  const stage: ModelStage = input.repair ? 'repair' : input.mode === 'fallback' ? 'fallback' : 'model'
+  const call = await runCall(
+    input,
+    stage,
+    url,
+    modelId,
+    key,
+    input.system,
+    input.user,
+  )
+  if (!call.ok) {
+    return { content: '', modelId, ok: false, reason: `${input.mode === 'fallback' ? 'fallback' : 'primary'}_${call.reason}` }
+  }
+  return { content: call.content, modelId, ok: true, reason: null }
+}
+
+export function scoresUser(deck: string, companyHint: string, roundHint: string): string {
+  return `${SCORES_PROMPT}\n\n${JSON.stringify({
+    company_hint: companyHint.slice(0, 80),
+    round_hint: roundHint.slice(0, 180),
+    deck_text: fitNumberedDeck(deck),
+  })}`
+}
+
+export function narrativeUser(deck: string, scoresJson: unknown): string {
+  return `${NARRATIVE_PROMPT}\n\n${JSON.stringify({
+    scores_pass: scoresJson,
+    deck_text: fitNumberedDeck(deck),
+  })}`
+}
+
 export async function analyzeDeckText(
   numberedText: string,
   hints: {
     companyHint?: string
     roundHint?: string
+    mode?: ModelPass
     onStage?: (stage: ModelStage, modelId: string) => Promise<void>
     deadlineAt?: number
     callTimeoutMs?: number
@@ -137,16 +207,18 @@ export async function analyzeDeckText(
   usedFallback: boolean
 }> {
   const key = edgeEnv('BA_DD_LLM_API_KEY')
-  if (!key) {
-    return { analysis: null, modelRan: false, modelId: null, skipReason: 'missing_api_key', usedFallback: false }
-  }
   const target = llmChatTarget()
-  if (!target) {
-    return { analysis: null, modelRan: false, modelId: null, skipReason: 'missing_model', usedFallback: false }
+  const mode: ModelPass = hints.mode === 'fallback' ? 'fallback' : 'primary'
+  const modelId = mode === 'fallback' ? FALLBACK_MODEL_ID : target?.model || ''
+  if (!key) {
+    return { analysis: null, modelRan: false, modelId: modelId || FALLBACK_MODEL_ID, skipReason: 'missing_api_key', usedFallback: mode === 'fallback' }
+  }
+  if (!target || !modelId) {
+    return { analysis: null, modelRan: false, modelId: FALLBACK_MODEL_ID, skipReason: 'missing_model', usedFallback: false }
   }
   const deck = fitNumberedDeck(numberedText)
   if (deck.replace(/\s+/g, ' ').trim().length < 40) {
-    return { analysis: null, modelRan: false, modelId: null, skipReason: 'empty_deck', usedFallback: false }
+    return { analysis: null, modelRan: false, modelId, skipReason: 'empty_deck', usedFallback: mode === 'fallback' }
   }
 
   const user = JSON.stringify({
@@ -155,40 +227,25 @@ export async function analyzeDeckText(
     deck_text: deck,
     user_question: 'default full DD',
   })
-
-  const primary = await runCall(hints, 'model', target.url, target.model, key, SYSTEM_PROMPT, `${SCHEMA_PROMPT}\n\n${user}`)
-  let modelId = target.model
-  let usedFallback = false
+  const url = mode === 'fallback' ? XAI_CHAT_URL : target.url
+  const call = await runCall(hints, mode === 'fallback' ? 'fallback' : 'model', url, modelId, key, SYSTEM_PROMPT, `${SCHEMA_PROMPT}\n\n${user}`)
+  const usedFallback = mode === 'fallback'
   const reasons: string[] = []
-  let content = ''
-  let repaired = false
-  let parsedRaw: unknown = null
+  if (!call.ok) return failed(modelId, [`${usedFallback ? 'fallback' : 'primary'}_${call.reason}`])
 
-  if (!primary.ok) {
-    reasons.push(`primary_${primary.reason}`)
-    if (target.model === FALLBACK_MODEL_ID) {
-      return failed(target.model, reasons)
-    }
-    const backup = await runCall(hints, 'fallback', XAI_CHAT_URL, FALLBACK_MODEL_ID, key, SYSTEM_PROMPT, `${SCHEMA_PROMPT}\n\n${user}`)
-    usedFallback = true
-    modelId = FALLBACK_MODEL_ID
-    if (!backup.ok) return failed(FALLBACK_MODEL_ID, [...reasons, `fallback_${backup.reason}`])
-    content = backup.content
-  } else {
-    content = primary.content
-  }
-
-  parsedRaw = parseModelJson(content)
+  let content = call.content
+  let parsedRaw = parseModelJson(content)
   let analysis = parseDeckAnalysis(parsedRaw)
+  let repaired = false
   if (!analysis || !rawHasHero(parsedRaw)) {
     const repair = await runCall(
       hints,
       'repair',
-      usedFallback || target.url === XAI_CHAT_URL ? XAI_CHAT_URL : target.url,
+      url,
       modelId,
       key,
       REPAIR_PROMPT,
-      `${SCHEMA_PROMPT}\n\nDeck text:\n${fitNumberedDeck(deck)}\n\nPrevious reply:\n${content.slice(0, 8_000)}`,
+      `${SCHEMA_PROMPT}\n\nDeck text:\n${deck}\n\nPrevious reply:\n${content.slice(0, 8_000)}`,
     )
     repaired = true
     if (repair.ok) {
@@ -196,18 +253,11 @@ export async function analyzeDeckText(
       const repairedAnalysis = parseDeckAnalysis(repairedRaw)
       if (repairedAnalysis) {
         analysis = repairedAnalysis
+        parsedRaw = repairedRaw
         content = repair.content
       }
-    }
-    if (!repair.ok) {
+    } else {
       reasons.push(`repair_${repair.reason}`)
-      if (!usedFallback && target.model !== FALLBACK_MODEL_ID) {
-        const backup = await runCall(hints, 'fallback', XAI_CHAT_URL, FALLBACK_MODEL_ID, key, SYSTEM_PROMPT, `${SCHEMA_PROMPT}\n\n${user}`)
-        usedFallback = true
-        modelId = FALLBACK_MODEL_ID
-        if (!backup.ok) return failed(FALLBACK_MODEL_ID, [...reasons, `fallback_${backup.reason}`])
-        analysis = parseDeckAnalysis(parseModelJson(backup.content))
-      }
     }
   }
 
@@ -240,9 +290,9 @@ function clipReason(value: string): string {
 }
 
 function stageCap(stage: ModelStage): number {
-  if (stage === 'model') return PRIMARY_CAP_MS
+  if (stage === 'repair') return REPAIR_MS
   if (stage === 'fallback') return FALLBACK_MS
-  return REPAIR_MS
+  return PRIMARY_CAP_MS
 }
 
 async function runCall(
@@ -260,16 +310,12 @@ async function runCall(
   system: string,
   user: string,
 ): Promise<Attempt> {
-  const remaining = hints.deadlineAt == null ? WORKER_BUDGET_MS : hints.deadlineAt - Date.now()
-  const reserve = stage === 'model' ? FALLBACK_MS + REPAIR_MS : stage === 'fallback' ? REPAIR_MS : 0
-  const room = remaining - reserve
-  if (room < 5_000) return { ok: false, reason: 'deadline' }
+  const remaining = hints.deadlineAt == null ? STEP_ANALYSIS_CAP_MS : hints.deadlineAt - Date.now()
+  if (remaining < 5_000) return { ok: false, reason: 'deadline' }
   await hints.onStage?.(stage, model)
-  const timeoutMs = Math.min(hints.callTimeoutMs ?? stageCap(stage), room)
-  const ttftMs = Math.min(hints.ttftMs ?? PRIMARY_TTFT_MS, timeoutMs)
-  return complete(url, model, key, system, user, timeoutMs, stage === 'model' ? ttftMs : timeoutMs, (elapsed) =>
-    hints.onTick?.(elapsed, model),
-  )
+  const timeoutMs = Math.min(hints.callTimeoutMs ?? stageCap(stage), remaining)
+  const ttftMs = Math.min(hints.ttftMs ?? (stage === 'model' ? PRIMARY_TTFT_MS : timeoutMs), timeoutMs)
+  return complete(url, model, key, system, user, timeoutMs, ttftMs, (elapsed) => hints.onTick?.(elapsed, model))
 }
 
 async function complete(

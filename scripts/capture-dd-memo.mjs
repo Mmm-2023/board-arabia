@@ -62,6 +62,8 @@ try {
   const shots = [
     ['pass', 1280, 900, 'dd-report-pass-1280.png'],
     ['pass', 390, 844, 'dd-report-pass-390.png'],
+    ['range', 1280, 900, 'dd-report-range-1280.png'],
+    ['range', 390, 844, 'dd-report-range-390.png'],
     ['evidence', 1280, 900, 'dd-report-evidence-1280.png'],
     ['evidence', 390, 844, 'dd-report-evidence-390.png'],
     ['nosearch', 1280, 900, 'dd-report-public-checks-1280.png'],

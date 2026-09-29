@@ -1,9 +1,9 @@
 import { isLiveMember } from '../_shared/staff_auth.ts'
 import { corsHeaders, jsonResponse } from '../_shared/mail.ts'
 import { requireUser } from '../_shared/require_user.ts'
-import { isUuid, MEMBER_MESSAGES, modelJobFields, shouldFailStaleJob, stageLabel } from '../_shared/due_diligence.ts'
+import { claimAllowed, isUuid, MEMBER_MESSAGES, modelJobFields, shouldFailStaleJob, stageLabel, stepIsBackingUp } from '../_shared/due_diligence.ts'
 import { FALLBACK_MODEL_ID } from '../due-diligence-start/llm.ts'
-import { advanceDueDiligenceJob, deferJob } from '../due-diligence-start/run.ts'
+import { deferJob, runDueDiligenceStep, triggerDueDiligenceStep } from '../due-diligence-start/run.ts'
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders(req) })
@@ -32,19 +32,23 @@ Deno.serve(async (req) => {
 
   const loaded = await session.admin
     .from('due_diligence_jobs')
-    .select('id, status, progress, error, model_id, created_at, updated_at')
+    .select('id, status, progress, error, model_id, pipeline_step, step_claim, pipeline, created_at, updated_at')
     .eq('id', jobId)
     .eq('member_id', session.user.id)
     .maybeSingle()
   if (loaded.error || !loaded.data) return jsonResponse(req, { error: MEMBER_MESSAGES.missingJob }, 404)
 
   let job = loaded.data
+  const pipelineStep = typeof job.pipeline_step === 'string' ? job.pipeline_step : null
+  const stepClaim = typeof job.step_claim === 'string' ? job.step_claim : null
   if (
     shouldFailStaleJob({
       status: job.status,
       updatedAt: String(job.updated_at || ''),
       createdAt: String(job.created_at || ''),
       nowMs: Date.now(),
+      pipelineStep,
+      stepClaim,
     })
   ) {
     const knownModel = typeof job.model_id === 'string' && job.model_id.trim() ? job.model_id.trim() : FALLBACK_MODEL_ID
@@ -54,6 +58,7 @@ Deno.serve(async (req) => {
       .update({
         status: 'failed',
         error: MEMBER_MESSAGES.timedOut,
+        step_claim: null,
         model_id: failed.model_id,
         model_skip_reason: failed.model_skip_reason,
       })
@@ -66,8 +71,11 @@ Deno.serve(async (req) => {
       error: MEMBER_MESSAGES.timedOut,
     }
   }
-  if (job.status === 'queued') {
-    deferJob(advanceDueDiligenceJob(session.admin, job.id))
+  if (claimAllowed({ status: job.status, pipelineStep: pipelineStep || 'extract', stepClaim })) {
+    deferJob((async () => {
+      const kicked = await triggerDueDiligenceStep(job.id)
+      if (!kicked) await runDueDiligenceStep(session.admin, job.id)
+    })())
   }
 
   let reportId: string | null = null
@@ -86,9 +94,19 @@ Deno.serve(async (req) => {
       id: job.id,
       status: job.status,
       progress: job.progress,
-      stage: stageLabel(job.status, job.progress),
+      stage: stageLabel(job.status, job.progress, stepIsBackingUp(pipelineStep || '', recordPipeline(job.pipeline))),
       error: job.error,
       report_id: reportId,
     },
   })
 })
+
+function recordPipeline(raw: unknown): { scores_mode?: string; narrative_mode?: string; compose_mode?: string } | null {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null
+  const row = raw as Record<string, unknown>
+  return {
+    scores_mode: typeof row.scores_mode === 'string' ? row.scores_mode : undefined,
+    narrative_mode: typeof row.narrative_mode === 'string' ? row.narrative_mode : undefined,
+    compose_mode: typeof row.compose_mode === 'string' ? row.compose_mode : undefined,
+  }
+}

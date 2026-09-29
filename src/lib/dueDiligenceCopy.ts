@@ -172,6 +172,7 @@ export function deskProgressLine(stage: string): string {
   if (
     value === 'numbering the pages' ||
     value === 'asking the model' ||
+    value === 'writing the memo' ||
     value === 'repairing the draft' ||
     value === 'trying the backup model' ||
     value === 'saving the draft'
