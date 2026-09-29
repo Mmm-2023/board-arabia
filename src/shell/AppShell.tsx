@@ -210,11 +210,11 @@ export function AppShell({
                         }`
                       }
                     >
-                      <span className="relative inline-flex">
+                      <span className="inline-flex shrink-0">
                         <DestinationIcon id={item.id} />
-                        {item.id === 'deals' ? <CountBadge count={dealsBadge} /> : null}
                       </span>
                       <span className={showLabels ? 'truncate' : 'sr-only'}>{item.label}</span>
+                      {item.id === 'deals' ? <CountBadge count={dealsBadge} place="sidebar" /> : null}
                     </NavLink>
                   </li>
                 ))}
@@ -389,7 +389,7 @@ export function AppShell({
                       }`}
                     >
                       <DestinationIcon id={item.id} className="h-6 w-6 shrink-0" />
-                      {item.id === 'deals' ? <CountBadge count={dealsBadge} /> : null}
+                      {item.id === 'deals' ? <CountBadge count={dealsBadge} place="tab" /> : null}
                     </span>
                     <span className="max-w-full truncate">{item.label}</span>
                   </>
@@ -544,13 +544,15 @@ export function AppShell({
   )
 }
 
-function CountBadge({ count }: { count: number }) {
+function CountBadge({ count, place }: { count: number; place: 'tab' | 'sidebar' }) {
   if (count <= 0) return null
   const text = count > 9 ? '9+' : String(count)
+  const position = place === 'tab' ? 'absolute -top-1 end-0' : 'relative ms-auto shrink-0'
   return (
     <span
       data-chip=""
-      className="absolute -top-1 end-0 inline-flex min-h-[1.125rem] min-w-[1.125rem] items-center justify-center rounded-full bg-[var(--ba-indigo)] px-1 text-[12px] leading-none font-semibold text-white ring-2 ring-white"
+      data-deals-badge={place}
+      className={`${position} inline-flex min-h-[1.125rem] min-w-[1.125rem] items-center justify-center rounded-full bg-[var(--ba-indigo)] px-1 text-[12px] leading-none font-semibold text-white ring-2 ring-white`}
     >
       {text}
     </span>
