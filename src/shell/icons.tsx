@@ -37,6 +37,15 @@ function paths(id: string) {
           <path d="M8 17h5" />
         </>
       )
+    case 'real-estate':
+      return (
+        <>
+          <path d="M3 20h18" />
+          <path d="M5 20V10l7-5 7 5v10" />
+          <path d="M10 20v-4h4v4" />
+          <path d="M9 12h2M13 12h2M9 15h2M13 15h2" />
+        </>
+      )
     case 'network':
       return (
         <>

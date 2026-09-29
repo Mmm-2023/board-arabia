@@ -62,8 +62,19 @@ export async function requestMandateIntro(mandateId: string): Promise<'ok' | 'er
   return postMandateIntro(mandateId)
 }
 
-export function fetchReOpportunities(): Promise<DemoLoad<ReOpportunityCard[]>> {
-  return loadJson(supabase.rpc('list_re_opportunities'), presentReOpportunityList)
+export function fetchReOpportunities(): Promise<DemoLoad<ReOpportunityCard[]> | { status: 'denied' }> {
+  return loadReOpportunities()
+}
+
+async function loadReOpportunities(): Promise<DemoLoad<ReOpportunityCard[]> | { status: 'denied' }> {
+  const { data, error } = await supabase.rpc('list_re_opportunities')
+  if (error) {
+    if (schemaMissing(error.message)) return { status: 'missing' }
+    const code = 'code' in error ? String(error.code) : ''
+    if (code === '42501' || /not_allowed/i.test(error.message)) return { status: 'denied' }
+    return { status: 'error' }
+  }
+  return { status: 'ready', rows: presentReOpportunityList(data) }
 }
 
 export function fetchRePartners(): Promise<DemoLoad<RePartnerCard[]>> {

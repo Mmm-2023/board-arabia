@@ -17,7 +17,7 @@ const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..')
 test('member primaries stay in the locked order', () => {
   assert.deepEqual(
     MEMBER_DESTINATIONS.map((item) => item.label),
-    ['Home', 'Directory', 'Mandates', 'Network', 'Profile'],
+    ['Home', 'Directory', 'Mandates', 'Real Estate', 'Network', 'Profile'],
   )
   assert.deepEqual(
     MEMBER_DESTINATIONS.map((item) => item.to),
@@ -25,11 +25,12 @@ test('member primaries stay in the locked order', () => {
       '/dashboard',
       '/dashboard/directory',
       '/dashboard/mandates',
+      '/dashboard/real-estate',
       '/dashboard/network',
       '/dashboard/profile',
     ],
   )
-  assert.equal(MEMBER_DESTINATIONS.length, 5)
+  assert.equal(MEMBER_DESTINATIONS.length, 6)
   assert.equal(MEMBER_DESTINATIONS[0]?.end, true)
 })
 
@@ -66,6 +67,10 @@ test('section title follows the active destination', () => {
   assert.equal(
     shellSectionTitle('/dashboard/network', MEMBER_DESTINATIONS, MEMBER_SECONDARY),
     'Network',
+  )
+  assert.equal(
+    shellSectionTitle('/dashboard/real-estate', MEMBER_DESTINATIONS, MEMBER_SECONDARY),
+    'Real Estate',
   )
   assert.equal(shellSectionTitle('/dashboard/majlis', MEMBER_DESTINATIONS, MEMBER_SECONDARY), 'Majlis')
   assert.equal(

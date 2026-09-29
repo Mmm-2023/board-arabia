@@ -69,6 +69,13 @@ export const RE_PARTNER_KINDS = [
 
 export const RE_CATEGORY_SLUG = 'real_estate'
 
+export const RE_LOCKED_PLACEHOLDERS = {
+  counterparty: 'Counterparty name',
+  terms: 'Terms of the brief',
+} as const
+
+export const RE_LOCKED_NOTE = 'Counterparty and terms stay locked. Request intro to unlock.'
+
 export const RE_SENSITIVE_KEYS = [
   'counterparty_name',
   'terms',
