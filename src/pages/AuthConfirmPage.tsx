@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { clearPasswordFlag } from '../lib/clearPasswordFlag'
 import { resolveAfterLogin } from '../lib/memberGate'
 import { readRecoveryLocation } from '../lib/recovery'
 import {
@@ -175,6 +176,9 @@ export function AuthConfirmPage() {
       setFormError(updateError.message)
       return
     }
+    const { data: sessionData } = await supabase.auth.getSession()
+    const userId = sessionData.session?.user.id
+    if (userId) await clearPasswordFlag(userId)
     clearPasswordRecovery()
     await supabase.auth.signOut()
     navigate('/login', { replace: true })

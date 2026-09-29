@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Navigate, Outlet } from 'react-router-dom'
 import { isStaffRole, showRoleSwitch } from '../../../supabase/functions/_shared/staff_auth.ts'
+import { clearPasswordFlag } from '../../lib/clearPasswordFlag'
 import { fetchMyDealRooms } from '../../lib/dealRoomApi'
+import { stillMustSetPassword } from '../../lib/passwordSet'
 import { pendingInvites } from '../../lib/dealRoomView'
 import { AppShell } from '../../shell/AppShell'
 import { MEMBER_ACCOUNT, MEMBER_DESTINATIONS, staleBanner } from '../../shell/destinations'
@@ -127,11 +129,13 @@ export function DashboardLayout() {
       return
     }
 
+    const mustSetPassword = stillMustSetPassword(member.must_set_password, sessionData.session.access_token)
+    if (member.must_set_password && !mustSetPassword) void clearPasswordFlag(user.id)
     const room: MemberRoom = {
       userId: user.id,
       email: user.email || member.email,
       staffRole,
-      member,
+      member: { ...member, must_set_password: mustSetPassword },
       profile: loaded.profile,
       reload: async () => {
         await loadRef.current()

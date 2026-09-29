@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom'
 import { BrandLockup } from '../components/BrandLockup'
+import { clearPasswordFlag } from '../lib/clearPasswordFlag'
 import { resolveAfterLogin } from '../lib/memberGate'
 import { sendPasswordReset, supabase } from '../lib/supabase'
 import { useNoIndex } from '../lib/usePageTitle'
@@ -60,6 +61,7 @@ export function LoginPage() {
       setAuthError(error?.message || 'Sign-in failed')
       return
     }
+    await clearPasswordFlag(data.user.id)
     const dest = await resolveAfterLogin(data.user.id, nextPath)
     setSubmitting(false)
     navigate(dest, { replace: true })
