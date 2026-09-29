@@ -299,7 +299,7 @@ test('the job row stores the model and a stale job is failed instead of restarte
   assert.match(run, /due-diligence-step/)
   assert.match(status, /pipeline_step/)
   assert.match(status, /step_claim/)
-  const pipeline = readFileSync(path.join(root, 'supabase/migrations/20261022120000_due_diligence_pipeline.sql'), 'utf8')
+  const pipeline = readFileSync(path.join(root, 'supabase/migrations/20261025120000_due_diligence_pipeline.sql'), 'utf8')
   assert.match(pipeline, /pipeline_step/)
   assert.match(pipeline, /step_claim/)
   assert.match(pipeline, /Not applied by the authoring agent/)
