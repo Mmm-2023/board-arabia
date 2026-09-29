@@ -11,7 +11,7 @@ const STATIC: Record<string, string> = {
   '/dashboard/directory': '/dashboard/people/directory',
   '/dashboard/network': '/dashboard/people/invites',
   '/dashboard/invites': '/dashboard/people/invites',
-  '/dashboard/intros': '/dashboard/people',
+  '/dashboard/intros': '/dashboard/people/intros',
   '/dashboard/due-diligence': '/dashboard/ai/due-diligence',
   '/dashboard/events': '/dashboard/majlis',
 }

@@ -631,6 +631,22 @@ export type Database = {
         Args: { p_mandate_id: string }
         Returns: Json
       }
+      request_member_intro: {
+        Args: { p_target_id: string; p_reason: string }
+        Returns: Json
+      }
+      respond_member_intro: {
+        Args: { p_intro_id: string; p_decision: string }
+        Returns: Json
+      }
+      list_my_intros: {
+        Args: Record<string, never>
+        Returns: Json
+      }
+      staff_list_all_intros: {
+        Args: Record<string, never>
+        Returns: Json
+      }
       list_member_rooms: {
         Args: Record<string, never>
         Returns: Json

@@ -16,6 +16,8 @@ import { supabase } from '../../lib/supabase'
 import { FilteredZero } from '../../shell/ViewState'
 import { MEMBER_VIEWS } from '../../shell/viewCopy'
 import { AvatarCircle } from './AvatarCircle'
+import { DirectoryIntroAction } from './DirectoryIntroAction'
+import type { IntroStatus } from '../../lib/memberIntros'
 import type { SeatCountState } from './DirectoryEmpty'
 import { chipOptions, FilterRow, MemberFilterControls } from './MemberFilters'
 
@@ -26,10 +28,22 @@ export function DirectoryBoard({
   cards,
   seat,
   initialFiltersOpen = false,
+  selfId = null,
+  introStatus,
+  busyId = null,
+  errorId = null,
+  requestError = '',
+  onRequestIntro,
 }: {
   cards: DirectoryCard[]
   seat: SeatCountState
   initialFiltersOpen?: boolean
+  selfId?: string | null
+  introStatus?: (id: string) => IntroStatus | null
+  busyId?: string | null
+  errorId?: string | null
+  requestError?: string
+  onRequestIntro?: (id: string, reason: string) => void
 }) {
   const photos = useSignedPortraits(cards)
   const hasExamples = cards.some((card) => card.is_demo)
@@ -74,7 +88,8 @@ export function DirectoryBoard({
       <p className="mt-3 max-w-xl text-[1rem] leading-relaxed text-ink/65">
         {hasExamples
           ? 'Admitted members. Cards marked Example are samples and step aside once enough real members are here.'
-          : 'Admitted members.'}
+          : 'Admitted members.'}{' '}
+        Request a warm introduction from a card. Email and phone stay private.
       </p>
       {seat.status === 'ready' ? (
         <p className="mt-4 font-display text-[1.25rem] font-semibold tracking-[-0.03em]">
@@ -142,6 +157,14 @@ export function DirectoryBoard({
                   {card.location ? <Field label="City" value={card.location} /> : null}
                   {card.company ? <Field label="Firm" value={card.company} /> : null}
                 </dl>
+                <DirectoryIntroAction
+                  sample={card.is_demo}
+                  self={selfId != null && card.id === selfId}
+                  status={introStatus ? introStatus(card.id) : null}
+                  busy={busyId === card.id}
+                  error={errorId === card.id ? requestError : ''}
+                  onRequest={onRequestIntro ? (reason) => onRequestIntro(card.id, reason) : undefined}
+                />
               </article>
             </li>
           ))}

@@ -165,7 +165,7 @@ const ACTIVITY_LABELS = new Set([
   'Majlis waitlist',
   'Majlis you are hosting',
 ])
-const ACTIVITY_HREF = /^\/dashboard\/(?:deals\/mandates|mandates|majlis)(?:\?event=[0-9a-f-]{36})?$/
+const ACTIVITY_HREF = /^\/dashboard\/(?:deals\/mandates|mandates|people\/intros|majlis)(?:\?event=[0-9a-f-]{36})?$/
 const LEAK_KEYS = [
   'email',
   'contact_email',
@@ -611,13 +611,15 @@ function pulseHeadline(
     value: String(count),
     body: pulseBody(id, example),
     to:
-      id === 'vouchers'
-        ? '/dashboard/people/invites'
-        : id === 'rooms'
-          ? '/dashboard/deals/rooms'
-          : id === 'directory'
-            ? '/dashboard/people/directory'
-            : '/dashboard/deals/mandates',
+      id === 'intros'
+        ? '/dashboard/people/intros'
+        : id === 'vouchers'
+          ? '/dashboard/people/invites'
+          : id === 'rooms'
+            ? '/dashboard/deals/rooms'
+            : id === 'directory'
+              ? '/dashboard/people/directory'
+              : '/dashboard/deals/mandates',
     example,
   }
 }
