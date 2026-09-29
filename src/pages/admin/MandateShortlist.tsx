@@ -81,7 +81,6 @@ export function MandateShortlist({
               {copied ? 'Copied' : 'Copy shortlist'}
             </button>
           </div>
-          <p className={`mt-2 max-w-xl text-[0.95rem] leading-relaxed ${styles.muted}`}>{copy.scoreNote}</p>
           {copyError ? (
             <div className="mt-3" role="alert">
               <p className="text-[0.95rem] text-red-300">{copyError}</p>
@@ -95,6 +94,7 @@ export function MandateShortlist({
               <MatchCard key={row.userId} row={row} rank={index + 1} />
             ))}
           </ol>
+          <p className={`mt-4 max-w-xl text-[0.95rem] leading-relaxed ${styles.muted}`}>{copy.scoreNote}</p>
         </section>
       ) : null}
     </div>
