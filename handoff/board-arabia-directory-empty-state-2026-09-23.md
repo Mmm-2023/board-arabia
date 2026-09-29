@@ -31,7 +31,7 @@ Bucket `member-avatars` is private. JPG or PNG, 5 MB. A member may read, insert,
 
 Apply `supabase/migrations/20260923120000_member_avatar_storage.sql` on project `iirqbizwanyhgkhanntq`. The dashboard still loads if that column is missing: the profile read retries without `avatar_path`.
 
-LinkedIn Connect is not in this change. See `handoff/board-arabia-profile-avatar-linkedin-2026-09-23.md`.
+LinkedIn Connect UI is behind `VITE_LINKEDIN_CONNECT`, default off. See `handoff/board-arabia-profile-avatar-linkedin-2026-09-23.md`.
 
 ## Security: no public PII / no fake names in the Directory empty state
 

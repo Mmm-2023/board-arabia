@@ -15,6 +15,7 @@ export function AppShell({
   roleSwitch,
   onSignOut,
   accountLabel,
+  accountMark = null,
   children,
   initialMoreOpen = false,
 }: {
@@ -25,6 +26,7 @@ export function AppShell({
   roleSwitch: RoleSwitch | null
   onSignOut: () => void
   accountLabel: string
+  accountMark?: ReactNode
   children: ReactNode
   initialMoreOpen?: boolean
 }) {
@@ -160,6 +162,7 @@ export function AppShell({
                 >
                   Sign out
                 </button>
+                {accountMark}
               </div>
             </div>
           </header>
