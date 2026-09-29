@@ -20,7 +20,7 @@ function source(path: string) {
   return readFileSync(new URL(path, root), 'utf8')
 }
 
-const migration = source('supabase/migrations/20261024120000_sponsor_area.sql')
+const migration = source('supabase/migrations/20261026120000_sponsor_area.sql')
 
 test('sponsor desk drops private fields and keeps package text from the payload', () => {
   const desk = presentSponsorDesk({
