@@ -2,6 +2,7 @@ import { isLiveMember } from '../_shared/staff_auth.ts'
 import { corsHeaders, jsonResponse } from '../_shared/mail.ts'
 import { requireUser } from '../_shared/require_user.ts'
 import { isUuid, MEMBER_MESSAGES, modelJobFields, shouldFailStaleJob, stageLabel } from '../_shared/due_diligence.ts'
+import { FALLBACK_MODEL_ID } from '../due-diligence-start/llm.ts'
 import { advanceDueDiligenceJob, deferJob } from '../due-diligence-start/run.ts'
 
 Deno.serve(async (req) => {
@@ -31,7 +32,7 @@ Deno.serve(async (req) => {
 
   const loaded = await session.admin
     .from('due_diligence_jobs')
-    .select('id, status, progress, error, created_at, updated_at')
+    .select('id, status, progress, error, model_id, created_at, updated_at')
     .eq('id', jobId)
     .eq('member_id', session.user.id)
     .maybeSingle()
@@ -46,10 +47,16 @@ Deno.serve(async (req) => {
       nowMs: Date.now(),
     })
   ) {
-    const failed = modelJobFields({ modelId: null, skipReason: 'stale_worker' })
+    const knownModel = typeof job.model_id === 'string' && job.model_id.trim() ? job.model_id.trim() : FALLBACK_MODEL_ID
+    const failed = modelJobFields({ modelId: knownModel, skipReason: 'stale_worker' })
     await session.admin
       .from('due_diligence_jobs')
-      .update({ status: 'failed', error: MEMBER_MESSAGES.timedOut, model_skip_reason: failed.model_skip_reason })
+      .update({
+        status: 'failed',
+        error: MEMBER_MESSAGES.timedOut,
+        model_id: failed.model_id,
+        model_skip_reason: failed.model_skip_reason,
+      })
       .eq('id', job.id)
       .eq('member_id', session.user.id)
       .in('status', ['queued', 'reading', 'checking', 'writing'])

@@ -8,11 +8,18 @@ import { readStoredAnalysis, type DeckAnalysis } from './deck_analysis.ts'
 export const DECK_BUCKET = 'due-diligence-decks'
 
 /**
- * Supabase Edge wall clock is 400s. This budget stays under it with margin
- * and is shorter than a silent multi-minute hang. Heartbeats refresh updated_at
- * at each stage. Silence or age past this budget means the worker died or the run ran out of time.
+ * Verified wall clock, including background work on the same worker:
+ * https://supabase.com/docs/guides/functions/limits
+ * Free plan 150s. Paid plans 400s. Budgets use the stricter 150s limit.
  */
-export const JOB_DEADLINE_MS = 180_000
+export const EDGE_WALL_CLOCK_MS = 150_000
+export const PRIMARY_TTFT_MS = 15_000
+export const PRIMARY_CAP_MS = 40_000
+export const FALLBACK_MS = 35_000
+export const REPAIR_MS = 15_000
+export const WORKER_BUDGET_MS = 120_000
+/** Silence longer than the worker budget, still under the wall clock. */
+export const JOB_STALE_MS = 135_000
 
 export const DD_PROGRESS = {
   extract: 18,
@@ -280,11 +287,10 @@ export function shouldFailStaleJob(input: {
   nowMs: number
 }): boolean {
   if (!LIVE_JOB.includes(input.status)) return false
+  void input.createdAt
   const updated = Date.parse(input.updatedAt)
-  const created = Date.parse(input.createdAt)
-  if (!Number.isFinite(updated) || !Number.isFinite(created)) return true
-  if (input.nowMs - updated >= JOB_DEADLINE_MS) return true
-  return input.nowMs - created >= JOB_DEADLINE_MS
+  if (!Number.isFinite(updated)) return true
+  return input.nowMs - updated >= JOB_STALE_MS
 }
 
 /** A model miss that should fail the job. A missing key still finishes as a degraded draft. */
