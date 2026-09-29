@@ -12,9 +12,9 @@ const ANSWERS = [
   {
     question: 'How do introductions work?',
     answer:
-      'A warm introduction goes through the desk. On a mandate or a real estate brief, Request intro asks the desk to unlock the private details. Members are listed in the Directory. A separate Intros page is not here yet.',
-    to: '/dashboard/people/directory',
-    toLabel: 'Directory',
+      'Request a warm introduction from a Directory card and give a short reason. The other member accepts or declines on Intros. Email and phone stay private. A mandate or real estate Request intro still asks the desk to unlock a brief, and those requests sit in the same Intros list.',
+    to: '/dashboard/people/intros',
+    toLabel: 'Intros',
   },
   {
     question: 'Who can see a deal room?',

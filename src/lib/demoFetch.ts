@@ -15,6 +15,7 @@ import {
   type ReOpportunityCard,
   type RePartnerCard,
 } from './reRedaction'
+import { introRequestError, presentIntroList, type IntroRow } from './memberIntros'
 import {
   requestMandateIntro as postMandateIntro,
   requestReOpportunityIntro as postReIntro,
@@ -53,6 +54,34 @@ export function fetchRooms(): Promise<DemoLoad<RoomCard[]>> {
 
 export function fetchPartners(): Promise<DemoLoad<PartnerCard[]>> {
   return loadJson(supabase.rpc('list_trusted_partners'), presentPartnerList)
+}
+
+export function fetchMyIntros(): Promise<DemoLoad<IntroRow[]>> {
+  return loadJson(supabase.rpc('list_my_intros'), presentIntroList)
+}
+
+export async function requestMemberIntro(targetId: string, reason: string): Promise<string | null> {
+  const { error } = await supabase.rpc('request_member_intro', {
+    p_target_id: targetId,
+    p_reason: reason,
+  })
+  if (error) return introRequestError(error.message)
+  return null
+}
+
+export async function respondMemberIntro(
+  introId: string,
+  decision: 'accepted' | 'declined',
+): Promise<string | null> {
+  const { error } = await supabase.rpc('respond_member_intro', {
+    p_intro_id: introId,
+    p_decision: decision,
+  })
+  if (error) {
+    if (/sample_blocked/i.test(error.message)) return 'Sample cards cannot take a request.'
+    return 'Could not save that answer. Retry.'
+  }
+  return null
 }
 
 export function fetchHomeActivity(): Promise<DemoLoad<HomeActivity[]>> {

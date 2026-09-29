@@ -153,6 +153,7 @@ test('every staff_* function checks staff and is not executable by anon', () => 
   const sql = files.map((file) => readFileSync(path.join(migrationsDir, file), 'utf8')).join('\n')
   const names = [
     'staff_set_member_capacity',
+    'staff_list_all_intros',
     'staff_list_mandate_intros',
     'staff_list_mandates',
     'staff_list_mandate_matches',
@@ -713,6 +714,7 @@ begin
 
   foreach diff in array array[
     'staff_set_member_capacity(uuid,numeric,numeric,numeric,boolean,boolean)',
+    'staff_list_all_intros()',
     'staff_list_mandate_intros()',
     'staff_decide_mandate_intro(uuid,text)',
     'staff_list_re_opportunity_intros()',

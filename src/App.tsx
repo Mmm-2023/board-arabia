@@ -19,6 +19,7 @@ import { CapacityPage } from './pages/admin/CapacityPage'
 import { EmailPage } from './pages/admin/EmailPage'
 import { AdminMajlisPage } from './pages/admin/MajlisPage'
 import { StaffRoomsPage } from './pages/admin/StaffRoomsPage'
+import { AdminIntrosPage } from './pages/admin/AdminIntrosPage'
 import { PeoplePage } from './pages/admin/PeoplePage'
 import { SettingsPage } from './pages/admin/SettingsPage'
 import { DashboardHome } from './pages/dashboard/DashboardHome'
@@ -29,6 +30,7 @@ import { DealsIndexRedirect, DealsLayout } from './pages/dashboard/DealsLayout'
 import { DirectoryPage } from './pages/dashboard/DirectoryPage'
 import { DueDiligencePage } from './pages/dashboard/DueDiligencePage'
 import { HelpPage } from './pages/dashboard/HelpPage'
+import { IntrosPage } from './pages/dashboard/IntrosPage'
 import { MajlisPage } from './pages/dashboard/MajlisPage'
 import { MandatesPage } from './pages/dashboard/MandatesPage'
 import { PeopleIndexRedirect, PeopleLayout } from './pages/dashboard/PeopleLayout'
@@ -60,6 +62,7 @@ export default function App() {
         <Route index element={<AdminHome />} />
         <Route path="applications" element={<ApplicationsPage />} />
         <Route path="people" element={<PeoplePage />} />
+        <Route path="people/intros" element={<AdminIntrosPage />} />
         <Route path="capacity" element={<CapacityPage />} />
         <Route path="settings" element={<SettingsPage />} />
         <Route path="email" element={<EmailPage />} />
@@ -83,6 +86,7 @@ export default function App() {
         <Route path="people" element={<PeopleLayout />}>
           <Route index element={<PeopleIndexRedirect />} />
           <Route path="directory" element={<DirectoryPage />} />
+          <Route path="intros" element={<IntrosPage />} />
           <Route path="invites" element={<NetworkPage />} />
         </Route>
         <Route path="majlis" element={<MajlisPage />} />

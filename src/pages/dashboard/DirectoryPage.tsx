@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
-import { fetchDirectory } from '../../lib/demoFetch'
+import { fetchDirectory, fetchMyIntros, requestMemberIntro } from '../../lib/demoFetch'
 import type { DirectoryCard } from '../../lib/demoRows'
+import { outgoingMemberStatus, type IntroRow } from '../../lib/memberIntros'
+import { sampleRow } from '../../lib/sampleAction'
 import { isProfileReady, loadFoundingAdmitted } from '../../lib/directoryGate'
 import { supabase } from '../../lib/supabase'
 import { useNoIndex } from '../../lib/usePageTitle'
@@ -16,9 +18,13 @@ type ListState =
   | { status: 'ready'; cards: DirectoryCard[] }
 
 export function DirectoryPage() {
-  const { profile, member } = useMember()
+  const { profile, member, userId } = useMember()
   const [seat, setSeat] = useState<SeatCountState>({ status: 'loading' })
   const [list, setList] = useState<ListState>({ status: 'loading' })
+  const [intros, setIntros] = useState<IntroRow[]>([])
+  const [busyId, setBusyId] = useState<string | null>(null)
+  const [errorId, setErrorId] = useState<string | null>(null)
+  const [requestError, setRequestError] = useState('')
   const [attempt, setAttempt] = useState(0)
   useNoIndex('Directory | Board Arabia')
 
@@ -44,6 +50,10 @@ export function DirectoryPage() {
         return
       }
       setList({ status: 'ready', cards: result.status === 'ready' ? result.rows : [] })
+    })
+    void fetchMyIntros().then((result) => {
+      if (cancelled || result.status !== 'ready') return
+      setIntros(result.rows)
     })
     return () => {
       cancelled = true
@@ -97,5 +107,32 @@ export function DirectoryPage() {
     )
   }
 
-  return <DirectoryBoard cards={list.cards} seat={seat} />
+  async function onRequestIntro(id: string, reason: string) {
+    if (sampleRow(list.status === 'ready' ? list.cards : [], id)) return
+    setRequestError('')
+    setErrorId(null)
+    setBusyId(id)
+    const message = await requestMemberIntro(id, reason)
+    setBusyId(null)
+    if (message) {
+      setErrorId(id)
+      setRequestError(message)
+      return
+    }
+    const refreshed = await fetchMyIntros()
+    if (refreshed.status === 'ready') setIntros(refreshed.rows)
+  }
+
+  return (
+    <DirectoryBoard
+      cards={list.cards}
+      seat={seat}
+      selfId={userId}
+      introStatus={(id) => outgoingMemberStatus(intros, id)}
+      busyId={busyId}
+      errorId={errorId}
+      requestError={requestError}
+      onRequestIntro={(id, reason) => void onRequestIntro(id, reason)}
+    />
+  )
 }
