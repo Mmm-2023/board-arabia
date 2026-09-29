@@ -121,12 +121,12 @@ export function DashboardPreviewFrame({
           aria-labelledby={locked ? 'preview-lock-title' : undefined}
           className={
             locked
-              ? 'absolute inset-0 z-10 flex items-center justify-center bg-[var(--ba-porcelain)]/92 px-5'
+              ? 'absolute inset-0 z-10 flex items-center justify-center bg-[var(--ba-porcelain)]/58 px-5'
               : 'sr-only'
           }
         >
           {locked ? (
-            <div className="w-full max-w-md text-center">
+            <div className="w-full max-w-md border border-ink/10 bg-[var(--ba-porcelain)] px-5 py-6 text-center">
               <p
                 id="preview-lock-title"
                 className="font-display text-[1.35rem] font-semibold tracking-[-0.03em] text-balance text-ink"
