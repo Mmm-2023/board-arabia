@@ -384,7 +384,7 @@ export function DueDiligenceDeskView({
 
             <div className="mt-3" id="dd-status">
               {phase === 'running' && activeJob ? (
-                <div className="border border-[var(--ba-line)] bg-white px-4 py-4" aria-live="polite">
+                <div className="border border-[var(--ba-line)] bg-white px-4 py-4" aria-live="polite" data-dd-job-progress={progress}>
                   <p className="text-[1rem] leading-snug text-ink">
                     {progressLabel}
                     <span className="text-[var(--ba-muted)]"> · {progress}%</span>

@@ -39,8 +39,8 @@ const desk: {
       : {
           phase: 'running',
           activeJob: true,
-          progress: 40,
-          progressLabel: DD_COPY.statusReading,
+          progress: 52,
+          progressLabel: 'Asking the model',
           actionError: '',
           retryLabel: DD_COPY.errorRetry,
         }

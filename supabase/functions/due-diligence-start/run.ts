@@ -15,7 +15,8 @@ import {
   extractCompanyUrl,
   independentSearchTerms,
   isTerminalModelFailure,
-  JOB_DEADLINE_MS,
+  PRIMARY_CAP_MS,
+  WORKER_BUDGET_MS,
   MEMBER_MESSAGES,
   modelJobFields,
   packReportDisclaimer,
@@ -63,7 +64,7 @@ export async function advanceDueDiligenceJob(admin: SupabaseClient, jobId: strin
       }),
     )
   }
-  const deadlineAt = Date.now() + JOB_DEADLINE_MS
+  const deadlineAt = Date.now() + WORKER_BUDGET_MS
   const assertDeadline = () => {
     if (Date.now() >= deadlineAt) {
       const error = new Error(MEMBER_MESSAGES.timedOut)
@@ -104,17 +105,26 @@ export async function advanceDueDiligenceJob(admin: SupabaseClient, jobId: strin
           .eq('member_id', job.member_id)
       }
     }
+    let lastBeat = 0
     const extraction = await extractDeckFactsWithOptionalLlm(
       text,
       String(deck.data.file_name || ''),
       numbered,
-      async (stage) => {
+      async (stage, calledModel) => {
         assertDeadline()
         const progress =
           stage === 'repair' ? DD_PROGRESS.repair : stage === 'fallback' ? DD_PROGRESS.fallback : DD_PROGRESS.model
-        await touch(admin, jobId, progress)
+        await touch(admin, jobId, progress, calledModel)
       },
       deadlineAt,
+      async (elapsed, calledModel) => {
+        const now = Date.now()
+        if (now - lastBeat < 4_000) return
+        lastBeat = now
+        const room = DD_PROGRESS.fallback - DD_PROGRESS.model - 1
+        const step = Math.min(room, Math.max(1, Math.round((elapsed / PRIMARY_CAP_MS) * room)))
+        await touch(admin, jobId, DD_PROGRESS.model + step, calledModel)
+      },
     )
     modelRan = extraction.modelRan
     modelSkipReason = extraction.skipReason
@@ -123,7 +133,9 @@ export async function advanceDueDiligenceJob(admin: SupabaseClient, jobId: strin
     claimsKept = extraction.claimsKept
     if (isTerminalModelFailure(extraction.skipReason, extraction.modelRan)) {
       const error = new Error(
-        (extraction.skipReason || '').includes('timeout') || (extraction.skipReason || '').includes('deadline')
+        (extraction.skipReason || '').includes('timeout') ||
+        (extraction.skipReason || '').includes('ttft') ||
+        (extraction.skipReason || '').includes('deadline')
           ? MEMBER_MESSAGES.timedOut
           : MEMBER_MESSAGES.finish,
       )
@@ -228,8 +240,10 @@ export function deferJob(work: Promise<unknown>) {
   else void work
 }
 
-async function touch(admin: SupabaseClient, jobId: string, progress: number) {
-  await admin.from('due_diligence_jobs').update({ progress }).eq('id', jobId).in('status', ACTIVE)
+async function touch(admin: SupabaseClient, jobId: string, progress: number, modelId?: string) {
+  const patch: { progress: number; model_id?: string } = { progress }
+  if (modelId) patch.model_id = modelId
+  await admin.from('due_diligence_jobs').update(patch).eq('id', jobId).in('status', ACTIVE)
 }
 
 async function mark(admin: SupabaseClient, jobId: string, status: string, progress: number) {

@@ -17,7 +17,13 @@ import {
 } from '../supabase/functions/_shared/deck_analysis.ts'
 import {
   DD_PROGRESS,
-  JOB_DEADLINE_MS,
+  EDGE_WALL_CLOCK_MS,
+  FALLBACK_MS,
+  JOB_STALE_MS,
+  PRIMARY_CAP_MS,
+  PRIMARY_TTFT_MS,
+  REPAIR_MS,
+  WORKER_BUDGET_MS,
   MEMBER_MESSAGES,
   extractDeckFacts,
   isTerminalModelFailure,
@@ -195,19 +201,21 @@ test('a failed primary call is retried once and the reason is ready for the job 
 })
 
 test('the job row stores the model and a stale job is failed instead of restarted', () => {
-  assert.equal(JOB_DEADLINE_MS < 400_000, true)
-  assert.equal(JOB_DEADLINE_MS <= 240_000, true)
-  assert.equal(JOB_DEADLINE_MS > 75_000, true)
+  assert.equal(EDGE_WALL_CLOCK_MS, 150_000)
+  assert.equal(PRIMARY_TTFT_MS < PRIMARY_CAP_MS, true)
+  assert.equal(PRIMARY_CAP_MS + FALLBACK_MS + REPAIR_MS < WORKER_BUDGET_MS, true)
+  assert.equal(WORKER_BUDGET_MS < JOB_STALE_MS, true)
+  assert.equal(JOB_STALE_MS < EDGE_WALL_CLOCK_MS, true)
   const steps = Object.values(DD_PROGRESS)
   for (let index = 1; index < steps.length; index += 1) {
     assert.equal(steps[index] > steps[index - 1], true)
   }
   const now = Date.parse('2026-09-29T12:00:00.000Z')
   const fresh = new Date(now - 1_000).toISOString()
-  const old = new Date(now - JOB_DEADLINE_MS - 1_000).toISOString()
+  const old = new Date(now - JOB_STALE_MS - 1_000).toISOString()
   assert.equal(shouldFailStaleJob({ status: 'checking', updatedAt: fresh, createdAt: fresh, nowMs: now }), false)
   assert.equal(shouldFailStaleJob({ status: 'checking', updatedAt: old, createdAt: fresh, nowMs: now }), true)
-  assert.equal(shouldFailStaleJob({ status: 'writing', updatedAt: fresh, createdAt: old, nowMs: now }), true)
+  assert.equal(shouldFailStaleJob({ status: 'writing', updatedAt: fresh, createdAt: old, nowMs: now }), false)
   assert.equal(shouldFailStaleJob({ status: 'queued', updatedAt: old, createdAt: old, nowMs: now }), true)
   assert.equal(shouldFailStaleJob({ status: 'ready', updatedAt: old, createdAt: old, nowMs: now }), false)
   assert.equal(shouldFailStaleJob({ status: 'failed', updatedAt: old, createdAt: old, nowMs: now }), false)
@@ -242,6 +250,69 @@ test('the job row stores the model and a stale job is failed instead of restarte
   assert.equal(timed.model_id, 'unit-model-id')
   assert.equal(timed.model_skip_reason, 'primary_timeout')
   assert.equal(MEMBER_MESSAGES.timedOut.includes('\u2014'), false)
+})
+
+test('a slow primary fails over and the fallback finishes inside the budget', async () => {
+  const stages: string[] = []
+  const models: string[] = []
+  const previousFetch = globalThis.fetch
+  const previousDeno = (globalThis as { Deno?: unknown }).Deno
+  ;(globalThis as { Deno?: { env: { get: (key: string) => string | undefined } } }).Deno = {
+    env: {
+      get: (key: string) =>
+        ({
+          BA_DD_LLM_PROVIDER: 'xai',
+          BA_DD_LLM_API_KEY: 'dd-unit-test-token',
+          BA_DD_LLM_MODEL: 'unit-model-id',
+        })[key],
+    },
+  }
+  let calls = 0
+  globalThis.fetch = ((...args: Parameters<typeof fetch>) => {
+    calls += 1
+    const init = args[1]
+    if (calls === 1) {
+      return new Promise((_resolve, reject) => {
+        const signal = init?.signal
+        if (!signal) {
+          reject(new Error('missing signal'))
+          return
+        }
+        const abort = () => reject(signal.reason instanceof Error ? signal.reason : new Error('aborted'))
+        if (signal.aborted) abort()
+        else signal.addEventListener('abort', abort, { once: true })
+      })
+    }
+    return Promise.resolve(
+      new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify(fullDraftAnalysis()) } }] }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    )
+  }) as typeof fetch
+  const started = Date.now()
+  try {
+    const result = await analyzeDeckText(`Page 1\n${FIXTURE_DECK}`, {
+      ttftMs: 40,
+      onStage: async (stage, modelId) => {
+        stages.push(stage)
+        models.push(modelId)
+      },
+    })
+    const elapsed = Date.now() - started
+    assert.deepEqual(stages, ['model', 'fallback'])
+    assert.equal(models[0], 'unit-model-id')
+    assert.equal(models[1], FALLBACK_MODEL_ID)
+    assert.equal(result.modelRan, true)
+    assert.equal(result.modelId, FALLBACK_MODEL_ID)
+    assert.match(result.skipReason || '', /ttft/)
+    assert.equal(result.analysis?.hero != null, true)
+    assert.ok(elapsed < PRIMARY_CAP_MS + FALLBACK_MS)
+    assert.ok(elapsed < WORKER_BUDGET_MS)
+  } finally {
+    globalThis.fetch = previousFetch
+    ;(globalThis as { Deno?: unknown }).Deno = previousDeno
+  }
 })
 
 test('a model call that runs out of time fails with the model id stored', async () => {
@@ -391,9 +462,10 @@ test('posture follows scores and red flags, and a missing hero is repaired', asy
     globalThis.fetch = previousFetch
     ;(globalThis as { Deno?: unknown }).Deno = previousDeno
   }
-  assert.equal(PRIMARY_CALL_MS, 120_000)
+  assert.equal(PRIMARY_CALL_MS, PRIMARY_CAP_MS)
   const llm = readFileSync(path.join(root, 'supabase/functions/due-diligence-start/llm.ts'), 'utf8')
-  assert.match(llm, /PRIMARY_CALL_MS/)
+  assert.match(llm, /PRIMARY_CAP_MS/)
+  assert.match(llm, /TtftError/)
   assert.match(llm, /stream: true/)
 })
 
