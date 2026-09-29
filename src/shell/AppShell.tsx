@@ -70,10 +70,11 @@ export function AppShell({
           aria-label="Primary"
           onMouseEnter={() => setHovered(true)}
           onMouseLeave={() => setHovered(false)}
-          className={`shell-safe-y shell-safe-left sticky top-0 hidden h-dvh shrink-0 flex-col border-r md:flex ${styles.sidebarBorder} ${styles.sidebar} ${
+          className={`relative hidden min-h-dvh shrink-0 flex-col self-stretch border-r md:flex ${styles.sidebarBorder} ${styles.sidebar} ${
             showLabels ? 'w-64' : 'w-[4.75rem]'
           } transition-[width] duration-200 motion-reduce:transition-none`}
         >
+          <div className="shell-safe-y shell-safe-left sticky top-0 flex h-dvh w-full flex-col self-start">
           <div className="flex items-center justify-between gap-2 px-3 py-4">
             <BrandLockup to={home} tone="on-dark" markOnly={!showLabels} />
             <button
@@ -131,6 +132,7 @@ export function AppShell({
             {accountLabel && showLabels && (
               <p className="truncate px-3 text-[0.82rem] text-[var(--ba-lavender-mist)]">{accountLabel}</p>
             )}
+          </div>
           </div>
         </aside>
 

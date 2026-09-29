@@ -13,12 +13,14 @@ export function HomeSnapshotView({
   sponsorBadge = null,
   seatCaption,
   seatValue,
+  attentionLead = null,
 }: {
   model: HomeModel
   onRetry?: () => void
   sponsorBadge?: ReactNode
   seatCaption?: string
   seatValue?: string
+  attentionLead?: ReactNode
 }) {
   const pulseVisible = model.pulse.length > 0 || model.majlis != null
   const teaserVisible =
@@ -67,25 +69,28 @@ export function HomeSnapshotView({
         </div>
       </section>
 
-      {model.attention.length > 0 && (
+      {(model.attention.length > 0 || attentionLead) && (
         <section aria-label="Needs attention" className="mt-5 space-y-3 md:mt-8">
           <h2 className="text-[0.72rem] font-semibold tracking-[0.14em] text-ink/40 uppercase">
             Needs attention
           </h2>
-          <ul className="space-y-3">
-            {model.attention.map((item) => (
-              <li key={item.title} className={`${styles.panel} px-4 py-3 md:py-4`}>
-                <p className="text-[1rem] text-ink">{item.title}</p>
-                <p className={`mt-1 text-[0.95rem] ${styles.muted}`}>{item.body}</p>
-                <Link
-                  to={item.to}
-                  className="mt-3 inline-flex min-h-11 items-center text-[0.75rem] font-semibold tracking-[0.08em] text-brass uppercase"
-                >
-                  {item.cta}
-                </Link>
-              </li>
-            ))}
-          </ul>
+          {attentionLead}
+          {model.attention.length > 0 ? (
+            <ul className="space-y-3">
+              {model.attention.map((item) => (
+                <li key={item.title} className={`${styles.panel} px-4 py-3 md:py-4`}>
+                  <p className="text-[1rem] text-ink">{item.title}</p>
+                  <p className={`mt-1 text-[0.95rem] ${styles.muted}`}>{item.body}</p>
+                  <Link
+                    to={item.to}
+                    className="mt-3 inline-flex min-h-11 items-center text-[0.75rem] font-semibold tracking-[0.08em] text-brass uppercase"
+                  >
+                    {item.cta}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          ) : null}
         </section>
       )}
 

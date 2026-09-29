@@ -16,6 +16,7 @@ import { ApplicationsPage } from './pages/admin/ApplicationsPage'
 import { CapacityPage } from './pages/admin/CapacityPage'
 import { EmailPage } from './pages/admin/EmailPage'
 import { AdminMajlisPage } from './pages/admin/MajlisPage'
+import { StaffRoomsPage } from './pages/admin/StaffRoomsPage'
 import { PeoplePage } from './pages/admin/PeoplePage'
 import { SettingsPage } from './pages/admin/SettingsPage'
 import { DashboardHome } from './pages/dashboard/DashboardHome'
@@ -26,6 +27,8 @@ import { HelpPage } from './pages/dashboard/HelpPage'
 import { MajlisPage } from './pages/dashboard/MajlisPage'
 import { MandatesPage } from './pages/dashboard/MandatesPage'
 import { RealEstatePage } from './pages/dashboard/RealEstatePage'
+import { CreateRoomPage } from './pages/dashboard/CreateRoomPage'
+import { DealRoomPage } from './pages/dashboard/DealRoomPage'
 import { RoomsPage } from './pages/dashboard/RoomsPage'
 import { NetworkPage } from './pages/dashboard/NetworkPage'
 import { ProfilePage } from './pages/dashboard/ProfilePage'
@@ -53,6 +56,7 @@ export default function App() {
         <Route path="settings" element={<SettingsPage />} />
         <Route path="email" element={<EmailPage />} />
         <Route path="majlis" element={<AdminMajlisPage />} />
+        <Route path="rooms" element={<StaffRoomsPage />} />
       </Route>
       <Route path="/ops/*" element={<Navigate to="/admin" replace />} />
       <Route path="/ops" element={<Navigate to="/admin" replace />} />
@@ -68,6 +72,8 @@ export default function App() {
         <Route path="due-diligence" element={<DueDiligencePage />} />
         <Route path="due-diligence/:reportId" element={<DueDiligencePage />} />
         <Route path="rooms" element={<RoomsPage />} />
+        <Route path="rooms/new" element={<CreateRoomPage />} />
+        <Route path="rooms/:roomId" element={<DealRoomPage />} />
         <Route path="majlis" element={<MajlisPage />} />
         <Route path="events" element={<Navigate to="/dashboard/majlis" replace />} />
         <Route path="help" element={<HelpPage />} />

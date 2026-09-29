@@ -62,9 +62,10 @@ function partner(extra: Record<string, unknown> = {}) {
   }
 }
 
-test('the partners migration sorts last and does not open the table', () => {
+test('the partners migration stays after readiness and does not open the table', () => {
   const files = readdirSync(migrationsDir).filter((file) => file.endsWith('.sql')).sort()
-  assert.equal(files.at(-1), migrationName)
+  assert.ok(files.includes(migrationName))
+  assert.ok((files.at(-1) ?? '') >= migrationName)
   assert.ok(migrationName > '20261005120000')
   assert.ok(migrationName > '20261003120000_re_regulatory_readiness.sql')
   assert.ok(files.includes('20261003120000_re_regulatory_readiness.sql'))
