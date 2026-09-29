@@ -29,11 +29,17 @@ test('demos stay only while the real count is below the threshold', () => {
 })
 
 test('proposed defaults match the single server config', () => {
+  const reMigration = readFileSync(
+    path.join(root, 'supabase/migrations/20260929230000_real_estate_inventory.sql'),
+    'utf8',
+  )
   assert.deepEqual(DEMO_THRESHOLD_DEFAULTS, {
     directory: 12,
     mandates: 6,
     rooms: 4,
     partners: 3,
+    re_opportunities: 5,
+    re_partners: 3,
   })
   assert.match(migration, /directory_real int not null default 12/)
   assert.match(migration, /mandates_real int not null default 6/)
@@ -41,7 +47,17 @@ test('proposed defaults match the single server config', () => {
   assert.match(migration, /partners_real int not null default 3/)
   assert.match(migration, /p_real_count </)
   assert.match(migration, /create table if not exists public\.demo_thresholds/)
+  assert.match(reMigration, /re_opportunities_real int not null default 5/)
+  assert.match(reMigration, /re_partners_real int not null default 3/)
+  assert.match(reMigration, /when 'directory' then directory_real/)
+  assert.match(reMigration, /when 'mandates' then mandates_real/)
+  assert.match(reMigration, /when 'rooms' then rooms_real/)
+  assert.match(reMigration, /when 'partners' then partners_real/)
+  assert.match(reMigration, /when 're_opportunities' then re_opportunities_real/)
+  assert.match(reMigration, /when 're_partners' then re_partners_real/)
+  assert.match(reMigration, /p_real_count </)
   assert.equal(migration.includes('\u2014'), false)
+  assert.equal(reMigration.includes('\u2014'), false)
 
   const pages = [
     'src/pages/dashboard/DirectoryPage.tsx',

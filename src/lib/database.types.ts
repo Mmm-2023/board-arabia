@@ -629,6 +629,69 @@ export type Database = {
         Args: { p_intro_id: string; p_decision: string }
         Returns: Json
       }
+      list_re_opportunities: {
+        Args: Record<string, never>
+        Returns: Json
+      }
+      list_re_partners: {
+        Args: Record<string, never>
+        Returns: Json
+      }
+      request_re_opportunity_intro: {
+        Args: { p_opportunity_id: string }
+        Returns: Json
+      }
+      staff_list_re_opportunity_intros: {
+        Args: Record<string, never>
+        Returns: Json
+      }
+      staff_decide_re_opportunity_intro: {
+        Args: { p_intro_id: string; p_decision: string }
+        Returns: Json
+      }
+      staff_save_re_opportunity: {
+        Args: {
+          p_id: string | null
+          p_published: boolean
+          p_sector: string
+          p_city: string
+          p_asset_class: string
+          p_capital_role: string
+          p_ticket_band: string
+          p_one_liner: string
+          p_sponsor_member_id: string | null
+          p_counterparty_name: string
+          p_terms: string
+          p_contact_name: string
+          p_contact_email: string
+          p_contact_phone: string
+          p_narrative: string
+          p_foreign_ownership_path: string
+          p_escrow_off_plan: string
+          p_title_clarity: string
+          p_white_land_exposure: string
+          p_sort_order: number
+        }
+        Returns: Json
+      }
+      staff_save_re_partner: {
+        Args: {
+          p_id: string | null
+          p_published: boolean
+          p_name: string
+          p_kind: string
+          p_blurb: string
+          p_contact_name: string
+          p_contact_email: string
+          p_contact_phone: string
+          p_sort_order: number
+        }
+        Returns: Json
+      }
+      staff_assign_sponsor_category: {
+        Args: { p_member_id: string; p_category_slug: string }
+        Returns: Json
+      }
     }
     Enums: Record<string, never>
     CompositeTypes: Record<string, never>
