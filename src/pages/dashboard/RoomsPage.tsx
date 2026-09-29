@@ -1,14 +1,12 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
 import { fetchMyDealRooms } from '../../lib/dealRoomApi'
 import { fetchRooms } from '../../lib/demoFetch'
 import type { MemberDealRoom } from '../../lib/dealRoomView'
-import { DEAL_COPY } from '../../lib/dealRoomView'
 import type { RoomCard } from '../../lib/demoRows'
 import { useNoIndex } from '../../lib/usePageTitle'
 import { CardSkeleton, EmptyState, ErrorBanner, PermissionState } from '../../shell/ViewState'
 import { MEMBER_VIEWS } from '../../shell/viewCopy'
-import { MemberRoomsList } from './MemberRoomsList'
+import { DealRoomsView, YourRooms } from './DealRoomsView'
 import { RoomsBoard } from './RoomsBoard'
 
 const ROOMS_EMPTY = 'A deal room opens for a live mandate, and only by admin. None are open.'
@@ -62,23 +60,13 @@ export function RoomsPage() {
   }, [mineAttempt])
 
   const canCreate = mine.status !== 'denied'
+  const showCreate = canCreate && !(mine.status === 'ready' && mine.rooms.length === 0)
 
   return (
-    <div className="max-w-3xl">
-      <h1 className="font-display text-[2.2rem] font-bold tracking-[-0.03em]">Deal rooms</h1>
-      <p className="mt-3 max-w-xl text-[1rem] leading-relaxed text-ink/65">{DEAL_COPY.yourRoomsIntro}</p>
-      {canCreate ? (
-        <Link
-          to="/dashboard/deals/rooms/new"
-          className="ba-primary mt-5 inline-flex min-h-11 items-center px-4 text-[0.75rem] font-semibold tracking-[0.08em] uppercase"
-        >
-          {MEMBER_VIEWS.rooms.emptyCta}
-        </Link>
-      ) : null}
-
-      <section aria-label="Your rooms" className="mt-10">
-        <h2 className="font-display text-[1.45rem] font-semibold tracking-[-0.03em]">Your rooms</h2>
-        <div className="mt-4">
+    <DealRoomsView
+      showCreate={showCreate}
+      yours={
+        <>
           {mine.status === 'loading' ? <CardSkeleton tone="member" label="Loading your rooms" /> : null}
           {mine.status === 'error' || mine.status === 'missing' ? (
             <ErrorBanner
@@ -94,16 +82,11 @@ export function RoomsPage() {
           {mine.status === 'denied' ? (
             <PermissionState tone="member" message={mine.message || MEMBER_VIEWS.rooms.denied} />
           ) : null}
-          {mine.status === 'ready' && mine.rooms.length === 0 ? (
-            <EmptyState tone="member" message={MEMBER_VIEWS.rooms.empty} />
-          ) : null}
-          {mine.status === 'ready' && mine.rooms.length > 0 ? <MemberRoomsList rooms={mine.rooms} /> : null}
-        </div>
-      </section>
-
-      <section aria-label="Opened by admin" className="mt-10">
-        <h2 className="font-display text-[1.45rem] font-semibold tracking-[-0.03em]">Opened by admin</h2>
-        <div className="mt-4">
+          {mine.status === 'ready' ? <YourRooms rooms={mine.rooms} /> : null}
+        </>
+      }
+      openedByAdmin={
+        <>
           {admin.status === 'loading' ? <CardSkeleton tone="member" label="Loading rooms" /> : null}
           {admin.status === 'error' ? (
             <ErrorBanner
@@ -122,8 +105,8 @@ export function RoomsPage() {
           {admin.status === 'ready' && admin.rooms.length > 0 ? (
             <RoomsBoard rooms={admin.rooms} embedded />
           ) : null}
-        </div>
-      </section>
-    </div>
+        </>
+      }
+    />
   )
 }

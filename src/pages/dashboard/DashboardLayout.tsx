@@ -4,7 +4,7 @@ import { isStaffRole, showRoleSwitch } from '../../../supabase/functions/_shared
 import { clearPasswordFlag } from '../../lib/clearPasswordFlag'
 import { fetchMyDealRooms } from '../../lib/dealRoomApi'
 import { stillMustSetPassword } from '../../lib/passwordSet'
-import { pendingInvites } from '../../lib/dealRoomView'
+import { dealsNavCount } from '../../lib/dealRoomView'
 import { AppShell } from '../../shell/AppShell'
 import { MEMBER_ACCOUNT, MEMBER_DESTINATIONS, staleBanner } from '../../shell/destinations'
 import { HomeSkeleton, PermissionState } from '../../shell/ViewState'
@@ -169,7 +169,7 @@ export function DashboardLayout() {
     let cancelled = false
     void fetchMyDealRooms().then((result) => {
       if (cancelled) return
-      setDealsBadge(result.status === 'ready' ? pendingInvites(result.rows).length : 0)
+      setDealsBadge(result.status === 'ready' ? dealsNavCount(result.rows) : 0)
     })
     return () => {
       cancelled = true

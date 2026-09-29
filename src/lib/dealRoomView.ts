@@ -140,6 +140,11 @@ export function pendingInvites(rooms: MemberDealRoom[]): MemberDealRoom[] {
   return rooms.filter((room) => room.myInviteStatus === 'invited' && room.status !== 'archived')
 }
 
+/** Deals nav count. Example and admin rooms are not member rooms, so they stay at zero. */
+export function dealsNavCount(rooms: MemberDealRoom[]): number {
+  return pendingInvites(rooms).length
+}
+
 export function blockingParticipantIds(room: MemberDealRoom): Set<string> {
   return new Set(
     room.participants

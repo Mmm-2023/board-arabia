@@ -357,6 +357,7 @@ test('the client uses Edge functions and read RPCs, not raw room tables', () => 
   const files = [
     'src/lib/dealRoomApi.ts',
     'src/pages/dashboard/RoomsPage.tsx',
+    'src/pages/dashboard/DealRoomsView.tsx',
     'src/pages/dashboard/CreateRoomPage.tsx',
     'src/pages/dashboard/DealRoomPage.tsx',
     'src/pages/dashboard/DashboardHome.tsx',

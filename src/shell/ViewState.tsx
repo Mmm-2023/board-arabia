@@ -81,16 +81,17 @@ export function EmptyState({
 }: {
   tone: ShellTone
   message: string
-  action?: { label: string; to: string }
+  action?: { label: string; to: string; wide?: boolean }
 }) {
   const styles = toneClasses(tone)
+  const width = action?.wide ? 'w-full justify-center sm:w-auto' : ''
   return (
     <div className={`${styles.panel} px-5 py-6`}>
       <p className={`max-w-xl text-[1.02rem] leading-relaxed ${styles.muted}`}>{message}</p>
       {action && (
         <Link
           to={action.to}
-          className={`mt-5 inline-flex min-h-11 items-center px-4 text-[0.75rem] font-semibold tracking-[0.08em] uppercase ${styles.primary}`}
+          className={`mt-5 inline-flex min-h-11 items-center px-4 text-[0.75rem] font-semibold tracking-[0.08em] uppercase ${width} ${styles.primary}`}
         >
           {action.label}
         </Link>
