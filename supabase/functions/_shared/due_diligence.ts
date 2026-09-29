@@ -3,7 +3,26 @@
  * Citations are only pages actually retrieved. Unknown stays unknown.
  */
 
+import { readStoredAnalysis, type DeckAnalysis } from './deck_analysis.ts'
+
 export const DECK_BUCKET = 'due-diligence-decks'
+
+/**
+ * Supabase Edge wall clock is 400s. This budget stays under it with margin
+ * and is shorter than a silent multi-minute hang. Heartbeats refresh updated_at
+ * at each stage. Silence or age past this budget means the worker died or the run ran out of time.
+ */
+export const JOB_DEADLINE_MS = 180_000
+
+export const DD_PROGRESS = {
+  extract: 18,
+  pages: 32,
+  model: 46,
+  repair: 58,
+  fallback: 70,
+  sources: 82,
+  save: 92,
+} as const
 export const DECK_MAX_BYTES = 15 * 1024 * 1024
 export const NOT_STATED = 'Not stated in the deck'
 
@@ -21,6 +40,7 @@ export const MEMBER_MESSAGES = {
   membersOnly: 'Only members can run a check.',
   start: 'Could not start the check.',
   finish: 'Could not finish the check. Try again later.',
+  timedOut: 'This check took too long and stopped. Try again.',
   url: 'Company site must be a public https link.',
   upload: 'Could not upload the deck. Try again.',
   missing: 'That note is not in your history.',
@@ -92,6 +112,9 @@ export type BuiltReport = {
   sources: SourceLink[]
   next_steps: string[]
   degraded_notes?: string[]
+  analysis?: DeckAnalysis | null
+  model_id?: string | null
+  model_skip_reason?: string | null
 }
 
 export const VERDICT_LABEL: Record<ClaimVerdict, string> = {
@@ -112,7 +135,9 @@ export const VERDICT_SHORT: Record<ClaimVerdict, string> = {
 export const DEGRADED_NOTE_SEARCH = 'Independent web checks were not run for this report.'
 export const DEGRADED_NOTE_SEARCH_FAILED = 'Independent web checks did not complete for this report.'
 export const DEGRADED_NOTE_MODEL = 'The language model was not used for this report.'
-export const DEGRADED_NOTE_MODEL_FAILED = 'The language model did not return facts for this report.'
+export const DEGRADED_NOTE_MODEL_FAILED = 'The language model did not return a draft for this report.'
+export const DEGRADED_NOTE_MODEL_FALLBACK = 'The first model did not finish, so this draft used the backup model.'
+export const DEGRADED_NOTE_MODEL_PARTIAL = 'Some draft sections did not validate and are marked missing.'
 export const INDEPENDENT_EVIDENCE_NOTE = 'The company website does not count as independent evidence.'
 
 const VERDICT_NOTE: Record<ClaimVerdict, string> = {
@@ -230,23 +255,43 @@ export function safeFileName(name: string, ext: DeckExt): string {
   return cleaned
 }
 
-export function stageLabel(status: string): string {
-  switch (status) {
-    case 'queued':
-      return 'Queued'
-    case 'reading':
-      return 'Reading the deck'
-    case 'checking':
-      return 'Checking public sources'
-    case 'writing':
-      return 'Writing the note'
-    case 'ready':
-      return 'Ready'
-    case 'failed':
-      return 'The check stopped'
-    default:
-      return 'Working'
-  }
+const LIVE_JOB = ['queued', 'reading', 'checking', 'writing']
+
+export function stageLabel(status: string, progress = 0): string {
+  if (status === 'queued') return 'Queued'
+  if (status === 'ready') return 'Ready'
+  if (status === 'failed') return 'The check stopped'
+  if (progress >= DD_PROGRESS.save) return 'Saving the draft'
+  if (progress >= DD_PROGRESS.sources) return 'Checking public sources'
+  if (progress >= DD_PROGRESS.fallback) return 'Trying the backup model'
+  if (progress >= DD_PROGRESS.repair) return 'Repairing the draft'
+  if (progress >= DD_PROGRESS.model) return 'Asking the model'
+  if (progress >= DD_PROGRESS.pages) return 'Numbering the pages'
+  if (progress >= DD_PROGRESS.extract || status === 'reading') return 'Reading the deck'
+  if (status === 'writing') return 'Writing the note'
+  return 'Working'
+}
+
+/** True when an in-flight job is past the deadline and should be marked failed. */
+export function shouldFailStaleJob(input: {
+  status: string
+  updatedAt: string
+  createdAt: string
+  nowMs: number
+}): boolean {
+  if (!LIVE_JOB.includes(input.status)) return false
+  const updated = Date.parse(input.updatedAt)
+  const created = Date.parse(input.createdAt)
+  if (!Number.isFinite(updated) || !Number.isFinite(created)) return true
+  if (input.nowMs - updated >= JOB_DEADLINE_MS) return true
+  return input.nowMs - created >= JOB_DEADLINE_MS
+}
+
+/** A model miss that should fail the job. A missing key still finishes as a degraded draft. */
+export function isTerminalModelFailure(skipReason: string | null, modelRan: boolean): boolean {
+  if (modelRan) return false
+  if (!skipReason) return true
+  return skipReason !== 'missing_api_key' && skipReason !== 'missing_model' && skipReason !== 'empty_deck'
 }
 
 export function parsePublicHttpsUrl(raw: string): { ok: true; url: URL } | { ok: false } {
@@ -635,6 +680,7 @@ export function assessmentLog(input: {
   jobId: string
   modelRan: boolean
   modelSkipReason: string | null
+  modelId?: string | null
   claimsReturned: number
   claimsKept: number
   sourcesFetched: number
@@ -645,6 +691,7 @@ export function assessmentLog(input: {
     event: 'dd_assessment',
     job_id: input.jobId,
     model_ran: input.modelRan,
+    model_id: input.modelId ?? null,
     model_skip_reason: input.modelSkipReason,
     claims_returned: input.claimsReturned,
     claims_kept: input.claimsKept,
@@ -652,6 +699,18 @@ export function assessmentLog(input: {
     search_ran: input.searchRan,
     search_skip_reason: input.searchSkipReason,
   })
+}
+
+export function modelJobFields(input: { modelId: string | null; skipReason: string | null }): {
+  model_id: string | null
+  model_skip_reason: string | null
+} {
+  const modelId = (input.modelId || '').replace(/[^\w.-]+/g, '').slice(0, 80)
+  const reason = (input.skipReason || '').replace(/[^\w:.-]+/g, '_').slice(0, 160)
+  return {
+    model_id: modelId || null,
+    model_skip_reason: reason || null,
+  }
 }
 
 export function buildReport(
@@ -681,6 +740,9 @@ export function buildReport(
     })),
     next_steps: nextStepsFor(claims),
     degraded_notes: cleanDegradedNotes(options?.degradedNotes),
+    analysis: null,
+    model_id: null,
+    model_skip_reason: null,
   }
 }
 
@@ -761,6 +823,9 @@ export function readStoredReport(input: {
   claims: unknown
   sources: unknown
   next_steps: unknown
+  analysis?: unknown
+  model_id?: unknown
+  model_skip_reason?: unknown
 }): BuiltReport | null {
   if (typeof input.company_label !== 'string' || typeof input.sector_label !== 'string') return null
   if (typeof input.ask_label !== 'string' || typeof input.disclaimer !== 'string') return null
@@ -785,6 +850,12 @@ export function readStoredReport(input: {
     sources,
     next_steps: nextSteps,
     degraded_notes: unpacked.degraded_notes,
+    analysis: readStoredAnalysis(input.analysis),
+    model_id: typeof input.model_id === 'string' && input.model_id.trim() ? input.model_id.trim().slice(0, 80) : null,
+    model_skip_reason:
+      typeof input.model_skip_reason === 'string' && input.model_skip_reason.trim()
+        ? input.model_skip_reason.trim().slice(0, 160)
+        : null,
   }
 }
 

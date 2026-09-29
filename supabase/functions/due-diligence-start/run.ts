@@ -1,22 +1,29 @@
 import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1'
+import { numberDeckPages } from '../_shared/deck_analysis.ts'
 import {
   assessmentLog,
   buildReport,
   DECK_BUCKET,
+  DD_PROGRESS,
   DECK_MAX_BYTES,
   DEGRADED_NOTE_MODEL,
   DEGRADED_NOTE_MODEL_FAILED,
+  DEGRADED_NOTE_MODEL_FALLBACK,
+  DEGRADED_NOTE_MODEL_PARTIAL,
   DEGRADED_NOTE_SEARCH,
   DEGRADED_NOTE_SEARCH_FAILED,
   extractCompanyUrl,
   independentSearchTerms,
+  isTerminalModelFailure,
+  JOB_DEADLINE_MS,
   MEMBER_MESSAGES,
+  modelJobFields,
   packReportDisclaimer,
   parsePublicHttpsUrl,
   sniffDeck,
   type DeckExt,
 } from '../_shared/due_diligence.ts'
-import { textFromDeck } from './extract.ts'
+import { readDeckSource } from './extract.ts'
 import { extractDeckFactsWithOptionalLlm } from './llm.ts'
 import { retrievePublicPages } from './sources.ts'
 
@@ -25,7 +32,7 @@ const ACTIVE = ['queued', 'reading', 'checking', 'writing']
 export async function advanceDueDiligenceJob(admin: SupabaseClient, jobId: string): Promise<void> {
   const claimed = await admin
     .from('due_diligence_jobs')
-    .update({ status: 'reading', progress: 20, error: null })
+    .update({ status: 'reading', progress: DD_PROGRESS.extract, error: null })
     .eq('id', jobId)
     .eq('status', 'queued')
     .select('id, deck_id, member_id')
@@ -35,6 +42,7 @@ export async function advanceDueDiligenceJob(admin: SupabaseClient, jobId: strin
   const job = claimed.data
   let modelRan = false
   let modelSkipReason: string | null = 'not_started'
+  let modelId: string | null = null
   let claimsReturned = 0
   let claimsKept = 0
   let sourcesFetched = 0
@@ -46,6 +54,7 @@ export async function advanceDueDiligenceJob(admin: SupabaseClient, jobId: strin
         jobId,
         modelRan,
         modelSkipReason,
+        modelId,
         claimsReturned,
         claimsKept,
         sourcesFetched,
@@ -53,6 +62,14 @@ export async function advanceDueDiligenceJob(admin: SupabaseClient, jobId: strin
         searchSkipReason,
       }),
     )
+  }
+  const deadlineAt = Date.now() + JOB_DEADLINE_MS
+  const assertDeadline = () => {
+    if (Date.now() >= deadlineAt) {
+      const error = new Error(MEMBER_MESSAGES.timedOut)
+      error.name = 'JobDeadlineError'
+      throw error
+    }
   }
   try {
     const deck = await admin
@@ -67,8 +84,13 @@ export async function advanceDueDiligenceJob(admin: SupabaseClient, jobId: strin
     const bytes = await downloadDeck(admin, deck.data.storage_path)
     if (sniffDeck(bytes) !== ext) throw new Error(MEMBER_MESSAGES.notDeck)
 
-    const text = await textFromDeck(bytes, ext)
-    await mark(admin, jobId, 'checking', 55)
+    const source = await readDeckSource(bytes, ext)
+    const text = source.text
+    assertDeadline()
+    await touch(admin, jobId, DD_PROGRESS.pages)
+    const numbered = numberDeckPages(source.pages).slice(0, 80_000)
+    assertDeadline()
+    await mark(admin, jobId, 'checking', DD_PROGRESS.model)
     const storedUrl = typeof deck.data.company_url === 'string' ? deck.data.company_url.trim() : ''
     let companyUrl: string | null = storedUrl || null
     if (!companyUrl) {
@@ -82,11 +104,34 @@ export async function advanceDueDiligenceJob(admin: SupabaseClient, jobId: strin
           .eq('member_id', job.member_id)
       }
     }
-    const extraction = await extractDeckFactsWithOptionalLlm(text, String(deck.data.file_name || ''))
+    const extraction = await extractDeckFactsWithOptionalLlm(
+      text,
+      String(deck.data.file_name || ''),
+      numbered,
+      async (stage) => {
+        assertDeadline()
+        const progress =
+          stage === 'repair' ? DD_PROGRESS.repair : stage === 'fallback' ? DD_PROGRESS.fallback : DD_PROGRESS.model
+        await touch(admin, jobId, progress)
+      },
+      deadlineAt,
+    )
     modelRan = extraction.modelRan
     modelSkipReason = extraction.skipReason
+    modelId = extraction.modelId
     claimsReturned = extraction.claimsReturned
     claimsKept = extraction.claimsKept
+    if (isTerminalModelFailure(extraction.skipReason, extraction.modelRan)) {
+      const error = new Error(
+        (extraction.skipReason || '').includes('timeout') || (extraction.skipReason || '').includes('deadline')
+          ? MEMBER_MESSAGES.timedOut
+          : MEMBER_MESSAGES.finish,
+      )
+      error.name = 'ModelFailed'
+      throw error
+    }
+    assertDeadline()
+    await touch(admin, jobId, DD_PROGRESS.sources)
     const facts = extraction.facts
     const retrieval = await retrievePublicPages({
       companyUrl,
@@ -95,10 +140,14 @@ export async function advanceDueDiligenceJob(admin: SupabaseClient, jobId: strin
     sourcesFetched = retrieval.sourcesFetched
     searchRan = retrieval.searchRan
     searchSkipReason = retrieval.searchSkipReason
-    await mark(admin, jobId, 'writing', 85)
+    assertDeadline()
+    await mark(admin, jobId, 'writing', DD_PROGRESS.save)
     const degradedNotes: string[] = []
     if (!extraction.modelRan) {
       degradedNotes.push(extraction.skipReason === 'missing_api_key' ? DEGRADED_NOTE_MODEL : DEGRADED_NOTE_MODEL_FAILED)
+    } else {
+      if (extraction.usedFallback) degradedNotes.push(DEGRADED_NOTE_MODEL_FALLBACK)
+      if (extraction.analysis?.sections_missing.length) degradedNotes.push(DEGRADED_NOTE_MODEL_PARTIAL)
     }
     if (!retrieval.searchRan) {
       degradedNotes.push(DEGRADED_NOTE_SEARCH)
@@ -106,6 +155,10 @@ export async function advanceDueDiligenceJob(admin: SupabaseClient, jobId: strin
       degradedNotes.push(DEGRADED_NOTE_SEARCH_FAILED)
     }
     const report = buildReport(facts, retrieval.pages, { companyUrl, degradedNotes })
+    report.analysis = extraction.analysis
+    const modelFields = modelJobFields({ modelId, skipReason: modelSkipReason })
+    report.model_id = modelFields.model_id
+    report.model_skip_reason = modelFields.model_skip_reason
     writeLog()
     const inserted = await admin
       .from('due_diligence_reports')
@@ -123,6 +176,10 @@ export async function advanceDueDiligenceJob(admin: SupabaseClient, jobId: strin
         claims: report.claims,
         sources: report.sources,
         next_steps: report.next_steps,
+        analysis: report.analysis,
+        analysis_status: 'draft',
+        model_id: report.model_id,
+        model_skip_reason: report.model_skip_reason,
       })
       .select('id')
       .maybeSingle()
@@ -136,23 +193,30 @@ export async function advanceDueDiligenceJob(admin: SupabaseClient, jobId: strin
     }
     await admin
       .from('due_diligence_jobs')
-      .update({ status: 'ready', progress: 100, error: null })
+      .update({ status: 'ready', progress: 100, error: null, ...modelJobFields({ modelId, skipReason: modelSkipReason }) })
       .eq('id', jobId)
       .in('status', ACTIVE)
   } catch (err) {
-    if (modelSkipReason === 'not_started') modelSkipReason = 'job_failed'
+    const deadline = err instanceof Error && err.name === 'JobDeadlineError'
+    if (deadline) {
+      modelSkipReason =
+        modelSkipReason && modelSkipReason !== 'not_started' ? `${modelSkipReason}:deadline_exceeded` : 'deadline_exceeded'
+    } else if (modelSkipReason === 'not_started') {
+      modelSkipReason = 'job_failed'
+    }
     if (searchSkipReason === 'not_started') searchSkipReason = 'job_failed'
     writeLog()
     const message = err instanceof Error ? err.message : ''
     const safe =
       message === MEMBER_MESSAGES.unreadable ||
       message === MEMBER_MESSAGES.scanned ||
-      message === MEMBER_MESSAGES.notDeck
+      message === MEMBER_MESSAGES.notDeck ||
+      message === MEMBER_MESSAGES.timedOut
         ? message
         : MEMBER_MESSAGES.finish
     await admin
       .from('due_diligence_jobs')
-      .update({ status: 'failed', error: safe })
+      .update({ status: 'failed', error: safe, ...modelJobFields({ modelId, skipReason: modelSkipReason }) })
       .eq('id', jobId)
       .in('status', ACTIVE)
   }
@@ -162,6 +226,10 @@ export function deferJob(work: Promise<unknown>) {
   const runtime = (globalThis as { EdgeRuntime?: { waitUntil: (promise: Promise<unknown>) => void } }).EdgeRuntime
   if (runtime?.waitUntil) runtime.waitUntil(work)
   else void work
+}
+
+async function touch(admin: SupabaseClient, jobId: string, progress: number) {
+  await admin.from('due_diligence_jobs').update({ progress }).eq('id', jobId).in('status', ACTIVE)
 }
 
 async function mark(admin: SupabaseClient, jobId: string, status: string, progress: number) {

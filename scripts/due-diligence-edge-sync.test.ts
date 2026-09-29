@@ -56,6 +56,7 @@ test('extract.ts boots from the vendored fflate graph with no remote import', as
   const files = importGraph(entry)
   const relative = files.map((file) => path.relative(root, file)).sort()
   assert.deepEqual(relative, [
+    'supabase/functions/_shared/deck_analysis.ts',
     'supabase/functions/_shared/due_diligence.ts',
     'supabase/functions/_shared/fflate-browser.js',
     'supabase/functions/_shared/pdf_text.ts',

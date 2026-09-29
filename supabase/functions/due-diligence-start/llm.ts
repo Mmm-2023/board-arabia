@@ -1,14 +1,29 @@
 import {
+  numberDeckPages,
+  parseDeckAnalysis,
+  parseModelJson,
+  preferredAsk,
+  preferredCompany,
+  type DeckAnalysis,
+} from '../_shared/deck_analysis.ts'
+import {
   extractDeckFacts,
   mergeModelFacts,
+  NOT_STATED,
   parsePublicHttpsUrl,
-  readModelFacts,
   type DeckFacts,
 } from '../_shared/due_diligence.ts'
+import { REPAIR_PROMPT } from './prompts/repair_prompt.ts'
+import { SCHEMA_PROMPT } from './prompts/schema_prompt.ts'
+import { SYSTEM_PROMPT } from './prompts/system_prompt.ts'
 
 const DEFAULT_MODEL = 'gpt-4o-mini'
 const DEFAULT_BASE = 'https://api.openai.com/v1'
 const XAI_CHAT_URL = 'https://api.x.ai/v1/chat/completions'
+
+export const ANALYSIS_TIMEOUT_MS = 75_000
+export const ANALYSIS_MAX_TOKENS = 4_000
+export const FALLBACK_MODEL_ID = 'grok-4.20-0309-non-reasoning'
 
 function edgeEnv(name: string): string {
   const Deno = (globalThis as { Deno?: { env: { get: (key: string) => string | undefined } } }).Deno
@@ -32,96 +47,236 @@ export function llmChatTarget(): { url: string; model: string } | null {
   return { url: endpoint.toString(), model: model || DEFAULT_MODEL }
 }
 
-const SYSTEM = [
-  'You extract structured facts from pitch deck text. Reply with one JSON object and no markdown.',
-  'Schema: {"company":"","sector":"","ask":"","claims":[{"text":"","kind":"team"}]}',
-  'kind is team, traction, market, ip, or other.',
-  'company is the legal or trading name. sector is the industry. ask is the raise, if the deck states one.',
-  'Use the deck wording or a close paraphrase. Every claim must stay grounded in the deck.',
-  'If a field is not in the deck, use an empty string.',
-  'Do not invent names, figures, customers, or sources.',
-  'Do not use these words: invest, approve, reject, fraud, pass, valid, invalid, investable.',
-  'Do not use em dashes.',
-  'Skip titles, postal addresses, phone numbers, and headings that only say partnership proposal.',
-  'At most 8 claims.',
-].join(' ')
-
 export type FactExtraction = {
   facts: DeckFacts
   modelRan: boolean
   skipReason: string | null
   claimsReturned: number
   claimsKept: number
+  modelId: string | null
+  analysis: DeckAnalysis | null
+  usedFallback: boolean
 }
 
-export async function extractDeckFactsWithOptionalLlm(text: string, fileName = ''): Promise<FactExtraction> {
+type Attempt = {
+  ok: true
+  content: string
+} | {
+  ok: false
+  reason: string
+}
+
+export type ModelStage = 'model' | 'repair' | 'fallback'
+
+export async function extractDeckFactsWithOptionalLlm(
+  text: string,
+  fileName = '',
+  numberedText = '',
+  onStage?: (stage: ModelStage) => Promise<void>,
+  deadlineAt?: number,
+): Promise<FactExtraction> {
   const heuristic = extractDeckFacts(text, fileName)
+  const deck = (numberedText.trim() || (text.trim() ? numberDeckPages([text]) : '')).slice(0, 80_000)
+  const companyHint = heuristic.company === NOT_STATED ? '' : heuristic.company
+  const run = await analyzeDeckText(deck, {
+    companyHint,
+    roundHint: heuristic.ask === NOT_STATED ? '' : heuristic.ask,
+    onStage,
+    deadlineAt,
+  })
+  const modelCompany = preferredCompany(run.analysis?.meta.company || '')
+  const ask = preferredAsk(run.analysis?.snapshot.round)
+  const facts = mergeModelFacts(
+    run.analysis && run.modelRan
+      ? {
+          company: modelCompany || NOT_STATED,
+          sector: NOT_STATED,
+          ask: ask || NOT_STATED,
+          claims: heuristic.claims,
+        }
+      : null,
+    heuristic,
+  )
+  if (modelCompany) facts.company = modelCompany
+  else facts.company = heuristic.company
+  if (ask) facts.ask = ask
+  return {
+    facts,
+    modelRan: run.modelRan,
+    skipReason: run.skipReason,
+    claimsReturned: run.analysis?.claims.length ?? 0,
+    claimsKept: facts.claims.length,
+    modelId: run.modelId,
+    analysis: run.analysis,
+    usedFallback: run.usedFallback,
+  }
+}
+
+export async function analyzeDeckText(
+  numberedText: string,
+  hints: {
+    companyHint?: string
+    roundHint?: string
+    onStage?: (stage: ModelStage) => Promise<void>
+    deadlineAt?: number
+    callTimeoutMs?: number
+  } = {},
+): Promise<{
+  analysis: DeckAnalysis | null
+  modelRan: boolean
+  modelId: string | null
+  skipReason: string | null
+  usedFallback: boolean
+}> {
   const key = edgeEnv('BA_DD_LLM_API_KEY')
   if (!key) {
-    return {
-      facts: heuristic,
-      modelRan: false,
-      skipReason: 'missing_api_key',
-      claimsReturned: 0,
-      claimsKept: 0,
+    return { analysis: null, modelRan: false, modelId: null, skipReason: 'missing_api_key', usedFallback: false }
+  }
+  const target = llmChatTarget()
+  if (!target) {
+    return { analysis: null, modelRan: false, modelId: null, skipReason: 'missing_model', usedFallback: false }
+  }
+  const deck = numberedText.trim().slice(0, 80_000)
+  if (deck.replace(/\s+/g, ' ').trim().length < 40) {
+    return { analysis: null, modelRan: false, modelId: null, skipReason: 'empty_deck', usedFallback: false }
+  }
+
+  const user = JSON.stringify({
+    company_hint: (hints.companyHint || '').slice(0, 80),
+    round_hint: (hints.roundHint || '').slice(0, 180),
+    deck_text: deck,
+    user_question: 'default full DD',
+  })
+
+  const primary = await runCall(hints, 'model', target.url, target.model, key, SYSTEM_PROMPT, `${SCHEMA_PROMPT}\n\n${user}`)
+  let modelId = target.model
+  let usedFallback = false
+  const reasons: string[] = []
+  let content = ''
+  let repaired = false
+
+  if (!primary.ok) {
+    reasons.push(`primary_${primary.reason}`)
+    if (target.model === FALLBACK_MODEL_ID) {
+      return failed(target.model, reasons)
+    }
+    const backup = await runCall(hints, 'fallback', XAI_CHAT_URL, FALLBACK_MODEL_ID, key, SYSTEM_PROMPT, `${SCHEMA_PROMPT}\n\n${user}`)
+    usedFallback = true
+    modelId = FALLBACK_MODEL_ID
+    if (!backup.ok) return failed(FALLBACK_MODEL_ID, [...reasons, `fallback_${backup.reason}`])
+    content = backup.content
+  } else {
+    content = primary.content
+  }
+
+  let analysis = parseDeckAnalysis(parseModelJson(content))
+  if (!analysis) {
+    const repair = await runCall(
+      hints,
+      'repair',
+      usedFallback || target.url === XAI_CHAT_URL ? XAI_CHAT_URL : target.url,
+      modelId,
+      key,
+      REPAIR_PROMPT,
+      `${SCHEMA_PROMPT}\n\nDeck text:\n${deck.slice(0, 60_000)}\n\nPrevious reply:\n${content.slice(0, 8_000)}`,
+    )
+    repaired = true
+    if (!repair.ok) {
+      reasons.push(`repair_${repair.reason}`)
+      if (!usedFallback && target.model !== FALLBACK_MODEL_ID) {
+        const backup = await runCall(hints, 'fallback', XAI_CHAT_URL, FALLBACK_MODEL_ID, key, SYSTEM_PROMPT, `${SCHEMA_PROMPT}\n\n${user}`)
+        usedFallback = true
+        modelId = FALLBACK_MODEL_ID
+        if (!backup.ok) return failed(FALLBACK_MODEL_ID, [...reasons, `fallback_${backup.reason}`])
+        analysis = parseDeckAnalysis(parseModelJson(backup.content))
+      }
+    } else {
+      analysis = parseDeckAnalysis(parseModelJson(repair.content))
     }
   }
-  try {
-    const parsed = await requestFacts(text, key)
-    if (!parsed) {
-      return {
-        facts: heuristic,
-        modelRan: false,
-        skipReason: 'model_response_unusable',
-        claimsReturned: 0,
-        claimsKept: 0,
-      }
-    }
-    const read = readModelFacts(parsed, text)
-    return {
-      facts: mergeModelFacts(read.facts, heuristic),
-      modelRan: true,
-      skipReason: null,
-      claimsReturned: read.claimsReturned,
-      claimsKept: read.claimsKept,
-    }
-  } catch {
-    return {
-      facts: heuristic,
-      modelRan: false,
-      skipReason: 'model_request_failed',
-      claimsReturned: 0,
-      claimsKept: 0,
-    }
+
+  if (!analysis) return failed(modelId, [...reasons, 'unusable'])
+  if (repaired) reasons.push('repaired')
+  if (usedFallback) reasons.push('fallback')
+  if (analysis.sections_missing.length > 0) reasons.push('partial')
+  return {
+    analysis,
+    modelRan: true,
+    modelId,
+    skipReason: reasons.length ? clipReason(reasons.join(':')) : null,
+    usedFallback,
   }
 }
 
-async function requestFacts(text: string, key: string): Promise<unknown | null> {
-  const target = llmChatTarget()
-  if (!target) return null
-  const response = await fetch(target.url, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${key}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: target.model,
-      temperature: 0,
-      max_tokens: 900,
-      response_format: { type: 'json_object' },
-      messages: [
-        { role: 'system', content: SYSTEM },
-        { role: 'user', content: text.slice(0, 12_000) },
-      ],
-    }),
-    signal: AbortSignal.timeout(12000),
-  })
-  if (!response.ok) return null
-  const body = (await response.json()) as { choices?: { message?: { content?: unknown } }[] }
-  const content = body.choices?.[0]?.message?.content
-  if (typeof content !== 'string') return null
-  return parseModelContent(content)
+function failed(modelId: string, reasons: string[]) {
+  return {
+    analysis: null,
+    modelRan: false,
+    modelId,
+    skipReason: clipReason(reasons.join(':')),
+    usedFallback: reasons.some((reason) => reason.startsWith('fallback')),
+  }
+}
+
+function clipReason(value: string): string {
+  const cleaned = value.replace(/[^\w:.-]+/g, '_').replace(/_+/g, '_').slice(0, 160)
+  return cleaned || 'model_request_failed'
+}
+
+async function runCall(
+  hints: { onStage?: (stage: ModelStage) => Promise<void>; deadlineAt?: number; callTimeoutMs?: number },
+  stage: ModelStage,
+  url: string,
+  model: string,
+  key: string,
+  system: string,
+  user: string,
+): Promise<Attempt> {
+  const left = hints.deadlineAt == null ? ANALYSIS_TIMEOUT_MS : hints.deadlineAt - Date.now()
+  if (left < 5_000) return { ok: false, reason: 'deadline' }
+  await hints.onStage?.(stage)
+  const timeoutMs = Math.min(hints.callTimeoutMs ?? ANALYSIS_TIMEOUT_MS, Math.max(1_000, left - 2_000))
+  return complete(url, model, key, system, user, timeoutMs)
+}
+
+async function complete(url: string, model: string, key: string, system: string, user: string, timeoutMs: number): Promise<Attempt> {
+  const controller = new AbortController()
+  const timer = setTimeout(() => {
+    const error = new Error('timed out')
+    error.name = 'TimeoutError'
+    controller.abort(error)
+  }, timeoutMs)
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${key}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model,
+        temperature: 0,
+        max_tokens: ANALYSIS_MAX_TOKENS,
+        response_format: { type: 'json_object' },
+        messages: [
+          { role: 'system', content: system },
+          { role: 'user', content: user },
+        ],
+      }),
+      signal: controller.signal,
+    })
+    if (!response.ok) return { ok: false, reason: `http_${response.status}` }
+    const body = (await response.json()) as { choices?: { message?: { content?: unknown } }[] }
+    const content = body.choices?.[0]?.message?.content
+    if (typeof content !== 'string' || !content.trim()) return { ok: false, reason: 'empty_content' }
+    return { ok: true, content }
+  } catch (err) {
+    const name = err instanceof Error ? err.name : ''
+    if (name === 'TimeoutError' || name === 'AbortError' || controller.signal.aborted) return { ok: false, reason: 'timeout' }
+    return { ok: false, reason: 'request_failed' }
+  } finally {
+    clearTimeout(timer)
+  }
 }
 
 function llmEndpoint(): URL | null {
@@ -134,13 +289,4 @@ function llmEndpoint(): URL | null {
   }
   if (!parsePublicHttpsUrl(`${endpoint.origin}/`).ok) return null
   return endpoint
-}
-
-function parseModelContent(content: string): unknown | null {
-  const trimmed = content.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '')
-  try {
-    return JSON.parse(trimmed) as unknown
-  } catch {
-    return null
-  }
 }

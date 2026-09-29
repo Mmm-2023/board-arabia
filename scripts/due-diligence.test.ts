@@ -275,6 +275,9 @@ test('desk progress and errors use the member strings', () => {
   assert.equal(deskProgressLine('Writing the note'), DD_COPY.statusWriting)
   assert.equal(deskProgressLine('Queued'), DD_COPY.ctaRunning)
   assert.equal(deskProgressLine('Working'), DD_COPY.statusRunning)
+  assert.equal(deskProgressLine('Asking the model'), 'Asking the model')
+  assert.equal(deskProgressLine('Saving the draft'), 'Saving the draft')
+  assert.equal(presentDeskError(MEMBER_MESSAGES.timedOut), DD_COPY.errorTimeout)
   assert.equal(presentDeskError(MEMBER_MESSAGES.start), DD_COPY.errorStart)
   assert.equal(presentDeskError(MEMBER_MESSAGES.unreadable), DD_COPY.errorUnreadable)
   assert.equal(presentDeskError(MEMBER_MESSAGES.scanned), DD_COPY.errorUnreadable)
@@ -1052,11 +1055,13 @@ test('a stamped cover does not become the company name, and degraded mode stays 
   }
 })
 
-test('xai provider posts an OpenAI-compatible chat request and does not pick a model id', async () => {
+test('xai provider posts a deck draft and does not hardcode the primary model id', async () => {
   const source = readFileSync(path.join(root, 'supabase/functions/due-diligence-start/llm.ts'), 'utf8')
   assert.match(source, /https:\/\/api\.x\.ai\/v1\/chat\/completions/)
   assert.match(source, /Deno\.env\.get\('BA_DD_LLM_PROVIDER'\)/)
-  assert.equal(/grok-\d/i.test(source), false)
+  assert.match(source, /ANALYSIS_TIMEOUT_MS/)
+  assert.match(source, /max_tokens: ANALYSIS_MAX_TOKENS/)
+  assert.equal(source.includes('grok-4.7'), false)
   const unitKey = 'dd-unit-test-token'
   const xai = await captureLlmCall({
     BA_DD_LLM_PROVIDER: 'xai',
@@ -1070,10 +1075,15 @@ test('xai provider posts an OpenAI-compatible chat request and does not pick a m
   assert.equal(xai.calls[0]?.headers['Content-Type'], 'application/json')
   assert.equal(xai.calls[0]?.body.model, 'unit-model-id')
   assert.equal(xai.calls[0]?.body.temperature, 0)
+  assert.equal(xai.calls[0]?.body.max_tokens, 4000)
   assert.equal(xai.calls[0]?.body.response_format?.type, 'json_object')
   assert.equal(xai.calls[0]?.body.messages?.[0]?.role, 'system')
   assert.equal(xai.calls[0]?.body.messages?.[1]?.role, 'user')
-  assert.equal(JSON.stringify(xai.calls[0]?.body).includes('grok-'), false)
+  assert.match(String(xai.calls[0]?.body.messages?.[1]?.content || ''), /Page 1/)
+  assert.equal(JSON.stringify(xai.calls[0]?.body).includes('grok-4.7'), false)
+  assert.equal(xai.result.modelRan, true)
+  assert.equal(xai.result.modelId, 'unit-model-id')
+  assert.equal(xai.result.facts.company, 'Harborline Robotics')
 
   const openai = await captureLlmCall({
     BA_DD_LLM_API_KEY: unitKey,
@@ -1088,17 +1098,58 @@ test('xai provider posts an OpenAI-compatible chat request and does not pick a m
   })
   assert.equal(missingModel.calls.length, 0)
   assert.equal(missingModel.result.modelRan, false)
+  assert.equal(missingModel.result.skipReason, 'missing_model')
+})
+
+const MINIMAL_DRAFT = JSON.stringify({
+  meta: { company: 'Harborline Robotics', document: 'deck', as_of: '2026-09-01', review_type: 'deck_only', disclaimer: 'Document review only.' },
+  snapshot: {
+    one_liner: 'Warehouse robotics sold to example.com customers.',
+    round: { amount: null, equity_pct: null, pre_money: null, post_money: null, currency: '' },
+    stage: 'pilot',
+    posture: 'evidence_required',
+    posture_reason: 'Proof is missing.',
+  },
+  scores: {
+    story_clarity: 3,
+    unit_economics: 2,
+    model_integrity: 3,
+    traction_evidence: 2,
+    team_and_governance: 2,
+    regulatory_and_operations: 2,
+    market_and_competition: 2,
+    use_of_funds: 2,
+    valuation_fit: 2,
+    overall: 2,
+  },
+  claims: [],
+  math_checks: [],
+  unit_economics: {
+    unit: 'site',
+    price: 'not in deck',
+    full_cost: 'not in deck',
+    break_even_volume: 'not in deck',
+    year1_volume_assumption: 'not in deck',
+    year1_vs_breakeven: 'unknown',
+    comment: '',
+  },
+  risks: [],
+  missing: [],
+  questions_for_management: [],
+  suggested_structure: { comment: '', tranches: [] },
+  memo_markdown: 'Verdict: evidence is thin for this example.com pilot.',
 })
 
 type LlmCall = {
   url: string
   method: string
   headers: Record<string, string>
-  body: {
+    body: {
     model?: string
     temperature?: number
+    max_tokens?: number
     response_format?: { type?: string }
-    messages?: { role?: string }[]
+    messages?: { role?: string; content?: string }[]
   }
 }
 
@@ -1121,7 +1172,7 @@ async function captureLlmCall(env: Record<string, string>): Promise<{ calls: Llm
       headers: headerBag,
       body: JSON.parse(String(init?.body || '{}')) as LlmCall['body'],
     })
-    return new Response(JSON.stringify({ choices: [{ message: { content: '{"company":"","sector":"","ask":"","claims":[]}' } }] }), {
+    return new Response(JSON.stringify({ choices: [{ message: { content: MINIMAL_DRAFT } }] }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
     })

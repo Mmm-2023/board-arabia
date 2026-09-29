@@ -14,6 +14,7 @@ import {
 import { REPORT_COPY } from '../../lib/dueDiligenceCopy.ts'
 import { presentNextSteps, visibleNextSteps, type NextStepItem } from '../../lib/dueDiligenceNextSteps.ts'
 import { MEMBER_VIEWS } from '../../shell/viewCopy.ts'
+import { DraftMemoMissing, DueDiligenceMemo } from './DueDiligenceMemo.tsx'
 
 const PILL_CLASS: Record<ClaimVerdict, string> = {
   publicly_consistent: 'dd-pill dd-pill-consistent',
@@ -37,6 +38,43 @@ export function DueDiligenceReport({
   const degraded = report.degraded_notes ?? []
   const compact = isDegradedCompact(report)
   const banner = degradedBannerText(degraded)
+  const analysis = report.analysis ?? null
+
+  if (analysis) {
+    return (
+      <article className="mt-6">
+        {banner ? (
+          <div
+            role="status"
+            data-dd-degraded="true"
+            data-dd-compact="false"
+            className="max-w-3xl rounded-xl border border-[var(--ba-line)] border-s-2 border-s-[var(--ba-copper)] bg-[var(--ba-porcelain)] px-4 py-3"
+          >
+            <p className="text-[0.82rem] font-semibold text-[var(--ba-copper-deep)]">{REPORT_COPY.degradedLabel}</p>
+            <p className="mt-2 text-[1rem] leading-relaxed text-ink">{banner}</p>
+          </div>
+        ) : null}
+        <DueDiligenceMemo analysis={analysis} companyLabel={report.company_label} preparedAt={preparedAt} />
+        <p className="mt-4 max-w-3xl text-[0.95rem] leading-relaxed text-ink/80">{report.disclaimer}</p>
+        <section className="mt-8" aria-labelledby="dd-public">
+          <h2 id="dd-public" className="font-display text-[1.35rem] font-semibold">
+            {REPORT_COPY.sectionPublic}
+          </h2>
+          {report.sources.length === 0 ? (
+            <p className="mt-4 text-[1rem] leading-relaxed text-ink/70">{REPORT_COPY.sourcesEmpty}</p>
+          ) : (
+            <ul className="mt-4 flex flex-col gap-2">
+              {report.sources.map((source) => (
+                <li key={source.url}>
+                  <PublicLink source={source} />
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      </article>
+    )
+  }
 
   return (
     <article className="mt-6">
@@ -76,6 +114,7 @@ export function DueDiligenceReport({
 
       {compact ? (
         <>
+          <DraftMemoMissing />
           <DeckSummary claims={report.claims} />
           <NextSteps reportId={reportId} items={checklist.items} closingNote={checklist.closingNote} />
         </>
