@@ -14,15 +14,13 @@ export function FaqList({
       <div className="mx-auto max-w-3xl px-5 md:px-10">
         <Eyebrow>Answers</Eyebrow>
         <DisplayHeading id="faq-heading">{heading}</DisplayHeading>
-        <div className="mt-12 border-t border-ink/10">
+        <div className="mt-8 border-t border-ink/10 md:mt-12">
           {items.map((item) => (
-            <article key={item.question} className="border-b border-ink/10 py-8">
-              <h3 className="font-display text-[1.35rem] font-semibold tracking-[-0.03em] text-ink">
+            <details key={item.question} className="border-b border-ink/10 py-3 md:py-8">
+              <summary className="cursor-pointer font-display text-[1.05rem] font-semibold tracking-[-0.02em] text-ink md:text-[1.35rem]">
                 {item.question}
-              </h3>
-              <p className="mt-3 text-[1.05rem] leading-relaxed text-ink/70">
-                {item.answer}
-              </p>
+              </summary>
+              <p className="mt-3 text-[1rem] leading-relaxed text-ink/70">{item.answer}</p>
               {item.to && item.toLabel && (
                 <Link
                   to={item.to}
@@ -31,7 +29,7 @@ export function FaqList({
                   {item.toLabel}
                 </Link>
               )}
-            </article>
+            </details>
           ))}
         </div>
       </div>

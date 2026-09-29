@@ -51,8 +51,7 @@ export function CreateRoomForm({
 
   return (
     <form data-deal-create="" onSubmit={submit} className="max-w-xl" noValidate>
-      <p className="text-[0.72rem] font-semibold tracking-[0.14em] text-brass uppercase">Rooms</p>
-      <h1 className="mt-3 font-display text-[2.2rem] font-bold tracking-[-0.03em] text-balance">
+      <h1 className="font-display text-[2.2rem] font-bold tracking-[-0.03em] text-balance">
         Create a room
       </h1>
       <p className="mt-3 text-[1rem] leading-relaxed text-ink/65">{DEAL_COPY.createIntro}</p>
@@ -189,7 +188,7 @@ export function CreateRoomForm({
           {busy ? 'Creating…' : 'Create room'}
         </button>
         <Link
-          to="/dashboard/rooms"
+          to="/dashboard/deals/rooms"
           className="inline-flex min-h-11 items-center border border-[var(--ba-line)] bg-white px-4 text-[0.75rem] font-semibold tracking-[0.08em] text-ink uppercase"
         >
           Cancel
@@ -211,8 +210,8 @@ function Radio({
   onChange: () => void
 }) {
   return (
-    <label className="flex min-h-11 items-center gap-3 text-[1rem] text-ink">
-      <input type="radio" name={name} checked={checked} onChange={onChange} />
+    <label className="flex min-h-11 items-center gap-3 rounded-lg border border-[var(--ba-line)] bg-white px-3 text-[0.8125rem] text-ink">
+      <input type="radio" name={name} checked={checked} onChange={onChange} className="h-5 w-5 shrink-0" />
       {label}
     </label>
   )

@@ -236,7 +236,7 @@ export function ProfilePage({ preview }: { preview?: { src: string | null } }) {
           {member.seat === 'sponsor' && <SponsorBadge />}
         </div>
         <p className="text-[1.02rem] leading-relaxed text-ink/60">
-          Visible to you. The directory is not open, and this page does not publish a profile.
+          Admitted members see your directory card. Keep these details current.
         </p>
         <p className="text-[0.92rem] text-ink/45">{email}</p>
       </div>

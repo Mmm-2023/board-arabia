@@ -13,49 +13,55 @@ test('desktop sidebar and mobile tabs share the locked destinations', async () =
       renderMemberShell: () => string
       renderStaffShell: () => string
     }
-    assertChrome(
-      mod.renderMemberShell(),
-      ['Home', 'Directory', 'Mandates', 'Real Estate', 'Network', 'Profile'],
-      'Switch to admin',
-    )
+    const memberLabels = ['Home', 'Deals', 'People', 'Majlis', 'AI tools']
+    assertMemberChrome(mod.renderMemberShell(), memberLabels)
     assertChrome(mod.renderStaffShell(), ['Home', 'Applications', 'People', 'Capacity', 'Settings'], 'Switch to member')
-    const sheet = mod.renderMemberShell(true)
-    const more = sheet.slice(sheet.indexOf('id="shell-more"'))
-    const order = ['AI Due Diligence', 'Majlis', 'Rooms', 'Help', 'Sign out']
-    let cursor = 0
-    for (const label of order) {
-      const at = more.indexOf(label, cursor)
-      assert.ok(at > cursor, `${label} should follow the previous More row`)
-      cursor = at + label.length
-    }
-    for (const tab of ['Home', 'Directory', 'Mandates', 'Real Estate', 'Network', 'Profile']) {
-      assert.equal(more.includes(`data-destination="${tab}"`), false, tab)
-    }
-    assert.match(sheet, /min-h-11 min-w-11/)
-    assert.match(sheet, /aria-label="More"/)
-    assert.match(sheet, /data-nav="sign-out"/)
-    assert.match(sheet, /md:hidden/)
-    assert.match(sheet, /hidden min-h-11 items-center px-2[^"]*md:inline-flex/)
+    const account = mod.renderMemberShell(true)
+    assert.match(account, /id="shell-account"/)
+    assert.match(account, /aria-label="Account"/)
+    assert.match(account, />Profile</)
+    assert.match(account, />Help</)
+    assert.match(account, /Switch to admin/)
+    assert.match(account, /data-nav="sign-out"/)
+    assert.equal(account.includes('aria-label="More"'), false)
+    assert.equal(account.includes('Updated '), false)
     const home = mod.renderMemberShell()
     const bar = tabBar(home)
-    assert.match(bar, /data-nav="more"/)
-    assert.match(bar, /data-more-current="false"/)
-    assert.match(bar, /grid-cols-7/)
-    assert.equal((bar.match(/data-nav="primary"/g) || []).length, 6)
+    assert.equal(bar.includes('data-nav="more"'), false)
+    assert.match(bar, /grid-cols-5/)
+    assert.equal((bar.match(/data-nav="primary"/g) || []).length, 5)
     assert.match(tabBar(mod.renderStaffShell()), /grid-cols-6/)
     assert.equal(header(home).includes('aria-label="More"'), false)
-    const due = mod.renderMemberShell(false, '/dashboard/due-diligence')
-    assert.match(tabBar(due), /data-more-current="true"/)
-    const dueOpen = mod.renderMemberShell(true, '/dashboard/due-diligence')
-    assert.doesNotMatch(dueOpen, /AI Due Diligence, Majlis, Rooms, Help/)
-    assert.match(dueOpen, /Updated /)
-    assert.match(tabBar(dueOpen), /data-more-current="true"/)
-    const nested = mod.renderMemberShell(false, '/dashboard/due-diligence/11111111-1111-4111-8111-111111111111')
-    assert.match(tabBar(nested), /data-more-current="true"/)
+    assert.equal(header(home).includes('Sign out'), false)
+    const ai = mod.renderMemberShell(false, '/dashboard/ai/due-diligence')
+    assert.match(ai, /data-destination="AI tools"/)
+    assert.match(header(ai), /AI tools/)
+    const profile = mod.renderMemberShell(false, '/dashboard/profile')
+    assert.match(header(profile), /Profile/)
+    assert.match(profile, /ring-2/)
+    const badge = mod.renderMemberShell(false, '/dashboard/deals/badge')
+    assert.match(badge, /Deals, 2 invitations waiting/)
   } finally {
     await vite.close()
   }
 })
+
+function assertMemberChrome(html: string, labels: string[]) {
+  for (const label of labels) {
+    const hits = html.split(`data-destination="${label}"`).length - 1
+    assert.equal(hits, 2, `${label} should be in the sidebar and the tab bar`)
+  }
+  assert.match(html, /aria-label="Primary"/)
+  assert.match(html, /md:hidden/)
+  assert.match(html, /md:flex/)
+  assert.match(html, /shell-safe-top/)
+  assert.match(html, /shell-safe-bottom/)
+  assert.equal(html.includes('Updated '), false)
+  assert.equal(html.includes('aria-label="More"'), false)
+  assert.equal(html.includes('\u2014'), false)
+  assert.equal((html.match(/data-nav="primary"/g) || []).length, labels.length * 2)
+  assert.equal(html.includes('data-destination="Network"'), false)
+}
 
 function assertChrome(html: string, labels: string[], roleSwitch: string) {
   for (const label of labels) {

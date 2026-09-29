@@ -164,7 +164,7 @@ const ACTIVITY_LABELS = new Set([
   'Majlis waitlist',
   'Majlis you are hosting',
 ])
-const ACTIVITY_HREF = /^\/dashboard\/(?:mandates|majlis)(?:\?event=[0-9a-f-]{36})?$/
+const ACTIVITY_HREF = /^\/dashboard\/(?:deals\/mandates|mandates|majlis)(?:\?event=[0-9a-f-]{36})?$/
 const LEAK_KEYS = [
   'email',
   'contact_email',
@@ -232,7 +232,7 @@ export function primaryHomeCta(input: CtaInput): HomeCta | null {
     }
   }
   if (input.pendingIntros != null && input.pendingIntros > 0) {
-    return { id: 'intro', label: 'Review intro', to: '/dashboard/mandates' }
+    return { id: 'intro', label: 'Review intro', to: '/dashboard/deals/mandates' }
   }
   if (input.canRegisterMajlis && input.openMajlisId) {
     return {
@@ -242,11 +242,11 @@ export function primaryHomeCta(input: CtaInput): HomeCta | null {
     }
   }
   if (input.newMandates != null && input.newMandates > 0) {
-    return { id: 'mandate', label: 'New mandate', to: '/dashboard/mandates' }
+    return { id: 'mandate', label: 'New mandate', to: '/dashboard/deals/mandates' }
   }
   const invites = normalizeCount(input.invitesRemaining)
   if (input.founding && invites > 0) {
-    return { id: 'invite', label: 'Invite peer', to: '/dashboard/network' }
+    return { id: 'invite', label: 'Invite peer', to: '/dashboard/people/invites' }
   }
   return null
 }
@@ -297,7 +297,7 @@ export function buildHeadlines(input: {
   if (input.founding) {
     const left = normalizeCount(input.invitesRemaining)
     if (left > 0) {
-      push(pulseHeadline('vouchers', 'Vouchers left', left, false))
+      push(pulseHeadline('vouchers', 'Invites left', left, false))
     }
   }
 
@@ -390,7 +390,7 @@ export function presentHomeActivity(raw: unknown): HomeActivity | null {
     label,
     detail,
     happenedAt,
-    href,
+    href: href.replace('/dashboard/mandates', '/dashboard/deals/mandates'),
     example: row.is_demo === true,
   }
 }
@@ -618,7 +618,14 @@ function pulseHeadline(
     label,
     value: String(count),
     body: pulseBody(id, example),
-    to: id === 'vouchers' ? '/dashboard/network' : id === 'rooms' ? '/dashboard/rooms' : id === 'directory' ? '/dashboard/directory' : '/dashboard/mandates',
+    to:
+      id === 'vouchers'
+        ? '/dashboard/people/invites'
+        : id === 'rooms'
+          ? '/dashboard/deals/rooms'
+          : id === 'directory'
+            ? '/dashboard/people/directory'
+            : '/dashboard/deals/mandates',
     example,
   }
 }

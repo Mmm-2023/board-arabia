@@ -30,7 +30,7 @@ export function RoomsPage() {
   const [mine, setMine] = useState<MineState>({ status: 'loading' })
   const [adminAttempt, setAdminAttempt] = useState(0)
   const [mineAttempt, setMineAttempt] = useState(0)
-  useNoIndex('Rooms | Board Arabia')
+  useNoIndex('Deal rooms | Board Arabia')
 
   useEffect(() => {
     let cancelled = false
@@ -65,12 +65,11 @@ export function RoomsPage() {
 
   return (
     <div className="max-w-3xl">
-      <p className="text-[0.72rem] font-semibold tracking-[0.14em] text-brass uppercase">Rooms</p>
-      <h1 className="mt-3 font-display text-[2.2rem] font-bold tracking-[-0.03em]">Rooms</h1>
+      <h1 className="font-display text-[2.2rem] font-bold tracking-[-0.03em]">Deal rooms</h1>
       <p className="mt-3 max-w-xl text-[1rem] leading-relaxed text-ink/65">{DEAL_COPY.yourRoomsIntro}</p>
       {canCreate ? (
         <Link
-          to="/dashboard/rooms/new"
+          to="/dashboard/deals/rooms/new"
           className="ba-primary mt-5 inline-flex min-h-11 items-center px-4 text-[0.75rem] font-semibold tracking-[0.08em] uppercase"
         >
           {MEMBER_VIEWS.rooms.emptyCta}

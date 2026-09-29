@@ -126,7 +126,7 @@ function InviteControl({ ctas, prominent }: { ctas: DirectoryCtas; prominent: bo
     <div className="w-full lg:w-auto">
       {ctas.invite.type === 'link' ? (
         <Link
-          to="/dashboard/invites"
+          to="/dashboard/people/invites"
           className={className}
           aria-describedby="directory-invite-help"
         >

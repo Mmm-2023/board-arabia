@@ -13,6 +13,7 @@ function renderShell(
   roleSwitch: { label: string; to: string } | null,
   initialMoreOpen = false,
   path?: string,
+  initialAccountOpen = false,
 ) {
   const destinations = tone === 'member' ? MEMBER_DESTINATIONS : STAFF_DESTINATIONS
   const secondary = tone === 'member' ? MEMBER_SECONDARY : STAFF_SECONDARY
@@ -22,11 +23,14 @@ function renderShell(
         tone={tone}
         destinations={destinations}
         secondary={secondary}
-        updatedLabel="Updated 09:00"
+        updatedLabel={tone === 'staff' ? 'Updated 09:00' : null}
         roleSwitch={roleSwitch}
         onSignOut={() => {}}
         accountLabel={tone === 'member' ? 'member@example.com' : 'staff@example.com'}
+        accountName={tone === 'member' ? 'Member name' : ''}
         initialMoreOpen={initialMoreOpen}
+        initialAccountOpen={initialAccountOpen}
+        dealsBadge={tone === 'member' && path?.includes('badge') ? 2 : 0}
       >
         <p>Shell body</p>
       </AppShell>
@@ -34,8 +38,8 @@ function renderShell(
   )
 }
 
-export function renderMemberShell(initialMoreOpen = false, path?: string) {
-  return renderShell('member', { label: 'Switch to admin', to: '/admin' }, initialMoreOpen, path)
+export function renderMemberShell(initialAccountOpen = false, path?: string) {
+  return renderShell('member', { label: 'Switch to admin', to: '/admin' }, false, path, initialAccountOpen)
 }
 
 export function renderStaffShell() {

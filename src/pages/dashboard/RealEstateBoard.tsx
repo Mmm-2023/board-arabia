@@ -91,12 +91,11 @@ export function RealEstateBoard({
 
   return (
     <div className="max-w-3xl">
-      <p className="text-[0.72rem] font-semibold tracking-[0.14em] text-brass uppercase">Real Estate</p>
-      <h1 className="mt-3 font-display text-[2.2rem] font-bold tracking-[-0.03em]">Real Estate</h1>
+      <h1 className="font-display text-[2.2rem] font-bold tracking-[-0.03em]">Real estate</h1>
       <p className="mt-3 max-w-xl text-[1rem] leading-relaxed text-ink/60">
         {activeTab === 'partners' ? copy.partnersIntro : copy.intro}
       </p>
-      <div role="tablist" aria-label="Real Estate" className="mt-8 flex gap-6 border-b border-[var(--ba-line)]" onKeyDown={onTabKey}>
+      <div role="tablist" aria-label="Real estate" className="mt-6 inline-flex flex-wrap gap-2" onKeyDown={onTabKey}>
         {TABS.map((item) => {
           const selected = activeTab === item.id
           const tabId = item.id === 'opportunities' ? 're-tab-opportunities' : 're-tab-partners'
@@ -111,8 +110,10 @@ export function RealEstateBoard({
               aria-controls={panelId}
               tabIndex={selected ? 0 : -1}
               data-re-tab={item.id}
-              className={`min-h-11 border-b-2 px-1 text-[0.95rem] font-semibold ${
-                selected ? 'border-[var(--ba-indigo)] text-ink' : 'border-transparent text-ink/55'
+              className={`min-h-11 rounded-full px-4 text-[0.8125rem] font-semibold ${
+                selected
+                  ? 'bg-[var(--ba-lavender-mist)] text-ink'
+                  : 'border border-[var(--ba-line)] bg-white text-ink/70'
               }`}
               onClick={() => selectTab(item.id)}
             >

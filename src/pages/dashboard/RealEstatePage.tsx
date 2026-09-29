@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import {
   fetchReOpportunities,
   fetchRePartners,
@@ -24,7 +25,14 @@ type PartnerState =
 export function RealEstatePage() {
   const [list, setList] = useState<OpportunityState>({ status: 'loading' })
   const [partners, setPartners] = useState<PartnerState>({ status: 'loading' })
-  const [tab, setTab] = useState<RealEstateTab>('opportunities')
+  const [params, setParams] = useSearchParams()
+  const tab: RealEstateTab = params.get('view') === 'partners' ? 'partners' : 'opportunities'
+  function selectTab(next: RealEstateTab) {
+    const nextParams = new URLSearchParams(params)
+    if (next === 'partners') nextParams.set('view', 'partners')
+    else nextParams.delete('view')
+    setParams(nextParams, { replace: true })
+  }
   const [attempt, setAttempt] = useState(0)
   const [partnerAttempt, setPartnerAttempt] = useState(0)
   const [busyId, setBusyId] = useState<string | null>(null)
@@ -111,7 +119,7 @@ export function RealEstatePage() {
       }}
       onRequest={(id) => void onRequest(id)}
       tab={tab}
-      onTab={setTab}
+      onTab={selectTab}
       partners={partners.status === 'ready' ? partners.cards : []}
       partnersStatus={partnersStatus}
       partnerBusyId={partnerBusyId}

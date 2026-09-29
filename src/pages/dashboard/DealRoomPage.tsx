@@ -244,7 +244,7 @@ export function DealRoomPage() {
 function Back() {
   return (
     <Link
-      to="/dashboard/rooms"
+      to="/dashboard/deals/rooms"
       className="mt-4 inline-flex min-h-11 items-center text-[0.75rem] font-semibold tracking-[0.08em] text-brass uppercase"
     >
       Rooms

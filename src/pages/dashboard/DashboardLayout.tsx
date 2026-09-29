@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Navigate, Outlet } from 'react-router-dom'
 import { isStaffRole, showRoleSwitch } from '../../../supabase/functions/_shared/staff_auth.ts'
+import { fetchMyDealRooms } from '../../lib/dealRoomApi'
+import { pendingInvites } from '../../lib/dealRoomView'
 import { AppShell } from '../../shell/AppShell'
-import { MEMBER_DESTINATIONS, MEMBER_SECONDARY, formatUpdated } from '../../shell/destinations'
-import { PermissionState } from '../../shell/ViewState'
+import { MEMBER_ACCOUNT, MEMBER_DESTINATIONS, staleBanner } from '../../shell/destinations'
+import { HomeSkeleton, PermissionState } from '../../shell/ViewState'
 import { REFRESH_ERROR } from '../../shell/viewCopy'
 import { endAuthSession } from '../../lib/endSession'
 import { supabase } from '../../lib/supabase'
@@ -41,6 +43,8 @@ export function DashboardLayout() {
   const [refreshError, setRefreshError] = useState('')
   const [refreshing, setRefreshing] = useState(false)
   const [updatedAt, setUpdatedAt] = useState<Date | null>(null)
+  const seenAt = useRef<Date | null>(null)
+  const [dealsBadge, setDealsBadge] = useState(0)
   const loadSeq = useRef(0)
   const loadRef = useRef<() => Promise<void>>(async () => {})
   const readyRef = useRef<MemberRoom | null>(null)
@@ -64,32 +68,33 @@ export function DashboardLayout() {
       setGate({ status: 'signed_out' })
       return
     }
-    const { data, error } = await supabase.auth.getUser()
+    const sessionUserId = sessionData.session.user.id
+    const [userRes, staffRes, memberRes, loaded] = await Promise.all([
+      supabase.auth.getUser(),
+      supabase.from('staff_users').select('role').eq('user_id', sessionUserId).maybeSingle(),
+      supabase
+        .from('members')
+        .select('user_id, email, seat, status, must_set_password, invites_remaining, invites_granted')
+        .eq('user_id', sessionUserId)
+        .maybeSingle(),
+      loadOwnProfile(sessionUserId),
+    ])
     if (seq !== loadSeq.current) return
-    const user = data.user
-    if (error || !user) {
+    const user = userRes.data.user
+    if (userRes.error || !user) {
       setRefreshing(false)
       if (readyRef.current) {
-        setRefreshError(REFRESH_ERROR)
+        setRefreshError(seenAt.current ? staleBanner(seenAt.current) : REFRESH_ERROR)
         return
       }
       setGate({ status: 'signed_out' })
       return
     }
 
-    const [staffRes, memberRes] = await Promise.all([
-      supabase.from('staff_users').select('role').eq('user_id', user.id).maybeSingle(),
-      supabase
-        .from('members')
-        .select('user_id, email, seat, status, must_set_password, invites_remaining, invites_granted')
-        .eq('user_id', user.id)
-        .maybeSingle(),
-    ])
-
     if (seq !== loadSeq.current) return
     if (memberRes.error && readyRef.current) {
       setRefreshing(false)
-      setRefreshError(REFRESH_ERROR)
+      setRefreshError(seenAt.current ? staleBanner(seenAt.current) : REFRESH_ERROR)
       return
     }
 
@@ -116,12 +121,9 @@ export function DashboardLayout() {
       return
     }
 
-    const loaded = await loadOwnProfile(user.id)
-
-    if (seq !== loadSeq.current) return
     if (loaded.error && readyRef.current) {
       setRefreshing(false)
-      setRefreshError(REFRESH_ERROR)
+      setRefreshError(seenAt.current ? staleBanner(seenAt.current) : REFRESH_ERROR)
       return
     }
 
@@ -137,7 +139,9 @@ export function DashboardLayout() {
     }
     readyRef.current = room
     setRefreshError('')
-    setUpdatedAt(new Date())
+    const now = new Date()
+    seenAt.current = now
+    setUpdatedAt(now)
     setRefreshing(false)
     setGate({ status: 'ready', room })
   }, [])
@@ -155,6 +159,18 @@ export function DashboardLayout() {
     })
     return () => sub.subscription.unsubscribe()
   }, [load])
+
+  useEffect(() => {
+    if (gate.status !== 'ready') return
+    let cancelled = false
+    void fetchMyDealRooms().then((result) => {
+      if (cancelled) return
+      setDealsBadge(result.status === 'ready' ? pendingInvites(result.rows).length : 0)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [gate.status])
 
   async function onSignOut() {
     if (signingOut.current) return
@@ -177,9 +193,17 @@ export function DashboardLayout() {
 
   if (gate.status === 'loading') {
     return (
-      <div className="shell-safe-top shell-safe-x flex min-h-dvh items-center justify-center bg-pearl text-ink">
-        <p className="text-ink/50">Loading…</p>
-      </div>
+      <AppShell
+        tone="member"
+        destinations={MEMBER_DESTINATIONS}
+        secondary={MEMBER_ACCOUNT}
+        updatedLabel={null}
+        roleSwitch={null}
+        onSignOut={() => {}}
+        accountLabel=""
+      >
+        <HomeSkeleton tone="member" cards={2} />
+      </AppShell>
     )
   }
 
@@ -231,8 +255,9 @@ export function DashboardLayout() {
         <AppShell
           tone="member"
           destinations={MEMBER_DESTINATIONS}
-          secondary={MEMBER_SECONDARY}
-          updatedLabel={formatUpdated(updatedAt)}
+          secondary={MEMBER_ACCOUNT}
+          updatedLabel={null}
+          dealsBadge={dealsBadge}
           roleSwitch={
             showRoleSwitch(gate.room.staffRole, gate.room.member.status).toAdmin
               ? { label: 'Switch to admin', to: '/admin' }
@@ -240,7 +265,8 @@ export function DashboardLayout() {
           }
           onSignOut={() => void onSignOut()}
           accountLabel={gate.room.email}
-          accountMark={<OwnAvatar />}
+          accountName={gate.room.profile?.full_name?.trim() || 'Member'}
+          accountMark={<OwnAvatar decorative />}
         >
           <Outlet />
         </AppShell>

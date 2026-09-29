@@ -28,8 +28,8 @@
   --ba-warn: #c48a2a;
   --ba-error: #a33b3b;
   --ba-info: #4b3f9a;
-  /* Icon + label row, including a two-line label. Safe area is added on the bar. */
-  --ba-tab-bar-height: 4.75rem;
+  /* Five tabs: 24px icon, 12px label, 56px bar. Safe area is added on the bar. */
+  --ba-tab-bar-height: 3.5rem;
 }
 
 @theme {
@@ -279,6 +279,135 @@
 .dd-focus:focus-visible {
   outline: 2px solid var(--ba-indigo);
   outline-offset: 3px;
+}
+
+/* Member phone type: 13px floor. 12px only on tab labels and data-chip badges. */
+@media (max-width: 767px) {
+  .shell-tone-member .shell-main,
+  .shell-tone-member .account-sheet {
+    font-size: 0.8125rem;
+  }
+
+  .shell-tone-member .shell-main :where(
+    .text-\[0\.65rem\],
+    .text-\[0\.68rem\],
+    .text-\[0\.7rem\],
+    .text-\[0\.72rem\],
+    .text-\[0\.75rem\],
+    .text-\[0\.78rem\],
+    .text-\[0\.8rem\],
+    .text-\[0\.82rem\]
+  ):not([data-chip]) {
+    font-size: 0.8125rem !important;
+  }
+
+  .shell-tone-member .shell-main .uppercase:not([data-chip]),
+  .shell-tone-member .account-sheet .uppercase:not([data-chip]) {
+    text-transform: none;
+    letter-spacing: 0;
+  }
+}
+
+/* Landing length on a phone, without changing the approved copy. */
+@media (max-width: 767px) {
+  #top,
+  #top > .relative {
+    min-height: 0 !important;
+  }
+
+  #top > .relative {
+    padding-top: 4.5rem;
+    padding-bottom: 0.75rem;
+  }
+
+  body:has(#top) main > section,
+  body:has(#top) #totals > div,
+  body:has(#top) #founding > div > div {
+    padding-top: 0.65rem !important;
+    padding-bottom: 0.65rem !important;
+  }
+
+  body:has(#top) #tools ul,
+  body:has(#top) #process ol,
+  body:has(#top) #why ol,
+  body:has(#top) #totals ul,
+  body:has(#top) #trusted-partners ul,
+  body:has(#top) #partners ul {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+    margin-top: 0.65rem;
+  }
+
+  body:has(#top) #tools ul {
+    grid-template-columns: 1fr 1fr 1fr;
+  }
+
+  body:has(#top) #tools a {
+    padding: 0.55rem !important;
+  }
+
+  body:has(#top) #tools h3,
+  body:has(#top) #why h3,
+  body:has(#top) #process h3 {
+    font-size: 1rem !important;
+    margin-top: 0.25rem !important;
+  }
+
+  body:has(#top) #trusted-partners li {
+    height: auto;
+    min-height: 0;
+  }
+
+  body:has(#top) main h2,
+  body:has(#top) #totals p[id] {
+    font-size: 1.45rem !important;
+    line-height: 1.15 !important;
+  }
+
+  body:has(#top) #tools p,
+  body:has(#top) #why li p,
+  body:has(#top) #process li p,
+  body:has(#top) #partners li p,
+  body:has(#top) #trust p,
+  body:has(#top) #founding p {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+  }
+
+  body:has(#top) #tools p {
+    -webkit-line-clamp: 1;
+  }
+
+  body:has(#top) #founding .font-extrabold {
+    font-size: 2.4rem !important;
+  }
+
+  body:has(#top) #founding .py-14,
+  body:has(#top) #founding .py-20 {
+    padding-top: 0.7rem !important;
+    padding-bottom: 0.7rem !important;
+  }
+
+  body:has(#top) #founding .grid.h-full {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  body:has(#top) #top h1 {
+    font-size: 2.15rem !important;
+  }
+
+  body:has(#top) footer .grid {
+    gap: 0.75rem;
+    padding-top: 0.75rem !important;
+    padding-bottom: 0.75rem !important;
+  }
+
+  body:has(#top) #trusted-partners [aria-busy] li {
+    height: 3.25rem !important;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
