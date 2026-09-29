@@ -45,3 +45,20 @@ verify_jwt = true
 # verify_jwt stays off so the anon key is not a credential. An unset secret rejects every call.
 [functions.remind-member-invites]
 verify_jwt = false
+
+# Member deal rooms. The anon key alone is not enough.
+# Each function also checks an active member, or staff for the staff function.
+[functions.deal-room-create]
+verify_jwt = true
+
+[functions.deal-room-invite]
+verify_jwt = true
+
+[functions.deal-room-respond]
+verify_jwt = true
+
+[functions.deal-room-manage]
+verify_jwt = true
+
+[functions.deal-room-staff]
+verify_jwt = true
