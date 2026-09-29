@@ -2,6 +2,12 @@ import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1
 import { requireStaff } from '../_shared/require_staff.ts'
 import { issueCredential, type Issued } from '../_shared/credentials.ts'
 import { deliverAdmitShare } from '../_shared/admit_share.ts'
+import {
+  admitLiShareEmailEnabled,
+  firstName,
+  sendDedicatedAdmitShare,
+  shareSeat,
+} from '../_shared/admit_li_share.ts'
 import { admitMail } from '../_shared/transactional_copy.ts'
 import { corsHeaders, jsonResponse, logEmailEvent, publicSite, sendEmail } from './mail.ts'
 
@@ -163,20 +169,59 @@ Deno.serve(async (req) => {
     return jsonResponse(req, { error: sent.detail || 'Email failed' }, 502)
   }
 
-  const share = await deliverAdmitShare(
-    {
-      to: email,
-      memberName: fullName || 'there',
-      tier: 'Founding Member',
-      headline: firstLine(app.job_titles),
-      company: firstLine(app.companies),
-      dashboardUrl: `${site}/dashboard`,
-    },
-    (message) => sendEmail(message),
-  )
+  // Flag off keeps the existing share letter. Flag on sends the dedicated letter once.
+  const dedicatedShare = admitLiShareEmailEnabled()
+  const seatShare = shareSeat(seat)
+  let share: { status: string; subject: string; detail: string | null }
+  if (!dedicatedShare) {
+    share = await deliverAdmitShare(
+      {
+        to: email,
+        memberName: fullName || 'there',
+        tier: 'Founding Member',
+        headline: firstLine(app.job_titles),
+        company: firstLine(app.companies),
+        dashboardUrl: `${site}/dashboard`,
+      },
+      (message) => sendEmail(message),
+    )
+  } else {
+    try {
+      share = await sendDedicatedAdmitShare({
+        enabled: true,
+        to: email,
+        firstName: firstName(fullName),
+        seatLabel: seatShare.seatLabel,
+        founding: seatShare.founding,
+        headline: firstLine(app.job_titles),
+        company: firstLine(app.companies),
+        dashboardUrl: `${site}/dashboard`,
+        clickBase: `${Deno.env.get('SUPABASE_URL') ?? ''}/functions/v1`,
+        claim: async (input) => {
+          const { data, error: claimError } = await admin.rpc('claim_admit_li_share_send', {
+            p_user_id: issued.userId,
+            p_application_id: app.id,
+            p_token: input.token,
+            p_seat_label: input.seatLabel,
+            p_post_text: input.postText,
+          })
+          if (claimError || !data || typeof data !== 'object') return null
+          const row = data as { token?: unknown; post_text?: unknown }
+          if (typeof row.token !== 'string' || typeof row.post_text !== 'string') return null
+          return { token: row.token, postText: row.post_text }
+        },
+        release: async () => {
+          await admin.rpc('release_admit_li_share_send', { p_user_id: issued.userId })
+        },
+        send: (message) => sendEmail(message),
+      })
+    } catch {
+      share = { status: 'error', subject: 'Board Arabia LinkedIn draft', detail: 'Share email failed' }
+    }
+  }
   await logEmailEvent(admin, {
     application_id: app.id,
-    kind: 'admit_linkedin_share',
+    kind: dedicatedShare ? 'admit_li_share' : 'admit_linkedin_share',
     recipient: email,
     subject: share.subject,
     status: share.status,

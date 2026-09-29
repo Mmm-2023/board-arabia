@@ -16,6 +16,7 @@ export function HomeSnapshotView({
   attentionLead = null,
   figuresAsOf = null,
   userId = 'member',
+  shareSlot = null,
 }: {
   model: HomeModel
   onRetry?: () => void
@@ -25,6 +26,7 @@ export function HomeSnapshotView({
   attentionLead?: ReactNode
   figuresAsOf?: string | null
   userId?: string
+  shareSlot?: ReactNode
 }) {
   const pulseVisible = model.pulse.length > 0 || model.majlis != null
   const nextAction = model.cta && !model.cta.to.includes('#password') ? model.cta : null
@@ -116,6 +118,7 @@ export function HomeSnapshotView({
           ) : (
             <p className={`mt-3 max-w-xl text-[1rem] ${styles.muted}`}>Nothing needs you right now.</p>
           )}
+          {shareSlot ? <div className="mt-4">{shareSlot}</div> : null}
         </section>
       ) : null}
 

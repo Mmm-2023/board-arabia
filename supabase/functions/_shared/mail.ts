@@ -74,6 +74,7 @@ export const BOARD_SIGNOFF = 'Board Arabia'
 
 const BOARD_FOOTER_HTML = /<footer>\s*Board Arabia\s*<\/footer>\s*$/
 const COHORT_FOOTER = 'Board Arabia · Private founding cohort'
+const MEMBERSHIP_FOOTER = 'Board Arabia. Private founding membership by review.'
 
 const MARKETING_SIGNATURE = [
   [/director of partner/i, 'job title'],
@@ -99,7 +100,9 @@ export function boardMail(textBody: string, htmlBody: string): { text: string; h
 export function hasBoardFooter(text: string, html: string): boolean {
   if (text.trimEnd().endsWith(BOARD_SIGNOFF) && BOARD_FOOTER_HTML.test(html)) return true
   // Locked invite and admit letters close with the cohort line instead of a second sign-off.
-  return text.includes(COHORT_FOOTER) && html.includes(COHORT_FOOTER)
+  if (text.includes(COHORT_FOOTER) && html.includes(COHORT_FOOTER)) return true
+  // Admitted-member LinkedIn share letter. Locked 29 Sep 2026 footer.
+  return text.includes(MEMBERSHIP_FOOTER) && html.includes(MEMBERSHIP_FOOTER)
 }
 
 /** A footer with no letter is not a message. */
