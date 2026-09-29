@@ -218,7 +218,9 @@ Proof build: `VITE_BASE_PATH=/ npm run build` writes `dist/CNAME`, `dist/dashboa
 
 ## Public platform totals
 
-The home page reads one aggregate row, `platform_stats`. It does not read members, profiles, or applications. Money figures stay null until five verified, opted-in admitted members contribute to that metric. Five to nine contributors round to the nearest $5m. Ten or more round to the nearest $1m. Seat counts can show earlier, including zero. The page does not invent a dollar total.
+The home page reads one aggregate row, `platform_stats`. It does not read members, profiles, or applications. The stored money columns stay null until five verified, opted-in admitted members contribute to that metric. Five to nine contributors round to the nearest $5m. Ten or more round to the nearest $1m. Seat counts can show earlier, including zero.
+
+The public money figures display the greater of that published sum and a quiet floor. Floors live only on `public.demo_thresholds` (`floor_investment_usd`, `floor_fo_aum_usd`, `floor_turnover_usd`). When the published sum is larger, that sum shows. The page does not label the floor. Founding seats stay the live count. Apply `supabase/migrations/20260929143000_landing_preview_and_floors.sql` on the live project before `landing_platform_totals` exists. Until then the site uses the same default amounts in `src/lib/platformFloors.ts`. No Edge function redeploy.
 
 Apply this on Supabase project `iirqbizwanyhgkhanntq` before the new Edge Function code is deployed. Supabase Dashboard → SQL Editor → paste and run:
 

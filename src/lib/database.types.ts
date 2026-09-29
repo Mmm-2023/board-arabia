@@ -609,6 +609,14 @@ export type Database = {
         Args: Record<string, never>
         Returns: Json
       }
+      list_landing_preview_deals: {
+        Args: Record<string, never>
+        Returns: Json
+      }
+      landing_platform_totals: {
+        Args: Record<string, never>
+        Returns: Json
+      }
       staff_list_mandate_intros: {
         Args: Record<string, never>
         Returns: Json

@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { CtaBand } from '../components/CtaBand'
+import { DashboardPreview } from '../components/DashboardPreview'
 import { MarketingLayout } from '../components/MarketingLayout'
 
 const TOOLS = [
@@ -107,19 +108,7 @@ export function ForMembersPage() {
         </ul>
       </header>
 
-      <section className="mx-auto max-w-7xl px-5 py-12 md:px-10 md:py-16" aria-labelledby="dashboard-preview">
-        <h2
-          id="dashboard-preview"
-          className="font-display text-[clamp(1.8rem,3vw,2.4rem)] font-bold tracking-[-0.03em] text-ink"
-        >
-          Dashboard, as a preview
-        </h2>
-        <p className="mt-4 max-w-2xl text-[1.02rem] leading-relaxed text-ink/60">
-          The frame shows the shape of the member dashboard. It contains no
-          names, no photographs, and no mandates.
-        </p>
-        <DashboardPreview />
-      </section>
+      <DashboardPreview />
 
       <div className="mx-auto max-w-7xl px-5 pb-8 md:px-10">
         {TOOLS.map((tool) => (
@@ -162,63 +151,5 @@ export function ForMembersPage() {
 
       <CtaBand />
     </MarketingLayout>
-  )
-}
-
-function DashboardPreview() {
-  const rail = ['Directory', 'Mandate inbox', 'Availability', 'Introductions', 'Majlis']
-  const panes = [
-    { label: 'Directory', value: 'Members only' },
-    { label: 'Inbox', value: 'Empty until admin delivers' },
-    { label: 'Availability', value: 'Set by you' },
-    { label: 'Founding mark', value: 'After admission' },
-  ]
-
-  return (
-    <div className="mt-8 overflow-hidden border border-ink/10 bg-white/70">
-      <div className="flex items-center justify-between gap-4 border-b border-ink/10 px-5 py-3">
-        <p className="text-[0.72rem] font-semibold tracking-[0.14em] text-ink/45 uppercase">
-          Member dashboard
-        </p>
-        <p className="text-[0.72rem] tracking-[0.08em] text-brass uppercase">
-          Preview · no live data
-        </p>
-      </div>
-      <div className="grid md:grid-cols-[13.5rem_1fr]">
-        <ul className="border-b border-ink/10 md:border-r md:border-b-0">
-          {rail.map((item, index) => (
-            <li
-              key={item}
-              className={`px-5 py-3 text-[0.92rem] ${
-                index === 0 ? 'ba-primary' : 'text-ink/70'
-              }`}
-            >
-              {item}
-            </li>
-          ))}
-        </ul>
-        <div className="p-6 md:p-8">
-          <p className="font-display text-[1.45rem] font-semibold tracking-[-0.03em] text-ink">
-            Private to admitted members
-          </p>
-          <p className="mt-3 max-w-lg text-[0.98rem] leading-relaxed text-ink/60">
-            A working surface, not a public profile. The panes below are
-            labels only.
-          </p>
-          <dl className="mt-8 grid gap-4 sm:grid-cols-2">
-            {panes.map((pane) => (
-              <div key={pane.label} className="border border-ink/10 px-4 py-4">
-                <dt className="text-[0.7rem] font-semibold tracking-[0.12em] text-ink/40 uppercase">
-                  {pane.label}
-                </dt>
-                <dd className="mt-2 font-display text-[1.05rem] font-semibold tracking-[-0.02em] text-ink">
-                  {pane.value}
-                </dd>
-              </div>
-            ))}
-          </dl>
-        </div>
-      </div>
-    </div>
   )
 }

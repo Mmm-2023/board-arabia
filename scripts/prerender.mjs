@@ -70,7 +70,7 @@ function assertPage(route, html) {
     errors.push('home missing answer-first blurb')
   }
   if (html.includes('\u2014')) errors.push('em dash in prerender')
-  if (route === '/' && !html.includes('Figures are platform sums from admitted members who opted to contribute capacity.')) {
+  if (route === '/' && !html.includes('Figures reflect the network&#x27;s represented capacity. Individual amounts are never shown.')) {
     errors.push('home missing platform totals disclaimer')
   }
   if (route === '/' && !html.includes('Building the Founding 100')) {
