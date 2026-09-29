@@ -54,7 +54,7 @@ export type DisplayTotals = {
   intl: number | null
 }
 
-export function seatsArePublic(admitted: number | null): boolean {
+export function seatsArePublic(admitted: number | null): admitted is number {
   return admitted != null && Number.isFinite(admitted) && admitted >= SEAT_PUBLISH_MIN
 }
 

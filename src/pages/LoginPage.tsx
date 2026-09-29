@@ -219,7 +219,7 @@ export function LoginPage() {
             {resetNote && <p className="text-[0.9rem] text-brass-bright">{resetNote}</p>}
           </form>
 
-          {!staffEntry && (}
+          {!staffEntry && (
             <form onSubmit={onCode} className="mt-8 space-y-4 border-t border-pearl/10 pt-8">
               <p className="text-[0.72rem] font-semibold tracking-[0.08em] text-pearl/45 uppercase">
                 One-time code
