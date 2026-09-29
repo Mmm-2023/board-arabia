@@ -684,12 +684,25 @@ export type Database = {
         }
         Returns: Json
       }
+      request_re_partner_intro: {
+        Args: { p_partner_id: string }
+        Returns: Json
+      }
+      staff_list_re_partner_intros: {
+        Args: Record<string, never>
+        Returns: Json
+      }
+      staff_decide_re_partner_intro: {
+        Args: { p_intro_id: string; p_decision: string }
+        Returns: Json
+      }
       staff_save_re_partner: {
         Args: {
           p_id: string | null
           p_published: boolean
           p_name: string
           p_kind: string
+          p_city: string
           p_blurb: string
           p_contact_name: string
           p_contact_email: string

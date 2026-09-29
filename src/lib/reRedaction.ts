@@ -145,18 +145,23 @@ export type RePartnerClear = {
   category_slug: typeof RE_CATEGORY_SLUG
   name: string
   kind: (typeof RE_PARTNER_KINDS)[number]
+  city: (typeof RE_CITIES)[number]
   blurb: string
+  intro_status: ReIntroStatus | null
+  sponsor_tied: boolean
   unlocked: false
   access: 'locked'
 }
 
-export type RePartnerInventory = Omit<RePartnerClear, 'unlocked' | 'access'> & {
+export type RePartnerInventory = Omit<RePartnerClear, 'unlocked' | 'access' | 'intro_status'> & {
   unlocked: true
   access: 'inventory'
+  intro_status: null
   contact_name: string
   contact_email: string
   contact_phone: string
   published: boolean
+  sort_order: number
 }
 
 export type RePartnerCard = RePartnerClear | RePartnerInventory
@@ -271,34 +276,57 @@ export function presentReOpportunityList(raw: unknown): ReOpportunityCard[] {
   return rows.map(presentReOpportunity).filter((row): row is ReOpportunityCard => row != null)
 }
 
+function sortOrder(value: unknown): number {
+  if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) return 0
+  return Math.floor(value)
+}
+
 export function presentRePartner(raw: unknown): RePartnerCard | null {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null
   const row = raw as Record<string, unknown>
   const id = text(row.id, 80)
-  const name = text(row.name, 120)
+  const secretEmail = text(row.contact_email, 320)
+  const secretPhone = text(row.contact_phone, 40)
+  const secretContact = text(row.contact_name, 120)
+  const name = untainted(untainted(text(row.name, 120), secretEmail), secretPhone)
   const kind = oneOf(row.kind, RE_PARTNER_KINDS)
-  const blurb = text(row.blurb, 400)
-  if (!id || !name || !kind || !blurb) return null
+  const city = oneOf(row.city, RE_CITIES)
+  const blurb = untainted(
+    untainted(untainted(text(row.blurb, 400), secretEmail), secretPhone),
+    secretContact,
+  )
+  if (!id || !name || !kind || !city || !blurb) return null
   if (row.category_slug !== RE_CATEGORY_SLUG) return null
-  const clear: Omit<RePartnerClear, 'unlocked' | 'access'> = {
+  const demo = row.is_demo === true
+  const shared = {
     id,
-    is_demo: row.is_demo === true,
-    category_slug: RE_CATEGORY_SLUG,
+    is_demo: demo,
+    category_slug: 'real_estate' as const,
     name,
     kind,
+    city,
     blurb,
+    sponsor_tied: demo ? false : row.sponsor_tied === true,
   }
   if (!rePartnerSecretsVisible(row)) {
-    return { ...clear, unlocked: false, access: 'locked' }
+    const status = introStatus(row.intro_status)
+    return {
+      ...shared,
+      intro_status: status,
+      unlocked: false,
+      access: 'locked',
+    }
   }
   return {
-    ...clear,
+    ...shared,
+    intro_status: null,
     unlocked: true,
     access: 'inventory',
-    contact_name: text(row.contact_name, 120),
-    contact_email: text(row.contact_email, 320),
-    contact_phone: text(row.contact_phone, 40),
+    contact_name: secretContact,
+    contact_email: secretEmail,
+    contact_phone: secretPhone,
     published: row.published === true,
+    sort_order: sortOrder(row.sort_order),
   }
 }
 

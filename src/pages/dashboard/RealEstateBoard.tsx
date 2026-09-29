@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { RE_ASSET_CLASSES, RE_CAPITAL_ROLES, RE_CITIES, type ReOpportunityCard } from '../../lib/reRedaction'
+import { useEffect, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react'
+import { RE_ASSET_CLASSES, RE_CAPITAL_ROLES, RE_CITIES, type ReOpportunityCard, type RePartnerCard } from '../../lib/reRedaction'
 import {
   EMPTY_RE_FILTERS,
   filterReOpportunities,
@@ -10,12 +10,15 @@ import {
 import { CardSkeleton, EmptyState, ErrorBanner, FilteredZero, PermissionState } from '../../shell/ViewState'
 import { MEMBER_VIEWS } from '../../shell/viewCopy'
 import { OpportunityCard } from './OpportunityCard'
+import { RealEstatePartners } from './RealEstatePartners'
 
 export type RealEstateStatus = 'loading' | 'error' | 'denied' | 'ready'
+export type RealEstateTab = 'opportunities' | 'partners'
 
-// Later home sections stay out of this tab list.
-// This shell has no coming-soon tab pattern to reuse, so those tabs stay hidden.
-const OPPORTUNITY_TAB = 'Opportunities'
+const TABS = [
+  { id: 'opportunities', label: 'Opportunities' },
+  { id: 'partners', label: 'Partners' },
+] as const
 
 export function RealEstateBoard({
   status,
@@ -24,6 +27,14 @@ export function RealEstateBoard({
   requestError,
   onRetry,
   onRequest,
+  tab,
+  onTab,
+  partners = [],
+  partnersStatus = 'ready',
+  partnerBusyId = null,
+  partnerRequestError = false,
+  onRetryPartners,
+  onRequestPartner,
 }: {
   status: RealEstateStatus
   cards: ReOpportunityCard[]
@@ -31,9 +42,34 @@ export function RealEstateBoard({
   requestError: boolean
   onRetry: () => void
   onRequest: (id: string) => void
+  tab?: RealEstateTab
+  onTab?: (next: RealEstateTab) => void
+  partners?: RePartnerCard[]
+  partnersStatus?: RealEstateStatus
+  partnerBusyId?: string | null
+  partnerRequestError?: boolean
+  onRetryPartners?: () => void
+  onRequestPartner?: (id: string) => void
 }) {
   const [filters, setFilters] = useState<ReOpportunityFilters>(EMPTY_RE_FILTERS)
   const [filtersOpen, setFiltersOpen] = useState(false)
+  const [localTab, setLocalTab] = useState<RealEstateTab>('opportunities')
+  const activeTab = tab ?? localTab
+  function selectTab(next: RealEstateTab) {
+    if (next !== 'opportunities') setFiltersOpen(false)
+    setLocalTab(next)
+    onTab?.(next)
+  }
+  function onTabKey(event: ReactKeyboardEvent<HTMLDivElement>) {
+    if (event.key !== 'ArrowRight' && event.key !== 'ArrowLeft') return
+    event.preventDefault()
+    const index = TABS.findIndex((item) => item.id === activeTab)
+    const step = event.key === 'ArrowRight' ? 1 : -1
+    const next = TABS[(index + step + TABS.length) % TABS.length]
+    if (!next) return
+    selectTab(next.id)
+    document.getElementById(next.id === 'opportunities' ? 're-tab-opportunities' : 're-tab-partners')?.focus()
+  }
   const forming = status === 'ready' && reFeedIsForming(cards)
   const visible = status === 'ready' ? filterReOpportunities(cards, filters) : []
   const active = reFiltersActive(filters)
@@ -57,19 +93,47 @@ export function RealEstateBoard({
     <div className="max-w-3xl">
       <p className="text-[0.72rem] font-semibold tracking-[0.14em] text-brass uppercase">Real Estate</p>
       <h1 className="mt-3 font-display text-[2.2rem] font-bold tracking-[-0.03em]">Real Estate</h1>
-      <p className="mt-3 max-w-xl text-[1rem] leading-relaxed text-ink/60">{copy.intro}</p>
-      <div role="tablist" aria-label="Real Estate" className="mt-8 flex gap-6 border-b border-[var(--ba-line)]">
-        <button
-          type="button"
-          role="tab"
-          id="re-tab-opportunities"
-          aria-selected="true"
-          aria-controls="re-panel-opportunities"
-          className="min-h-11 border-b-2 border-[var(--ba-indigo)] px-1 text-[0.95rem] font-semibold text-ink"
-        >
-          {OPPORTUNITY_TAB}
-        </button>
+      <p className="mt-3 max-w-xl text-[1rem] leading-relaxed text-ink/60">
+        {activeTab === 'partners' ? copy.partnersIntro : copy.intro}
+      </p>
+      <div role="tablist" aria-label="Real Estate" className="mt-8 flex gap-6 border-b border-[var(--ba-line)]" onKeyDown={onTabKey}>
+        {TABS.map((item) => {
+          const selected = activeTab === item.id
+          const tabId = item.id === 'opportunities' ? 're-tab-opportunities' : 're-tab-partners'
+          const panelId = item.id === 'opportunities' ? 're-panel-opportunities' : 're-panel-partners'
+          return (
+            <button
+              key={item.id}
+              type="button"
+              role="tab"
+              id={tabId}
+              aria-selected={selected}
+              aria-controls={panelId}
+              tabIndex={selected ? 0 : -1}
+              data-re-tab={item.id}
+              className={`min-h-11 border-b-2 px-1 text-[0.95rem] font-semibold ${
+                selected ? 'border-[var(--ba-indigo)] text-ink' : 'border-transparent text-ink/55'
+              }`}
+              onClick={() => selectTab(item.id)}
+            >
+              {item.label}
+            </button>
+          )
+        })}
       </div>
+      {activeTab === 'partners' ? (
+        <div className="mt-6">
+          <RealEstatePartners
+            status={partnersStatus}
+            cards={partners}
+            busyId={partnerBusyId}
+            requestError={partnerRequestError}
+            onRetry={onRetryPartners ?? onRetry}
+            onRequest={onRequestPartner ?? (() => {})}
+          />
+        </div>
+      ) : null}
+      {activeTab === 'opportunities' ? (
       <div
         role="tabpanel"
         id="re-panel-opportunities"
@@ -139,6 +203,7 @@ export function RealEstateBoard({
           </p>
         ) : null}
       </div>
+      ) : null}
       {filtersOpen ? (
         <div className="fixed inset-0 z-50 md:hidden" role="presentation">
           <button

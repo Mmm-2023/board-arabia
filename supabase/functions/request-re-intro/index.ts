@@ -28,6 +28,44 @@ async function openSession(req: Request) {
     rpc: (opportunityId: string) =>
       userClient.rpc('request_re_opportunity_intro', { p_opportunity_id: opportunityId }),
     context: (opportunityId: string) => loadContext(admin, user.id, opportunityId),
+    partnerRpc: (partnerId: string) =>
+      userClient.rpc('request_re_partner_intro', { p_partner_id: partnerId }),
+    partnerContext: (partnerId: string) => loadPartner(admin, user.id, partnerId),
+  }
+}
+
+const KIND_LABEL: Record<string, string> = {
+  law: 'Law',
+  valuation: 'Valuation',
+  'project finance': 'Project finance',
+  developer: 'Developers',
+  broker: 'FO-grade brokers',
+}
+
+async function loadPartner(
+  admin: ReturnType<typeof createClient>,
+  userId: string,
+  partnerId: string,
+): Promise<ReIntroContext> {
+  const [prior, profile, member, partner] = await Promise.all([
+    admin.from('re_partner_intros').select('id').eq('partner_id', partnerId).eq('member_id', userId).maybeSingle(),
+    admin.from('profiles').select('full_name').eq('user_id', userId).maybeSingle(),
+    admin.from('members').select('seat').eq('user_id', userId).maybeSingle(),
+    admin.from('re_partners').select('name, kind, city').eq('id', partnerId).maybeSingle(),
+  ])
+  const seat = member.data?.seat === 'sponsor' ? 'sponsor' : 'member'
+  const found = typeof profile.data?.full_name === 'string' ? profile.data.full_name.trim() : ''
+  const row = partner.data
+  const kind = typeof row?.kind === 'string' ? KIND_LABEL[row.kind] || row.kind.trim() : ''
+  const item = [row?.name, kind, row?.city]
+    .map((part) => (typeof part === 'string' ? part.trim() : ''))
+    .filter((part) => part.length > 0)
+    .join(', ')
+  return {
+    alreadyQueued: Boolean(prior.data?.id),
+    requesterName: found || (seat === 'sponsor' ? 'Sponsor' : 'Member'),
+    requesterKind: seat,
+    item: item || 'Real estate partner',
   }
 }
 

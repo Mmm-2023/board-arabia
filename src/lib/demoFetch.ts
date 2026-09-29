@@ -18,6 +18,7 @@ import {
 import {
   requestMandateIntro as postMandateIntro,
   requestReOpportunityIntro as postReIntro,
+  requestRePartnerIntro as postRePartnerIntro,
   supabase,
 } from './supabase'
 
@@ -77,10 +78,25 @@ async function loadReOpportunities(): Promise<DemoLoad<ReOpportunityCard[]> | { 
   return { status: 'ready', rows: presentReOpportunityList(data) }
 }
 
-export function fetchRePartners(): Promise<DemoLoad<RePartnerCard[]>> {
-  return loadJson(supabase.rpc('list_re_partners'), presentRePartnerList)
+export function fetchRePartners(): Promise<DemoLoad<RePartnerCard[]> | { status: 'denied' }> {
+  return loadRePartners()
+}
+
+async function loadRePartners(): Promise<DemoLoad<RePartnerCard[]> | { status: 'denied' }> {
+  const { data, error } = await supabase.rpc('list_re_partners')
+  if (error) {
+    if (schemaMissing(error.message)) return { status: 'missing' }
+    const code = 'code' in error ? String(error.code) : ''
+    if (code === '42501' || /not_allowed/i.test(error.message)) return { status: 'denied' }
+    return { status: 'error' }
+  }
+  return { status: 'ready', rows: presentRePartnerList(data) }
 }
 
 export async function requestReOpportunityIntro(opportunityId: string): Promise<'ok' | 'error'> {
   return postReIntro(opportunityId)
+}
+
+export async function requestRePartnerIntro(partnerId: string): Promise<'ok' | 'error'> {
+  return postRePartnerIntro(partnerId)
 }
