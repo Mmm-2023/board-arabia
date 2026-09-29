@@ -218,8 +218,18 @@ const demo = shell(
     ],
     partners: [{ id: 'p9', is_demo: true, name: 'Sample Rail', monogram: 'SR' }],
     gatherings: [],
-    activity: [],
-    activityStatus: 'empty',
+    activity: [
+      {
+        id: 'sample-intro',
+        kind: 'intro',
+        label: 'Intro requested',
+        detail: 'Energy transition · Growth equity',
+        happenedAt: '2026-09-25T11:40:00.000Z',
+        href: '/dashboard/deals/mandates',
+        example: true,
+      },
+    ],
+    activityStatus: 'ready',
   },
   'demo',
 )

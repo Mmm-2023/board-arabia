@@ -185,6 +185,10 @@ test('your rooms empty state shows for zero rooms and hides when they have one',
     assert.match(listed, />Example</)
     assert.match(listed, /Industrial services room/)
     assert.match(listed, /Cards marked Example are samples\./)
+    assert.match(listed, /data-sample-action="inert"/)
+    assert.match(listed, />Sample</)
+    assert.match(listed, />Open room</)
+    assert.match(listed, /<button[^>]*disabled=""[^>]*>Open room<\/button>/)
     assert.equal(listed.includes('>Create room<'), false)
 
     const withOwn = page(

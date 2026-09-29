@@ -255,13 +255,13 @@ export function primaryHomeCta(input: CtaInput): HomeCta | null {
 export function visiblePendingIntros(rows: { id?: string; is_demo: boolean; intro_status: IntroState }[] | null): number | null {
   if (!rows) return null
   const visible = dedupeIdentified(applyDemoThreshold(rows, DEMO_THRESHOLD_DEFAULTS.mandates))
-  return visible.filter((row) => row.intro_status === 'pending').length
+  return visible.filter((row) => !row.is_demo && row.intro_status === 'pending').length
 }
 
 export function visibleNewMandates(rows: { id?: string; is_demo: boolean; intro_status: IntroState }[] | null): number | null {
   if (!rows) return null
   const visible = dedupeIdentified(applyDemoThreshold(rows, DEMO_THRESHOLD_DEFAULTS.mandates))
-  return visible.filter((row) => row.intro_status == null).length
+  return visible.filter((row) => !row.is_demo && row.intro_status == null).length
 }
 
 export function buildHeadlines(input: {
@@ -279,19 +279,13 @@ export function buildHeadlines(input: {
 
   if (input.mandates) {
     const visible = dedupeIdentified(applyDemoThreshold(input.mandates, DEMO_THRESHOLD_DEFAULTS.mandates))
-    const pending = visible.filter((row) => row.intro_status === 'pending')
-    const livePending = pending.filter((row) => !row.is_demo).length
+    const livePending = visible.filter((row) => !row.is_demo && row.intro_status === 'pending').length
     if (livePending > 0) {
       push(pulseHeadline('intros', 'Intros pending', livePending, false))
-    } else if (pending.length > 0) {
-      push(pulseHeadline('intros', 'Intros pending', pending.length, true))
     }
-    const fresh = visible.filter((row) => row.intro_status == null)
-    const liveFresh = fresh.filter((row) => !row.is_demo).length
+    const liveFresh = visible.filter((row) => !row.is_demo && row.intro_status == null).length
     if (liveFresh > 0) {
       push(pulseHeadline('mandates', 'New mandates', liveFresh, false))
-    } else if (fresh.length > 0) {
-      push(pulseHeadline('mandates', 'New mandates', fresh.length, true))
     }
   }
 
@@ -307,8 +301,6 @@ export function buildHeadlines(input: {
     const live = visible.filter((row) => !row.is_demo).length
     if (live > 0) {
       push(pulseHeadline('rooms', 'Rooms needing action', live, false))
-    } else if (visible.length > 0) {
-      push(pulseHeadline('rooms', 'Rooms needing action', visible.length, true))
     }
   }
 
@@ -317,8 +309,6 @@ export function buildHeadlines(input: {
     const live = visible.filter((row) => !row.is_demo).length
     if (live > 0) {
       push(pulseHeadline('directory', 'Directory', live, false))
-    } else if (visible.length > 0) {
-      push(pulseHeadline('directory', 'Directory', visible.length, true))
     }
   }
 

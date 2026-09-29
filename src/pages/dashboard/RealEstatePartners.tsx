@@ -1,4 +1,6 @@
 import { ExampleMark } from '../../components/ExampleMark'
+import { SampleAction } from '../../components/SampleAction'
+import { SAMPLE_NOTE } from '../../lib/sampleAction'
 import { SponsorBadge } from '../../components/SponsorBadge'
 import { rePartnerFeedIsForming, rePartnerGroups, RE_PARTNER_KIND_LABEL } from '../../lib/rePartnerView'
 import type { RePartnerCard } from '../../lib/reRedaction'
@@ -121,7 +123,9 @@ export function PartnerCard({
               {note}
             </p>
           ) : null}
-          {status == null && onRequest ? (
+          {card.is_demo && status == null ? (
+            <SampleAction label="Request intro" />
+          ) : status == null && onRequest ? (
             <button
               type="button"
               disabled={busy}
@@ -132,6 +136,7 @@ export function PartnerCard({
               Request intro
             </button>
           ) : null}
+          {card.is_demo && status != null ? <p className="mt-4 text-[0.92rem] text-ink/60">{SAMPLE_NOTE}</p> : null}
         </div>
       ) : null}
     </article>

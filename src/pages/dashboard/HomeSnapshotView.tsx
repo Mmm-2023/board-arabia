@@ -29,7 +29,8 @@ export function HomeSnapshotView({
   userId?: string
   shareSlot?: ReactNode
 }) {
-  const pulseVisible = model.pulse.length > 0 || model.majlis != null
+  const livePulse = model.pulse.filter((item) => !item.example)
+  const pulseVisible = livePulse.length > 0 || model.majlis != null
   const nextAction = model.cta && !model.cta.to.includes('#password') ? model.cta : null
   const [exampleSeen, setExampleSeen] = useState(() => readExampleSeen(userId))
   const hasExample =
@@ -145,25 +146,15 @@ export function HomeSnapshotView({
               <h2 className="text-[0.72rem] font-semibold tracking-[0.14em] text-ink/40 uppercase">
                 Your pulse
               </h2>
-              {model.pulse.length > 0 ? (
+              {livePulse.length > 0 ? (
                 <ul className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  {model.pulse.map((item) => (
-                    <li
-                      key={item.id}
-                      className={`${styles.panel} px-4 py-3 md:py-4 ${
-                        item.example ? 'border border-dashed border-[var(--ba-indigo)]' : ''
-                      }`}
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <p className="text-[0.8125rem] font-semibold text-ink/70">{item.label}</p>
-                        {item.example ? <ExampleMark /> : null}
-                      </div>
-                      {item.example ? null : (
-                        <p className="mt-2 font-display text-[1.7rem] font-semibold tracking-[-0.03em]">
-                          {item.value}
-                        </p>
-                      )}
-                      {item.example ? null : <p className={`mt-1 text-[0.95rem] ${styles.muted}`}>{item.body}</p>}
+                  {livePulse.map((item) => (
+                    <li key={item.id} className={`${styles.panel} px-4 py-3 md:py-4`}>
+                      <p className="text-[0.8125rem] font-semibold text-ink/70">{item.label}</p>
+                      <p className="mt-2 font-display text-[1.7rem] font-semibold tracking-[-0.03em]">
+                        {item.value}
+                      </p>
+                      <p className={`mt-1 text-[0.95rem] ${styles.muted}`}>{item.body}</p>
                       <Link
                         to={item.to}
                         className="mt-3 inline-flex min-h-11 items-center text-[0.75rem] font-semibold tracking-[0.08em] text-brass uppercase"

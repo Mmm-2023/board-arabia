@@ -1,4 +1,5 @@
 import { ExampleMark } from '../../components/ExampleMark'
+import { SampleAction } from '../../components/SampleAction'
 import type { RoomCard } from '../../lib/demoRows'
 
 export function RoomsBoard({ rooms, embedded = false }: { rooms: RoomCard[]; embedded?: boolean }) {
@@ -28,6 +29,7 @@ export function RoomsBoard({ rooms, embedded = false }: { rooms: RoomCard[]; emb
               {room.member_count} {room.member_count === 1 ? 'member' : 'members'}
               {room.host_name ? ` · Host ${room.host_name}` : ''}
             </p>
+            {room.is_demo ? <SampleAction label="Open room" /> : null}
           </article>
         </li>
       ))}

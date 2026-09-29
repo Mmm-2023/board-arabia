@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { fetchMandates, requestMandateIntro } from '../../lib/demoFetch'
+import { sampleRow } from '../../lib/sampleAction'
 import type { MandateCardModel } from '../../lib/mandateRedaction'
 import { useNoIndex } from '../../lib/usePageTitle'
 import { CardSkeleton, EmptyState, ErrorBanner } from '../../shell/ViewState'
@@ -34,6 +35,7 @@ export function MandatesPage() {
   }, [attempt])
 
   async function onRequest(id: string) {
+    if (list.status === 'ready' && sampleRow(list.mandates, id)) return
     setRequestError(false)
     setBusyId(id)
     const outcome = await requestMandateIntro(id)
