@@ -1,5 +1,5 @@
-import { useState, type FormEvent } from 'react'
-import { Link } from 'react-router-dom'
+import { useEffect, useState, type FormEvent } from 'react'
+import { Link, useLocation } from 'react-router-dom'
 import { CapacityFields } from '../../components/CapacityFields'
 import { draftFromProfile } from '../../lib/capacity'
 import { adminMemberLine, type FoundingSeat } from '../../lib/member'
@@ -26,7 +26,14 @@ export function PeoplePage() {
   const [sponsorError, setSponsorError] = useState('')
   const [sponsorSuccess, setSponsorSuccess] = useState('')
   const [sponsorDryRun, setSponsorDryRun] = useState<DryRunInvite | null>(null)
+  const location = useLocation()
+  const focusId = location.hash.startsWith('#member-') ? location.hash.slice(1) : ''
   useNoIndex('People | Board Arabia')
+
+  useEffect(() => {
+    if (!focusId) return
+    document.getElementById(focusId)?.scrollIntoView({ block: 'start' })
+  }, [focusId, room.members.length])
   const sponsorCap = sponsorCapView(room.members)
   const sponsorCapKnown = room.hasLoaded && !room.refreshError
 
@@ -160,7 +167,13 @@ export function PeoplePage() {
         ) : (
           <ul className="mt-4 space-y-3">
             {room.members.map((member) => (
-              <li key={member.user_id} className="border border-pearl/10 px-5 py-4">
+              <li
+                key={member.user_id}
+                id={`member-${member.user_id}`}
+                className={`scroll-mt-24 border px-5 py-4 ${
+                  focusId === `member-${member.user_id}` ? 'border-brass/70' : 'border-pearl/10'
+                }`}
+              >
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
                     <p className="text-[0.95rem] text-stone/85">{member.email}</p>

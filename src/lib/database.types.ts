@@ -663,6 +663,14 @@ export type Database = {
         Args: Record<string, never>
         Returns: Json
       }
+      staff_list_mandates: {
+        Args: Record<string, never>
+        Returns: Json
+      }
+      staff_list_mandate_matches: {
+        Args: { p_mandate_id: string }
+        Returns: Json
+      }
       staff_decide_mandate_intro: {
         Args: { p_intro_id: string; p_decision: string }
         Returns: Json

@@ -61,7 +61,7 @@ test('account links are not tabs and staff secondary stays put', () => {
   )
   assert.deepEqual(
     STAFF_SECONDARY.map((item) => item.label),
-    ['Majlis', 'Rooms', 'Email'],
+    ['Majlis', 'Mandates', 'Rooms', 'Email'],
   )
 })
 
@@ -80,6 +80,11 @@ test('section title follows the active destination', () => {
   assert.equal(shellSectionTitle('/admin/email', STAFF_DESTINATIONS, STAFF_SECONDARY), 'Email')
   assert.equal(shellSectionTitle('/admin/majlis', STAFF_DESTINATIONS, STAFF_SECONDARY), 'Majlis')
   assert.equal(shellSectionTitle('/admin/rooms', STAFF_DESTINATIONS, STAFF_SECONDARY), 'Rooms')
+  assert.equal(shellSectionTitle('/admin/mandates', STAFF_DESTINATIONS, STAFF_SECONDARY), 'Mandates')
+  assert.equal(
+    shellSectionTitle('/admin/mandates/11111111-1111-4111-8111-111111111111', STAFF_DESTINATIONS, STAFF_SECONDARY),
+    'Mandates',
+  )
 })
 
 test('updated label has no em dash', () => {

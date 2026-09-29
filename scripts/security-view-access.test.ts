@@ -154,6 +154,8 @@ test('every staff_* function checks staff and is not executable by anon', () => 
   const names = [
     'staff_set_member_capacity',
     'staff_list_mandate_intros',
+    'staff_list_mandates',
+    'staff_list_mandate_matches',
     'staff_decide_mandate_intro',
     'staff_list_re_opportunity_intros',
     'staff_decide_re_opportunity_intro',
