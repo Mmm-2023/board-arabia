@@ -9,6 +9,12 @@ import {
 } from './demoRows'
 import { presentHomeActivityList, type HomeActivity } from './homeSnapshot'
 import { presentMandateList, type MandateCardModel } from './mandateRedaction'
+import {
+  presentReOpportunityList,
+  presentRePartnerList,
+  type ReOpportunityCard,
+  type RePartnerCard,
+} from './reRedaction'
 import { supabase } from './supabase'
 
 export type DemoLoad<T> =
@@ -50,6 +56,22 @@ export function fetchHomeActivity(): Promise<DemoLoad<HomeActivity[]>> {
 
 export async function requestMandateIntro(mandateId: string): Promise<'ok' | 'error'> {
   const { error } = await supabase.rpc('request_mandate_intro', { p_mandate_id: mandateId })
+  if (error) return 'error'
+  return 'ok'
+}
+
+export function fetchReOpportunities(): Promise<DemoLoad<ReOpportunityCard[]>> {
+  return loadJson(supabase.rpc('list_re_opportunities'), presentReOpportunityList)
+}
+
+export function fetchRePartners(): Promise<DemoLoad<RePartnerCard[]>> {
+  return loadJson(supabase.rpc('list_re_partners'), presentRePartnerList)
+}
+
+export async function requestReOpportunityIntro(opportunityId: string): Promise<'ok' | 'error'> {
+  const { error } = await supabase.rpc('request_re_opportunity_intro', {
+    p_opportunity_id: opportunityId,
+  })
   if (error) return 'error'
   return 'ok'
 }
