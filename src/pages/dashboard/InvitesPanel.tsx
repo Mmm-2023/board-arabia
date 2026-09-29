@@ -1,5 +1,6 @@
 import type { FormEvent } from 'react'
 import { Link } from 'react-router-dom'
+import { formatInviteSent } from '../../lib/riyadhStamp'
 import { applyInviteUrl, whatsAppInviteUrl } from '../../lib/inviteLink'
 import { CardSkeleton } from '../../shell/ViewState'
 import { MEMBER_VIEWS } from '../../shell/viewCopy'
@@ -59,11 +60,8 @@ export function InvitesPanel({
     <div className="max-w-3xl">
       {!embedded && (
         <>
-          <p className="text-[0.72rem] font-semibold tracking-[0.14em] text-brass uppercase">
-            Network
-          </p>
-          <h1 className="mt-3 font-display text-[2.4rem] font-bold tracking-[-0.04em] text-balance md:text-[3rem]">
-            Network
+          <h1 className="font-display text-[2.2rem] font-bold tracking-[-0.03em] text-balance">
+            Invites
           </h1>
         </>
       )}
@@ -187,7 +185,7 @@ export function InvitesPanel({
                   {invite.recipient_phone ? ` · ${invite.recipient_phone}` : ''}
                 </p>
                 <p className="mt-1 text-[0.85rem] text-ink/50">
-                  {invite.status} · {new Date(invite.created_at).toLocaleString()}
+                  {formatInviteSent(invite.created_at, invite.status)}
                 </p>
                 <div className="mt-3 flex flex-wrap gap-3">
                   <button

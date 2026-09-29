@@ -108,7 +108,7 @@ function Desk() {
         setProgress(result.progress)
         setStage(result.stage)
         if (result.reportId) {
-          navigate(`/dashboard/due-diligence/${result.reportId}`)
+          navigate(`/dashboard/ai/due-diligence/${result.reportId}`)
           return
         }
         if (result.status === 'failed') {
@@ -454,7 +454,7 @@ export function DueDiligenceDeskView({
                 {reports.map((report) => (
                   <li key={report.id}>
                     <Link
-                      to={`/dashboard/due-diligence/${report.id}`}
+                      to={`/dashboard/ai/due-diligence/${report.id}`}
                       className="flex min-h-11 flex-col justify-center border border-[var(--ba-line)] bg-white px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
                     >
                       <span className="text-[1rem] text-ink">{report.company_label}</span>
@@ -523,7 +523,7 @@ function ReportView({ reportId }: { reportId: string }) {
         {ready ? ready.report.company_label : 'AI Due Diligence'}
       </h1>
       <Link
-        to="/dashboard/due-diligence"
+        to="/dashboard/ai/due-diligence"
         className="mt-3 inline-flex min-h-11 items-center text-[0.95rem] text-[var(--ba-indigo)]"
       >
         All checks

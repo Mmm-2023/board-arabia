@@ -17,7 +17,7 @@ export function MemberRoomsList({ rooms }: { rooms: MemberDealRoom[] }) {
             {room.purpose ? <p className="mt-3 text-[1rem] leading-relaxed text-ink/75">{room.purpose}</p> : null}
             <p className="mt-4 text-[0.92rem] text-ink/60">{peopleLine(room)}</p>
             <Link
-              to={`/dashboard/rooms/${room.id}`}
+              to={`/dashboard/deals/rooms/${room.id}`}
               className="mt-4 inline-flex min-h-11 items-center text-[0.75rem] font-semibold tracking-[0.08em] text-brass uppercase"
             >
               {room.myInviteStatus === 'invited' ? 'Review invite' : 'Open room'}

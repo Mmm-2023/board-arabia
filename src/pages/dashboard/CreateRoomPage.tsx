@@ -130,7 +130,7 @@ export function CreateRoomPage() {
         void createDealRoom(parsed.body).then((result) => {
           setBusy(false)
           if (result.status === 'ok' && result.roomId) {
-            navigate(`/dashboard/rooms/${result.roomId}`)
+            navigate(`/dashboard/deals/rooms/${result.roomId}`)
             return
           }
           setError(result.status === 'ok' ? "Couldn't open the room. Retry." : result.message)

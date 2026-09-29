@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { ExampleMark } from '../../components/ExampleMark'
 import { formatActivityWhen, type HomeModel } from '../../lib/homeSnapshot'
@@ -14,6 +14,8 @@ export function HomeSnapshotView({
   seatCaption,
   seatValue,
   attentionLead = null,
+  figuresAsOf = null,
+  userId = 'member',
 }: {
   model: HomeModel
   onRetry?: () => void
@@ -21,8 +23,18 @@ export function HomeSnapshotView({
   seatCaption?: string
   seatValue?: string
   attentionLead?: ReactNode
+  figuresAsOf?: string | null
+  userId?: string
 }) {
   const pulseVisible = model.pulse.length > 0 || model.majlis != null
+  const nextAction = model.cta && !model.cta.to.includes('#password') ? model.cta : null
+  const [exampleSeen, setExampleSeen] = useState(() => readExampleSeen(userId))
+  const hasExample =
+    model.pulse.some((item) => item.example) ||
+    model.teasers.directory.some((card) => card.example) ||
+    model.teasers.mandates.some((card) => card.example) ||
+    model.teasers.rooms.some((card) => card.example)
+  const membershipLabel = sponsorBadge ? null : model.identity.founding ? 'Founding' : seatCaption || model.identity.badge
   const teaserVisible =
     model.teasers.directory.length > 0 ||
     model.teasers.mandates.length > 0 ||
@@ -31,43 +43,39 @@ export function HomeSnapshotView({
 
   return (
     <div className="max-w-3xl" data-home-snapshot="">
-      <section aria-label="Identity" className={`${styles.panel} px-4 py-4 md:px-5`}>
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-          <Photo initials={model.identity.initials} url={model.identity.photoUrl} />
-          <div className="min-w-0 flex-1">
-            <p className="hidden text-[0.72rem] font-semibold tracking-[0.14em] text-brass uppercase md:block">
-              Home
-            </p>
-            <h1 className="font-display text-2xl font-bold tracking-[-0.04em] text-balance md:mt-1 md:text-[2.4rem]">
-              {model.identity.name}
-            </h1>
-            <div className="mt-3 flex flex-wrap items-center gap-2">
-              {sponsorBadge ?? (
-                <span
-                  data-membership-badge={model.identity.badge}
-                  className="inline-flex min-h-7 items-center border border-[var(--ba-copper)] bg-[var(--ba-indigo-deep)] px-2 text-[0.68rem] font-semibold tracking-[0.12em] text-[var(--ba-porcelain)] uppercase"
-                >
-                  {model.identity.badge}
-                </span>
-              )}
-              <span className={`text-[0.72rem] font-semibold tracking-[0.12em] uppercase ${styles.quiet}`}>
-                {seatCaption ?? (model.identity.founding ? 'Founding seat' : 'Seat')}
-              </span>
-              <span className="text-[0.95rem] text-ink/70">{seatValue ?? model.identity.seatLabel}</span>
-            </div>
-            {model.identity.profileNeedsWork ? (
-              <Link
-                to={model.identity.profileTo}
-                className="mt-3 inline-flex min-h-11 items-center text-[0.75rem] font-semibold tracking-[0.08em] text-brass uppercase"
-              >
-                Complete profile
-              </Link>
-            ) : (
-              <p className="mt-3 text-[0.95rem] text-ink/60">Profile complete</p>
-            )}
-          </div>
+      <section aria-label="Identity" className="flex items-center gap-3 py-1">
+        <Photo initials={model.identity.initials} url={model.identity.photoUrl} />
+        <div className="min-w-0">
+          <h1 className="truncate font-display text-[1.35rem] font-bold tracking-[-0.03em] md:text-[1.7rem]">
+            {model.identity.name}
+          </h1>
+          <p className="mt-0.5 flex flex-wrap items-center gap-2 text-[0.8125rem] text-ink/70">
+            {sponsorBadge}
+            {membershipLabel ? (
+              <span data-membership-badge={model.identity.badge}>{membershipLabel}</span>
+            ) : null}
+            <span className="ms-2">{seatValue ?? model.identity.seatLabel}</span>
+          </p>
         </div>
       </section>
+
+      {hasExample && !exampleSeen ? (
+        <div className="mt-4 border border-dashed border-[var(--ba-indigo)] bg-white px-4 py-3" role="status">
+          <p className="text-[0.8125rem] leading-relaxed text-ink/80">
+            Cards marked Example are samples. They step aside when real items arrive.
+          </p>
+          <button
+            type="button"
+            className="mt-2 inline-flex min-h-11 items-center text-[0.8125rem] font-semibold text-[var(--ba-indigo)]"
+            onClick={() => {
+              writeExampleSeen(userId)
+              setExampleSeen(true)
+            }}
+          >
+            Got it
+          </button>
+        </div>
+      ) : null}
 
       {(model.attention.length > 0 || attentionLead) && (
         <section aria-label="Needs attention" className="mt-5 space-y-3 md:mt-8">
@@ -94,6 +102,23 @@ export function HomeSnapshotView({
         </section>
       )}
 
+      {!model.loading ? (
+        <section aria-label="Next actions" className="mt-5">
+          <h2 className="text-[0.8125rem] font-semibold text-ink/70">Next actions</h2>
+          {nextAction ? (
+            <Link
+              to={nextAction.to}
+              data-home-cta={nextAction.id}
+              className={`mt-3 inline-flex min-h-11 items-center px-4 text-[0.8125rem] font-semibold ${styles.primary}`}
+            >
+              {nextAction.label}
+            </Link>
+          ) : (
+            <p className={`mt-3 max-w-xl text-[1rem] ${styles.muted}`}>Nothing needs you right now.</p>
+          )}
+        </section>
+      ) : null}
+
       {model.partialError && onRetry ? (
         <div className="mt-5">
           <ErrorBanner
@@ -119,17 +144,22 @@ export function HomeSnapshotView({
               {model.pulse.length > 0 ? (
                 <ul className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
                   {model.pulse.map((item) => (
-                    <li key={item.id} className={`${styles.panel} px-4 py-3 md:py-4`}>
+                    <li
+                      key={item.id}
+                      className={`${styles.panel} px-4 py-3 md:py-4 ${
+                        item.example ? 'border border-dashed border-[var(--ba-indigo)]' : ''
+                      }`}
+                    >
                       <div className="flex items-start justify-between gap-3">
-                        <p className={`text-[0.72rem] font-semibold tracking-[0.12em] uppercase ${styles.quiet}`}>
-                          {item.label}
-                        </p>
+                        <p className="text-[0.8125rem] font-semibold text-ink/70">{item.label}</p>
                         {item.example ? <ExampleMark /> : null}
                       </div>
-                      <p className="mt-2 font-display text-[1.7rem] font-semibold tracking-[-0.03em]">
-                        {item.value}
-                      </p>
-                      <p className={`mt-1 text-[0.95rem] ${styles.muted}`}>{item.body}</p>
+                      {item.example ? null : (
+                        <p className="mt-2 font-display text-[1.7rem] font-semibold tracking-[-0.03em]">
+                          {item.value}
+                        </p>
+                      )}
+                      {item.example ? null : <p className={`mt-1 text-[0.95rem] ${styles.muted}`}>{item.body}</p>}
                       <Link
                         to={item.to}
                         className="mt-3 inline-flex min-h-11 items-center text-[0.75rem] font-semibold tracking-[0.08em] text-brass uppercase"
@@ -159,23 +189,6 @@ export function HomeSnapshotView({
               ) : null}
             </section>
           ) : null}
-
-          <section aria-label="Next actions" className="mt-5 md:mt-8">
-            <h2 className="text-[0.72rem] font-semibold tracking-[0.14em] text-ink/40 uppercase">
-              Next actions
-            </h2>
-            {model.cta ? (
-              <Link
-                to={model.cta.to}
-                data-home-cta={model.cta.id}
-                className={`mt-4 inline-flex min-h-11 items-center px-4 text-[0.75rem] font-semibold tracking-[0.08em] uppercase ${styles.primary}`}
-              >
-                {model.cta.label}
-              </Link>
-            ) : (
-              <p className={`mt-3 max-w-xl text-[1rem] ${styles.muted}`}>Nothing needs you right now.</p>
-            )}
-          </section>
 
           <section aria-label="Platform snapshot" className="mt-8 border-t border-ink/10 pt-8">
             <h2 className="text-[0.72rem] font-semibold tracking-[0.14em] text-ink/40 uppercase">
@@ -292,9 +305,7 @@ export function HomeSnapshotView({
                 </ul>
               </div>
             ) : null}
-            {model.updatedLabel ? (
-              <p className="mt-4 text-[0.85rem] text-ink/45">{model.updatedLabel}</p>
-            ) : null}
+            {figuresAsOf ? <p className="mt-4 text-[0.8125rem] text-ink/60">{figuresAsOf}</p> : null}
           </section>
 
           <section aria-label="From the room" className="mt-8 border-t border-ink/10 pt-8">
@@ -304,7 +315,7 @@ export function HomeSnapshotView({
             {teaserVisible ? (
               <div className="mt-4 flex flex-col gap-6">
                 {model.teasers.directory.length > 0 ? (
-                  <TeaserGroup title="Directory" to="/dashboard/directory">
+                  <TeaserGroup title="Directory" to="/dashboard/people/directory">
                     {model.teasers.directory.map((card) => (
                       <article key={card.id} className={`${styles.panel} px-4 py-3`}>
                         <div className="flex items-start justify-between gap-3">
@@ -320,7 +331,7 @@ export function HomeSnapshotView({
                   </TeaserGroup>
                 ) : null}
                 {model.teasers.mandates.length > 0 ? (
-                  <TeaserGroup title="Mandates" to="/dashboard/mandates">
+                  <TeaserGroup title="Mandates" to="/dashboard/deals/mandates">
                     {model.teasers.mandates.map((card) => (
                       <article key={card.id} className={`${styles.panel} px-4 py-3`}>
                         <div className="flex items-start justify-between gap-3">
@@ -343,7 +354,7 @@ export function HomeSnapshotView({
                   </TeaserGroup>
                 ) : null}
                 {model.teasers.rooms.length > 0 ? (
-                  <TeaserGroup title="Rooms" to="/dashboard/rooms">
+                  <TeaserGroup title="Deal rooms" to="/dashboard/deals/rooms">
                     {model.teasers.rooms.map((room) => (
                       <article key={room.id} className={`${styles.panel} px-4 py-3`}>
                         <div className="flex items-start justify-between gap-3">
@@ -427,14 +438,35 @@ export function HomeSnapshotView({
   )
 }
 
+function exampleKey(userId: string) {
+  return `ba-example-seen:${userId}`
+}
+
+function readExampleSeen(userId: string) {
+  if (typeof window === 'undefined') return false
+  try {
+    return window.localStorage.getItem(exampleKey(userId)) === '1'
+  } catch {
+    return false
+  }
+}
+
+function writeExampleSeen(userId: string) {
+  try {
+    window.localStorage.setItem(exampleKey(userId), '1')
+  } catch {
+    // The explainer can show again if storage is blocked.
+  }
+}
+
 function Photo({ initials, url }: { initials: string; url: string | null }) {
   if (url) {
-    return <img src={url} alt="Profile photo" className="h-16 w-16 shrink-0 rounded-full object-cover" />
+    return <img src={url} alt="Profile photo" className="h-10 w-10 shrink-0 rounded-full object-cover" />
   }
   return (
     <div
       aria-hidden="true"
-      className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-[var(--ba-lavender-mist)] font-display text-[1rem] font-semibold text-[var(--ba-indigo)]"
+      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--ba-lavender-mist)] font-display text-[0.8125rem] font-semibold text-[var(--ba-indigo)]"
     >
       {initials}
     </div>

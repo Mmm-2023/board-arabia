@@ -1,8 +1,8 @@
-import { useEffect, useState, type ReactNode } from 'react'
-import { Link, NavLink, useLocation } from 'react-router-dom'
+import { useEffect, useId, useRef, useState, type ReactNode } from 'react'
+import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { BrandLockup } from '../components/BrandLockup'
 import type { Destination, SecondaryLink, ShellTone } from './destinations'
-import { shellSectionTitle } from './destinations'
+import { dealsBadgeLabel, shellSectionTitle } from './destinations'
 import { DestinationIcon } from './icons'
 
 type RoleSwitch = { label: string; to: string }
@@ -15,9 +15,12 @@ export function AppShell({
   roleSwitch,
   onSignOut,
   accountLabel,
+  accountName = '',
   accountMark = null,
+  dealsBadge = 0,
   children,
   initialMoreOpen = false,
+  initialAccountOpen = false,
 }: {
   tone: ShellTone
   destinations: readonly Destination[]
@@ -26,28 +29,44 @@ export function AppShell({
   roleSwitch: RoleSwitch | null
   onSignOut: () => void
   accountLabel: string
+  accountName?: string
   accountMark?: ReactNode
+  dealsBadge?: number
   children: ReactNode
   initialMoreOpen?: boolean
+  initialAccountOpen?: boolean
 }) {
   const location = useLocation()
+  const navigate = useNavigate()
   const desktop = useMinWidth(1024)
+  const member = tone === 'member'
   const [hovered, setHovered] = useState(false)
   const [pinned, setPinned] = useState(false)
   const [morePath, setMorePath] = useState(location.pathname)
   const [moreOpen, setMoreOpen] = useState(initialMoreOpen)
+  const [accountOpen, setAccountOpen] = useState(initialAccountOpen)
+  const accountButton = useRef<HTMLButtonElement>(null)
+  const accountPanel = useRef<HTMLDivElement>(null)
+  const accountTitleId = useId()
   if (location.pathname !== morePath) {
     setMorePath(location.pathname)
     setMoreOpen(false)
+    setAccountOpen(false)
   }
-  const showLabels = desktop || hovered || pinned
+  const showLabels = member || desktop || hovered || pinned
   const title = shellSectionTitle(location.pathname, destinations, secondary)
   const styles = tone === 'staff' ? staffTheme : memberTheme
   const home = destinations[0]?.to ?? '/'
   const secondaryActive = secondary.some(
     (item) => location.pathname === item.to || location.pathname.startsWith(`${item.to}/`),
   )
+  const accountRoute =
+    location.pathname === '/dashboard/profile' ||
+    location.pathname.startsWith('/dashboard/profile/') ||
+    location.pathname === '/dashboard/help' ||
+    location.pathname.startsWith('/dashboard/help/')
   const moreCurrent = moreOpen || secondaryActive
+  const displayName = accountName.trim() || accountLabel
 
   useEffect(() => {
     if (!moreOpen) return
@@ -63,8 +82,93 @@ export function AppShell({
     }
   }, [moreOpen])
 
+  useEffect(() => {
+    if (!accountOpen) return
+    const panel = accountPanel.current
+    const button = accountButton.current
+    const previousOverflow = document.body.style.overflow
+    if (!desktop) document.body.style.overflow = 'hidden'
+    const focusables = () =>
+      panel
+        ? [...panel.querySelectorAll<HTMLElement>('a[href], button:not([disabled])')].filter(
+            (node) => node.tabIndex !== -1,
+          )
+        : []
+    focusables()[0]?.focus()
+    function onKey(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        event.preventDefault()
+        setAccountOpen(false)
+        return
+      }
+      if (event.key !== 'Tab') return
+      const items = focusables()
+      if (items.length === 0) return
+      const first = items[0]
+      const last = items[items.length - 1]
+      if (!first || !last) return
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault()
+        last.focus()
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault()
+        first.focus()
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => {
+      document.body.style.overflow = previousOverflow
+      window.removeEventListener('keydown', onKey)
+      button?.focus()
+    }
+  }, [accountOpen, desktop])
+
+  function retap(event: { preventDefault: () => void }, item: Destination, isActive: boolean) {
+    if (!isActive) return
+    event.preventDefault()
+    navigate(item.to)
+    requestAnimationFrame(() => {
+      document.querySelector('.shell-main')?.scrollTo({ top: 0 })
+    })
+  }
+
+  function closeAccount() {
+    setAccountOpen(false)
+  }
+
+  const accountRows = (
+    <ul>
+      {secondary.map((item) => (
+        <li key={item.to}>
+          <NavLink
+            to={item.to}
+            className={({ isActive }) =>
+              `flex min-h-11 w-full items-center px-3 text-[0.95rem] ${
+                isActive ? styles.navActive : styles.navIdle
+              }`
+            }
+            onClick={closeAccount}
+          >
+            {item.label}
+          </NavLink>
+        </li>
+      ))}
+      {roleSwitch ? (
+        <li>
+          <Link
+            to={roleSwitch.to}
+            className={`flex min-h-11 w-full items-center px-3 text-[0.95rem] ${styles.navIdle}`}
+            onClick={closeAccount}
+          >
+            {roleSwitch.label}
+          </Link>
+        </li>
+      ) : null}
+    </ul>
+  )
+
   return (
-    <div className={`shell-root min-h-dvh ${styles.page}`}>
+    <div className={`shell-root min-h-dvh ${member ? 'shell-tone-member' : 'shell-tone-staff'} ${styles.page}`}>
       <div className="shell-frame flex min-h-dvh w-full">
         <aside
           aria-label="Primary"
@@ -75,96 +179,181 @@ export function AppShell({
           } transition-[width] duration-200 motion-reduce:transition-none`}
         >
           <div className="shell-safe-y shell-safe-left sticky top-0 flex h-dvh w-full flex-col self-start">
-          <div className="flex items-center justify-between gap-2 px-3 py-4">
-            <BrandLockup to={home} tone="on-dark" markOnly={!showLabels} />
-            <button
-              type="button"
-              className={`inline-flex min-h-11 min-w-11 items-center justify-center lg:hidden ${styles.muted}`}
-              aria-expanded={pinned || hovered}
-              aria-label={pinned ? 'Collapse navigation' : 'Expand navigation'}
-              onClick={() => setPinned((value) => !value)}
-            >
-              <span aria-hidden="true">{pinned ? '«' : '»'}</span>
-            </button>
-          </div>
-          <nav className="flex-1 px-2">
-            <ul className="space-y-1">
-              {destinations.map((item) => (
-                <li key={item.to}>
-                  <NavLink
-                    to={item.to}
-                    end={item.end}
-                    data-nav="primary"
-                    data-destination={item.label}
-                    className={({ isActive }) =>
-                      `flex min-h-11 items-center gap-3 px-3 text-[0.95rem] ${
-                        isActive ? styles.sidebarActive : styles.sidebarIdle
-                      }`
-                    }
-                  >
-                    <DestinationIcon id={item.id} />
-                    <span className={showLabels ? 'truncate' : 'sr-only'}>{item.label}</span>
-                  </NavLink>
-                </li>
-              ))}
-            </ul>
-          </nav>
-          <div className={`border-t px-3 py-4 ${styles.border}`}>
-            {showLabels && secondary.length > 0 && (
-              <ul className="mb-3 space-y-1">
-                {secondary.map((item) => (
+            <div className="flex items-center justify-between gap-2 px-3 py-4">
+              <BrandLockup to={home} tone="on-dark" markOnly={!showLabels} />
+              {member ? null : (
+                <button
+                  type="button"
+                  className={`inline-flex min-h-11 min-w-11 items-center justify-center lg:hidden ${styles.muted}`}
+                  aria-expanded={pinned || hovered}
+                  aria-label={pinned ? 'Collapse navigation' : 'Expand navigation'}
+                  onClick={() => setPinned((value) => !value)}
+                >
+                  <span aria-hidden="true">{pinned ? '«' : '»'}</span>
+                </button>
+              )}
+            </div>
+            <nav className="flex-1 px-2">
+              <ul className="space-y-1">
+                {destinations.map((item) => (
                   <li key={item.to}>
                     <NavLink
                       to={item.to}
-                      data-nav="secondary"
+                      end={item.end}
+                      data-nav="primary"
+                      data-destination={item.label}
+                      aria-label={item.id === 'deals' && dealsBadge > 0 ? dealsBadgeLabel(dealsBadge) : undefined}
+                      onClick={(event) => retap(event, item, event.currentTarget.getAttribute('aria-current') === 'page')}
                       className={({ isActive }) =>
-                        `flex min-h-11 items-center px-3 text-[0.92rem] ${
+                        `flex min-h-11 items-center gap-3 px-3 text-[0.95rem] ${
                           isActive ? styles.sidebarActive : styles.sidebarIdle
                         }`
                       }
                     >
-                      {item.label}
+                      <span className="relative inline-flex">
+                        <DestinationIcon id={item.id} />
+                        {item.id === 'deals' ? <CountBadge count={dealsBadge} /> : null}
+                      </span>
+                      <span className={showLabels ? 'truncate' : 'sr-only'}>{item.label}</span>
                     </NavLink>
                   </li>
                 ))}
               </ul>
+            </nav>
+            {member ? (
+              <div className={`mt-auto border-t px-3 py-4 ${styles.border}`}>
+                <div className="flex items-center gap-3 px-2">
+                  <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[var(--ba-indigo)] text-[0.75rem] text-[var(--ba-porcelain)]">
+                    {accountMark}
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block truncate text-[0.95rem] text-[var(--ba-porcelain)]">{displayName}</span>
+                    <span className="block text-[0.8125rem] text-[var(--ba-lavender-mist)]">Account</span>
+                  </span>
+                </div>
+                <ul className="mt-2">
+                  {secondary.map((item) => (
+                    <li key={item.to}>
+                      <NavLink
+                        to={item.to}
+                        data-nav="account"
+                        className={({ isActive }) =>
+                          `flex min-h-11 items-center px-3 text-[0.95rem] ${
+                            isActive ? styles.sidebarActive : styles.sidebarIdle
+                          }`
+                        }
+                      >
+                        {item.label}
+                      </NavLink>
+                    </li>
+                  ))}
+                </ul>
+                {roleSwitch ? (
+                  <Link
+                    to={roleSwitch.to}
+                    className={`flex min-h-11 items-center px-3 text-[0.95rem] ${styles.sidebarIdle}`}
+                  >
+                    {roleSwitch.label}
+                  </Link>
+                ) : null}
+                <button
+                  type="button"
+                  onClick={onSignOut}
+                  data-nav="sign-out"
+                  className={`flex min-h-11 w-full items-center px-3 text-left text-[0.95rem] ${styles.sidebarIdle}`}
+                >
+                  Sign out
+                </button>
+              </div>
+            ) : (
+              <div className={`border-t px-3 py-4 ${styles.border}`}>
+                {showLabels && secondary.length > 0 && (
+                  <ul className="mb-3 space-y-1">
+                    {secondary.map((item) => (
+                      <li key={item.to}>
+                        <NavLink
+                          to={item.to}
+                          data-nav="secondary"
+                          className={({ isActive }) =>
+                            `flex min-h-11 items-center px-3 text-[0.92rem] ${
+                              isActive ? styles.sidebarActive : styles.sidebarIdle
+                            }`
+                          }
+                        >
+                          {item.label}
+                        </NavLink>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {accountLabel && showLabels && (
+                  <p className="truncate px-3 text-[0.82rem] text-[var(--ba-lavender-mist)]">{accountLabel}</p>
+                )}
+              </div>
             )}
-            {accountLabel && showLabels && (
-              <p className="truncate px-3 text-[0.82rem] text-[var(--ba-lavender-mist)]">{accountLabel}</p>
-            )}
-          </div>
           </div>
         </aside>
 
         <div className="shell-column flex min-w-0 flex-1 flex-col">
           <header className={`shell-safe-top shell-safe-x sticky top-0 z-30 border-b backdrop-blur ${styles.header}`}>
             <div className="flex min-h-14 items-center justify-between gap-3 px-2 py-1 md:px-6 md:py-2">
-              <div className="min-w-0 md:hidden">
-                <BrandLockup to={home} tone={tone === 'staff' ? 'on-dark' : 'on-light'} />
-              </div>
-              <p className="hidden min-w-0 font-display text-[1.15rem] font-semibold tracking-[-0.02em] md:block">
-                {title}
-              </p>
+              {member ? (
+                <p className="min-w-0 truncate font-display text-[1.15rem] font-semibold tracking-[-0.02em]">
+                  {title}
+                </p>
+              ) : (
+                <>
+                  <div className="min-w-0 md:hidden">
+                    <BrandLockup to={home} tone={tone === 'staff' ? 'on-dark' : 'on-light'} />
+                  </div>
+                  <p className="hidden min-w-0 font-display text-[1.15rem] font-semibold tracking-[-0.02em] md:block">
+                    {title}
+                  </p>
+                </>
+              )}
               <div className="flex shrink-0 items-center justify-end gap-2">
-                {updatedLabel && (
+                {!member && updatedLabel ? (
                   <p className={`hidden px-1 text-[0.75rem] md:block ${styles.muted}`}>{updatedLabel}</p>
-                )}
-                {roleSwitch && (
+                ) : null}
+                {!member && roleSwitch ? (
                   <Link
                     to={roleSwitch.to}
                     className={`hidden min-h-11 items-center px-2 text-[0.75rem] font-semibold tracking-[0.06em] uppercase md:inline-flex ${styles.switch}`}
                   >
                     {roleSwitch.label}
                   </Link>
+                ) : null}
+                {!member ? (
+                  <button
+                    type="button"
+                    onClick={onSignOut}
+                    className={`hidden min-h-11 items-center px-2 text-[0.75rem] font-semibold tracking-[0.06em] uppercase md:inline-flex ${styles.signOut}`}
+                  >
+                    Sign out
+                  </button>
+                ) : null}
+                {member ? (
+                  <button
+                    ref={accountButton}
+                    type="button"
+                    className={`inline-flex min-h-11 items-center gap-2 rounded-full ps-2 pe-1 ${
+                      accountRoute ? 'ring-2 ring-[var(--ba-indigo)]' : ''
+                    }`}
+                    aria-label="Account"
+                    aria-expanded={accountOpen}
+                    aria-controls="shell-account"
+                    onClick={() => setAccountOpen((value) => !value)}
+                  >
+                    <span className="hidden text-[0.8125rem] font-semibold text-[var(--ba-indigo)] lg:inline">
+                      Account
+                    </span>
+                    <span className="inline-flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-[var(--ba-indigo)] text-[0.75rem] text-[var(--ba-porcelain)]">
+                      {accountMark}
+                    </span>
+                  </button>
+                ) : (
+                  accountMark
                 )}
-                <button
-                  type="button"
-                  onClick={onSignOut}
-                  className={`hidden min-h-11 items-center px-2 text-[0.75rem] font-semibold tracking-[0.06em] uppercase md:inline-flex ${styles.signOut}`}
-                >
-                  Sign out
-                </button>
-                {accountMark}
               </div>
             </div>
           </header>
@@ -174,9 +363,9 @@ export function AppShell({
 
       <nav
         aria-label="Primary"
-        className={`shell-tab-bar shell-safe-bottom shell-safe-x fixed inset-x-0 bottom-0 z-40 border-t md:hidden ${styles.tabBar}`}
+        className={`shell-tab-bar shell-safe-bottom shell-safe-x fixed inset-x-0 bottom-0 z-40 h-14 border-t md:hidden ${styles.tabBar}`}
       >
-        <ul className={`grid min-h-[var(--ba-tab-bar-height,76px)] ${tabGridClass(destinations.length)}`}>
+        <ul className={`grid min-h-14 ${member ? 'grid-cols-5' : tabGridClass(destinations.length)}`}>
           {destinations.map((item) => (
             <li key={item.to} className="min-w-0">
               <NavLink
@@ -184,38 +373,53 @@ export function AppShell({
                 end={item.end}
                 data-nav="primary"
                 data-destination={item.label}
+                aria-label={item.id === 'deals' && dealsBadge > 0 ? dealsBadgeLabel(dealsBadge) : undefined}
+                onClick={(event) => retap(event, item, event.currentTarget.getAttribute('aria-current') === 'page')}
                 className={({ isActive }) =>
-                  `flex min-h-11 w-full flex-col items-center justify-center gap-0.5 px-0.5 py-1.5 text-center text-[0.65rem] leading-tight ${
-                    isActive ? styles.tabActive : styles.tabIdle
+                  `flex min-h-11 w-full flex-col items-center justify-center gap-0.5 px-0.5 py-1 text-center text-[12px] leading-none whitespace-nowrap ${
+                    isActive ? 'font-bold text-[var(--ba-indigo)]' : styles.tabIdle
                   }`
                 }
               >
-                <DestinationIcon id={item.id} />
-                <span className="max-w-full text-balance">{item.label}</span>
+                {({ isActive }) => (
+                  <>
+                    <span
+                      className={`relative inline-flex h-6 w-6 items-center justify-center rounded-full ${
+                        isActive ? 'bg-[var(--ba-lavender-mist)]' : ''
+                      }`}
+                    >
+                      <DestinationIcon id={item.id} className="h-6 w-6 shrink-0" />
+                      {item.id === 'deals' ? <CountBadge count={dealsBadge} /> : null}
+                    </span>
+                    <span className="max-w-full truncate">{item.label}</span>
+                  </>
+                )}
               </NavLink>
             </li>
           ))}
-          <li className="min-w-0">
-            <button
-              type="button"
-              data-nav="more"
-              data-more-current={moreCurrent ? 'true' : 'false'}
-              className={`flex min-h-11 min-w-11 w-full flex-col items-center justify-center gap-0.5 px-0.5 py-1.5 text-center text-[0.65rem] leading-tight ${
-                moreCurrent ? styles.tabActive : styles.tabIdle
-              }`}
-              aria-expanded={moreOpen}
-              aria-controls="shell-more"
-              aria-label="More"
-              onClick={() => setMoreOpen((value) => !value)}
-            >
-              <MoreIcon />
-              <span>More</span>
-            </button>
-          </li>
+          {member ? null : (
+            <li className="min-w-0">
+              <button
+                type="button"
+                data-nav="more"
+                data-more-current={moreCurrent ? 'true' : 'false'}
+                className={`flex min-h-11 min-w-11 w-full flex-col items-center justify-center gap-0.5 px-0.5 py-1.5 text-center text-[0.65rem] leading-tight ${
+                  moreCurrent ? styles.tabActive : styles.tabIdle
+                }`}
+                aria-expanded={moreOpen}
+                aria-controls="shell-more"
+                aria-label="More"
+                onClick={() => setMoreOpen((value) => !value)}
+              >
+                <MoreIcon />
+                <span>More</span>
+              </button>
+            </li>
+          )}
         </ul>
       </nav>
 
-      {moreOpen && (
+      {!member && moreOpen ? (
         <div className="fixed inset-0 z-50 md:hidden" role="presentation">
           <button
             type="button"
@@ -233,7 +437,7 @@ export function AppShell({
             <div className="flex items-start justify-between gap-3 px-3 pb-2">
               <div className="min-w-0">
                 <p className="font-display text-[1.15rem] font-semibold tracking-[-0.02em]">More</p>
-                {updatedLabel && <p className={`mt-1 text-[0.75rem] ${styles.muted}`}>{updatedLabel}</p>}
+                {updatedLabel ? <p className={`mt-1 text-[0.75rem] ${styles.muted}`}>{updatedLabel}</p> : null}
               </div>
               <button
                 type="button"
@@ -261,7 +465,7 @@ export function AppShell({
                   </NavLink>
                 </li>
               ))}
-              {roleSwitch && (
+              {roleSwitch ? (
                 <li>
                   <Link
                     to={roleSwitch.to}
@@ -271,7 +475,7 @@ export function AppShell({
                     {roleSwitch.label}
                   </Link>
                 </li>
-              )}
+              ) : null}
             </ul>
             <div className={`my-2 border-t ${styles.border}`} role="separator" />
             <button
@@ -284,12 +488,76 @@ export function AppShell({
             </button>
           </div>
         </div>
-      )}
+      ) : null}
+
+      {member && accountOpen ? (
+        <div className="fixed inset-0 z-50" role="presentation">
+          <button
+            type="button"
+            aria-label="Close"
+            className="absolute inset-0 bg-ink/45 lg:bg-transparent"
+            onClick={closeAccount}
+          />
+          <div
+            ref={accountPanel}
+            id="shell-account"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={accountTitleId}
+            className={`account-sheet shell-safe-bottom absolute inset-x-0 bottom-0 max-h-[min(32rem,85dvh)] overflow-y-auto border-t px-4 pt-4 pb-4 lg:inset-x-auto lg:end-4 lg:top-16 lg:bottom-auto lg:w-80 lg:border ${styles.border} ${styles.page}`}
+          >
+            <div className="flex items-start justify-between gap-3 px-3 pb-2">
+              <div className="flex min-w-0 items-center gap-3">
+                <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[var(--ba-indigo)] text-[0.85rem] text-[var(--ba-porcelain)]">
+                  {accountMark}
+                </span>
+                <div className="min-w-0">
+                  <p id={accountTitleId} className="truncate font-display text-[1.15rem] font-semibold tracking-[-0.02em]">
+                    {displayName}
+                  </p>
+                  <p className="text-[0.8125rem] text-[var(--ba-muted)]">Account</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                className={`inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center px-3 text-[0.95rem] font-semibold ${styles.switch}`}
+                aria-label="Close"
+                onClick={closeAccount}
+              >
+                Close
+              </button>
+            </div>
+            {accountRows}
+            <div className={`my-2 border-t ${styles.border}`} role="separator" />
+            <button
+              type="button"
+              onClick={onSignOut}
+              data-nav="sign-out"
+              className={`flex min-h-11 w-full items-center px-3 text-left text-[1rem] ${styles.signOut}`}
+            >
+              Sign out
+            </button>
+          </div>
+        </div>
+      ) : null}
     </div>
   )
 }
 
-/** One column per primary destination, plus More. */
+function CountBadge({ count }: { count: number }) {
+  if (count <= 0) return null
+  const text = count > 9 ? '9+' : String(count)
+  return (
+    <span
+      data-chip=""
+      className="absolute -top-1 end-0 inline-flex min-h-[1.125rem] min-w-[1.125rem] items-center justify-center rounded-full bg-[var(--ba-indigo)] px-1 text-[12px] leading-none font-semibold text-white ring-2 ring-white"
+    >
+      {text}
+    </span>
+  )
+}
+
+/** Staff tab bar: one column per primary destination, plus More. */
 function tabGridClass(destinationCount: number) {
   if (destinationCount + 1 === 7) return 'grid-cols-7'
   return 'grid-cols-6'

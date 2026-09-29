@@ -11,7 +11,6 @@ import { supabase } from '../../lib/supabase'
 import { useNoIndex } from '../../lib/usePageTitle'
 import { ErrorBanner, HomeSkeleton } from '../../shell/ViewState'
 import { MEMBER_VIEWS } from '../../shell/viewCopy'
-import { formatUpdated } from '../../shell/destinations'
 import { useDashboardStatus, useMember } from './context'
 import { HomeSnapshotView } from './HomeSnapshotView'
 import { PendingInviteCards } from './PendingInviteCards'
@@ -29,6 +28,7 @@ const EMPTY_SOURCES: LoadedSources = {
   activity: null,
   activityStatus: 'loading',
   partialError: false,
+  figuresAsOf: null,
 }
 
 export function DashboardHome() {
@@ -158,7 +158,7 @@ export function DashboardHome() {
     activityStatus: loading ? 'loading' : sources.activityStatus,
     loading,
     partialError: !loading && sources.partialError,
-    updatedLabel: formatUpdated(status.updatedAt),
+    updatedLabel: null,
   })
 
   return (
@@ -199,6 +199,8 @@ export function DashboardHome() {
             </div>
           ) : null
         }
+        figuresAsOf={sources.figuresAsOf}
+        userId={userId}
         onRetry={() => {
           setAttempt((value) => value + 1)
           setInviteAttempt((value) => value + 1)

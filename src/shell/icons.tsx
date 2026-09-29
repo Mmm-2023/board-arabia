@@ -1,9 +1,9 @@
-export function DestinationIcon({ id }: { id: string }) {
+export function DestinationIcon({ id, className = 'h-5 w-5 shrink-0' }: { id: string; className?: string }) {
   return (
     <svg
       aria-hidden="true"
       viewBox="0 0 24 24"
-      className="h-5 w-5 shrink-0"
+      className={className}
       fill="none"
       stroke="currentColor"
       strokeWidth="1.75"
@@ -44,6 +44,31 @@ function paths(id: string) {
           <path d="M5 20V10l7-5 7 5v10" />
           <path d="M10 20v-4h4v4" />
           <path d="M9 12h2M13 12h2M9 15h2M13 15h2" />
+        </>
+      )
+    case 'deals':
+      return (
+        <>
+          <path d="M4 8h16v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V8z" />
+          <path d="M8 8V6a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+          <path d="M4 12h16" />
+        </>
+      )
+    case 'majlis':
+      return (
+        <>
+          <path d="M6 10h12" />
+          <path d="M7 10v7" />
+          <path d="M17 10v7" />
+          <path d="M5 17h14" />
+          <path d="M9 10V7.5a3 3 0 0 1 6 0V10" />
+        </>
+      )
+    case 'ai':
+      return (
+        <>
+          <path d="M12 3.5 13.1 7 16.5 8 13.1 9 12 12.5 10.9 9 7.5 8 10.9 7 12 3.5z" />
+          <path d="M17.5 14.5 18.1 16.2 19.8 16.8 18.1 17.4 17.5 19.1 16.9 17.4 15.2 16.8 16.9 16.2 17.5 14.5z" />
         </>
       )
     case 'network':

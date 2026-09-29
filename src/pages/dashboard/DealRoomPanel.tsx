@@ -76,7 +76,7 @@ export function DealRoomPanel({
   return (
     <div data-deal-manage="" className="max-w-3xl">
       <Link
-        to="/dashboard/rooms"
+        to="/dashboard/deals/rooms"
         className="inline-flex min-h-11 items-center text-[0.75rem] font-semibold tracking-[0.08em] text-brass uppercase"
       >
         Rooms

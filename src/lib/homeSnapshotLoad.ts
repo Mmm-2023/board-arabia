@@ -1,4 +1,5 @@
 import { fetchDirectory, fetchHomeActivity, fetchMandates, fetchPartners, fetchRooms } from './demoFetch'
+import { figuresAsOfLabel } from './riyadhStamp'
 import {
   platformMoneyLines,
   type DirectoryBrief,
@@ -25,6 +26,7 @@ export type LoadedSources = {
   activity: HomeActivity[] | null
   activityStatus: HomeModel['activityStatus']
   partialError: boolean
+  figuresAsOf: string | null
 }
 
 export async function loadHomeSources(input: { userId: string; sponsor: boolean }): Promise<LoadedSources> {
@@ -111,6 +113,7 @@ export async function loadHomeSources(input: { userId: string; sponsor: boolean 
     activity: activityRows,
     activityStatus,
     partialError: partialError || stats == null,
+    figuresAsOf: figuresAsOfLabel(stats?.updatedAt),
   }
 }
 

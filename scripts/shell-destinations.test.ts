@@ -3,12 +3,14 @@ import { readFileSync, readdirSync, statSync } from 'node:fs'
 import path from 'node:path'
 import test from 'node:test'
 import {
+  MEMBER_ACCOUNT,
   MEMBER_DESTINATIONS,
-  MEMBER_SECONDARY,
+  MEMBER_SECTIONS,
   STAFF_DESTINATIONS,
   STAFF_SECONDARY,
   formatUpdated,
   shellSectionTitle,
+  staleBanner,
 } from '../src/shell/destinations.ts'
 import { MEMBER_VIEWS, STAFF_VIEWS } from '../src/shell/viewCopy.ts'
 
@@ -17,21 +19,22 @@ const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..')
 test('member primaries stay in the locked order', () => {
   assert.deepEqual(
     MEMBER_DESTINATIONS.map((item) => item.label),
-    ['Home', 'Directory', 'Mandates', 'Real Estate', 'Network', 'Profile'],
+    ['Home', 'Deals', 'People', 'Majlis', 'AI tools'],
   )
   assert.deepEqual(
     MEMBER_DESTINATIONS.map((item) => item.to),
-    [
-      '/dashboard',
-      '/dashboard/directory',
-      '/dashboard/mandates',
-      '/dashboard/real-estate',
-      '/dashboard/network',
-      '/dashboard/profile',
-    ],
+    ['/dashboard', '/dashboard/deals', '/dashboard/people', '/dashboard/majlis', '/dashboard/ai'],
   )
-  assert.equal(MEMBER_DESTINATIONS.length, 6)
+  assert.equal(MEMBER_DESTINATIONS.length, 5)
   assert.equal(MEMBER_DESTINATIONS[0]?.end, true)
+  assert.deepEqual(
+    MEMBER_SECTIONS.deals?.map((item) => item.label),
+    ['Mandates', 'Real estate', 'Deal rooms'],
+  )
+  assert.deepEqual(
+    MEMBER_SECTIONS.people?.map((item) => item.label),
+    ['Directory', 'Invites'],
+  )
 })
 
 test('staff primaries stay in the locked order', () => {
@@ -47,14 +50,14 @@ test('staff primaries stay in the locked order', () => {
   assert.equal(STAFF_DESTINATIONS[0]?.end, true)
 })
 
-test('secondary links are not a sixth primary', () => {
+test('account links are not tabs and staff secondary stays put', () => {
   const memberLabels = new Set(MEMBER_DESTINATIONS.map((item) => item.label))
   const staffLabels = new Set(STAFF_DESTINATIONS.map((item) => item.label))
-  for (const item of MEMBER_SECONDARY) assert.equal(memberLabels.has(item.label), false)
+  for (const item of MEMBER_ACCOUNT) assert.equal(memberLabels.has(item.label), false)
   for (const item of STAFF_SECONDARY) assert.equal(staffLabels.has(item.label), false)
   assert.deepEqual(
-    MEMBER_SECONDARY.map((item) => item.label),
-    ['AI Due Diligence', 'Majlis', 'Rooms', 'Help'],
+    MEMBER_ACCOUNT.map((item) => item.label),
+    ['Profile', 'Help'],
   )
   assert.deepEqual(
     STAFF_SECONDARY.map((item) => item.label),
@@ -63,28 +66,16 @@ test('secondary links are not a sixth primary', () => {
 })
 
 test('section title follows the active destination', () => {
-  assert.equal(shellSectionTitle('/dashboard', MEMBER_DESTINATIONS, MEMBER_SECONDARY), 'Home')
+  assert.equal(shellSectionTitle('/dashboard', MEMBER_DESTINATIONS, MEMBER_ACCOUNT), 'Home')
+  assert.equal(shellSectionTitle('/dashboard/deals/rooms/abc', MEMBER_DESTINATIONS, MEMBER_ACCOUNT), 'Deals')
+  assert.equal(shellSectionTitle('/dashboard/people/invites', MEMBER_DESTINATIONS, MEMBER_ACCOUNT), 'People')
+  assert.equal(shellSectionTitle('/dashboard/majlis', MEMBER_DESTINATIONS, MEMBER_ACCOUNT), 'Majlis')
   assert.equal(
-    shellSectionTitle('/dashboard/network', MEMBER_DESTINATIONS, MEMBER_SECONDARY),
-    'Network',
+    shellSectionTitle('/dashboard/ai/due-diligence', MEMBER_DESTINATIONS, MEMBER_ACCOUNT),
+    'AI tools',
   )
-  assert.equal(
-    shellSectionTitle('/dashboard/real-estate', MEMBER_DESTINATIONS, MEMBER_SECONDARY),
-    'Real Estate',
-  )
-  assert.equal(shellSectionTitle('/dashboard/majlis', MEMBER_DESTINATIONS, MEMBER_SECONDARY), 'Majlis')
-  assert.equal(
-    shellSectionTitle('/dashboard/due-diligence', MEMBER_DESTINATIONS, MEMBER_SECONDARY),
-    'AI Due Diligence',
-  )
-  assert.equal(
-    shellSectionTitle(
-      '/dashboard/due-diligence/11111111-1111-4111-8111-111111111111',
-      MEMBER_DESTINATIONS,
-      MEMBER_SECONDARY,
-    ),
-    'AI Due Diligence',
-  )
+  assert.equal(shellSectionTitle('/dashboard/profile', MEMBER_DESTINATIONS, MEMBER_ACCOUNT), 'Profile')
+  assert.equal(shellSectionTitle('/dashboard/help', MEMBER_DESTINATIONS, MEMBER_ACCOUNT), 'Help')
   assert.equal(shellSectionTitle('/admin/applications', STAFF_DESTINATIONS, STAFF_SECONDARY), 'Applications')
   assert.equal(shellSectionTitle('/admin/email', STAFF_DESTINATIONS, STAFF_SECONDARY), 'Email')
   assert.equal(shellSectionTitle('/admin/majlis', STAFF_DESTINATIONS, STAFF_SECONDARY), 'Majlis')
@@ -95,6 +86,9 @@ test('updated label has no em dash', () => {
   const label = formatUpdated(new Date('2026-09-23T09:05:00Z'))
   assert.match(label || '', /^Updated /)
   assert.equal((label || '').includes('\u2014'), false)
+  const stale = staleBanner(new Date('2026-09-23T09:05:00Z'))
+  assert.match(stale, /^Could not refresh\. Showing what loaded at \d{2}:\d{2}\. Retry$/)
+  assert.equal(stale.includes('\u2014'), false)
 })
 
 test('state copy matches the brief and has no em dash', () => {

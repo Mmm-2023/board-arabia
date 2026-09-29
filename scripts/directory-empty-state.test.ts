@@ -18,7 +18,6 @@ const uiFiles = [
   '../src/pages/dashboard/DirectoryEmpty.tsx',
   '../src/pages/dashboard/DirectoryPage.tsx',
   '../src/pages/dashboard/MemberAvatar.tsx',
-  '../src/pages/dashboard/ModulePage.tsx',
 ]
 
 test('profile is ready only with name, headline, and location', () => {
@@ -106,13 +105,10 @@ test('directory copy has no em dash and no invented people', () => {
   const ghosts = readFileSync(new URL('../src/pages/dashboard/DirectoryEmpty.tsx', import.meta.url), 'utf8')
   assert.match(ghosts, /rounded-full/)
   assert.match(ghosts, /aria-hidden="true"/)
-  assert.match(ghosts, /to="\/dashboard\/invites"/)
+  assert.match(ghosts, /to="\/dashboard\/people\/invites"/)
   assert.match(ghosts, /to="\/dashboard\/profile"/)
   assert.equal(ghosts.includes('<img'), false)
   assert.equal(ghosts.includes('No names on this page'), false)
-  const modulePage = readFileSync(new URL('../src/pages/dashboard/ModulePage.tsx', import.meta.url), 'utf8')
-  assert.equal(modulePage.includes('No names on this page'), false)
-  assert.equal(modulePage.includes('directory:'), false)
 })
 
 test('avatar files stay JPG or PNG under 5 MB and storage stays private', () => {

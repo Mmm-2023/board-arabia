@@ -264,6 +264,7 @@ function presentMyDealRoom(raw: unknown): MemberDealRoom | null {
     ? row.my_invite_status
     : null
   if (!UUID.test(id) || !name || !UUID.test(ownerMemberId) || !status || !myRole || !myInviteStatus) return null
+  if (row.is_demo === true) return null
   if (row.opened_by != null && row.opened_by !== 'member') return null
   const mandateId = optionalId(row.mandate_id)
   const reOpportunityId = optionalId(row.re_opportunity_id)
