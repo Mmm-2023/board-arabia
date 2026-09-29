@@ -198,76 +198,72 @@ function FindingBlock({
   claims: BuiltReport['claims']
 }) {
   return (
-    <section className="mt-8" aria-labelledby={`dd-finding-${section.number}`}>
-      <details className="dd-finding" open={section.number === 1}>
-        <summary className="min-h-11 cursor-pointer list-none md:cursor-auto [&::-webkit-details-marker]:hidden">
-          <h2
-            id={`dd-finding-${section.number}`}
-            className="border-b border-[var(--ba-copper)] pb-2 font-display text-[1.35rem] font-semibold"
-          >
-            Finding {section.number}. {section.title}
-          </h2>
-        </summary>
-        <div className="dd-finding-body">
-          <p className="mt-3 max-w-3xl text-[1rem] leading-relaxed text-ink/80">{section.narrative}</p>
-          <ul className="mt-4 space-y-3 md:hidden">
-            {section.rows.map((row, index) => (
-              <li
-                key={`${section.number}-${index}`}
-                className="rounded-xl border border-[var(--ba-line)] bg-white px-4 py-3"
-              >
-                <p className="text-[1rem] leading-relaxed font-semibold break-words text-ink">{row.claim}</p>
-                <div className="mt-2">
-                  <StatusPill verdict={row.status} />
-                </div>
-                <ClampText text={row.finding} className="mt-2 text-[0.95rem] leading-relaxed text-ink/80" />
-                <div className="mt-2 text-[0.95rem] text-ink">
-                  <FindingSource row={row} claims={claims} />
-                </div>
-              </li>
-            ))}
-          </ul>
-          <div className="mt-4 hidden overflow-x-auto rounded-xl border border-[var(--ba-line)] bg-white md:block">
-            <table className="w-full min-w-[44rem] border-collapse text-left">
-              <thead>
-                <tr className="border-b border-[var(--ba-line)] text-[0.82rem] text-[var(--ba-muted)]">
-                  <th scope="col" className="px-3 py-3 font-semibold">
-                    {REPORT_COPY.colClaim}
-                  </th>
-                  <th scope="col" className="px-3 py-3 font-semibold">
-                    {REPORT_COPY.colSource}
-                  </th>
-                  <th scope="col" className="px-3 py-3 font-semibold">
-                    {REPORT_COPY.colFinding}
-                  </th>
-                  <th scope="col" className="px-3 py-3 font-semibold">
-                    {REPORT_COPY.colStatus}
-                  </th>
+    <section className="dd-finding mt-8" aria-labelledby={`dd-finding-${section.number}`}>
+      <h2
+        id={`dd-finding-${section.number}`}
+        className="border-b border-[var(--ba-copper)] pb-2 font-display text-[1.35rem] font-semibold"
+      >
+        Finding {section.number}. {section.title}
+      </h2>
+      <div className="dd-finding-body">
+        <p className="mt-3 max-w-3xl text-[1rem] leading-relaxed text-ink/80">{section.narrative}</p>
+        <ul className="mt-4 space-y-3 md:hidden">
+          {section.rows.map((row, index) => (
+            <li
+              key={`${section.number}-${index}`}
+              className="rounded-xl border border-[var(--ba-line)] bg-white px-4 py-3"
+            >
+              <p className="text-[1rem] leading-relaxed font-semibold break-words text-ink">{row.claim}</p>
+              <div className="mt-2">
+                <StatusPill verdict={row.status} />
+              </div>
+              <ClampText text={row.finding} className="mt-2 text-[0.95rem] leading-relaxed text-ink/80" />
+              <div className="mt-2 text-[0.95rem] text-ink">
+                <FindingSource row={row} claims={claims} />
+              </div>
+            </li>
+          ))}
+        </ul>
+        <div className="mt-4 hidden overflow-x-auto rounded-xl border border-[var(--ba-line)] bg-white md:block">
+          <table className="w-full min-w-[44rem] border-collapse text-left">
+            <thead>
+              <tr className="border-b border-[var(--ba-line)] text-[0.82rem] text-[var(--ba-muted)]">
+                <th scope="col" className="px-3 py-3 font-semibold">
+                  {REPORT_COPY.colClaim}
+                </th>
+                <th scope="col" className="px-3 py-3 font-semibold">
+                  {REPORT_COPY.colSource}
+                </th>
+                <th scope="col" className="px-3 py-3 font-semibold">
+                  {REPORT_COPY.colFinding}
+                </th>
+                <th scope="col" className="px-3 py-3 font-semibold">
+                  {REPORT_COPY.colStatus}
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {section.rows.map((row, index) => (
+                <tr
+                  key={`${section.number}-${index}`}
+                  className="border-b border-[var(--ba-line)] align-top hover:bg-[var(--ba-porcelain)]"
+                >
+                  <td className="px-3 py-3 text-[0.95rem] leading-relaxed text-ink">{row.claim}</td>
+                  <td className="px-3 py-3 text-[0.95rem] text-ink">
+                    <FindingSource row={row} claims={claims} />
+                  </td>
+                  <td className="px-3 py-3">
+                    <ClampText text={row.finding} className="text-[0.95rem] leading-relaxed text-ink/80" />
+                  </td>
+                  <td className="px-3 py-3">
+                    <StatusPill verdict={row.status} />
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {section.rows.map((row, index) => (
-                  <tr
-                    key={`${section.number}-${index}`}
-                    className="border-b border-[var(--ba-line)] align-top hover:bg-[var(--ba-porcelain)]"
-                  >
-                    <td className="px-3 py-3 text-[0.95rem] leading-relaxed text-ink">{row.claim}</td>
-                    <td className="px-3 py-3 text-[0.95rem] text-ink">
-                      <FindingSource row={row} claims={claims} />
-                    </td>
-                    <td className="px-3 py-3">
-                      <ClampText text={row.finding} className="text-[0.95rem] leading-relaxed text-ink/80" />
-                    </td>
-                    <td className="px-3 py-3">
-                      <StatusPill verdict={row.status} />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+              ))}
+            </tbody>
+          </table>
         </div>
-      </details>
+      </div>
     </section>
   )
 }
