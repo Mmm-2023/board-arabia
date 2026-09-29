@@ -209,6 +209,57 @@ export function passDraftReport(): BuiltReport {
   return report
 }
 
+export function rangeBreachReport(): BuiltReport {
+  const base = fullDraftRaw()
+  const analysis = parseDeckAnalysis({
+    hero: {
+      company: 'Northwind Freight',
+      one_liner: 'A shipped warehouse lane for example.com customers.',
+      posture: 'pass',
+      overall: 1,
+      pre_money: 8000000,
+      post_money: 10000000,
+      currency: 'USD',
+    },
+    ...base,
+    snapshot: {
+      ...(base.snapshot as object),
+      one_liner: 'A shipped warehouse lane for example.com customers.',
+      posture: 'pass',
+      posture_reason: 'The first step is proved.',
+      round: { amount: 2000000, equity_pct: 20, pre_money: 8000000, post_money: 10000000, currency: 'USD' },
+    },
+    scores: {
+      story_clarity: 4,
+      unit_economics: 4,
+      model_integrity: 4,
+      traction_evidence: 4,
+      team_and_governance: 4,
+      regulatory_and_operations: 4,
+      market_and_competition: 3,
+      use_of_funds: 4,
+      valuation_fit: 4,
+      overall: 4,
+    },
+    claims: [{ claim: 'Northwind Freight serves 40 warehouses.', page: '2', status: 'supported_in_deck', note: 'Deck-stated.' }],
+    risks: [{ title: 'Thin insurance note', severity: 'low', why: 'The deck names a carrier in one line.', evidence_that_would_retire_it: 'The policy number.' }],
+    memo_markdown: 'The gauge reads 25 kg, which is inside the 10 to 20 kg band.\n\nVerdict: the first step is proved and the price can be discussed.',
+  })
+  if (!analysis) throw new Error('range draft did not parse')
+  const report = buildReport(extractDeckFacts(FIXTURE_DECK), [
+    {
+      title: 'Northwind public note',
+      url: 'https://example.com/northwind',
+      text: 'Northwind Freight serves 40 warehouses. This public note is long enough to cite in a check.',
+    },
+  ])
+  report.analysis = analysis
+  report.company_label = 'Northwind Freight'
+  report.model_id = 'unit-model-id'
+  report.model_skip_reason = null
+  return report
+}
+
 export function publicChecksReport(): BuiltReport {
   const report = passDraftReport()
   report.sources = []

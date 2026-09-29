@@ -179,6 +179,104 @@ export function rawHasHero(raw: unknown): boolean {
   return Boolean(hero && typeof hero === 'object' && !Array.isArray(hero))
 }
 
+export type RangeVerdict = 'inside' | 'outside' | 'boundary' | 'unit_mismatch'
+
+export type RangeBreach = {
+  value: number
+  low: number
+  high: number
+  unit: string
+}
+
+const RANGE_NUMBER = String.raw`\d+(?:\.\d+)?`
+const RANGE_UNIT =
+  'celsius|°c|degrees?\\s+c|fahrenheit|°f|degrees?\\s+f|percent|pct|%|hours|hour|hrs|hr|kilograms|kilogram|kgs|kg|grams|gram|(?<![a-z])c(?![a-z])|(?<![a-z])f(?![a-z])|(?<![a-z])h(?![a-z])|(?<![a-z])g(?![a-z])'
+
+const BETWEEN_RANGE = new RegExp(
+  String.raw`\bbetween\s+(${RANGE_NUMBER})(?:\s*(${RANGE_UNIT}))?\s+and\s+(${RANGE_NUMBER})\s*(${RANGE_UNIT})`,
+  'gi',
+)
+const SPAN_RANGE = new RegExp(
+  String.raw`(?<![.\d])(${RANGE_NUMBER})(?:\s*(${RANGE_UNIT}))?\s*(?:to|-)\s*(${RANGE_NUMBER})\s*(${RANGE_UNIT})`,
+  'gi',
+)
+const READING = new RegExp(String.raw`(?<![.\d])(${RANGE_NUMBER})\s*(${RANGE_UNIT})`, 'gi')
+const RANGE_CUE = /\b(band|range|threshold|operating|within|inside|outside|limits?|windows?|specs?)\b/i
+
+export function compareRange(
+  value: number,
+  low: number,
+  high: number,
+  valueUnit: string,
+  rangeUnit: string,
+): RangeVerdict {
+  const left = normalizeUnit(valueUnit)
+  const right = normalizeUnit(rangeUnit)
+  if (!left || !right || left !== right) return 'unit_mismatch'
+  const min = Math.min(low, high)
+  const max = Math.max(low, high)
+  if (value === min || value === max) return 'boundary'
+  if (value < min || value > max) return 'outside'
+  return 'inside'
+}
+
+/** Operating ranges and readings in one text. Only a same-unit reading outside the band is returned. */
+export function findRangeBreaches(text: string): RangeBreach[] {
+  const ranges = collectRanges(text)
+  if (!ranges.length) return []
+  const breaches: RangeBreach[] = []
+  const seen = new Set<string>()
+  READING.lastIndex = 0
+  let match: RegExpExecArray | null
+  while ((match = READING.exec(text))) {
+    const start = match.index
+    const end = start + match[0].length
+    if (ranges.some((range) => start >= range.start && start < range.end)) continue
+    const value = Number(match[1])
+    const unit = normalizeUnit(match[2] || '')
+    if (!unit || !Number.isFinite(value)) continue
+    for (const range of ranges) {
+      if (range.unit !== unit) continue
+      if (compareRange(value, range.low, range.high, unit, range.unit) !== 'outside') continue
+      const key = `${value}|${range.low}|${range.high}|${unit}`
+      if (seen.has(key)) continue
+      seen.add(key)
+      breaches.push({ value, low: range.low, high: range.high, unit })
+    }
+    if (READING.lastIndex === start) READING.lastIndex = end
+  }
+  return breaches
+}
+
+/** Narrative JSON cannot replace the overall score from the scores pass. */
+export function mergeSectionDrafts(scoresRaw: unknown, narrativeRaw: unknown): Record<string, unknown> {
+  const scores = record(scoresRaw) || {}
+  const narrative = record(narrativeRaw) || {}
+  const scoreRow = record(scores.scores) || {}
+  const scoreSnap = record(scores.snapshot) || {}
+  const narrativeSnap = record(narrative.snapshot) || {}
+  const hero = record(scores.hero) || {}
+  const overall = score(scoreRow.overall)
+  return {
+    hero: { ...hero, ...(overall == null ? {} : { overall }) },
+    meta: scores.meta,
+    snapshot: {
+      ...scoreSnap,
+      posture: narrativeSnap.posture || narrative.posture || scoreSnap.posture,
+      posture_reason: narrativeSnap.posture_reason || narrative.posture_reason || scoreSnap.posture_reason,
+    },
+    scores: scoreRow,
+    claims: scores.claims,
+    math_checks: scores.math_checks,
+    unit_economics: scores.unit_economics,
+    risks: narrative.risks,
+    missing: narrative.missing,
+    questions_for_management: narrative.questions_for_management,
+    suggested_structure: narrative.suggested_structure,
+    memo_markdown: typeof narrative.memo_markdown === 'string' ? narrative.memo_markdown : scores.memo_markdown,
+  }
+}
+
 /** High risk, a contradicted claim, or overall at or below 2 forces evidence_required. Pass is never the fallback. */
 export function derivePosture(input: {
   posture: Posture | ''
@@ -196,27 +294,190 @@ export function derivePosture(input: {
 }
 
 export function applyReviewRules(analysis: DeckAnalysis): DeckAnalysis {
+  const checked = applyRangeChecks(analysis)
   const posture = derivePosture({
-    posture: analysis.snapshot.posture,
-    overall: analysis.scores.overall,
-    risks: analysis.risks,
-    claims: analysis.claims,
+    posture: checked.snapshot.posture,
+    overall: checked.scores.overall,
+    risks: checked.risks,
+    claims: checked.claims,
   })
   const hero: DeckHero = {
-    company: analysis.meta.company,
-    one_liner: analysis.snapshot.one_liner,
+    company: checked.meta.company,
+    one_liner: checked.snapshot.one_liner,
     posture,
-    overall: analysis.scores.overall,
-    pre_money: analysis.snapshot.round.pre_money,
-    post_money: analysis.snapshot.round.post_money,
-    currency: analysis.snapshot.round.currency || 'USD',
+    overall: checked.scores.overall,
+    pre_money: checked.snapshot.round.pre_money,
+    post_money: checked.snapshot.round.post_money,
+    currency: checked.snapshot.round.currency || 'USD',
+  }
+  return {
+    ...checked,
+    scores: checked.scores,
+    hero,
+    snapshot: { ...checked.snapshot, posture },
+    sections_missing: checked.sections_missing.filter((key) => key !== 'hero' && key !== 'posture'),
+  }
+}
+
+type ParsedRange = { low: number; high: number; unit: string; start: number; end: number }
+
+function applyRangeChecks(analysis: DeckAnalysis): DeckAnalysis {
+  const blocks = [
+    analysis.memo_markdown,
+    analysis.snapshot.one_liner,
+    analysis.snapshot.posture_reason,
+    analysis.unit_economics?.comment || '',
+    ...analysis.claims.flatMap((claim) => [claim.claim, claim.note]),
+    ...analysis.risks.map((risk) => risk.why),
+  ]
+  const breaches = blocks.flatMap((block) => findRangeBreaches(block))
+  const uniqueBreaches = dedupeBreaches(breaches)
+  if (!uniqueBreaches.length) return analysis
+  const claims = analysis.claims.map((claim) => {
+    const nextClaim = rewriteOutside(claim.claim, uniqueBreaches)
+    const nextNote = rewriteOutside(claim.note, uniqueBreaches)
+    const mentions = uniqueBreaches.some((breach) => sentenceMentions(`${nextClaim} ${nextNote}`, breach))
+    if (!mentions) return { ...claim, claim: nextClaim, note: nextNote }
+    return { ...claim, claim: nextClaim, note: nextNote || 'The reading is outside the stated band.', status: 'contradicted' as const }
+  })
+  for (const breach of uniqueBreaches) {
+    const covered = claims.some((claim) => sentenceMentions(`${claim.claim} ${claim.note}`, breach))
+    if (covered || claims.length >= 24) continue
+    claims.push({
+      claim: `A reading of ${formatMeasure(breach.value)} ${breach.unit} sits outside the stated ${formatMeasure(breach.low)} to ${formatMeasure(breach.high)} ${breach.unit} band.`,
+      page: '',
+      status: 'contradicted',
+      note: 'Checked against the stated band. The model text is not the source of this flag.',
+    })
+  }
+  const risks = analysis.risks.slice()
+  for (const breach of uniqueBreaches) {
+    const why = rangeWhy(breach)
+    if (risks.some((risk) => risk.why === why)) continue
+    risks.unshift({
+      title: 'Measured value outside the stated band',
+      severity: 'high',
+      why,
+      evidence_that_would_retire_it: 'A corrected reading, or a deck page that states a band covering that reading.',
+    })
   }
   return {
     ...analysis,
-    hero,
-    snapshot: { ...analysis.snapshot, posture },
-    sections_missing: analysis.sections_missing.filter((key) => key !== 'hero' && key !== 'posture'),
+    scores: analysis.scores,
+    memo_markdown: rewriteOutside(analysis.memo_markdown, uniqueBreaches),
+    snapshot: {
+      ...analysis.snapshot,
+      one_liner: rewriteOutside(analysis.snapshot.one_liner, uniqueBreaches),
+      posture_reason: rewriteOutside(analysis.snapshot.posture_reason, uniqueBreaches),
+    },
+    unit_economics: analysis.unit_economics
+      ? { ...analysis.unit_economics, comment: rewriteOutside(analysis.unit_economics.comment, uniqueBreaches) }
+      : null,
+    claims,
+    risks: risks.slice(0, 16),
   }
+}
+
+function dedupeBreaches(breaches: RangeBreach[]): RangeBreach[] {
+  const out: RangeBreach[] = []
+  const seen = new Set<string>()
+  for (const breach of breaches) {
+    const key = `${breach.value}|${breach.low}|${breach.high}|${breach.unit}`
+    if (seen.has(key)) continue
+    seen.add(key)
+    out.push(breach)
+  }
+  return out
+}
+
+function rangeWhy(breach: RangeBreach): string {
+  return `A stated reading of ${formatMeasure(breach.value)} ${breach.unit} sits outside the stated band of ${formatMeasure(breach.low)} to ${formatMeasure(breach.high)} ${breach.unit}.`
+}
+
+function rewriteOutside(text: string, breaches: RangeBreach[]): string {
+  if (!text || !breaches.length) return text
+  return text
+    .split(/(\n+)/)
+    .map((part) => {
+      if (/^\n+$/.test(part)) return part
+      return part
+        .split(/(?<=[.!?])\s+/)
+        .map((sentence) => {
+          if (!breaches.some((breach) => sentenceMentions(sentence, breach))) return sentence
+          return sentence.replace(/\binside\b/gi, 'outside').replace(/\bwithin\b/gi, 'outside')
+        })
+        .join(' ')
+    })
+    .join('')
+}
+
+function sentenceMentions(text: string, breach: RangeBreach): boolean {
+  return (
+    hasNumber(text, breach.value) &&
+    hasNumber(text, breach.low) &&
+    hasNumber(text, breach.high) &&
+    new RegExp(`\\b${breach.unit}\\b`, 'i').test(text)
+  )
+}
+
+function hasNumber(text: string, value: number): boolean {
+  const token = formatMeasure(value).replace('.', '\\.')
+  return new RegExp(String.raw`(?<![\d.])${token}(?!\d)`).test(text)
+}
+
+function formatMeasure(value: number): string {
+  if (Number.isInteger(value)) return String(value)
+  return String(Math.round(value * 1000) / 1000)
+}
+
+function collectRanges(text: string): ParsedRange[] {
+  const found: ParsedRange[] = []
+  const push = (
+    lowRaw: string,
+    highRaw: string,
+    firstUnit: string,
+    secondUnit: string,
+    start: number,
+    end: number,
+    needsCue: boolean,
+  ) => {
+    const low = Number(lowRaw)
+    const high = Number(highRaw)
+    const left = firstUnit ? normalizeUnit(firstUnit) : ''
+    const right = normalizeUnit(secondUnit)
+    if (!right || (left && left !== right) || !Number.isFinite(low) || !Number.isFinite(high)) return
+    if (needsCue && !RANGE_CUE.test(sentenceAround(text, start))) return
+    found.push({ low: Math.min(low, high), high: Math.max(low, high), unit: right, start, end })
+  }
+  BETWEEN_RANGE.lastIndex = 0
+  let match: RegExpExecArray | null
+  while ((match = BETWEEN_RANGE.exec(text))) {
+    push(match[1] || '', match[3] || '', match[2] || '', match[4] || '', match.index, match.index + match[0].length, false)
+  }
+  SPAN_RANGE.lastIndex = 0
+  while ((match = SPAN_RANGE.exec(text))) {
+    push(match[1] || '', match[3] || '', match[2] || '', match[4] || '', match.index, match.index + match[0].length, true)
+  }
+  return found
+}
+
+function sentenceAround(text: string, index: number): string {
+  let start = index
+  while (start > 0 && !/[\n.!?]/.test(text[start - 1] || '')) start -= 1
+  let end = index
+  while (end < text.length && !/[\n.!?]/.test(text[end] || '')) end += 1
+  return text.slice(start, end)
+}
+
+function normalizeUnit(raw: string): string {
+  const token = raw.trim().toLowerCase().replace(/°/g, '')
+  if (token === 'c' || token === 'celsius' || /^degrees?\s*c$/.test(token)) return 'celsius'
+  if (token === 'f' || token === 'fahrenheit' || /^degrees?\s*f$/.test(token)) return 'fahrenheit'
+  if (token === '%' || token === 'pct' || token === 'percent') return 'percent'
+  if (/^hours?$/.test(token) || /^hrs?$/.test(token) || token === 'h') return 'hours'
+  if (/^kilograms?$/.test(token) || /^kgs?$/.test(token)) return 'kg'
+  if (/^grams?$/.test(token) || token === 'g') return 'g'
+  return ''
 }
 
 /** Keep the opening and the closing pages when the deck is longer than the prompt budget. */

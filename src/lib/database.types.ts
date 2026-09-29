@@ -412,6 +412,9 @@ export type Database = {
           error: string | null
           model_id: string | null
           model_skip_reason: string | null
+          pipeline_step: string
+          step_claim: string | null
+          pipeline: Json
           created_at: string
           updated_at: string
         }
@@ -424,6 +427,9 @@ export type Database = {
           error?: string | null
           model_id?: string | null
           model_skip_reason?: string | null
+          pipeline_step?: string
+          step_claim?: string | null
+          pipeline?: Json
           created_at?: string
           updated_at?: string
         }
@@ -436,6 +442,9 @@ export type Database = {
           error?: string | null
           model_id?: string | null
           model_skip_reason?: string | null
+          pipeline_step?: string
+          step_claim?: string | null
+          pipeline?: Json
           created_at?: string
           updated_at?: string
         }

@@ -10,25 +10,42 @@ export const DECK_BUCKET = 'due-diligence-decks'
 /**
  * Verified wall clock, including background work on the same worker:
  * https://supabase.com/docs/guides/functions/limits
- * Free plan 150s. Paid plans 400s. Budgets use the stricter 150s limit.
+ * Free plan 150s. Paid plans 400s. This pipeline stays on the free-plan limit.
+ * Each step is its own Edge invocation. A fallback is another invocation of the
+ * same step, so it is not added to the primary cap.
  */
 export const EDGE_WALL_CLOCK_MS = 150_000
-export const PRIMARY_TTFT_MS = 15_000
-export const PRIMARY_CAP_MS = 40_000
-export const FALLBACK_MS = 35_000
-export const REPAIR_MS = 15_000
-export const WORKER_BUDGET_MS = 120_000
-/** Silence longer than the worker budget, still under the wall clock. */
-export const JOB_STALE_MS = 135_000
+export const STEP_EXTRACT_BUDGET_MS = 45_000
+export const STEP_EXTRACT_STALE_MS = 70_000
+export const STEP_ANALYSIS_CAP_MS = 125_000
+export const STEP_ANALYSIS_TTFT_MS = 115_000
+export const STEP_ANALYSIS_STALE_MS = 140_000
+export const STEP_COMPOSE_BUDGET_MS = 80_000
+export const STEP_COMPOSE_REPAIR_MS = 35_000
+export const STEP_COMPOSE_STALE_MS = 110_000
+/** Silence while a finished step waits for the next invocation. */
+export const STEP_HANDOFF_STALE_MS = 90_000
+
+export const PRIMARY_TTFT_MS = STEP_ANALYSIS_TTFT_MS
+export const PRIMARY_CAP_MS = STEP_ANALYSIS_CAP_MS
+export const FALLBACK_MS = STEP_ANALYSIS_CAP_MS
+export const REPAIR_MS = STEP_COMPOSE_REPAIR_MS
+export const WORKER_BUDGET_MS = STEP_ANALYSIS_CAP_MS
+export const JOB_STALE_MS = STEP_ANALYSIS_STALE_MS
+
+export const PIPELINE_STEPS = ['extract', 'scores', 'narrative', 'compose', 'done'] as const
+export type PipelineStepName = (typeof PIPELINE_STEPS)[number]
+export type ModelPass = 'primary' | 'fallback'
 
 export const DD_PROGRESS = {
   extract: 18,
   pages: 32,
   model: 46,
-  repair: 58,
+  narrative: 60,
   fallback: 70,
-  sources: 82,
-  save: 92,
+  repair: 78,
+  sources: 86,
+  save: 94,
 } as const
 export const DECK_MAX_BYTES = 15 * 1024 * 1024
 export const NOT_STATED = 'Not stated in the deck'
@@ -264,14 +281,15 @@ export function safeFileName(name: string, ext: DeckExt): string {
 
 const LIVE_JOB = ['queued', 'reading', 'checking', 'writing']
 
-export function stageLabel(status: string, progress = 0): string {
+export function stageLabel(status: string, progress = 0, backingUp = false): string {
   if (status === 'queued') return 'Queued'
   if (status === 'ready') return 'Ready'
   if (status === 'failed') return 'The check stopped'
   if (progress >= DD_PROGRESS.save) return 'Saving the draft'
   if (progress >= DD_PROGRESS.sources) return 'Checking public sources'
-  if (progress >= DD_PROGRESS.fallback) return 'Trying the backup model'
   if (progress >= DD_PROGRESS.repair) return 'Repairing the draft'
+  if (backingUp || (progress >= DD_PROGRESS.fallback && progress < DD_PROGRESS.repair)) return 'Trying the backup model'
+  if (progress >= DD_PROGRESS.narrative) return 'Writing the memo'
   if (progress >= DD_PROGRESS.model) return 'Asking the model'
   if (progress >= DD_PROGRESS.pages) return 'Numbering the pages'
   if (progress >= DD_PROGRESS.extract || status === 'reading') return 'Reading the deck'
@@ -279,18 +297,87 @@ export function stageLabel(status: string, progress = 0): string {
   return 'Working'
 }
 
-/** True when an in-flight job is past the deadline and should be marked failed. */
+export function stepStaleMs(step: string | null | undefined): number {
+  if (step === 'extract') return STEP_EXTRACT_STALE_MS
+  if (step === 'compose') return STEP_COMPOSE_STALE_MS
+  if (step === 'scores' || step === 'narrative') return STEP_ANALYSIS_STALE_MS
+  return JOB_STALE_MS
+}
+
+export function nextPipelineStep(step: string): PipelineStepName | null {
+  if (step === 'extract') return 'scores'
+  if (step === 'scores') return 'narrative'
+  if (step === 'narrative') return 'compose'
+  if (step === 'compose') return 'done'
+  return null
+}
+
+export function statusForStep(step: string): 'queued' | 'reading' | 'checking' | 'writing' | 'ready' {
+  if (step === 'extract') return 'reading'
+  if (step === 'compose') return 'writing'
+  if (step === 'done') return 'ready'
+  return 'checking'
+}
+
+export function progressForStep(step: string): number {
+  if (step === 'extract') return DD_PROGRESS.extract
+  if (step === 'scores') return DD_PROGRESS.model
+  if (step === 'narrative') return DD_PROGRESS.narrative
+  if (step === 'compose') return DD_PROGRESS.repair
+  return 100
+}
+
+/** Primary failure retries that step on the backup model. A second failure stops the job. */
+export function afterModelAttempt(mode: ModelPass, ok: boolean): 'advance' | 'fallback' | 'fail' {
+  if (ok) return 'advance'
+  if (mode === 'primary') return 'fallback'
+  return 'fail'
+}
+
+/** One worker may claim a live step. A second trigger sees the claim and returns. */
+export function claimAllowed(input: {
+  status: string
+  pipelineStep: string
+  stepClaim: string | null
+}): boolean {
+  if (!LIVE_JOB.includes(input.status)) return false
+  if (input.stepClaim) return false
+  return (
+    input.pipelineStep === 'extract' ||
+    input.pipelineStep === 'scores' ||
+    input.pipelineStep === 'narrative' ||
+    input.pipelineStep === 'compose'
+  )
+}
+
+export function stepIsBackingUp(
+  step: string,
+  pipeline: { scores_mode?: string; narrative_mode?: string; compose_mode?: string } | null | undefined,
+): boolean {
+  if (!pipeline) return false
+  if (step === 'scores') return pipeline.scores_mode === 'fallback'
+  if (step === 'narrative') return pipeline.narrative_mode === 'fallback'
+  if (step === 'compose') return pipeline.compose_mode === 'fallback'
+  return false
+}
+
+/** True when the current step has been silent past that step's own threshold. Age of the job is ignored. */
 export function shouldFailStaleJob(input: {
   status: string
   updatedAt: string
   createdAt: string
   nowMs: number
+  pipelineStep?: string | null
+  stepClaim?: string | null
 }): boolean {
   if (!LIVE_JOB.includes(input.status)) return false
   void input.createdAt
   const updated = Date.parse(input.updatedAt)
   if (!Number.isFinite(updated)) return true
-  return input.nowMs - updated >= JOB_STALE_MS
+  const silence = input.nowMs - updated
+  if (input.stepClaim) return silence >= stepStaleMs(input.pipelineStep)
+  if (input.pipelineStep) return silence >= STEP_HANDOFF_STALE_MS
+  return silence >= JOB_STALE_MS
 }
 
 /** A model miss that should fail the job. A missing key still finishes as a degraded draft. */
