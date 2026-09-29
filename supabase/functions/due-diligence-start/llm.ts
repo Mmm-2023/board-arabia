@@ -1,8 +1,8 @@
 import {
   extractDeckFacts,
-  factsFromModelJson,
   mergeModelFacts,
   parsePublicHttpsUrl,
+  readModelFacts,
   type DeckFacts,
 } from '../_shared/due_diligence.ts'
 
@@ -13,7 +13,9 @@ const SYSTEM = [
   'You extract structured facts from pitch deck text. Reply with one JSON object and no markdown.',
   'Schema: {"company":"","sector":"","ask":"","claims":[{"text":"","kind":"team"}]}',
   'kind is team, traction, market, ip, or other.',
-  'Copy company, sector, ask, and every claim text from the deck. If a field is not in the deck, use an empty string.',
+  'company is the legal or trading name. sector is the industry. ask is the raise, if the deck states one.',
+  'Use the deck wording or a close paraphrase. Every claim must stay grounded in the deck.',
+  'If a field is not in the deck, use an empty string.',
   'Do not invent names, figures, customers, or sources.',
   'Do not use these words: invest, approve, reject, fraud, pass, valid, invalid, investable.',
   'Do not use em dashes.',
@@ -21,16 +23,53 @@ const SYSTEM = [
   'At most 8 claims.',
 ].join(' ')
 
-export async function extractDeckFactsWithOptionalLlm(text: string): Promise<DeckFacts> {
+export type FactExtraction = {
+  facts: DeckFacts
+  modelRan: boolean
+  skipReason: string | null
+  claimsReturned: number
+  claimsKept: number
+}
+
+export async function extractDeckFactsWithOptionalLlm(text: string): Promise<FactExtraction> {
   const heuristic = extractDeckFacts(text)
   const key = Deno.env.get('BA_DD_LLM_API_KEY')?.trim()
-  if (!key) return heuristic
+  if (!key) {
+    return {
+      facts: heuristic,
+      modelRan: false,
+      skipReason: 'missing_api_key',
+      claimsReturned: 0,
+      claimsKept: 0,
+    }
+  }
   try {
     const parsed = await requestFacts(text, key)
-    if (!parsed) return heuristic
-    return mergeModelFacts(factsFromModelJson(parsed, text), heuristic)
+    if (!parsed) {
+      return {
+        facts: heuristic,
+        modelRan: false,
+        skipReason: 'model_response_unusable',
+        claimsReturned: 0,
+        claimsKept: 0,
+      }
+    }
+    const read = readModelFacts(parsed, text)
+    return {
+      facts: mergeModelFacts(read.facts, heuristic),
+      modelRan: true,
+      skipReason: null,
+      claimsReturned: read.claimsReturned,
+      claimsKept: read.claimsKept,
+    }
   } catch {
-    return heuristic
+    return {
+      facts: heuristic,
+      modelRan: false,
+      skipReason: 'model_request_failed',
+      claimsReturned: 0,
+      claimsKept: 0,
+    }
   }
 }
 

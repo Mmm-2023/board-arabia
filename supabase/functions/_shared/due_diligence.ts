@@ -70,6 +70,7 @@ export type RetrievedPage = {
 export type SourceLink = {
   title: string
   url: string
+  quote?: string
 }
 
 export type ReportClaim = {
@@ -90,6 +91,7 @@ export type BuiltReport = {
   claims: ReportClaim[]
   sources: SourceLink[]
   next_steps: string[]
+  degraded_notes?: string[]
 }
 
 export const VERDICT_LABEL: Record<ClaimVerdict, string> = {
@@ -98,6 +100,20 @@ export const VERDICT_LABEL: Record<ClaimVerdict, string> = {
   conflict_with_public_sources: 'Conflict with public sources',
   insufficient_public_data: 'Insufficient public data',
 }
+
+/** Member-facing verdict. Stored codes stay stable so older notes still open. */
+export const VERDICT_SHORT: Record<ClaimVerdict, string> = {
+  publicly_consistent: 'Consistent',
+  not_publicly_verifiable: 'Not verified',
+  conflict_with_public_sources: 'Contradicted',
+  insufficient_public_data: 'Not verified',
+}
+
+export const DEGRADED_NOTE_SEARCH = 'Independent web checks were not run for this report.'
+export const DEGRADED_NOTE_SEARCH_FAILED = 'Independent web checks did not complete for this report.'
+export const DEGRADED_NOTE_MODEL = 'The language model was not used for this report.'
+export const DEGRADED_NOTE_MODEL_FAILED = 'The language model did not return facts for this report.'
+export const INDEPENDENT_EVIDENCE_NOTE = 'The company website does not count as independent evidence.'
 
 const VERDICT_NOTE: Record<ClaimVerdict, string> = {
   publicly_consistent: 'This wording appears on a public page retrieved for this check.',
@@ -429,27 +445,33 @@ export function publicHitMatchesTerm(title: string, url: string, term: string): 
   )
 }
 
-export function factsFromModelJson(raw: unknown, deckText: string): DeckFacts | null {
-  if (!raw || typeof raw !== 'object') return null
+export type ModelFactRead = {
+  facts: DeckFacts | null
+  claimsReturned: number
+  claimsKept: number
+}
+
+export function readModelFacts(raw: unknown, deckText: string): ModelFactRead {
+  if (!raw || typeof raw !== 'object') return { facts: null, claimsReturned: 0, claimsKept: 0 }
   const row = raw as Record<string, unknown>
-  const deck = comparableDeck(deckText)
-  const companyRaw = modelField(row.company, deck, 80)
-  const company = companyRaw && !GENERIC_DECK_TITLE.test(companyRaw) ? companyRaw : ''
-  const sectorRaw = modelField(row.sector, deck, 60)
-  const sector = sectorRaw && sectorSupported(sectorRaw, deckText) ? sectorRaw : ''
-  const askRaw = modelField(row.ask, deck, 180)
-  const ask = askRaw && isRaiseAsk(askRaw) ? askRaw : ''
-  if (!Array.isArray(row.claims)) return null
+  const company = scrubLabel(modelCompany(row.company, deckText), 80)
+  const sector = scrubLabel(titleCaseSector(modelSector(row.sector, deckText)), 60)
+  const ask = scrubLabel(modelAsk(row.ask, deckText), 180)
+  if (!Array.isArray(row.claims)) return { facts: null, claimsReturned: 0, claimsKept: 0 }
+  let claimsReturned = 0
   const claims: DeckClaim[] = []
   const seen = new Set<string>()
+  const deck = comparableDeck(deckText)
   for (const item of row.claims) {
-    if (claims.length >= 8) break
     if (!item || typeof item !== 'object') continue
     const claim = item as Record<string, unknown>
     if (typeof claim.text !== 'string') continue
     const text = scrubMemberPunctuation(normalizeDeckText(claim.text)).slice(0, 320)
+    if (text.length < 8) continue
+    claimsReturned += 1
+    if (claims.length >= 8) continue
     if (text.length < 24 || text.length > 320) continue
-    if (!deck.includes(text.toLowerCase())) continue
+    if (!claimGroundedInDeck(text, deck)) continue
     if (containsVerdictLanguage(text)) continue
     const kind = kindOf(text)
     if (!isClaim(text, kind)) continue
@@ -458,13 +480,16 @@ export function factsFromModelJson(raw: unknown, deckText: string): DeckFacts | 
     seen.add(key)
     claims.push({ text, kind })
   }
-  if (claims.length === 0) return null
+  if (claims.length === 0) return { facts: null, claimsReturned, claimsKept: 0 }
   return {
-    company: scrubLabel(company, 80),
-    sector: scrubLabel(titleCaseSector(sector), 60),
-    ask: scrubLabel(ask, 180),
-    claims,
+    facts: { company, sector, ask, claims },
+    claimsReturned,
+    claimsKept: claims.length,
   }
+}
+
+export function factsFromModelJson(raw: unknown, deckText: string): DeckFacts | null {
+  return readModelFacts(raw, deckText).facts
 }
 
 export function mergeModelFacts(model: DeckFacts | null, heuristic: DeckFacts): DeckFacts {
@@ -503,14 +528,104 @@ export function publicSearchTerms(facts: DeckFacts): string[] {
   return unique.slice(0, 4)
 }
 
+export function searchMatchTerm(term: string): string {
+  return term.replace(/\s+site:\S+/gi, ' ').replace(/\s+/g, ' ').trim()
+}
+
+export function independentSearchTerms(facts: DeckFacts): string[] {
+  const terms = [...publicSearchTerms(facts)]
+  const legal = facts.company === NOT_STATED ? '' : sanitizeSearchTerm(facts.company).slice(0, 60)
+  if (legal) {
+    terms.push(`${legal} site:argaam.com`)
+    terms.push(`${legal} site:saudiexchange.sa`)
+    terms.push(`${legal} site:misa.gov.sa`)
+  }
+  const unique: string[] = []
+  const seen = new Set<string>()
+  for (const term of terms) {
+    const key = term.toLowerCase()
+    if (!term || seen.has(key)) continue
+    seen.add(key)
+    unique.push(term)
+  }
+  return unique.slice(0, 8)
+}
+
+export function isCompanyOwnedUrl(pageUrl: string, companyUrl: string | null | undefined): boolean {
+  if (!companyUrl) return false
+  const page = parsePublicHttpsUrl(pageUrl)
+  const company = parsePublicHttpsUrl(companyUrl)
+  if (!page.ok || !company.ok) return false
+  const pageHost = page.url.hostname.toLowerCase().replace(/^www\./, '')
+  const companyHost = company.url.hostname.toLowerCase().replace(/^www\./, '')
+  if (!pageHost || !companyHost) return false
+  return pageHost === companyHost || pageHost.endsWith(`.${companyHost}`)
+}
+
+export function isBlockedPublicSourceUrl(raw: string): boolean {
+  const parsed = parsePublicHttpsUrl(raw)
+  if (!parsed.ok) return true
+  return /\/(login|signin|sign-in|log-in|auth|data-?room|dataroom|private)(?:\/|$)/i.test(parsed.url.pathname)
+}
+
+export function packReportDisclaimer(notes: readonly string[] | undefined): string {
+  let packed = DUE_DILIGENCE_DISCLAIMER
+  for (const note of cleanDegradedNotes(notes)) {
+    const next = `${packed}\n${note}`
+    if (next.length > 400) break
+    packed = next
+  }
+  return packed
+}
+
+export function unpackReportDisclaimer(raw: string): { disclaimer: string; degraded_notes: string[] } {
+  if (!raw.startsWith(DUE_DILIGENCE_DISCLAIMER)) return { disclaimer: raw, degraded_notes: [] }
+  const rest = raw.slice(DUE_DILIGENCE_DISCLAIMER.length).replace(/^\n+/, '')
+  if (!rest.trim()) return { disclaimer: DUE_DILIGENCE_DISCLAIMER, degraded_notes: [] }
+  return {
+    disclaimer: DUE_DILIGENCE_DISCLAIMER,
+    degraded_notes: rest
+      .split('\n')
+      .map((line) => line.trim())
+      .filter((line) => line.length >= 8),
+  }
+}
+
+export function assessmentLog(input: {
+  jobId: string
+  modelRan: boolean
+  modelSkipReason: string | null
+  claimsReturned: number
+  claimsKept: number
+  sourcesFetched: number
+  searchRan: boolean
+  searchSkipReason: string | null
+}): string {
+  return JSON.stringify({
+    event: 'dd_assessment',
+    job_id: input.jobId,
+    model_ran: input.modelRan,
+    model_skip_reason: input.modelSkipReason,
+    claims_returned: input.claimsReturned,
+    claims_kept: input.claimsKept,
+    sources_fetched: input.sourcesFetched,
+    search_ran: input.searchRan,
+    search_skip_reason: input.searchSkipReason,
+  })
+}
+
 export function buildReport(
   facts: DeckFacts,
   pages: RetrievedPage[],
-  options?: { companyUrl?: string | null },
+  options?: { companyUrl?: string | null; degradedNotes?: readonly string[] },
 ): BuiltReport {
-  const usable = pages.filter((page) => parsePublicHttpsUrl(page.url).ok && page.text.trim().length >= 40)
-  const claims = facts.claims.map((claim) => scoreClaim(claim, usable))
   const companyUrl = options?.companyUrl?.trim() ? options.companyUrl.trim() : null
+  const usable = pages.filter(
+    (page) => parsePublicHttpsUrl(page.url).ok && !isBlockedPublicSourceUrl(page.url) && page.text.trim().length >= 40,
+  )
+  const owned = usable.filter((page) => isCompanyOwnedUrl(page.url, companyUrl))
+  const independent = usable.filter((page) => !isCompanyOwnedUrl(page.url, companyUrl))
+  const claims = facts.claims.map((claim) => scoreClaim(claim, independent, owned))
   const percents = diligencePercents(claims)
   return {
     company_label: facts.company,
@@ -520,11 +635,12 @@ export function buildReport(
     publicly_consistent_pct: percents.consistent,
     not_publicly_verifiable_pct: percents.notVerifiable,
     claims,
-    sources: usable.map((page) => ({
+    sources: independent.map((page) => ({
       title: page.title.replace(/\s+/g, ' ').trim().slice(0, 120) || page.url,
       url: publicUrlWithoutQuery(page.url),
     })),
-    next_steps: nextStepsFor(claims, { companyUrl, sourceCount: usable.length }),
+    next_steps: nextStepsFor(claims),
+    degraded_notes: cleanDegradedNotes(options?.degradedNotes),
   }
 }
 
@@ -617,20 +733,50 @@ export function readStoredReport(input: {
   if (consistent === undefined || notVerifiable === undefined) return null
   if ((consistent === null) !== (notVerifiable === null)) return null
   if (consistent !== null && notVerifiable !== null && consistent + notVerifiable !== 100) return null
+  const unpacked = unpackReportDisclaimer(input.disclaimer)
   return {
     company_label: input.company_label,
     sector_label: input.sector_label,
     ask_label: input.ask_label,
-    disclaimer: input.disclaimer,
+    disclaimer: unpacked.disclaimer,
     publicly_consistent_pct: consistent,
     not_publicly_verifiable_pct: notVerifiable,
     claims,
     sources,
     next_steps: nextSteps,
+    degraded_notes: unpacked.degraded_notes,
   }
 }
 
-function scoreClaim(claim: DeckClaim, pages: RetrievedPage[]): ReportClaim {
+function scoreClaim(claim: DeckClaim, pages: RetrievedPage[], owned: RetrievedPage[]): ReportClaim {
+  for (const page of pages) {
+    const quote = evidenceSentence(claim.text, page.text, 'support')
+    if (!quote) continue
+    return {
+      ...claim,
+      verdict: 'publicly_consistent',
+      note: 'This point matches an independent public page retrieved for this check.',
+      sources: [sourceWithQuote(page, quote)],
+    }
+  }
+  for (const page of pages) {
+    const quote = evidenceSentence(claim.text, page.text, 'conflict')
+    if (!quote) continue
+    return {
+      ...claim,
+      verdict: 'conflict_with_public_sources',
+      note: VERDICT_NOTE.conflict_with_public_sources,
+      sources: [sourceWithQuote(page, quote)],
+    }
+  }
+  if (pages.length === 0 && owned.length > 0) {
+    return {
+      ...claim,
+      verdict: 'not_publicly_verifiable',
+      note: INDEPENDENT_EVIDENCE_NOTE,
+      sources: [],
+    }
+  }
   if (pages.length === 0) {
     return {
       ...claim,
@@ -639,28 +785,10 @@ function scoreClaim(claim: DeckClaim, pages: RetrievedPage[]): ReportClaim {
       sources: [],
     }
   }
-  const matched = pages.filter((page) => pageSupportsClaim(claim.text, page.text))
-  if (matched.length > 0) {
-    return {
-      ...claim,
-      verdict: 'publicly_consistent',
-      note: VERDICT_NOTE.publicly_consistent,
-      sources: matched.slice(0, 3).map(sourceFromPage),
-    }
-  }
-  const conflict = pages.find((page) => pageConflicts(claim.text, page.text))
-  if (conflict) {
-    return {
-      ...claim,
-      verdict: 'conflict_with_public_sources',
-      note: VERDICT_NOTE.conflict_with_public_sources,
-      sources: [sourceFromPage(conflict)],
-    }
-  }
   return {
     ...claim,
     verdict: 'not_publicly_verifiable',
-    note: VERDICT_NOTE.not_publicly_verifiable,
+    note: 'Not found on the independent public pages retrieved for this check.',
     sources: [],
   }
 }
@@ -672,22 +800,35 @@ function sourceFromPage(page: RetrievedPage): SourceLink {
   }
 }
 
-function pageConflicts(claim: string, page: string): boolean {
-  const figures = significantFigures(claim)
-  if (figures.length === 0) return false
+function sourceWithQuote(page: RetrievedPage, quote: string): SourceLink {
+  return { ...sourceFromPage(page), quote: clipQuote(quote) }
+}
+
+function evidenceSentence(claim: string, page: string, mode: 'support' | 'conflict'): string | null {
   const claimTokens = distinctiveTokens(claim)
-  const sentences = page.split(/\n+|(?<=[.!?])\s+/)
-  for (const sentence of sentences) {
+  const figures = significantFigures(claim)
+  const parts = page
+    .split(/\n+|(?<=[.!?])\s+/)
+    .map((part) => part.replace(/\s+/g, ' ').trim())
+    .filter((part) => part.length >= 12)
+  const candidates = parts.length > 0 ? parts : [page.replace(/\s+/g, ' ').trim()].filter((part) => part.length >= 12)
+  for (const sentence of candidates) {
     const sentenceTokens = new Set(distinctiveTokens(sentence))
     const hits = claimTokens.filter((token) => sentenceTokens.has(token))
-    if (hits.length < 3) continue
+    // Two shared tokens are enough. The old gate required three on claims with no figure.
+    if (hits.length < 2) continue
+    if (mode === 'support') {
+      if (figures.length > 0 && !figures.some((figure) => figureInPage(figure, sentence))) continue
+      return sentence
+    }
+    if (figures.length === 0) continue
     if (figures.some((figure) => figureInPage(figure, sentence))) continue
     const other = significantFigures(sentence)
     if (other.some((figure) => !figures.some((item) => item.digits === figure.digits && item.scale === figure.scale))) {
-      return true
+      return sentence
     }
   }
-  return false
+  return null
 }
 
 function entityScore(report: BuiltReport): { label: ClaimVerdict; reason: string } {
@@ -770,20 +911,20 @@ function overviewText(report: BuiltReport, documents: string): string {
   return `This assessment reads ${documents} for ${report.company_label} and compares the claims with public pages.${sector}${ask} ${report.publicly_consistent_pct}% of the checkable claims were publicly consistent. ${report.not_publicly_verifiable_pct}% were not publicly verifiable. Where a public page states a different figure, the scorecard says conflict with public sources. This is not legal advice. You decide what to do next.`
 }
 
-function pageSupportsClaim(claim: string, page: string): boolean {
-  const claimTokens = distinctiveTokens(claim)
-  const pageTokens = new Set(distinctiveTokens(page))
-  const hits = claimTokens.filter((token) => pageTokens.has(token))
-  const figures = significantFigures(claim)
-  if (figures.length > 0 && !figures.some((figure) => figureInPage(figure, page))) return false
-  if (figures.length > 0) return hits.length >= 2
-  return hits.length >= 3
+function nextStepsFor(claims: ReportClaim[]): string[] {
+  const steps: string[] = []
+  if (claims.length === 0) steps.push(STEP_THIN)
+  const gaps = claims.filter((claim) => claim.verdict !== 'publicly_consistent')
+  const kinds = new Set(gaps.map((claim) => claim.kind))
+  if (kinds.has('team')) steps.push(STEP_PEOPLE)
+  if (kinds.has('market')) steps.push(STEP_MARKET)
+  if (kinds.has('traction')) steps.push(STEP_TRACTION)
+  if (kinds.has('ip')) steps.push(STEP_IP)
+  if (kinds.has('other')) steps.push(STEP_OTHER)
+  if (claims.length > 0 && gaps.length === 0) steps.push(STEP_INCOMPLETE)
+  return [...steps.slice(0, 5), STEP_CLOSE]
 }
 
-const STEP_LEGAL =
-  'Confirm the legal name. Which exact legal name and jurisdiction should we search on public registers, and which public page or filing already shows it?'
-const STEP_HOME =
-  "Point to a public homepage. Which https page is the company's public home (or LinkedIn Company page), and can you open it without a login?"
 const STEP_PEOPLE =
   'Name who is public. Which founders or directors already appear on a public company page, registry extract, or news item we can cite?'
 const STEP_MARKET =
@@ -791,42 +932,14 @@ const STEP_MARKET =
 const STEP_TRACTION =
   'Show a public traction proof. Which customer, partner, or pilot is already named on a public page, press note, or filing?'
 const STEP_IP =
-  'Cite the public filing. Which public filing or page describes the IP or product claim in the deck?'
+  'Cite the public filing. Which public filing or page describes the intellectual property claim in the deck?'
 const STEP_THIN =
   'The deck did not state a checkable claim. Share the market, traction, team, or IP points you want compared with public sources.'
 const STEP_INCOMPLETE = 'Public pages can be incomplete. Ask management what is not on the public record.'
+const STEP_OTHER =
+  'Cite a public page for the point that was not verified or contradicted.'
 const STEP_CLOSE =
   'This note is a public-source assist. It is not formal due diligence and it is not legal advice. You decide the next conversation.'
-
-function nextStepsFor(
-  claims: ReportClaim[],
-  ctx: { companyUrl: string | null; sourceCount: number },
-): string[] {
-  const steps: string[] = []
-  const consistent = (kind: ClaimKind) =>
-    claims.some((claim) => claim.kind === kind && claim.verdict === 'publicly_consistent')
-  const weak = (kind: ClaimKind) =>
-    claims.some((claim) => claim.kind === kind && claim.verdict !== 'publicly_consistent')
-  const identityWeak = !ctx.companyUrl || ctx.sourceCount === 0
-  if (claims.length === 0) steps.push(STEP_THIN)
-  if (identityWeak) {
-    steps.push(STEP_LEGAL)
-    steps.push(STEP_HOME)
-  }
-  if (
-    claims.length > 0 &&
-    ctx.sourceCount > 0 &&
-    !identityWeak &&
-    claims.every((claim) => claim.verdict === 'publicly_consistent')
-  ) {
-    steps.push(STEP_INCOMPLETE)
-  }
-  if (weak('team') || (identityWeak && !consistent('team'))) steps.push(STEP_PEOPLE)
-  if (weak('market') || (identityWeak && !consistent('market'))) steps.push(STEP_MARKET)
-  if (weak('traction') || (identityWeak && !consistent('traction'))) steps.push(STEP_TRACTION)
-  if (weak('ip')) steps.push(STEP_IP)
-  return [...steps.slice(0, 5), STEP_CLOSE]
-}
 
 function pickClaims(text: string): DeckClaim[] {
   const seen = new Set<string>()
@@ -991,20 +1104,89 @@ function comparableDeck(text: string): string {
   return normalizeDeckText(text).replace(/\u2014/g, ', ').replace(/\u2013/g, '-').replace(/\s+/g, ' ').trim().toLowerCase()
 }
 
-function modelField(value: unknown, deckLower: string, max: number): string {
+function cleanModelLabel(value: unknown, max: number): string {
   if (typeof value !== 'string') return ''
   const cleaned = scrubMemberPunctuation(normalizeDeckText(value)).slice(0, max)
   if (!cleaned || containsVerdictLanguage(cleaned)) return ''
-  if (!deckLower.includes(cleaned.toLowerCase())) return ''
   return cleaned
 }
 
-function sectorSupported(sector: string, deckText: string): boolean {
-  const lower = sector.trim().toLowerCase()
-  if (!lower) return false
-  if (labelFrom(deckText, 'sector').toLowerCase().includes(lower)) return true
-  if (labelFrom(deckText, 'industry').toLowerCase().includes(lower)) return true
-  return sectorKeyword(normalizeDeckText(deckText)).toLowerCase() === lower
+function modelCompany(value: unknown, deckText: string): string {
+  const cleaned = cleanModelLabel(value, 80)
+  if (cleaned && !GENERIC_DECK_TITLE.test(cleaned) && companyFromModelOk(cleaned, deckText)) return cleaned
+  return submittedByEntity(deckText)
+}
+
+function modelSector(value: unknown, deckText: string): string {
+  const cleaned = cleanModelLabel(value, 60)
+  if (cleaned) return cleaned
+  return labelFrom(deckText, 'sector') || labelFrom(deckText, 'industry') || sectorKeyword(deckText)
+}
+
+function modelAsk(value: unknown, deckText: string): string {
+  const cleaned = cleanModelLabel(value, 180)
+  if (cleaned && isRaiseAsk(cleaned)) return cleaned
+  const submitted = labelFrom(deckText, 'ask')
+  if (submitted && isRaiseAsk(submitted)) return submitted
+  return askFrom(deckText)
+}
+
+function submittedByEntity(text: string): string {
+  const match = text.match(/(?:^|\n)\s*submitted by\s*:\s*([^\n]{2,80})/i)
+  const value = match?.[1]?.trim() || ''
+  if (!value || containsVerdictLanguage(value) || GENERIC_DECK_TITLE.test(value)) return ''
+  return value
+}
+
+function companyFromModelOk(company: string, deckText: string): boolean {
+  const deck = comparableDeck(deckText)
+  if (deck.includes(company.toLowerCase())) return true
+  const tokens = distinctiveTokens(company).filter((token) => token.length >= 5 && !WEAK_HOST_TOKENS.has(token))
+  if (tokens.length === 0) return false
+  const deckTokens = new Set(distinctiveTokens(deck))
+  return tokens.every((token) => deckTokens.has(token) || [...deckTokens].some((item) => tokensOverlap(token, item)))
+}
+
+function claimGroundedInDeck(claim: string, deckLower: string): boolean {
+  const claimLower = claim.toLowerCase().replace(/\s+/g, ' ').trim()
+  if (deckLower.includes(claimLower)) return true
+  const claimTokens = distinctiveTokens(claim)
+  if (claimTokens.length < 2) return false
+  const deckTokens = new Set(distinctiveTokens(deckLower))
+  const hits = claimTokens.filter(
+    (token) => deckTokens.has(token) || [...deckTokens].some((item) => tokensOverlap(token, item)),
+  )
+  if (hits.length < 2) return false
+  if (significantFigures(claim).some((figure) => !figureInPage(figure, deckLower))) return false
+  return hits.length / claimTokens.length >= 0.5
+}
+
+function tokensOverlap(a: string, b: string): boolean {
+  if (a === b) return true
+  const short = a.length <= b.length ? a : b
+  const long = a.length <= b.length ? b : a
+  return short.length >= 5 && long.startsWith(short)
+}
+
+function cleanDegradedNotes(notes: readonly string[] | undefined): string[] {
+  const clean: string[] = []
+  const seen = new Set<string>()
+  for (const note of notes ?? []) {
+    const value = note.replace(/\s+/g, ' ').trim()
+    if (value.length < 8 || value.length > 220) continue
+    const key = value.toLowerCase()
+    if (seen.has(key)) continue
+    seen.add(key)
+    clean.push(value)
+    if (clean.length >= 3) break
+  }
+  return clean
+}
+
+function clipQuote(value: string): string {
+  const cleaned = value.replace(/\s+/g, ' ').trim()
+  if (cleaned.length <= 280) return cleaned
+  return `${cleaned.slice(0, 277)}...`
 }
 
 function isReferenceHost(hostname: string): boolean {
@@ -1125,7 +1307,12 @@ function readSources(value: unknown): SourceLink[] | null {
     const row = item as Record<string, unknown>
     if (typeof row.title !== 'string' || typeof row.url !== 'string') return null
     if (!row.title.trim() || parsePublicHttpsUrl(row.url).ok === false) return null
-    sources.push({ title: row.title, url: row.url })
+    const source: SourceLink = { title: row.title, url: row.url }
+    if (typeof row.quote === 'string') {
+      const quote = row.quote.replace(/\s+/g, ' ').trim()
+      if (quote.length >= 8 && quote.length <= 400) source.quote = quote
+    }
+    sources.push(source)
   }
   return sources
 }
