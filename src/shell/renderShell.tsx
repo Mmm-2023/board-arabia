@@ -28,6 +28,15 @@ function renderShell(
         onSignOut={() => {}}
         accountLabel={tone === 'member' ? 'member@example.com' : 'staff@example.com'}
         accountName={tone === 'member' ? 'Member name' : ''}
+        renderAccountMark={
+          tone === 'member'
+            ? (size) => (
+                <span data-account-photo="" data-photo-size={size}>
+                  MM
+                </span>
+              )
+            : undefined
+        }
         initialMoreOpen={initialMoreOpen}
         initialAccountOpen={initialAccountOpen}
         dealsBadge={tone === 'member' && path?.includes('badge') ? 2 : 0}

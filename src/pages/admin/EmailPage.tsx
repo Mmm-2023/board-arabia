@@ -33,6 +33,9 @@ export function EmailPage() {
                 </span>
               </div>
               <p className="mt-2 text-[0.95rem] text-stone/85">{event.subject}</p>
+              {event.kind === 'desk_note' && event.detail ? (
+                <p className="mt-2 whitespace-pre-wrap text-[0.95rem] leading-relaxed text-pearl/80">{event.detail}</p>
+              ) : null}
               <p className="mt-1 text-[0.85rem] text-pearl/50">
                 {event.kind} · {event.recipient}
               </p>

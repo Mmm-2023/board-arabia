@@ -272,7 +272,7 @@ export function DashboardLayout() {
           onSignOut={() => void onSignOut()}
           accountLabel={gate.room.email}
           accountName={gate.room.profile?.full_name?.trim() || 'Member'}
-          accountMark={<OwnAvatar decorative />}
+          renderAccountMark={(size) => <OwnAvatar decorative size={size} />}
         >
           <Outlet />
         </AppShell>

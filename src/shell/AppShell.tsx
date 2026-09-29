@@ -17,6 +17,7 @@ export function AppShell({
   accountLabel,
   accountName = '',
   accountMark = null,
+  renderAccountMark,
   dealsBadge = 0,
   children,
   initialMoreOpen = false,
@@ -31,6 +32,8 @@ export function AppShell({
   accountLabel: string
   accountName?: string
   accountMark?: ReactNode
+  /** Fresh mark for each chrome slot, so the sheet can show the same photo as the header. */
+  renderAccountMark?: (size: number) => ReactNode
   dealsBadge?: number
   children: ReactNode
   initialMoreOpen?: boolean
@@ -136,6 +139,10 @@ export function AppShell({
     setAccountOpen(false)
   }
 
+  function markAt(size: number) {
+    return renderAccountMark ? renderAccountMark(size) : accountMark
+  }
+
   const accountRows = (
     <ul>
       {secondary.map((item) => (
@@ -224,7 +231,7 @@ export function AppShell({
               <div className={`mt-auto border-t px-3 py-4 ${styles.border}`}>
                 <div className="flex items-center gap-3 px-2">
                   <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[var(--ba-indigo)] text-[0.75rem] text-[var(--ba-porcelain)]">
-                    {accountMark}
+                    {markAt(36)}
                   </span>
                   <span className="min-w-0">
                     <span className="block truncate text-[0.95rem] text-[var(--ba-porcelain)]">{displayName}</span>
@@ -348,7 +355,7 @@ export function AppShell({
                       Account
                     </span>
                     <span className="inline-flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-[var(--ba-indigo)] text-[0.75rem] text-[var(--ba-porcelain)]">
-                      {accountMark}
+                      {markAt(36)}
                     </span>
                   </button>
                 ) : (
@@ -508,8 +515,8 @@ export function AppShell({
           >
             <div className="flex items-start justify-between gap-3 px-3 pb-2">
               <div className="flex min-w-0 items-center gap-3">
-                <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[var(--ba-indigo)] text-[0.85rem] text-[var(--ba-porcelain)]">
-                  {accountMark}
+                <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[var(--ba-lavender-mist)] text-[0.85rem] text-[var(--ba-indigo)]">
+                  {markAt(44)}
                 </span>
                 <div className="min-w-0">
                   <p id={accountTitleId} className="truncate font-display text-[1.15rem] font-semibold tracking-[-0.02em]">

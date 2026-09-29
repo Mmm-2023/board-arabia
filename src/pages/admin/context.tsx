@@ -173,7 +173,7 @@ function useAdminState(): AdminRoom {
           .order('created_at', { ascending: false }),
         supabase
           .from('email_events')
-          .select('id, created_at, kind, recipient, subject, status')
+          .select('id, created_at, kind, recipient, subject, status, detail')
           .order('created_at', { ascending: false })
           .limit(40),
         supabase.rpc('list_staff_directory'),

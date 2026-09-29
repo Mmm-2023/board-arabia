@@ -15,13 +15,16 @@ export function AvatarCircle({
 }) {
   const style = { width: size, height: size }
   if (busy) {
+    const text = size >= 96 ? 'text-[1.7rem]' : 'text-[0.85rem]'
     return (
       <div
         style={style}
-        className="shrink-0 animate-pulse rounded-full bg-ink/10"
+        className={`flex shrink-0 animate-pulse items-center justify-center rounded-full bg-[var(--ba-lavender-mist)] font-display font-semibold text-[var(--ba-indigo)] ${text}`}
         role="status"
         aria-label="Loading photo"
-      />
+      >
+        {initials}
+      </div>
     )
   }
   if (src) {
