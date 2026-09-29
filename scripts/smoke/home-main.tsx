@@ -5,24 +5,27 @@ import { assembleHome, type AssembleInput, type HomeGathering, type MandateBrief
 import { HomeSnapshotView } from '../../src/pages/dashboard/HomeSnapshotView'
 import { AppShell } from '../../src/shell/AppShell'
 import { MEMBER_DESTINATIONS, MEMBER_SECONDARY } from '../../src/shell/destinations'
-import '../../src/index.css'
+import './home.css'
 
 const NOW = Date.parse('2026-10-01T09:00:00.000Z')
 const LATER = '2026-10-20T15:00:00.000Z'
 const LATER_END = '2026-10-20T17:00:00.000Z'
 
-function mandate(id: string, demo: boolean, intro: MandateBrief['intro_status']): MandateBrief {
+function mandate(
+  id: string,
+  demo: boolean,
+  intro: MandateBrief['intro_status'],
+  fields: Pick<MandateBrief, 'sector' | 'deal_type' | 'one_liner'>,
+): MandateBrief {
   return {
     id,
     is_demo: demo,
-    sector: demo ? 'Energy transition' : 'Health',
-    deal_type: demo ? 'Growth equity' : 'Advisory',
+    sector: fields.sector,
+    deal_type: fields.deal_type,
     ticket_band: '$10-25m',
     geography: 'KSA',
     stage: 'Diligence',
-    one_liner: demo
-      ? 'Growth capital for a Saudi industrial services platform.'
-      : 'An advisory brief for a regional care network.',
+    one_liner: fields.one_liner,
     intro_status: intro,
   }
 }
@@ -92,9 +95,21 @@ const populated = shell(
   {
     ...shared,
     mandates: [
-      mandate('a2000001-0000-4000-8000-000000000001', false, 'pending'),
-      mandate('a2000001-0000-4000-8000-000000000002', false, 'pending'),
-      mandate('a2000001-0000-4000-8000-000000000003', false, null),
+      mandate('a2000001-0000-4000-8000-000000000001', false, 'pending', {
+        sector: 'Health',
+        deal_type: 'Advisory',
+        one_liner: 'An advisory brief for a regional care network.',
+      }),
+      mandate('a2000001-0000-4000-8000-000000000002', false, 'pending', {
+        sector: 'Logistics',
+        deal_type: 'Growth equity',
+        one_liner: 'Growth capital for a domestic freight platform.',
+      }),
+      mandate('a2000001-0000-4000-8000-000000000003', false, null, {
+        sector: 'Tourism',
+        deal_type: 'Acquisition',
+        one_liner: 'An acquisition brief for a Red Sea hospitality group.',
+      }),
     ],
     rooms: [
       {
@@ -163,8 +178,16 @@ const demo = shell(
     money: [],
     personalCapacityIncluded: false,
     mandates: [
-      mandate('a2000001-0000-4000-8000-000000000021', true, null),
-      mandate('a2000001-0000-4000-8000-000000000022', true, null),
+      mandate('a2000001-0000-4000-8000-000000000021', true, null, {
+        sector: 'Energy transition',
+        deal_type: 'Growth equity',
+        one_liner: 'Growth capital for a Saudi industrial services platform.',
+      }),
+      mandate('a2000001-0000-4000-8000-000000000022', true, null, {
+        sector: 'Tourism',
+        deal_type: 'Advisory',
+        one_liner: 'An advisory brief for a west coast hospitality platform.',
+      }),
     ],
     rooms: [
       {

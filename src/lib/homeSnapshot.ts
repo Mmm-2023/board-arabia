@@ -210,6 +210,18 @@ export function applyDemoThreshold<T extends { is_demo: boolean }>(rows: T[], th
   return rows.filter((row) => !row.is_demo)
 }
 
+/** First row for an id wins. A repeated id must not render as a second card. */
+export function uniqueById<T extends { id: string }>(rows: T[]): T[] {
+  const seen = new Set<string>()
+  const next: T[] = []
+  for (const row of rows) {
+    if (!row.id || seen.has(row.id)) continue
+    seen.add(row.id)
+    next.push(row)
+  }
+  return next
+}
+
 export function primaryHomeCta(input: CtaInput): HomeCta | null {
   if (!input.profileReady || input.mustSetPassword) {
     const passwordOnly = input.mustSetPassword && input.profileReady
@@ -239,15 +251,15 @@ export function primaryHomeCta(input: CtaInput): HomeCta | null {
   return null
 }
 
-export function visiblePendingIntros(rows: { is_demo: boolean; intro_status: IntroState }[] | null): number | null {
+export function visiblePendingIntros(rows: { id?: string; is_demo: boolean; intro_status: IntroState }[] | null): number | null {
   if (!rows) return null
-  const visible = applyDemoThreshold(rows, DEMO_THRESHOLD_DEFAULTS.mandates)
+  const visible = dedupeIdentified(applyDemoThreshold(rows, DEMO_THRESHOLD_DEFAULTS.mandates))
   return visible.filter((row) => row.intro_status === 'pending').length
 }
 
-export function visibleNewMandates(rows: { is_demo: boolean; intro_status: IntroState }[] | null): number | null {
+export function visibleNewMandates(rows: { id?: string; is_demo: boolean; intro_status: IntroState }[] | null): number | null {
   if (!rows) return null
-  const visible = applyDemoThreshold(rows, DEMO_THRESHOLD_DEFAULTS.mandates)
+  const visible = dedupeIdentified(applyDemoThreshold(rows, DEMO_THRESHOLD_DEFAULTS.mandates))
   return visible.filter((row) => row.intro_status == null).length
 }
 
@@ -265,7 +277,7 @@ export function buildHeadlines(input: {
   }
 
   if (input.mandates) {
-    const visible = applyDemoThreshold(input.mandates, DEMO_THRESHOLD_DEFAULTS.mandates)
+    const visible = dedupeIdentified(applyDemoThreshold(input.mandates, DEMO_THRESHOLD_DEFAULTS.mandates))
     const pending = visible.filter((row) => row.intro_status === 'pending')
     const livePending = pending.filter((row) => !row.is_demo).length
     if (livePending > 0) {
@@ -290,7 +302,7 @@ export function buildHeadlines(input: {
   }
 
   if (input.rooms) {
-    const visible = applyDemoThreshold(input.rooms, DEMO_THRESHOLD_DEFAULTS.rooms)
+    const visible = dedupeIdentified(applyDemoThreshold(input.rooms, DEMO_THRESHOLD_DEFAULTS.rooms))
     const live = visible.filter((row) => !row.is_demo).length
     if (live > 0) {
       push(pulseHeadline('rooms', 'Rooms needing action', live, false))
@@ -300,7 +312,7 @@ export function buildHeadlines(input: {
   }
 
   if (headlines.length < 3 && input.directory) {
-    const visible = applyDemoThreshold(input.directory, DEMO_THRESHOLD_DEFAULTS.directory)
+    const visible = dedupeIdentified(applyDemoThreshold(input.directory, DEMO_THRESHOLD_DEFAULTS.directory))
     const live = visible.filter((row) => !row.is_demo).length
     if (live > 0) {
       push(pulseHeadline('directory', 'Directory', live, false))
@@ -486,14 +498,16 @@ export function assembleHome(input: AssembleInput): HomeModel {
     : null
 
   const directoryRows = input.directory
-    ? applyDemoThreshold(input.directory, DEMO_THRESHOLD_DEFAULTS.directory)
+    ? uniqueById(applyDemoThreshold(input.directory, DEMO_THRESHOLD_DEFAULTS.directory))
     : []
   const mandateRows = input.mandates
-    ? applyDemoThreshold(input.mandates, DEMO_THRESHOLD_DEFAULTS.mandates)
+    ? uniqueById(applyDemoThreshold(input.mandates, DEMO_THRESHOLD_DEFAULTS.mandates))
     : []
-  const roomRows = input.rooms ? applyDemoThreshold(input.rooms, DEMO_THRESHOLD_DEFAULTS.rooms) : []
+  const roomRows = input.rooms
+    ? uniqueById(applyDemoThreshold(input.rooms, DEMO_THRESHOLD_DEFAULTS.rooms))
+    : []
   const partnerRows = input.partners
-    ? applyDemoThreshold(input.partners, DEMO_THRESHOLD_DEFAULTS.partners)
+    ? uniqueById(applyDemoThreshold(input.partners, DEMO_THRESHOLD_DEFAULTS.partners))
     : []
 
   return {
@@ -546,8 +560,11 @@ export function assembleHome(input: AssembleInput): HomeModel {
         stage: room.stage,
         example: room.is_demo,
       })),
-      majlis: gatherings
-        .filter((event) => event.status === 'published' && upcoming(event, input.nowMs) && safePublicText(event.title))
+      majlis: uniqueById(
+        gatherings.filter(
+          (event) => event.status === 'published' && upcoming(event, input.nowMs) && safePublicText(event.title),
+        ),
+      )
         .sort((a, b) => a.startsAt.localeCompare(b.startsAt))
         .slice(0, 2)
         .map((event) => ({
@@ -579,6 +596,15 @@ function foundingFill(admitted: number, ksa: number, intl: number) {
     updatedAt: null,
   })
   return { admitted: line.admitted, label: line.label, split: line.split }
+}
+
+function dedupeIdentified<T extends { is_demo: boolean }>(rows: T[]): T[] {
+  const identified = rows.every((row) => {
+    const id = (row as { id?: unknown }).id
+    return typeof id === 'string' && id.length > 0
+  })
+  if (!identified) return rows
+  return uniqueById(rows as (T & { id: string })[])
 }
 
 function pulseHeadline(

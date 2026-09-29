@@ -11,6 +11,7 @@ import {
   presentHomeActivity,
   presentHomeActivityList,
   primaryHomeCta,
+  uniqueById,
   type AssembleInput,
   type IntroState,
   type MandateBrief,
@@ -28,12 +29,12 @@ function brief(partial: Partial<MandateBrief> & { is_demo: boolean; intro_status
   return {
     id: partial.id ?? 'mandate',
     is_demo: partial.is_demo,
-    sector: 'Energy',
-    deal_type: 'Growth equity',
+    sector: partial.sector ?? 'Energy',
+    deal_type: partial.deal_type ?? 'Growth equity',
     ticket_band: '$10-25m',
     geography: 'KSA',
     stage: 'Diligence',
-    one_liner: 'A clear line with no private detail.',
+    one_liner: partial.one_liner ?? 'A clear line with no private detail.',
     intro_status: partial.intro_status,
   }
 }
@@ -238,6 +239,45 @@ test('demo threshold keeps example counts below the line and drops them at the l
     rooms: [],
     directory: [],
   }).find((item) => item.id === 'intros')?.example)
+})
+
+test('mandate teasers keep one card per id', () => {
+  const repeated = brief({
+    id: 'same-brief',
+    is_demo: false,
+    intro_status: null,
+    sector: 'Health',
+    deal_type: 'Advisory',
+    one_liner: 'An advisory brief for a regional care network.',
+  })
+  const copy = brief({
+    id: 'same-brief',
+    is_demo: false,
+    intro_status: null,
+    sector: 'Health',
+    deal_type: 'Advisory',
+    one_liner: 'This second copy must not render.',
+  })
+  const other = brief({
+    id: 'other-brief',
+    is_demo: false,
+    intro_status: null,
+    sector: 'Logistics',
+    deal_type: 'Growth equity',
+    one_liner: 'Growth capital for a domestic freight platform.',
+  })
+  assert.deepEqual(uniqueById([repeated, copy, other]).map((row) => row.id), ['same-brief', 'other-brief'])
+  const model = assembleHome(base({ mandates: [repeated, copy, other] }))
+  assert.deepEqual(
+    model.teasers.mandates.map((card) => card.id),
+    ['same-brief', 'other-brief'],
+  )
+  assert.deepEqual(
+    model.teasers.mandates.map((card) => `${card.sector} ${card.dealType}`),
+    ['Health Advisory', 'Logistics Growth equity'],
+  )
+  assert.equal(model.teasers.mandates.some((card) => card.oneLiner.includes('second copy')), false)
+  assert.equal(model.pulse.find((item) => item.id === 'mandates')?.value, '2')
 })
 
 test('home teasers keep clear mandate fields and drop private ones', () => {
