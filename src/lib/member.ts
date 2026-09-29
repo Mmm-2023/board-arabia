@@ -1,9 +1,10 @@
 export type FoundingSeat = 'ksa' | 'intl'
+export type MemberSeat = FoundingSeat | 'sponsor'
 
 export type MemberRow = {
   user_id: string
   email: string
-  seat: FoundingSeat
+  seat: MemberSeat
   status: 'invited' | 'active' | 'suspended'
   must_set_password: boolean
   invites_remaining: number
@@ -36,8 +37,18 @@ export type FoundingCapacity = {
   total_cap: number
 }
 
-export function seatLabel(seat: FoundingSeat) {
-  return seat === 'ksa' ? 'Saudi Arabia' : 'International'
+/** Saudi Arabia and International are founding seats. Sponsor is its own seat. */
+export function seatLabel(seat: string | null | undefined) {
+  if (seat === 'ksa') return 'Saudi Arabia'
+  if (seat === 'intl') return 'International'
+  if (seat === 'sponsor') return 'Sponsor'
+  return 'Unknown seat'
+}
+
+export function adminMemberLine(seat: string, status: string) {
+  if (seat === 'sponsor') return `Sponsor · ${status}`
+  if (seat === 'ksa' || seat === 'intl') return `${seatLabel(seat)} · Founding Member · ${status}`
+  return `${seatLabel(seat)} · ${status}`
 }
 
 export function parseCapacity(value: unknown): FoundingCapacity | null {

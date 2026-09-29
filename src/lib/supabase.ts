@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import type { Database } from './database.types'
 import type { CapacityPayload } from './capacity'
-import { parseCapacity, type FoundingCapacity, type FoundingSeat } from './member'
+import { parseCapacity, type FoundingCapacity, type FoundingSeat, type MemberSeat } from './member'
 import { parsePlatformStats, type PlatformStats } from './platformStats'
 import { readRecoveryLocation } from './recovery'
 
@@ -254,10 +254,62 @@ export async function admitMember(
 export type MemberAdminRow = {
   user_id: string
   email: string
-  seat: FoundingSeat
+  seat: MemberSeat
   status: 'invited' | 'active' | 'suspended'
   invites_remaining: number
   invites_granted: number
+}
+
+export async function inviteSponsor(input: {
+  email: string
+  company: string
+}): Promise<{
+  error?: string
+  message?: string
+  dryRun?: boolean
+  dryRunInvite?: DryRunInvite
+}> {
+  try {
+    const res = await fetch(`${functionsBase}/invite-sponsor`, {
+      method: 'POST',
+      headers: await staffHeaders(),
+      body: JSON.stringify({
+        email: input.email.trim(),
+        company: input.company.trim(),
+        seat: 'sponsor',
+      }),
+    })
+    const body = (await res.json().catch(() => ({}))) as {
+      error?: string
+      message?: string
+      dry_run?: boolean
+      dry_run_invite?: {
+        confirm_url?: string | null
+        login_url?: string
+        otp?: string | null
+        temp_password?: string | null
+      }
+    }
+    const invite = body.dry_run_invite
+    const dryRunInvite = invite
+      ? {
+          confirmUrl: invite.confirm_url ?? null,
+          loginUrl: invite.login_url || '',
+          otp: invite.otp ?? null,
+          tempPassword: invite.temp_password ?? null,
+        }
+      : undefined
+    if (!res.ok) {
+      return { error: body.error || `Sponsor invite failed (${res.status})`, dryRunInvite }
+    }
+    return {
+      message: body.message,
+      dryRun: Boolean(body.dry_run),
+      dryRunInvite,
+    }
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : 'Sponsor invite failed' }
+  }
 }
 
 export type MemberInviteAdminRow = {

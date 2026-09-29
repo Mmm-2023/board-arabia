@@ -29,6 +29,8 @@ import {
 } from '../../lib/supabase'
 
 type ProfileCapacity = {
+  full_name: string | null
+  company: string | null
   investable_capacity_usd: number | string | null
   fo_aum_usd: number | string | null
   turnover_usd: number | string | null
@@ -178,7 +180,7 @@ function useAdminState(): AdminRoom {
         supabase
           .from('profiles')
           .select(
-            'user_id, investable_capacity_usd, fo_aum_usd, turnover_usd, include_in_public_aggregates, capacity_verified',
+            'user_id, full_name, company, investable_capacity_usd, fo_aum_usd, turnover_usd, include_in_public_aggregates, capacity_verified',
           ),
       ])
 

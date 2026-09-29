@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { useLocation } from 'react-router-dom'
+import { SponsorBadge } from '../../components/SponsorBadge'
 import { formatPrivateUsd, readNumeric } from '../../lib/capacity'
 import type { ProfileRow } from '../../lib/member'
 import { supabase } from '../../lib/supabase'
@@ -139,9 +140,12 @@ export function ProfilePage() {
         <p className="text-[0.72rem] font-semibold tracking-[0.14em] text-brass uppercase">
           Profile
         </p>
-        <h1 className="font-display text-[2.4rem] font-bold tracking-[-0.04em]">
-          Your details
-        </h1>
+        <div className="flex flex-wrap items-center gap-3">
+          <h1 className="font-display text-[2.4rem] font-bold tracking-[-0.04em]">
+            Your details
+          </h1>
+          {member.seat === 'sponsor' && <SponsorBadge />}
+        </div>
         <p className="text-[1.02rem] leading-relaxed text-ink/60">
           Visible to you. The directory is not open, and this page does not publish a profile.
         </p>

@@ -1,4 +1,5 @@
 import { seatLabel } from '../../lib/member'
+import { sponsorSeatHolders } from '../../lib/sponsorSeat'
 import type {
   Application,
   ApplicationStatus,
@@ -27,11 +28,19 @@ export function peopleInTier(
       .filter((row) => row.role === 'staff')
       .map((row) => ({ email: row.email, detail: new Date(row.created_at).toLocaleString() }))
   }
-  if (tier === 'Founding Member') {
-    return members.map((member) => ({
+  if (tier === 'Sponsor') {
+    return sponsorSeatHolders(members).map((member) => ({
       email: member.email,
       detail: `${seatLabel(member.seat)} · ${member.status}`,
     }))
+  }
+  if (tier === 'Founding Member') {
+    return members
+      .filter((member) => member.seat === 'ksa' || member.seat === 'intl')
+      .map((member) => ({
+        email: member.email,
+        detail: `${seatLabel(member.seat)} · ${member.status}`,
+      }))
   }
   return []
 }
