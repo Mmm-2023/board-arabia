@@ -10,6 +10,7 @@ export const REPAIR_PROMPT = [
   'Do not hide risks, inflate scores, or conceal a contradiction.',
   'No buy or sell rating. Posture is pass, evidence_required, or discuss_with_milestones.',
   'review_type is deck_only.',
+  'hero is required. If it is missing, fill company, one_liner, posture, overall, pre_money, post_money, and currency from the deck text.',
   'Scores are integers from 1 to 5. Overall is not an average.',
   'No exclamation marks. Do not use an em dash or an en dash.',
   'Never claim an investment was approved.',

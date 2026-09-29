@@ -4,11 +4,14 @@ import path from 'node:path'
 import test from 'node:test'
 import { createServer } from 'vite'
 import {
+  derivePosture,
+  fitNumberedDeck,
   missingBannerLabels,
   numberDeckPages,
   parseDeckAnalysis,
   preferredAsk,
   preferredCompany,
+  rawHasHero,
   SCORE_KEYS,
   SCORE_LABEL,
 } from '../supabase/functions/_shared/deck_analysis.ts'
@@ -24,9 +27,9 @@ import {
   stageLabel,
   type BuiltReport,
 } from '../supabase/functions/_shared/due_diligence.ts'
-import { FALLBACK_MODEL_ID, analyzeDeckText, extractDeckFactsWithOptionalLlm } from '../supabase/functions/due-diligence-start/llm.ts'
+import { FALLBACK_MODEL_ID, PRIMARY_CALL_MS, analyzeDeckText, extractDeckFactsWithOptionalLlm } from '../supabase/functions/due-diligence-start/llm.ts'
 import { deskProgressLine, DD_COPY } from '../src/lib/dueDiligenceCopy.ts'
-import { partialDraftAnalysis, partialDraftRaw, partialDraftReport, fullDraftAnalysis, fullDraftReport, FIXTURE_DECK } from '../src/lib/dueDiligenceMemoFixture.ts'
+import { partialDraftAnalysis, partialDraftRaw, partialDraftReport, fullDraftAnalysis, fullDraftRaw, fullDraftReport, FIXTURE_DECK } from '../src/lib/dueDiligenceMemoFixture.ts'
 import { REPORT_COPY } from '../src/lib/dueDiligenceCopy.ts'
 
 const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..')
@@ -295,6 +298,103 @@ test('a model call that runs out of time fails with the model id stored', async 
     globalThis.fetch = previousFetch
     ;(globalThis as { Deno?: unknown }).Deno = previousDeno
   }
+})
+
+test('posture follows scores and red flags, and a missing hero is repaired', async () => {
+  assert.equal(
+    derivePosture({ posture: 'pass', overall: 1, risks: [{ severity: 'high' }], claims: [{ status: 'contradicted' }] }),
+    'evidence_required',
+  )
+  assert.equal(
+    derivePosture({ posture: 'pass', overall: 2, risks: [], claims: [] }),
+    'evidence_required',
+  )
+  assert.equal(
+    derivePosture({ posture: 'pass', overall: 4, risks: [{ severity: 'low' }], claims: [{ status: 'supported_in_deck' }] }),
+    'pass',
+  )
+  assert.equal(
+    derivePosture({ posture: '', overall: 4, risks: [], claims: [] }),
+    'evidence_required',
+  )
+  const forced = parseDeckAnalysis({
+    ...fullDraftRaw(),
+    snapshot: { ...(fullDraftRaw().snapshot as object), posture: 'pass' },
+    scores: { ...(fullDraftRaw().scores as object), overall: 1 },
+  })
+  assert.equal(forced?.hero.posture, 'evidence_required')
+  assert.equal(forced?.snapshot.posture, 'evidence_required')
+  assert.equal(forced?.hero.overall, 1)
+  assert.notEqual(forced?.hero, null)
+  const open = parseDeckAnalysis({
+    hero: {
+      company: 'Northwind Freight',
+      one_liner: 'A shipped warehouse lane for example.com customers.',
+      posture: 'pass',
+      overall: 4,
+      pre_money: 8000000,
+      post_money: 10000000,
+      currency: 'USD',
+    },
+    ...fullDraftRaw(),
+    snapshot: {
+      ...(fullDraftRaw().snapshot as object),
+      posture: 'pass',
+      one_liner: 'A shipped warehouse lane for example.com customers.',
+    },
+    scores: {
+      ...(fullDraftRaw().scores as object),
+      overall: 4,
+      traction_evidence: 4,
+      valuation_fit: 4,
+    },
+    claims: [{ claim: 'Northwind Freight serves 40 warehouses.', page: '2', status: 'supported_in_deck', note: 'Deck-stated.' }],
+    risks: [{ title: 'Thin insurance note', severity: 'low', why: 'The deck names a carrier in one line.', evidence_that_would_retire_it: 'The policy number.' }],
+  })
+  assert.equal(open?.hero.posture, 'pass')
+  assert.equal(rawHasHero({ hero: { company: 'Northwind Freight' } }), true)
+  assert.equal(rawHasHero(fullDraftRaw()), false)
+
+  const kept = fitNumberedDeck(`${'Page 1\nOpening table stays in the prompt.\n'.repeat(30)}Page 4\nOps page threshold table stays in the prompt.`, 400)
+  assert.match(kept, /Page 1/)
+  assert.match(kept, /Page 4/)
+  assert.match(kept, /Later pages follow/)
+
+  const calls: string[] = []
+  const previousFetch = globalThis.fetch
+  const previousDeno = (globalThis as { Deno?: unknown }).Deno
+  ;(globalThis as { Deno?: { env: { get: (key: string) => string | undefined } } }).Deno = {
+    env: {
+      get: (key: string) =>
+        ({
+          BA_DD_LLM_PROVIDER: 'xai',
+          BA_DD_LLM_API_KEY: 'dd-unit-test-token',
+          BA_DD_LLM_MODEL: 'unit-model-id',
+        })[key],
+    },
+  }
+  const withHero = JSON.stringify(open)
+  globalThis.fetch = (async () => {
+    calls.push('call')
+    const content = calls.length === 1 ? JSON.stringify(fullDraftRaw()) : withHero
+    return new Response(JSON.stringify({ choices: [{ message: { content } }] }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    })
+  }) as typeof fetch
+  try {
+    const repaired = await analyzeDeckText(`Page 1\n${FIXTURE_DECK}`)
+    assert.equal(calls.length, 2)
+    assert.equal(repaired.analysis?.hero.posture, 'pass')
+    assert.match(repaired.skipReason || '', /repaired/)
+  } finally {
+    globalThis.fetch = previousFetch
+    ;(globalThis as { Deno?: unknown }).Deno = previousDeno
+  }
+  assert.equal(PRIMARY_CALL_MS, 120_000)
+  const llm = readFileSync(path.join(root, 'supabase/functions/due-diligence-start/llm.ts'), 'utf8')
+  assert.match(llm, /PRIMARY_CALL_MS/)
+  assert.match(llm, /stream: true/)
 })
 
 test('the draft memo renders at the hero, bars, math, risks, accordion, and footer', async () => {

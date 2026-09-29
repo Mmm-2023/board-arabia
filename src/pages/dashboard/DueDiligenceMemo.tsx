@@ -36,9 +36,11 @@ export function DueDiligenceMemo({
   companyLabel: string
   preparedAt: string
 }) {
-  const posture = analysis.snapshot.posture
-  const overall = analysis.scores.overall
-  const currency = analysis.snapshot.round.currency
+  const posture = analysis.hero?.posture || analysis.snapshot.posture
+  const overall = analysis.hero?.overall ?? analysis.scores.overall
+  const currency = analysis.hero?.currency || analysis.snapshot.round.currency
+  const preMoney = analysis.hero?.pre_money ?? analysis.snapshot.round.pre_money
+  const postMoney = analysis.hero?.post_money ?? analysis.snapshot.round.post_money
   const risks = [...analysis.risks].sort((a, b) => severityRank(a.severity) - severityRank(b.severity))
   const gaps = missingBannerLabels(analysis)
 
@@ -70,8 +72,8 @@ export function DueDiligenceMemo({
           <p className="mt-3 max-w-3xl text-[0.98rem] leading-relaxed text-ink/80">{analysis.snapshot.posture_reason}</p>
         ) : null}
         <dl className="mt-4 grid gap-3 sm:grid-cols-3">
-          <HeroFact label={REPORT_COPY.preMoney} value={moneyLabel(analysis.snapshot.round.pre_money, currency)} />
-          <HeroFact label={REPORT_COPY.postMoney} value={moneyLabel(analysis.snapshot.round.post_money, currency)} />
+          <HeroFact label={REPORT_COPY.preMoney} value={moneyLabel(preMoney, currency)} />
+          <HeroFact label={REPORT_COPY.postMoney} value={moneyLabel(postMoney, currency)} />
           <HeroFact label={REPORT_COPY.preparedLabel} value={formatDate(preparedAt)} />
         </dl>
       </header>

@@ -913,7 +913,7 @@ test('a missing search key is stored as a member-visible degraded note', () => {
   })
   assert.deepEqual(report.degraded_notes, [DEGRADED_NOTE_SEARCH, DEGRADED_NOTE_MODEL])
   const packed = packReportDisclaimer(report.degraded_notes)
-  assert.match(packed, /Independent web checks were not run for this report/)
+  assert.match(packed, /Public checks were not run for this report/)
   assert.equal(packed.length <= 400, true)
   assert.equal(packed.includes('\u2014'), false)
   const stored = readStoredReport({ ...report, disclaimer: packed })
@@ -1027,7 +1027,7 @@ test('a stamped cover does not become the company name, and degraded mode stays 
   assert.equal(report.sources.length, 0)
   assert.equal(report.claims.length > 0, true)
   assert.match(degradedBannerText(report.degraded_notes || []), /language model was not used/)
-  assert.match(degradedBannerText(report.degraded_notes || []), /Independent web checks were not run/)
+  assert.match(degradedBannerText(report.degraded_notes || []), /Public checks were not run/)
   assert.match(degradedBannerText(report.degraded_notes || []), /Those checks are not available/)
   const vite = await createServer({
     server: { middlewareMode: true },
@@ -1102,6 +1102,15 @@ test('xai provider posts a deck draft and does not hardcode the primary model id
 })
 
 const MINIMAL_DRAFT = JSON.stringify({
+  hero: {
+    company: 'Harborline Robotics',
+    one_liner: 'Warehouse robotics sold to example.com customers.',
+    posture: 'evidence_required',
+    overall: 2,
+    pre_money: null,
+    post_money: null,
+    currency: 'USD',
+  },
   meta: { company: 'Harborline Robotics', document: 'deck', as_of: '2026-09-01', review_type: 'deck_only', disclaimer: 'Document review only.' },
   snapshot: {
     one_liner: 'Warehouse robotics sold to example.com customers.',

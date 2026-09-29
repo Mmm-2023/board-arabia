@@ -1,5 +1,5 @@
 import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1'
-import { numberDeckPages } from '../_shared/deck_analysis.ts'
+import { fitNumberedDeck, numberDeckPages } from '../_shared/deck_analysis.ts'
 import {
   assessmentLog,
   buildReport,
@@ -88,7 +88,7 @@ export async function advanceDueDiligenceJob(admin: SupabaseClient, jobId: strin
     const text = source.text
     assertDeadline()
     await touch(admin, jobId, DD_PROGRESS.pages)
-    const numbered = numberDeckPages(source.pages).slice(0, 80_000)
+    const numbered = fitNumberedDeck(numberDeckPages(source.pages))
     assertDeadline()
     await mark(admin, jobId, 'checking', DD_PROGRESS.model)
     const storedUrl = typeof deck.data.company_url === 'string' ? deck.data.company_url.trim() : ''
