@@ -57,10 +57,14 @@ Deno.serve(async (req) => {
 
   const { data: profile } = await admin
     .from('profiles')
-    .select('full_name')
+    .select('full_name, headline, company')
     .eq('user_id', user.id)
     .maybeSingle()
-  const inviterLabel = oneLine(profile?.full_name || '') || 'A Board Arabia member'
+  const inviter = {
+    name: oneLine(profile?.full_name || '') || 'A Board Arabia member',
+    headline: oneLine(profile?.headline || ''),
+    company: oneLine(profile?.company || ''),
+  }
 
   const { data: issued, error: issueError } = await admin.rpc('issue_member_invite', {
     p_member_id: user.id,
@@ -88,7 +92,8 @@ Deno.serve(async (req) => {
   const site = publicSite()
   const applyUrl = applyInviteUrl(site, token)
   const phoneDigits = phone.replace(/\D/g, '')
-  const whatsappUrl = channel === 'whatsapp' ? whatsAppInviteUrl(phoneDigits || null, applyUrl) : null
+  const whatsappUrl =
+    channel === 'whatsapp' ? whatsAppInviteUrl(phoneDigits || null, applyUrl, inviter.name) : null
 
   if (channel === 'whatsapp') {
     return jsonResponse(req, {
@@ -102,7 +107,7 @@ Deno.serve(async (req) => {
     })
   }
 
-  const { subject, text, html } = peerInviteMail(applyUrl, inviterLabel)
+  const { subject, text, html } = peerInviteMail(applyUrl, inviter)
   if (/calendar\.app\.google|nammco/i.test(`${subject}\n${text}\n${html}`)) {
     await admin.rpc('release_member_invite', { p_invite_id: inviteId })
     return jsonResponse(req, { error: 'Invite blocked' }, 500)
@@ -136,7 +141,7 @@ Deno.serve(async (req) => {
     whatsapp_url: null,
     message: sent.dryRun
       ? 'Invite saved. Workspace mail is not connected, so the email was not sent. The link is still yours to share.'
-      : 'Invite emailed.',
+      : 'Invite sent. They\u2019ll apply with your name attached.',
   })
 })
 

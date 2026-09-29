@@ -34,7 +34,7 @@ test('home does not show a dead availability status', () => {
 })
 
 test('spent peer invites collapse the send forms behind one quiet banner', () => {
-  const invites = source('src/pages/dashboard/InvitesPage.tsx')
+  const invites = source('src/pages/dashboard/InvitesPanel.tsx')
   assert.match(invites, /Both peer invites are used\. Unused invites do not refill\./)
   assert.equal(invites.includes('Both invites are used. A third send is blocked.'), false)
   assert.match(invites, /to="\/dashboard\/help"/)
@@ -56,6 +56,7 @@ test('member copy in this wave has no em dash', () => {
   const files = [
     'src/pages/dashboard/DashboardHome.tsx',
     'src/pages/dashboard/InvitesPage.tsx',
+    'src/pages/dashboard/InvitesPanel.tsx',
     'src/pages/dashboard/DirectoryEmpty.tsx',
     'src/pages/dashboard/ProfilePage.tsx',
     'src/shell/AppShell.tsx',
