@@ -24,7 +24,7 @@ import { MEMBER_VIEWS } from '../src/shell/viewCopy.ts'
 
 const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..')
 const migrationsDir = path.join(root, 'supabase/migrations')
-const migrationName = '20261003120000_re_trusted_partners.sql'
+const migrationName = '20261004120000_re_trusted_partners.sql'
 const migration = readFileSync(path.join(migrationsDir, migrationName), 'utf8')
 const MAIL = 'desk@example.com'
 const PHONE = 'Desk extension 5201'
@@ -65,8 +65,8 @@ function partner(extra: Record<string, unknown> = {}) {
 test('the partners migration sorts last and does not open the table', () => {
   const files = readdirSync(migrationsDir).filter((file) => file.endsWith('.sql')).sort()
   assert.equal(files.at(-1), migrationName)
-  assert.ok(migrationName > '20261002120000')
-  assert.ok(migrationName > '20261001120000_re_regulatory_readiness.sql')
+  assert.ok(migrationName > '20261003120000_re_regulatory_readiness.sql')
+  assert.ok(files.includes('20261003120000_re_regulatory_readiness.sql'))
   assert.equal(migration.includes('\u2014'), false)
   assert.equal(migration.includes('\u2013'), false)
   assert.equal(/https?:\/\//i.test(migration), false)
