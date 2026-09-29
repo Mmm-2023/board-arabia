@@ -212,6 +212,9 @@ export type Database = {
           include_in_public_aggregates: boolean
           capacity_verified: boolean
           avatar_path: string | null
+          availability: 'open' | 'selective' | 'at_capacity' | null
+          sector_tags: string[]
+          vision_themes: string[]
           updated_at: string
         }
         Insert: {
@@ -230,6 +233,9 @@ export type Database = {
           include_in_public_aggregates?: boolean
           capacity_verified?: boolean
           avatar_path?: string | null
+          availability?: 'open' | 'selective' | 'at_capacity' | null
+          sector_tags?: string[]
+          vision_themes?: string[]
           updated_at?: string
         }
         Update: {
@@ -248,6 +254,9 @@ export type Database = {
           include_in_public_aggregates?: boolean
           capacity_verified?: boolean
           avatar_path?: string | null
+          availability?: 'open' | 'selective' | 'at_capacity' | null
+          sector_tags?: string[]
+          vision_themes?: string[]
           updated_at?: string
         }
         Relationships: []

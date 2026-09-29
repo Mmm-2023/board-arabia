@@ -1,5 +1,7 @@
 /** Safe projections for directory, rooms, and trusted partners. */
 
+import { isAvailability, normalizeTags, SECTOR_TAGS, VISION_2030_THEMES, type Availability } from './profileTags.ts'
+
 export type DirectoryCard = {
   id: string
   is_demo: boolean
@@ -8,6 +10,9 @@ export type DirectoryCard = {
   company: string
   location: string
   sector: string
+  sectors: string[]
+  vision_themes: string[]
+  availability: Availability | null
   seat: 'ksa' | 'intl'
   portrait_asset: string | null
   avatar_path: string | null
@@ -58,6 +63,10 @@ export function presentDirectoryCard(raw: unknown): DirectoryCard | null {
   if (!id || !fullName || !seat) return null
   const portrait = text(row.portrait_asset, 160)
   const avatar = text(row.avatar_path, 160)
+  const fromList = normalizeTags(row.sectors, SECTOR_TAGS)
+  const legacy = text(row.sector, 120)
+  const legacyOk = (SECTOR_TAGS as readonly string[]).includes(legacy) ? legacy : ''
+  const sectors = fromList.length > 0 ? fromList : legacyOk ? [legacyOk] : []
   return {
     id,
     is_demo: row.is_demo === true,
@@ -65,7 +74,10 @@ export function presentDirectoryCard(raw: unknown): DirectoryCard | null {
     headline: text(row.headline, 160),
     company: text(row.company, 200),
     location: text(row.location, 120),
-    sector: text(row.sector, 120),
+    sector: sectors[0] ?? '',
+    sectors,
+    vision_themes: normalizeTags(row.vision_themes, VISION_2030_THEMES),
+    availability: isAvailability(row.availability) ? row.availability : null,
     seat,
     portrait_asset: portrait.startsWith('/demo/portraits/') ? portrait : null,
     avatar_path: /^[0-9a-f-]{36}\/avatar$/i.test(avatar) ? avatar : null,
