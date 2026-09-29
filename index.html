@@ -47,6 +47,19 @@
     <title>Board Arabia</title>
   </head>
   <body>
+    <script>
+      (function () {
+        try {
+          var path = location.pathname
+          if (path !== '/shell.html' && path.slice(-11) !== '/shell.html') return
+          var redirect = sessionStorage.getItem('ba-spa-redirect')
+          if (!redirect) return
+          sessionStorage.removeItem('ba-spa-redirect')
+          if (redirect.indexOf(location.origin + '/') !== 0) return
+          if (redirect !== location.href) history.replaceState(null, '', redirect)
+        } catch (e) {}
+      })()
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

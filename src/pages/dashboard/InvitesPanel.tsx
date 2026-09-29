@@ -1,5 +1,6 @@
 import type { FormEvent } from 'react'
 import { Link } from 'react-router-dom'
+import { sentInviteLabel } from '../../../supabase/functions/_shared/invitee_name.ts'
 import { formatInviteSent } from '../../lib/riyadhStamp'
 import { applyInviteUrl, whatsAppInviteUrl } from '../../lib/inviteLink'
 import { CardSkeleton } from '../../shell/ViewState'
@@ -12,6 +13,7 @@ export type SentInvite = {
   status: string
   recipient_email: string | null
   recipient_phone: string | null
+  recipient_name?: string | null
   created_at: string
   expires_at: string
 }
@@ -22,6 +24,8 @@ export function InvitesPanel({
   embedded = false,
   remaining,
   inviterName,
+  emailName,
+  whatsAppName,
   email,
   phone,
   busy,
@@ -30,6 +34,8 @@ export function InvitesPanel({
   sent,
   listError,
   loadingList,
+  onEmailNameChange,
+  onWhatsAppNameChange,
   onEmailChange,
   onPhoneChange,
   onEmail,
@@ -39,6 +45,8 @@ export function InvitesPanel({
   embedded?: boolean
   remaining: number
   inviterName: string
+  emailName: string
+  whatsAppName: string
   email: string
   phone: string
   busy: 'email' | 'whatsapp' | null
@@ -47,6 +55,8 @@ export function InvitesPanel({
   sent: SentInvite[]
   listError: string
   loadingList: boolean
+  onEmailNameChange: (value: string) => void
+  onWhatsAppNameChange: (value: string) => void
   onEmailChange: (value: string) => void
   onPhoneChange: (value: string) => void
   onEmail: (event: FormEvent) => void
@@ -89,10 +99,27 @@ export function InvitesPanel({
         </div>
       ) : (
         <>
-      <form onSubmit={onEmail} className="mt-10 border border-ink/10 px-5 py-5">
+      <p className="mt-8 max-w-xl text-[0.95rem] leading-relaxed text-ink/60">
+        Add their name so you can tell the invites apart. Only you and the desk see it.
+      </p>
+      <form onSubmit={onEmail} className="mt-4 border border-ink/10 px-5 py-5">
         <h2 className="text-[0.72rem] font-semibold tracking-[0.14em] text-ink/40 uppercase">
           Email
         </h2>
+        <label className="mt-4 block text-[0.95rem] text-ink" htmlFor="invite_email_name">
+          Their name
+        </label>
+        <input
+          id="invite_email_name"
+          type="text"
+          required
+          maxLength={80}
+          value={emailName}
+          disabled={blocked || busy !== null}
+          onChange={(event) => onEmailNameChange(event.target.value)}
+          autoComplete="name"
+          className="mt-2 w-full border border-ink/15 bg-white/70 px-4 py-3 text-[1rem] outline-none focus:border-brass"
+        />
         <label className="mt-4 block text-[0.95rem] text-ink" htmlFor="invite_email">
           Their email
         </label>
@@ -120,6 +147,20 @@ export function InvitesPanel({
         <h2 className="text-[0.72rem] font-semibold tracking-[0.14em] text-ink/40 uppercase">
           WhatsApp
         </h2>
+        <label className="mt-4 block text-[0.95rem] text-ink" htmlFor="invite_whatsapp_name">
+          Their name
+        </label>
+        <input
+          id="invite_whatsapp_name"
+          type="text"
+          required
+          maxLength={80}
+          value={whatsAppName}
+          disabled={blocked || busy !== null}
+          onChange={(event) => onWhatsAppNameChange(event.target.value)}
+          autoComplete="name"
+          className="mt-2 w-full border border-ink/15 bg-white/70 px-4 py-3 text-[1rem] outline-none focus:border-brass"
+        />
         <label className="mt-4 block text-[0.95rem] text-ink" htmlFor="invite_phone">
           Their number (optional)
         </label>
@@ -177,13 +218,11 @@ export function InvitesPanel({
               invite.channel === 'whatsapp'
                 ? whatsAppInviteUrl(invite.recipient_phone, applyUrl, inviterName)
                 : null
+            const label = sentInviteLabel(invite)
             return (
               <li key={invite.id} className="border border-ink/10 px-4 py-4">
-                <p className="text-[0.95rem] text-ink">
-                  {invite.channel === 'email' ? 'Email' : 'WhatsApp'}
-                  {invite.recipient_email ? ` · ${invite.recipient_email}` : ''}
-                  {invite.recipient_phone ? ` · ${invite.recipient_phone}` : ''}
-                </p>
+                <p className="text-[0.95rem] text-ink">{label.title}</p>
+                {label.detail ? <p className="mt-1 text-[0.85rem] text-ink/55">{label.detail}</p> : null}
                 <p className="mt-1 text-[0.85rem] text-ink/50">
                   {formatInviteSent(invite.created_at, invite.status)}
                 </p>

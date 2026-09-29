@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { loadDueDiligenceDesk, type HistoryItem } from '../../lib/dueDiligence'
+import { recentReports } from '../../lib/recentReports'
 import { useNoIndex } from '../../lib/usePageTitle'
 import { CardSkeleton, ErrorBanner } from '../../shell/ViewState'
 import { MEMBER_VIEWS } from '../../shell/viewCopy'
@@ -29,6 +30,8 @@ export function AiToolsHome() {
       cancelled = true
     }
   }, [attempt, userId])
+
+  const rows = reports ? recentReports(reports) : null
 
   return (
     <div className="max-w-3xl">
@@ -71,18 +74,18 @@ export function AiToolsHome() {
             />
           </div>
         ) : null}
-        {reports && reports.length === 0 && !error ? (
+        {rows && rows.length === 0 && !error ? (
           <p className="mt-3 text-[1rem] text-ink/60">No reports yet. Open AI Due Diligence to run a check.</p>
         ) : null}
-        {reports && reports.length > 0 ? (
+        {rows && rows.length > 0 ? (
           <ul className="mt-4 space-y-3">
-            {reports.map((report) => (
+            {rows.map((report) => (
               <li key={report.id}>
                 <Link
                   to={`/dashboard/ai/due-diligence/${report.id}`}
                   className="flex min-h-11 flex-col justify-center border border-[var(--ba-line)] bg-white px-4 py-3"
                 >
-                  <span className="text-[1rem] text-ink">{report.company_label || report.file_name}</span>
+                  <span className="text-[1rem] text-ink">{report.title}</span>
                 </Link>
               </li>
             ))}

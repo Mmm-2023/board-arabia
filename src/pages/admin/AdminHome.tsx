@@ -9,6 +9,7 @@ import { ReIntroQueue } from './ReIntroQueue'
 import { RePartnerIntroQueue } from './RePartnerIntroQueue'
 import { RePartnersPanel } from './RePartnersPanel'
 import { ReReadinessPanel } from './ReReadinessPanel'
+import { sponsorSeatHolders } from '../../lib/sponsorSeat'
 import { useAdmin } from './context'
 
 export function AdminHome() {
@@ -27,6 +28,7 @@ export function AdminHome() {
   const attention = pending.length + failedMail.length + awaiting.length + capacityAlerts.length > 0
   const admitted = room.platform ? seatLine(room.platform) : null
   const admins = room.staffRows.filter((row) => row.role !== 'master').length
+  const sponsors = sponsorSeatHolders(room.members).length
   const recent = room.events.slice(0, 5)
 
   return (
@@ -138,7 +140,7 @@ export function AdminHome() {
             <p className={`text-[0.72rem] font-semibold tracking-[0.12em] uppercase ${styles.quiet}`}>
               Sponsors
             </p>
-            <p className="mt-2 font-display text-[1.6rem] font-semibold">0</p>
+            <p className="mt-2 font-display text-[1.6rem] font-semibold">{sponsors}</p>
           </article>
         </div>
       </section>

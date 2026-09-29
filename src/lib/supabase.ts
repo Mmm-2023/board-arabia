@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import { cleanDeskNote } from '../../supabase/functions/_shared/desk_note.ts'
 import type { Database } from './database.types'
 import type { CapacityPayload } from './capacity'
 import { parseCapacity, type FoundingCapacity, type FoundingSeat, type MemberSeat } from './member'
@@ -338,10 +339,32 @@ export async function lookupMemberInvite(token: string): Promise<InviteLookup> {
   return { valid: false, state: 'invalid' }
 }
 
+export async function sendDeskNote(input: { topic: string; message: string }): Promise<{ error?: string }> {
+  const cleaned = cleanDeskNote(input)
+  if (!cleaned.ok) return { error: cleaned.error }
+  try {
+    const res = await fetch(`${functionsBase}/contact-desk`, {
+      method: 'POST',
+      headers: await staffHeaders(),
+      body: JSON.stringify({ topic: cleaned.topic, message: cleaned.message }),
+    })
+    const body = (await res.json().catch(() => ({}))) as { error?: string }
+    if (!res.ok) {
+      const message = typeof body.error === 'string' ? body.error : ''
+      const safe = message.length > 0 && message.length < 180 && !message.includes('@')
+      return { error: safe ? message : 'Could not reach the desk. Try again.' }
+    }
+    return {}
+  } catch (err) {
+    return { error: err instanceof Error ? 'Could not reach the desk. Try again.' : 'Could not reach the desk. Try again.' }
+  }
+}
+
 export async function sendMemberInvite(input: {
   channel: 'email' | 'whatsapp'
   email?: string
   phone?: string
+  name?: string
 }): Promise<{
   error?: string
   message?: string
@@ -358,6 +381,7 @@ export async function sendMemberInvite(input: {
         channel: input.channel,
         email: input.email || null,
         phone: input.phone || null,
+        name: input.name || null,
       }),
     })
     const body = (await res.json().catch(() => ({}))) as {
@@ -388,6 +412,7 @@ export type EmailEventAdminRow = {
   recipient: string
   subject: string
   status: string
+  detail?: string | null
 }
 
 export type StaffDirectoryRow = {

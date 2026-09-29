@@ -35,6 +35,13 @@ jobs:
         run: |
           test -f dist/.nojekyll
           test -f dist/404.html
+          grep -q 'data-ba-spa-fallback' dist/404.html
+          grep -q 'location.replace' dist/404.html
+          grep -q 'ba-spa-redirect' dist/shell.html
+          if grep -q 'location.replace' dist/shell.html; then
+            echo 'spa bounce leaked into the app shell'
+            exit 1
+          fi
           test -f dist/CNAME
           grep -qx 'boardarabia.com' dist/CNAME
           test -f dist/for-members/index.html

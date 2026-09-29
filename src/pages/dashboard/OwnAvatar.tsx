@@ -4,7 +4,7 @@ import { AvatarCircle } from './AvatarCircle'
 import { useMember } from './context'
 import { useSignedAvatar } from './useSignedAvatar'
 
-export function OwnAvatar({ decorative = false }: { decorative?: boolean }) {
+export function OwnAvatar({ decorative = false, size = 36 }: { decorative?: boolean; size?: number }) {
   const { email, profile } = useMember()
   const path = profile?.avatar_path ?? null
   const signed = useSignedAvatar(path)
@@ -13,7 +13,7 @@ export function OwnAvatar({ decorative = false }: { decorative?: boolean }) {
     <AvatarCircle
       src={signed.failed ? null : signed.url}
       initials={mark}
-      size={36}
+      size={size}
       busy={signed.loading}
       alt=""
       onError={signed.markFailed}

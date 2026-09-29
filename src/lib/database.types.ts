@@ -156,6 +156,7 @@ export type Database = {
           status: 'pending' | 'opened' | 'applied' | 'accepted' | 'rejected' | 'admitted'
           recipient_email: string | null
           recipient_phone: string | null
+          recipient_name: string | null
           application_id: string | null
           expires_at: string
           opened_at: string | null
@@ -171,6 +172,7 @@ export type Database = {
           status?: 'pending' | 'opened' | 'applied' | 'accepted' | 'rejected' | 'admitted'
           recipient_email?: string | null
           recipient_phone?: string | null
+          recipient_name?: string | null
           application_id?: string | null
           expires_at: string
           opened_at?: string | null
@@ -186,6 +188,7 @@ export type Database = {
           status?: 'pending' | 'opened' | 'applied' | 'accepted' | 'rejected' | 'admitted'
           recipient_email?: string | null
           recipient_phone?: string | null
+          recipient_name?: string | null
           application_id?: string | null
           expires_at?: string
           opened_at?: string | null

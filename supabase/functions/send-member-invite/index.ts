@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1'
+import { cleanInviteeName } from '../_shared/invitee_name.ts'
 import { applyInviteUrl, peerInviteMail, whatsAppInviteUrl } from '../_shared/peer_invite.ts'
 import { corsHeaders, jsonResponse, logEmailEvent, publicSite, sendEmail } from './mail.ts'
 
@@ -42,17 +43,25 @@ Deno.serve(async (req) => {
   let channel = ''
   let email = ''
   let phone = ''
+  let name = ''
   try {
     const body = await req.json()
     channel = String(body.channel || '')
     email = typeof body.email === 'string' ? body.email.trim().slice(0, 320) : ''
     phone = typeof body.phone === 'string' ? body.phone.trim().slice(0, 32) : ''
+    name = typeof body.name === 'string' ? body.name : ''
   } catch {
     return jsonResponse(req, { error: 'Invalid JSON' }, 400)
   }
 
   if (channel !== 'email' && channel !== 'whatsapp') {
     return jsonResponse(req, { error: 'Choose email or WhatsApp.' }, 400)
+  }
+
+  let recipientName: string | null = null
+  if (name.trim()) {
+    recipientName = cleanInviteeName(name)
+    if (!recipientName) return jsonResponse(req, { error: 'Enter their name.' }, 400)
   }
 
   const { data: profile } = await admin
@@ -87,6 +96,14 @@ Deno.serve(async (req) => {
   const inviteId = String(row.id || '')
   if (!token || !inviteId) {
     return jsonResponse(req, { error: 'Invite could not be sent.' }, 500)
+  }
+
+  if (recipientName) {
+    const { error: nameError } = await admin
+      .from('member_invites')
+      .update({ recipient_name: recipientName })
+      .eq('id', inviteId)
+    if (nameError) console.warn('recipient_name was not saved')
   }
 
   const site = publicSite()

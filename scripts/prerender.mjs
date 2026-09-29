@@ -2,6 +2,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { createServer } from 'vite'
+import { pages404Html } from './spa-fallback.mjs'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const dist = path.join(root, 'dist')
@@ -237,8 +238,9 @@ try {
 
 writeSitemap()
 
-const shellHtml = fs.readFileSync(path.join(dist, 'shell.html'))
-fs.writeFileSync(path.join(dist, '404.html'), shellHtml)
+const shellHtml = fs.readFileSync(path.join(dist, 'shell.html'), 'utf8')
+const pagesBase = (process.env.VITE_BASE_PATH || '/').replace(/\/?$/, '/')
+fs.writeFileSync(path.join(dist, '404.html'), pages404Html(shellHtml, pagesBase))
 fs.writeFileSync(path.join(dist, '.nojekyll'), '')
 
 const appShells = [
@@ -285,7 +287,6 @@ for (const staff of appShells) {
   fs.writeFileSync(path.join(dir, 'index.html'), shellHtml)
 }
 
-const pagesBase = (process.env.VITE_BASE_PATH || '/').replace(/\/?$/, '/')
 if (pagesBase !== '/') {
   const prefix = pagesBase.replace(/\/$/, '')
   const robots = [
