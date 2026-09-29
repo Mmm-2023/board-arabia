@@ -390,9 +390,9 @@ function ProfileChecklist({
   linkedin: string
   photo: boolean
 }) {
-  const items = [
+  const items: { label: string; done: boolean; doneLabel?: string }[] = [
     { label: 'Name on file', done: name.trim().length > 0 },
-    { label: 'Password set', done: passwordSet },
+    { label: 'Password set', done: passwordSet, doneLabel: 'Set' },
     { label: 'Photo', done: photo },
     { label: 'LinkedIn link', done: linkedin.trim().length > 0 },
   ]
@@ -402,7 +402,7 @@ function ProfileChecklist({
       {items.map((item) => (
         <li key={item.label} className="flex min-h-11 items-center justify-between gap-3 text-[0.95rem]">
           <span>{item.label}</span>
-          <span className={item.done ? 'text-ink/45' : 'text-brass'}>{item.done ? 'Done' : 'Needed'}</span>
+          <span className={item.done ? 'text-ink/45' : 'text-brass'}>{item.done ? item.doneLabel ?? 'Done' : 'Needed'}</span>
         </li>
       ))}
     </ul>
