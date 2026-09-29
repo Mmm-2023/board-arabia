@@ -43,6 +43,18 @@ export const MEMBER_VIEWS = {
     filtered: 'No matches. Clear filters.',
     clear: 'Clear filters',
   },
+  realEstate: {
+    intro:
+      'Sector, city, asset class, ticket band, capital role, and readiness stay visible. Counterparty and terms stay locked until you request an intro and an admin approves it for you.',
+    forming:
+      'Real estate opportunities are still forming. These examples stay until real briefs can take their place.',
+    empty: 'No opportunities yet. When an admin publishes a brief, it lands here.',
+    error: REFRESH_ERROR,
+    retry: 'Retry',
+    denied: 'Real Estate is for admitted members.',
+    filtered: 'No matches. Clear filters.',
+    clear: 'Clear filters',
+  },
   network: {
     invites: 'You have 2 peer invites.',
     intros: 'No intro requests yet.',

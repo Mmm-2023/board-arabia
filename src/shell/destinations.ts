@@ -18,6 +18,7 @@ export const MEMBER_DESTINATIONS: readonly Destination[] = [
   { id: 'home', label: 'Home', to: '/dashboard', end: true },
   { id: 'directory', label: 'Directory', to: '/dashboard/directory', end: false },
   { id: 'mandates', label: 'Mandates', to: '/dashboard/mandates', end: false },
+  { id: 'real-estate', label: 'Real Estate', to: '/dashboard/real-estate', end: false },
   { id: 'network', label: 'Network', to: '/dashboard/network', end: false },
   { id: 'profile', label: 'Profile', to: '/dashboard/profile', end: false },
 ]

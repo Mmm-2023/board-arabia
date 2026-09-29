@@ -13,7 +13,11 @@ test('desktop sidebar and mobile tabs share the locked destinations', async () =
       renderMemberShell: () => string
       renderStaffShell: () => string
     }
-    assertChrome(mod.renderMemberShell(), ['Home', 'Directory', 'Mandates', 'Network', 'Profile'], 'Switch to admin')
+    assertChrome(
+      mod.renderMemberShell(),
+      ['Home', 'Directory', 'Mandates', 'Real Estate', 'Network', 'Profile'],
+      'Switch to admin',
+    )
     assertChrome(mod.renderStaffShell(), ['Home', 'Applications', 'People', 'Capacity', 'Settings'], 'Switch to member')
     const sheet = mod.renderMemberShell(true)
     const more = sheet.slice(sheet.indexOf('id="shell-more"'))
@@ -24,7 +28,7 @@ test('desktop sidebar and mobile tabs share the locked destinations', async () =
       assert.ok(at > cursor, `${label} should follow the previous More row`)
       cursor = at + label.length
     }
-    for (const tab of ['Home', 'Directory', 'Mandates', 'Network', 'Profile']) {
+    for (const tab of ['Home', 'Directory', 'Mandates', 'Real Estate', 'Network', 'Profile']) {
       assert.equal(more.includes(`data-destination="${tab}"`), false, tab)
     }
     assert.match(sheet, /min-h-11 min-w-11/)
@@ -36,8 +40,9 @@ test('desktop sidebar and mobile tabs share the locked destinations', async () =
     const bar = tabBar(home)
     assert.match(bar, /data-nav="more"/)
     assert.match(bar, /data-more-current="false"/)
-    assert.match(bar, /grid-cols-6/)
-    assert.equal((bar.match(/data-nav="primary"/g) || []).length, 5)
+    assert.match(bar, /grid-cols-7/)
+    assert.equal((bar.match(/data-nav="primary"/g) || []).length, 6)
+    assert.match(tabBar(mod.renderStaffShell()), /grid-cols-6/)
     assert.equal(header(home).includes('aria-label="More"'), false)
     const due = mod.renderMemberShell(false, '/dashboard/due-diligence')
     assert.match(tabBar(due), /data-more-current="true"/)

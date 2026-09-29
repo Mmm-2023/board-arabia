@@ -25,6 +25,7 @@ import { DueDiligencePage } from './pages/dashboard/DueDiligencePage'
 import { HelpPage } from './pages/dashboard/HelpPage'
 import { MajlisPage } from './pages/dashboard/MajlisPage'
 import { MandatesPage } from './pages/dashboard/MandatesPage'
+import { RealEstatePage } from './pages/dashboard/RealEstatePage'
 import { RoomsPage } from './pages/dashboard/RoomsPage'
 import { NetworkPage } from './pages/dashboard/NetworkPage'
 import { ProfilePage } from './pages/dashboard/ProfilePage'
@@ -59,6 +60,7 @@ export default function App() {
         <Route index element={<DashboardHome />} />
         <Route path="directory" element={<DirectoryPage />} />
         <Route path="mandates" element={<MandatesPage />} />
+        <Route path="real-estate" element={<RealEstatePage />} />
         <Route path="network" element={<NetworkPage />} />
         <Route path="profile" element={<ProfilePage />} />
         <Route path="invites" element={<Navigate to="/dashboard/network" replace />} />

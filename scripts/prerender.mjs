@@ -252,6 +252,7 @@ const appShells = [
   'dashboard/profile',
   'dashboard/directory',
   'dashboard/mandates',
+  'dashboard/real-estate',
   'dashboard/network',
   'dashboard/help',
   'dashboard/invites',

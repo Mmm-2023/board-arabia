@@ -174,7 +174,7 @@ export function AppShell({
         aria-label="Primary"
         className={`shell-tab-bar shell-safe-bottom shell-safe-x fixed inset-x-0 bottom-0 z-40 border-t md:hidden ${styles.tabBar}`}
       >
-        <ul className="grid min-h-[var(--ba-tab-bar-height,76px)] grid-cols-6">
+        <ul className={`grid min-h-[var(--ba-tab-bar-height,76px)] ${tabGridClass(destinations.length)}`}>
           {destinations.map((item) => (
             <li key={item.to} className="min-w-0">
               <NavLink
@@ -285,6 +285,12 @@ export function AppShell({
       )}
     </div>
   )
+}
+
+/** One column per primary destination, plus More. */
+function tabGridClass(destinationCount: number) {
+  if (destinationCount + 1 === 7) return 'grid-cols-7'
+  return 'grid-cols-6'
 }
 
 function MoreIcon() {
