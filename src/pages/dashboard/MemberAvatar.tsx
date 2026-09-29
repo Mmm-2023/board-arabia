@@ -1,76 +1,61 @@
-import { useEffect, useRef, useState } from 'react'
-import { AVATAR_BUCKET, AVATAR_COPY, avatarContentType, avatarObjectPath, validateAvatarFile } from '../../lib/avatar'
+import { useRef, useState } from 'react'
+import { AVATAR_BUCKET, AVATAR_COPY, avatarObjectPath } from '../../lib/avatar'
+import { prepareAvatarUpload } from '../../lib/avatarImage'
+import { initials } from '../../lib/member'
 import { supabase } from '../../lib/supabase'
+import { AvatarCircle } from './AvatarCircle'
 import { useMember } from './context'
-
-type LoadedPhoto = {
-  path: string
-  attempt: number
-  url: string | null
-  failed: boolean
-}
+import { useSignedAvatar } from './useSignedAvatar'
 
 const actionClass =
-  'ba-primary inline-flex min-h-11 items-center justify-center px-4 py-2.5 text-[0.75rem] font-semibold tracking-[0.08em] uppercase disabled:opacity-40'
+  'ba-primary inline-flex min-h-11 w-full items-center justify-center px-4 py-2.5 text-[0.75rem] font-semibold tracking-[0.08em] uppercase disabled:opacity-40 sm:w-auto'
 const quietClass =
-  'inline-flex min-h-11 items-center justify-center px-4 py-2.5 text-[0.75rem] font-semibold tracking-[0.08em] text-ink/55 uppercase disabled:opacity-40'
+  'inline-flex min-h-11 w-full items-center justify-center px-4 py-2.5 text-[0.75rem] font-semibold tracking-[0.08em] text-ink/55 uppercase disabled:opacity-40 sm:w-auto'
 
-export function MemberAvatar() {
-  const { userId, profile, reload } = useMember()
+export function MemberAvatar({
+  preview,
+  refreshKey = 0,
+}: {
+  preview?: { src: string | null }
+  refreshKey?: number
+}) {
+  const { userId, email, profile, reload } = useMember()
   const inputRef = useRef<HTMLInputElement>(null)
   const path = profile?.avatar_path ?? null
-  const [loaded, setLoaded] = useState<LoadedPhoto | null>(null)
   const [uploadError, setUploadError] = useState(false)
+  const [removeError, setRemoveError] = useState(false)
   const [busy, setBusy] = useState<'save' | 'remove' | null>(null)
   const [confirming, setConfirming] = useState(false)
   const [loadAttempt, setLoadAttempt] = useState(0)
-  const current = loaded?.path === path && loaded.attempt === loadAttempt ? loaded : null
-  const signedUrl = current?.url ?? null
-  const loadFailed = Boolean(path) && current?.failed === true
-
-  useEffect(() => {
-    if (!path) return
-    let cancelled = false
-    const attempt = loadAttempt
-    void supabase.storage
-      .from(AVATAR_BUCKET)
-      .createSignedUrl(path, 600)
-      .then(({ data, error }) => {
-        if (cancelled) return
-        if (error || !data?.signedUrl) {
-          setLoaded({ path, attempt, url: null, failed: true })
-          return
-        }
-        setLoaded({ path, attempt, url: data.signedUrl, failed: false })
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [path, loadAttempt])
+  const live = useSignedAvatar(path, refreshKey + loadAttempt, preview === undefined)
+  const mark = initials(profile?.full_name ?? null, email)
+  const src = preview ? preview.src : live.failed ? null : live.url
+  const waiting = preview ? false : live.loading
 
   function openPicker() {
     setUploadError(false)
+    setRemoveError(false)
     inputRef.current?.click()
   }
 
   async function onFile(file: File | undefined) {
     setUploadError(false)
+    setRemoveError(false)
     setConfirming(false)
     if (!file || !profile) return
-    if (validateAvatarFile(file) || !avatarContentType(file.type)) {
-      setUploadError(true)
-      return
-    }
-    const contentType = avatarContentType(file.type)
-    if (!contentType) {
+    setBusy('save')
+    let prepared: Awaited<ReturnType<typeof prepareAvatarUpload>>
+    try {
+      prepared = await prepareAvatarUpload(file)
+    } catch {
+      setBusy(null)
       setUploadError(true)
       return
     }
     const objectPath = avatarObjectPath(userId)
-    setBusy('save')
-    const { error: uploadFailed } = await supabase.storage.from(AVATAR_BUCKET).upload(objectPath, file, {
+    const { error: uploadFailed } = await supabase.storage.from(AVATAR_BUCKET).upload(objectPath, prepared.body, {
       upsert: true,
-      contentType,
+      contentType: prepared.contentType,
       cacheControl: '3600',
     })
     if (uploadFailed) {
@@ -87,16 +72,19 @@ export function MemberAvatar() {
       setUploadError(true)
       return
     }
+    setLoadAttempt((value) => value + 1)
     await reload()
   }
 
   async function onRemove() {
     if (!path) return
     setUploadError(false)
+    setRemoveError(false)
     setBusy('remove')
-    const { error: removeError } = await supabase.storage.from(AVATAR_BUCKET).remove([path])
-    if (removeError) {
+    const { error: removeFailed } = await supabase.storage.from(AVATAR_BUCKET).remove([path])
+    if (removeFailed) {
       setBusy(null)
+      setRemoveError(true)
       return
     }
     const { error: saveError } = await supabase
@@ -105,61 +93,48 @@ export function MemberAvatar() {
       .eq('user_id', userId)
     setBusy(null)
     if (saveError) {
+      setRemoveError(true)
       return
     }
     setConfirming(false)
     await reload()
   }
 
-  const hasPhoto = Boolean(signedUrl)
-
   return (
-    <div className="flex items-center gap-3">
-      {hasPhoto ? (
-        <img
-          src={signedUrl ?? undefined}
-          alt="Your profile photo"
-          className="h-28 w-28 shrink-0 rounded-full object-cover"
-          onError={() => {
-            if (!path) return
-            setLoaded({ path, attempt: loadAttempt, url: null, failed: true })
-          }}
-        />
-      ) : (
-        <div className="h-28 w-28 shrink-0 rounded-full bg-ink/10" aria-hidden="true" />
-      )}
-      <div className="min-w-0 flex-1">
+    <div className="flex w-full flex-col items-start gap-4 sm:flex-row sm:items-center">
+      <AvatarCircle
+        src={src}
+        initials={mark}
+        size={112}
+        busy={waiting || busy === 'save'}
+        alt="Your profile photo"
+        onError={preview ? undefined : live.markFailed}
+      />
+      <div className="min-w-0 w-full flex-1">
         <p className="text-[0.72rem] font-semibold tracking-[0.08em] text-ink/45 uppercase">
           {AVATAR_COPY.section}
         </p>
-        <div className="mt-2 flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:flex-wrap">
+        <div className="mt-2 flex w-full flex-col items-stretch gap-2 sm:flex-row sm:flex-wrap sm:items-center">
           {path ? (
             <>
-              <button
-                type="button"
-                disabled={!profile || busy !== null}
-                onClick={openPicker}
-                className={actionClass}
-              >
-                {busy === 'save' ? 'Saving…' : AVATAR_COPY.change}
+              <button type="button" disabled={!profile || busy !== null} onClick={openPicker} className={actionClass}>
+                {busy === 'save' ? 'Saving\u2026' : AVATAR_COPY.change}
               </button>
               <button
                 type="button"
                 disabled={busy !== null}
-                onClick={() => setConfirming(true)}
+                onClick={() => {
+                  setRemoveError(false)
+                  setConfirming(true)
+                }}
                 className={quietClass}
               >
                 {AVATAR_COPY.remove}
               </button>
             </>
           ) : (
-            <button
-              type="button"
-              disabled={!profile || busy !== null}
-              onClick={openPicker}
-              className={actionClass}
-            >
-              {busy === 'save' ? 'Saving…' : AVATAR_COPY.add}
+            <button type="button" disabled={!profile || busy !== null} onClick={openPicker} className={actionClass}>
+              {busy === 'save' ? 'Saving\u2026' : AVATAR_COPY.add}
             </button>
           )}
         </div>
@@ -169,21 +144,25 @@ export function MemberAvatar() {
         {uploadError ? (
           <p className="mt-3 max-w-sm text-[0.95rem] leading-relaxed text-[var(--ba-error)]" role="alert">
             {AVATAR_COPY.uploadError}{' '}
-            <button
-              type="button"
-              onClick={openPicker}
-              className="border-b border-brass font-semibold text-ink"
-            >
+            <button type="button" onClick={openPicker} className="inline-flex min-h-11 items-center border-b border-brass font-semibold text-ink">
               {AVATAR_COPY.tryAgain}
             </button>
           </p>
         ) : null}
-        {loadFailed && !uploadError ? (
+        {removeError ? (
+          <p className="mt-3 max-w-sm text-[0.95rem] leading-relaxed text-[var(--ba-error)]" role="alert">
+            Couldn&apos;t remove that photo.{' '}
+            <button type="button" onClick={() => void onRemove()} className="inline-flex min-h-11 items-center border-b border-brass font-semibold text-ink">
+              {AVATAR_COPY.tryAgain}
+            </button>
+          </p>
+        ) : null}
+        {live.failed && !uploadError && !preview ? (
           <p className="mt-3">
             <button
               type="button"
               onClick={() => setLoadAttempt((value) => value + 1)}
-              className="border-b border-brass text-[0.95rem] font-semibold text-ink"
+              className="inline-flex min-h-11 items-center border-b border-brass text-[0.95rem] font-semibold text-ink"
             >
               {AVATAR_COPY.tryAgain}
             </button>
@@ -199,17 +178,12 @@ export function MemberAvatar() {
               {AVATAR_COPY.removeTitle}
             </h2>
             <p className="mt-2 text-[0.98rem] leading-relaxed text-ink/65">{AVATAR_COPY.removeBody}</p>
-            <div className="mt-4 flex flex-wrap gap-3">
+            <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
               <button type="button" onClick={() => setConfirming(false)} className={quietClass}>
                 {AVATAR_COPY.cancel}
               </button>
-              <button
-                type="button"
-                disabled={busy !== null}
-                onClick={() => void onRemove()}
-                className={actionClass}
-              >
-                {busy === 'remove' ? 'Removing…' : AVATAR_COPY.remove}
+              <button type="button" disabled={busy !== null} onClick={() => void onRemove()} className={actionClass}>
+                {busy === 'remove' ? 'Removing\u2026' : AVATAR_COPY.remove}
               </button>
             </div>
           </div>

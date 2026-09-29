@@ -1,17 +1,26 @@
-import { useEffect, useState, type FormEvent } from 'react'
-import { useLocation } from 'react-router-dom'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { useLocation, useSearchParams } from 'react-router-dom'
 import { SponsorBadge } from '../../components/SponsorBadge'
 import { formatPrivateUsd, readNumeric } from '../../lib/capacity'
+import {
+  finishLinkedInConnect,
+  linkedInLinked,
+  linkedInStateMatches,
+  startLinkedInConnect,
+  type LinkedInProfilePatch,
+} from '../../lib/linkedinConnect'
+import { LINKEDIN_CONNECT_ENABLED, LINKEDIN_COPY } from '../../lib/linkedinFlag'
 import type { ProfileRow } from '../../lib/member'
 import { supabase } from '../../lib/supabase'
 import { useNoIndex } from '../../lib/usePageTitle'
 import { useMember } from './context'
+import { LinkedInConnect } from './LinkedInConnect'
 import { MemberAvatar } from './MemberAvatar'
 
 const fieldClass =
   'mt-2 w-full border border-ink/15 bg-white/70 px-4 py-3 text-[1rem] text-ink outline-none placeholder:text-ink/30 focus:border-brass'
 
-export function ProfilePage() {
+export function ProfilePage({ preview }: { preview?: { src: string | null } }) {
   const { userId, email, profile, member, reload } = useMember()
   const [fullName, setFullName] = useState(profile?.full_name ?? '')
   const [headline, setHeadline] = useState(profile?.headline ?? '')
@@ -36,8 +45,88 @@ export function ProfilePage() {
   const [passwordError, setPasswordError] = useState('')
   const [savingProfile, setSavingProfile] = useState(false)
   const [savingPassword, setSavingPassword] = useState(false)
+  const [avatarRefresh, setAvatarRefresh] = useState(0)
+  const [linked, setLinked] = useState(() => LINKEDIN_CONNECT_ENABLED && linkedInLinked())
+  const [liNote, setLiNote] = useState('')
+  const [liError, setLiError] = useState<'' | 'cancel' | 'tech'>('')
+  const [liBusy, setLiBusy] = useState(false)
+  const oauthSeen = useRef('')
   const { hash } = useLocation()
+  const [searchParams, setSearchParams] = useSearchParams()
   useNoIndex('Profile | Board Arabia')
+
+  function applyLinkedIn(patch: LinkedInProfilePatch, refreshed: boolean) {
+    if (patch.full_name) setFullName(patch.full_name)
+    if (patch.headline) setHeadline(patch.headline)
+    if (patch.company) setCompany(patch.company)
+    if (patch.linkedin_url) setLinkedin(patch.linkedin_url)
+    if (patch.photo_saved) setAvatarRefresh((value) => value + 1)
+    setLinked(true)
+    setLiError('')
+    setLiNote(refreshed ? LINKEDIN_COPY.refreshSuccess : LINKEDIN_COPY.success)
+    void reload()
+  }
+
+  const applyLinkedInRef = useRef(applyLinkedIn)
+  useEffect(() => {
+    applyLinkedInRef.current = applyLinkedIn
+  })
+
+  useEffect(() => {
+    const code = searchParams.get('code')
+    const oauthError = searchParams.get('error')
+    const state = searchParams.get('state')
+    if (!code && !oauthError) return
+    const token = `${oauthError ?? ''}:${state ?? ''}:${code ?? ''}`
+    if (oauthSeen.current === token) return
+    oauthSeen.current = token
+    const next = new URLSearchParams(searchParams)
+    next.delete('code')
+    next.delete('state')
+    next.delete('error')
+    next.delete('error_description')
+    setSearchParams(next, { replace: true })
+    if (!LINKEDIN_CONNECT_ENABLED) return
+    const returnedState = state
+    void Promise.resolve().then(() => {
+      if (oauthError) {
+        setLiError(oauthError === 'access_denied' ? 'cancel' : 'tech')
+        return
+      }
+      if (!code || !returnedState || !linkedInStateMatches(returnedState)) {
+        setLiError('tech')
+        return
+      }
+      setLiBusy(true)
+      void finishLinkedInConnect(code, returnedState).then((result) => {
+        setLiBusy(false)
+        if (result.status === 'applied') {
+          applyLinkedInRef.current(result.profile, result.refreshed)
+          return
+        }
+        setLiError(result.status === 'cancelled' ? 'cancel' : 'tech')
+      })
+    })
+  }, [searchParams, setSearchParams])
+
+  async function onLinkedIn() {
+    if (!LINKEDIN_CONNECT_ENABLED) return
+    setLiError('')
+    setLiNote('')
+    setLiBusy(true)
+    const result = await startLinkedInConnect()
+    if (result.status === 'authorize') {
+      window.location.assign(result.url)
+      return
+    }
+    setLiBusy(false)
+    if (result.status === 'off') return
+    setLiError(result.status === 'cancelled' ? 'cancel' : 'tech')
+  }
+
+  function onManualProfile() {
+    document.getElementById('profile-name')?.focus()
+  }
 
   useEffect(() => {
     if (hash !== '#password') return
@@ -155,14 +244,41 @@ export function ProfilePage() {
         name={fullName}
         passwordSet={!member.must_set_password}
         linkedin={linkedin}
+        photo={Boolean(profile?.avatar_path)}
       />
 
+      {member.must_set_password ? (
+        <LinkedInConnect
+          placement="signup"
+          linked={linked}
+          note={liNote}
+          errorKind={liError}
+          busy={liBusy}
+          onConnect={() => void onLinkedIn()}
+          onDismiss={() => setLiError('')}
+          onManual={onManualProfile}
+        />
+      ) : null}
+
       <div className="mt-8">
-        <MemberAvatar />
+        <MemberAvatar preview={preview} refreshKey={avatarRefresh} />
       </div>
 
+      {member.must_set_password ? null : (
+        <LinkedInConnect
+          placement="profile"
+          linked={linked}
+          note={liNote}
+          errorKind={liError}
+          busy={liBusy}
+          onConnect={() => void onLinkedIn()}
+          onDismiss={() => setLiError('')}
+          onManual={onManualProfile}
+        />
+      )}
+
       <form onSubmit={onSaveProfile} className="mt-8 space-y-5">
-        <Field label="Name" value={fullName} onChange={setFullName} autoComplete="name" />
+        <Field id="profile-name" label="Name" value={fullName} onChange={setFullName} autoComplete="name" />
         <Field label="Headline" value={headline} onChange={setHeadline} />
         <Field label="Company" value={company} onChange={setCompany} autoComplete="organization" />
         <Field label="Location" value={location} onChange={setLocation} autoComplete="address-level2" />
@@ -267,14 +383,17 @@ function ProfileChecklist({
   name,
   passwordSet,
   linkedin,
+  photo,
 }: {
   name: string
   passwordSet: boolean
   linkedin: string
+  photo: boolean
 }) {
   const items = [
     { label: 'Name on file', done: name.trim().length > 0 },
     { label: 'Password set', done: passwordSet },
+    { label: 'Photo', done: photo },
     { label: 'LinkedIn link', done: linkedin.trim().length > 0 },
   ]
   if (items.every((item) => item.done)) return null
@@ -291,6 +410,7 @@ function ProfileChecklist({
 }
 
 function Field({
+  id,
   label,
   value,
   onChange,
@@ -298,6 +418,7 @@ function Field({
   autoComplete,
   placeholder,
 }: {
+  id?: string
   label: string
   value: string
   onChange: (value: string) => void
@@ -306,11 +427,12 @@ function Field({
   placeholder?: string
 }) {
   return (
-    <label className="block">
+    <label className="block" htmlFor={id}>
       <span className="text-[0.72rem] font-semibold tracking-[0.08em] text-ink/45 uppercase">
         {label}
       </span>
       <input
+        id={id}
         type={type}
         value={value}
         onChange={(event) => onChange(event.target.value)}

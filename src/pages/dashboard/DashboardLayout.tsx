@@ -10,6 +10,7 @@ import { supabase } from '../../lib/supabase'
 import type { MemberRow, ProfileRow } from '../../lib/member'
 import { useNoIndex } from '../../lib/usePageTitle'
 import { DashboardStatusContext, MemberContext, type MemberRoom } from './context'
+import { OwnAvatar } from './OwnAvatar'
 
 type Gate =
   | { status: 'loading' }
@@ -239,6 +240,7 @@ export function DashboardLayout() {
           }
           onSignOut={() => void onSignOut()}
           accountLabel={gate.room.email}
+          accountMark={<OwnAvatar />}
         >
           <Outlet />
         </AppShell>

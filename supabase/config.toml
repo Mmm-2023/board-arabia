@@ -28,3 +28,7 @@ verify_jwt = true
 
 [functions.due-diligence-status]
 verify_jwt = true
+
+# LinkedIn token exchange. Deploy this function later. Secrets stay in the Edge secret store.
+[functions.linkedin-oauth]
+verify_jwt = true

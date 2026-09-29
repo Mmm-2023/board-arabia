@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { ExampleMark } from '../../components/ExampleMark'
 import { seatLabel, type DirectoryCard } from '../../lib/demoRows'
 import { progressLine } from '../../lib/directoryGate'
+import { AvatarCircle } from './AvatarCircle'
 import type { SeatCountState } from './DirectoryEmpty'
 import { supabase } from '../../lib/supabase'
 
@@ -67,23 +68,25 @@ function Field({ label, value }: { label: string; value: string }) {
 }
 
 function Portrait({ card, src }: { card: DirectoryCard; src: string | null }) {
-  const initials = card.full_name
+  const [failedSrc, setFailedSrc] = useState<string | null>(null)
+  const mark = card.full_name
     .split(/\s+/)
     .slice(0, 2)
     .map((part) => part[0] ?? '')
     .join('')
     .toUpperCase()
-  if (!src) {
-    return (
-      <div
-        aria-hidden="true"
-        className="flex h-14 w-14 items-center justify-center rounded-full bg-[var(--ba-lavender-mist)] font-display text-[0.95rem] text-[var(--ba-indigo)]"
-      >
-        {initials}
-      </div>
-    )
-  }
-  return <img src={src} alt="" className="h-14 w-14 rounded-full object-cover" />
+  const photo = src && failedSrc !== src ? src : null
+  return (
+    <AvatarCircle
+      src={photo}
+      initials={mark}
+      size={56}
+      alt=""
+      onError={() => {
+        if (src) setFailedSrc(src)
+      }}
+    />
+  )
 }
 
 function useSignedPortraits(cards: DirectoryCard[]) {
