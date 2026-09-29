@@ -4,6 +4,10 @@ import { DESK_NOTE_MAX, DESK_TOPICS, cleanDeskNote } from '../../../supabase/fun
 import { sendDeskNote } from '../../lib/supabase'
 import { useNoIndex } from '../../lib/usePageTitle'
 
+const fieldClass =
+  'mt-2 w-full min-h-11 border border-ink/15 bg-white/70 px-4 py-3 text-[1rem] text-ink outline-none placeholder:text-ink/30 focus:border-brass'
+const labelClass = 'text-[0.72rem] font-semibold tracking-[0.08em] text-ink/45 uppercase'
+
 const ANSWERS = [
   {
     question: 'How do introductions work?',
@@ -108,43 +112,36 @@ export function HelpPage() {
         <p className="mt-2 text-[1rem] leading-relaxed text-ink/65">
           Send a note from this seat. The desk reads it. Do not put a password in the note.
         </p>
-        <form onSubmit={(event) => void onSubmit(event)} className="mt-5 border border-ink/10 px-5 py-5">
-          <label className="block text-[0.95rem] text-ink" htmlFor="desk_topic">
-            Topic
+        <form onSubmit={(event) => void onSubmit(event)} className="mt-5 max-w-xl space-y-5">
+          <label className="block" htmlFor="desk_topic">
+            <span className={labelClass}>Topic</span>
+            <select id="desk_topic" required value={topic} disabled={busy} onChange={(event) => setTopic(event.target.value)} className={fieldClass}>
+              <option value="">Choose a topic</option>
+              {DESK_TOPICS.map((item) => (
+                <option key={item} value={item}>
+                  {item}
+                </option>
+              ))}
+            </select>
           </label>
-          <select
-            id="desk_topic"
-            required
-            value={topic}
-            disabled={busy}
-            onChange={(event) => setTopic(event.target.value)}
-            className="mt-2 w-full border border-ink/15 bg-white/70 px-4 py-3 text-[1rem] outline-none focus:border-brass"
-          >
-            <option value="">Choose a topic</option>
-            {DESK_TOPICS.map((item) => (
-              <option key={item} value={item}>
-                {item}
-              </option>
-            ))}
-          </select>
-          <label className="mt-4 block text-[0.95rem] text-ink" htmlFor="desk_message">
-            Note
+          <label className="block" htmlFor="desk_message">
+            <span className={labelClass}>Note</span>
+            <textarea
+              id="desk_message"
+              required
+              rows={5}
+              maxLength={DESK_NOTE_MAX}
+              value={message}
+              disabled={busy}
+              onChange={(event) => setMessage(event.target.value)}
+              className={`${fieldClass} leading-relaxed`}
+            />
           </label>
-          <textarea
-            id="desk_message"
-            required
-            rows={5}
-            maxLength={DESK_NOTE_MAX}
-            value={message}
-            disabled={busy}
-            onChange={(event) => setMessage(event.target.value)}
-            className="mt-2 w-full border border-ink/15 bg-white/70 px-4 py-3 text-[1rem] leading-relaxed outline-none focus:border-brass"
-          />
-          <p className="mt-2 text-[0.85rem] text-ink/45">Up to {DESK_NOTE_MAX} characters.</p>
+          <p className="text-[0.85rem] text-ink/45">Up to {DESK_NOTE_MAX} characters.</p>
           <button
             type="submit"
             disabled={busy}
-            className="ba-primary mt-4 inline-flex min-h-11 items-center px-5 py-3 text-[0.75rem] font-semibold tracking-[0.08em] uppercase disabled:opacity-40"
+            className="ba-primary inline-flex min-h-11 items-center px-5 py-3 text-[0.75rem] font-semibold tracking-[0.08em] uppercase disabled:opacity-40"
           >
             {busy ? 'Sending…' : 'Send to the desk'}
           </button>

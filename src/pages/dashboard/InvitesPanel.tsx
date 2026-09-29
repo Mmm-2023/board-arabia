@@ -19,6 +19,9 @@ export type SentInvite = {
 }
 
 const SENT_NOTE = 'Invite sent. They\u2019ll apply with your name attached.'
+const fieldClass =
+  'mt-2 w-full min-h-11 border border-ink/15 bg-white/70 px-4 py-3 text-[1rem] text-ink outline-none placeholder:text-ink/30 focus:border-brass'
+const labelClass = 'text-[0.72rem] font-semibold tracking-[0.08em] text-ink/45 uppercase'
 
 export function InvitesPanel({
   embedded = false,
@@ -102,85 +105,85 @@ export function InvitesPanel({
       <p className="mt-8 max-w-xl text-[0.95rem] leading-relaxed text-ink/60">
         Add their name so you can tell the invites apart. Only you and the desk see it.
       </p>
-      <form onSubmit={onEmail} className="mt-4 border border-ink/10 px-5 py-5">
+      <form onSubmit={onEmail} className="mt-8 max-w-xl space-y-5">
         <h2 className="text-[0.72rem] font-semibold tracking-[0.14em] text-ink/40 uppercase">
           Email
         </h2>
-        <label className="mt-4 block text-[0.95rem] text-ink" htmlFor="invite_email_name">
-          Their name
+        <label className="block" htmlFor="invite_email_name">
+          <span className={labelClass}>Their name</span>
+          <input
+            id="invite_email_name"
+            type="text"
+            required
+            maxLength={80}
+            value={emailName}
+            disabled={blocked || busy !== null}
+            onChange={(event) => onEmailNameChange(event.target.value)}
+            autoComplete="name"
+            className={fieldClass}
+          />
         </label>
-        <input
-          id="invite_email_name"
-          type="text"
-          required
-          maxLength={80}
-          value={emailName}
-          disabled={blocked || busy !== null}
-          onChange={(event) => onEmailNameChange(event.target.value)}
-          autoComplete="name"
-          className="mt-2 w-full border border-ink/15 bg-white/70 px-4 py-3 text-[1rem] outline-none focus:border-brass"
-        />
-        <label className="mt-4 block text-[0.95rem] text-ink" htmlFor="invite_email">
-          Their email
+        <label className="block" htmlFor="invite_email">
+          <span className={labelClass}>Their email</span>
+          <input
+            id="invite_email"
+            type="email"
+            required
+            value={email}
+            disabled={blocked || busy !== null}
+            onChange={(event) => onEmailChange(event.target.value)}
+            placeholder="name@example.com"
+            autoComplete="email"
+            className={fieldClass}
+          />
         </label>
-        <input
-          id="invite_email"
-          type="email"
-          required
-          value={email}
-          disabled={blocked || busy !== null}
-          onChange={(event) => onEmailChange(event.target.value)}
-          placeholder="name@example.com"
-          autoComplete="email"
-          className="mt-2 w-full border border-ink/15 bg-white/70 px-4 py-3 text-[1rem] outline-none focus:border-brass"
-        />
         <button
           type="submit"
           disabled={blocked || busy !== null}
-          className="ba-primary mt-4 inline-flex min-h-11 items-center px-5 py-3 text-[0.75rem] font-semibold tracking-[0.08em] uppercase disabled:opacity-40"
+          className="ba-primary inline-flex min-h-11 items-center px-5 py-3 text-[0.75rem] font-semibold tracking-[0.08em] uppercase disabled:opacity-40"
         >
           {busy === 'email' ? 'Sending…' : 'Send email invite'}
         </button>
       </form>
 
-      <form onSubmit={onWhatsApp} className="mt-4 border border-ink/10 px-5 py-5">
+      <form onSubmit={onWhatsApp} className="mt-10 max-w-xl space-y-5">
         <h2 className="text-[0.72rem] font-semibold tracking-[0.14em] text-ink/40 uppercase">
           WhatsApp
         </h2>
-        <label className="mt-4 block text-[0.95rem] text-ink" htmlFor="invite_whatsapp_name">
-          Their name
+        <label className="block" htmlFor="invite_whatsapp_name">
+          <span className={labelClass}>Their name</span>
+          <input
+            id="invite_whatsapp_name"
+            type="text"
+            required
+            maxLength={80}
+            value={whatsAppName}
+            disabled={blocked || busy !== null}
+            onChange={(event) => onWhatsAppNameChange(event.target.value)}
+            autoComplete="name"
+            className={fieldClass}
+          />
         </label>
-        <input
-          id="invite_whatsapp_name"
-          type="text"
-          required
-          maxLength={80}
-          value={whatsAppName}
-          disabled={blocked || busy !== null}
-          onChange={(event) => onWhatsAppNameChange(event.target.value)}
-          autoComplete="name"
-          className="mt-2 w-full border border-ink/15 bg-white/70 px-4 py-3 text-[1rem] outline-none focus:border-brass"
-        />
-        <label className="mt-4 block text-[0.95rem] text-ink" htmlFor="invite_phone">
-          Their number (optional)
+        <label className="block" htmlFor="invite_phone">
+          <span className={labelClass}>Their number (optional)</span>
+          <input
+            id="invite_phone"
+            type="tel"
+            value={phone}
+            disabled={blocked || busy !== null}
+            onChange={(event) => onPhoneChange(event.target.value)}
+            placeholder="9665…"
+            autoComplete="tel"
+            className={fieldClass}
+          />
         </label>
-        <input
-          id="invite_phone"
-          type="tel"
-          value={phone}
-          disabled={blocked || busy !== null}
-          onChange={(event) => onPhoneChange(event.target.value)}
-          placeholder="9665…"
-          autoComplete="tel"
-          className="mt-2 w-full border border-ink/15 bg-white/70 px-4 py-3 text-[1rem] outline-none focus:border-brass"
-        />
-        <p className="mt-2 text-[0.85rem] text-ink/45">
+        <p className="text-[0.85rem] text-ink/45">
           Country code, no spaces. Leave blank to open WhatsApp with the text ready to share.
         </p>
         <button
           type="submit"
           disabled={blocked || busy !== null}
-          className="mt-4 inline-flex min-h-11 items-center border border-ink px-5 py-3 text-[0.75rem] font-semibold tracking-[0.08em] uppercase disabled:opacity-40"
+          className="inline-flex min-h-11 items-center border border-ink px-5 py-3 text-[0.75rem] font-semibold tracking-[0.08em] uppercase disabled:opacity-40"
         >
           {busy === 'whatsapp' ? 'Opening…' : 'Open WhatsApp'}
         </button>
@@ -226,10 +229,10 @@ export function InvitesPanel({
                 <p className="mt-1 text-[0.85rem] text-ink/50">
                   {formatInviteSent(invite.created_at, invite.status)}
                 </p>
-                <div className="mt-3 flex flex-wrap gap-3">
+                <div className="mt-3 flex flex-wrap items-center gap-x-6 gap-y-2">
                   <button
                     type="button"
-                    className="inline-flex min-h-11 items-center text-[0.75rem] font-semibold tracking-[0.08em] text-brass uppercase"
+                    className="inline-flex min-h-11 items-center px-1 text-[0.75rem] font-semibold tracking-[0.08em] text-brass uppercase"
                     onClick={() => void navigator.clipboard.writeText(applyUrl)}
                   >
                     Copy link
@@ -239,7 +242,7 @@ export function InvitesPanel({
                       href={whatsappUrl}
                       target="_blank"
                       rel="noreferrer"
-                      className="inline-flex min-h-11 items-center text-[0.75rem] font-semibold tracking-[0.08em] text-brass uppercase"
+                      className="inline-flex min-h-11 items-center px-1 text-[0.75rem] font-semibold tracking-[0.08em] text-brass uppercase"
                     >
                       Open WhatsApp
                     </a>
