@@ -66,7 +66,7 @@ function assertPage(route, html) {
   if (!html.includes('/login?next=/dashboard')) {
     errors.push('Log in is not the member path')
   }
-  if (route === '/' && !html.includes('no public booking calendar')) {
+  if (route === '/' && !html.includes('No public booking calendar')) {
     errors.push('home missing answer-first blurb')
   }
   if (html.includes('\u2014')) errors.push('em dash in prerender')

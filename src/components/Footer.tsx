@@ -22,7 +22,7 @@ export function Footer() {
           <BrandLockup to="/" tone="on-light" />
           <p className="mt-3 max-w-sm text-[0.98rem] leading-relaxed text-ink/55">
             A selective founding membership for Saudi and international
-            chairpersons and board advisors.
+            Chairpersons, Board members, and C-suite executives.
           </p>
           <p className="mt-6 text-[0.8rem] tracking-wide text-ink/40">
             No public calendar. Admission by review.
