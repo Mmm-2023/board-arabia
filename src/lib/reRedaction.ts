@@ -46,18 +46,19 @@ export const RE_TICKET_BANDS = [
   '$100m and above',
 ] as const
 
-export const RE_FOREIGN_OWNERSHIP = [
-  'designated_zone',
-  'saudi_vehicle',
-  'not_available',
-  'not_stated',
-] as const
+/** One status vocabulary for all four regulatory checks. */
+export const RE_READINESS_STATUS = ['ready', 'in_progress', 'not_yet', 'not_applicable'] as const
 
-export const RE_ESCROW = ['in_place', 'not_off_plan', 'not_stated'] as const
+export type ReReadinessStatus = (typeof RE_READINESS_STATUS)[number]
 
-export const RE_TITLE = ['clear', 'in_review', 'not_stated'] as const
+export const RE_FOREIGN_OWNERSHIP = RE_READINESS_STATUS
+export const RE_ESCROW = RE_READINESS_STATUS
+export const RE_TITLE = RE_READINESS_STATUS
+export const RE_WHITE_LAND = RE_READINESS_STATUS
 
-export const RE_WHITE_LAND = ['none', 'exposed', 'not_stated'] as const
+export function isReReadinessStatus(value: string): value is ReReadinessStatus {
+  return (RE_READINESS_STATUS as readonly string[]).includes(value)
+}
 
 export const RE_PARTNER_KINDS = [
   'law',

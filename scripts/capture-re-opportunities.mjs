@@ -52,6 +52,17 @@ try {
   await verifyFilters(browser)
   await verifyIntro(browser)
   await verifyMobileSheet(browser)
+  const readinessShots = [
+    ['blurred', 1280, 1400, 're-readiness-blurred-1280.png'],
+    ['blurred', 390, 844, 're-readiness-blurred-390.png'],
+    ['approved', 1280, 1400, 're-readiness-approved-1280.png'],
+    ['approved', 390, 844, 're-readiness-approved-390.png'],
+  ]
+  for (const [state, width, height, name] of readinessShots) {
+    await captureReadiness(browser, state, width, height, path.join(outDir, name))
+  }
+  await captureStaff(browser, 1280, 1400, path.join(outDir, 're-readiness-staff-1280.png'))
+  await captureStaff(browser, 390, 844, path.join(outDir, 're-readiness-staff-390.png'))
 } finally {
   chrome.kill('SIGKILL')
   await vite.close()
@@ -292,5 +303,116 @@ async function verifyMobileSheet(browser) {
       throw new Error(`mobile filters failed: ${JSON.stringify(result.result?.value)}`)
     }
     console.log('mobile filters ok')
+  })
+}
+
+async function captureReadiness(browser, state, width, height, file) {
+  void browser
+  await withPage(width, height, pageUrl(state), async (send) => {
+    const placed = await send('Runtime.evaluate', {
+      expression: `new Promise((resolve) => {
+        const started = Date.now()
+        const tick = () => {
+          const mixed = ${JSON.stringify(state)} !== 'approved'
+          const card = mixed
+            ? document.querySelector('[data-re-status="in_progress"]')?.closest('[data-re-card]')
+            : document.querySelector('[data-re-card]')
+          const strip = card?.querySelector('[data-re-readiness]')
+          const title = document.querySelector('h1')
+          if (card && strip && title && title.textContent.includes('Real Estate')) {
+            document.fonts.ready.then(() => {
+              document.documentElement.style.scrollBehavior = 'auto'
+              const main = document.querySelector('.shell-main')
+              if (main) main.style.scrollBehavior = 'auto'
+              strip.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'instant' })
+              const next = strip.getBoundingClientRect()
+              const blur = card.querySelector('.re-locked-copy')
+              const stripInsideBlur = Boolean(blur && blur.contains(strip))
+              const visibleTop = Math.max(next.top, 0)
+              const visibleBottom = Math.min(next.bottom, window.innerHeight)
+              resolve({
+                ok: visibleBottom - visibleTop > Math.min(next.height, 120) && next.height > 40 && !stripInsideBlur,
+                top: next.top,
+                bottom: next.bottom,
+                height: next.height,
+                innerHeight: window.innerHeight,
+                scrollY: window.scrollY,
+                open: card.textContent.includes('Intro approved for you.'),
+                secret: card.innerText.includes('Nahla House Works'),
+                blur: Boolean(blur),
+                stripInsideBlur,
+                note: strip.textContent.includes('indicative checklist, not legal advice'),
+                progress: strip.textContent.includes('In progress'),
+                ready: strip.textContent.includes('Ready'),
+                text: card.innerText.slice(0, 180),
+              })
+            })
+            return
+          }
+          if (Date.now() - started > 8000) resolve({ ok: false, text: document.body.innerText.slice(0, 240) })
+          else setTimeout(tick, 50)
+        }
+        tick()
+      })`,
+      awaitPromise: true,
+      returnByValue: true,
+    })
+    const value = placed.result?.value
+    if (!value?.ok || !value.note || value.stripInsideBlur) {
+      throw new Error(`readiness strip not in view for ${state} at ${width}: ${JSON.stringify(value)}`)
+    }
+    if (state === 'approved' && (!value.open || !value.secret || !value.ready)) {
+      throw new Error(`approved readiness card was not clear: ${JSON.stringify(value)}`)
+    }
+    if (state === 'blurred' && (value.open || value.secret || !value.blur || !value.progress)) {
+      throw new Error(`blurred readiness card leaked or missed the strip: ${JSON.stringify(value)}`)
+    }
+    const shot = await send('Page.captureScreenshot', { format: 'png' })
+    const bytes = Buffer.from(shot.data, 'base64')
+    writeFileSync(file, bytes)
+    console.log(`${file} ${bytes.length}`)
+  })
+}
+
+async function captureStaff(browser, width, height, file) {
+  void browser
+  await withPage(width, height, `http://127.0.0.1:${port}/readiness-staff.html`, async (send) => {
+    const placed = await send('Runtime.evaluate', {
+      expression: `new Promise((resolve) => {
+        const started = Date.now()
+        const tick = () => {
+          const form = document.querySelector('[data-re-staff-edit]')
+          const home = document.querySelector('[data-destination="Home"]')
+          if (form && home) {
+            document.fonts.ready.then(() => {
+              document.documentElement.style.scrollBehavior = 'auto'
+              const main = document.querySelector('.shell-main')
+              if (main) main.style.scrollBehavior = 'auto'
+              form.scrollIntoView({ block: 'start', inline: 'nearest', behavior: 'instant' })
+              const text = document.body.innerText
+              resolve({
+                ok: /save readiness/i.test(text) && text.includes('Foreign ownership path') && text.includes('In progress') && text.includes('Not applicable') && text.includes('indicative checklist, not legal advice'),
+                mail: text.includes('@'),
+                save: /save readiness/i.test(text),
+                note: text.includes('indicative checklist, not legal advice'),
+                text: text.slice(0, 800),
+              })
+            })
+            return
+          }
+          if (Date.now() - started > 8000) resolve({ ok: false, text: document.body.innerText.slice(0, 240) })
+          else setTimeout(tick, 50)
+        }
+        tick()
+      })`,
+      awaitPromise: true,
+      returnByValue: true,
+    })
+    const value = placed.result?.value
+    if (!value?.ok || value.mail) throw new Error(`staff readiness editor failed at ${width}: ${JSON.stringify(value)}`)
+    const shot = await send('Page.captureScreenshot', { format: 'png' })
+    const bytes = Buffer.from(shot.data, 'base64')
+    writeFileSync(file, bytes)
+    console.log(`${file} ${bytes.length}`)
   })
 }

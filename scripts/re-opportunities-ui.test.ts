@@ -10,13 +10,10 @@ import {
   RE_ASSET_CLASSES,
   RE_CAPITAL_ROLES,
   RE_CITIES,
-  RE_ESCROW,
-  RE_FOREIGN_OWNERSHIP,
-  RE_TITLE,
-  RE_WHITE_LAND,
+  RE_READINESS_STATUS,
   presentReOpportunity,
 } from '../src/lib/reRedaction.ts'
-import { filterReOpportunities, readinessLines, reFeedIsForming } from '../src/lib/reOpportunityView.ts'
+import { filterReOpportunities, readinessLines, reFeedIsForming, RE_READINESS_NOTE, RE_READINESS_STATUS_LABEL } from '../src/lib/reOpportunityView.ts'
 import { MEMBER_VIEWS } from '../src/shell/viewCopy.ts'
 
 const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..')
@@ -40,10 +37,10 @@ function raw(overrides: Record<string, unknown> = {}) {
     capital_role: 'equity',
     ticket_band: '$10-25m',
     one_liner: 'Equity for a residential block in Riyadh aimed at end users.',
-    foreign_ownership_path: 'designated_zone',
-    escrow_off_plan: 'in_place',
-    title_clarity: 'clear',
-    white_land_exposure: 'none',
+    foreign_ownership_path: 'ready',
+    escrow_off_plan: 'ready',
+    title_clarity: 'ready',
+    white_land_exposure: 'ready',
     unlocked: false,
     access: 'locked',
     intro_status: null,
@@ -82,55 +79,25 @@ test('opportunity filters use the three RE-A tag families', () => {
   assert.deepEqual(RE_CAPITAL_ROLES.includes('sukuk/REIT'), true)
 })
 
-test('readiness labels cover every RE-A value and skip secrets', () => {
-  for (const foreign_ownership_path of RE_FOREIGN_OWNERSHIP) {
+test('readiness labels cover every status and skip secrets', () => {
+  for (const status of RE_READINESS_STATUS) {
     const lines = readinessLines({
-      foreign_ownership_path,
-      escrow_off_plan: null,
-      title_clarity: null,
-      white_land_exposure: null,
+      foreign_ownership_path: status,
+      escrow_off_plan: status,
+      title_clarity: status,
+      white_land_exposure: status,
     })
-    assert.equal(lines.length, 1)
-    assert.equal(lines[0]?.includes('\u2014'), false)
+    assert.equal(lines.length, 4)
+    assert.equal(lines.join(' ').includes('\u2014'), false)
+    assert.equal(lines.every((line) => line.includes(RE_READINESS_STATUS_LABEL[status])), true)
   }
-  for (const escrow_off_plan of RE_ESCROW) {
-    assert.equal(
-      readinessLines({
-        foreign_ownership_path: null,
-        escrow_off_plan,
-        title_clarity: null,
-        white_land_exposure: null,
-      }).length,
-      1,
-    )
-  }
-  for (const title_clarity of RE_TITLE) {
-    assert.equal(
-      readinessLines({
-        foreign_ownership_path: null,
-        escrow_off_plan: null,
-        title_clarity,
-        white_land_exposure: null,
-      }).length,
-      1,
-    )
-  }
-  for (const white_land_exposure of RE_WHITE_LAND) {
-    assert.equal(
-      readinessLines({
-        foreign_ownership_path: null,
-        escrow_off_plan: null,
-        title_clarity: null,
-        white_land_exposure,
-      }).length,
-      1,
-    )
-  }
-  const card = presentReOpportunity(raw())
-  assert.ok(card)
-  const lines = readinessLines(card).join(' ')
+  const dropped = presentReOpportunity(raw({ foreign_ownership_path: SECRET }))
+  assert.ok(dropped)
+  const lines = readinessLines(dropped).join(' ')
   assert.equal(lines.includes(SECRET), false)
   assert.equal(lines.includes(MAIL), false)
+  assert.match(lines, /Foreign ownership path: Not yet/)
+  assert.equal(RE_READINESS_NOTE.includes('\u2014'), false)
 })
 
 test('forming copy follows demo dwell, and the intro queue parser keeps counterparty only', () => {
@@ -242,8 +209,12 @@ test('locked opportunity markup blurs placeholders and keeps secrets out of the 
     assert.match(html, /residential/)
     assert.match(html, /equity/)
     assert.match(html, /\$10-25m/)
-    assert.match(html, /Foreign ownership: designated zone/)
-    assert.match(html, /Not legal advice/)
+    assert.match(html, /Foreign ownership path/)
+    assert.match(html, /Escrow \/ off-plan registration/)
+    assert.match(html, /Title clarity/)
+    assert.match(html, /White Land exposure/)
+    assert.match(html, /data-re-readiness="clear"/)
+    assert.match(html, /Readiness is an indicative checklist, not legal advice/)
     assert.match(html, /data-re-forming="true"/)
     assert.match(html, /role="tab"/)
     assert.equal((html.match(/role="tab"/g) || []).length, 1)
@@ -255,9 +226,13 @@ test('locked opportunity markup blurs placeholders and keeps secrets out of the 
     assert.match(html, /aria-label="City"/)
     assert.match(html, /aria-label="Capital role"/)
     const blurAt = html.indexOf('re-locked-copy')
+    const readinessAt = html.indexOf('data-re-readiness')
+    assert.ok(readinessAt >= 0 && readinessAt < blurAt)
     const blurred = html.slice(blurAt, blurAt + 400)
     assert.match(blurred, /Counterparty name/)
     assert.equal(blurred.includes(SECRET), false)
+    assert.equal(blurred.includes('Foreign ownership path'), false)
+    assert.equal(blurred.includes('data-re-readiness'), false)
 
     const clear = renderToStaticMarkup(
       createElement(view.RealEstateBoard, {
@@ -270,6 +245,8 @@ test('locked opportunity markup blurs placeholders and keeps secrets out of the 
       }),
     )
     assert.match(clear, /Intro approved for you/)
+    assert.match(clear, /data-re-readiness="clear"/)
+    assert.match(clear, /Readiness is an indicative checklist, not legal advice/)
     assert.match(clear, new RegExp(SECRET))
     assert.match(clear, /Observer seat beside the developer/)
     assert.match(clear, new RegExp(MAIL.replace('.', '\\.')))

@@ -1,5 +1,4 @@
 import { ExampleMark } from '../../components/ExampleMark'
-import { readinessLines } from '../../lib/reOpportunityView'
 import {
   RE_LOCKED_NOTE,
   RE_LOCKED_PLACEHOLDERS,
@@ -7,6 +6,7 @@ import {
   type ReOpportunityInventory,
   type ReOpportunityOpen,
 } from '../../lib/reRedaction'
+import { ReadinessStrip } from './ReadinessStrip'
 
 export function OpportunityCard({
   card,
@@ -17,7 +17,6 @@ export function OpportunityCard({
   busy?: boolean
   onRequest?: (id: string) => void
 }) {
-  const lines = readinessLines(card)
   return (
     <article
       className="border border-[var(--ba-line)] bg-white px-5 py-5"
@@ -47,17 +46,7 @@ export function OpportunityCard({
         <span className="sr-only">, </span>
         {card.capital_role}
       </p>
-      {lines.length > 0 ? (
-        <div className="mt-4">
-          <h3 className="text-[0.68rem] font-semibold tracking-[0.12em] text-ink/40 uppercase">Readiness</h3>
-          <ul className="mt-2 space-y-1 text-[0.95rem] text-ink/75">
-            {lines.map((line) => (
-              <li key={line}>{line}</li>
-            ))}
-          </ul>
-          <p className="mt-2 text-[0.82rem] text-ink/45">Not legal advice.</p>
-        </div>
-      ) : null}
+      <ReadinessStrip card={card} />
       {card.unlocked ? (
         <OpenBrief card={card} />
       ) : (

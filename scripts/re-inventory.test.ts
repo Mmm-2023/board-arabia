@@ -6,14 +6,10 @@ import {
   RE_ASSET_CLASSES,
   RE_CAPITAL_ROLES,
   RE_CITIES,
-  RE_ESCROW,
-  RE_FOREIGN_OWNERSHIP,
   RE_PARTNER_KINDS,
   RE_PARTNER_SENSITIVE_KEYS,
   RE_SENSITIVE_KEYS,
   RE_TICKET_BANDS,
-  RE_TITLE,
-  RE_WHITE_LAND,
   presentReOpportunity,
   presentRePartner,
   reOpportunitySecretsVisible,
@@ -89,10 +85,10 @@ function clearOpportunity(extra: Record<string, unknown> = {}) {
     capital_role: 'equity',
     ticket_band: '$10-25m',
     one_liner: OPPORTUNITIES[0].oneLiner,
-    foreign_ownership_path: 'designated_zone',
-    escrow_off_plan: 'in_place',
-    title_clarity: 'clear',
-    white_land_exposure: 'none',
+    foreign_ownership_path: 'ready',
+    escrow_off_plan: 'ready',
+    title_clarity: 'ready',
+    white_land_exposure: 'ready',
     unlocked: false,
     access: 'locked',
     intro_status: null,
@@ -161,7 +157,7 @@ test('a member without an approved intro cannot read counterparty or terms', () 
   assert.match(encoded, /Riyadh/)
   assert.match(encoded, /residential/)
   assert.match(encoded, /\$10-25m/)
-  assert.match(encoded, /designated_zone/)
+  assert.match(encoded, /ready/)
 
   const pending = presentReOpportunity({ ...poisoned, unlocked: true, access: 'intro', intro_status: 'pending' })
   assert.equal(pending?.unlocked, false)
@@ -385,10 +381,16 @@ test('tables are revoked, anon cannot list, and tag families are constrained', (
     ...RE_CITIES,
     ...RE_CAPITAL_ROLES,
     ...RE_TICKET_BANDS,
-    ...RE_FOREIGN_OWNERSHIP,
-    ...RE_ESCROW,
-    ...RE_TITLE,
-    ...RE_WHITE_LAND,
+    'designated_zone',
+    'saudi_vehicle',
+    'not_available',
+    'not_stated',
+    'in_place',
+    'not_off_plan',
+    'clear',
+    'in_review',
+    'none',
+    'exposed',
     ...RE_PARTNER_KINDS,
   ]) {
     assert.equal(migration.includes(`'${value}'`), true, value)

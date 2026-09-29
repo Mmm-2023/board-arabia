@@ -149,7 +149,8 @@ test('majlis read models keep the previous rows and columns without a definer vi
 })
 
 test('every staff_* function checks staff and is not executable by anon', () => {
-  const sql = readFileSync(migrationPath, 'utf8')
+  const files = readdirSync(migrationsDir).filter((file) => file.endsWith('.sql')).sort()
+  const sql = files.map((file) => readFileSync(path.join(migrationsDir, file), 'utf8')).join('\n')
   const names = [
     'staff_set_member_capacity',
     'staff_list_mandate_intros',
@@ -159,6 +160,7 @@ test('every staff_* function checks staff and is not executable by anon', () => 
     'staff_save_re_opportunity',
     'staff_save_re_partner',
     'staff_assign_sponsor_category',
+    'staff_set_re_opportunity_readiness',
   ]
   for (const name of names) {
     const fn = latestFunction(name)
