@@ -70,7 +70,7 @@ export function AppShell({
           aria-label="Primary"
           onMouseEnter={() => setHovered(true)}
           onMouseLeave={() => setHovered(false)}
-          className={`relative hidden min-h-dvh shrink-0 flex-col border-r md:flex ${styles.sidebarBorder} ${styles.sidebar} ${
+          className={`relative hidden min-h-dvh shrink-0 flex-col self-stretch border-r md:flex ${styles.sidebarBorder} ${styles.sidebar} ${
             showLabels ? 'w-64' : 'w-[4.75rem]'
           } transition-[width] duration-200 motion-reduce:transition-none`}
         >

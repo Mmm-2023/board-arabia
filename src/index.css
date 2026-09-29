@@ -158,6 +158,19 @@
     padding-left: max(2rem, env(safe-area-inset-left));
     padding-right: max(2rem, env(safe-area-inset-right));
   }
+
+  /* One row, two columns. The sidebar stretches to the document, not the viewport. */
+  .shell-frame {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: stretch;
+  }
+
+  .shell-frame > aside {
+    align-self: stretch;
+    height: auto;
+    min-height: 100%;
+  }
 }
 
 /* Mobile: the fixed tab bar stays out of the scrollport. shell-main padding keeps the last control clear of that bar and the safe area. */
