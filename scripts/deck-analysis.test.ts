@@ -4,10 +4,13 @@ import path from 'node:path'
 import test from 'node:test'
 import { createServer } from 'vite'
 import {
+  missingBannerLabels,
   numberDeckPages,
   parseDeckAnalysis,
   preferredAsk,
   preferredCompany,
+  SCORE_KEYS,
+  SCORE_LABEL,
 } from '../supabase/functions/_shared/deck_analysis.ts'
 import {
   DD_PROGRESS,
@@ -320,9 +323,26 @@ test('the draft memo renders at the hero, bars, math, risks, accordion, and foot
     assert.equal(full.includes('\u2014'), false)
     assert.equal(full.includes('\u2013'), false)
 
+    const partialAnalysis = partialDraftAnalysis()
+    const gaps = missingBannerLabels(partialAnalysis)
+    for (const key of SCORE_KEYS) {
+      if (key === 'overall') continue
+      assert.equal(gaps.includes(SCORE_LABEL[key]), partialAnalysis.scores[key] == null, SCORE_LABEL[key])
+    }
+    assert.equal(partialAnalysis.scores.unit_economics, 2)
+    assert.equal(partialAnalysis.scores.traction_evidence, null)
+    assert.ok(partialAnalysis.sections_missing.includes('unit_economics'))
+    assert.deepEqual(gaps, ['Traction', 'Memo'])
+
     const partial = mod.renderDueReport(partialDraftReport(), 'northwind-freight.pdf', '2026-09-29T09:00:00.000Z')
     assert.ok(partial.includes('data-dd-degraded="true"'))
     assert.ok(partial.includes('data-dd-partial="true"'))
+    assert.ok(partial.includes('data-dd-missing="Traction|Memo"'))
+    const unitBar = partial.slice(partial.indexOf('data-dd-score="unit_economics"'), partial.indexOf('data-dd-score="unit_economics"') + 700)
+    const tractionBar = partial.slice(partial.indexOf('data-dd-score="traction_evidence"'), partial.indexOf('data-dd-score="traction_evidence"') + 700)
+    assert.ok(unitBar.includes('2 of 5'))
+    assert.equal(unitBar.includes('>Missing<'), false)
+    assert.ok(tractionBar.includes('>Missing<'))
     assert.ok(partial.includes('data-dd-memo-text="missing"'))
     assert.ok(partial.includes('backup model'))
     assert.ok(partial.includes('marked missing'))

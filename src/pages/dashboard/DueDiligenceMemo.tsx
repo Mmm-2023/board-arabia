@@ -1,10 +1,10 @@
 import {
   ANALYSIS_DISCLAIMER,
   NOT_A_RECOMMENDATION,
+  missingBannerLabels,
   POSTURE_LABEL,
   SCORE_KEYS,
   SCORE_LABEL,
-  SECTION_LABEL,
   type DeckAnalysis,
   type MathResult,
   type Posture,
@@ -40,6 +40,7 @@ export function DueDiligenceMemo({
   const overall = analysis.scores.overall
   const currency = analysis.snapshot.round.currency
   const risks = [...analysis.risks].sort((a, b) => severityRank(a.severity) - severityRank(b.severity))
+  const gaps = missingBannerLabels(analysis)
 
   return (
     <div data-dd-memo="true" data-dd-ai="draft">
@@ -75,10 +76,10 @@ export function DueDiligenceMemo({
         </dl>
       </header>
 
-      {analysis.sections_missing.length > 0 ? (
-        <p className="mt-4 max-w-3xl text-[0.95rem] leading-relaxed text-ink" data-dd-partial="true">
+      {gaps.length > 0 ? (
+        <p className="mt-4 max-w-3xl text-[0.95rem] leading-relaxed text-ink" data-dd-partial="true" data-dd-missing={gaps.join('|')}>
           <span className="font-semibold">{REPORT_COPY.missingSections}: </span>
-          {analysis.sections_missing.map((key) => SECTION_LABEL[key] || key).join(', ')}
+          {gaps.join(', ')}
         </p>
       ) : null}
 

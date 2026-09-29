@@ -144,6 +144,23 @@ export const SECTION_LABEL: Record<string, string> = {
   memo_markdown: 'Memo',
 }
 
+const SCORE_KEY_SET = new Set<string>(SCORE_KEYS)
+
+/** Labels for the partial banner. Score names come from the same values the bars render. */
+export function missingBannerLabels(analysis: DeckAnalysis): string[] {
+  const labels: string[] = []
+  for (const key of SCORE_KEYS) {
+    if (key === 'overall') continue
+    if (analysis.scores[key] == null) labels.push(SCORE_LABEL[key])
+  }
+  for (const key of analysis.sections_missing) {
+    if (key === 'scores' || SCORE_KEY_SET.has(key)) continue
+    const label = SECTION_LABEL[key] || key
+    if (!labels.includes(label)) labels.push(label)
+  }
+  return labels
+}
+
 const EMPTY_ROUND: RoundFacts = {
   amount: null,
   equity_pct: null,
