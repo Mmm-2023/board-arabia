@@ -381,10 +381,13 @@ test('the client uses Edge functions and read RPCs, not raw room tables', () => 
   assert.match(board, /Host \$\{room\.host_name\}/)
 })
 
-test('the read migration sorts after the deal room migration and returns no mailbox', () => {
-  const name = 'supabase/migrations/20261002130000_member_deal_room_reads.sql'
+test('the read migration sorts after 20261004120000 and returns no mailbox', () => {
+  const file = '20261005120000_member_deal_room_reads.sql'
+  const name = `supabase/migrations/${file}`
   const sql = source(name)
-  assert.ok(name > 'supabase/migrations/20261002120000_member_deal_rooms.sql')
+  assert.ok(file > '20261004120000')
+  assert.ok(file > '20261003120000_re_regulatory_readiness.sql')
+  assert.ok(file > '20261002120000_member_deal_rooms.sql')
   assert.match(sql, /opened_by = 'member'/)
   assert.match(sql, /m\.status = 'active'/)
   assert.match(sql, /m\.seat in \('ksa', 'intl', 'sponsor'\)/)
