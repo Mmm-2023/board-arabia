@@ -111,6 +111,7 @@ export type Database = {
           invited_by: string | null
           invites_granted: number
           invites_remaining: number
+          is_demo: boolean
           created_at: string
           updated_at: string
         }
@@ -125,6 +126,7 @@ export type Database = {
           invited_by?: string | null
           invites_granted?: number
           invites_remaining?: number
+          is_demo?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -139,6 +141,7 @@ export type Database = {
           invited_by?: string | null
           invites_granted?: number
           invites_remaining?: number
+          is_demo?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -585,6 +588,34 @@ export type Database = {
       due_diligence_consume_run: {
         Args: { p_member: string }
         Returns: undefined
+      }
+      list_directory: {
+        Args: Record<string, never>
+        Returns: Json
+      }
+      list_member_mandates: {
+        Args: Record<string, never>
+        Returns: Json
+      }
+      request_mandate_intro: {
+        Args: { p_mandate_id: string }
+        Returns: Json
+      }
+      list_member_rooms: {
+        Args: Record<string, never>
+        Returns: Json
+      }
+      list_trusted_partners: {
+        Args: Record<string, never>
+        Returns: Json
+      }
+      staff_list_mandate_intros: {
+        Args: Record<string, never>
+        Returns: Json
+      }
+      staff_decide_mandate_intro: {
+        Args: { p_intro_id: string; p_decision: string }
+        Returns: Json
       }
     }
     Enums: Record<string, never>

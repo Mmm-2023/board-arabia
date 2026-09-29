@@ -9,6 +9,7 @@ import { Nav } from '../components/Nav'
 import { Reveal } from '../components/Reveal'
 import { Seo } from '../components/Seo'
 import { DisplayHeading, Eyebrow } from '../components/Type'
+import { TrustedPartnersSection } from '../components/TrustedPartners'
 import { MEMBER_TOOLS, PARTNER_CATEGORIES, PROCESS_STEPS } from '../content/marketing'
 
 const PATHS = [
@@ -33,6 +34,7 @@ export function LandingPage() {
         <ToolsSection />
         <ProcessSection />
         <PartnersSection />
+        <TrustedPartnersSection />
         <TrustSection />
         <FaqList />
         <CtaBand
