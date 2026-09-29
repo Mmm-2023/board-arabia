@@ -1,5 +1,6 @@
 import {
   fitNumberedDeck,
+  narrativeDeckExcerpt,
   numberDeckPages,
   parseDeckAnalysis,
   parseModelJson,
@@ -183,7 +184,7 @@ export function scoresUser(deck: string, companyHint: string, roundHint: string)
 export function narrativeUser(deck: string, scoresJson: unknown): string {
   return `${NARRATIVE_PROMPT}\n\n${JSON.stringify({
     scores_pass: scoresJson,
-    deck_text: fitNumberedDeck(deck),
+    deck_text: narrativeDeckExcerpt(deck, scoresJson),
   })}`
 }
 

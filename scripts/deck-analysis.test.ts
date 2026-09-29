@@ -9,6 +9,7 @@ import {
   findRangeBreaches,
   fitNumberedDeck,
   mergeSectionDrafts,
+  narrativeDeckExcerpt,
   missingBannerLabels,
   numberDeckPages,
   parseDeckAnalysis,
@@ -21,7 +22,9 @@ import {
 import {
   afterModelAttempt,
   claimAllowed,
+  classifyFallback,
   DD_PROGRESS,
+  formatStepLog,
   EDGE_WALL_CLOCK_MS,
   FALLBACK_MS,
   JOB_STALE_MS,
@@ -36,6 +39,12 @@ import {
   STEP_EXTRACT_BUDGET_MS,
   STEP_EXTRACT_STALE_MS,
   STEP_HANDOFF_STALE_MS,
+  STEP_NARRATIVE_CAP_MS,
+  STEP_NARRATIVE_STALE_MS,
+  STEP_NARRATIVE_TTFT_MS,
+  STEP_SCORES_CAP_MS,
+  STEP_SCORES_STALE_MS,
+  STEP_SCORES_TTFT_MS,
   extractDeckFacts,
   isTerminalModelFailure,
   modelJobFields,
@@ -221,6 +230,13 @@ test('the job row stores the model and a stale job is failed instead of restarte
   assert.equal(STEP_ANALYSIS_TTFT_MS < STEP_ANALYSIS_CAP_MS, true)
   assert.equal(STEP_ANALYSIS_CAP_MS < STEP_ANALYSIS_STALE_MS, true)
   assert.equal(STEP_ANALYSIS_STALE_MS < EDGE_WALL_CLOCK_MS, true)
+  assert.equal(STEP_SCORES_TTFT_MS < STEP_SCORES_CAP_MS, true)
+  assert.equal(STEP_SCORES_CAP_MS < STEP_SCORES_STALE_MS, true)
+  assert.equal(STEP_SCORES_STALE_MS < EDGE_WALL_CLOCK_MS, true)
+  assert.equal(STEP_NARRATIVE_TTFT_MS < STEP_NARRATIVE_CAP_MS, true)
+  assert.equal(STEP_NARRATIVE_CAP_MS < STEP_NARRATIVE_STALE_MS, true)
+  assert.equal(STEP_NARRATIVE_STALE_MS < EDGE_WALL_CLOCK_MS, true)
+  assert.equal(STEP_NARRATIVE_CAP_MS < STEP_SCORES_CAP_MS, true)
   assert.equal(STEP_EXTRACT_BUDGET_MS < STEP_EXTRACT_STALE_MS, true)
   assert.equal(STEP_EXTRACT_STALE_MS < EDGE_WALL_CLOCK_MS, true)
   assert.equal(STEP_COMPOSE_REPAIR_MS < STEP_COMPOSE_BUDGET_MS, true)
@@ -244,11 +260,19 @@ test('the job row stores the model and a stale job is failed instead of restarte
   assert.equal(shouldFailStaleJob({ status: 'ready', updatedAt: old, createdAt: old, nowMs: now }), false)
   assert.equal(shouldFailStaleJob({ status: 'failed', updatedAt: old, createdAt: old, nowMs: now }), false)
   assert.equal(
-    shouldFailStaleJob({ status: 'checking', updatedAt: ago(139_000), createdAt: ago(500_000), nowMs: now, pipelineStep: 'scores', stepClaim: 'claim-1' }),
+    shouldFailStaleJob({ status: 'checking', updatedAt: ago(STEP_SCORES_STALE_MS - 1_000), createdAt: ago(500_000), nowMs: now, pipelineStep: 'scores', stepClaim: 'claim-1' }),
     false,
   )
   assert.equal(
-    shouldFailStaleJob({ status: 'checking', updatedAt: ago(141_000), createdAt: ago(1_000), nowMs: now, pipelineStep: 'scores', stepClaim: 'claim-1' }),
+    shouldFailStaleJob({ status: 'checking', updatedAt: ago(STEP_SCORES_STALE_MS + 1_000), createdAt: ago(1_000), nowMs: now, pipelineStep: 'scores', stepClaim: 'claim-1' }),
+    true,
+  )
+  assert.equal(
+    shouldFailStaleJob({ status: 'checking', updatedAt: ago(STEP_NARRATIVE_STALE_MS - 1_000), createdAt: ago(400_000), nowMs: now, pipelineStep: 'narrative', stepClaim: 'claim-1' }),
+    false,
+  )
+  assert.equal(
+    shouldFailStaleJob({ status: 'checking', updatedAt: ago(STEP_NARRATIVE_STALE_MS + 1_000), createdAt: ago(1_000), nowMs: now, pipelineStep: 'narrative', stepClaim: 'claim-1' }),
     true,
   )
   assert.equal(
@@ -297,6 +321,15 @@ test('the job row stores the model and a stale job is failed instead of restarte
   assert.match(run, /step_claim/)
   assert.match(run, /pipeline_step/)
   assert.match(run, /due-diligence-step/)
+  assert.match(run, /BA_DD_STEP_SECRET/)
+  assert.match(run, /x-dd-step/)
+  assert.equal(run.includes('Authorization'), false)
+  const stepFn = readFileSync(path.join(root, 'supabase/functions/due-diligence-step/index.ts'), 'utf8')
+  assert.match(stepFn, /BA_DD_STEP_SECRET/)
+  assert.match(stepFn, /x-dd-step/)
+  assert.equal(stepFn.includes('require_user'), false)
+  const toml = readFileSync(path.join(root, 'supabase/config.toml'), 'utf8')
+  assert.match(toml, /\[functions\.due-diligence-step\]\s+verify_jwt = false/)
   assert.match(status, /pipeline_step/)
   assert.match(status, /step_claim/)
   const pipeline = readFileSync(path.join(root, 'supabase/migrations/20261025120000_due_diligence_pipeline.sql'), 'utf8')
@@ -592,6 +625,34 @@ test('posture follows scores and red flags, and a missing hero is repaired', asy
   assert.equal(clean?.hero.overall, 4)
   assert.equal(clean?.hero.posture, 'pass')
   assert.equal(clean?.snapshot.posture, 'pass')
+  assert.equal(clean?.posture, clean?.hero.posture)
+  assert.equal(classifyFallback('primary_ttft').reason, 'ttft')
+  assert.equal(classifyFallback('primary_timeout').reason, 'timeout')
+  assert.equal(classifyFallback('fallback_deadline').reason, 'timeout')
+  assert.deepEqual(classifyFallback('primary_http_503'), { reason: 'http', httpStatus: 503 })
+  assert.equal(classifyFallback('unusable').reason, 'parse')
+  assert.equal(classifyFallback('validation').reason, 'validation')
+  assert.equal(
+    formatStepLog({
+      extract: { model_id: 'unit-model-id', called: false, pass: 'none', fallback_reason: null, http_status: null, elapsed_ms: 1200, primary_elapsed_ms: null },
+      scores: { model_id: 'unit-model-id', called: true, pass: 'fallback', fallback_reason: 'ttft', http_status: null, elapsed_ms: 40000, primary_elapsed_ms: 130000 },
+      narrative: { model_id: 'unit-model-id', called: true, pass: 'primary', fallback_reason: null, http_status: null, elapsed_ms: 22000, primary_elapsed_ms: null },
+    }),
+    'e:none:1200.s:fb:ttft:40000.n:primary:22000',
+  )
+  const longDeck = [
+    'Page 1\nOpening page for the example lane.',
+    'Page 2\nA cited operating note with no band.',
+    'Page 3\nFiller page.\n'.repeat(40),
+    'Page 4\nThe gauge reads 25 kg, which is inside the 10 to 20 kg band.',
+    'Page 5\nClosing page.',
+  ].join('\n\n')
+  const excerpt = narrativeDeckExcerpt(longDeck, { claims: [{ page: '2', claim: 'A cited note.' }] }, 2_000)
+  assert.match(excerpt, /Page 1/)
+  assert.match(excerpt, /Page 2/)
+  assert.match(excerpt, /Page 4/)
+  assert.equal(excerpt.includes('Filler page'), false)
+  assert.ok(excerpt.length < longDeck.length)
   const merged = parseDeckAnalysis(
     mergeSectionDrafts(
       { ...(clean || {}), scores: { ...(clean?.scores || {}), overall: 4 } },
@@ -604,6 +665,7 @@ test('posture follows scores and red flags, and a missing hero is repaired', asy
   assert.match(llm, /PRIMARY_CAP_MS/)
   assert.match(llm, /TtftError/)
   assert.match(llm, /stream: true/)
+  assert.match(llm, /narrativeDeckExcerpt/)
 })
 
 test('the draft memo renders at the hero, bars, math, risks, accordion, and footer', async () => {
