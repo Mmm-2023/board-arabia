@@ -1,7 +1,9 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { MemoryRouter } from 'react-router-dom'
+import { SponsorBadge } from '../../src/components/SponsorBadge'
 import { assembleHome, type AssembleInput, type HomeGathering, type MandateBrief } from '../../src/lib/homeSnapshot'
+import { seatLabel } from '../../src/lib/member'
 import { HomeSnapshotView } from '../../src/pages/dashboard/HomeSnapshotView'
 import { AppShell } from '../../src/shell/AppShell'
 import { MEMBER_DESTINATIONS, MEMBER_SECONDARY } from '../../src/shell/destinations'
@@ -45,6 +47,7 @@ function gathering(id: string, title: string, region: string, rsvp: HomeGatherin
 
 function shell(input: AssembleInput, state: string) {
   const model = assembleHome(input)
+  const sponsor = input.seat === 'sponsor'
   return (
     <div data-home-state={state}>
       <AppShell
@@ -56,7 +59,13 @@ function shell(input: AssembleInput, state: string) {
         onSignOut={() => undefined}
         accountLabel="Member"
       >
-        <HomeSnapshotView model={model} onRetry={() => undefined} />
+        <HomeSnapshotView
+          model={model}
+          sponsorBadge={sponsor ? <SponsorBadge /> : null}
+          seatCaption={sponsor ? 'Seat' : 'Founding seat'}
+          seatValue={seatLabel(input.seat)}
+          onRetry={() => undefined}
+        />
       </AppShell>
     </div>
   )
@@ -219,7 +228,7 @@ const empty = shell(
   {
     ...shared,
     seat: 'sponsor',
-    name: "You're in",
+    name: 'Noura Al Sample',
     photoUrl: null,
     profileReady: false,
     invitesRemaining: 2,
