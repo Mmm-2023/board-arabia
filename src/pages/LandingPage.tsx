@@ -13,9 +13,9 @@ import { TrustedPartnersSection } from '../components/TrustedPartners'
 import { MEMBER_TOOLS, PARTNER_CATEGORIES, PROCESS_STEPS } from '../content/marketing'
 
 const PATHS = [
-  'Chairpersons',
-  'Board advisors',
-  'Aspiring NEDs',
+  'Chairperson',
+  'Board members',
+  'C-suite executives',
   'Saudi Arabia & the GCC',
   'International',
 ]
@@ -80,7 +80,7 @@ function Hero() {
             transition={{ duration: 0.8, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
             className="mb-4 font-serif text-[1.1rem] italic text-stone/85 md:text-[1.25rem]"
           >
-            Founding membership
+            Founding membership · Saudi Arabia & international
           </motion.p>
 
           <motion.h1
@@ -105,10 +105,10 @@ function Hero() {
             className="mt-7 flex max-w-3xl flex-col gap-7 md:mt-9 md:flex-row md:items-end md:justify-between md:gap-12"
           >
             <p className="max-w-md text-[1.05rem] leading-relaxed text-stone/90 md:text-[1.12rem]">
-              Board Arabia is a selective founding membership for Saudi, GCC,
-              and international chairpersons, board advisors, and aspiring
-              non-executive directors. Credentials are reviewed before any
-              conversation; there is no public booking calendar on this site.
+              Connect Saudi boardrooms with international Chairpersons, Board
+              members, and C-suite executives. Access to capital. Business
+              relationships. Opening doors. Credentials before any conversation.
+              No public booking calendar.
             </p>
 
             <div className="flex shrink-0 flex-col gap-3 sm:flex-row">
@@ -160,18 +160,18 @@ function WhySection() {
   const points = [
     {
       n: '01',
-      title: 'Proximity to capital',
-      body: 'Mandates from family offices (FO), foreign direct investment (FDI), funds, and strategic investors arrive through an admin-gated inbox. Members are not left open to cold outreach.',
+      title: 'Access to capital',
+      body: 'Mandates from family offices, FDI, funds, and strategic investors arrive through an admin-gated inbox. Members are not left open to cold outreach on the open web.',
     },
     {
       n: '02',
-      title: 'Proximity to peers',
-      body: 'Saudi and international chairs and advisors, admitted on the same standard: credentials first, then a decision.',
+      title: 'Business relationships',
+      body: 'Saudi and international Chairpersons, Board members, and C-suite executives admitted on one standard: credentials first, then a decision. Fifty founding seats for Saudi Arabia and the GCC. Fifty for international counterparts.',
     },
     {
       n: '03',
-      title: 'Not an open directory',
-      body: 'You cannot browse members, buy a seat, or arrange a conversation from this site. The pages explain the room. They do not open it.',
+      title: 'Opening doors',
+      body: 'Warm introductions, deal rooms, Majlis, and a private directory open the right doors without an open messaging wall. Nothing opens from this public site.',
     },
   ]
 
@@ -181,11 +181,14 @@ function WhySection() {
         <Reveal>
           <Eyebrow>Why Board Arabia</Eyebrow>
           <DisplayHeading className="max-w-3xl">
-            Near capital. Near peers. Closed by design.
+            Access to capital. Business relationships. Opening doors.
           </DisplayHeading>
           <p className="mt-6 max-w-xl text-[1.05rem] leading-relaxed text-ink/60">
-            Board Arabia is a reviewed membership. It is not a directory you
-            can search, and it is not a calendar you can book.
+            Board Arabia is a reviewed founding membership. It links Saudi
+            Arabia’s boardrooms with international counterparts for
+            Chairpersons, Board members, and C-suite executives. Growth and
+            governance sit inside that frame. It is not a directory you can
+            search, and it is not a calendar you can book.
           </p>
         </Reveal>
 
@@ -222,10 +225,10 @@ function FoundingSection() {
               Fifty and fifty.
             </DisplayHeading>
             <p className="mt-6 max-w-md text-[1.05rem] leading-relaxed text-stone/75">
-              The Founding 100 is one hundred places, split evenly: fifty in
-              Saudi Arabia, fifty international. Complimentary founding terms
-              pending contribution, as set by the desk. Places are not priced
-              on this site.
+              One hundred founding places, split evenly: fifty in Saudi Arabia,
+              fifty international. Complimentary founding terms pending
+              contribution, as set by the desk. Places are not priced on this
+              site.
             </p>
           </Reveal>
         </div>
@@ -238,8 +241,8 @@ function FoundingSection() {
               Saudi Arabia
             </h3>
             <p className="mt-3 text-[0.98rem] leading-relaxed text-ink/60">
-              Chairpersons and NEDs held for Saudi Arabia and the Gulf
-              Cooperation Council (GCC).
+              Chairpersons, Board members, and C-suite executives held for
+              Saudi Arabia and the GCC.
             </p>
           </div>
           <div className="flex flex-col justify-end px-5 py-14 md:px-10 md:py-16">
@@ -250,8 +253,8 @@ function FoundingSection() {
               International
             </h3>
             <p className="mt-3 text-[0.98rem] leading-relaxed text-ink/60">
-              International chairs and NEDs. The place is not reserved for a
-              GCC-only practice.
+              International Chairpersons, Board members, and C-suite executives.
+              The room is not a GCC-only practice.
             </p>
           </div>
         </div>
@@ -265,16 +268,15 @@ function ToolsSection() {
     <section id="tools" className="bg-pearl py-24 md:py-32">
       <div className="mx-auto max-w-7xl px-5 md:px-10">
         <Reveal>
-          <Eyebrow>Member tools and benefits</Eyebrow>
+          <Eyebrow>Inside the membership</Eyebrow>
           <DisplayHeading className="max-w-3xl">
-            What the room actually uses.
+            Tools that support capital, relationships, and open doors.
           </DisplayHeading>
           <p className="mt-6 max-w-xl text-[1.05rem] leading-relaxed text-ink/60">
-            After admission, the outcome is concrete: a private directory, an
-            admin-gated mandate inbox, availability you set, warm introductions
-            that are released rather than cold, a founding badge, a quarterly
-            majlis, peer vouchers, Vision 2030 tags, and deal rooms. Each tile
-            opens on the member page. Capital reads the mandate path separately.
+            After admission you work in a private directory, an admin-gated
+            mandate path, warm introductions, deal rooms, a quarterly Majlis,
+            and tools that support diligence and sector fit. Each tile opens on
+            the member page. Capital reads the mandate path separately.
           </p>
           <p className="mt-4">
             <Link to="/for-capital" className="border-b border-brass text-ink">
@@ -378,9 +380,9 @@ function PartnersSection() {
           <Eyebrow>Founding Ecosystem Partners</Eyebrow>
           <DisplayHeading>Three seats a year.</DisplayHeading>
           <p className="mt-6 max-w-xl text-[1.05rem] leading-relaxed text-ink/60">
-            Three annual Founding Ecosystem Partner seats. They are for firms
-            on the finance rails of a deal, not a wall of logos. We do not
-            scrape names, publish a partner directory, or show a price.
+            Three annual seats for firms on the finance rails of a deal, not a
+            wall of logos. We do not scrape names, publish a partner directory,
+            or show a price.
           </p>
           <Link
             to="/partners"
@@ -417,11 +419,11 @@ function TrustSection() {
   const points = [
     {
       title: 'Credentials are reviewed',
-      body: 'No one is offered a conversation on the strength of a form that has not been read.',
+      body: 'No conversation on the strength of an unread form.',
     },
     {
       title: 'No open calendar',
-      body: 'This site does not publish a booking page. A link, when one is offered, is emailed after acceptance.',
+      body: 'A booking link, when offered, is emailed after acceptance.',
     },
     {
       title: 'Admin oversight',

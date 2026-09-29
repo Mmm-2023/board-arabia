@@ -3,7 +3,7 @@ export const SITE_ORIGIN = 'https://boardarabia.com'
 export const OG_TITLE = 'Board Arabia'
 
 export const OG_DESCRIPTION =
-  'Reviewed founding membership for chairpersons, board advisors, and aspiring NEDs. Saudi, GCC, and international. Apply for consideration.'
+  'A selective founding membership for Chairpersons, Board members, and C-suite executives connecting Saudi Arabia’s boardrooms with international counterparts. Access to capital, business relationships, and opening doors in trusted rooms.'
 
 export const OG_IMAGE = `${SITE_ORIGIN}/og-board-arabia.png`
 
@@ -41,10 +41,9 @@ export type MarketingPage = {
 export const MARKETING_PAGES: Record<MarketingPath, MarketingPage> = {
   '/': {
     path: '/',
-    title:
-      'Board Arabia | Selective founding board membership | Saudi, GCC & international',
+    title: 'Board Arabia | Saudi boardrooms meet international counterparts',
     description:
-      'Board Arabia is a reviewed founding membership for chairpersons, board advisors, and aspiring NEDs across Saudi Arabia, the GCC, and internationally. Apply for consideration. There is no public calendar.',
+      'A selective founding membership for Chairpersons, Board members, and C-suite executives connecting Saudi Arabia’s boardrooms with international counterparts. Access to capital, business relationships, and opening doors in trusted rooms.',
     faq: true,
   },
   '/for-members': {
@@ -110,12 +109,12 @@ export const FAQ: FaqItem[] = [
   {
     question: 'What is Board Arabia?',
     answer:
-      'Board Arabia is a reviewed founding membership connecting chairpersons, board advisors, and aspiring NEDs with peers and capital proximity in Saudi Arabia, the GCC, and internationally. It is not an open directory.',
+      'Board Arabia is a selective founding membership that connects Saudi Arabia’s boardrooms with international counterparts for Chairpersons, Board members, and C-suite executives. Access to capital, business relationships, and opening doors happen in reviewed rooms. Growth and governance stay in the frame. It is not an open directory.',
   },
   {
     question: 'Who is it for?',
     answer:
-      'Chairpersons, board advisors, and aspiring non-executive directors (NEDs), including Saudi, GCC, and international candidates in the Founding 100.',
+      'Chairpersons, Board members, and C-suite executives. Saudi, GCC, and international candidates in the Founding 100.',
     to: '/for-members',
     toLabel: 'Member tools',
   },
@@ -141,7 +140,7 @@ export const FAQ: FaqItem[] = [
   {
     question: 'What do members get?',
     answer:
-      'Private directory, admin-gated mandate inbox and warm intros, availability controls, founding badge and LinkedIn announce, quarterly majlis, peer invite vouchers, sector and Vision 2030 tags, and deal rooms. Details are on /for-members.',
+      'Access to capital through an admin-gated mandate inbox; business relationships through a private directory, Majlis, and warm intros; opening doors through deal rooms and peer vouchers; plus founding badge, sector and Vision 2030 tags, and AI Due Diligence for public-source governance support. Details on /for-members.',
     to: '/for-members',
     toLabel: 'See the tools',
   },
@@ -199,13 +198,13 @@ export function pageGraph(page: MarketingPage) {
       name: 'Board Arabia',
       url: `${SITE_ORIGIN}/`,
       description:
-        'Selective founding board membership for chairpersons, board advisors, and aspiring NEDs (Saudi Arabia, GCC, international).',
+        'A selective founding membership for Chairpersons, Board members, and C-suite executives connecting Saudi Arabia’s boardrooms with international counterparts.',
       email: 'partners@boardarabia.com',
       areaServed: ['Saudi Arabia', 'GCC', 'International'],
       knowsAbout: [
-        'chairperson',
-        'board advisor',
-        'non-executive director (NED)',
+        'Chairperson',
+        'Board member',
+        'C-suite executive',
         'founding membership',
         'Founding 100',
         'family office',
