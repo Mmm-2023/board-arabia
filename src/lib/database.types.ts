@@ -605,6 +605,10 @@ export type Database = {
         Args: Record<string, never>
         Returns: Json
       }
+      list_member_home_activity: {
+        Args: Record<string, never>
+        Returns: Json
+      }
       list_trusted_partners: {
         Args: Record<string, never>
         Returns: Json

@@ -7,6 +7,7 @@ import {
   type PartnerCard,
   type RoomCard,
 } from './demoRows'
+import { presentHomeActivityList, type HomeActivity } from './homeSnapshot'
 import { presentMandateList, type MandateCardModel } from './mandateRedaction'
 import { supabase } from './supabase'
 
@@ -41,6 +42,10 @@ export function fetchRooms(): Promise<DemoLoad<RoomCard[]>> {
 
 export function fetchPartners(): Promise<DemoLoad<PartnerCard[]>> {
   return loadJson(supabase.rpc('list_trusted_partners'), presentPartnerList)
+}
+
+export function fetchHomeActivity(): Promise<DemoLoad<HomeActivity[]>> {
+  return loadJson(supabase.rpc('list_member_home_activity'), presentHomeActivityList)
 }
 
 export async function requestMandateIntro(mandateId: string): Promise<'ok' | 'error'> {

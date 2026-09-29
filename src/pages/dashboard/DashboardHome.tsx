@@ -1,32 +1,127 @@
-import { Link } from 'react-router-dom'
+import { useEffect, useState } from 'react'
 import { SponsorBadge } from '../../components/SponsorBadge'
-import { initials, seatLabel } from '../../lib/member'
+import { AVATAR_BUCKET } from '../../lib/avatar'
+import { isProfileReady } from '../../lib/directoryGate'
+import { assembleHome, isFoundingMember, type AttentionItem } from '../../lib/homeSnapshot'
+import { loadHomeSources, type LoadedSources } from '../../lib/homeSnapshotLoad'
+import { seatLabel } from '../../lib/member'
+import { supabase } from '../../lib/supabase'
 import { useNoIndex } from '../../lib/usePageTitle'
-import { ErrorBanner, HomeSkeleton, toneClasses } from '../../shell/ViewState'
+import { ErrorBanner, HomeSkeleton } from '../../shell/ViewState'
 import { MEMBER_VIEWS } from '../../shell/viewCopy'
+import { formatUpdated } from '../../shell/destinations'
 import { useDashboardStatus, useMember } from './context'
+import { HomeSnapshotView } from './HomeSnapshotView'
+
+const EMPTY_SOURCES: LoadedSources = {
+  mandates: null,
+  rooms: null,
+  directory: null,
+  partners: null,
+  gatherings: null,
+  admitted: null,
+  ksa: null,
+  intl: null,
+  money: null,
+  activity: null,
+  activityStatus: 'loading',
+  partialError: false,
+}
 
 export function DashboardHome() {
-  const { member, profile, email } = useMember()
+  const { member, profile, userId } = useMember()
   const status = useDashboardStatus()
-  const name = profile?.full_name?.trim() || ''
-  const incomplete = name.length === 0
-  const styles = toneClasses('member')
+  const [attempt, setAttempt] = useState(0)
+  const [bundle, setBundle] = useState<{ attempt: number; nowMs: number; sources: LoadedSources } | null>(null)
+  const [photo, setPhoto] = useState<{ path: string; url: string } | null>(null)
   useNoIndex('Home | Board Arabia')
+
+  useEffect(() => {
+    const path = profile?.avatar_path
+    if (!path) return
+    let cancelled = false
+    void supabase.storage
+      .from(AVATAR_BUCKET)
+      .createSignedUrl(path, 600)
+      .then(({ data, error }) => {
+        if (cancelled || error || !data?.signedUrl) return
+        setPhoto({ path, url: data.signedUrl })
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [profile?.avatar_path, attempt])
+
+  useEffect(() => {
+    let cancelled = false
+    const current = attempt
+    void loadHomeSources({ userId, sponsor: String(member.seat) === 'sponsor' }).then((next) => {
+      if (cancelled) return
+      setBundle({ attempt: current, nowMs: Date.now(), sources: next })
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [attempt, member.seat, userId])
 
   if (status.refreshing && !status.updatedAt) {
     return <HomeSkeleton tone="member" cards={3} />
   }
 
-  const attention = attentionItems(member.must_set_password, member.invites_remaining)
-  const primary = primaryAction(incomplete, member.must_set_password, member.invites_remaining)
-  const included =
-    Boolean(profile?.include_in_public_aggregates) && Boolean(profile?.capacity_verified)
+  const sources = bundle?.attempt === attempt ? bundle.sources : EMPTY_SOURCES
+  const loading = bundle?.attempt !== attempt
+  const photoUrl = profile?.avatar_path && photo?.path === profile.avatar_path ? photo.url : null
+  const profileReady = isProfileReady(profile)
+  const founding = isFoundingMember(String(member.seat))
+  const attention: AttentionItem[] = []
+  if (member.must_set_password) {
+    attention.push({
+      title: 'Set your password',
+      body: 'Set a password before you leave this session so your invite link is not the only way back in.',
+      to: '/dashboard/profile#password',
+      cta: 'Set password',
+    })
+  } else if (!profileReady) {
+    attention.push({
+      title: 'Finish your profile',
+      body: MEMBER_VIEWS.home.empty,
+      to: '/dashboard/profile',
+      cta: MEMBER_VIEWS.home.emptyCta,
+    })
+  }
+
+  const model = assembleHome({
+    nowMs: bundle?.attempt === attempt ? bundle.nowMs : 0,
+    seat: String(member.seat),
+    name: profile?.full_name?.trim() || "You're in",
+    photoUrl,
+    profileReady,
+    mustSetPassword: member.must_set_password,
+    invitesRemaining: member.invites_remaining,
+    personalCapacityIncluded: founding
+      ? Boolean(profile?.include_in_public_aggregates && profile?.capacity_verified)
+      : null,
+    attention,
+    mandates: sources.mandates,
+    rooms: sources.rooms,
+    directory: sources.directory,
+    partners: sources.partners,
+    gatherings: sources.gatherings,
+    admitted: sources.admitted,
+    ksa: sources.ksa,
+    intl: sources.intl,
+    money: sources.money,
+    activity: sources.activity,
+    activityStatus: loading ? 'loading' : sources.activityStatus,
+    loading,
+    partialError: !loading && sources.partialError,
+    updatedLabel: formatUpdated(status.updatedAt),
+  })
 
   return (
-    <div className="max-w-3xl">
-      {status.refreshError && (
-        <div className="mb-6">
+    <div>
+      {status.refreshError ? (
+        <div className="mb-6 max-w-3xl">
           <ErrorBanner
             tone="member"
             message={status.refreshError}
@@ -34,179 +129,16 @@ export function DashboardHome() {
             retryLabel={MEMBER_VIEWS.home.retry}
           />
         </div>
-      )}
-
-      {member.seat === 'sponsor' && (
-        <div className="mb-4">
-          <SponsorBadge />
-        </div>
-      )}
-
-      {incomplete ? (
-        <section aria-label="Needs attention">
-          <p className="hidden text-[0.72rem] font-semibold tracking-[0.14em] text-brass uppercase md:block">
-            Home
-          </p>
-          <h1 className="font-display text-2xl font-bold tracking-[-0.04em] text-balance md:mt-3 md:text-[2.8rem]">
-            {MEMBER_VIEWS.home.empty}
-          </h1>
-          <Link
-            to="/dashboard/profile"
-            className={`mt-6 inline-flex min-h-11 items-center px-4 text-[0.75rem] font-semibold tracking-[0.08em] uppercase ${styles.primary}`}
-          >
-            {MEMBER_VIEWS.home.emptyCta}
-          </Link>
-          <div className="mt-8" aria-hidden="true">
-            <HomeSkeleton tone="member" cards={3} pulse={false} />
-          </div>
-        </section>
-      ) : (
-        <>
-          <p className="hidden text-[0.72rem] font-semibold tracking-[0.14em] text-brass uppercase md:block">
-            Home
-          </p>
-          <h1 className="font-display text-2xl font-bold tracking-[-0.04em] text-balance md:mt-3 md:text-[2.8rem]">
-            {name}
-          </h1>
-
-          {attention.length > 0 && (
-            <section aria-label="Needs attention" className="mt-4 space-y-3 md:mt-8">
-              <h2 className="text-[0.72rem] font-semibold tracking-[0.14em] text-ink/40 uppercase">
-                Needs attention
-              </h2>
-              <ul className="space-y-3">
-                {attention.map((item) => (
-                  <li key={item.title} className={`${styles.panel} px-4 py-3 md:py-4`}>
-                    <p className="text-[1rem] text-ink">{item.title}</p>
-                    <p className={`mt-1 text-[0.95rem] ${styles.muted}`}>{item.body}</p>
-                    <Link
-                      to={item.to}
-                      className="mt-3 inline-flex min-h-11 items-center text-[0.75rem] font-semibold tracking-[0.08em] text-brass uppercase"
-                    >
-                      {item.cta}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          )}
-
-          <section aria-label="Status" className="mt-5 md:mt-8">
-            <h2 className="text-[0.72rem] font-semibold tracking-[0.14em] text-ink/40 uppercase">
-              Status
-            </h2>
-            <div className="mt-3 grid gap-3 sm:grid-cols-2">
-              <article className={`${styles.panel} px-4 py-3 md:py-4`}>
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className={`text-[0.72rem] font-semibold tracking-[0.12em] uppercase ${styles.quiet}`}>
-                      {member.seat === 'sponsor' ? 'Seat' : 'Founding seat'}
-                    </p>
-                    <p className="mt-1 font-display text-[1.35rem] font-semibold tracking-[-0.03em]">
-                      {seatLabel(member.seat)}
-                    </p>
-                  </div>
-                  <p
-                    className="ba-primary inline-flex h-11 w-11 shrink-0 items-center justify-center border border-[var(--ba-copper)] font-display text-[1rem] font-bold"
-                    aria-label="Badge mark placeholder"
-                  >
-                    {initials(profile?.full_name ?? null, email)}
-                  </p>
-                </div>
-              </article>
-              <article className={`${styles.panel} px-4 py-3 md:py-4`}>
-                <p className={`text-[0.72rem] font-semibold tracking-[0.12em] uppercase ${styles.quiet}`}>
-                  Invites remaining
-                </p>
-                <p className="mt-2 font-display text-[1.35rem] font-semibold tracking-[-0.03em]">
-                  {member.invites_remaining} / {member.invites_granted}
-                </p>
-              </article>
-              <article className={`${styles.panel} px-4 py-3 md:py-4`}>
-                <p className={`text-[0.72rem] font-semibold tracking-[0.12em] uppercase ${styles.quiet}`}>
-                  Your capacity included in platform totals
-                </p>
-                <p className="mt-2 font-display text-[1.35rem] font-semibold tracking-[-0.03em]">
-                  {included ? 'Yes' : 'No'}
-                </p>
-              </article>
-            </div>
-          </section>
-
-          <section aria-label="Next actions" className="mt-5 md:mt-8">
-            <h2 className="text-[0.72rem] font-semibold tracking-[0.14em] text-ink/40 uppercase">
-              Next actions
-            </h2>
-            <Link
-              to={primary.to}
-              className={`mt-4 inline-flex min-h-11 items-center px-4 text-[0.75rem] font-semibold tracking-[0.08em] uppercase ${styles.primary}`}
-            >
-              {primary.label}
-            </Link>
-            <ul className="mt-4 flex flex-wrap gap-x-5 gap-y-2">
-              <li>
-                <Link to="/dashboard/directory" className="inline-flex min-h-11 items-center text-[0.95rem] text-ink/70">
-                  Directory
-                </Link>
-              </li>
-              <li>
-                <Link to="/dashboard/network" className="inline-flex min-h-11 items-center text-[0.95rem] text-ink/70">
-                  Network
-                </Link>
-              </li>
-              <li>
-                <Link to="/dashboard/profile" className="inline-flex min-h-11 items-center text-[0.95rem] text-ink/70">
-                  Profile
-                </Link>
-              </li>
-            </ul>
-          </section>
-
-          <section aria-label="Context" className="mt-10 border-t border-ink/10 pt-8">
-            <h2 className="text-[0.72rem] font-semibold tracking-[0.14em] text-ink/40 uppercase">
-              Context
-            </h2>
-            <p className={`mt-3 max-w-xl text-[1rem] leading-relaxed ${styles.muted}`}>
-              Directory, mandates, and introductions stay inside this membership. Nothing on this
-              page lists another member.
-            </p>
-            <p className={`mt-3 max-w-xl text-[1rem] leading-relaxed ${styles.muted}`}>
-              A LinkedIn announce will live with your profile. This page does not post one.
-            </p>
-          </section>
-        </>
-      )}
+      ) : null}
+      <HomeSnapshotView
+        model={model}
+        sponsorBadge={member.seat === 'sponsor' ? <SponsorBadge /> : null}
+        seatCaption={member.seat === 'sponsor' ? 'Seat' : 'Founding seat'}
+        seatValue={seatLabel(member.seat)}
+        onRetry={() => {
+          setAttempt((value) => value + 1)
+        }}
+      />
     </div>
   )
-}
-
-function attentionItems(mustSetPassword: boolean, invitesRemaining: number) {
-  const items: { title: string; body: string; to: string; cta: string }[] = []
-  if (mustSetPassword) {
-    items.push({
-      title: 'Set your password',
-      body: 'Set a password before you leave this session so your invite link is not the only way back in.',
-      to: '/dashboard/profile#password',
-      cta: 'Set password',
-    })
-  }
-  if (invitesRemaining > 0) {
-    items.push({
-      title: 'Invite wallet',
-      body: `${invitesRemaining} peer invite${invitesRemaining === 1 ? '' : 's'} remaining.`,
-      to: '/dashboard/network',
-      cta: 'Send invite',
-    })
-  }
-  return items
-}
-
-function primaryAction(incomplete: boolean, mustSetPassword: boolean, invitesRemaining: number) {
-  if (incomplete || mustSetPassword) {
-    return { label: 'Complete profile', to: '/dashboard/profile' }
-  }
-  if (invitesRemaining > 0) {
-    return { label: 'Send invite', to: '/dashboard/network' }
-  }
-  return { label: 'Open mandates', to: '/dashboard/mandates' }
 }
