@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Navigate, Outlet } from 'react-router-dom'
+import { Navigate, Outlet, useLocation } from 'react-router-dom'
 import { isStaffRole, showRoleSwitch } from '../../../supabase/functions/_shared/staff_auth.ts'
 import { clearPasswordFlag } from '../../lib/clearPasswordFlag'
 import { fetchMyDealRooms } from '../../lib/dealRoomApi'
@@ -10,6 +10,7 @@ import { MEMBER_ACCOUNT, MEMBER_DESTINATIONS, staleBanner } from '../../shell/de
 import { HomeSkeleton, PermissionState } from '../../shell/ViewState'
 import { REFRESH_ERROR } from '../../shell/viewCopy'
 import { endAuthSession } from '../../lib/endSession'
+import { currentReturnPath, loginHref } from '../../lib/returnPath'
 import { supabase } from '../../lib/supabase'
 import type { MemberRow, ProfileRow } from '../../lib/member'
 import { useNoIndex } from '../../lib/usePageTitle'
@@ -51,6 +52,7 @@ export function DashboardLayout() {
   const loadRef = useRef<() => Promise<void>>(async () => {})
   const readyRef = useRef<MemberRoom | null>(null)
   const signingOut = useRef(false)
+  const location = useLocation()
   useNoIndex('Member dashboard | Board Arabia')
 
   const load = useCallback(async () => {
@@ -212,7 +214,7 @@ export function DashboardLayout() {
   }
 
   if (gate.status === 'signed_out') {
-    return <Navigate to="/login?next=/dashboard" replace />
+    return <Navigate to={loginHref(currentReturnPath(location))} replace />
   }
 
   if (gate.status === 'staff_home') {

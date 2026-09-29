@@ -19,7 +19,7 @@ English only. No public calendar, no member names or photographs, no fee schedul
 | `/about` | Short founding note |
 | `/privacy`, `/terms` | What the site collects, and what the pages do not promise |
 
-Primary CTA on every marketing page is **Apply for consideration** → `/apply`. Partner CTA is **Partner with us** (mailto draft). The shared nav and footer include **Log in** → `/login?next=/dashboard` (member path). There is no public signup. Staff still open `/login`, which defaults to `/admin`.
+Primary CTA on every marketing page is **Apply for consideration** → `/apply`. Partner CTA is **Partner with us** (mailto draft). The shared nav and footer include **Log in** → `/login` (member sign-in). There is no public signup. Staff sign in at `/login/staff`, which opens `/admin`.
 
 **Security:** marketing pages render no applicant PII. The private booking URL stays in the Accept email path only (`supabase/functions/decide-application`). Do not add it to client code.
 
@@ -34,7 +34,7 @@ Primary CTA on every marketing page is **Apply for consideration** → `/apply`.
 | Organization + WebSite JSON-LD | Every marketing page |
 | FAQPage | Home and `/how-it-works`, matching the visible questions |
 | `sitemap.xml` + `robots.txt` | `public/`, sitemap refreshed at build |
-| Staff `/login`, `/admin`, `/ops` | `noindex`; `/admin` and `/ops` serve `shell.html` |
+| Staff `/login/staff`, member `/login`, `/admin`, `/ops` | `noindex`; `/admin` and `/ops` serve `shell.html` |
 
 Home includes an answer-first definition and eight questions (Founding 100, Vision 2030, family offices, FDI, chairperson, NED, Saudi Arabia, GCC, international places, personal review). No review or rating schema.
 
@@ -72,7 +72,7 @@ Legacy `/book` and `/verify` redirect to `/apply`.
 
 ## Staff flow
 
-1. **Staff login:** https://boardarabia.com/login → `/admin` when the account is in `staff_users`.
+1. **Staff login:** https://boardarabia.com/login/staff → `/admin` when the account is in `staff_users`.
 2. **Admin** (`/admin` or `/ops`). Staff can list applications, members, founding capacity, email events (kind, recipient, subject, status, time), and staff emails. Accept, Reject, and Admit stay on the application row.
 3. **Accept** → Edge Function `decide-application` emails the candidate the private booking link only (no date picker, no Calendar API).
 4. **Reject** → polite decline email to applicant.
@@ -85,11 +85,11 @@ Legacy `/book` and `/verify` redirect to `/apply`.
 
 ## Member flow
 
-1. **Member login:** https://boardarabia.com/login?next=/dashboard
+1. **Member login:** https://boardarabia.com/login
 2. Open the one-time link from Admit or Direct invite, or use the one-time code or the password you set.
 3. **Dashboard** (`/dashboard`). Home shows a founding-badge placeholder, your seat, capacity toward 100, and invites remaining. **Invites** (`/dashboard/invites`) sends the two peer invites by email or WhatsApp. Profile edits your own row. Directory, Mandates, Intros, Rooms, and Events are empty shells. The Admin link is shown only when this signed-in user is in `staff_users` with role `staff` or `master` and also has a live member row. Members do not see it.
 4. **Peer invites.** Admit grants exactly 2 (`invites_remaining`). Each send uses one. Unused invites do not refill. Email uses Edge `send-member-invite` and Workspace mail. WhatsApp returns a `wa.me` link with the apply URL. The invitee is still reviewed.
-5. Accounts are invite-only. A signed-in user who is not in `members` does not see the room. Staff `/login` with no `next` still goes to `/admin`.
+5. Accounts are invite-only. A signed-in user who is not in `members` does not see the room. Staff sign in at `/login/staff` and go to `/admin`.
 
 ### Critical anti-leak
 
@@ -97,19 +97,19 @@ The public site must **never** show the booking URL. It is emailed only on Accep
 
 ## Michael: master staff and member access
 
-`ADMIN_NOTIFY_EMAIL` (example `staff@example.com`) is the intended master. There may be no auth user yet. An existing staff account signs in at https://boardarabia.com/login, opens `/admin`, and uses **Invite / promote Michael**. That promotes the `ADMIN_NOTIFY_EMAIL` mailbox to master staff and admits the Saudi Arabia founding seat. The Edge Function uses that secret when the request omits an email, and fails closed when the secret is unset.
+`ADMIN_NOTIFY_EMAIL` (example `staff@example.com`) is the intended master. There may be no auth user yet. An existing staff account signs in at https://boardarabia.com/login/staff, opens `/admin`, and uses **Invite / promote Michael**. That promotes the `ADMIN_NOTIFY_EMAIL` mailbox to master staff and admits the Saudi Arabia founding seat. The Edge Function uses that secret when the request omits an email, and fails closed when the secret is unset.
 
 Another staff account may remain staff. Do not delete that row from this screen. Do not add a member-only test inbox to `staff_users`. That inbox stays a member.
 
 **After the one-time link is used and a password is set:**
 
-- Staff: https://boardarabia.com/login → `/admin`
-- Member: https://boardarabia.com/login?next=/dashboard
+- Staff: https://boardarabia.com/login/staff → `/admin`
+- Member: https://boardarabia.com/login
 
 **One-time password (pick one):**
 
 1. **Forgot password? on the site (simplest)**  
-   Open https://boardarabia.com/login (staff) or https://boardarabia.com/login?next=/dashboard (members), enter the email, and choose **Forgot password?**. That calls `resetPasswordForEmail` with `redirectTo` `https://boardarabia.com/auth/confirm`. `/auth/confirm` and `/auth/reset` read `token_hash` plus `type=recovery` from the query string, and `access_token` from the URL hash. They also listen for `PASSWORD_RECOVERY`. Set the new password, confirm it, and you return to `/login`. Staff who are in `staff_users` then continue to `/admin`.
+   Open https://boardarabia.com/login/staff (staff) or https://boardarabia.com/login (members), enter the email, and choose **Forgot password?**. That calls `resetPasswordForEmail` with `redirectTo` `https://boardarabia.com/auth/confirm`. `/auth/confirm` and `/auth/reset` read `token_hash` plus `type=recovery` from the query string, and `access_token` from the URL hash. They also listen for `PASSWORD_RECOVERY`. Set the new password, confirm it, and you return to `/login`. Staff open admin from `/login/staff`.
 
 2. **Dashboard reset**  
    Supabase → Authentication → Users → the person → *Send password recovery*. The redirect URL must be `https://boardarabia.com/auth/confirm` (allow that URL, and `https://boardarabia.com/auth/reset`, in Authentication → URL configuration). Both routes accept `recovery` and `signup` as well as invite, magic link, and email, from the query string or the hash.
@@ -120,7 +120,7 @@ Another staff account may remain staff. Do not delete that row from this screen.
 4. **Magic / recovery link (SQL / Auth API)**  
    Authentication → Users → generate recovery link with redirect `https://boardarabia.com/auth/confirm` → open once and set password.
 
-Then open https://boardarabia.com/login and sign in. Staff land on `/admin`. Members use https://boardarabia.com/login?next=/dashboard.
+Then open https://boardarabia.com/login/staff and sign in. Staff land on `/admin`. Members use https://boardarabia.com/login.
 
 ### Promote another staff user
 
@@ -190,10 +190,10 @@ Payload columns are not granted to the staff client. The admin list never select
 
 ### Dry-run invite (Workspace credentials not set)
 
-1. Staff signs in at https://boardarabia.com/login and opens `/admin`.
+1. Staff signs in at https://boardarabia.com/login/staff and opens `/admin`.
 2. Use **Invite / promote Michael**, **Direct invite**, or **Admit**.
 3. The dry-run box on that page shows the one-time link, one-time code, or temporary password. That material is returned only in the staff HTTP response. It is not written into `email_events`.
-4. Open the link once, or sign in with the code at the login URL in the box. Staff destination is https://boardarabia.com/login. Member destination is https://boardarabia.com/login?next=/dashboard.
+4. Open the link once, or sign in with the code at the login URL in the box. Staff destination is https://boardarabia.com/login/staff. Member destination is https://boardarabia.com/login.
 5. Hand the link to Michael through a channel you trust. Do not paste it into a shared chat if you can avoid it.
 6. After a password is set, use the staff and member URLs above. When Gmail secrets are present, the same actions email from `GMAIL_FROM` with Reply-To set to that mailbox, and the admin response does not include the secret.
 
@@ -203,7 +203,7 @@ Local proof of the Accept path, without a live mailbox: `node --experimental-str
 
 1. Staging → **Apply for review** → submit.  
 2. Confirm ack + `ADMIN_NOTIFY_EMAIL` notify (or dry-run rows).  
-3. https://boardarabia.com/login → `/admin` → **Accept** → candidate email contains the private booking URL (dry-run until Gmail secrets are set).  
+3. https://boardarabia.com/login/staff → `/admin` → **Accept** → candidate email contains the private booking URL (dry-run until Gmail secrets are set).  
 4. Public site has **no** calendar CTA.
 
 ## Deploy
@@ -214,15 +214,15 @@ https://boardarabia.com/
 
 The previous project URL `https://mmm-2023.github.io/board-arabia/` redirects to the apex after the custom domain is active. In-app routes stay root paths (`/apply`, `/login`, `/dashboard`). React Router `basename` follows Vite `BASE_URL`.
 
-Pages must use **GitHub Actions** as the source (not the `main` branch files). Marketing URLs are real `index.html` files. `/login`, `/admin`, `/ops`, `/dashboard` (and its sections), and `/auth/confirm` ship the noindex app shell. Unknown paths use `404.html` with the same shell.
+Pages must use **GitHub Actions** as the source (not the `main` branch files). Marketing URLs are real `index.html` files. `/login`, `/login/staff`, `/admin`, `/ops`, `/dashboard` (and its sections), and `/auth/confirm` ship the noindex app shell. Unknown paths use `404.html` with the same shell.
 
 Proof build: `VITE_BASE_PATH=/ npm run build` writes `dist/CNAME`, `dist/dashboard/index.html`, and root `/assets/` URLs, and fails if the artifact contains a public booking URL.
 
 ## Public platform totals
 
-The home page reads one aggregate row, `platform_stats`. It does not read members, profiles, or applications. The stored money columns stay null until five verified, opted-in admitted members contribute to that metric. Five to nine contributors round to the nearest $5m. Ten or more round to the nearest $1m. Seat counts can show earlier, including zero.
+The home page reads one aggregate row, `platform_stats`. It does not read members, profiles, or applications. The stored money columns stay null until five verified, opted-in admitted members contribute to that metric. Five to nine contributors round to the nearest $5m. Ten or more round to the nearest $1m.
 
-The public money figures display the greater of that published sum and a quiet floor. Floors live only on `public.demo_thresholds` (`floor_investment_usd`, `floor_fo_aum_usd`, `floor_turnover_usd`). When the published sum is larger, that sum shows. The page does not label the floor. Founding seats stay the live count. Apply `supabase/migrations/20260929143000_landing_preview_and_floors.sql` on the live project before `landing_platform_totals` exists. Until then the site uses the same default amounts in `src/lib/platformFloors.ts`. No Edge function redeploy.
+Public money totals stay hidden until the published sum is above its threshold. The thresholds live on `public.demo_thresholds` (`floor_investment_usd`, `floor_fo_aum_usd`, `floor_turnover_usd`) and match the defaults in `src/lib/platformFloors.ts`. The threshold amount is not shown as a figure. Until a total passes its threshold, that slot says Forming. The public seat counter says Forming until 15 founding seats are admitted, then shows the live count. Apply `supabase/migrations/20260929143000_landing_preview_and_floors.sql` on the live project before `landing_platform_totals` exists. The page still withholds a substituted floor from that function. No new migration. The password-reset letter and the master invite name the new sign-in paths, so redeploy `request-password-reset` and `invite-master` after this lands.
 
 Apply this on Supabase project `iirqbizwanyhgkhanntq` before the new Edge Function code is deployed. Supabase Dashboard → SQL Editor → paste and run:
 
@@ -240,10 +240,10 @@ Evidence tags: **VERIFIED** = proved against live project / staging; **INFERRED*
 | RLS `staff_users` | **VERIFIED PASS-ish** | select-own + claim-first insert (bootstrap residual) |
 | RLS `email_events` | **VERIFIED PASS** | Staff select only |
 | Dangerous ops RPCs | **VERIFIED PASS** | Factory revoked EXECUTE on `list_applications_ops` / `ops_code_ok` / `update_application_status_ops` + client access on `ops_config`; anon RPC call → not exposed |
-| Auth gate `/admin` | **VERIFIED PASS** | Unauthed → `/login?next=/admin`; UI requires session; list needs `staff_users` |
+| Auth gate `/admin` | **VERIFIED PASS** | Unauthed → `/login/staff` with the full admin path in `next`; UI requires session; list needs `staff_users` |
 | Accept/Reject | **VERIFIED PASS** | Edge `decide-application` JWT + `staff_users`; Accept emails private booking URL only; Reject decline only. Admitted rows are refused so Accept is not sent again |
 | RLS `members` / `profiles` | **VERIFIED PASS** | Own row only. Anon has no table grant. No client insert. `claim_founding_seat` is service_role only |
-| Invite-only `/dashboard` | **VERIFIED PASS** | Signed-out redirects to `/login?next=/dashboard`. No `members` row → invitation required. No public signup form |
+| Invite-only `/dashboard` | **VERIFIED PASS** | Signed-out redirects to `/login` and keeps the full dashboard path and query in `next`. No `members` row → invitation required. No public signup form |
 | No anon directory scrape | **VERIFIED PASS** | Directory shell does not query other members. Anon `select` on `members` and `profiles` is permission denied. `founding_capacity()` returns counts to a member or staff user only |
 | Peer invite wallet | **INFERRED** until the migration is on the live project | `member_invites` has no anon grant. Lookup is `lookup_member_invite(token)` and returns a label only. `issue_member_invite` and `release_member_invite` are service_role only. Wallet updates cannot raise `invites_remaining` without the release flag |
 | `/dashboard` vs `/admin` | **INFERRED** until this PR is on Pages | Non-staff, including members, are sent to `/dashboard` and `/admin` redirects there without admin chrome. Staff and master still open `/admin`. The switcher renders only when `staff_users.role` is `staff` or `master` and a live `members` row exists |

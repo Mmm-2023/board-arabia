@@ -1,12 +1,17 @@
 import { useEffect, useState } from 'react'
 import { formatPublicUsd } from '../lib/capacity'
-import { displayPlatformMoney, presentServerTotals, type DisplayTotals } from '../lib/platformFloors'
+import {
+  displayPlatformMoney,
+  FORMING_LABEL,
+  presentServerTotals,
+  seatsArePublic,
+  type DisplayTotals,
+} from '../lib/platformFloors'
 import { seatLine, type PlatformStats } from '../lib/platformStats'
 import { fetchPlatformStats, supabase } from '../lib/supabase'
 import { Eyebrow } from './Type'
 
 const EARLY = 'Building the Founding 100'
-const UNPUBLISHED = 'Not yet published'
 const DISCLAIMER =
   "Figures reflect the network's represented capacity. Individual amounts are never shown."
 
@@ -26,6 +31,11 @@ export function StatsStrip() {
   useEffect(() => {
     let cancelled = false
     async function load() {
+      const real = await fetchPlatformStats()
+      if (!cancelled && real) {
+        setShown(shownFromStats(real))
+        return
+      }
       const { data, error } = await supabase.rpc('landing_platform_totals')
       if (!cancelled && !error) {
         const parsed = presentServerTotals(data)
@@ -34,8 +44,7 @@ export function StatsStrip() {
           return
         }
       }
-      const real = await fetchPlatformStats()
-      if (!cancelled) setShown(shownFromStats(real))
+      if (!cancelled) setShown(shownFromStats(null))
     }
     void load()
     const channel = supabase
@@ -55,7 +64,7 @@ export function StatsStrip() {
   }, [])
 
   const seats =
-    shown && shown.admitted != null && shown.ksa != null && shown.intl != null
+    shown && seatsArePublic(shown.admitted) && shown.ksa != null && shown.intl != null
       ? seatLine({
           investment: null,
           foAum: null,
@@ -105,7 +114,7 @@ export function StatsStrip() {
               </>
             ) : (
               <p className="mt-4 font-serif text-[1.65rem] italic leading-tight text-ink/45">
-                {UNPUBLISHED}
+                {FORMING_LABEL}
               </p>
             )}
           </li>
@@ -124,7 +133,7 @@ function MoneyStat({ label, amount }: { label: string; amount: number | null }) 
       </p>
       {amount == null ? (
         <p className="mt-4 font-serif text-[1.65rem] italic leading-tight text-ink/45">
-          {UNPUBLISHED}
+          {FORMING_LABEL}
         </p>
       ) : (
         <p className="mt-4 font-display text-[clamp(2.2rem,4vw,3.2rem)] font-extrabold leading-none tracking-[-0.04em] text-ink">

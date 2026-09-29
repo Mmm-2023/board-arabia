@@ -1,9 +1,10 @@
-import { Navigate, Outlet } from 'react-router-dom'
+import { Navigate, Outlet, useLocation } from 'react-router-dom'
 import { clientAdminGate } from '../../../supabase/functions/_shared/staff_auth.ts'
 import { AppShell } from '../../shell/AppShell'
 import { STAFF_DESTINATIONS, STAFF_SECONDARY, formatUpdated } from '../../shell/destinations'
 import { ErrorBanner } from '../../shell/ViewState'
 import { STAFF_VIEWS } from '../../shell/viewCopy'
+import { currentReturnPath, loginHref } from '../../lib/returnPath'
 import { useNoIndex } from '../../lib/usePageTitle'
 import { AdminProvider, useAdmin } from './context'
 import { DryRunInviteBox } from './bits'
@@ -18,6 +19,7 @@ export function AdminLayout() {
 
 function AdminFrame() {
   const room = useAdmin()
+  const location = useLocation()
   useNoIndex('Admin | Board Arabia')
 
   if (room.booting || (room.session && !room.hasLoaded)) {
@@ -29,7 +31,7 @@ function AdminFrame() {
   }
 
   if (!room.session || clientAdminGate(true, room.staffRole) === 'login') {
-    return <Navigate to="/login?next=/admin" replace />
+    return <Navigate to={loginHref(currentReturnPath(location), true)} replace />
   }
 
   if (clientAdminGate(true, room.staffRole) !== 'allow') {

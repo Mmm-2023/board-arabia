@@ -48,14 +48,32 @@ export function memberRoomLabel(seat: unknown): 'Founding member' | 'Member' {
   return 'Member'
 }
 
-export function sanitizeNext(raw: string | null, fallback: string): string {
-  if (!raw) return fallback
-  if (!raw.startsWith('/') || raw.startsWith('//') || raw.startsWith('/\\')) return fallback
-  if (raw.startsWith('/login') || raw.startsWith('/auth')) return fallback
-  return raw
+const CONTROL = /[\u0000-\u001f\u007f]/
+
+function pathOnly(value: string): string {
+  const cut = value.search(/[?#]/)
+  return cut === -1 ? value : value.slice(0, cut)
 }
 
-/** Staff land on /admin unless they also have a live member row and asked for /dashboard. */
+function isAppPath(path: string, root: string): boolean {
+  return path === root || path.startsWith(`${root}/`)
+}
+
+/** Keep an in-app path, including its query and hash. Reject open redirects. */
+export function sanitizeNext(raw: string | null, fallback: string): string {
+  if (!raw) return fallback
+  const value = raw.trim()
+  if (!value.startsWith('/') || value.startsWith('//') || value.startsWith('/\\')) return fallback
+  if (CONTROL.test(value)) return fallback
+  const path = pathOnly(value)
+  if (path.includes('\\') || path.includes('//') || path.split('/').includes('..')) return fallback
+  if (path.startsWith('/login') || path.startsWith('/auth')) return fallback
+  return value
+}
+
+/** Staff land on /admin unless they also have a live member row and asked for /dashboard.
+ * A requested in-app path keeps its query and hash.
+ */
 export function postLoginDestination(input: {
   role: unknown
   memberStatus: unknown
@@ -63,12 +81,13 @@ export function postLoginDestination(input: {
 }): string {
   const inStaff = isStaffRole(input.role)
   const requested = sanitizeNext(input.requested, inStaff ? '/admin' : '/dashboard')
+  const path = pathOnly(requested)
   if (inStaff) {
-    if (isLiveMember(input.memberStatus) && requested.startsWith('/dashboard')) return requested
-    if (requested === '/ops' || requested.startsWith('/ops/')) return '/ops'
-    if (requested === '/admin' || requested.startsWith('/admin/')) return requested
+    if (isLiveMember(input.memberStatus) && isAppPath(path, '/dashboard')) return requested
+    if (isAppPath(path, '/ops')) return requested
+    if (isAppPath(path, '/admin')) return requested
     return '/admin'
   }
-  if (isLiveMember(input.memberStatus) && requested.startsWith('/dashboard')) return requested
+  if (isLiveMember(input.memberStatus) && isAppPath(path, '/dashboard')) return requested
   return '/dashboard'
 }

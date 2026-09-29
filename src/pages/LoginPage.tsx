@@ -1,16 +1,20 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import type { Session } from '@supabase/supabase-js'
-import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, Navigate, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { BrandLockup } from '../components/BrandLockup'
 import { clearPasswordFlag } from '../lib/clearPasswordFlag'
 import { resolveAfterLogin } from '../lib/memberGate'
+import { isStaffReturn, safeReturnPath } from '../lib/returnPath'
 import { sendPasswordReset, supabase } from '../lib/supabase'
 import { useNoIndex } from '../lib/usePageTitle'
 
 export function LoginPage() {
   const navigate = useNavigate()
+  const location = useLocation()
   const [searchParams] = useSearchParams()
-  const nextPath = safeNext(searchParams.get('next'))
+  const onStaffPath = location.pathname === '/login/staff'
+  const nextPath = safeReturnPath(searchParams.get('next'), onStaffPath ? '/admin' : '/dashboard')
+  const staffEntry = onStaffPath || isStaffReturn(nextPath)
 
   const [session, setSession] = useState<Session | null | undefined>(undefined)
   const [email, setEmail] = useState('')
@@ -20,10 +24,9 @@ export function LoginPage() {
   const [submitting, setSubmitting] = useState(false)
   const [destination, setDestination] = useState<string | null>(null)
   const [resetNote, setResetNote] = useState('')
-  const memberEntry = nextPath.startsWith('/dashboard')
   const codeType = otpType(searchParams.get('otp_type'))
 
-  useNoIndex(memberEntry ? 'Member login | Board Arabia' : 'Staff login | Board Arabia')
+  useNoIndex(staffEntry ? 'Staff login | Board Arabia' : 'Member login | Board Arabia')
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -153,15 +156,15 @@ export function LoginPage() {
       <main className="relative z-10 mx-auto flex max-w-5xl flex-col justify-center px-5 py-14 md:px-8 md:py-20">
         <div className="mx-auto w-full max-w-md">
           <p className="text-[0.72rem] font-semibold tracking-[0.14em] text-brass-bright uppercase">
-            {memberEntry ? 'Members' : 'Staff only'}
+            {staffEntry ? 'Staff' : 'Members'}
           </p>
           <h1 className="mt-3 font-display text-[2.35rem] leading-[1.05] font-bold tracking-[-0.03em] md:text-[2.75rem]">
             Sign in
           </h1>
           <p className="mt-4 text-[0.98rem] leading-relaxed text-stone/70">
-            {memberEntry
-              ? 'Use the one-time link in your admission email, or the password you set after you arrived.'
-              : 'Email and password via Supabase Auth. After sign-in you go to the admin applications list. Visitors never need this screen.'}
+            {staffEntry
+              ? 'Email and password for the desk. After sign-in you open the admin desk.'
+              : 'Use the one-time link in your admission email, or the password you set after you arrived.'}
           </p>
 
           <form onSubmit={onSignIn} className="mt-10 space-y-4">
@@ -216,7 +219,7 @@ export function LoginPage() {
             {resetNote && <p className="text-[0.9rem] text-brass-bright">{resetNote}</p>}
           </form>
 
-          {memberEntry && (
+          {!staffEntry && (
             <form onSubmit={onCode} className="mt-8 space-y-4 border-t border-pearl/10 pt-8">
               <p className="text-[0.72rem] font-semibold tracking-[0.08em] text-pearl/45 uppercase">
                 One-time code
@@ -243,21 +246,31 @@ export function LoginPage() {
           )}
 
           <p className="mt-8 text-[0.85rem] leading-relaxed text-pearl/45">
-            {memberEntry
-              ? 'Admission is by invitation. This page does not create accounts. Forgot password? sends a link to choose a new password.'
-              : 'Forgot password? sends a link to choose a new password on this site. This page does not create accounts.'}
+            {staffEntry
+              ? 'Forgot password? sends a link to choose a new password on this site. This page does not create accounts.'
+              : 'Admission is by invitation. This page does not create accounts. Forgot password? sends a link to choose a new password.'}
+          </p>
+          <p className="mt-4 text-[0.85rem] leading-relaxed">
+            {staffEntry ? (
+              <Link
+                to="/login"
+                className="text-pearl/55 underline decoration-pearl/25 underline-offset-4 transition-colors hover:text-pearl"
+              >
+                Member sign in
+              </Link>
+            ) : (
+              <Link
+                to="/login/staff"
+                className="text-pearl/55 underline decoration-pearl/25 underline-offset-4 transition-colors hover:text-pearl"
+              >
+                Staff sign in
+              </Link>
+            )}
           </p>
         </div>
       </main>
     </div>
   )
-}
-
-function safeNext(raw: string | null): string {
-  if (!raw) return '/admin'
-  if (!raw.startsWith('/') || raw.startsWith('//')) return '/admin'
-  if (raw.startsWith('/login')) return '/admin'
-  return raw
 }
 
 function otpType(raw: string | null): 'invite' | 'magiclink' | 'email' {

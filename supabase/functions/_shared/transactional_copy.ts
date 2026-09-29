@@ -189,13 +189,13 @@ ${confirmUrl}
 
 If you did not ask for this, you can ignore this message.
 
-After you save the new password, sign in again. Members use https://boardarabia.com/login?next=/dashboard. Staff use https://boardarabia.com/login.`,
+After you save the new password, sign in again. Members use https://boardarabia.com/login. Staff use https://boardarabia.com/login/staff.`,
     `<p>Hello,</p>
 <p>We received a request to reset the password for this Board Arabia sign-in.</p>
 <p>Open this link to choose a new password. It expires and works once:</p>
 <p><a href="${escapeHtml(confirmUrl)}">${escapeHtml(confirmUrl)}</a></p>
 <p>If you did not ask for this, you can ignore this message.</p>
-<p>After you save the new password, sign in again. Members use <a href="https://boardarabia.com/login?next=/dashboard">member sign-in</a>. Staff use <a href="https://boardarabia.com/login">staff sign-in</a>.</p>`,
+<p>After you save the new password, sign in again. Members use <a href="https://boardarabia.com/login">member sign-in</a>. Staff use <a href="https://boardarabia.com/login/staff">staff sign-in</a>.</p>`,
   )
   return { subject: 'Board Arabia: reset your password', ...sealed }
 }

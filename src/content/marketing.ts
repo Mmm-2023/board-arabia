@@ -192,8 +192,8 @@ export const PARTNER_CATEGORIES: PartnerCategory[] = [
   },
 ]
 
-/** Public sign-in. Members first. Staff keep /login, which still opens /admin. */
-export const MEMBER_LOGIN = '/login?next=/dashboard'
+/** Public sign-in for members. Staff use /login/staff. */
+export const MEMBER_LOGIN = '/login'
 
 export const NAV_LINKS = [
   { label: 'Members', to: '/for-members' },

@@ -8,6 +8,7 @@
 import { formatMajlisWhen, MAJLIS_REGIONS, countPublishedByRegion } from '../../supabase/functions/_shared/majlis.ts'
 import { formatPublicUsd } from './capacity.ts'
 import { DEMO_THRESHOLD_DEFAULTS, demoRowsVisible } from './demoThreshold.ts'
+import { displayPlatformMoney } from './platformFloors.ts'
 import { seatLine, type PlatformStats } from './platformStats.ts'
 
 export type MembershipBadge = 'Founding' | 'Member'
@@ -419,15 +420,16 @@ export function formatActivityWhen(iso: string): string {
 
 export function platformMoneyLines(stats: PlatformStats | null): { label: string; value: string }[] | null {
   if (!stats) return null
+  const money = displayPlatformMoney(stats)
   const lines: { label: string; value: string }[] = []
-  if (stats.investment != null) {
-    lines.push({ label: 'Platform investment capability', value: formatPublicUsd(stats.investment) })
+  if (money.investment != null) {
+    lines.push({ label: 'Platform investment capability', value: formatPublicUsd(money.investment) })
   }
-  if (stats.foAum != null) {
-    lines.push({ label: 'Family office AUM represented', value: formatPublicUsd(stats.foAum) })
+  if (money.foAum != null) {
+    lines.push({ label: 'Family office AUM represented', value: formatPublicUsd(money.foAum) })
   }
-  if (stats.turnover != null) {
-    lines.push({ label: 'Business turnover capacity', value: formatPublicUsd(stats.turnover) })
+  if (money.turnover != null) {
+    lines.push({ label: 'Business turnover capacity', value: formatPublicUsd(money.turnover) })
   }
   return lines
 }
