@@ -11,6 +11,7 @@ const outDir = '/opt/cursor/artifacts'
 mkdirSync(outDir, { recursive: true })
 
 const vite = await createServer({
+  configFile: false,
   root: path.resolve('scripts/smoke'),
   publicDir: path.resolve('public'),
   server: { host: '127.0.0.1', port, strictPort: true },
@@ -129,7 +130,25 @@ async function capture(browser, state, width, height, file) {
           if (card && title && title.textContent.includes('Real Estate')) {
             document.fonts.ready.then(() => {
               const main = document.querySelector('.shell-main')
-              if (main && window.innerWidth < 500) main.scrollTop = 0
+              const stateName = ${JSON.stringify(state)}
+              if (main && window.innerWidth < 500 && stateName !== 'demo') {
+                const delta = card.getBoundingClientRect().top - main.getBoundingClientRect().top
+                main.scrollTop += delta - 12
+                if (stateName === 'approved') {
+                  const line = [...document.querySelectorAll('dt')].find((el) => el.textContent.trim() === 'Counterparty')
+                  if (line) {
+                    const shift = line.getBoundingClientRect().top - main.getBoundingClientRect().top
+                    main.scrollTop += shift - 64
+                  }
+                }
+                if (stateName === 'blurred') {
+                  const button = card.querySelector('button')
+                  if (button) {
+                    const overflow = button.getBoundingClientRect().bottom - main.getBoundingClientRect().bottom
+                    if (overflow > 0) main.scrollTop += overflow + 28
+                  }
+                }
+              }
               const blur = card.querySelector('.re-locked-copy')
               const open = card.textContent.includes('Intro approved for you.')
               const secret = card.innerText.includes('Nahla House Works')
@@ -185,7 +204,7 @@ async function verifyFilters(browser) {
           }
           chip.click()
           setTimeout(() => {
-            const text = [...document.querySelectorAll('[data-re-card]')].map((el) => el.innerText).join('\n')
+            const text = [...document.querySelectorAll('[data-re-card]')].map((el) => el.innerText).join('\\n')
             resolve({
               ok: text.includes('Jeddah freight') && !text.includes('aimed at end users') && !text.includes('Red Sea'),
               text: text.slice(0, 400),
@@ -197,8 +216,9 @@ async function verifyFilters(browser) {
       awaitPromise: true,
       returnByValue: true,
     })
-    if (!result.result?.value?.ok) {
-      throw new Error(`city filter failed: ${JSON.stringify(result.result?.value)}`)
+    const value = result.result?.value
+    if (!value?.ok) {
+      throw new Error(`city filter failed: ${JSON.stringify({ value, exception: result.exceptionDetails || null })}`)
     }
     console.log('city filter ok')
   })
@@ -255,7 +275,7 @@ async function verifyMobileSheet(browser) {
           button.click()
           setTimeout(() => {
             const sheet = document.getElementById('re-filter-sheet')
-            const text = sheet ? sheet.innerText : ''
+            const text = sheet ? sheet.textContent : ''
             resolve({
               ok: Boolean(sheet) && text.includes('Asset class') && text.includes('City') && text.includes('Capital role') && text.includes('industrial/logistics') && tab >= 1,
               tab,
