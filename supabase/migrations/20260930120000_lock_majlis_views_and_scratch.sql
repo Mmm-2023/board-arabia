@@ -393,3 +393,26 @@ grant execute on function public.staff_list_mandate_intros() to authenticated;
 
 revoke all on function public.staff_decide_mandate_intro(uuid, text) from public, anon;
 grant execute on function public.staff_decide_mandate_intro(uuid, text) to authenticated;
+
+revoke all on function public.staff_list_re_opportunity_intros() from public, anon;
+grant execute on function public.staff_list_re_opportunity_intros() to authenticated;
+
+revoke all on function public.staff_decide_re_opportunity_intro(uuid, text) from public, anon;
+grant execute on function public.staff_decide_re_opportunity_intro(uuid, text) to authenticated;
+
+revoke all on function public.staff_save_re_opportunity(
+  uuid, boolean, text, text, text, text, text, text, uuid, text, text, text, text, text, text, text, text, text, text, integer
+) from public, anon;
+grant execute on function public.staff_save_re_opportunity(
+  uuid, boolean, text, text, text, text, text, text, uuid, text, text, text, text, text, text, text, text, text, text, integer
+) to authenticated;
+
+revoke all on function public.staff_save_re_partner(
+  uuid, boolean, text, text, text, text, text, text, integer
+) from public, anon;
+grant execute on function public.staff_save_re_partner(
+  uuid, boolean, text, text, text, text, text, text, integer
+) to authenticated;
+
+revoke all on function public.staff_assign_sponsor_category(uuid, text) from public, anon;
+grant execute on function public.staff_assign_sponsor_category(uuid, text) to authenticated;

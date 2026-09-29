@@ -147,6 +147,11 @@ test('every staff_* function checks staff and is not executable by anon', () => 
     'staff_set_member_capacity',
     'staff_list_mandate_intros',
     'staff_decide_mandate_intro',
+    'staff_list_re_opportunity_intros',
+    'staff_decide_re_opportunity_intro',
+    'staff_save_re_opportunity',
+    'staff_save_re_partner',
+    'staff_assign_sponsor_category',
   ]
   for (const name of names) {
     const fn = latestFunction(name)
@@ -154,9 +159,9 @@ test('every staff_* function checks staff and is not executable by anon', () => 
     const updateAt = fn.body.search(/\bupdate\b/i)
     const checkAt = fn.body.indexOf('if not private.is_staff()')
     if (updateAt >= 0) assert.ok(checkAt >= 0 && checkAt < updateAt, `${name} updates before the staff check`)
-    assert.match(sql, new RegExp(`revoke all on function public\\.${name}(\\([^)]*\\))? from public, anon;`))
-    assert.match(sql, new RegExp(`grant execute on function public\\.${name}(\\([^)]*\\))? to authenticated;`))
-    assert.equal(new RegExp(`grant execute on function public\\.${name}(\\([^)]*\\))? to anon`).test(sql), false)
+    assert.match(sql, new RegExp(`revoke all on function public\\.${name}\\s*\\([^;]*\\)\\s*from public, anon;`))
+    assert.match(sql, new RegExp(`grant execute on function public\\.${name}\\s*\\([^;]*\\)\\s*to authenticated;`))
+    assert.equal(new RegExp(`grant execute on function public\\.${name}\\s*\\([^;]*\\)\\s*to anon`).test(sql), false)
     assert.ok(fn.line > 0)
   }
 
@@ -168,6 +173,18 @@ test('every staff_* function checks staff and is not executable by anon', () => 
     }
   }
   assert.deepEqual([...defined].sort(), [...names].sort())
+})
+
+test('real estate migration adds no definer view and pins search_path', () => {
+  const sql = readFileSync(path.join(migrationsDir, '20260929230000_real_estate_inventory.sql'), 'utf8')
+  assert.equal(/create\s+(or\s+replace\s+)?(materialized\s+)?view\b/i.test(sql), false)
+  const blocks = sql.split(/create or replace function /i).slice(1)
+  assert.ok(blocks.length > 0)
+  for (const block of blocks) {
+    const header = block.split(/\$\$/)[0] ?? ''
+    if (!/security definer/i.test(header)) continue
+    assert.match(header, /set search_path = public/)
+  }
 })
 
 test('edge functions do not read the majlis views', () => {
@@ -423,6 +440,115 @@ $$;
 grant execute on function public.staff_set_member_capacity(uuid, numeric, numeric, numeric, boolean, boolean) to public, anon, authenticated;
 grant execute on function public.staff_list_mandate_intros() to public, anon, authenticated;
 grant execute on function public.staff_decide_mandate_intro(uuid, text) to public, anon, authenticated;
+
+create or replace function public.staff_list_re_opportunity_intros()
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not private.is_staff() then
+    raise exception 'not_allowed' using errcode = '42501';
+  end if;
+  return '[]'::jsonb;
+end;
+$$;
+
+create or replace function public.staff_decide_re_opportunity_intro(p_intro_id uuid, p_decision text)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not private.is_staff() then
+    raise exception 'not_allowed' using errcode = '42501';
+  end if;
+  return jsonb_build_object('ok', true);
+end;
+$$;
+
+create or replace function public.staff_save_re_opportunity(
+  p_id uuid,
+  p_published boolean,
+  p_sector text,
+  p_city text,
+  p_asset_class text,
+  p_capital_role text,
+  p_ticket_band text,
+  p_one_liner text,
+  p_sponsor_member_id uuid,
+  p_counterparty_name text,
+  p_terms text,
+  p_contact_name text,
+  p_contact_email text,
+  p_contact_phone text,
+  p_narrative text,
+  p_foreign_ownership_path text,
+  p_escrow_off_plan text,
+  p_title_clarity text,
+  p_white_land_exposure text,
+  p_sort_order integer
+) returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not private.is_staff() then
+    raise exception 'not_allowed' using errcode = '42501';
+  end if;
+  return jsonb_build_object('ok', true);
+end;
+$$;
+
+create or replace function public.staff_save_re_partner(
+  p_id uuid,
+  p_published boolean,
+  p_name text,
+  p_kind text,
+  p_blurb text,
+  p_contact_name text,
+  p_contact_email text,
+  p_contact_phone text,
+  p_sort_order integer
+) returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not private.is_staff() then
+    raise exception 'not_allowed' using errcode = '42501';
+  end if;
+  return jsonb_build_object('ok', true);
+end;
+$$;
+
+create or replace function public.staff_assign_sponsor_category(p_member_id uuid, p_category_slug text)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not private.is_staff() then
+    raise exception 'not_allowed' using errcode = '42501';
+  end if;
+  return jsonb_build_object('ok', true);
+end;
+$$;
+
+grant execute on function public.staff_list_re_opportunity_intros() to public, anon, authenticated;
+grant execute on function public.staff_decide_re_opportunity_intro(uuid, text) to public, anon, authenticated;
+grant execute on function public.staff_save_re_opportunity(
+  uuid, boolean, text, text, text, text, text, text, uuid, text, text, text, text, text, text, text, text, text, text, integer
+) to public, anon, authenticated;
+grant execute on function public.staff_save_re_partner(
+  uuid, boolean, text, text, text, text, text, text, integer
+) to public, anon, authenticated;
+grant execute on function public.staff_assign_sponsor_category(uuid, text) to public, anon, authenticated;
 `
 
 const fixtureSql = `
@@ -575,7 +701,12 @@ begin
   foreach diff in array array[
     'staff_set_member_capacity(uuid,numeric,numeric,numeric,boolean,boolean)',
     'staff_list_mandate_intros()',
-    'staff_decide_mandate_intro(uuid,text)'
+    'staff_decide_mandate_intro(uuid,text)',
+    'staff_list_re_opportunity_intros()',
+    'staff_decide_re_opportunity_intro(uuid,text)',
+    'staff_save_re_opportunity(uuid,boolean,text,text,text,text,text,text,uuid,text,text,text,text,text,text,text,text,text,text,integer)',
+    'staff_save_re_partner(uuid,boolean,text,text,text,text,text,text,integer)',
+    'staff_assign_sponsor_category(uuid,text)'
   ]
   loop
     if has_function_privilege('anon', 'public.' || diff, 'execute') then
