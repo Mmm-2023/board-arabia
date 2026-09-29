@@ -95,6 +95,8 @@ export type DeckHero = {
 
 export type DeckAnalysis = {
   hero: DeckHero
+  /** Same value as hero.posture. Derived, never a second score. */
+  posture: Posture | ''
   meta: {
     company: string
     document: string
@@ -313,10 +315,77 @@ export function applyReviewRules(analysis: DeckAnalysis): DeckAnalysis {
   return {
     ...checked,
     scores: checked.scores,
+    posture,
     hero,
     snapshot: { ...checked.snapshot, posture },
     sections_missing: checked.sections_missing.filter((key) => key !== 'hero' && key !== 'posture'),
   }
+}
+
+/** Scores JSON plus the pages a narrative pass needs. Not the whole fitted deck. */
+export function narrativeDeckExcerpt(deck: string, scoresJson: unknown, maxChars = 18_000): string {
+  const trimmed = deck.trim()
+  if (!trimmed) return ''
+  const pages = splitNumberedPages(trimmed)
+  if (pages.length <= 1 && trimmed.length <= maxChars) return trimmed
+  if (!pages.length) return trimmed.slice(0, maxChars)
+  const cited = citedPageNumbers(scoresJson)
+  const keep = new Set<number>([pages[0].n, pages[pages.length - 1].n])
+  for (const page of pages) {
+    if (cited.has(page.n) || hasOperatingFigure(page.body)) keep.add(page.n)
+  }
+  const ordered = pages.filter((page) => keep.has(page.n))
+  let out = ''
+  for (const page of ordered) {
+    const block = `Page ${page.n}\n${page.body.trim()}`
+    const next = out ? `${out}\n\n${block}` : block
+    if (next.length <= maxChars) {
+      out = next
+      continue
+    }
+    if (cited.has(page.n) || hasOperatingFigure(page.body)) {
+      const room = maxChars - out.length - 2
+      if (room > 240) out = out ? `${out}\n\n${block.slice(0, room)}` : block.slice(0, maxChars)
+    }
+  }
+  return out || trimmed.slice(0, maxChars)
+}
+
+export function hasOperatingFigure(text: string): boolean {
+  if (collectRanges(text).length > 0) return true
+  READING.lastIndex = 0
+  const found = READING.test(text)
+  READING.lastIndex = 0
+  return found
+}
+
+function splitNumberedPages(deck: string): { n: number; body: string }[] {
+  const parts = deck.split(/\n\n(?=Page \d+\n)/)
+  const pages: { n: number; body: string }[] = []
+  for (const part of parts) {
+    const match = part.match(/^Page (\d+)\n([\s\S]*)$/)
+    if (!match) continue
+    pages.push({ n: Number(match[1]), body: match[2] || '' })
+  }
+  return pages
+}
+
+function citedPageNumbers(raw: unknown, into = new Set<number>(), depth = 0): Set<number> {
+  if (!raw || typeof raw !== 'object' || depth > 6) return into
+  if (Array.isArray(raw)) {
+    for (const item of raw) citedPageNumbers(item, into, depth + 1)
+    return into
+  }
+  const row = raw as Record<string, unknown>
+  if (typeof row.page === 'string' || typeof row.page === 'number') {
+    const match = String(row.page).match(/\d+/)
+    const page = match ? Number(match[0]) : 0
+    if (page > 0 && page < 500) into.add(page)
+  }
+  for (const value of Object.values(row)) {
+    if (value && typeof value === 'object') citedPageNumbers(value, into, depth + 1)
+  }
+  return into
 }
 
 type ParsedRange = { low: number; high: number; unit: string; start: number; end: number }
@@ -609,6 +678,7 @@ export function parseDeckAnalysis(raw: unknown): DeckAnalysis | null {
 
   const analysis: DeckAnalysis = {
     hero: emptyHero(),
+    posture: '',
     meta,
     snapshot,
     scores,

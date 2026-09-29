@@ -37,10 +37,12 @@ verify_jwt = true
 [functions.due-diligence-status]
 verify_jwt = true
 
-# One pipeline step. The previous step calls it with SUPABASE_SERVICE_ROLE_KEY, already in the Edge env.
-# verify_jwt stays on. No new secret and no cron.
+# One pipeline step. verify_jwt stays off so a non-JWT service key is not rejected
+# by the gateway before this function runs. The caller must send header x-dd-step
+# equal to BA_DD_STEP_SECRET from the Edge secret store. An unset secret rejects
+# every call. No cron.
 [functions.due-diligence-step]
-verify_jwt = true
+verify_jwt = false
 
 # LinkedIn token exchange. Deploy this function later. Secrets stay in the Edge secret store.
 [functions.linkedin-oauth]

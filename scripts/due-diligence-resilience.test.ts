@@ -490,7 +490,6 @@ test('due diligence start is the only caller of the local auth helper', () => {
     'supabase/functions/admit-li-share-card/index.ts',
     'supabase/functions/contact-desk/index.ts',
     'supabase/functions/due-diligence-status/index.ts',
-    'supabase/functions/due-diligence-step/index.ts',
     'supabase/functions/linkedin-oauth/index.ts',
     'supabase/functions/majlis-ics/index.ts',
     'supabase/functions/majlis-rsvp/index.ts',

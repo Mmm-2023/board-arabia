@@ -44,7 +44,7 @@ export const DD_COPY = {
   statusReading: 'Reading your deck\u2026',
   statusResearching: 'Looking up public information\u2026',
   statusWriting: 'Building your report\u2026',
-  progressHint: 'This usually takes a few minutes. You can leave this page open.',
+  progressHint: 'Expect about 3 to 5 minutes. You can leave and come back.',
   errorStart:
     'Could not start this check. Try again in a moment. If it keeps failing, contact support with the time you tried.',
   errorRetry: 'Try again',

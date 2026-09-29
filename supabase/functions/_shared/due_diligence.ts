@@ -17,21 +17,29 @@ export const DECK_BUCKET = 'due-diligence-decks'
 export const EDGE_WALL_CLOCK_MS = 150_000
 export const STEP_EXTRACT_BUDGET_MS = 45_000
 export const STEP_EXTRACT_STALE_MS = 70_000
-export const STEP_ANALYSIS_CAP_MS = 125_000
-export const STEP_ANALYSIS_TTFT_MS = 115_000
-export const STEP_ANALYSIS_STALE_MS = 140_000
-export const STEP_COMPOSE_BUDGET_MS = 80_000
-export const STEP_COMPOSE_REPAIR_MS = 35_000
+/** Full deck. First token stays close to the cap so a late reasoning token is not cut off. */
+export const STEP_SCORES_CAP_MS = 140_000
+export const STEP_SCORES_TTFT_MS = 130_000
+export const STEP_SCORES_STALE_MS = 148_000
+/** Narrative sees the scores pass plus key pages, so it can finish inside a shorter cap. */
+export const STEP_NARRATIVE_CAP_MS = 100_000
+export const STEP_NARRATIVE_TTFT_MS = 85_000
+export const STEP_NARRATIVE_STALE_MS = 120_000
+export const STEP_COMPOSE_BUDGET_MS = 90_000
+export const STEP_COMPOSE_REPAIR_MS = 60_000
 export const STEP_COMPOSE_STALE_MS = 110_000
 /** Silence while a finished step waits for the next invocation. */
 export const STEP_HANDOFF_STALE_MS = 90_000
 
-export const PRIMARY_TTFT_MS = STEP_ANALYSIS_TTFT_MS
-export const PRIMARY_CAP_MS = STEP_ANALYSIS_CAP_MS
-export const FALLBACK_MS = STEP_ANALYSIS_CAP_MS
+export const STEP_ANALYSIS_CAP_MS = STEP_SCORES_CAP_MS
+export const STEP_ANALYSIS_TTFT_MS = STEP_SCORES_TTFT_MS
+export const STEP_ANALYSIS_STALE_MS = STEP_SCORES_STALE_MS
+export const PRIMARY_TTFT_MS = STEP_SCORES_TTFT_MS
+export const PRIMARY_CAP_MS = STEP_SCORES_CAP_MS
+export const FALLBACK_MS = STEP_SCORES_CAP_MS
 export const REPAIR_MS = STEP_COMPOSE_REPAIR_MS
-export const WORKER_BUDGET_MS = STEP_ANALYSIS_CAP_MS
-export const JOB_STALE_MS = STEP_ANALYSIS_STALE_MS
+export const WORKER_BUDGET_MS = STEP_SCORES_CAP_MS
+export const JOB_STALE_MS = STEP_SCORES_STALE_MS
 
 export const PIPELINE_STEPS = ['extract', 'scores', 'narrative', 'compose', 'done'] as const
 export type PipelineStepName = (typeof PIPELINE_STEPS)[number]
@@ -300,8 +308,54 @@ export function stageLabel(status: string, progress = 0, backingUp = false): str
 export function stepStaleMs(step: string | null | undefined): number {
   if (step === 'extract') return STEP_EXTRACT_STALE_MS
   if (step === 'compose') return STEP_COMPOSE_STALE_MS
-  if (step === 'scores' || step === 'narrative') return STEP_ANALYSIS_STALE_MS
+  if (step === 'narrative') return STEP_NARRATIVE_STALE_MS
+  if (step === 'scores') return STEP_SCORES_STALE_MS
   return JOB_STALE_MS
+}
+
+export const FALLBACK_REASONS = ['timeout', 'ttft', 'http', 'parse', 'validation'] as const
+export type FallbackReason = (typeof FALLBACK_REASONS)[number]
+
+export type StepTiming = {
+  model_id: string
+  called: boolean
+  pass: 'primary' | 'fallback' | 'none'
+  fallback_reason: FallbackReason | null
+  http_status: number | null
+  elapsed_ms: number
+  primary_elapsed_ms: number | null
+}
+
+/** Map a model miss onto timeout, ttft, http, parse, or validation. */
+export function classifyFallback(reason: string | null): { reason: FallbackReason; httpStatus: number | null } {
+  const bare = (reason || '').toLowerCase().replace(/^(primary|fallback)_/, '')
+  const http = bare.match(/http_(\d{3})/)
+  if (bare.includes('ttft')) return { reason: 'ttft', httpStatus: null }
+  if (bare.includes('timeout') || bare.includes('deadline')) return { reason: 'timeout', httpStatus: null }
+  if (http) return { reason: 'http', httpStatus: Number(http[1]) }
+  if (bare.includes('validation') || bare.includes('section')) return { reason: 'validation', httpStatus: null }
+  return { reason: 'parse', httpStatus: null }
+}
+
+/** Compact job-row summary. The pipeline jsonb keeps the full step records. */
+export function formatStepLog(steps: Record<string, StepTiming>): string {
+  const parts: string[] = []
+  for (const key of ['extract', 'scores', 'narrative', 'compose'] as const) {
+    const row = steps[key]
+    if (!row) continue
+    const name = key[0]
+    if (!row.called || row.pass === 'none') {
+      parts.push(`${name}:none:${row.elapsed_ms}`)
+      continue
+    }
+    if (row.pass === 'fallback' && row.fallback_reason) {
+      const status = row.http_status ? `:${row.http_status}` : ''
+      parts.push(`${name}:fb:${row.fallback_reason}${status}:${row.elapsed_ms}`)
+      continue
+    }
+    parts.push(`${name}:${row.pass}:${row.elapsed_ms}`)
+  }
+  return parts.join('.').slice(0, 160)
 }
 
 export function nextPipelineStep(step: string): PipelineStepName | null {

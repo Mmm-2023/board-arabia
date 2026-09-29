@@ -1,10 +1,11 @@
 import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1'
-import { fitNumberedDeck, mergeSectionDrafts, numberDeckPages, parseDeckAnalysis, parseModelJson, preferredAsk, preferredCompany, type DeckAnalysis } from '../_shared/deck_analysis.ts'
+import { fitNumberedDeck, mergeSectionDrafts, narrativeDeckExcerpt, numberDeckPages, parseDeckAnalysis, parseModelJson, preferredAsk, preferredCompany, type DeckAnalysis } from '../_shared/deck_analysis.ts'
 import {
   afterModelAttempt,
   assessmentLog,
   buildReport,
   claimAllowed,
+  classifyFallback,
   DECK_BUCKET,
   DECK_MAX_BYTES,
   DD_PROGRESS,
@@ -18,6 +19,7 @@ import {
   independentSearchTerms,
   isTerminalModelFailure,
   MEMBER_MESSAGES,
+  formatStepLog,
   modelJobFields,
   nextPipelineStep,
   packReportDisclaimer,
@@ -25,11 +27,16 @@ import {
   progressForStep,
   sniffDeck,
   statusForStep,
-  STEP_ANALYSIS_CAP_MS,
   STEP_COMPOSE_BUDGET_MS,
   STEP_EXTRACT_BUDGET_MS,
+  STEP_NARRATIVE_CAP_MS,
+  STEP_NARRATIVE_TTFT_MS,
+  STEP_SCORES_CAP_MS,
+  STEP_SCORES_TTFT_MS,
   type DeckExt,
+  type FallbackReason,
   type ModelPass,
+  type StepTiming,
 } from '../_shared/due_diligence.ts'
 import { readDeckSource } from './extract.ts'
 import { analyzeDeckSection, plannedModelId, scoresUser, narrativeUser } from './llm.ts'
@@ -53,6 +60,7 @@ type PipelineState = {
   narrative_ran: boolean
   used_fallback: boolean
   models: Record<string, string>
+  steps: Record<string, StepTiming>
 }
 
 type HeldJob = {
@@ -116,20 +124,27 @@ export async function runDueDiligenceStep(admin: SupabaseClient, jobId: string):
 
 export async function triggerDueDiligenceStep(jobId: string): Promise<boolean> {
   const supabaseUrl = edgeSetting('SUPABASE_URL').replace(/\/$/, '')
-  const serviceKey = edgeSetting('SUPABASE_SERVICE_ROLE_KEY')
-  if (!supabaseUrl || !serviceKey) return false
+  const stepSecret = edgeSetting('BA_DD_STEP_SECRET')
+  const anonKey = edgeSetting('SUPABASE_ANON_KEY')
+  if (!supabaseUrl || !stepSecret) {
+    console.log(JSON.stringify({ event: 'dd_step_trigger', job_id: jobId, ok: false, status: 0 }))
+    return false
+  }
   try {
     const response = await fetch(`${supabaseUrl}/functions/v1/due-diligence-step`, {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${serviceKey}`,
-        apikey: serviceKey,
         'Content-Type': 'application/json',
+        'x-dd-step': stepSecret,
+        ...(anonKey ? { apikey: anonKey } : {}),
       },
       body: JSON.stringify({ job_id: jobId }),
+      signal: AbortSignal.timeout(8_000),
     })
+    console.log(JSON.stringify({ event: 'dd_step_trigger', job_id: jobId, ok: response.ok, status: response.status }))
     return response.ok
   } catch {
+    console.log(JSON.stringify({ event: 'dd_step_trigger', job_id: jobId, ok: false, status: 0 }))
     return false
   }
 }
@@ -141,7 +156,8 @@ export function deferJob(work: Promise<unknown>) {
 }
 
 async function runExtract(admin: SupabaseClient, job: HeldJob, pipeline: PipelineState) {
-  const deadlineAt = Date.now() + STEP_EXTRACT_BUDGET_MS
+  const started = Date.now()
+  const deadlineAt = started + STEP_EXTRACT_BUDGET_MS
   const deck = await admin
     .from('due_diligence_decks')
     .select('storage_path, company_url, file_name, mime_type')
@@ -168,7 +184,13 @@ async function runExtract(admin: SupabaseClient, job: HeldJob, pipeline: Pipelin
   pipeline.deck_text = numbered
   pipeline.file_name = String(deck.data.file_name || '')
   pipeline.company_url = companyUrl
-  pipeline.models.extract = knownModel(pipeline, 'extract')
+  noteStep(pipeline, 'extract', {
+    modelId: knownModel(pipeline, 'extract'),
+    called: false,
+    pass: 'none',
+    elapsedMs: Date.now() - started,
+    reason: null,
+  })
   await advance(admin, job, pipeline, 'extract', DD_PROGRESS.model)
 }
 
@@ -178,8 +200,11 @@ async function runAnalysis(
   pipeline: PipelineState,
   step: 'scores' | 'narrative',
 ) {
+  const started = Date.now()
   const mode = step === 'scores' ? pipeline.scores_mode : pipeline.narrative_mode
-  const deadlineAt = Date.now() + STEP_ANALYSIS_CAP_MS
+  const cap = step === 'scores' ? STEP_SCORES_CAP_MS : STEP_NARRATIVE_CAP_MS
+  const ttft = step === 'scores' ? STEP_SCORES_TTFT_MS : STEP_NARRATIVE_TTFT_MS
+  const deadlineAt = started + cap
   const floor = progressForStep(step)
   const ceiling = step === 'scores' ? DD_PROGRESS.narrative - 1 : DD_PROGRESS.fallback - 1
   let lastBeat = 0
@@ -192,6 +217,8 @@ async function runAnalysis(
         : narrativeUser(pipeline.deck_text, pipeline.scores_json),
     mode,
     deadlineAt,
+    callTimeoutMs: cap,
+    ttftMs: ttft,
     onStage: async (_stage, called) => {
       pipeline.models[step] = called
       await touch(admin, job, floor, called)
@@ -201,20 +228,21 @@ async function runAnalysis(
       if (now - lastBeat < 4_000) return
       lastBeat = now
       const span = Math.max(1, ceiling - floor)
-      const moved = Math.min(span, Math.max(1, Math.round((elapsed / STEP_ANALYSIS_CAP_MS) * span)))
+      const moved = Math.min(span, Math.max(1, Math.round((elapsed / cap) * span)))
       await touch(admin, job, floor + moved, called)
     },
   })
   pipeline.models[step] = call.modelId
+  const elapsedMs = Date.now() - started
   if (!call.ok) {
     const bare = (call.reason || '').replace(/^(primary|fallback)_/, '')
     if (bare === 'missing_api_key' || bare === 'missing_model') delete pipeline.models[step]
-    await settleModelMiss(admin, job, pipeline, step, mode, call.reason)
+    await settleModelMiss(admin, job, pipeline, step, mode, call.reason, elapsedMs)
     return
   }
   const parsed = parseModelJson(call.content)
   if (!parsed || typeof parsed !== 'object') {
-    await settleModelMiss(admin, job, pipeline, step, mode, 'unusable')
+    await settleModelMiss(admin, job, pipeline, step, mode, 'unusable', elapsedMs)
     return
   }
   if (step === 'scores') {
@@ -225,6 +253,13 @@ async function runAnalysis(
     pipeline.narrative_ran = true
   }
   if (mode === 'fallback') pipeline.used_fallback = true
+  noteStep(pipeline, step, {
+    modelId: call.modelId,
+    called: true,
+    pass: mode,
+    elapsedMs,
+    reason: null,
+  })
   const next = nextPipelineStep(step)
   await advance(admin, job, pipeline, step, next ? progressForStep(next) : DD_PROGRESS.repair)
 }
@@ -236,8 +271,16 @@ async function settleModelMiss(
   step: 'scores' | 'narrative',
   mode: ModelPass,
   reason: string | null,
+  elapsedMs: number,
 ) {
   const bare = (reason || '').replace(/^(primary|fallback)_/, '') || 'model_request_failed'
+  noteStep(pipeline, step, {
+    modelId: pipeline.models[step] || knownModel(pipeline, step),
+    called: true,
+    pass: mode,
+    elapsedMs,
+    reason: bare,
+  })
   if (!isTerminalModelFailure(bare, false)) {
     await advance(admin, job, pipeline, step, progressForStep(nextPipelineStep(step) || 'compose'))
     return
@@ -256,27 +299,41 @@ async function settleModelMiss(
 }
 
 async function runCompose(admin: SupabaseClient, job: HeldJob, pipeline: PipelineState) {
-  const deadlineAt = Date.now() + STEP_COMPOSE_BUDGET_MS
+  const started = Date.now()
+  const deadlineAt = started + STEP_COMPOSE_BUDGET_MS
   let analysis = parseDeckAnalysis(mergeSectionDrafts(pipeline.scores_json, pipeline.narrative_json))
   const locked = analysis?.scores.overall ?? null
   const needsRepair =
     !analysis || analysis.sections_missing.includes('memo_markdown') || analysis.sections_missing.includes('scores')
+  let called = false
+  let pass: ModelPass | 'none' = 'none'
+  let miss: string | null = needsRepair ? 'validation' : null
   if (needsRepair && Date.now() < deadlineAt) {
     const mode = pipeline.compose_mode
+    called = true
+    pass = mode
     const repair = await analyzeDeckSection({
       system: REPAIR_PROMPT,
-      user: `${SCHEMA_PROMPT}\n\nDeck text:\n${pipeline.deck_text.slice(0, 12_000)}\n\nPrevious reply:\n${JSON.stringify(mergeSectionDrafts(pipeline.scores_json, pipeline.narrative_json)).slice(0, 8_000)}`,
+      user: `${SCHEMA_PROMPT}\n\nDeck text:\n${narrativeDeckExcerpt(pipeline.deck_text, pipeline.scores_json)}\n\nPrevious reply:\n${JSON.stringify(mergeSectionDrafts(pipeline.scores_json, pipeline.narrative_json)).slice(0, 8_000)}`,
       mode,
       repair: true,
       deadlineAt,
-      onStage: async (_stage, called) => {
-        pipeline.models.compose = called
-        await touch(admin, job, DD_PROGRESS.repair, called)
+      onStage: async (_stage, calledModel) => {
+        pipeline.models.compose = calledModel
+        await touch(admin, job, DD_PROGRESS.repair, calledModel)
       },
     })
     pipeline.models.compose = repair.modelId
     if (!repair.ok) {
       const bare = (repair.reason || '').replace(/^(primary|fallback)_/, '')
+      miss = bare
+      noteStep(pipeline, 'compose', {
+        modelId: repair.modelId,
+        called: true,
+        pass: mode,
+        elapsedMs: Date.now() - started,
+        reason: bare,
+      })
       if (isTerminalModelFailure(bare, false) && afterModelAttempt(mode, false) === 'fallback') {
         pipeline.compose_mode = 'fallback'
         pipeline.used_fallback = true
@@ -285,13 +342,25 @@ async function runCompose(admin: SupabaseClient, job: HeldJob, pipeline: Pipelin
       }
     } else {
       const repaired = parseDeckAnalysis(parseModelJson(repair.content))
-      if (repaired) analysis = lockOverall(repaired, locked)
+      if (repaired) {
+        analysis = lockOverall(repaired, locked)
+        miss = null
+      } else {
+        miss = 'unusable'
+      }
     }
   }
   if (analysis && locked != null) analysis = lockOverall(analysis, locked)
   if (Date.now() >= deadlineAt && !analysis && (pipeline.scores_ran || pipeline.narrative_ran)) {
     throw failError(MEMBER_MESSAGES.timedOut, pipeline)
   }
+  noteStep(pipeline, 'compose', {
+    modelId: pipeline.models.compose || knownModel(pipeline, 'narrative'),
+    called,
+    pass,
+    elapsedMs: Date.now() - started,
+    reason: miss,
+  })
   await finishReport(admin, job, pipeline, analysis)
 }
 
@@ -374,7 +443,6 @@ async function finishReport(
     const existing = await admin.from('due_diligence_reports').select('id').eq('job_id', job.id).maybeSingle()
     if (existing.error || !existing.data) throw failError(MEMBER_MESSAGES.finish, pipeline)
   }
-  pipeline.models.compose = pipeline.models.compose || modelId
   const saved = await admin
     .from('due_diligence_jobs')
     .update({
@@ -509,11 +577,32 @@ function knownModel(pipeline: PipelineState, step: string): string {
 }
 
 function stepReason(pipeline: PipelineState, extra = ''): string {
-  const parts = ['scores', 'narrative', 'compose']
-    .filter((key) => pipeline.models[key])
-    .map((key) => `${key}:${pipeline.models[key]}`)
-  if (extra) parts.push(extra)
-  return parts.join(';').slice(0, 160)
+  const line = formatStepLog(pipeline.steps)
+  if (!extra) return line
+  return (line ? `${line}.${extra}` : extra).slice(0, 160)
+}
+
+function noteStep(
+  pipeline: PipelineState,
+  step: string,
+  input: { modelId: string; called: boolean; pass: ModelPass | 'none'; elapsedMs: number; reason: string | null },
+) {
+  const prev = pipeline.steps[step]
+  const classified = input.reason ? classifyFallback(input.reason) : null
+  const primaryMiss = input.pass === 'primary' && classified != null
+  const reason: FallbackReason | null =
+    input.pass === 'fallback' ? prev?.fallback_reason || classified?.reason || null : (classified?.reason ?? null)
+  pipeline.steps[step] = {
+    model_id: input.modelId || prev?.model_id || '',
+    called: input.called,
+    pass: primaryMiss ? 'fallback' : input.pass,
+    fallback_reason: reason,
+    http_status:
+      input.pass === 'fallback' ? (prev?.http_status ?? classified?.httpStatus ?? null) : (classified?.httpStatus ?? null),
+    elapsed_ms: Math.max(0, Math.round(input.elapsedMs)),
+    primary_elapsed_ms:
+      input.pass === 'fallback' ? (prev?.primary_elapsed_ms ?? prev?.elapsed_ms ?? null) : primaryMiss ? Math.max(0, Math.round(input.elapsedMs)) : null,
+  }
 }
 
 function readPipeline(raw: unknown): PipelineState {
@@ -538,7 +627,30 @@ function readPipeline(raw: unknown): PipelineState {
     narrative_ran: row.narrative_ran === true,
     used_fallback: row.used_fallback === true,
     models,
+    steps: readSteps(row.steps),
   }
+}
+
+function readSteps(raw: unknown): Record<string, StepTiming> {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {}
+  const allowed = new Set(['timeout', 'ttft', 'http', 'parse', 'validation'])
+  const out: Record<string, StepTiming> = {}
+  for (const [key, value] of Object.entries(raw as Record<string, unknown>)) {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) continue
+    const row = value as Record<string, unknown>
+    const reason = typeof row.fallback_reason === 'string' && allowed.has(row.fallback_reason) ? (row.fallback_reason as FallbackReason) : null
+    const pass = row.pass === 'primary' || row.pass === 'fallback' ? row.pass : 'none'
+    out[key] = {
+      model_id: typeof row.model_id === 'string' ? row.model_id.replace(/[^\w.-]+/g, '').slice(0, 80) : '',
+      called: row.called === true,
+      pass,
+      fallback_reason: reason,
+      http_status: typeof row.http_status === 'number' && row.http_status >= 100 && row.http_status <= 599 ? row.http_status : null,
+      elapsed_ms: typeof row.elapsed_ms === 'number' && row.elapsed_ms >= 0 ? Math.round(row.elapsed_ms) : 0,
+      primary_elapsed_ms: typeof row.primary_elapsed_ms === 'number' && row.primary_elapsed_ms >= 0 ? Math.round(row.primary_elapsed_ms) : null,
+    }
+  }
+  return out
 }
 
 function packPipeline(pipeline: PipelineState): PipelineState {
