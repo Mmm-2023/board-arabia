@@ -120,7 +120,8 @@ function CompleteControl({ prominent }: { prominent: boolean }) {
 }
 
 function InviteControl({ ctas, prominent }: { ctas: DirectoryCtas; prominent: boolean }) {
-  const className = `${prominent ? primaryClass : secondaryClass} disabled:opacity-40`
+  const loud = prominent && ctas.invite.type === 'link'
+  const className = loud ? primaryClass : `${secondaryClass} disabled:opacity-60`
   return (
     <div className="w-full lg:w-auto">
       {ctas.invite.type === 'link' ? (

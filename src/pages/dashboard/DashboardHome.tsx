@@ -14,7 +14,7 @@ export function DashboardHome() {
   useNoIndex('Home | Board Arabia')
 
   if (status.refreshing && !status.updatedAt) {
-    return <HomeSkeleton tone="member" />
+    return <HomeSkeleton tone="member" cards={3} />
   }
 
   const attention = attentionItems(member.must_set_password, member.invites_remaining)
@@ -50,7 +50,7 @@ export function DashboardHome() {
             {MEMBER_VIEWS.home.emptyCta}
           </Link>
           <div className="mt-8" aria-hidden="true">
-            <HomeSkeleton tone="member" pulse={false} />
+            <HomeSkeleton tone="member" cards={3} pulse={false} />
           </div>
         </section>
       ) : (
@@ -106,17 +106,6 @@ export function DashboardHome() {
                     {initials(profile?.full_name ?? null, email)}
                   </p>
                 </div>
-              </article>
-              <article className={`${styles.panel} px-4 py-3 md:py-4`}>
-                <p className={`text-[0.72rem] font-semibold tracking-[0.12em] uppercase ${styles.quiet}`}>
-                  Availability
-                </p>
-                <p className="mt-2 font-display text-[1.35rem] font-semibold tracking-[-0.03em]">
-                  Not set
-                </p>
-                <p className={`mt-2 text-[0.92rem] ${styles.muted}`}>
-                  Open, Selective, or At capacity will show here once you can set it.
-                </p>
               </article>
               <article className={`${styles.panel} px-4 py-3 md:py-4`}>
                 <p className={`text-[0.72rem] font-semibold tracking-[0.12em] uppercase ${styles.quiet}`}>
@@ -189,9 +178,9 @@ function attentionItems(mustSetPassword: boolean, invitesRemaining: number) {
   if (mustSetPassword) {
     items.push({
       title: 'Set your password',
-      body: 'Replace the invitation before you leave this session.',
+      body: 'Set a password before you leave this session so your invite link is not the only way back in.',
       to: '/dashboard/profile#password',
-      cta: 'Complete profile',
+      cta: 'Set password',
     })
   }
   if (invitesRemaining > 0) {

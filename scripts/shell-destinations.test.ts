@@ -132,6 +132,11 @@ test('product shell files have no em dash', () => {
   assert.match(css, /safe-area-inset-bottom/)
   assert.match(css, /--ba-tab-bar-height/)
   assert.match(css, /padding-bottom:\s*calc\(var\(--ba-tab-bar-height,\s*56px\)\s*\+\s*env\(safe-area-inset-bottom,\s*0px\)\s*\+\s*1rem\)/)
+  assert.match(
+    css,
+    /margin-bottom:\s*calc\(var\(--ba-tab-bar-height,\s*4\.75rem\)\s*\+\s*env\(safe-area-inset-bottom,\s*0px\)\)/,
+  )
+  assert.match(css, /@media \(max-width:\s*767px\)/)
   assert.match(css, /\.shell-tab-bar\s*\{[^}]*padding-bottom:\s*env\(safe-area-inset-bottom,\s*0px\)/)
   assert.match(css, /safe-area-inset-left/)
   assert.match(css, /safe-area-inset-right/)

@@ -62,8 +62,8 @@ export function AppShell({
   }, [moreOpen])
 
   return (
-    <div className={`min-h-dvh ${styles.page}`}>
-      <div className="flex min-h-dvh">
+    <div className={`shell-root min-h-dvh ${styles.page}`}>
+      <div className="shell-frame flex min-h-dvh w-full">
         <aside
           aria-label="Primary"
           onMouseEnter={() => setHovered(true)}
@@ -132,7 +132,7 @@ export function AppShell({
           </div>
         </aside>
 
-        <div className="flex min-w-0 flex-1 flex-col">
+        <div className="shell-column flex min-w-0 flex-1 flex-col">
           <header className={`shell-safe-top shell-safe-x sticky top-0 z-30 border-b backdrop-blur ${styles.header}`}>
             <div className="flex min-h-14 items-center justify-between gap-3 px-2 py-1 md:px-6 md:py-2">
               <div className="min-w-0 md:hidden">
@@ -163,7 +163,7 @@ export function AppShell({
               </div>
             </div>
           </header>
-          <main className="shell-main">{children}</main>
+          <main className="shell-main min-h-0 flex-1">{children}</main>
         </div>
       </div>
 
@@ -228,9 +228,6 @@ export function AppShell({
             <div className="flex items-start justify-between gap-3 px-3 pb-2">
               <div className="min-w-0">
                 <p className="font-display text-[1.15rem] font-semibold tracking-[-0.02em]">More</p>
-                <p className={`mt-1 text-[0.95rem] leading-relaxed ${styles.muted}`}>
-                  {secondary.map((item) => item.label).join(', ')}.
-                </p>
                 {updatedLabel && <p className={`mt-1 text-[0.75rem] ${styles.muted}`}>{updatedLabel}</p>}
               </div>
               <button

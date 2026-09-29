@@ -31,9 +31,11 @@ export function toneClasses(tone: ShellTone) {
 export function HomeSkeleton({
   tone,
   pulse = true,
+  cards = 4,
 }: {
   tone: ShellTone
   pulse?: boolean
+  cards?: number
 }) {
   const { skeleton } = toneClasses(tone)
   const motion = pulse ? 'motion-reduce:animate-none animate-pulse' : ''
@@ -41,8 +43,8 @@ export function HomeSkeleton({
     <div aria-busy={pulse} aria-label="Loading home" className="max-w-3xl">
       <div className={`h-16 ${skeleton} ${motion}`} />
       <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
-        {['seat', 'availability', 'invites', 'totals'].map((id) => (
-          <div key={id} className={`h-24 ${skeleton} ${motion}`} />
+        {Array.from({ length: cards }, (_, index) => (
+          <div key={index} className={`h-24 ${skeleton} ${motion}`} />
         ))}
       </div>
       <div className={`mt-4 h-12 w-44 ${skeleton} ${motion}`} />
