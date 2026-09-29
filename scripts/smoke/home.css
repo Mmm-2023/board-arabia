@@ -1,0 +1,3 @@
+@import "../../src/index.css";
+/* Smoke Vite root is this folder, so Tailwind would otherwise miss src. */
+@source "../../src";
