@@ -1,10 +1,12 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { MemoryRouter } from 'react-router-dom'
-import { MajlisCardTitle } from '../../src/components/MajlisCardTitle'
 import type { DirectoryCard } from '../../src/lib/demoRows'
 import type { SponsorDesk } from '../../src/lib/sponsorDesk'
+import type { MajlisEventRow } from '../../src/lib/supabase'
+import { MemberContext, type MemberRoom } from '../../src/pages/dashboard/context'
 import { DirectoryBoard } from '../../src/pages/dashboard/DirectoryBoard'
+import { MajlisPage } from '../../src/pages/dashboard/MajlisPage'
 import { SponsorshipView } from '../../src/pages/dashboard/SponsorshipView'
 import { AppShell } from '../../src/shell/AppShell'
 import { MEMBER_ACCOUNT, MEMBER_DESTINATIONS, memberAccountLinks } from '../../src/shell/destinations'
@@ -32,8 +34,8 @@ const desk: SponsorDesk = {
       {
         id: '10000000-0000-4000-8000-0000000000aa',
         title: 'Riyadh governance salon',
-        starts_at: '2026-09-27T09:27:00.000Z',
-        ends_at: '2026-09-27T11:29:00.000Z',
+        starts_at: '2026-10-15T09:00:00.000Z',
+        ends_at: '2026-10-15T12:00:00.000Z',
         region: 'Riyadh',
         presented_by: 'Example House',
         status: 'published',
@@ -79,34 +81,93 @@ const directory: DirectoryCard[] = [
   },
 ]
 
+function majlisEvent(partial: Pick<MajlisEventRow, 'id' | 'title' | 'starts_at' | 'ends_at' | 'sponsor_label'>): MajlisEventRow {
+  return {
+    id: partial.id,
+    host_member_id: '10000000-0000-4000-8000-000000000099',
+    title: partial.title,
+    description: 'A members gathering on board practice.',
+    region: 'Riyadh',
+    focus_tags: ['Governance'],
+    starts_at: partial.starts_at,
+    ends_at: partial.ends_at,
+    timezone: 'Asia/Riyadh',
+    capacity: 12,
+    venue_name: 'Example House',
+    venue_address: null,
+    venue_visibility: 'members_on_rsvp',
+    status: 'published',
+    rejection_feedback: null,
+    admin_note: null,
+    approved_at: '2026-09-01T09:00:00.000Z',
+    created_at: '2026-09-01T09:00:00.000Z',
+    map_lat: null,
+    map_lng: null,
+    rsvp_opens_at: null,
+    founding_priority_ends_at: null,
+    featured: false,
+    sponsor_label: partial.sponsor_label,
+    cancelled_at: null,
+    cancel_reason: null,
+    registered_count: 0,
+    waitlist_count: 0,
+    my_rsvp_status: null,
+    my_waitlist_position: null,
+  }
+}
+
+const majlisPreview = {
+  events: [
+    majlisEvent({
+      id: '10000000-0000-4000-8000-0000000000aa',
+      title: 'Riyadh governance salon',
+      starts_at: '2026-10-15T09:00:00.000Z',
+      ends_at: '2026-10-15T12:00:00.000Z',
+      sponsor_label: 'Example House',
+    }),
+    majlisEvent({
+      id: '10000000-0000-4000-8000-0000000000ab',
+      title: 'Riyadh evening salon',
+      starts_at: '2026-09-20T09:00:00.000Z',
+      ends_at: '2026-09-20T12:00:00.000Z',
+      sponsor_label: null,
+    }),
+    majlisEvent({
+      id: '10000000-0000-4000-8000-0000000000ac',
+      title: 'test majlis',
+      starts_at: '2026-10-20T09:00:00.000Z',
+      ends_at: '2026-10-20T12:00:00.000Z',
+      sponsor_label: null,
+    }),
+  ],
+}
+
+const memberRoom: MemberRoom = {
+  userId: '10000000-0000-4000-8000-000000000001',
+  email: '',
+  staffRole: null,
+  member: {
+    user_id: '10000000-0000-4000-8000-000000000001',
+    email: '',
+    seat: 'ksa',
+    status: 'active',
+    must_set_password: false,
+    invites_remaining: 2,
+    invites_granted: 2,
+  },
+  profile: null,
+  reload: async () => {},
+}
+
 function Screen() {
   if (screen === 'directory') {
     return <DirectoryBoard cards={directory} seat={{ status: 'ready', admitted: 1 }} />
   }
   if (screen === 'majlis') {
     return (
-      <div className="max-w-3xl">
-        <p className="text-[0.72rem] font-semibold tracking-[0.14em] text-brass uppercase">Majlis</p>
-        <h1 className="mt-3 font-display text-[2.2rem] font-bold tracking-[-0.03em]">Majlis</h1>
-        <article className="mt-6 border border-[var(--ba-line)] bg-white px-4 py-4">
-          <MajlisCardTitle
-            title="Riyadh governance salon"
-            featured={false}
-            presentedBy="Example House"
-            description="A members gathering on board practice."
-          />
-          <dl className="mt-3 grid gap-2 text-[0.95rem] sm:grid-cols-2">
-            <div>
-              <dt className="text-[var(--ba-muted)]">Region</dt>
-              <dd>Riyadh</dd>
-            </div>
-            <div>
-              <dt className="text-[var(--ba-muted)]">When</dt>
-              <dd>Sun, 27 Sept 2026, 12:27 to 14:29 Asia/Riyadh</dd>
-            </div>
-          </dl>
-        </article>
-      </div>
+      <MemberContext.Provider value={memberRoom}>
+        <MajlisPage preview={majlisPreview} />
+      </MemberContext.Provider>
     )
   }
   return <SponsorshipView desk={desk} />

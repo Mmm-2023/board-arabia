@@ -3,13 +3,13 @@ import { formatMajlisWhen } from '../../../supabase/functions/_shared/majlis.ts'
 import {
   introStatusLine,
   NO_PACKAGE,
-  PLACEHOLDER_PRICE_NOTE,
   slotLine,
+  sponsorPackageFace,
   type SponsorDesk,
 } from '../../lib/sponsorDesk'
 
 export function SponsorshipView({ desk }: { desk: SponsorDesk }) {
-  const pack = desk.package
+  const face = sponsorPackageFace(desk.package)
   return (
     <div className="max-w-3xl" data-sponsorship="">
       <p className="text-[0.72rem] font-semibold tracking-[0.14em] text-brass uppercase">Sponsorship</p>
@@ -20,15 +20,19 @@ export function SponsorshipView({ desk }: { desk: SponsorDesk }) {
 
       <section className="mt-8 border border-[var(--ba-line)] bg-white px-5 py-5">
         <h2 className="text-[0.72rem] font-semibold tracking-[0.08em] text-ink/45 uppercase">Package</h2>
-        {pack ? (
+        {face.kind === 'set' ? (
           <>
-            <p className="mt-3 font-display text-[1.5rem] font-semibold tracking-[-0.03em]">{pack.name}</p>
+            <p className="mt-3 font-display text-[1.5rem] font-semibold tracking-[-0.03em]">{face.name}</p>
             <p className="mt-3 text-[0.72rem] font-semibold tracking-[0.08em] text-ink/45 uppercase">Price</p>
-            <p className="mt-1 text-[1rem] text-ink/80">{pack.price_label}</p>
-            {pack.is_placeholder ? <p className="mt-2 text-[0.95rem] text-ink/60">{PLACEHOLDER_PRICE_NOTE}</p> : null}
+            <p className="mt-1 text-[1rem] text-ink/80">{face.price}</p>
           </>
         ) : (
-          <p className="mt-3 text-[1rem] text-ink/70">{NO_PACKAGE} The desk attaches one from Settings.</p>
+          <>
+            <p className="mt-3 font-display text-[1.5rem] font-semibold tracking-[-0.03em]">{face.heading}</p>
+            {desk.package ? null : (
+              <p className="mt-3 text-[1rem] text-ink/70">{NO_PACKAGE} The desk attaches one from Settings.</p>
+            )}
+          </>
         )}
         <p className="mt-5 text-[0.72rem] font-semibold tracking-[0.08em] text-ink/45 uppercase">Seat category</p>
         <p className="mt-1 text-[1rem] text-ink/80">{desk.category?.name ?? 'No category yet.'}</p>

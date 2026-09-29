@@ -74,7 +74,26 @@ export type PackageSave = {
 }
 
 export const PLACEHOLDER_PRICE_NOTE = 'Placeholder. Staff have not locked a price.'
+export const SPONSOR_PACKAGE_HEADING = 'Your sponsorship'
 export const NO_PACKAGE = 'No package on this seat yet.'
+
+export type SponsorPackageFace =
+  | { kind: 'open'; heading: typeof SPONSOR_PACKAGE_HEADING }
+  | { kind: 'set'; name: string; price: string }
+
+/** Sponsors see a name and price only after staff save a real package. */
+export function sponsorPackageFace(pack: SponsorPackage | null): SponsorPackageFace {
+  if (!pack || pack.is_placeholder || !priceIsSet(pack.price_label)) {
+    return { kind: 'open', heading: SPONSOR_PACKAGE_HEADING }
+  }
+  return { kind: 'set', name: pack.name, price: pack.price_label }
+}
+
+function priceIsSet(price: string | null | undefined) {
+  const value = price?.trim() ?? ''
+  if (!value) return false
+  return value.toLowerCase() !== 'placeholder'
+}
 
 export function sponsorDeskDenied(message: string) {
   return /not_allowed|42501/i.test(message)

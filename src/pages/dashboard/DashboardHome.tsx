@@ -204,7 +204,7 @@ export function DashboardHome() {
       ) : null}
       {member.seat === 'sponsor' ? (
         <section className="mb-8 max-w-3xl border border-[var(--ba-line)] bg-white px-5 py-4">
-          <h2 className="font-display text-[1.25rem] font-semibold tracking-[-0.02em]">Sponsorship</h2>
+          <h2 className="font-display text-[1.25rem] font-semibold tracking-[-0.02em]">Your sponsorship</h2>
           <p className="mt-2 text-[0.95rem] leading-relaxed text-ink/70">
             Package, seat category, majlis slots, approved intros, and credits.
           </p>

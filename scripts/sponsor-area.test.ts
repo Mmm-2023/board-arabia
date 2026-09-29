@@ -10,7 +10,9 @@ import {
   presentSponsorDesk,
   presentedByLine,
   slotLine,
+  SPONSOR_PACKAGE_HEADING,
   sponsorDeskDenied,
+  sponsorPackageFace,
 } from '../src/lib/sponsorDesk.ts'
 import { MEMBER_DESTINATIONS, memberAccountLinks } from '../src/shell/destinations.ts'
 
@@ -74,6 +76,54 @@ test('sponsor desk drops private fields and keeps package text from the payload'
   assert.equal(introStatusLine(1, 0, 0), '1 approved, 0 waiting, 0 not approved.')
   assert.equal(sponsorDeskDenied('not_allowed'), true)
   assert.equal(PLACEHOLDER_PRICE_NOTE.includes('not locked'), true)
+})
+
+test('sponsors never see placeholder package names or prices', () => {
+  const placeholder = sponsorPackageFace({
+    slug: 'placeholder_a',
+    name: 'Placeholder package A',
+    price_label: 'Placeholder',
+    is_placeholder: true,
+    majlis_slots: 1,
+    intro_credits: 2,
+    room_credits: 0,
+  })
+  assert.equal(placeholder.kind, 'open')
+  if (placeholder.kind === 'open') assert.equal(placeholder.heading, SPONSOR_PACKAGE_HEADING)
+  assert.equal(JSON.stringify(placeholder).includes('Placeholder package A'), false)
+  assert.equal(JSON.stringify(placeholder).includes('Placeholder'), false)
+
+  const unset = sponsorPackageFace({
+    slug: 'seat_one',
+    name: 'Seat one',
+    price_label: 'Placeholder',
+    is_placeholder: false,
+    majlis_slots: 1,
+    intro_credits: 0,
+    room_credits: 0,
+  })
+  assert.equal(unset.kind, 'open')
+
+  const live = sponsorPackageFace({
+    slug: 'seat_one',
+    name: 'Founding partner',
+    price_label: 'Set with the desk',
+    is_placeholder: false,
+    majlis_slots: 2,
+    intro_credits: 4,
+    room_credits: 1,
+  })
+  assert.deepEqual(live, { kind: 'set', name: 'Founding partner', price: 'Set with the desk' })
+
+  const view = source('src/pages/dashboard/SponsorshipView.tsx')
+  const home = source('src/pages/dashboard/DashboardHome.tsx')
+  const staff = source('src/pages/admin/SponsorPackagesPanel.tsx')
+  assert.equal(view.includes(PLACEHOLDER_PRICE_NOTE), false)
+  assert.equal(view.includes('Placeholder package'), false)
+  assert.match(view, /sponsorPackageFace/)
+  assert.match(home, /Your sponsorship/)
+  assert.equal(home.includes('Placeholder package'), false)
+  assert.match(staff, /PLACEHOLDER_PRICE_NOTE/)
 })
 
 test('package drafts reject prices baked into code and keep staff text', () => {
