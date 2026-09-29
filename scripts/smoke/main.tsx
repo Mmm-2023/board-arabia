@@ -5,8 +5,9 @@ import { Nav } from '../../src/components/Nav'
 import { TrustedPartnersGallery } from '../../src/components/TrustedPartners'
 import type { DirectoryCard, PartnerCard, RoomCard } from '../../src/lib/demoRows'
 import type { MandateClear } from '../../src/lib/mandateRedaction'
+import { SAMPLE_DIRECTORY_TAGS } from '../../src/lib/profileTags'
 import { DirectoryBoard } from '../../src/pages/dashboard/DirectoryBoard'
-import { MandateCard } from '../../src/pages/dashboard/MandateCard'
+import { MandatesBoard } from '../../src/pages/dashboard/MandatesBoard'
 import { RoomsBoard } from '../../src/pages/dashboard/RoomsBoard'
 import { SponsorInvitePanel } from '../../src/pages/admin/SponsorInvitePanel'
 import { DashboardHome } from '../../src/pages/dashboard/DashboardHome'
@@ -15,10 +16,12 @@ import type { ProfileRow } from '../../src/lib/member'
 import { AppShell } from '../../src/shell/AppShell'
 import {
   MEMBER_DESTINATIONS,
+  MEMBER_SECTIONS,
   MEMBER_SECONDARY,
   STAFF_DESTINATIONS,
   STAFF_SECONDARY,
 } from '../../src/shell/destinations'
+import { SectionTabs } from '../../src/shell/SectionTabs'
 import './smoke.css'
 
 const directory: DirectoryCard[] = [
@@ -32,18 +35,14 @@ const directory: DirectoryCard[] = [
   card('a1000001-0000-4000-8000-000000000008', 'Yusuf Al-Batin', 'Board member', 'Batin Family Council', 'Jeddah', 'Food security', 'intl', 'batin'),
 ]
 
-const mandate: MandateClear = {
-  id: 'a2000001-0000-4000-8000-000000000001',
-  is_demo: true,
-  sector: 'Energy transition',
-  deal_type: 'Growth equity',
-  ticket_band: '$10-25m',
-  geography: 'KSA',
-  stage: 'Diligence',
-  one_liner: 'Growth capital for a Saudi industrial services platform.',
-  unlocked: false,
-  intro_status: null,
-}
+const mandates: MandateClear[] = [
+  mandate('a2000001-0000-4000-8000-000000000001', 'Energy transition', 'Growth equity', '$10-25m', 'KSA', 'Diligence', 'Growth capital for a Saudi industrial services platform.'),
+  mandate('a2000001-0000-4000-8000-000000000002', 'Health', 'Acquisition', '$25-50m', 'GCC', 'Sourcing', 'A control stake in a private clinic network along the west coast.'),
+  mandate('a2000001-0000-4000-8000-000000000003', 'Tourism', 'Advisory seat', '$5-10m', 'KSA', 'Closing', 'An advisory seat beside a hospitality operator on the Red Sea.'),
+  mandate('a2000001-0000-4000-8000-000000000004', 'Logistics', 'Growth equity', '$10-25m', 'KSA', 'Diligence', 'Growth equity for a domestic freight and warehousing platform.'),
+  mandate('a2000001-0000-4000-8000-000000000005', 'Mining', 'Project finance', '$50-100m', 'KSA', 'Sourcing', 'Project capital for a minerals development in the north.'),
+  mandate('a2000001-0000-4000-8000-000000000006', 'Food security', 'Growth equity', '$10-25m', 'KSA', 'Diligence', 'Growth capital for a packaged food producer serving local supply.'),
+]
 
 const rooms: RoomCard[] = [
   {
@@ -112,9 +111,44 @@ function card(
     company,
     location,
     sector,
+    sectors: [sector],
+    vision_themes: sampleThemes(id),
+    availability: sampleAvailability(id),
     seat,
     portrait_asset: `/demo/portraits/${portrait}.svg`,
     avatar_path: null,
+  }
+}
+
+function sampleThemes(id: string) {
+  const sample = SAMPLE_DIRECTORY_TAGS.find((item) => item.id === id)
+  return sample ? [...sample.themes] : []
+}
+
+function sampleAvailability(id: string) {
+  return SAMPLE_DIRECTORY_TAGS.find((item) => item.id === id)?.availability ?? null
+}
+
+function mandate(
+  id: string,
+  sector: string,
+  deal_type: string,
+  ticket_band: string,
+  geography: string,
+  stage: string,
+  one_liner: string,
+): MandateClear {
+  return {
+    id,
+    is_demo: true,
+    sector,
+    deal_type,
+    ticket_band,
+    geography,
+    stage,
+    one_liner,
+    unlocked: false,
+    intro_status: null,
   }
 }
 
@@ -249,26 +283,27 @@ function DashboardSponsorSmoke() {
   )
 }
 
-function MandatesSmoke() {
-  const [status, setStatus] = useState<MandateClear['intro_status']>(null)
+function MandatesSmoke({ filtersOpen }: { filtersOpen: boolean }) {
   return (
-    <div className="max-w-3xl">
-      <p className="text-[0.72rem] font-semibold tracking-[0.14em] text-brass uppercase">Mandates</p>
-      <h1 className="mt-3 font-display text-[2.2rem] font-bold tracking-[-0.03em]">Mandates</h1>
-      <p className="mt-3 max-w-xl text-[1rem] leading-relaxed text-ink/60">
-        Sector, deal type, size band, geography, and stage stay visible. Company, exact price, contacts, and the confidential note stay locked until you request an intro and an admin approves it for you.
-      </p>
-      <div className="mt-8">
-        <MandateCard
-          mandate={{ ...mandate, intro_status: status }}
-          onRequest={() => setStatus('pending')}
-        />
+    <>
+      <SectionTabs label="Deals sections" sections={MEMBER_SECTIONS.deals ?? []} />
+      <div className="mt-6 max-w-3xl">
+        <p className="text-[0.72rem] font-semibold tracking-[0.14em] text-brass uppercase">Mandates</p>
+        <h1 className="mt-3 font-display text-[2.2rem] font-bold tracking-[-0.03em]">Mandates</h1>
+        <p className="mt-3 max-w-xl text-[1rem] leading-relaxed text-ink/60">
+          Sector, deal type, size band, geography, and stage stay visible. Company, exact price, contacts, and the confidential note stay locked until you request an intro and an admin approves it for you.
+        </p>
+        <div className="mt-8">
+          <MandatesBoard mandates={mandates} initialFiltersOpen={filtersOpen} onRequest={() => {}} />
+        </div>
       </div>
-    </div>
+    </>
   )
 }
 
-const view = new URLSearchParams(window.location.search).get('view')
+const viewParams = new URLSearchParams(window.location.search)
+const view = viewParams.get('view')
+const filtersOpen = viewParams.get('filters') === 'open'
 const path = window.location.pathname
 const cap = new URLSearchParams(window.location.search).get('state') === 'cap'
 const root = document.getElementById('root')
@@ -287,13 +322,16 @@ createRoot(root).render(
       </MemoryRouter>
     ) : null}
     {path === '/' && view === 'directory' ? (
-      <Shell path="/dashboard/directory">
-        <DirectoryBoard cards={directory} seat={{ status: 'ready', admitted: 0 }} />
+      <Shell path="/dashboard/people/directory">
+        <SectionTabs label="People sections" sections={MEMBER_SECTIONS.people ?? []} />
+        <div className="mt-6">
+          <DirectoryBoard cards={directory} seat={{ status: 'ready', admitted: 1 }} initialFiltersOpen={filtersOpen} />
+        </div>
       </Shell>
     ) : null}
     {path === '/' && view === 'mandates' ? (
-      <Shell path="/dashboard/mandates">
-        <MandatesSmoke />
+      <Shell path="/dashboard/deals/mandates">
+        <MandatesSmoke filtersOpen={filtersOpen} />
       </Shell>
     ) : null}
     {path === '/' && view === 'rooms' ? (

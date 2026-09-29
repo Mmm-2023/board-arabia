@@ -1,3 +1,5 @@
+import type { Availability } from './profileTags.ts'
+
 export type FoundingSeat = 'ksa' | 'intl'
 export type MemberSeat = FoundingSeat | 'sponsor'
 
@@ -27,6 +29,9 @@ export type ProfileRow = {
   include_in_public_aggregates: boolean
   capacity_verified: boolean
   avatar_path: string | null
+  availability?: Availability | null
+  sector_tags?: string[]
+  vision_themes?: string[]
 }
 
 export type FoundingCapacity = {

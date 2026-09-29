@@ -44,6 +44,9 @@ const profile: ProfileRow = {
   include_in_public_aggregates: false,
   capacity_verified: false,
   avatar_path: withPhoto ? `${userId}/avatar` : null,
+  availability: 'selective',
+  sector_tags: ['Health', 'Energy transition'],
+  vision_themes: ['Health transformation', 'Thriving economy'],
 }
 
 const room: MemberRoom = {

@@ -4,7 +4,7 @@ import type { MandateCardModel } from '../../lib/mandateRedaction'
 import { useNoIndex } from '../../lib/usePageTitle'
 import { CardSkeleton, EmptyState, ErrorBanner } from '../../shell/ViewState'
 import { MEMBER_VIEWS } from '../../shell/viewCopy'
-import { MandateCard } from './MandateCard'
+import { MandatesBoard } from './MandatesBoard'
 
 type ListState =
   | { status: 'loading' }
@@ -70,13 +70,11 @@ export function MandatesPage() {
           <EmptyState tone="member" message={MEMBER_VIEWS.mandates.empty} />
         ) : null}
         {list.status === 'ready' && list.mandates.length > 0 ? (
-          <ul className="grid gap-3">
-            {list.mandates.map((mandate) => (
-              <li key={mandate.id}>
-                <MandateCard mandate={mandate} busy={busyId === mandate.id} onRequest={(id) => void onRequest(id)} />
-              </li>
-            ))}
-          </ul>
+          <MandatesBoard
+            mandates={list.mandates}
+            busyId={busyId}
+            onRequest={(id) => void onRequest(id)}
+          />
         ) : null}
         {requestError ? (
           <p className="mt-4 text-[0.95rem] text-[var(--ba-error)]" role="alert">

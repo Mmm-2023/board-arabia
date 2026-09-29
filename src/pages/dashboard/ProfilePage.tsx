@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { useLocation, useSearchParams } from 'react-router-dom'
 import { SponsorBadge } from '../../components/SponsorBadge'
 import { formatPrivateUsd, readNumeric } from '../../lib/capacity'
+import { schemaMissing } from '../../lib/demoRows'
 import {
   finishLinkedInConnect,
   linkedInLinked,
@@ -11,11 +12,20 @@ import {
 } from '../../lib/linkedinConnect'
 import { LINKEDIN_CONNECT_ENABLED, LINKEDIN_COPY } from '../../lib/linkedinFlag'
 import type { ProfileRow } from '../../lib/member'
+import {
+  isAvailability,
+  normalizeTags,
+  SECTOR_TAGS,
+  toggleTag,
+  VISION_2030_THEMES,
+  type Availability,
+} from '../../lib/profileTags'
 import { supabase } from '../../lib/supabase'
 import { useNoIndex } from '../../lib/usePageTitle'
 import { useMember } from './context'
 import { LinkedInConnect } from './LinkedInConnect'
 import { MemberAvatar } from './MemberAvatar'
+import { ProfileTagFields } from './ProfileTagFields'
 
 const fieldClass =
   'mt-2 w-full border border-ink/15 bg-white/70 px-4 py-3 text-[1rem] text-ink outline-none placeholder:text-ink/30 focus:border-brass'
@@ -29,6 +39,18 @@ export function ProfilePage({ preview }: { preview?: { src: string | null } }) {
   const [linkedin, setLinkedin] = useState(profile?.linkedin_url ?? '')
   const [phone, setPhone] = useState(profile?.phone ?? '')
   const [bio, setBio] = useState(profile?.bio ?? '')
+  const tagsFromProfile =
+    profile?.availability !== undefined ||
+    profile?.sector_tags !== undefined ||
+    profile?.vision_themes !== undefined
+  const [availability, setAvailability] = useState<Availability | null>(
+    isAvailability(profile?.availability) ? profile.availability : null,
+  )
+  const [sectors, setSectors] = useState(() => normalizeTags(profile?.sector_tags, SECTOR_TAGS))
+  const [themes, setThemes] = useState(() => normalizeTags(profile?.vision_themes, VISION_2030_THEMES))
+  const [tagNote, setTagNote] = useState('')
+  const [tagStatus, setTagStatus] = useState<'loading' | 'ready' | 'error'>(tagsFromProfile ? 'ready' : 'loading')
+  const [tagAttempt, setTagAttempt] = useState(0)
   const [includeInPublic, setIncludeInPublic] = useState(
     profile?.include_in_public_aggregates !== false,
   )
@@ -51,6 +73,7 @@ export function ProfilePage({ preview }: { preview?: { src: string | null } }) {
   const [liError, setLiError] = useState<'' | 'cancel' | 'tech'>('')
   const [liBusy, setLiBusy] = useState(false)
   const oauthSeen = useRef('')
+  const tagEdited = useRef(false)
   const { hash } = useLocation()
   const [searchParams, setSearchParams] = useSearchParams()
   useNoIndex('Profile | Board Arabia')
@@ -129,6 +152,37 @@ export function ProfilePage({ preview }: { preview?: { src: string | null } }) {
   }
 
   useEffect(() => {
+    if (tagsFromProfile) return
+    let cancelled = false
+    const columns = 'availability, sector_tags, vision_themes' as const
+    void supabase
+      .from('profiles')
+      .select(columns)
+      .eq('user_id', userId)
+      .maybeSingle()
+      .then(({ data, error }) => {
+        if (cancelled) return
+        if (error) {
+          if (schemaMissing(error.message)) {
+            setTagStatus('ready')
+            return
+          }
+          setTagStatus('error')
+          return
+        }
+        if (!tagEdited.current) {
+          setAvailability(isAvailability(data?.availability) ? data.availability : null)
+          setSectors(normalizeTags(data?.sector_tags, SECTOR_TAGS))
+          setThemes(normalizeTags(data?.vision_themes, VISION_2030_THEMES))
+        }
+        setTagStatus('ready')
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [userId, tagAttempt, tagsFromProfile])
+
+  useEffect(() => {
     if (hash !== '#password') return
     let frame = 0
     const jump = () => {
@@ -164,23 +218,37 @@ export function ProfilePage({ preview }: { preview?: { src: string | null } }) {
       return
     }
 
+    const base = {
+      full_name: emptyToNull(fullName),
+      headline: emptyToNull(headline),
+      company: emptyToNull(company),
+      location: emptyToNull(location),
+      linkedin_url: linkedinUrl || null,
+      phone: emptyToNull(phone),
+      bio: emptyToNull(bio),
+      include_in_public_aggregates: includeInPublic,
+    }
+    const tagsReady = tagStatus === 'ready'
+    const withTags = tagsReady
+      ? { ...base, availability, sector_tags: sectors, vision_themes: themes }
+      : base
+
     setSavingProfile(true)
-    const { error } = await supabase
-      .from('profiles')
-      .update({
-        full_name: emptyToNull(fullName),
-        headline: emptyToNull(headline),
-        company: emptyToNull(company),
-        location: emptyToNull(location),
-        linkedin_url: linkedinUrl || null,
-        phone: emptyToNull(phone),
-        bio: emptyToNull(bio),
-        include_in_public_aggregates: includeInPublic,
-      })
-      .eq('user_id', userId)
+    let saved = await supabase.from('profiles').update(withTags).eq('user_id', userId)
+    if (saved.error && tagsReady && schemaMissing(saved.error.message)) {
+      saved = await supabase.from('profiles').update(base).eq('user_id', userId)
+      setSavingProfile(false)
+      if (saved.error) {
+        setProfileError(saved.error.message)
+        return
+      }
+      setProfileNote('Profile saved. Availability and tags are not available yet.')
+      await reload()
+      return
+    }
     setSavingProfile(false)
-    if (error) {
-      setProfileError(error.message)
+    if (saved.error) {
+      setProfileError(saved.error.message)
       return
     }
     setProfileNote('Profile saved.')
@@ -245,6 +313,9 @@ export function ProfilePage({ preview }: { preview?: { src: string | null } }) {
         passwordSet={!member.must_set_password}
         linkedin={linkedin}
         photo={Boolean(profile?.avatar_path)}
+        showTags={tagStatus === 'ready'}
+        availabilitySet={availability != null}
+        sectorSet={sectors.length > 0}
       />
 
       {member.must_set_password ? (
@@ -282,6 +353,53 @@ export function ProfilePage({ preview }: { preview?: { src: string | null } }) {
         <Field label="Headline" value={headline} onChange={setHeadline} />
         <Field label="Company" value={company} onChange={setCompany} autoComplete="organization" />
         <Field label="Location" value={location} onChange={setLocation} autoComplete="address-level2" />
+        {tagStatus === 'loading' ? (
+          <div aria-busy="true" aria-label="Loading availability and tags" className="space-y-3">
+            <div className="h-11 bg-[var(--ba-lavender)] motion-reduce:animate-none animate-pulse" />
+            <div className="h-11 bg-[var(--ba-lavender)] motion-reduce:animate-none animate-pulse" />
+          </div>
+        ) : null}
+        {tagStatus === 'error' ? (
+          <div className="space-y-3">
+            <p className="text-[0.92rem] text-[var(--ba-error)]" role="alert">
+              Could not load availability and tags.
+            </p>
+            <button
+              type="button"
+              className="inline-flex min-h-11 items-center border border-ink/20 px-4 text-[0.75rem] font-semibold tracking-[0.08em] uppercase"
+              onClick={() => {
+                setTagStatus('loading')
+                setTagAttempt((value) => value + 1)
+              }}
+            >
+              Retry
+            </button>
+          </div>
+        ) : null}
+        {tagStatus === 'ready' ? (
+          <ProfileTagFields
+            availability={availability}
+            sectors={sectors}
+            themes={themes}
+            limitNote={tagNote}
+            onAvailability={(value) => {
+              tagEdited.current = true
+              setAvailability((current) => (current === value ? null : value))
+            }}
+            onSector={(tag) => {
+              tagEdited.current = true
+              const result = toggleTag(sectors, tag, SECTOR_TAGS)
+              setSectors(result.next)
+              setTagNote(result.limited ? 'Three sectors is the limit.' : '')
+            }}
+            onTheme={(tag) => {
+              tagEdited.current = true
+              const result = toggleTag(themes, tag, VISION_2030_THEMES)
+              setThemes(result.next)
+              setTagNote(result.limited ? 'Three Vision 2030 themes is the limit.' : '')
+            }}
+          />
+        ) : null}
         <Field
           label="LinkedIn URL"
           value={linkedin}
@@ -384,11 +502,17 @@ function ProfileChecklist({
   passwordSet,
   linkedin,
   photo,
+  showTags,
+  availabilitySet,
+  sectorSet,
 }: {
   name: string
   passwordSet: boolean
   linkedin: string
   photo: boolean
+  showTags: boolean
+  availabilitySet: boolean
+  sectorSet: boolean
 }) {
   const items: { label: string; done: boolean; doneLabel?: string }[] = [
     { label: 'Name on file', done: name.trim().length > 0 },
@@ -396,6 +520,12 @@ function ProfileChecklist({
     { label: 'Photo', done: photo },
     { label: 'LinkedIn link', done: linkedin.trim().length > 0 },
   ]
+  if (showTags) {
+    items.push(
+      { label: 'Availability', done: availabilitySet },
+      { label: 'Sector tag', done: sectorSet },
+    )
+  }
   if (items.every((item) => item.done)) return null
   return (
     <ul className="mt-3 border border-ink/10 bg-white/50 px-5 py-5" aria-label="Incomplete profile">
