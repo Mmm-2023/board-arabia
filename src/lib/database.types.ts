@@ -674,6 +674,16 @@ export type Database = {
         }
         Returns: Json
       }
+      staff_set_re_opportunity_readiness: {
+        Args: {
+          p_id: string
+          p_foreign_ownership_path: string
+          p_escrow_off_plan: string
+          p_title_clarity: string
+          p_white_land_exposure: string
+        }
+        Returns: Json
+      }
       staff_save_re_partner: {
         Args: {
           p_id: string | null

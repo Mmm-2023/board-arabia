@@ -183,9 +183,10 @@ function fnBody(sql: string, name: string): string {
   return sql.slice(asAt, end)
 }
 
-test('migration sorts last, keeps RLS, and does not grant anon', () => {
+test('migration keeps RLS and does not grant anon', () => {
   const files = readdirSync(path.join(root, 'supabase/migrations')).filter((file) => file.endsWith('.sql')).sort()
-  assert.equal(files.at(-1), migrationName)
+  assert.ok(files.includes(migrationName))
+  assert.ok(files.at(-1)! > migrationName)
   assert.ok(files.includes('20260930120000_lock_majlis_views_and_scratch.sql'))
   assert.ok(migrationName > '20260930120000_lock_majlis_views_and_scratch.sql')
   assert.match(migration, /alter table public\.rooms enable row level security/)
