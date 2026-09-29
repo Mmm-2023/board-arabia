@@ -64,6 +64,7 @@ export const MEMBER_SECONDARY = MEMBER_ACCOUNT
 
 export const STAFF_SECONDARY: readonly SecondaryLink[] = [
   { id: 'majlis', label: 'Majlis', to: '/admin/majlis' },
+  { id: 'mandates', label: 'Mandates', to: '/admin/mandates' },
   { id: 'rooms', label: 'Rooms', to: '/admin/rooms' },
   { id: 'email', label: 'Email', to: '/admin/email' },
 ]

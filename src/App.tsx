@@ -11,6 +11,8 @@ import { PartnersPage } from './pages/PartnersPage'
 import { PrivacyPage } from './pages/PrivacyPage'
 import { TermsPage } from './pages/TermsPage'
 import { AdminLayout } from './pages/admin/AdminLayout'
+import { AdminMandateMatchPage } from './pages/admin/AdminMandateMatchPage'
+import { AdminMandatesPage } from './pages/admin/AdminMandatesPage'
 import { AdminHome } from './pages/admin/AdminHome'
 import { ApplicationsPage } from './pages/admin/ApplicationsPage'
 import { CapacityPage } from './pages/admin/CapacityPage'
@@ -62,6 +64,8 @@ export default function App() {
         <Route path="settings" element={<SettingsPage />} />
         <Route path="email" element={<EmailPage />} />
         <Route path="majlis" element={<AdminMajlisPage />} />
+        <Route path="mandates" element={<AdminMandatesPage />} />
+        <Route path="mandates/:mandateId" element={<AdminMandateMatchPage />} />
         <Route path="rooms" element={<StaffRoomsPage />} />
       </Route>
       <Route path="/ops/*" element={<Navigate to="/admin" replace />} />

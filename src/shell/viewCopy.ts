@@ -136,6 +136,23 @@ export const STAFF_VIEWS = {
     retry: 'Retry',
     denied: 'This list is for staff.',
   },
+  mandates: {
+    empty: 'No mandates on the desk yet.',
+    intro:
+      'Open a mandate to see members whose sector tags, Vision 2030 themes, and availability fit. The desk sees this list. Members are not emailed or notified.',
+    deskNote: 'Staff only. Copying a shortlist does not email or notify anyone.',
+    noTags: 'This mandate has no sector or Vision 2030 tags, so there is no one to match.',
+    noMatches:
+      'No active members share these tags. Sample profiles are left out, and so are members who are inactive or unavailable.',
+    scoreNote:
+      'Score adds 3 for each shared sector, 2 for each shared Vision 2030 theme, 2 when availability is Open, and 1 when it is Selective.',
+    copyFailed: 'Could not copy. Select the shortlist below and copy it yourself.',
+    notFound: 'That mandate is not on the desk.',
+    missing: 'The shortlist is not available on this database yet.',
+    error: REFRESH_ERROR,
+    retry: 'Retry',
+    denied: 'This shortlist is for staff.',
+  },
   capacity: {
     early:
       'Aggregates appear after verified opted-in admits (min N on public site).',
