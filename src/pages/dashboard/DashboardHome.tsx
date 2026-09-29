@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { SponsorBadge } from '../../components/SponsorBadge'
 import { initials, seatLabel } from '../../lib/member'
 import { useNoIndex } from '../../lib/usePageTitle'
 import { ErrorBanner, HomeSkeleton, toneClasses } from '../../shell/ViewState'
@@ -32,6 +33,12 @@ export function DashboardHome() {
             onRetry={status.retry}
             retryLabel={MEMBER_VIEWS.home.retry}
           />
+        </div>
+      )}
+
+      {member.seat === 'sponsor' && (
+        <div className="mb-4">
+          <SponsorBadge />
         </div>
       )}
 
@@ -93,7 +100,7 @@ export function DashboardHome() {
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className={`text-[0.72rem] font-semibold tracking-[0.12em] uppercase ${styles.quiet}`}>
-                      Founding seat
+                      {member.seat === 'sponsor' ? 'Seat' : 'Founding seat'}
                     </p>
                     <p className="mt-1 font-display text-[1.35rem] font-semibold tracking-[-0.03em]">
                       {seatLabel(member.seat)}

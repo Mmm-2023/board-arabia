@@ -39,7 +39,7 @@ const quietBtn =
 
 export function MajlisPage() {
   const { member, userId } = useMember()
-  const sponsor = String(member.seat) === 'sponsor'
+  const sponsor = member.seat === 'sponsor'
   const [params, setParams] = useSearchParams()
   const region = isMajlisRegion(params.get('region') || '') ? params.get('region') : ''
   const focus = params.get('focus') || ''

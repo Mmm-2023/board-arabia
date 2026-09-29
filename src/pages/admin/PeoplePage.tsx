@@ -2,14 +2,16 @@ import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { CapacityFields } from '../../components/CapacityFields'
 import { draftFromProfile } from '../../lib/capacity'
-import { seatLabel, type FoundingSeat } from '../../lib/member'
-import type { MemberAdminRow } from '../../lib/supabase'
+import { adminMemberLine, type FoundingSeat } from '../../lib/member'
+import { firmByUserId, sponsorCapView } from '../../lib/sponsorSeat'
+import { inviteSponsor, type DryRunInvite, type MemberAdminRow } from '../../lib/supabase'
 import { useNoIndex } from '../../lib/usePageTitle'
 import { ConfirmDialog } from '../../shell/ConfirmDialog'
 import { CardSkeleton, EmptyState } from '../../shell/ViewState'
 import { STAFF_VIEWS } from '../../shell/viewCopy'
 import { PEOPLE_TIERS, peopleInTier } from './bits'
 import { useAdmin } from './context'
+import { SponsorInvitePanel } from './SponsorInvitePanel'
 
 export function PeoplePage() {
   const room = useAdmin()
@@ -17,7 +19,16 @@ export function PeoplePage() {
   const [inviteSeat, setInviteSeat] = useState<FoundingSeat>('ksa')
   const [inviteAdmit, setInviteAdmit] = useState(true)
   const [suspending, setSuspending] = useState<MemberAdminRow | null>(null)
+  const [sponsorOpen, setSponsorOpen] = useState(false)
+  const [sponsorFirm, setSponsorFirm] = useState('')
+  const [sponsorEmail, setSponsorEmail] = useState('')
+  const [sponsorSubmitting, setSponsorSubmitting] = useState(false)
+  const [sponsorError, setSponsorError] = useState('')
+  const [sponsorSuccess, setSponsorSuccess] = useState('')
+  const [sponsorDryRun, setSponsorDryRun] = useState<DryRunInvite | null>(null)
   useNoIndex('People | Board Arabia')
+  const sponsorCap = sponsorCapView(room.members)
+  const sponsorCapKnown = room.hasLoaded && !room.refreshError
 
   if (!room.refreshedAt && room.refreshError && room.members.length === 0) return null
 
@@ -37,6 +48,31 @@ export function PeoplePage() {
     })
   }
 
+  async function onSponsorSubmit() {
+    if (!sponsorCapKnown || sponsorCap.full || sponsorSubmitting) return
+    const company = sponsorFirm.trim()
+    const email = sponsorEmail.trim()
+    if (!company || !email) return
+    setSponsorSubmitting(true)
+    setSponsorError('')
+    setSponsorSuccess('')
+    setSponsorDryRun(null)
+    const result = await inviteSponsor({ email, company })
+    setSponsorSubmitting(false)
+    if (result.error) {
+      setSponsorError(result.error)
+      setSponsorDryRun(result.dryRunInvite ?? null)
+      room.refresh()
+      return
+    }
+    setSponsorFirm('')
+    setSponsorEmail('')
+    setSponsorOpen(false)
+    setSponsorSuccess(result.message || 'Sponsor invited.')
+    setSponsorDryRun(result.dryRunInvite ?? null)
+    room.refresh()
+  }
+
   return (
     <div>
       <h1 className="font-display text-[2rem] font-semibold tracking-[-0.03em]">People</h1>
@@ -44,6 +80,25 @@ export function PeoplePage() {
         Members, admins, and sponsors. Invite, suspend, or restore. This screen does not remove
         people. The last master stays in place.
       </p>
+
+      <SponsorInvitePanel
+        members={room.members}
+        firmByUser={firmByUserId(room.profileByUser)}
+        capKnown={sponsorCapKnown}
+        countError={Boolean(room.refreshError)}
+        submitting={sponsorSubmitting}
+        open={sponsorOpen && !sponsorCap.full}
+        firm={sponsorFirm}
+        email={sponsorEmail}
+        error={sponsorError}
+        success={sponsorSuccess}
+        dryRunInvite={sponsorDryRun}
+        onOpen={() => setSponsorOpen(true)}
+        onCancel={() => setSponsorOpen(false)}
+        onFirm={setSponsorFirm}
+        onEmail={setSponsorEmail}
+        onSubmit={() => void onSponsorSubmit()}
+      />
 
       <section className="mt-8 border border-brass/30 px-5 py-5">
         <h2 className="font-display text-[1.35rem] font-semibold tracking-[-0.02em]">Invite</h2>
@@ -110,9 +165,13 @@ export function PeoplePage() {
                   <div>
                     <p className="text-[0.95rem] text-stone/85">{member.email}</p>
                     <p className="mt-1 text-[0.8rem] text-pearl/45">
-                      {seatLabel(member.seat)} · Founding Member · {member.status}
-                      {' · '}
-                      {member.invites_remaining} of {member.invites_granted} invites left
+                      {adminMemberLine(member.seat, member.status)}
+                      {member.seat !== 'sponsor' && (
+                        <>
+                          {' · '}
+                          {member.invites_remaining} of {member.invites_granted} invites left
+                        </>
+                      )}
                     </p>
                   </div>
                   {member.status === 'suspended' ? (
@@ -171,7 +230,7 @@ export function PeoplePage() {
                 <ul className="mt-3 space-y-3">
                   {rows.length === 0 && (
                     <li className="border border-pearl/10 px-5 py-6 text-stone/55">
-                      {tier === 'Sponsor' ? 'No sponsors yet. The sponsor portal is not open.' : 'None yet.'}
+                      {tier === 'Sponsor' ? 'No sponsors invited yet.' : 'None yet.'}
                     </li>
                   )}
                   {rows.map((row) => (

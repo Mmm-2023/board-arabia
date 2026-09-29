@@ -8,8 +8,17 @@ import type { MandateClear } from '../../src/lib/mandateRedaction'
 import { DirectoryBoard } from '../../src/pages/dashboard/DirectoryBoard'
 import { MandateCard } from '../../src/pages/dashboard/MandateCard'
 import { RoomsBoard } from '../../src/pages/dashboard/RoomsBoard'
+import { SponsorInvitePanel } from '../../src/pages/admin/SponsorInvitePanel'
+import { DashboardHome } from '../../src/pages/dashboard/DashboardHome'
+import { DashboardStatusContext, MemberContext, type MemberRoom } from '../../src/pages/dashboard/context'
+import type { ProfileRow } from '../../src/lib/member'
 import { AppShell } from '../../src/shell/AppShell'
-import { MEMBER_DESTINATIONS, MEMBER_SECONDARY } from '../../src/shell/destinations'
+import {
+  MEMBER_DESTINATIONS,
+  MEMBER_SECONDARY,
+  STAFF_DESTINATIONS,
+  STAFF_SECONDARY,
+} from '../../src/shell/destinations'
 import './smoke.css'
 
 const directory: DirectoryCard[] = [
@@ -127,6 +136,119 @@ function Shell({ path, children }: { path: string; children: ReactNode }) {
   )
 }
 
+function StaffShell({ path, children }: { path: string; children: ReactNode }) {
+  return (
+    <MemoryRouter initialEntries={[path]}>
+      <AppShell
+        tone="staff"
+        destinations={STAFF_DESTINATIONS}
+        secondary={STAFF_SECONDARY}
+        updatedLabel="Updated 09:41"
+        roleSwitch={null}
+        onSignOut={() => {}}
+        accountLabel="Example staff"
+      >
+        {children}
+      </AppShell>
+    </MemoryRouter>
+  )
+}
+
+function sponsorHolder(id: string, email: string, status: 'invited' | 'active' | 'suspended') {
+  return { user_id: id, email, seat: 'sponsor', status }
+}
+
+function AdminSponsorSmoke({ cap }: { cap: boolean }) {
+  const [open, setOpen] = useState(false)
+  const [firm, setFirm] = useState('')
+  const [email, setEmail] = useState('')
+  const holders = cap
+    ? [
+        sponsorHolder('s1', 'sponsor@example.com', 'active'),
+        sponsorHolder('s2', 'sponsor.two@example.com', 'invited'),
+        sponsorHolder('s3', 'sponsor.three@example.com', 'active'),
+      ]
+    : [
+        sponsorHolder('s1', 'sponsor@example.com', 'active'),
+        sponsorHolder('s9', 'sponsor.suspended@example.com', 'suspended'),
+        { user_id: 'k1', email: 'member@example.com', seat: 'ksa', status: 'active' },
+      ]
+  return (
+    <StaffShell path="/admin/people">
+      <h1 className="font-display text-[2rem] font-semibold tracking-[-0.03em]">People</h1>
+      <p className="mt-2 max-w-2xl text-[0.95rem] text-stone/65">
+        Members, admins, and sponsors. Invite, suspend, or restore. This screen does not remove
+        people. The last master stays in place.
+      </p>
+      <SponsorInvitePanel
+        members={holders}
+        firmByUser={{ s1: 'Example Ledger', s2: null, s3: 'Example House' }}
+        capKnown
+        countError={false}
+        submitting={false}
+        open={open && !cap}
+        firm={firm}
+        email={email}
+        error=""
+        success=""
+        dryRunInvite={null}
+        onOpen={() => setOpen(true)}
+        onCancel={() => setOpen(false)}
+        onFirm={setFirm}
+        onEmail={setEmail}
+        onSubmit={() => {}}
+      />
+    </StaffShell>
+  )
+}
+
+function DashboardSponsorSmoke() {
+  const profileRow: ProfileRow = {
+    user_id: 'a1000001-0000-4000-8000-000000000099',
+    full_name: 'Example Sponsor',
+    headline: 'Sponsor seat',
+    company: 'Example Ledger',
+    location: null,
+    linkedin_url: null,
+    bio: null,
+    phone: null,
+    investable_capacity_usd: null,
+    fo_aum_usd: null,
+    turnover_usd: null,
+    capacity_currency: 'USD',
+    include_in_public_aggregates: false,
+    capacity_verified: false,
+    avatar_path: null,
+  }
+  const room: MemberRoom = {
+    userId: profileRow.user_id,
+    email: 'sponsor@example.com',
+    staffRole: null,
+    member: {
+      user_id: profileRow.user_id,
+      email: 'sponsor@example.com',
+      seat: 'sponsor',
+      status: 'active',
+      must_set_password: false,
+      invites_remaining: 0,
+      invites_granted: 0,
+    },
+    profile: profileRow,
+    reload: async () => {},
+  }
+  return (
+    <Shell path="/dashboard">
+      <DashboardStatusContext.Provider
+        value={{ refreshError: '', refreshing: false, updatedAt: new Date('2026-09-29T06:41:00Z'), retry: () => {} }}
+      >
+        <MemberContext.Provider value={room}>
+          <DashboardHome />
+        </MemberContext.Provider>
+      </DashboardStatusContext.Provider>
+    </Shell>
+  )
+}
+
 function MandatesSmoke() {
   const [status, setStatus] = useState<MandateClear['intro_status']>(null)
   return (
@@ -147,12 +269,16 @@ function MandatesSmoke() {
 }
 
 const view = new URLSearchParams(window.location.search).get('view')
+const path = window.location.pathname
+const cap = new URLSearchParams(window.location.search).get('state') === 'cap'
 const root = document.getElementById('root')
 if (!root) throw new Error('missing root')
 
 createRoot(root).render(
   <StrictMode>
-    {view === 'partners' ? (
+    {path === '/admin/people' ? <AdminSponsorSmoke cap={cap} /> : null}
+    {path === '/dashboard' ? <DashboardSponsorSmoke /> : null}
+    {path === '/' && view === 'partners' ? (
       <MemoryRouter initialEntries={['/trusted-partners']}>
         <div className="min-h-dvh bg-pearl pt-20">
           <Nav />
@@ -160,17 +286,17 @@ createRoot(root).render(
         </div>
       </MemoryRouter>
     ) : null}
-    {view === 'directory' ? (
+    {path === '/' && view === 'directory' ? (
       <Shell path="/dashboard/directory">
         <DirectoryBoard cards={directory} seat={{ status: 'ready', admitted: 0 }} />
       </Shell>
     ) : null}
-    {view === 'mandates' ? (
+    {path === '/' && view === 'mandates' ? (
       <Shell path="/dashboard/mandates">
         <MandatesSmoke />
       </Shell>
     ) : null}
-    {view === 'rooms' ? (
+    {path === '/' && view === 'rooms' ? (
       <Shell path="/dashboard/rooms">
         <RoomsBoard rooms={rooms} />
       </Shell>
