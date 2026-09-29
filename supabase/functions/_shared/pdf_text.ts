@@ -9,6 +9,7 @@ import { Inflate, Unzlib } from './fflate-browser.js'
 
 export type PdfRead = {
   text: string
+  pages: string[]
   textOps: number
   imageOps: number
   encrypted: boolean
@@ -99,12 +100,18 @@ const WINANSI: Record<number, string> = {
 }
 
 export async function readPdfText(bytes: Uint8Array): Promise<PdfRead> {
-  const empty: PdfRead = { text: '', textOps: 0, imageOps: 0, encrypted: false }
+  const empty: PdfRead = { text: '', pages: [], textOps: 0, imageOps: 0, encrypted: false }
   try {
     const doc = await openPdf(bytes)
     if (!doc) {
       const literal = literalPdfText(bytes)
-      return { text: literal, textOps: literal.trim().length >= 40 ? 1 : 0, imageOps: 0, encrypted: false }
+      return {
+        text: literal,
+        pages: literal.trim() ? [literal] : [],
+        textOps: literal.trim().length >= 40 ? 1 : 0,
+        imageOps: 0,
+        encrypted: false,
+      }
     }
     const walked = await walkPages(doc)
     let text = joinWrappedLines(walked.text)
@@ -116,10 +123,16 @@ export async function readPdfText(bytes: Uint8Array): Promise<PdfRead> {
       text = literal
       if (textLength(literal) >= 40) textOps = Math.max(textOps, 1)
     }
-    return { text, textOps, imageOps: walked.imageOps, encrypted: doc.encrypted }
+    const pages = walked.pages.some((page) => page.trim()) ? walked.pages : text.trim() ? [text] : []
+    return { text, pages, textOps, imageOps: walked.imageOps, encrypted: doc.encrypted }
   } catch {
     const literal = literalPdfText(bytes)
-    return { ...empty, text: literal, textOps: textLength(literal) >= 40 ? 1 : 0 }
+    return {
+      ...empty,
+      text: literal,
+      pages: literal.trim() ? [literal] : [],
+      textOps: textLength(literal) >= 40 ? 1 : 0,
+    }
   }
 }
 
@@ -204,11 +217,11 @@ async function openPdf(bytes: Uint8Array): Promise<Opened | null> {
   return { load, root, encrypted, streamBytes }
 }
 
-async function walkPages(doc: Opened): Promise<{ text: string; textOps: number; imageOps: number }> {
+async function walkPages(doc: Opened): Promise<{ text: string; pages: string[]; textOps: number; imageOps: number }> {
   const pages: string[] = []
   let textOps = 0
   let imageOps = 0
-  if (!doc.root) return { text: '', textOps, imageOps }
+  if (!doc.root) return { text: '', pages, textOps, imageOps }
 
   async function walk(node: PdfVal | null, inherited: PdfDict | null, depth: number) {
     if (!node || node.t !== 'dict' || depth > 12) return
@@ -234,12 +247,12 @@ async function walkPages(doc: Opened): Promise<{ text: string; textOps: number; 
       textOps += pulled.textOps
       imageOps += pulled.imageOps
     }
-    if (page.trim()) pages.push(page)
+    pages.push(page)
   }
 
   const pagesNode = await resolve(doc.root.v.get('Pages') ?? null, doc.load)
   await walk(pagesNode, null, 0)
-  return { text: pages.join('\n'), textOps, imageOps }
+  return { text: pages.filter((page) => page.trim()).join('\n'), pages, textOps, imageOps }
 }
 
 async function contentStreams(contents: PdfVal, load: (n: number) => Promise<PdfVal | null>): Promise<Uint8Array[]> {

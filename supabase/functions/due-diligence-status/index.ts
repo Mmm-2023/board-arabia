@@ -1,7 +1,7 @@
 import { isLiveMember } from '../_shared/staff_auth.ts'
 import { corsHeaders, jsonResponse } from '../_shared/mail.ts'
 import { requireUser } from '../_shared/require_user.ts'
-import { isUuid, MEMBER_MESSAGES, stageLabel } from '../_shared/due_diligence.ts'
+import { isUuid, JOB_STALE_MS, MEMBER_MESSAGES, stageLabel } from '../_shared/due_diligence.ts'
 import { advanceDueDiligenceJob, deferJob } from '../due-diligence-start/run.ts'
 
 const ACTIVE = ['reading', 'checking', 'writing']
@@ -40,7 +40,7 @@ Deno.serve(async (req) => {
   if (loaded.error || !loaded.data) return jsonResponse(req, { error: MEMBER_MESSAGES.missingJob }, 404)
 
   let job = loaded.data
-  const staleBefore = new Date(Date.now() - 90_000).toISOString()
+  const staleBefore = new Date(Date.now() - JOB_STALE_MS).toISOString()
   if (ACTIVE.includes(job.status) && job.updated_at < staleBefore) {
     await session.admin
       .from('due_diligence_jobs')

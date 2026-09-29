@@ -14,36 +14,51 @@ export function assertPptxSlides(bytes: Uint8Array) {
 }
 
 export async function textFromDeck(bytes: Uint8Array, ext: DeckExt): Promise<string> {
-  const text = ext === 'pdf' ? await textFromPdf(bytes) : textFromPptx(bytes)
-  const cleaned = text.replace(/\r/g, '\n').trim()
-  if (cleaned.replace(/\s+/g, ' ').trim().length < 40) throw new Error(MEMBER_MESSAGES.unreadable)
-  return cleaned.slice(0, 80_000)
+  return (await readDeckSource(bytes, ext)).text
 }
 
-async function textFromPdf(bytes: Uint8Array): Promise<string> {
-  const decision = decidePdfText(await readPdfText(bytes))
+export async function readDeckSource(bytes: Uint8Array, ext: DeckExt): Promise<{ text: string; pages: string[] }> {
+  const pages = ext === 'pdf' ? await pagesFromPdf(bytes) : pagesFromPptx(bytes)
+  const cleaned = pages
+    .map((page) => page.replace(/\r/g, '\n').trim())
+    .filter(Boolean)
+    .join('\n')
+    .trim()
+  if (cleaned.replace(/\s+/g, ' ').trim().length < 40) throw new Error(MEMBER_MESSAGES.unreadable)
+  return { text: cleaned.slice(0, 80_000), pages: pages.map((page) => page.replace(/\r/g, '\n').trim()) }
+}
+
+async function pagesFromPdf(bytes: Uint8Array): Promise<string[]> {
+  const read = await readPdfText(bytes)
+  const decision = decidePdfText(read)
   if (!decision.ok) {
     throw new Error(decision.reason === 'scanned' ? MEMBER_MESSAGES.scanned : MEMBER_MESSAGES.unreadable)
   }
-  return decision.text
+  const pages = (read.pages ?? []).map((page) => page.replace(/\r/g, '\n').trim())
+  if (pages.some((page) => page.length > 0)) return pages
+  return [decision.text]
 }
 
-function textFromPptx(bytes: Uint8Array): string {
+function pagesFromPptx(bytes: Uint8Array): string[] {
   let files: Record<string, Uint8Array>
   try {
     files = unzipSync(bytes)
   } catch {
     throw new Error(MEMBER_MESSAGES.notDeck)
   }
-  const slides = Object.keys(files)
-    .filter((name) => /^ppt\/slides\/slide\d+\.xml$/.test(name))
-    .sort((a, b) => slideNumber(a) - slideNumber(b))
-    .slice(0, 40)
+  const slides = Object.keys(files).filter((name) => /^ppt\/slides\/slide\d+\.xml$/.test(name))
   if (slides.length === 0) throw new Error(MEMBER_MESSAGES.notDeck)
-  return slides
-    .map((name) => textFromOfficeXml(strFromU8(files[name] || new Uint8Array())))
-    .filter(Boolean)
-    .join('\n')
+  const byNumber = new Map<number, string>()
+  for (const name of slides) {
+    const number = slideNumber(name)
+    if (number < 1 || number > 40) continue
+    byNumber.set(number, textFromOfficeXml(strFromU8(files[name] || new Uint8Array())))
+  }
+  if (byNumber.size === 0) throw new Error(MEMBER_MESSAGES.notDeck)
+  const max = Math.min(40, Math.max(...byNumber.keys()))
+  const pages: string[] = []
+  for (let index = 1; index <= max; index += 1) pages.push(byNumber.get(index) ?? '')
+  return pages
 }
 
 function slideNumber(name: string): number {

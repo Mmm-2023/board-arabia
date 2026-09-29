@@ -3,7 +3,12 @@
  * Citations are only pages actually retrieved. Unknown stays unknown.
  */
 
+import { readStoredAnalysis, type DeckAnalysis } from './deck_analysis.ts'
+
 export const DECK_BUCKET = 'due-diligence-decks'
+
+/** One model call is about 75s. Heartbeats refresh updated_at between a repair and a backup call. */
+export const JOB_STALE_MS = 180_000
 export const DECK_MAX_BYTES = 15 * 1024 * 1024
 export const NOT_STATED = 'Not stated in the deck'
 
@@ -92,6 +97,9 @@ export type BuiltReport = {
   sources: SourceLink[]
   next_steps: string[]
   degraded_notes?: string[]
+  analysis?: DeckAnalysis | null
+  model_id?: string | null
+  model_skip_reason?: string | null
 }
 
 export const VERDICT_LABEL: Record<ClaimVerdict, string> = {
@@ -112,7 +120,9 @@ export const VERDICT_SHORT: Record<ClaimVerdict, string> = {
 export const DEGRADED_NOTE_SEARCH = 'Independent web checks were not run for this report.'
 export const DEGRADED_NOTE_SEARCH_FAILED = 'Independent web checks did not complete for this report.'
 export const DEGRADED_NOTE_MODEL = 'The language model was not used for this report.'
-export const DEGRADED_NOTE_MODEL_FAILED = 'The language model did not return facts for this report.'
+export const DEGRADED_NOTE_MODEL_FAILED = 'The language model did not return a draft for this report.'
+export const DEGRADED_NOTE_MODEL_FALLBACK = 'The first model did not finish, so this draft used the backup model.'
+export const DEGRADED_NOTE_MODEL_PARTIAL = 'Some draft sections did not validate and are marked missing.'
 export const INDEPENDENT_EVIDENCE_NOTE = 'The company website does not count as independent evidence.'
 
 const VERDICT_NOTE: Record<ClaimVerdict, string> = {
@@ -635,6 +645,7 @@ export function assessmentLog(input: {
   jobId: string
   modelRan: boolean
   modelSkipReason: string | null
+  modelId?: string | null
   claimsReturned: number
   claimsKept: number
   sourcesFetched: number
@@ -645,6 +656,7 @@ export function assessmentLog(input: {
     event: 'dd_assessment',
     job_id: input.jobId,
     model_ran: input.modelRan,
+    model_id: input.modelId ?? null,
     model_skip_reason: input.modelSkipReason,
     claims_returned: input.claimsReturned,
     claims_kept: input.claimsKept,
@@ -652,6 +664,18 @@ export function assessmentLog(input: {
     search_ran: input.searchRan,
     search_skip_reason: input.searchSkipReason,
   })
+}
+
+export function modelJobFields(input: { modelId: string | null; skipReason: string | null }): {
+  model_id: string | null
+  model_skip_reason: string | null
+} {
+  const modelId = (input.modelId || '').replace(/[^\w.-]+/g, '').slice(0, 80)
+  const reason = (input.skipReason || '').replace(/[^\w:.-]+/g, '_').slice(0, 160)
+  return {
+    model_id: modelId || null,
+    model_skip_reason: reason || null,
+  }
 }
 
 export function buildReport(
@@ -681,6 +705,9 @@ export function buildReport(
     })),
     next_steps: nextStepsFor(claims),
     degraded_notes: cleanDegradedNotes(options?.degradedNotes),
+    analysis: null,
+    model_id: null,
+    model_skip_reason: null,
   }
 }
 
@@ -761,6 +788,9 @@ export function readStoredReport(input: {
   claims: unknown
   sources: unknown
   next_steps: unknown
+  analysis?: unknown
+  model_id?: unknown
+  model_skip_reason?: unknown
 }): BuiltReport | null {
   if (typeof input.company_label !== 'string' || typeof input.sector_label !== 'string') return null
   if (typeof input.ask_label !== 'string' || typeof input.disclaimer !== 'string') return null
@@ -785,6 +815,12 @@ export function readStoredReport(input: {
     sources,
     next_steps: nextSteps,
     degraded_notes: unpacked.degraded_notes,
+    analysis: readStoredAnalysis(input.analysis),
+    model_id: typeof input.model_id === 'string' && input.model_id.trim() ? input.model_id.trim().slice(0, 80) : null,
+    model_skip_reason:
+      typeof input.model_skip_reason === 'string' && input.model_skip_reason.trim()
+        ? input.model_skip_reason.trim().slice(0, 160)
+        : null,
   }
 }
 

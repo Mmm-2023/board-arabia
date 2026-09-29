@@ -398,6 +398,8 @@ export type Database = {
           status: 'queued' | 'reading' | 'checking' | 'writing' | 'ready' | 'failed'
           progress: number
           error: string | null
+          model_id: string | null
+          model_skip_reason: string | null
           created_at: string
           updated_at: string
         }
@@ -408,6 +410,8 @@ export type Database = {
           status?: 'queued' | 'reading' | 'checking' | 'writing' | 'ready' | 'failed'
           progress?: number
           error?: string | null
+          model_id?: string | null
+          model_skip_reason?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -418,6 +422,8 @@ export type Database = {
           status?: 'queued' | 'reading' | 'checking' | 'writing' | 'ready' | 'failed'
           progress?: number
           error?: string | null
+          model_id?: string | null
+          model_skip_reason?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -439,6 +445,10 @@ export type Database = {
           claims: Json
           sources: Json
           next_steps: Json
+          analysis: Json | null
+          analysis_status: string
+          model_id: string | null
+          model_skip_reason: string | null
           created_at: string
         }
         Insert: {
@@ -456,6 +466,10 @@ export type Database = {
           claims: Json
           sources: Json
           next_steps: Json
+          analysis?: Json | null
+          analysis_status?: string
+          model_id?: string | null
+          model_skip_reason?: string | null
           created_at?: string
         }
         Update: {
@@ -473,6 +487,10 @@ export type Database = {
           claims?: Json
           sources?: Json
           next_steps?: Json
+          analysis?: Json | null
+          analysis_status?: string
+          model_id?: string | null
+          model_skip_reason?: string | null
           created_at?: string
         }
         Relationships: []

@@ -93,21 +93,26 @@ export async function loadDueDiligenceDesk(userId: string): Promise<DeskLoad> {
   }
 }
 
+const REPORT_COLUMNS =
+  'file_name, created_at, company_label, sector_label, ask_label, disclaimer, publicly_consistent_pct, not_publicly_verifiable_pct, claims, sources, next_steps, analysis, model_id, model_skip_reason' as const
+const REPORT_COLUMNS_LEGACY =
+  'file_name, created_at, company_label, sector_label, ask_label, disclaimer, publicly_consistent_pct, not_publicly_verifiable_pct, claims, sources, next_steps' as const
+
 export async function loadDueDiligenceReport(
   reportId: string,
 ): Promise<{ ok: true; report: BuiltReport; fileName: string; createdAt: string } | { ok: false; kind: ReadFailure | 'missing' }> {
-  const { data, error } = await supabase
-    .from('due_diligence_reports')
-    .select(
-      'file_name, created_at, company_label, sector_label, ask_label, disclaimer, publicly_consistent_pct, not_publicly_verifiable_pct, claims, sources, next_steps',
-    )
-    .eq('id', reportId)
-    .maybeSingle()
-  if (error) return { ok: false, kind: classifyReadError(error) }
-  if (!data) return { ok: false, kind: 'missing' }
-  const report = readStoredReport(data)
+  const first = await supabase.from('due_diligence_reports').select(REPORT_COLUMNS).eq('id', reportId).maybeSingle()
+  const missingColumn =
+    first.error &&
+    /analysis|model_id|model_skip_reason|schema cache|does not exist/i.test(first.error.message || '')
+  const loaded = missingColumn
+    ? await supabase.from('due_diligence_reports').select(REPORT_COLUMNS_LEGACY).eq('id', reportId).maybeSingle()
+    : first
+  if (loaded.error) return { ok: false, kind: classifyReadError(loaded.error) }
+  if (!loaded.data) return { ok: false, kind: 'missing' }
+  const report = readStoredReport(loaded.data)
   if (!report) return { ok: false, kind: 'error' }
-  return { ok: true, report, fileName: data.file_name, createdAt: data.created_at }
+  return { ok: true, report, fileName: loaded.data.file_name, createdAt: loaded.data.created_at }
 }
 
 export async function startDueDiligence(input: {

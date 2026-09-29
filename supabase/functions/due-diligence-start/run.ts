@@ -1,4 +1,5 @@
 import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1'
+import { numberDeckPages } from '../_shared/deck_analysis.ts'
 import {
   assessmentLog,
   buildReport,
@@ -6,17 +7,20 @@ import {
   DECK_MAX_BYTES,
   DEGRADED_NOTE_MODEL,
   DEGRADED_NOTE_MODEL_FAILED,
+  DEGRADED_NOTE_MODEL_FALLBACK,
+  DEGRADED_NOTE_MODEL_PARTIAL,
   DEGRADED_NOTE_SEARCH,
   DEGRADED_NOTE_SEARCH_FAILED,
   extractCompanyUrl,
   independentSearchTerms,
   MEMBER_MESSAGES,
+  modelJobFields,
   packReportDisclaimer,
   parsePublicHttpsUrl,
   sniffDeck,
   type DeckExt,
 } from '../_shared/due_diligence.ts'
-import { textFromDeck } from './extract.ts'
+import { readDeckSource } from './extract.ts'
 import { extractDeckFactsWithOptionalLlm } from './llm.ts'
 import { retrievePublicPages } from './sources.ts'
 
@@ -35,6 +39,7 @@ export async function advanceDueDiligenceJob(admin: SupabaseClient, jobId: strin
   const job = claimed.data
   let modelRan = false
   let modelSkipReason: string | null = 'not_started'
+  let modelId: string | null = null
   let claimsReturned = 0
   let claimsKept = 0
   let sourcesFetched = 0
@@ -46,6 +51,7 @@ export async function advanceDueDiligenceJob(admin: SupabaseClient, jobId: strin
         jobId,
         modelRan,
         modelSkipReason,
+        modelId,
         claimsReturned,
         claimsKept,
         sourcesFetched,
@@ -67,7 +73,9 @@ export async function advanceDueDiligenceJob(admin: SupabaseClient, jobId: strin
     const bytes = await downloadDeck(admin, deck.data.storage_path)
     if (sniffDeck(bytes) !== ext) throw new Error(MEMBER_MESSAGES.notDeck)
 
-    const text = await textFromDeck(bytes, ext)
+    const source = await readDeckSource(bytes, ext)
+    const text = source.text
+    const numbered = numberDeckPages(source.pages).slice(0, 80_000)
     await mark(admin, jobId, 'checking', 55)
     const storedUrl = typeof deck.data.company_url === 'string' ? deck.data.company_url.trim() : ''
     let companyUrl: string | null = storedUrl || null
@@ -82,9 +90,15 @@ export async function advanceDueDiligenceJob(admin: SupabaseClient, jobId: strin
           .eq('member_id', job.member_id)
       }
     }
-    const extraction = await extractDeckFactsWithOptionalLlm(text, String(deck.data.file_name || ''))
+    const extraction = await extractDeckFactsWithOptionalLlm(
+      text,
+      String(deck.data.file_name || ''),
+      numbered,
+      () => touch(admin, jobId, 68),
+    )
     modelRan = extraction.modelRan
     modelSkipReason = extraction.skipReason
+    modelId = extraction.modelId
     claimsReturned = extraction.claimsReturned
     claimsKept = extraction.claimsKept
     const facts = extraction.facts
@@ -99,6 +113,9 @@ export async function advanceDueDiligenceJob(admin: SupabaseClient, jobId: strin
     const degradedNotes: string[] = []
     if (!extraction.modelRan) {
       degradedNotes.push(extraction.skipReason === 'missing_api_key' ? DEGRADED_NOTE_MODEL : DEGRADED_NOTE_MODEL_FAILED)
+    } else {
+      if (extraction.usedFallback) degradedNotes.push(DEGRADED_NOTE_MODEL_FALLBACK)
+      if (extraction.analysis?.sections_missing.length) degradedNotes.push(DEGRADED_NOTE_MODEL_PARTIAL)
     }
     if (!retrieval.searchRan) {
       degradedNotes.push(DEGRADED_NOTE_SEARCH)
@@ -106,6 +123,10 @@ export async function advanceDueDiligenceJob(admin: SupabaseClient, jobId: strin
       degradedNotes.push(DEGRADED_NOTE_SEARCH_FAILED)
     }
     const report = buildReport(facts, retrieval.pages, { companyUrl, degradedNotes })
+    report.analysis = extraction.analysis
+    const modelFields = modelJobFields({ modelId, skipReason: modelSkipReason })
+    report.model_id = modelFields.model_id
+    report.model_skip_reason = modelFields.model_skip_reason
     writeLog()
     const inserted = await admin
       .from('due_diligence_reports')
@@ -123,6 +144,10 @@ export async function advanceDueDiligenceJob(admin: SupabaseClient, jobId: strin
         claims: report.claims,
         sources: report.sources,
         next_steps: report.next_steps,
+        analysis: report.analysis,
+        analysis_status: 'draft',
+        model_id: report.model_id,
+        model_skip_reason: report.model_skip_reason,
       })
       .select('id')
       .maybeSingle()
@@ -136,7 +161,7 @@ export async function advanceDueDiligenceJob(admin: SupabaseClient, jobId: strin
     }
     await admin
       .from('due_diligence_jobs')
-      .update({ status: 'ready', progress: 100, error: null })
+      .update({ status: 'ready', progress: 100, error: null, ...modelJobFields({ modelId, skipReason: modelSkipReason }) })
       .eq('id', jobId)
       .in('status', ACTIVE)
   } catch (err) {
@@ -152,7 +177,7 @@ export async function advanceDueDiligenceJob(admin: SupabaseClient, jobId: strin
         : MEMBER_MESSAGES.finish
     await admin
       .from('due_diligence_jobs')
-      .update({ status: 'failed', error: safe })
+      .update({ status: 'failed', error: safe, ...modelJobFields({ modelId, skipReason: modelSkipReason }) })
       .eq('id', jobId)
       .in('status', ACTIVE)
   }
@@ -162,6 +187,10 @@ export function deferJob(work: Promise<unknown>) {
   const runtime = (globalThis as { EdgeRuntime?: { waitUntil: (promise: Promise<unknown>) => void } }).EdgeRuntime
   if (runtime?.waitUntil) runtime.waitUntil(work)
   else void work
+}
+
+async function touch(admin: SupabaseClient, jobId: string, progress: number) {
+  await admin.from('due_diligence_jobs').update({ progress }).eq('id', jobId).in('status', ACTIVE)
 }
 
 async function mark(admin: SupabaseClient, jobId: string, status: string, progress: number) {
