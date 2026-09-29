@@ -11,7 +11,9 @@ import './smoke.css'
 
 const userId = '00000000-0000-4000-8000-000000000001'
 const email = 'member@example.com'
-const withPhoto = new URLSearchParams(window.location.search).get('photo') === '1'
+const params = new URLSearchParams(window.location.search)
+const withPhoto = params.get('photo') === '1'
+const sponsor = params.get('sponsor') === '1'
 const photoSrc = `data:image/svg+xml,${encodeURIComponent(
   `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128"><rect width="128" height="128" fill="#4b3f9a"/><circle cx="64" cy="48" r="22" fill="#f4efe6"/><ellipse cx="64" cy="112" rx="40" ry="28" fill="#f4efe6"/></svg>`,
 )}`
@@ -19,7 +21,7 @@ const photoSrc = `data:image/svg+xml,${encodeURIComponent(
 const member: MemberRow = {
   user_id: userId,
   email,
-  seat: 'ksa',
+  seat: sponsor ? 'sponsor' : 'ksa',
   status: 'active',
   must_set_password: false,
   invites_remaining: 2,
@@ -28,7 +30,7 @@ const member: MemberRow = {
 
 const profile: ProfileRow = {
   user_id: userId,
-  full_name: 'Example Member',
+  full_name: sponsor ? 'Example Sponsor' : 'Example Member',
   headline: 'Independent chair',
   company: 'Example House',
   location: 'Riyadh',
@@ -71,7 +73,7 @@ createRoot(root).render(
           accountMark={
             <AvatarCircle
               src={withPhoto ? photoSrc : null}
-              initials="EM"
+              initials={sponsor ? 'ES' : 'EM'}
               size={36}
               alt=""
             />
