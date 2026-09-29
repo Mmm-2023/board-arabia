@@ -17,13 +17,13 @@ export const DECK_BUCKET = 'due-diligence-decks'
 export const EDGE_WALL_CLOCK_MS = 150_000
 export const STEP_EXTRACT_BUDGET_MS = 45_000
 export const STEP_EXTRACT_STALE_MS = 70_000
-/** Full deck. First token stays close to the cap so a late reasoning token is not cut off. */
+/** Full deck. The cap is the whole call. Silence is only until the first SSE chunk. */
 export const STEP_SCORES_CAP_MS = 140_000
-export const STEP_SCORES_TTFT_MS = 130_000
+export const STEP_SCORES_TTFT_MS = 30_000
 export const STEP_SCORES_STALE_MS = 148_000
 /** Narrative sees the scores pass plus key pages, so it can finish inside a shorter cap. */
 export const STEP_NARRATIVE_CAP_MS = 100_000
-export const STEP_NARRATIVE_TTFT_MS = 85_000
+export const STEP_NARRATIVE_TTFT_MS = 30_000
 export const STEP_NARRATIVE_STALE_MS = 120_000
 export const STEP_COMPOSE_BUDGET_MS = 90_000
 export const STEP_COMPOSE_REPAIR_MS = 60_000
@@ -324,6 +324,12 @@ export type StepTiming = {
   http_status: number | null
   elapsed_ms: number
   primary_elapsed_ms: number | null
+  /** Milliseconds until the first SSE chunk, including a reasoning delta. Null if none arrived. */
+  first_chunk_ms: number | null
+  /** Milliseconds until the first content token. Null if the model never started the answer. */
+  first_content_ms: number | null
+  /** Effort sent on the accepted request. Null when the call omitted it. */
+  reasoning_effort: string | null
 }
 
 /** Map a model miss onto timeout, ttft, http, parse, or validation. */

@@ -39,7 +39,7 @@ import {
   type StepTiming,
 } from '../_shared/due_diligence.ts'
 import { readDeckSource } from './extract.ts'
-import { analyzeDeckSection, plannedModelId, scoresUser, narrativeUser } from './llm.ts'
+import { analyzeDeckSection, narrativeUser, plannedModelId, PRIMARY_REASONING_EFFORT, scoresUser } from './llm.ts'
 import { REPAIR_PROMPT } from './prompts/repair_prompt.ts'
 import { SCHEMA_PROMPT } from './prompts/schema_prompt.ts'
 import { SYSTEM_PROMPT } from './prompts/system_prompt.ts'
@@ -219,6 +219,7 @@ async function runAnalysis(
     deadlineAt,
     callTimeoutMs: cap,
     ttftMs: ttft,
+    reasoningEffort: mode === 'primary' ? PRIMARY_REASONING_EFFORT : null,
     onStage: async (_stage, called) => {
       pipeline.models[step] = called
       await touch(admin, job, floor, called)
@@ -237,12 +238,12 @@ async function runAnalysis(
   if (!call.ok) {
     const bare = (call.reason || '').replace(/^(primary|fallback)_/, '')
     if (bare === 'missing_api_key' || bare === 'missing_model') delete pipeline.models[step]
-    await settleModelMiss(admin, job, pipeline, step, mode, call.reason, elapsedMs)
+    await settleModelMiss(admin, job, pipeline, step, mode, call.reason, elapsedMs, call)
     return
   }
   const parsed = parseModelJson(call.content)
   if (!parsed || typeof parsed !== 'object') {
-    await settleModelMiss(admin, job, pipeline, step, mode, 'unusable', elapsedMs)
+    await settleModelMiss(admin, job, pipeline, step, mode, 'unusable', elapsedMs, call)
     return
   }
   if (step === 'scores') {
@@ -259,6 +260,9 @@ async function runAnalysis(
     pass: mode,
     elapsedMs,
     reason: null,
+    firstChunkMs: call.firstChunkMs,
+    firstContentMs: call.firstContentMs,
+    reasoningEffort: call.reasoningEffort,
   })
   const next = nextPipelineStep(step)
   await advance(admin, job, pipeline, step, next ? progressForStep(next) : DD_PROGRESS.repair)
@@ -272,6 +276,7 @@ async function settleModelMiss(
   mode: ModelPass,
   reason: string | null,
   elapsedMs: number,
+  call?: { firstChunkMs: number | null; firstContentMs: number | null; reasoningEffort: string | null },
 ) {
   const bare = (reason || '').replace(/^(primary|fallback)_/, '') || 'model_request_failed'
   noteStep(pipeline, step, {
@@ -280,6 +285,9 @@ async function settleModelMiss(
     pass: mode,
     elapsedMs,
     reason: bare,
+    firstChunkMs: call?.firstChunkMs ?? null,
+    firstContentMs: call?.firstContentMs ?? null,
+    reasoningEffort: call?.reasoningEffort ?? null,
   })
   if (!isTerminalModelFailure(bare, false)) {
     await advance(admin, job, pipeline, step, progressForStep(nextPipelineStep(step) || 'compose'))
@@ -585,13 +593,23 @@ function stepReason(pipeline: PipelineState, extra = ''): string {
 function noteStep(
   pipeline: PipelineState,
   step: string,
-  input: { modelId: string; called: boolean; pass: ModelPass | 'none'; elapsedMs: number; reason: string | null },
+  input: {
+    modelId: string
+    called: boolean
+    pass: ModelPass | 'none'
+    elapsedMs: number
+    reason: string | null
+    firstChunkMs?: number | null
+    firstContentMs?: number | null
+    reasoningEffort?: string | null
+  },
 ) {
   const prev = pipeline.steps[step]
   const classified = input.reason ? classifyFallback(input.reason) : null
   const primaryMiss = input.pass === 'primary' && classified != null
   const reason: FallbackReason | null =
     input.pass === 'fallback' ? prev?.fallback_reason || classified?.reason || null : (classified?.reason ?? null)
+  const keepPrimaryTimes = input.pass === 'fallback'
   pipeline.steps[step] = {
     model_id: input.modelId || prev?.model_id || '',
     called: input.called,
@@ -602,6 +620,9 @@ function noteStep(
     elapsed_ms: Math.max(0, Math.round(input.elapsedMs)),
     primary_elapsed_ms:
       input.pass === 'fallback' ? (prev?.primary_elapsed_ms ?? prev?.elapsed_ms ?? null) : primaryMiss ? Math.max(0, Math.round(input.elapsedMs)) : null,
+    first_chunk_ms: keepPrimaryTimes && prev ? prev.first_chunk_ms : (input.firstChunkMs ?? null),
+    first_content_ms: keepPrimaryTimes && prev ? prev.first_content_ms : (input.firstContentMs ?? null),
+    reasoning_effort: input.reasoningEffort ?? prev?.reasoning_effort ?? null,
   }
 }
 
@@ -648,9 +669,16 @@ function readSteps(raw: unknown): Record<string, StepTiming> {
       http_status: typeof row.http_status === 'number' && row.http_status >= 100 && row.http_status <= 599 ? row.http_status : null,
       elapsed_ms: typeof row.elapsed_ms === 'number' && row.elapsed_ms >= 0 ? Math.round(row.elapsed_ms) : 0,
       primary_elapsed_ms: typeof row.primary_elapsed_ms === 'number' && row.primary_elapsed_ms >= 0 ? Math.round(row.primary_elapsed_ms) : null,
+      first_chunk_ms: msOrNull(row.first_chunk_ms),
+      first_content_ms: msOrNull(row.first_content_ms),
+      reasoning_effort: typeof row.reasoning_effort === 'string' ? row.reasoning_effort.slice(0, 16) : null,
     }
   }
   return out
+}
+
+function msOrNull(value: unknown): number | null {
+  return typeof value === 'number' && value >= 0 ? Math.round(value) : null
 }
 
 function packPipeline(pipeline: PipelineState): PipelineState {
