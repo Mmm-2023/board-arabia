@@ -68,8 +68,15 @@ function latestFunction(name: string): { file: string; body: string; line: numbe
 
 test('majlis read models keep the previous rows and columns without a definer view', () => {
   const files = readdirSync(migrationsDir).filter((file) => file.endsWith('.sql')).sort()
-  assert.equal(files.at(-1), migrationName)
-  assert.ok(files.at(-2)! < migrationName)
+  assert.ok(files.includes(migrationName))
+  const later = files.filter((file) => file > migrationName)
+  assert.ok(later.length > 0)
+  for (const file of later) {
+    const text = readFileSync(path.join(migrationsDir, file), 'utf8')
+    assert.equal(/create\s+(or\s+replace\s+)?(materialized\s+)?view\s+public\.majlis_/i.test(text), false, file)
+    assert.equal(/_edge_boot_staging|_edge_boot_upload|_hex_scratch/.test(text), false, file)
+    assert.equal(/security_invoker\s*=\s*false/.test(text), false, file)
+  }
 
   const sql = readFileSync(migrationPath, 'utf8')
   const previous = readFileSync(previousViewPath, 'utf8')
