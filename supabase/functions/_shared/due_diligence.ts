@@ -132,7 +132,7 @@ export const VERDICT_SHORT: Record<ClaimVerdict, string> = {
   insufficient_public_data: 'Not verified',
 }
 
-export const DEGRADED_NOTE_SEARCH = 'Independent web checks were not run for this report.'
+export const DEGRADED_NOTE_SEARCH = 'Public checks were not run for this report.'
 export const DEGRADED_NOTE_SEARCH_FAILED = 'Independent web checks did not complete for this report.'
 export const DEGRADED_NOTE_MODEL = 'The language model was not used for this report.'
 export const DEGRADED_NOTE_MODEL_FAILED = 'The language model did not return a draft for this report.'

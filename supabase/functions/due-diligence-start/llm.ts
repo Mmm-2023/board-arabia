@@ -1,9 +1,11 @@
 import {
+  fitNumberedDeck,
   numberDeckPages,
   parseDeckAnalysis,
   parseModelJson,
   preferredAsk,
   preferredCompany,
+  rawHasHero,
   type DeckAnalysis,
 } from '../_shared/deck_analysis.ts'
 import {
@@ -22,6 +24,7 @@ const DEFAULT_BASE = 'https://api.openai.com/v1'
 const XAI_CHAT_URL = 'https://api.x.ai/v1/chat/completions'
 
 export const ANALYSIS_TIMEOUT_MS = 75_000
+export const PRIMARY_CALL_MS = 120_000
 export const ANALYSIS_MAX_TOKENS = 4_000
 export const FALLBACK_MODEL_ID = 'grok-4.20-0309-non-reasoning'
 
@@ -76,7 +79,7 @@ export async function extractDeckFactsWithOptionalLlm(
   deadlineAt?: number,
 ): Promise<FactExtraction> {
   const heuristic = extractDeckFacts(text, fileName)
-  const deck = (numberedText.trim() || (text.trim() ? numberDeckPages([text]) : '')).slice(0, 80_000)
+  const deck = fitNumberedDeck(numberedText.trim() || (text.trim() ? numberDeckPages([text]) : ''))
   const companyHint = heuristic.company === NOT_STATED ? '' : heuristic.company
   const run = await analyzeDeckText(deck, {
     companyHint,
@@ -136,7 +139,7 @@ export async function analyzeDeckText(
   if (!target) {
     return { analysis: null, modelRan: false, modelId: null, skipReason: 'missing_model', usedFallback: false }
   }
-  const deck = numberedText.trim().slice(0, 80_000)
+  const deck = fitNumberedDeck(numberedText)
   if (deck.replace(/\s+/g, ' ').trim().length < 40) {
     return { analysis: null, modelRan: false, modelId: null, skipReason: 'empty_deck', usedFallback: false }
   }
@@ -154,6 +157,7 @@ export async function analyzeDeckText(
   const reasons: string[] = []
   let content = ''
   let repaired = false
+  let parsedRaw: unknown = null
 
   if (!primary.ok) {
     reasons.push(`primary_${primary.reason}`)
@@ -169,8 +173,9 @@ export async function analyzeDeckText(
     content = primary.content
   }
 
-  let analysis = parseDeckAnalysis(parseModelJson(content))
-  if (!analysis) {
+  parsedRaw = parseModelJson(content)
+  let analysis = parseDeckAnalysis(parsedRaw)
+  if (!analysis || !rawHasHero(parsedRaw)) {
     const repair = await runCall(
       hints,
       'repair',
@@ -178,9 +183,17 @@ export async function analyzeDeckText(
       modelId,
       key,
       REPAIR_PROMPT,
-      `${SCHEMA_PROMPT}\n\nDeck text:\n${deck.slice(0, 60_000)}\n\nPrevious reply:\n${content.slice(0, 8_000)}`,
+      `${SCHEMA_PROMPT}\n\nDeck text:\n${fitNumberedDeck(deck)}\n\nPrevious reply:\n${content.slice(0, 8_000)}`,
     )
     repaired = true
+    if (repair.ok) {
+      const repairedRaw = parseModelJson(repair.content)
+      const repairedAnalysis = parseDeckAnalysis(repairedRaw)
+      if (repairedAnalysis) {
+        analysis = repairedAnalysis
+        content = repair.content
+      }
+    }
     if (!repair.ok) {
       reasons.push(`repair_${repair.reason}`)
       if (!usedFallback && target.model !== FALLBACK_MODEL_ID) {
@@ -190,8 +203,6 @@ export async function analyzeDeckText(
         if (!backup.ok) return failed(FALLBACK_MODEL_ID, [...reasons, `fallback_${backup.reason}`])
         analysis = parseDeckAnalysis(parseModelJson(backup.content))
       }
-    } else {
-      analysis = parseDeckAnalysis(parseModelJson(repair.content))
     }
   }
 
@@ -232,10 +243,11 @@ async function runCall(
   system: string,
   user: string,
 ): Promise<Attempt> {
-  const left = hints.deadlineAt == null ? ANALYSIS_TIMEOUT_MS : hints.deadlineAt - Date.now()
-  if (left < 5_000) return { ok: false, reason: 'deadline' }
+  const remaining = hints.deadlineAt == null ? PRIMARY_CALL_MS + 5_000 : hints.deadlineAt - Date.now()
+  if (hints.deadlineAt != null && remaining < 5_000) return { ok: false, reason: 'deadline' }
   await hints.onStage?.(stage)
-  const timeoutMs = Math.min(hints.callTimeoutMs ?? ANALYSIS_TIMEOUT_MS, Math.max(1_000, left - 2_000))
+  const preferred = stage === 'model' ? PRIMARY_CALL_MS : remaining
+  const timeoutMs = Math.min(hints.callTimeoutMs ?? preferred, Math.max(1_000, remaining - 2_000))
   return complete(url, model, key, system, user, timeoutMs)
 }
 
@@ -257,6 +269,7 @@ async function complete(url: string, model: string, key: string, system: string,
         model,
         temperature: 0,
         max_tokens: ANALYSIS_MAX_TOKENS,
+        stream: true,
         response_format: { type: 'json_object' },
         messages: [
           { role: 'system', content: system },
@@ -266,9 +279,8 @@ async function complete(url: string, model: string, key: string, system: string,
       signal: controller.signal,
     })
     if (!response.ok) return { ok: false, reason: `http_${response.status}` }
-    const body = (await response.json()) as { choices?: { message?: { content?: unknown } }[] }
-    const content = body.choices?.[0]?.message?.content
-    if (typeof content !== 'string' || !content.trim()) return { ok: false, reason: 'empty_content' }
+    const content = await readModelContent(response)
+    if (!content.trim()) return { ok: false, reason: 'empty_content' }
     return { ok: true, content }
   } catch (err) {
     const name = err instanceof Error ? err.name : ''
@@ -277,6 +289,44 @@ async function complete(url: string, model: string, key: string, system: string,
   } finally {
     clearTimeout(timer)
   }
+}
+
+async function readModelContent(response: Response): Promise<string> {
+  const kind = response.headers.get('content-type') || ''
+  if (!kind.includes('text/event-stream') || !response.body) {
+    const body = (await response.json()) as { choices?: { message?: { content?: unknown } }[] }
+    const content = body.choices?.[0]?.message?.content
+    return typeof content === 'string' ? content : ''
+  }
+  const reader = response.body.getReader()
+  const decoder = new TextDecoder()
+  let buffer = ''
+  let content = ''
+  while (true) {
+    const step = await reader.read()
+    if (step.done) break
+    buffer += decoder.decode(step.value, { stream: true })
+    const lines = buffer.split('\n')
+    buffer = lines.pop() || ''
+    for (const line of lines) {
+      const trimmed = line.trim()
+      if (!trimmed.startsWith('data:')) continue
+      const data = trimmed.slice(5).trim()
+      if (!data || data === '[DONE]') continue
+      try {
+        const json = JSON.parse(data) as {
+          choices?: { delta?: { content?: unknown }; message?: { content?: unknown } }[]
+        }
+        const delta = json.choices?.[0]?.delta?.content
+        const message = json.choices?.[0]?.message?.content
+        if (typeof delta === 'string') content += delta
+        else if (typeof message === 'string') content += message
+      } catch {
+        // A partial chunk is ignored. The next line still parses.
+      }
+    }
+  }
+  return content
 }
 
 function llmEndpoint(): URL | null {

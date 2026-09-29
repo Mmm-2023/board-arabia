@@ -60,10 +60,12 @@ const chrome = spawn(
 try {
   await waitForBrowser()
   const shots = [
-    ['full', 1280, 900, 'dd-report-full-1280.png'],
-    ['full', 390, 844, 'dd-report-full-390.png'],
-    ['degraded', 1280, 900, 'dd-report-degraded-1280.png'],
-    ['degraded', 390, 844, 'dd-report-degraded-390.png'],
+    ['pass', 1280, 900, 'dd-report-pass-1280.png'],
+    ['pass', 390, 844, 'dd-report-pass-390.png'],
+    ['evidence', 1280, 900, 'dd-report-evidence-1280.png'],
+    ['evidence', 390, 844, 'dd-report-evidence-390.png'],
+    ['nosearch', 1280, 900, 'dd-report-public-checks-1280.png'],
+    ['nosearch', 390, 844, 'dd-report-public-checks-390.png'],
   ]
   for (const [state, width, height, name] of shots) {
     await capture(state, width, height, `${outDir}/${name}`)

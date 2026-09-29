@@ -3,6 +3,7 @@
  */
 export const SCHEMA_PROMPT = [
   'Return one JSON object with these keys:',
+  'hero (required): company, one_liner, posture, overall, pre_money, post_money, currency.',
   'meta: company, document, as_of, review_type (deck_only), disclaimer.',
   'disclaimer must be: Document review only. Illustrative. Not investment advice, not an audit, and not a substitute for legal, financial, or regulatory diligence.',
   'snapshot: one_liner; round (amount, equity_pct, pre_money, post_money, currency) with numbers or null; stage one of pre_revenue, pilot, revenue; posture one of pass, evidence_required, discuss_with_milestones; posture_reason.',

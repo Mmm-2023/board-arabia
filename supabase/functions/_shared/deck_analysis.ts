@@ -83,7 +83,18 @@ export type Tranche = {
   release_when: string
 }
 
+export type DeckHero = {
+  company: string
+  one_liner: string
+  posture: Posture | ''
+  overall: number | null
+  pre_money: number | null
+  post_money: number | null
+  currency: string
+}
+
 export type DeckAnalysis = {
+  hero: DeckHero
   meta: {
     company: string
     document: string
@@ -142,6 +153,7 @@ export const SECTION_LABEL: Record<string, string> = {
   questions_for_management: 'Questions',
   suggested_structure: 'Structure',
   memo_markdown: 'Memo',
+  hero: 'Hero',
 }
 
 const SCORE_KEY_SET = new Set<string>(SCORE_KEYS)
@@ -159,6 +171,62 @@ export function missingBannerLabels(analysis: DeckAnalysis): string[] {
     if (!labels.includes(label)) labels.push(label)
   }
   return labels
+}
+
+export function rawHasHero(raw: unknown): boolean {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return false
+  const hero = (raw as Record<string, unknown>).hero
+  return Boolean(hero && typeof hero === 'object' && !Array.isArray(hero))
+}
+
+/** High risk, a contradicted claim, or overall at or below 2 forces evidence_required. Pass is never the fallback. */
+export function derivePosture(input: {
+  posture: Posture | ''
+  overall: number | null
+  risks: readonly { severity: string }[]
+  claims: readonly { status: string }[]
+}): Posture {
+  const high = input.risks.some((risk) => risk.severity === 'high')
+  const contradicted = input.claims.some((claim) => claim.status === 'contradicted')
+  if (high || contradicted || (input.overall != null && input.overall <= 2)) return 'evidence_required'
+  if (input.posture === 'pass' || input.posture === 'discuss_with_milestones' || input.posture === 'evidence_required') {
+    return input.posture
+  }
+  return 'evidence_required'
+}
+
+export function applyReviewRules(analysis: DeckAnalysis): DeckAnalysis {
+  const posture = derivePosture({
+    posture: analysis.snapshot.posture,
+    overall: analysis.scores.overall,
+    risks: analysis.risks,
+    claims: analysis.claims,
+  })
+  const hero: DeckHero = {
+    company: analysis.meta.company,
+    one_liner: analysis.snapshot.one_liner,
+    posture,
+    overall: analysis.scores.overall,
+    pre_money: analysis.snapshot.round.pre_money,
+    post_money: analysis.snapshot.round.post_money,
+    currency: analysis.snapshot.round.currency || 'USD',
+  }
+  return {
+    ...analysis,
+    hero,
+    snapshot: { ...analysis.snapshot, posture },
+    sections_missing: analysis.sections_missing.filter((key) => key !== 'hero' && key !== 'posture'),
+  }
+}
+
+/** Keep the opening and the closing pages when the deck is longer than the prompt budget. */
+export function fitNumberedDeck(text: string, max = 100_000): string {
+  const trimmed = text.trim()
+  if (trimmed.length <= max) return trimmed
+  const marker = '\n\n[Earlier pages kept. Later pages follow.]\n\n'
+  const head = Math.max(1_000, Math.floor(max * 0.62))
+  const tail = Math.max(1_000, max - head - marker.length)
+  return `${trimmed.slice(0, head)}${marker}${trimmed.slice(-tail)}`
 }
 
 const EMPTY_ROUND: RoundFacts = {
@@ -276,8 +344,10 @@ export function parseDeckAnalysis(raw: unknown): DeckAnalysis | null {
   const structure = readStructure(row.suggested_structure, missing)
   const memo = block(row.memo_markdown, 8000)
   if (typeof row.memo_markdown !== 'string' || !memo) missing.push('memo_markdown')
+  if (!rawHasHero(row)) missing.push('hero')
 
   const analysis: DeckAnalysis = {
+    hero: emptyHero(),
     meta,
     snapshot,
     scores,
@@ -296,7 +366,19 @@ export function parseDeckAnalysis(raw: unknown): DeckAnalysis | null {
     analysis.memo_markdown = analysis.memo_markdown.slice(0, 4000)
     if (JSON.stringify(analysis).length > ANALYSIS_MAX_JSON_CHARS) return null
   }
-  return analysis
+  return applyReviewRules(analysis)
+}
+
+function emptyHero(): DeckHero {
+  return {
+    company: '',
+    one_liner: '',
+    posture: '',
+    overall: null,
+    pre_money: null,
+    post_money: null,
+    currency: '',
+  }
 }
 
 export function readStoredAnalysis(raw: unknown): DeckAnalysis | null {
