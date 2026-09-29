@@ -19,11 +19,13 @@ export function DashboardPreviewFrame({ deals }: { deals: LandingDeal[] }) {
       </h2>
       <p className="mt-4 max-w-2xl text-[1.02rem] leading-relaxed text-ink/60">{previewIntro(deals)}</p>
       <div className="mt-8 overflow-hidden border border-ink/10 bg-white/70">
-        <div className="flex items-center justify-between gap-4 border-b border-ink/10 px-5 py-3">
-          <p className="text-[0.72rem] font-semibold tracking-[0.14em] text-ink/45 uppercase">
+        <div className="flex items-center justify-between gap-3 border-b border-ink/10 px-4 py-3 sm:px-5">
+          <p className="text-[0.62rem] font-semibold tracking-[0.12em] text-ink/45 whitespace-nowrap uppercase sm:text-[0.72rem] sm:tracking-[0.14em]">
             Member dashboard
           </p>
-          <p className="text-[0.72rem] tracking-[0.08em] text-brass uppercase">Preview · no live data</p>
+          <p className="shrink-0 text-[0.62rem] tracking-[0.06em] text-brass whitespace-nowrap uppercase sm:text-[0.72rem] sm:tracking-[0.08em]">
+            Preview · no live data
+          </p>
         </div>
         <div className="grid md:grid-cols-[13.5rem_1fr]">
           <ul className="border-b border-ink/10 md:border-e md:border-b-0">
