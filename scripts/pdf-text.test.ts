@@ -142,60 +142,11 @@ test('synthetic export fixtures yield readable Northwind sentences', async () =>
   assert.match(chrome.text, /Northwind Logistics\nNorthwind Logistics serves 120/)
   const canva = await readPdfText(built['canva-northwind.pdf'])
   assert.match(canva.text, /Northwind Logistics/)
-})
-
-test('uploaded repro decks read as sentences when they are on disk', async () => {
-  const decks = [
-    {
-      path: '/home/ubuntu/.cursor/projects/workspace/uploads/deck_c8ff.pdf',
-      sentence: /Jahez was founded in 2016 in Riyadh, Saudi Arabia, as an online food delivery platform\./,
-    },
-    {
-      path: '/home/ubuntu/.cursor/projects/workspace/uploads/jahez-test-deck_f066.pdf',
-      sentence: /Jahez International Company/,
-    },
-  ]
-  let saw = 0
-  for (const deck of decks) {
-    let bytes
-    try {
-      bytes = new Uint8Array(readFileSync(deck.path))
-    } catch (err) {
-      if (err && typeof err === 'object' && 'code' in err && err.code === 'ENOENT') continue
-      throw err
-    }
-    saw += 1
-    const read = await readPdfText(bytes)
-    const decision = decidePdfText(read)
-    assert.equal(decision.ok, true, deck.path)
-    if (!decision.ok) continue
-    assert.match(decision.text, deck.sentence, deck.path)
-    assert.match(decision.text, /Ghassab Al Mandeel is the co-founder and CEO of Jahez International Company/, deck.path)
-    assert.match(decision.text, /We are raising SAR 200 million to expand quick commerce in the GCC/, deck.path)
-    assert.equal(/\n[A-Za-z]\n/.test(decision.text), false, deck.path)
-    assert.equal(decision.text.includes('\u2014'), false, deck.path)
-  }
-  if (saw === 0) return
-  assert.equal(saw, decks.length)
-})
-
-test('sample report PDF yields usable text when the fixture is on disk', async () => {
-  const paths = [
-    '/workspace/handoff/ba-ai-dd-fix-2026-09-26/sample-report-style.pdf',
-    '/home/ubuntu/.cursor/projects/workspace/uploads/sample-report-style_68c9.pdf',
-  ]
-  for (const path of paths) {
-    try {
-      const bytes = new Uint8Array(readFileSync(path))
-      const read = await readPdfText(bytes)
-      const decision = decidePdfText(read)
-      assert.equal(decision.ok, true, path)
-      if (decision.ok) assert.match(decision.text, /Goldman|assessment|Finding/i)
-      return
-    } catch (err) {
-      if (err && typeof err === 'object' && 'code' in err && err.code === 'ENOENT') continue
-      throw err
-    }
+  const wrapped = /Northwind Logistics serves 120 enterprise customers across the Gulf and is raising a seed round for regional freight\./
+  for (const name of ['libreoffice-northwind.pdf', 'chrome-type3-northwind.pdf']) {
+    const read = await readPdfText(built[name])
+    assert.match(read.text, wrapped, name)
+    assert.equal(/\n[A-Za-z]\n/.test(read.text), false, name)
   }
 })
 
