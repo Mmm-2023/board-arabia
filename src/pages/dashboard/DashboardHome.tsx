@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { dismissAdmitShareCard, loadAdmitShareCard, type AdmitShareCardState } from '../../lib/admitShareCard'
 import { SponsorBadge } from '../../components/SponsorBadge'
 import { AVATAR_BUCKET } from '../../lib/avatar'
@@ -200,6 +201,20 @@ export function DashboardHome() {
             retryLabel={MEMBER_VIEWS.home.retry}
           />
         </div>
+      ) : null}
+      {member.seat === 'sponsor' ? (
+        <section className="mb-8 max-w-3xl border border-[var(--ba-line)] bg-white px-5 py-4">
+          <h2 className="font-display text-[1.25rem] font-semibold tracking-[-0.02em]">Sponsorship</h2>
+          <p className="mt-2 text-[0.95rem] leading-relaxed text-ink/70">
+            Package, seat category, majlis slots, approved intros, and credits.
+          </p>
+          <Link
+            to="/dashboard/sponsorship"
+            className="mt-3 inline-flex min-h-11 items-center font-semibold text-[var(--ba-indigo)] underline"
+          >
+            Open sponsorship
+          </Link>
+        </section>
       ) : null}
       <HomeSnapshotView
         model={model}

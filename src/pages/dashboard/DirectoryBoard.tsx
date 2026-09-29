@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { ExampleMark } from '../../components/ExampleMark'
+import { SponsorBadge } from '../../components/SponsorBadge'
 import {
   DIRECTORY_AVAILABILITY_OPTIONS,
   DIRECTORY_SEAT_OPTIONS,
@@ -141,7 +142,14 @@ export function DirectoryBoard({
                   <Portrait card={card} src={photos[card.id] ?? card.portrait_asset} />
                   <div className="text-end">
                     {card.is_demo ? <ExampleMark /> : null}
-                    <p className="mt-1 text-[0.85rem] text-ink/55">{seatLabel(card.seat)}</p>
+                    {card.preferred_partner ? (
+                      <div className={card.is_demo ? 'mt-2' : undefined}>
+                        <SponsorBadge />
+                      </div>
+                    ) : null}
+                    {card.seat === 'sponsor' ? null : (
+                      <p className="mt-1 text-[0.85rem] text-ink/55">{seatLabel(card.seat)}</p>
+                    )}
                     {card.availability ? <AvailabilityMark value={card.availability} /> : null}
                   </div>
                 </div>

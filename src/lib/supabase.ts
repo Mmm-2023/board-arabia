@@ -4,6 +4,13 @@ import type { Database } from './database.types'
 import type { CapacityPayload } from './capacity'
 import { parseCapacity, type FoundingCapacity, type FoundingSeat, type MemberSeat } from './member'
 import { parsePlatformStats, type PlatformStats } from './platformStats'
+import {
+  presentSponsorCatalog,
+  presentSponsorDesk,
+  type PackageSave,
+  type SponsorCatalog,
+  type SponsorDesk,
+} from './sponsorDesk'
 import { readRecoveryLocation } from './recovery'
 
 const url = import.meta.env.VITE_SUPABASE_URL
@@ -872,6 +879,77 @@ export async function requestMandateIntro(mandateId: string): Promise<'ok' | 'er
   } catch {
     return 'error'
   }
+}
+
+function plainStaffError(message: string): string {
+  if (message.includes('category_taken')) return 'That category is already held.'
+  if (message.includes('not_allowed')) return 'Staff only.'
+  if (message.includes('invalid_category')) return 'Choose a category from the list.'
+  if (message.includes('invalid_sponsor')) return 'Choose an invited or active sponsor.'
+  return message
+}
+
+export async function fetchSponsorDesk(): Promise<{ error: string } | { desk: SponsorDesk }> {
+  const { data, error } = await supabase.rpc('sponsor_desk')
+  if (error) return { error: error.message }
+  const desk = presentSponsorDesk(data)
+  if (!desk) return { error: 'Could not read the sponsorship.' }
+  return { desk }
+}
+
+export async function fetchSponsorCatalog(): Promise<{ error: string } | { catalog: SponsorCatalog }> {
+  const { data, error } = await supabase.rpc('staff_list_sponsor_catalog')
+  if (error) return { error: plainStaffError(error.message) }
+  const catalog = presentSponsorCatalog(data)
+  if (!catalog) return { error: 'Could not read sponsor packages.' }
+  return { catalog }
+}
+
+export async function saveSponsorPackage(value: PackageSave): Promise<{ error?: string }> {
+  const { error } = await supabase.rpc('staff_save_sponsor_package', {
+    p_slug: value.slug,
+    p_name: value.name,
+    p_price_label: value.price_label,
+    p_majlis_slots: value.majlis_slots,
+    p_intro_credits: value.intro_credits,
+    p_room_credits: value.room_credits,
+    p_active: value.active,
+    p_is_placeholder: value.is_placeholder,
+  })
+  if (error) return { error: plainStaffError(error.message) }
+  return {}
+}
+
+export async function assignSponsorPackage(memberId: string, packageSlug: string): Promise<{ error?: string }> {
+  const { error } = await supabase.rpc('staff_assign_sponsor_package', {
+    p_member_id: memberId,
+    p_package_slug: packageSlug,
+  })
+  if (error) return { error: plainStaffError(error.message) }
+  return {}
+}
+
+export async function assignSponsorCategory(memberId: string, categorySlug: string): Promise<{ error?: string }> {
+  const { error } = await supabase.rpc('staff_assign_sponsor_category', {
+    p_member_id: memberId,
+    p_category_slug: categorySlug,
+  })
+  if (error) return { error: plainStaffError(error.message) }
+  return {}
+}
+
+export async function setMajlisPresentedBy(input: {
+  eventId: string
+  memberId: string | null
+  label: string
+}): Promise<{ error?: string }> {
+  const { error } = await supabase.rpc('staff_set_majlis_presented_by', {
+    p_event_id: input.eventId,
+    p_member_id: input.memberId,
+    p_label: input.label,
+  })
+  if (error) return { error: plainStaffError(error.message) }
+  return {}
 }
 
 export async function fetchFoundingCapacity(): Promise<

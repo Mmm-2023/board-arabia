@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { useNoIndex } from '../../lib/usePageTitle'
 import { FormSkeleton, toneClasses } from '../../shell/ViewState'
+import { SponsorPackagesPanel } from './SponsorPackagesPanel'
 import { STAFF_VIEWS } from '../../shell/viewCopy'
 import { useAdmin } from './context'
 
@@ -12,9 +13,11 @@ export function SettingsPage() {
   if (room.loading && !room.hasLoaded) return <FormSkeleton tone="staff" />
 
   return (
-    <div className="max-w-xl">
+    <div className="max-w-3xl">
       <h1 className="font-display text-[2rem] font-semibold tracking-[-0.03em]">Settings</h1>
       <p className="mt-3 text-[0.98rem] leading-relaxed text-stone/70">{STAFF_VIEWS.settings.optional}</p>
+
+      <SponsorPackagesPanel />
 
       <section className={`${styles.panel} mt-8 px-5 py-5`}>
         <h2 className={`text-[0.72rem] font-semibold tracking-[0.12em] uppercase ${styles.quiet}`}>

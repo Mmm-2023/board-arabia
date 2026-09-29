@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { useSearchParams } from 'react-router-dom'
+import { MajlisCardTitle } from '../../components/MajlisCardTitle'
 import {
   MAJLIS_REGIONS,
   formatMajlisWhen,
@@ -528,18 +529,7 @@ function CardHead({
   sponsorLabel: string | null
   description: string
 }) {
-  return (
-    <>
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <h3 className="font-display text-[1.15rem] font-semibold">{title}</h3>
-        {featured && (
-          <p className="text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--ba-copper-deep)] uppercase">Featured</p>
-        )}
-      </div>
-      {sponsorLabel && <p className="mt-1 text-[0.88rem] text-[var(--ba-muted)]">Presenting: {sponsorLabel}</p>}
-      <p className="mt-2 text-[0.95rem] leading-relaxed text-[var(--ba-muted)]">{description}</p>
-    </>
-  )
+  return <MajlisCardTitle title={title} featured={featured} presentedBy={sponsorLabel} description={description} />
 }
 
 function Meta({

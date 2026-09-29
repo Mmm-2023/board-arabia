@@ -23,6 +23,7 @@ const LIVE_PREFIXES = [
   '/dashboard/ai',
   '/dashboard/profile',
   '/dashboard/help',
+  '/dashboard/sponsorship',
 ]
 
 export function normalizePath(pathname: string) {

@@ -66,7 +66,7 @@ export type DirectoryBrief = {
   is_demo: boolean
   full_name: string
   headline: string
-  seat: 'ksa' | 'intl'
+  seat: 'ksa' | 'intl' | 'sponsor'
 }
 
 export type PartnerBrief = {
@@ -541,7 +541,7 @@ export function assembleHome(input: AssembleInput): HomeModel {
         id: card.id,
         name: card.full_name,
         headline: card.headline,
-        seat: card.seat === 'intl' ? 'International' : 'Saudi Arabia',
+        seat: card.seat === 'intl' ? 'International' : card.seat === 'sponsor' ? 'Sponsor' : 'Saudi Arabia',
         example: card.is_demo,
       })),
       mandates: mandateRows.slice(0, 2).map((row) => mandateTeaser(row)),

@@ -10,11 +10,14 @@ import {
 } from '../../../supabase/functions/_shared/majlis.ts'
 import { KsaRegionMap } from '../../components/majlis/KsaRegionMap'
 import { downloadCsv, toCsv } from '../../lib/csv'
+import type { SponsorRosterRow } from '../../lib/sponsorDesk'
 import {
   decideMajlis,
   fetchMajlisEvents,
   fetchMajlisRoster,
+  fetchSponsorCatalog,
   majlisAdminAction,
+  setMajlisPresentedBy,
   supabase,
   type MajlisEventRow,
   type MajlisRosterRow,
@@ -43,6 +46,10 @@ export function AdminMajlisPage() {
   const [when, setWhen] = useState<'all' | 'upcoming' | 'past'>('all')
   const [sponsor, setSponsor] = useState<'all' | 'with' | 'without'>('all')
   const [openId, setOpenId] = useState<string | null>(null)
+  const [sponsors, setSponsors] = useState<SponsorRosterRow[]>([])
+  const [presentedBy, setPresentedBy] = useState<Record<string, string>>({})
+  const [catalogState, setCatalogState] = useState<'loading' | 'ready' | 'error'>('loading')
+  const [catalogError, setCatalogError] = useState('')
   const [nowMs] = useState(() => Date.now())
   useNoIndex('Majlis queue | Board Arabia')
 
@@ -68,6 +75,22 @@ export function AdminMajlisPage() {
         setError('')
         setEvents(result.events)
       }
+    })
+    void fetchSponsorCatalog().then((catalog) => {
+      if (cancelled) return
+      if ('error' in catalog) {
+        setCatalogState('error')
+        setCatalogError(catalog.error)
+        setSponsors([])
+        setPresentedBy({})
+        return
+      }
+      const links: Record<string, string> = {}
+      for (const row of catalog.catalog.presented_by) links[row.event_id] = row.member_id
+      setSponsors(catalog.catalog.sponsors)
+      setPresentedBy(links)
+      setCatalogError('')
+      setCatalogState('ready')
     })
     return () => {
       cancelled = true
@@ -291,7 +314,17 @@ export function AdminMajlisPage() {
                 <button type="button" className={`${quietBtn} mt-4`} aria-expanded={openId === event.id} onClick={() => setOpenId(openId === event.id ? null : event.id)}>
                   {openId === event.id ? 'Hide operations' : 'Operations'}
                 </button>
-                {openId === event.id && <Ops event={event} onDone={reload} />}
+                {openId === event.id && (
+                  <Ops
+                    key={`${event.id}:${presentedBy[event.id] ?? ''}:${catalogState}`}
+                    event={event}
+                    onDone={reload}
+                    sponsors={sponsors}
+                    presentedMemberId={presentedBy[event.id] ?? ''}
+                    catalogState={catalogState}
+                    catalogError={catalogError}
+                  />
+                )}
               </li>
             ))}
           </ul>
@@ -437,11 +470,26 @@ function PendingCard({ event, host, onDone }: { event: MajlisEventRow; host: str
   )
 }
 
-function Ops({ event, onDone }: { event: MajlisEventRow; onDone: () => void }) {
+function Ops({
+  event,
+  onDone,
+  sponsors,
+  presentedMemberId,
+  catalogState,
+  catalogError,
+}: {
+  event: MajlisEventRow
+  onDone: () => void
+  sponsors: SponsorRosterRow[]
+  presentedMemberId: string
+  catalogState: 'loading' | 'ready' | 'error'
+  catalogError: string
+}) {
   const [message, setMessage] = useState('')
   const [busy, setBusy] = useState(false)
   const [reason, setReason] = useState('')
   const [sponsorLabel, setSponsorLabel] = useState(event.sponsor_label || '')
+  const [presentedMember, setPresentedMember] = useState(presentedMemberId)
   const [starts, setStarts] = useState(utcToRiyadhWall(event.starts_at))
   const [ends, setEnds] = useState(utcToRiyadhWall(event.ends_at))
   const [venueName, setVenueName] = useState(event.venue_name)
@@ -528,15 +576,61 @@ function Ops({ event, onDone }: { event: MajlisEventRow; onDone: () => void }) {
         className="grid gap-3"
         onSubmit={(submit) => {
           submit.preventDefault()
-          void run({ action: 'sponsor', sponsor_label: sponsorLabel })
+          if (catalogState !== 'ready') {
+            setMessage(catalogError || 'The sponsor list is still loading.')
+            return
+          }
+          setBusy(true)
+          setMessage('')
+          void setMajlisPresentedBy({
+            eventId: event.id,
+            memberId: presentedMember || null,
+            label: sponsorLabel,
+          }).then((result) => {
+            setBusy(false)
+            if (result.error) {
+              setMessage(result.error)
+              return
+            }
+            onDone()
+          })
         }}
       >
         <label className="block text-[0.92rem]">
-          Presenting sponsor
+          Presented by
+          <select
+            className="mt-1 min-h-11 w-full border border-white/20 bg-transparent px-3"
+            value={presentedMember}
+            onChange={(input) => {
+              const next = input.target.value
+              setPresentedMember(next)
+              const choice = sponsors.find((sponsor) => sponsor.user_id === next)
+              setSponsorLabel(choice ? choice.label : '')
+            }}
+          >
+            <option value="">No sponsor seat</option>
+            {sponsors.map((sponsor) => (
+              <option key={sponsor.user_id} value={sponsor.user_id}>
+                {sponsor.label}
+                {sponsor.email ? ` · ${sponsor.email}` : ''}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="block text-[0.92rem]">
+          Public name
           <input className="mt-1 min-h-11 w-full border border-white/20 bg-transparent px-3" value={sponsorLabel} onChange={(input) => setSponsorLabel(input.target.value)} />
         </label>
-        <button type="submit" className={`${quietBtn} w-fit`} disabled={busy}>
-          Save sponsor
+        {catalogError ? (
+          <p className="text-[0.95rem] text-red-300" role="alert">
+            {catalogError}{' '}
+            <button type="button" className="min-h-11 underline" onClick={onDone}>
+              Retry
+            </button>
+          </p>
+        ) : null}
+        <button type="submit" className={`${quietBtn} w-fit`} disabled={busy || catalogState !== 'ready'}>
+          Save Presented by
         </button>
       </form>
       {(event.status === 'published' || event.status === 'hidden') && (

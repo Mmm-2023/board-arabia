@@ -115,6 +115,7 @@ function card(
     vision_themes: sampleThemes(id),
     availability: sampleAvailability(id),
     seat,
+    preferred_partner: false,
     portrait_asset: `/demo/portraits/${portrait}.svg`,
     avatar_path: null,
   }

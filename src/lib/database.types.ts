@@ -786,6 +786,35 @@ export type Database = {
         Args: { p_member_id: string; p_category_slug: string }
         Returns: Json
       }
+      sponsor_desk: {
+        Args: Record<string, never>
+        Returns: Json
+      }
+      staff_list_sponsor_catalog: {
+        Args: Record<string, never>
+        Returns: Json
+      }
+      staff_save_sponsor_package: {
+        Args: {
+          p_slug: string
+          p_name: string
+          p_price_label: string
+          p_majlis_slots: number
+          p_intro_credits: number
+          p_room_credits: number
+          p_active: boolean
+          p_is_placeholder: boolean
+        }
+        Returns: Json
+      }
+      staff_assign_sponsor_package: {
+        Args: { p_member_id: string; p_package_slug: string }
+        Returns: Json
+      }
+      staff_set_majlis_presented_by: {
+        Args: { p_event_id: string; p_member_id: string | null; p_label: string }
+        Returns: Json
+      }
     }
     Enums: Record<string, never>
     CompositeTypes: Record<string, never>

@@ -54,11 +54,16 @@ export const MEMBER_SECTIONS: Readonly<Record<string, readonly SectionLink[]>> =
   ai: [{ id: 'due-diligence', label: 'Due diligence', to: '/dashboard/ai/due-diligence', end: false }],
 }
 
-/** Account links. Not tabs. */
+/** Account links. Not tabs. Sponsorship is added only for a sponsor seat. */
 export const MEMBER_ACCOUNT: readonly SecondaryLink[] = [
   { id: 'profile', label: 'Profile', to: '/dashboard/profile' },
   { id: 'help', label: 'Help', to: '/dashboard/help' },
 ]
+
+export function memberAccountLinks(seat: string | null | undefined): readonly SecondaryLink[] {
+  if (seat !== 'sponsor') return MEMBER_ACCOUNT
+  return [{ id: 'sponsorship', label: 'Sponsorship', to: '/dashboard/sponsorship' }, ...MEMBER_ACCOUNT]
+}
 
 /** Older previews still import this name. It is the account list, not a More sheet. */
 export const MEMBER_SECONDARY = MEMBER_ACCOUNT
@@ -95,6 +100,8 @@ export function shellSectionTitle(
   destinations: readonly Destination[],
   secondary: readonly SecondaryLink[],
 ) {
+  const path = pathname.length > 1 && pathname.endsWith('/') ? pathname.replace(/\/+$/, '') : pathname
+  if (path === '/dashboard/sponsorship') return 'Sponsorship'
   const account = secondary.find(
     (item) => pathname === item.to || pathname.startsWith(`${item.to}/`),
   )

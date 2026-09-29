@@ -12,6 +12,7 @@ import { STAFF_VIEWS } from '../../shell/viewCopy'
 import { PEOPLE_TIERS, peopleInTier } from './bits'
 import { useAdmin } from './context'
 import { SponsorInvitePanel } from './SponsorInvitePanel'
+import { SponsorSeatPanel } from './SponsorSeatPanel'
 
 export function PeoplePage() {
   const room = useAdmin()
@@ -114,6 +115,7 @@ export function PeoplePage() {
         onEmail={setSponsorEmail}
         onSubmit={() => void onSponsorSubmit()}
       />
+      <SponsorSeatPanel />
 
       <section className="mt-8 border border-brass/30 px-5 py-5">
         <h2 className="font-display text-[1.35rem] font-semibold tracking-[-0.02em]">Invite</h2>
