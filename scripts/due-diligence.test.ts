@@ -4,7 +4,7 @@ import path from 'node:path'
 import test from 'node:test'
 import { createServer } from 'vite'
 import { DD_COPY, deskProgressLine, presentDeskError, REPORT_COPY } from '../src/lib/dueDiligenceCopy.ts'
-import { deskPhase } from '../src/lib/dueDiligencePhase.ts'
+import { deskPhase, nextPollFailures, POLL_FAILURE_LIMIT } from '../src/lib/dueDiligencePhase.ts'
 import {
   HOMEPAGE_STEP,
   IP_STEP,
@@ -208,11 +208,42 @@ test('desk status never stacks the empty state with an error', () => {
     }),
     'job-error',
   )
+  assert.equal(
+    deskPhase({
+      loadState: 'ready',
+      activeJob: true,
+      jobError: true,
+      statusError: true,
+      fileChosen: true,
+      reportCount: 1,
+    }),
+    'job-error',
+  )
+  assert.equal(
+    deskPhase({
+      loadState: 'ready',
+      activeJob: false,
+      jobError: false,
+      starting: true,
+      fileChosen: true,
+      reportCount: 0,
+    }),
+    'starting',
+  )
+  assert.equal(POLL_FAILURE_LIMIT, 3)
+  assert.deepEqual(nextPollFailures(0, false), { failures: 1, giveUp: false })
+  assert.deepEqual(nextPollFailures(1, false), { failures: 2, giveUp: false })
+  assert.deepEqual(nextPollFailures(2, false), { failures: 3, giveUp: true })
+  assert.deepEqual(nextPollFailures(2, true), { failures: 0, giveUp: false })
   const page = readFileSync(path.join(root, 'src/pages/dashboard/DueDiligencePage.tsx'), 'utf8')
   const copy = readFileSync(path.join(root, 'src/lib/dueDiligenceCopy.ts'), 'utf8')
   assert.match(page, /phase === 'idle-empty'/)
   assert.match(page, /phase === 'job-error'/)
   assert.equal(/reports\.length === 0 \?/.test(page), false)
+  assert.equal(/activeJob:\s*Boolean\(activeJobId\)\s*\|\|\s*busy/.test(page), false)
+  assert.match(page, /statusError: pollGaveUp/)
+  assert.match(page, /nextPollFailures/)
+  assert.match(page, /phase === 'running' && activeJob/)
   assert.match(page, /AI Due Diligence/)
   assert.match(copy, /Check this deck/)
   assert.match(page, /\{progress\}%/)
@@ -233,6 +264,9 @@ test('desk progress and errors use the member strings', () => {
   assert.equal(presentDeskError(MEMBER_MESSAGES.rate), DD_COPY.errorRate)
   assert.equal(presentDeskError(MEMBER_MESSAGES.finish), DD_COPY.errorGeneric)
   assert.equal(presentDeskError(DD_COPY.errorNetwork), DD_COPY.errorNetwork)
+  assert.equal(presentDeskError(MEMBER_MESSAGES.authUnavailable), DD_COPY.errorAuth)
+  assert.equal(presentDeskError(DD_COPY.errorTimeout), DD_COPY.errorTimeout)
+  assert.equal(presentDeskError(DD_COPY.errorPoll), DD_COPY.errorPoll)
   assert.equal(presentDeskError(MEMBER_MESSAGES.url), MEMBER_MESSAGES.url)
   assert.equal(MEMBER_VIEWS.dueDiligence.empty, DD_COPY.emptyHistory)
   assert.equal(MEMBER_VIEWS.dueDiligence.ready, DD_COPY.fileChosen)
@@ -246,9 +280,16 @@ test('desk screen keeps one status and puts the error under the check button', a
   })
   try {
     const mod = (await vite.ssrLoadModule('/src/shell/renderDueDesk.tsx')) as {
-      renderDueDeskStates: () => { idle: string; chosen: string; error: string; running: string }
+      renderDueDeskStates: () => {
+        idle: string
+        chosen: string
+        error: string
+        running: string
+        starting: string
+        pollError: string
+      }
     }
-    const { idle, chosen, error, running } = mod.renderDueDeskStates()
+    const { idle, chosen, error, running, starting, pollError } = mod.renderDueDeskStates()
     assert.ok(idle.includes(DD_COPY.introPrimary))
     assert.ok(idle.includes(DD_COPY.introShort))
     assert.ok(idle.includes(DD_COPY.introSupporting))
@@ -290,7 +331,17 @@ test('desk screen keeps one status and puts the error under the check button', a
     assert.equal(running.includes(DD_COPY.fileChosen), false)
     assert.equal(running.includes(DD_COPY.idle), false)
 
-    const blob = [idle, chosen, error, running].join('\n')
+    assert.ok(starting.includes(DD_COPY.starting))
+    assert.equal(starting.includes('role="progressbar"'), false)
+    assert.equal(starting.includes(DD_COPY.progressHint), false)
+
+    assert.ok(pollError.includes(DD_COPY.errorPoll))
+    assert.ok(pollError.includes(DD_COPY.pollRetry))
+    assert.equal(pollError.includes('role="progressbar"'), false)
+    assert.equal(pollError.includes(DD_COPY.progressHint), false)
+    assert.equal(pollError.includes(DD_COPY.emptyHistory), false)
+
+    const blob = [idle, chosen, error, running, starting, pollError].join('\n')
     assert.equal(blob.includes('\u2014'), false)
     assert.equal(blob.includes('\u2013'), false)
     assert.equal(/\b(valid|invalid|investable|approved|rejected|fraud|invest|pass|fail)\b/i.test(blob), false)
@@ -532,6 +583,10 @@ test('migration locks RLS, storage, and the run limit without secrets', () => {
     'src/lib/dueDiligence.ts',
     'src/lib/dueDiligenceCopy.ts',
     'src/lib/dueDiligenceNextSteps.ts',
+    'src/lib/dueDiligenceRequests.ts',
+    'src/lib/fetchTimeout.ts',
+    'supabase/functions/_shared/due_diligence_user.ts',
+    'supabase/functions/due-diligence-start/handle.ts',
     'supabase/functions/due-diligence-start/index.ts',
     'supabase/functions/due-diligence-status/index.ts',
     'supabase/functions/due-diligence-start/run.ts',

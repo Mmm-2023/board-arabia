@@ -26,6 +26,7 @@ export const MEMBER_MESSAGES = {
   missing: 'That note is not in your history.',
   missingJob: 'That check is not in your history.',
   unauthorized: 'Unauthorized',
+  authUnavailable: 'Could not confirm your sign-in. Try again in a moment.',
 } as const
 
 const SAFE_MESSAGES = new Set<string>(Object.values(MEMBER_MESSAGES))

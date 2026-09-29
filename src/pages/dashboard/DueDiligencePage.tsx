@@ -22,7 +22,7 @@ import {
   type ReadFailure,
 } from '../../lib/dueDiligence'
 import { DD_COPY, deskCtaLabel, deskProgressLine, presentDeskError } from '../../lib/dueDiligenceCopy'
-import { deskPhase, type DeskPhase } from '../../lib/dueDiligencePhase'
+import { deskPhase, nextPollFailures, type DeskPhase } from '../../lib/dueDiligencePhase'
 import { supabase } from '../../lib/supabase'
 import { useNoIndex } from '../../lib/usePageTitle'
 import { CardSkeleton, EmptyState, ErrorBanner, PermissionState } from '../../shell/ViewState'
@@ -62,6 +62,8 @@ function Desk() {
   const [progress, setProgress] = useState(0)
   const [stage, setStage] = useState('')
   const [jobError, setJobError] = useState('')
+  const [pollGaveUp, setPollGaveUp] = useState(false)
+  const pollFailures = useRef(0)
 
   useEffect(() => {
     let cancelled = false
@@ -84,21 +86,38 @@ function Desk() {
   }, [attempt, userId])
 
   useEffect(() => {
-    if (!activeJobId) return
+    if (!activeJobId || pollGaveUp) return
     let cancelled = false
+    let inFlight = false
+    pollFailures.current = 0
     async function tick() {
-      const result = await fetchDueDiligenceStatus(activeJobId as string)
-      if (cancelled) return
-      if (!result.ok) return
-      setProgress(result.progress)
-      setStage(result.stage)
-      if (result.reportId) {
-        navigate(`/dashboard/due-diligence/${result.reportId}`)
-        return
-      }
-      if (result.status === 'failed') {
-        setJobError(result.error || MEMBER_MESSAGES.finish)
-        setActiveJobId(null)
+      if (cancelled || inFlight) return
+      inFlight = true
+      try {
+        const result = await fetchDueDiligenceStatus(activeJobId as string)
+        if (cancelled) return
+        const next = nextPollFailures(pollFailures.current, result.ok)
+        pollFailures.current = next.failures
+        if (!result.ok) {
+          if (next.giveUp) {
+            setJobError(DD_COPY.errorPoll)
+            setPollGaveUp(true)
+          }
+          return
+        }
+        setProgress(result.progress)
+        setStage(result.stage)
+        if (result.reportId) {
+          navigate(`/dashboard/due-diligence/${result.reportId}`)
+          return
+        }
+        if (result.status === 'failed') {
+          setJobError(result.error || MEMBER_MESSAGES.finish)
+          setActiveJobId(null)
+          setPollGaveUp(false)
+        }
+      } finally {
+        inFlight = false
       }
     }
     void tick()
@@ -107,7 +126,7 @@ function Desk() {
       cancelled = true
       window.clearInterval(timer)
     }
-  }, [activeJobId, navigate])
+  }, [activeJobId, navigate, pollGaveUp])
 
   async function runCheck() {
     setFormError('')
@@ -168,6 +187,8 @@ function Desk() {
       return
     }
     setJobError('')
+    setPollGaveUp(false)
+    pollFailures.current = 0
     setProgress(5)
     setStage('Queued')
     setActiveJobId(started.jobId)
@@ -179,6 +200,11 @@ function Desk() {
   }
 
   function onRetry() {
+    if (pollGaveUp && activeJobId) {
+      setJobError('')
+      setPollGaveUp(false)
+      return
+    }
     if (file) {
       void runCheck()
       return
@@ -189,11 +215,13 @@ function Desk() {
 
   const phase = deskPhase({
     loadState,
-    activeJob: Boolean(activeJobId) || busy,
+    activeJob: Boolean(activeJobId),
     jobError: Boolean(jobError),
     formError: Boolean(formError),
     fileChosen: Boolean(file),
     reportCount: reports.length,
+    statusError: pollGaveUp,
+    starting: busy && !activeJobId,
   })
 
   return (
@@ -216,6 +244,7 @@ function Desk() {
       }}
       onSubmit={onSubmit}
       onRetry={onRetry}
+      retryLabel={pollGaveUp ? DD_COPY.pollRetry : DD_COPY.errorRetry}
       onReload={() => {
         setLoadState('loading')
         setAttempt((value) => value + 1)
@@ -240,6 +269,7 @@ export function DueDiligenceDeskView({
   onSubmit,
   onRetry,
   onReload,
+  retryLabel = DD_COPY.errorRetry,
 }: {
   phase: DeskPhase
   loadState: 'loading' | 'ready' | ReadFailure
@@ -256,6 +286,7 @@ export function DueDiligenceDeskView({
   onSubmit: (event: FormEvent) => void
   onRetry: () => void
   onReload: () => void
+  retryLabel?: string
 }) {
   const fileRef = useRef<HTMLInputElement>(null)
   const fileChosen = Boolean(fileName)
@@ -351,7 +382,7 @@ export function DueDiligenceDeskView({
               {deskCtaLabel({ busy, fileChosen })}
             </button>
 
-            <div className="mt-3">
+            <div className="mt-3" id="dd-status">
               {phase === 'running' && activeJob ? (
                 <div className="border border-[var(--ba-line)] bg-white px-4 py-4" aria-live="polite">
                   <p className="text-[1rem] leading-snug text-ink">
@@ -371,11 +402,16 @@ export function DueDiligenceDeskView({
                   <p className="mt-3 text-[0.92rem] leading-relaxed text-[var(--ba-muted)]">{DD_COPY.progressHint}</p>
                 </div>
               ) : null}
+              {phase === 'starting' ? (
+                <p className="text-[0.98rem] leading-relaxed text-ink" aria-live="polite">
+                  {DD_COPY.starting}
+                </p>
+              ) : null}
               {phase === 'job-error' ? (
                 <div id="dd-action-error" role="alert">
                   <p className="text-[0.95rem] leading-relaxed text-[var(--ba-error)]">{actionError}</p>
                   <button type="button" className={retryClass} onClick={onRetry}>
-                    {DD_COPY.errorRetry}
+                    {retryLabel}
                   </button>
                 </div>
               ) : null}

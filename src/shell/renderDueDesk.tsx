@@ -14,6 +14,7 @@ function renderDesk(input: {
   progress?: number
   progressLabel?: string
   actionError?: string
+  retryLabel?: string
 }) {
   return renderToStaticMarkup(
     <MemoryRouter>
@@ -33,6 +34,7 @@ function renderDesk(input: {
         onSubmit={(event: FormEvent) => event.preventDefault()}
         onRetry={noop}
         onReload={noop}
+        retryLabel={input.retryLabel}
       />
     </MemoryRouter>,
   )
@@ -53,6 +55,17 @@ export function renderDueDeskStates() {
       activeJob: true,
       progress: 40,
       progressLabel: DD_COPY.statusReading,
+    }),
+    starting: renderDesk({
+      phase: 'starting',
+      fileName: 'sample-deck.pdf',
+    }),
+    pollError: renderDesk({
+      phase: 'job-error',
+      fileName: 'sample-deck.pdf',
+      activeJob: true,
+      actionError: DD_COPY.errorPoll,
+      retryLabel: DD_COPY.pollRetry,
     }),
   }
 }
