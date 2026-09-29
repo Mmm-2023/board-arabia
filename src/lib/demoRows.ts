@@ -13,7 +13,8 @@ export type DirectoryCard = {
   sectors: string[]
   vision_themes: string[]
   availability: Availability | null
-  seat: 'ksa' | 'intl'
+  seat: 'ksa' | 'intl' | 'sponsor'
+  preferred_partner: boolean
   portrait_asset: string | null
   avatar_path: string | null
 }
@@ -51,7 +52,9 @@ function rowsOf(raw: unknown): unknown[] {
 }
 
 export function seatLabel(seat: DirectoryCard['seat']): string {
-  return seat === 'intl' ? 'International' : 'Saudi Arabia'
+  if (seat === 'intl') return 'International'
+  if (seat === 'sponsor') return 'Sponsor'
+  return 'Saudi Arabia'
 }
 
 export function presentDirectoryCard(raw: unknown): DirectoryCard | null {
@@ -59,7 +62,7 @@ export function presentDirectoryCard(raw: unknown): DirectoryCard | null {
   const row = raw as Record<string, unknown>
   const id = text(row.id, 80)
   const fullName = text(row.full_name, 200)
-  const seat = row.seat === 'intl' ? 'intl' : row.seat === 'ksa' ? 'ksa' : null
+  const seat = row.seat === 'intl' ? 'intl' : row.seat === 'ksa' ? 'ksa' : row.seat === 'sponsor' ? 'sponsor' : null
   if (!id || !fullName || !seat) return null
   const portrait = text(row.portrait_asset, 160)
   const avatar = text(row.avatar_path, 160)
@@ -79,6 +82,7 @@ export function presentDirectoryCard(raw: unknown): DirectoryCard | null {
     vision_themes: normalizeTags(row.vision_themes, VISION_2030_THEMES),
     availability: isAvailability(row.availability) ? row.availability : null,
     seat,
+    preferred_partner: row.preferred_partner === true || seat === 'sponsor',
     portrait_asset: portrait.startsWith('/demo/portraits/') ? portrait : null,
     avatar_path: /^[0-9a-f-]{36}\/avatar$/i.test(avatar) ? avatar : null,
   }

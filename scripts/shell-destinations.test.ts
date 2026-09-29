@@ -5,6 +5,7 @@ import test from 'node:test'
 import {
   MEMBER_ACCOUNT,
   MEMBER_DESTINATIONS,
+  memberAccountLinks,
   MEMBER_SECTIONS,
   STAFF_DESTINATIONS,
   STAFF_SECONDARY,
@@ -76,6 +77,16 @@ test('section title follows the active destination', () => {
   )
   assert.equal(shellSectionTitle('/dashboard/profile', MEMBER_DESTINATIONS, MEMBER_ACCOUNT), 'Profile')
   assert.equal(shellSectionTitle('/dashboard/help', MEMBER_DESTINATIONS, MEMBER_ACCOUNT), 'Help')
+  assert.equal(shellSectionTitle('/dashboard/sponsorship', MEMBER_DESTINATIONS, MEMBER_ACCOUNT), 'Sponsorship')
+  assert.deepEqual(
+    memberAccountLinks('ksa').map((item) => item.label),
+    ['Profile', 'Help'],
+  )
+  assert.deepEqual(
+    memberAccountLinks('sponsor').map((item) => item.label),
+    ['Sponsorship', 'Profile', 'Help'],
+  )
+  assert.equal(memberAccountLinks('sponsor').some((item) => MEMBER_DESTINATIONS.some((tab) => tab.label === item.label)), false)
   assert.equal(shellSectionTitle('/admin/applications', STAFF_DESTINATIONS, STAFF_SECONDARY), 'Applications')
   assert.equal(shellSectionTitle('/admin/email', STAFF_DESTINATIONS, STAFF_SECONDARY), 'Email')
   assert.equal(shellSectionTitle('/admin/majlis', STAFF_DESTINATIONS, STAFF_SECONDARY), 'Majlis')

@@ -40,6 +40,7 @@ import { DealRoomPage } from './pages/dashboard/DealRoomPage'
 import { RoomsPage } from './pages/dashboard/RoomsPage'
 import { NetworkPage } from './pages/dashboard/NetworkPage'
 import { ProfilePage } from './pages/dashboard/ProfilePage'
+import { SponsorshipPage } from './pages/dashboard/SponsorshipPage'
 import { RedirectKeep } from './shell/RedirectKeep'
 
 export default function App() {
@@ -97,6 +98,7 @@ export default function App() {
         </Route>
         <Route path="profile" element={<ProfilePage />} />
         <Route path="help" element={<HelpPage />} />
+        <Route path="sponsorship" element={<SponsorshipPage />} />
         <Route path="directory" element={<RedirectKeep />} />
         <Route path="mandates" element={<RedirectKeep />} />
         <Route path="real-estate" element={<RedirectKeep />} />

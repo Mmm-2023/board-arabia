@@ -67,7 +67,9 @@ export function AppShell({
     location.pathname === '/dashboard/profile' ||
     location.pathname.startsWith('/dashboard/profile/') ||
     location.pathname === '/dashboard/help' ||
-    location.pathname.startsWith('/dashboard/help/')
+    location.pathname.startsWith('/dashboard/help/') ||
+    location.pathname === '/dashboard/sponsorship' ||
+    location.pathname.startsWith('/dashboard/sponsorship/')
   const moreCurrent = moreOpen || secondaryActive
   const displayName = accountName.trim() || accountLabel
 

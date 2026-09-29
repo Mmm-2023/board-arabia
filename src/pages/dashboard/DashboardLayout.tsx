@@ -6,7 +6,7 @@ import { fetchMyDealRooms } from '../../lib/dealRoomApi'
 import { stillMustSetPassword } from '../../lib/passwordSet'
 import { dealsNavCount } from '../../lib/dealRoomView'
 import { AppShell } from '../../shell/AppShell'
-import { MEMBER_ACCOUNT, MEMBER_DESTINATIONS, staleBanner } from '../../shell/destinations'
+import { MEMBER_ACCOUNT, MEMBER_DESTINATIONS, memberAccountLinks, staleBanner } from '../../shell/destinations'
 import { HomeSkeleton, PermissionState } from '../../shell/ViewState'
 import { REFRESH_ERROR } from '../../shell/viewCopy'
 import { endAuthSession } from '../../lib/endSession'
@@ -261,7 +261,7 @@ export function DashboardLayout() {
         <AppShell
           tone="member"
           destinations={MEMBER_DESTINATIONS}
-          secondary={MEMBER_ACCOUNT}
+          secondary={memberAccountLinks(gate.room.member.seat)}
           updatedLabel={null}
           dealsBadge={dealsBadge}
           roleSwitch={
