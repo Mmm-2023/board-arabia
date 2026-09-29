@@ -1,4 +1,6 @@
 import { ExampleMark } from '../../components/ExampleMark'
+import { SampleAction } from '../../components/SampleAction'
+import { SAMPLE_NOTE } from '../../lib/sampleAction'
 import {
   RE_LOCKED_NOTE,
   RE_LOCKED_PLACEHOLDERS,
@@ -51,6 +53,7 @@ export function OpportunityCard({
         <OpenBrief card={card} />
       ) : (
         <LockedBrief
+          sample={card.is_demo}
           status={card.intro_status}
           busy={busy}
           onRequest={onRequest ? () => onRequest(card.id) : undefined}
@@ -87,10 +90,12 @@ function OpenBrief({ card }: { card: ReOpportunityOpen | ReOpportunityInventory 
 }
 
 function LockedBrief({
+  sample,
   status,
   busy,
   onRequest,
 }: {
+  sample: boolean
   status: 'pending' | 'declined' | null
   busy?: boolean
   onRequest?: () => void
@@ -100,7 +105,9 @@ function LockedBrief({
       ? 'Intro requested. An admin must approve it before the counterparty and terms open.'
       : status === 'declined'
         ? 'This intro was not approved.'
-        : 'Request intro to unlock.'
+        : sample
+          ? null
+          : 'Request intro to unlock.'
   return (
     <div className="mt-5 border-t border-[var(--ba-line)] pt-4">
       <p className="sr-only">{status == null ? RE_LOCKED_NOTE : note}</p>
@@ -108,8 +115,11 @@ function LockedBrief({
         <p>{RE_LOCKED_PLACEHOLDERS.counterparty}</p>
         <p>{RE_LOCKED_PLACEHOLDERS.terms}</p>
       </div>
-      <p className="mt-4 text-[0.92rem] text-ink/60">{note}</p>
-      {status == null && onRequest ? (
+      {note ? <p className="mt-4 text-[0.92rem] text-ink/60">{note}</p> : null}
+      {sample && status != null ? <p className="mt-4 text-[0.92rem] text-ink/60">{SAMPLE_NOTE}</p> : null}
+      {sample && status == null ? (
+        <SampleAction label="Request intro" />
+      ) : status == null && onRequest ? (
         <button
           type="button"
           disabled={busy}

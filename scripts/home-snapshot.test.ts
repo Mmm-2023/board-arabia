@@ -179,7 +179,7 @@ test('primary CTA follows profile, intro, majlis, mandate, then invite', () => {
   assert.equal(primaryHomeCta({ ...all, profileReady: true, pendingIntros: null })?.id, 'majlis')
 })
 
-test('demo threshold keeps example counts below the line and drops them at the line', () => {
+test('pulse shows real counts and hides sample-only cards', () => {
   assert.equal(DEMO_THRESHOLD_DEFAULTS.mandates, 6)
   assert.equal(DEMO_THRESHOLD_DEFAULTS.rooms, 4)
   assert.equal(demoRowsVisible(5, 6), true)
@@ -193,14 +193,13 @@ test('demo threshold keeps example counts below the line and drops them at the l
       { is_demo: true },
       { is_demo: true },
     ],
-    directory: [],
+    directory: [{ is_demo: true }, { is_demo: true }],
   })
-  const thinMandates = thin.find((item) => item.id === 'mandates')
-  const thinRooms = thin.find((item) => item.id === 'rooms')
-  assert.equal(thinMandates?.example, true)
-  assert.equal(thinMandates?.value, '2')
-  assert.equal(thinRooms?.example, true)
-  assert.ok(thinMandates && thinMandates.body.includes('Example'))
+  assert.equal(thin.find((item) => item.id === 'mandates'), undefined)
+  assert.equal(thin.find((item) => item.id === 'rooms'), undefined)
+  assert.equal(thin.find((item) => item.id === 'directory'), undefined)
+  assert.equal(thin.some((item) => item.example), false)
+  assert.equal(thin.length, 0)
 
   const liveAndSample = [
     ...Array.from({ length: 6 }, (_, index) => brief({ id: `r${index}`, is_demo: false, intro_status: null })),
@@ -232,13 +231,47 @@ test('demo threshold keeps example counts below the line and drops them at the l
   })
   assert.equal(mixedPending.find((item) => item.id === 'intros')?.value, '1')
   assert.equal(mixedPending.find((item) => item.id === 'intros')?.example, false)
-  assert.ok(buildHeadlines({
+  const sampleOnly = buildHeadlines({
     founding: false,
     invitesRemaining: 0,
     mandates: [brief({ is_demo: true, intro_status: 'pending' })],
     rooms: [],
     directory: [],
-  }).find((item) => item.id === 'intros')?.example)
+  })
+  assert.equal(sampleOnly.find((item) => item.id === 'intros'), undefined)
+  assert.equal(sampleOnly.some((item) => item.example), false)
+
+  const sampleHome = assembleHome(
+    base({
+      invitesRemaining: 2,
+      mandates: [
+        brief({ is_demo: true, intro_status: 'pending' }),
+        brief({ id: 'fresh-sample', is_demo: true, intro_status: null }),
+      ],
+      rooms: [{ id: 'room-sample', is_demo: true, name: 'Industrial services room', sector: 'Energy', stage: 'Diligence' }],
+      activity: [
+        {
+          id: 'sample-intro',
+          kind: 'intro',
+          label: 'Intro requested',
+          detail: 'Energy transition · Growth equity',
+          happenedAt: '2026-09-25T11:40:00.000Z',
+          href: '/dashboard/deals/mandates',
+          example: true,
+        },
+      ],
+      activityStatus: 'ready',
+    }),
+  )
+  assert.equal(sampleHome.pulse.find((item) => item.id === 'intros'), undefined)
+  assert.equal(sampleHome.pulse.find((item) => item.id === 'mandates'), undefined)
+  assert.equal(sampleHome.pulse.find((item) => item.id === 'rooms'), undefined)
+  assert.equal(sampleHome.pulse.find((item) => item.id === 'vouchers')?.value, '2')
+  assert.equal(sampleHome.pulse.some((item) => item.example), false)
+  assert.equal(sampleHome.cta?.id, 'invite')
+  assert.equal(sampleHome.teasers.mandates[0]?.example, true)
+  assert.equal(sampleHome.activity[0]?.example, true)
+  assert.equal(sampleHome.activity[0]?.label, 'Intro requested')
 })
 
 test('mandate teasers keep one card per id', () => {
@@ -375,6 +408,13 @@ test('home copy and the activity migration stay free of private fields and em da
   assert.equal(view.includes('contact_email'), false)
   assert.match(view, /ExampleMark/)
   assert.match(view, /data-membership-badge/)
+  assert.match(view, /!item\.example/)
+  assert.match(view, /\{item\.value\}/)
+  assert.equal(view.includes('item.example ? null'), false)
+  assert.match(view, /FORMING_TOTALS/)
+  assert.equal(view.includes('Platform totals are not published yet'), false)
+  assert.equal(view.includes('\u2014'), false)
+  assert.equal(view.includes('\u2013'), false)
   const sql = source('supabase/migrations/20260929180000_member_home_activity.sql')
   assert.match(sql, /security definer/)
   assert.match(sql, /auth\.uid\(\)/)

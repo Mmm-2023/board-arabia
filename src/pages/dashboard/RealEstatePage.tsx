@@ -7,6 +7,7 @@ import {
   requestRePartnerIntro,
 } from '../../lib/demoFetch'
 import type { ReOpportunityCard, RePartnerCard } from '../../lib/reRedaction'
+import { sampleRow } from '../../lib/sampleAction'
 import { useNoIndex } from '../../lib/usePageTitle'
 import { RealEstateBoard, type RealEstateStatus, type RealEstateTab } from './RealEstateBoard'
 
@@ -80,6 +81,7 @@ export function RealEstatePage() {
   }, [partnerAttempt])
 
   async function onRequest(id: string) {
+    if (list.status === 'ready' && sampleRow(list.cards, id)) return
     setRequestError(false)
     setBusyId(id)
     const outcome = await requestReOpportunityIntro(id)
@@ -93,6 +95,7 @@ export function RealEstatePage() {
   }
 
   async function onRequestPartner(id: string) {
+    if (partners.status === 'ready' && sampleRow(partners.cards, id)) return
     setPartnerRequestError(false)
     setPartnerBusyId(id)
     const outcome = await requestRePartnerIntro(id)

@@ -1,4 +1,6 @@
 import { ExampleMark } from '../../components/ExampleMark'
+import { SampleAction } from '../../components/SampleAction'
+import { SAMPLE_NOTE } from '../../lib/sampleAction'
 import {
   LOCKED_NOTE,
   LOCKED_PLACEHOLDERS,
@@ -40,6 +42,7 @@ export function MandateCard({
         <OpenBrief mandate={mandate} />
       ) : (
         <LockedBrief
+          sample={mandate.is_demo}
           status={mandate.intro_status}
           busy={busy}
           onRequest={onRequest ? () => onRequest(mandate.id) : undefined}
@@ -77,10 +80,12 @@ function OpenBrief({ mandate }: { mandate: MandateOpen }) {
 }
 
 function LockedBrief({
+  sample,
   status,
   busy,
   onRequest,
 }: {
+  sample: boolean
   status: 'pending' | 'declined' | null
   busy?: boolean
   onRequest?: () => void
@@ -90,7 +95,9 @@ function LockedBrief({
       ? 'Intro requested. An admin must approve it before the brief opens.'
       : status === 'declined'
         ? 'This intro was not approved.'
-        : 'Request intro to unlock.'
+        : sample
+          ? null
+          : 'Request intro to unlock.'
   return (
     <div className="mt-5 border-t border-[var(--ba-line)] pt-4">
       <p className="sr-only">{LOCKED_NOTE}</p>
@@ -101,8 +108,11 @@ function LockedBrief({
         <p>{LOCKED_PLACEHOLDERS.deck}</p>
         <p>{LOCKED_PLACEHOLDERS.narrative}</p>
       </div>
-      <p className="mt-4 text-[0.92rem] text-ink/60">{note}</p>
-      {status == null && onRequest ? (
+      {note ? <p className="mt-4 text-[0.92rem] text-ink/60">{note}</p> : null}
+      {sample && status != null ? <p className="mt-4 text-[0.92rem] text-ink/60">{SAMPLE_NOTE}</p> : null}
+      {sample && status == null ? (
+        <SampleAction label="Request intro" />
+      ) : status == null && onRequest ? (
         <button
           type="button"
           disabled={busy}
