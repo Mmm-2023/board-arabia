@@ -25,7 +25,7 @@ import { DueDiligencePage } from './pages/dashboard/DueDiligencePage'
 import { HelpPage } from './pages/dashboard/HelpPage'
 import { MajlisPage } from './pages/dashboard/MajlisPage'
 import { MandatesPage } from './pages/dashboard/MandatesPage'
-import { ModulePage } from './pages/dashboard/ModulePage'
+import { RoomsPage } from './pages/dashboard/RoomsPage'
 import { NetworkPage } from './pages/dashboard/NetworkPage'
 import { ProfilePage } from './pages/dashboard/ProfilePage'
 
@@ -65,7 +65,7 @@ export default function App() {
         <Route path="intros" element={<Navigate to="/dashboard/network" replace />} />
         <Route path="due-diligence" element={<DueDiligencePage />} />
         <Route path="due-diligence/:reportId" element={<DueDiligencePage />} />
-        <Route path="rooms" element={<ModulePage id="rooms" />} />
+        <Route path="rooms" element={<RoomsPage />} />
         <Route path="majlis" element={<MajlisPage />} />
         <Route path="events" element={<Navigate to="/dashboard/majlis" replace />} />
         <Route path="help" element={<HelpPage />} />

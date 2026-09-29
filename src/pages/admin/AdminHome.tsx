@@ -4,6 +4,7 @@ import { seatLine } from '../../lib/platformStats'
 import { useNoIndex } from '../../lib/usePageTitle'
 import { EmptyState, HomeSkeleton, toneClasses } from '../../shell/ViewState'
 import { STAFF_VIEWS } from '../../shell/viewCopy'
+import { MandateIntroQueue } from './MandateIntroQueue'
 import { useAdmin } from './context'
 
 export function AdminHome() {
@@ -71,6 +72,8 @@ export function AdminHome() {
           </ul>
         )}
       </section>
+
+      <MandateIntroQueue />
 
       <section aria-label="Status" className="mt-8">
         <h2 className={`text-[0.72rem] font-semibold tracking-[0.14em] uppercase ${styles.quiet}`}>

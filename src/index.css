@@ -134,6 +134,13 @@
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
+.mandate-locked-copy {
+  filter: blur(7px);
+  user-select: none;
+  -webkit-user-select: none;
+  pointer-events: none;
+}
+
 @media (min-width: 768px) {
   .shell-main {
     padding-top: 2rem;
