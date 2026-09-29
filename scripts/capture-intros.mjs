@@ -32,16 +32,16 @@ const chrome = spawn(
 )
 
 const shots = [
-  ['directory', 'directory_card_request'],
-  ['intros', 'intros_member'],
-  ['admin', 'intros_admin'],
+  ['directory', 'directory_request_form'],
+  ['intros', 'intros_member_list'],
+  ['admin', 'intros_admin_list'],
 ]
 
 try {
   await waitForBrowser()
   for (const [view, name] of shots) {
     for (const width of [390, 1280]) {
-      const height = width === 390 ? 900 : 1000
+      const height = width === 390 ? 1680 : 1200
       await capture(
         `http://127.0.0.1:${port}/scripts/smoke/intros.html?view=${view}`,
         width,
@@ -155,8 +155,6 @@ async function capture(url, width, height, file, view) {
             setter.call(field, 'Shared work on an energy brief.')
             field.dispatchEvent(new Event('input', { bubbles: true }))
           }
-          const card = live.closest('article')
-          if (card) card.scrollIntoView({ block: 'center' })
           return field ? 'opened' : 'no-field'
         })()`,
         returnByValue: true,
