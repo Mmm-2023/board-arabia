@@ -32,3 +32,8 @@ verify_jwt = true
 # LinkedIn token exchange. Deploy this function later. Secrets stay in the Edge secret store.
 [functions.linkedin-oauth]
 verify_jwt = true
+
+# Daily GitHub Action. Header x-invite-reminder must match INVITE_REMINDER_SECRET.
+# verify_jwt stays off so the anon key is not a credential. An unset secret rejects every call.
+[functions.remind-member-invites]
+verify_jwt = false

@@ -2,6 +2,7 @@ import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1
 import { issueCredential, type Issued } from '../_shared/credentials.ts'
 import { requireStaff } from '../_shared/require_staff.ts'
 import { SPONSOR_CAP, sponsorSeatAllowed } from '../_shared/sponsor_seat.ts'
+import { deliverAdmitShare } from '../_shared/admit_share.ts'
 import { sponsorInviteMail } from '../_shared/transactional_copy.ts'
 import { corsHeaders, jsonResponse, logEmailEvent, publicSite, sendEmail } from './mail.ts'
 
@@ -109,6 +110,28 @@ Deno.serve(async (req) => {
     return jsonResponse(req, { error: sent.detail || 'Email failed' }, 502)
   }
 
+  const share = await deliverAdmitShare(
+    {
+      to: email,
+      memberName: fullName || 'there',
+      tier: 'Sponsor',
+      company,
+      dashboardUrl: `${site}/dashboard`,
+    },
+    (message) => sendEmail(message),
+  )
+  await logEmailEvent(admin, {
+    application_id: null,
+    kind: 'admit_linkedin_share',
+    recipient: email,
+    subject: share.subject,
+    status: share.status,
+    provider: 'gmail',
+    provider_id: null,
+    detail: share.detail,
+    payload: { tier: 'Sponsor', seat: 'sponsor' },
+  })
+
   const dryRunInvite = sent.dryRun
     ? {
         confirm_url: confirmUrl,
@@ -121,6 +144,7 @@ Deno.serve(async (req) => {
   return jsonResponse(req, {
     ok: true,
     dry_run: sent.dryRun,
+    linkedin_share: share.status,
     seat: 'sponsor',
     message: sent.dryRun
       ? 'Sponsor invited (dry-run). Workspace mail is not connected, so the invite was not emailed.'

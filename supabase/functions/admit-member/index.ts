@@ -1,6 +1,7 @@
 import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1'
 import { requireStaff } from '../_shared/require_staff.ts'
 import { issueCredential, type Issued } from '../_shared/credentials.ts'
+import { deliverAdmitShare } from '../_shared/admit_share.ts'
 import { admitMail } from '../_shared/transactional_copy.ts'
 import { corsHeaders, jsonResponse, logEmailEvent, publicSite, sendEmail } from './mail.ts'
 
@@ -162,6 +163,29 @@ Deno.serve(async (req) => {
     return jsonResponse(req, { error: sent.detail || 'Email failed' }, 502)
   }
 
+  const share = await deliverAdmitShare(
+    {
+      to: email,
+      memberName: fullName || 'there',
+      tier: 'Founding Member',
+      headline: firstLine(app.job_titles),
+      company: firstLine(app.companies),
+      dashboardUrl: `${site}/dashboard`,
+    },
+    (message) => sendEmail(message),
+  )
+  await logEmailEvent(admin, {
+    application_id: app.id,
+    kind: 'admit_linkedin_share',
+    recipient: email,
+    subject: share.subject,
+    status: share.status,
+    provider: 'gmail',
+    provider_id: null,
+    detail: share.detail,
+    payload: { tier: 'Founding Member', seat },
+  })
+
   const dryRunInvite = sent.dryRun
     ? {
         confirm_url: confirmUrl,
@@ -174,6 +198,7 @@ Deno.serve(async (req) => {
   return jsonResponse(req, {
     ok: true,
     dry_run: sent.dryRun,
+    linkedin_share: share.status,
     seat,
     message: sent.dryRun
       ? 'Admitted (dry-run). Workspace mail is not connected, so the invite was not emailed.'

@@ -31,15 +31,15 @@ test('peer invite mail is Board Arabia only', () => {
   const previous = process.env.GMAIL_FROM
   process.env.GMAIL_FROM = 'ops@example.com'
   try {
-    const mail = peerInviteMail(applyUrl, 'Layla Hassan')
-    assert.equal(mail.subject, 'Board Arabia: a personal invitation')
+    const mail = peerInviteMail(applyUrl, { name: 'Layla Hassan' })
+    assert.equal(mail.subject, 'Layla Hassan vouched for you on Board Arabia')
     assert.equal(hasBoardFooter(mail.text, mail.html), true)
     assert.equal(marketingSignatureHit(mail.text, mail.html), null)
     assert.equal(mail.text.includes('\u2014'), false)
     assert.equal(mail.html.includes('\u2014'), false)
     assert.equal(/calendar\.app\.google/i.test(mail.text + mail.html), false)
     assert.equal(/nammco/i.test(mail.text + mail.html), false)
-    assert.match(mail.text, /does not skip review/)
+    assert.match(mail.text, /not an automatic seat/)
     assert.match(mail.text, /Layla Hassan/)
     const raw = buildRfc822({
       from: workspaceFromAddress(),
@@ -59,13 +59,14 @@ test('peer invite mail is Board Arabia only', () => {
 })
 
 test('WhatsApp url carries the same apply link', () => {
-  const withPhone = whatsAppInviteUrl('966500000000', applyUrl)
-  const bare = whatsAppInviteUrl(null, applyUrl)
+  const withPhone = whatsAppInviteUrl('966500000000', applyUrl, 'Layla Hassan')
+  const bare = whatsAppInviteUrl(null, applyUrl, 'Layla Hassan')
   assert.equal(withPhone.startsWith('https://wa.me/966500000000?text='), true)
   assert.equal(bare.startsWith('https://wa.me/?text='), true)
-  assert.equal(decodeURIComponent(withPhone.split('text=')[1] || ''), whatsAppInviteText(applyUrl))
-  assert.equal(clientWhatsAppUrl('966500000000', applyUrl), withPhone)
-  assert.equal(clientWhatsAppText(applyUrl), whatsAppInviteText(applyUrl))
+  assert.equal(decodeURIComponent(withPhone.split('text=')[1] || ''), whatsAppInviteText(applyUrl, 'Layla Hassan'))
+  assert.equal(clientWhatsAppUrl('966500000000', applyUrl, 'Layla Hassan'), withPhone)
+  assert.equal(clientWhatsAppText(applyUrl, 'Layla Hassan'), whatsAppInviteText(applyUrl, 'Layla Hassan'))
+  assert.match(whatsAppInviteText(applyUrl, 'Layla Hassan'), /^Layla Hassan vouched for you on Board Arabia\./)
   assert.equal(/calendar\.app\.google|nammco/i.test(withPhone + bare), false)
   assert.equal((withPhone + bare).includes('\u2014'), false)
 })
