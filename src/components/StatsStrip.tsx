@@ -8,7 +8,7 @@ import { Eyebrow } from './Type'
 const EARLY = 'Building the Founding 100'
 const UNPUBLISHED = 'Not yet published'
 const DISCLAIMER =
-  'Figures are platform sums from admitted members who opted to contribute capacity. Individual amounts are never shown.'
+  "Figures reflect the network's represented capacity. Individual amounts are never shown."
 
 function shownFromStats(stats: PlatformStats | null): DisplayTotals {
   const money = displayPlatformMoney(stats)

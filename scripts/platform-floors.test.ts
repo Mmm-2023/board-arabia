@@ -155,5 +155,5 @@ test('the public totals strip does not name the floor', () => {
   assert.match(source, /Founding seats admitted/)
   assert.doesNotMatch(source, /\b(floor|example|demo|illustrative|preview)\b/i)
   assert.equal(source.includes('\u2014'), false)
-  assert.match(source, /Individual amounts are never shown/)
+  assert.match(source, /Figures reflect the network's represented capacity\. Individual amounts are never shown\./)
 })
