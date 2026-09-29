@@ -7,7 +7,7 @@ export const OG_DESCRIPTION =
 
 export const OG_IMAGE = `${SITE_ORIGIN}/og-board-arabia.png`
 
-export const OG_IMAGE_ALT = 'Board Arabia Najdi diamond mark on Night Indigo'
+export const OG_IMAGE_ALT = 'Board Arabia stacked wordmark and Najdi diamond mark on Night Indigo'
 
 export const OG_IMAGE_WIDTH = '1200'
 

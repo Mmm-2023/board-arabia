@@ -91,7 +91,7 @@ function Hero() {
               delay: 0.18,
               ease: [0.22, 1, 0.36, 1],
             }}
-            className="font-display text-[clamp(3.4rem,11vw,8.5rem)] font-extrabold leading-[0.88] tracking-[-0.045em] text-pearl"
+            className="font-display text-[clamp(3.4rem,11vw,8.5rem)] font-extrabold leading-[0.9] tracking-[-0.03em] text-pearl"
           >
             Board
             <br />

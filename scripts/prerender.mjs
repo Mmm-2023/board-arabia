@@ -85,7 +85,7 @@ function assertPage(route, html) {
   if (/images\.unsplash\.com/i.test(html)) errors.push('unsplash url')
   if (/Riyadh skyline/i.test(html)) errors.push('skyline share alt')
   if (!html.includes('https://boardarabia.com/og-board-arabia.png')) errors.push('og image')
-  if (!html.includes('Board Arabia Najdi diamond mark on Night Indigo')) errors.push('og alt')
+  if (!html.includes('Board Arabia stacked wordmark and Najdi diamond mark on Night Indigo')) errors.push('og alt')
   if (!html.includes('property="og:image:width" content="1200"')) errors.push('og width')
   if (!html.includes('property="og:image:height" content="630"')) errors.push('og height')
   if (!html.includes('property="og:image:type" content="image/png"')) errors.push('og type')

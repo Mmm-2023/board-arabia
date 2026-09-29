@@ -13,7 +13,7 @@ const toneClass: Record<Tone, { name: string; line: string }> = {
   },
 }
 
-/** Serif wordmark plus the Najdi C3 mark. Subtitle is the membership line. */
+/** Syne ExtraBold stacked wordmark plus the Najdi C3 mark. Subtitle is the membership line. */
 export function BrandLockup({
   to = '/',
   tone,
@@ -31,15 +31,18 @@ export function BrandLockup({
         alt=""
         width={32}
         height={32}
-        className="h-8 w-8 shrink-0"
+        className="h-8 w-8 shrink-0 self-start"
       />
       {!markOnly && (
         <span className="min-w-0">
-          <span className={`block truncate font-serif text-[1.35rem] leading-none ${colors.name}`}>
-            Board Arabia
+          <span
+            className={`ba-wordmark block font-display text-[1.02rem] leading-[0.9] font-extrabold tracking-[-0.03em] sm:text-[1.12rem] ${colors.name}`}
+          >
+            <span className="block">Board</span>
+            <span className="block">Arabia</span>
           </span>
           <span
-            className={`mt-1 block truncate text-[0.62rem] font-semibold tracking-[0.16em] uppercase ${colors.line}`}
+            className={`mt-0.5 block truncate text-[0.56rem] leading-none font-semibold tracking-[0.12em] uppercase sm:mt-1 sm:text-[0.62rem] sm:tracking-[0.16em] ${colors.line}`}
           >
             Founding membership
           </span>

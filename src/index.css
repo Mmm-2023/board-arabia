@@ -1,5 +1,14 @@
 @import "tailwindcss";
 
+/* Syne variable (wght 400 to 800), self-hosted. SIL OFL 1.1: public/fonts/OFL.txt. */
+@font-face {
+  font-family: "Syne";
+  font-style: normal;
+  font-weight: 400 800;
+  font-display: swap;
+  src: url("/fonts/syne-latin-wght-normal.woff2") format("woff2");
+}
+
 /* Board Arabia locked palette. Legacy names point at these tokens. */
 :root {
   --ba-indigo: #4b3f9a;
