@@ -3,6 +3,7 @@
 - Date: 29 Sep 2026
 - Branch: `cursor/ba-demo-seed`
 - Base: `main` at `6447c363cbd88ac09784aff2ba6ef9e90218c863`
+- PR: https://github.com/Mmm-2023/board-arabia/pull/38
 - Agent does not merge. Michael merges.
 
 ## What shipped
