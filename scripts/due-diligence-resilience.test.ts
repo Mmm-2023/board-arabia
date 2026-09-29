@@ -488,6 +488,7 @@ test('start and status fetches abort inside the front-end timeout', async () => 
 test('due diligence start is the only caller of the local auth helper', () => {
   assert.deepEqual(importers("from '../_shared/require_user.ts'"), [
     'supabase/functions/due-diligence-status/index.ts',
+    'supabase/functions/linkedin-oauth/index.ts',
     'supabase/functions/majlis-ics/index.ts',
     'supabase/functions/majlis-rsvp/index.ts',
   ])
