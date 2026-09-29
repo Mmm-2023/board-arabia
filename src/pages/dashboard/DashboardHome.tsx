@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { dismissAdmitShareCard, loadAdmitShareCard, type AdmitShareCardState } from '../../lib/admitShareCard'
 import { SponsorBadge } from '../../components/SponsorBadge'
 import { AVATAR_BUCKET } from '../../lib/avatar'
 import { isProfileReady } from '../../lib/directoryGate'
@@ -12,6 +13,7 @@ import { useNoIndex } from '../../lib/usePageTitle'
 import { ErrorBanner, HomeSkeleton } from '../../shell/ViewState'
 import { MEMBER_VIEWS } from '../../shell/viewCopy'
 import { useDashboardStatus, useMember } from './context'
+import { AdmitShareCard } from './AdmitShareCard'
 import { HomeSnapshotView } from './HomeSnapshotView'
 import { PendingInviteCards } from './PendingInviteCards'
 
@@ -42,6 +44,9 @@ export function DashboardHome() {
   const [inviteBusy, setInviteBusy] = useState<string | null>(null)
   const [inviteErrors, setInviteErrors] = useState<Record<string, string>>({})
   const [inviteAttempt, setInviteAttempt] = useState(0)
+  const [shareCard, setShareCard] = useState<AdmitShareCardState>({ show: false })
+  const [shareDismissing, setShareDismissing] = useState(false)
+  const [shareDismissError, setShareDismissError] = useState('')
   useNoIndex('Home | Board Arabia')
 
   useEffect(() => {
@@ -71,6 +76,29 @@ export function DashboardHome() {
       cancelled = true
     }
   }, [attempt, member.seat, userId])
+
+  useEffect(() => {
+    let cancelled = false
+    void loadAdmitShareCard().then((next) => {
+      if (!cancelled) setShareCard(next)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [userId])
+
+  function dismissShareCard() {
+    setShareDismissing(true)
+    setShareDismissError('')
+    void dismissAdmitShareCard().then((ok) => {
+      setShareDismissing(false)
+      if (!ok) {
+        setShareDismissError('Could not dismiss this card. Try again.')
+        return
+      }
+      setShareCard({ show: false })
+    })
+  }
 
   useEffect(() => {
     let cancelled = false
@@ -201,6 +229,17 @@ export function DashboardHome() {
         }
         figuresAsOf={sources.figuresAsOf}
         userId={userId}
+        shareSlot={
+          shareCard.show ? (
+            <AdmitShareCard
+              href={shareCard.href}
+              dismissing={shareDismissing}
+              error={shareDismissError}
+              onShare={() => setShareCard({ show: false })}
+              onDismiss={dismissShareCard}
+            />
+          ) : null
+        }
         onRetry={() => {
           setAttempt((value) => value + 1)
           setInviteAttempt((value) => value + 1)

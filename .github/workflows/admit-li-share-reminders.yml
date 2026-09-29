@@ -1,0 +1,45 @@
+# One admitted-member LinkedIn reminder per day. No-op until
+# ADMIT_LI_SHARE_REMINDER_SECRET is set on this repository and the same value
+# is set as an Edge secret. The function also sends nothing unless
+# ADMIT_LI_SHARE_REMINDER_ENABLED is the exact string true.
+# A dry-run releases the claim so the reminder is not consumed.
+
+name: Admit LinkedIn share reminders
+
+on:
+  schedule:
+    - cron: '30 4 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  remind:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Remind admitted members who have not shared
+        env:
+          ADMIT_LI_SHARE_REMINDER_SECRET: ${{ secrets.ADMIT_LI_SHARE_REMINDER_SECRET }}
+        run: |
+          if [ -z "$ADMIT_LI_SHARE_REMINDER_SECRET" ]; then
+            echo "ADMIT_LI_SHARE_REMINDER_SECRET is unset. Reminder run is a no-op."
+            exit 0
+          fi
+          code=$(curl -sS --max-time 60 -o /tmp/admit-li-share-reminder-body.txt -w '%{http_code}' \
+            -X POST \
+            -H "Content-Type: application/json" \
+            -H "x-admit-li-share-reminder: ${ADMIT_LI_SHARE_REMINDER_SECRET}" \
+            --data '{}' \
+            "https://iirqbizwanyhgkhanntq.supabase.co/functions/v1/remind-admit-li-share")
+          echo "status ${code}"
+          python3 - <<'PY'
+          import pathlib, re
+          text = pathlib.Path("/tmp/admit-li-share-reminder-body.txt").read_text(encoding="utf-8", errors="replace")
+          text = re.sub(r"[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}", "[redacted]", text)
+          print(text[:300])
+          PY
+          if [ "$code" -lt 200 ] || [ "$code" -ge 300 ]; then
+            echo "reminder call failed"
+            exit 1
+          fi

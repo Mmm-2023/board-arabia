@@ -46,6 +46,23 @@ verify_jwt = true
 [functions.remind-member-invites]
 verify_jwt = false
 
+# Staff dry run of the admitted-member LinkedIn share letter. requireStaff as well.
+[functions.admit-li-share-dry-run]
+verify_jwt = true
+
+# Member Home card. The show flag is read in the function, not in the client bundle.
+[functions.admit-li-share-card]
+verify_jwt = true
+
+# Email and Home card click. An unguessable token is the credential. verify_jwt stays off.
+[functions.admit-li-share-go]
+verify_jwt = false
+
+# Daily GitHub Action. Header x-admit-li-share-reminder must match ADMIT_LI_SHARE_REMINDER_SECRET.
+# The function also stays quiet unless ADMIT_LI_SHARE_REMINDER_ENABLED is the exact string true.
+[functions.remind-admit-li-share]
+verify_jwt = false
+
 # Member deal rooms. The anon key alone is not enough.
 # Each function also checks an active member, or staff for the staff function.
 [functions.deal-room-create]
