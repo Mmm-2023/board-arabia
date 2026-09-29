@@ -7,12 +7,12 @@ import {
   formatRiyadhStamp,
   googleCalendarUrl,
   isMajlisRegion,
+  memberMajlisFeed,
   parseFocusTags,
   riyadhWallToUtc,
   rsvpTier,
   validateMajlisApplication,
 } from '../../../supabase/functions/_shared/majlis.ts'
-import { KsaRegionMap } from '../../components/majlis/KsaRegionMap'
 import { downloadCsv, toCsv } from '../../lib/csv'
 import {
   applyForMajlis,
@@ -36,6 +36,8 @@ const primaryBtn =
   'inline-flex min-h-11 items-center px-4 text-[0.75rem] font-semibold tracking-[0.08em] uppercase ba-primary disabled:opacity-40'
 const quietBtn =
   'inline-flex min-h-11 items-center border border-[var(--ba-line)] bg-white px-4 text-[0.75rem] font-semibold tracking-[0.08em] text-ink uppercase disabled:opacity-40'
+const jumpClass =
+  'inline-flex min-h-11 items-center justify-center border border-[var(--ba-line)] bg-white px-3 text-[0.92rem] text-ink'
 
 export function MajlisPage() {
   const { member, userId } = useMember()
@@ -45,6 +47,7 @@ export function MajlisPage() {
   const focus = params.get('focus') || ''
   const highlight = params.get('event') || ''
   const [nowMs] = useState(() => Date.now())
+  const [hostOpen, setHostOpen] = useState(false)
   const [events, setEvents] = useState<MajlisEventRow[] | null>(null)
   const [sponsorEvents, setSponsorEvents] = useState<MajlisSponsorEvent[] | null>(null)
   const [unavailable, setUnavailable] = useState(false)
@@ -89,6 +92,15 @@ export function MajlisPage() {
     document.getElementById(`majlis-${highlight}`)?.scrollIntoView({ block: 'center' })
   }, [highlight, events, sponsorEvents])
 
+  function openHostForm() {
+    setHostOpen(true)
+    window.setTimeout(() => {
+      const title = document.getElementById('majlis-apply-title')
+      title?.scrollIntoView({ block: 'start' })
+      title?.focus()
+    }, 0)
+  }
+
   function setFilter(next: { region?: string | null; focus?: string | null }) {
     const copy = new URLSearchParams(params)
     if ('region' in next) {
@@ -103,16 +115,18 @@ export function MajlisPage() {
   }
 
   const published = useMemo(() => {
-    const rows = sponsor
+    const rows: Array<MajlisEventRow | MajlisSponsorEvent> = sponsor
       ? (sponsorEvents ?? [])
       : (events ?? []).filter((event) => event.status === 'published')
-    return [...rows].sort((a, b) => Number(b.featured) - Number(a.featured) || a.starts_at.localeCompare(b.starts_at))
+    return rows
   }, [events, sponsor, sponsorEvents])
+
+  const feed = useMemo(() => memberMajlisFeed(published, nowMs), [published, nowMs])
 
   const tags = useMemo(() => {
     const seen = new Set<string>()
     const list: string[] = []
-    for (const event of published) {
+    for (const event of feed) {
       for (const tag of event.focus_tags) {
         const key = tag.toLowerCase()
         if (seen.has(key)) continue
@@ -121,9 +135,9 @@ export function MajlisPage() {
       }
     }
     return list.sort((a, b) => a.localeCompare(b))
-  }, [published])
+  }, [feed])
 
-  const filtered = published.filter((event) => {
+  const filtered = feed.filter((event) => {
     if (region && event.region !== region) return false
     if (focus && !event.focus_tags.some((tag) => tag.toLowerCase() === focus.toLowerCase())) return false
     return true
@@ -131,7 +145,7 @@ export function MajlisPage() {
 
   const counts = countPublishedByRegion(
     MAJLIS_REGIONS,
-    published.map((event) => ({ region: event.region })),
+    feed.map((event) => ({ region: event.region })),
   )
   const loading = sponsor ? sponsorEvents === null : events === null
   const mine = sponsor
@@ -146,19 +160,160 @@ export function MajlisPage() {
       <p className="mt-2 max-w-3xl text-[0.98rem] leading-relaxed text-[var(--ba-muted)]">
         {sponsor
           ? 'Regional activity for sponsors. Guest names and contact details stay with the host.'
-          : 'Apply to host, then follow the status under Your applications. Published gatherings are listed below.'}
+          : 'Upcoming gatherings are listed first. Host a majlis when you want to hold one.'}
       </p>
 
       {!sponsor && (
         <nav aria-label="On this page" className="mt-5 grid gap-2 sm:flex sm:flex-wrap">
+          <PageJump href="#majlis-feed">Upcoming</PageJump>
+          <button type="button" className={jumpClass} aria-expanded={hostOpen} aria-controls="majlis-apply" onClick={openHostForm}>
+            Host a majlis
+          </button>
           <PageJump href="#majlis-mine">Your applications</PageJump>
-          <PageJump href="#majlis-apply">Apply to host</PageJump>
-          <PageJump href="#majlis-feed">Published</PageJump>
         </nav>
       )}
 
+      <section id="majlis-feed" className="mt-8 scroll-mt-24" aria-labelledby="majlis-feed-title">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <h2 id="majlis-feed-title" className="font-display text-[1.35rem] font-semibold">
+            Upcoming
+          </h2>
+          {!loading && !error && feed.length > 0 && (
+            <p className="text-[0.92rem] text-[var(--ba-muted)]">{upcomingLabel(feed.length)}</p>
+          )}
+        </div>
+        {loading ? (
+          <div className="mt-4">
+            <CardSkeleton tone="member" label="Loading majlis" />
+          </div>
+        ) : error ? (
+          <div className="mt-4">
+            <ErrorBanner
+              tone="member"
+              message={MEMBER_VIEWS.majlis.error}
+              onRetry={() => {
+                setEvents(null)
+                setSponsorEvents(null)
+                setError('')
+                setAttempt((value) => value + 1)
+              }}
+              retryLabel={MEMBER_VIEWS.majlis.retry}
+            />
+          </div>
+        ) : unavailable ? (
+          <p className="mt-4 text-[0.98rem] text-[var(--ba-muted)]">Published gatherings are not available yet.</p>
+        ) : feed.length === 0 ? (
+          <div className="mt-4">
+            <EmptyState tone="member" message="No upcoming majlis." />
+          </div>
+        ) : (
+          <>
+            <p className="mt-2 text-[0.95rem] text-[var(--ba-muted)]">Filter by region or focus.</p>
+            <div className="mt-4 flex flex-wrap gap-2" role="group" aria-label="Region filters">
+              <Chip pressed={!region} onClick={() => setFilter({ region: null })}>
+                All regions
+              </Chip>
+              {MAJLIS_REGIONS.map((name) => (
+                <Chip
+                  key={name}
+                  pressed={region === name}
+                  onClick={() => setFilter({ region: region === name ? null : name })}
+                >
+                  {counts[name] ? `${name} (${counts[name]})` : name}
+                </Chip>
+              ))}
+            </div>
+            {tags.length > 0 && (
+              <div className="mt-4 flex flex-wrap gap-2" role="group" aria-label="Focus filters">
+                <Chip pressed={!focus} onClick={() => setFilter({ focus: null })}>
+                  All focus
+                </Chip>
+                {tags.map((tag) => (
+                  <Chip
+                    key={tag}
+                    pressed={focus.toLowerCase() === tag.toLowerCase()}
+                    onClick={() => setFilter({ focus: focus.toLowerCase() === tag.toLowerCase() ? null : tag })}
+                  >
+                    {tag}
+                  </Chip>
+                ))}
+              </div>
+            )}
+            {filtered.length === 0 ? (
+              <div className="mt-4">
+                <FilteredZero
+                  tone="member"
+                  message={MEMBER_VIEWS.majlis.filtered}
+                  clearLabel={MEMBER_VIEWS.majlis.clear}
+                  onClear={() => setFilter({ region: null, focus: null })}
+                />
+              </div>
+            ) : (
+              <ul className="mt-4 space-y-3">
+                {filtered.map((event) => (
+                  <li key={event.id} id={`majlis-${event.id}`}>
+                    {sponsor || !('host_member_id' in event) ? (
+                      <SponsorCard
+                        event={event as MajlisSponsorEvent}
+                        nowMs={nowMs}
+                        onFocus={(tag) => setFilter({ focus: tag })}
+                        onRegion={(name) => setFilter({ region: name })}
+                      />
+                    ) : (
+                      <MemberCard
+                        event={event as MajlisEventRow}
+                        userId={userId}
+                        nowMs={nowMs}
+                        tier={rsvpTier(member.seat)}
+                        highlighted={highlight === event.id}
+                        onFocus={(tag) => setFilter({ focus: tag })}
+                        onRegion={(name) => setFilter({ region: name })}
+                        onChanged={() => {
+                          setEvents(null)
+                          setAttempt((value) => value + 1)
+                        }}
+                      />
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </>
+        )}
+      </section>
+
       {!sponsor && (
-        <section id="majlis-mine" className="mt-8 scroll-mt-24" aria-labelledby="majlis-mine-title">
+        <section id="majlis-host" className="mt-10 scroll-mt-24" aria-labelledby="majlis-host-title">
+          <h2 id="majlis-host-title" className="font-display text-[1.35rem] font-semibold">
+            Host a majlis
+          </h2>
+          <p className="mt-2 max-w-3xl text-[0.95rem] leading-relaxed text-[var(--ba-muted)]">
+            Staff review the application before it is published.
+          </p>
+          {!hostOpen && (
+            <button
+              type="button"
+              className={`${primaryBtn} mt-4 w-full justify-center sm:w-auto`}
+              aria-expanded={false}
+              aria-controls="majlis-apply"
+              onClick={openHostForm}
+            >
+              Host a majlis
+            </button>
+          )}
+          {hostOpen && (
+            <ApplyForm
+              onCreated={() => {
+                setEvents(null)
+                setAttempt((value) => value + 1)
+              }}
+            />
+          )}
+        </section>
+      )}
+
+      {!sponsor && (
+        <section id="majlis-mine" className="mt-10 scroll-mt-24" aria-labelledby="majlis-mine-title">
           <h2 id="majlis-mine-title" className="font-display text-[1.35rem] font-semibold">
             Your applications
           </h2>
@@ -182,137 +337,17 @@ export function MajlisPage() {
           )}
         </section>
       )}
-
-      {!sponsor && (
-        <ApplyForm
-          onCreated={() => {
-            setEvents(null)
-            setAttempt((value) => value + 1)
-          }}
-        />
-      )}
-
-      <section className="mt-10 scroll-mt-24" aria-labelledby="majlis-map-title">
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          <h2 id="majlis-map-title" className="font-display text-[1.35rem] font-semibold">
-            Regions
-          </h2>
-          <p className="text-[0.92rem] text-[var(--ba-muted)]">{published.length} published</p>
-        </div>
-        <p className="mt-2 text-[0.95rem] text-[var(--ba-muted)]">
-          Filter the published list by region. The map is not open yet.
-        </p>
-        {unavailable && (
-          <p className="mt-3 text-[0.95rem] text-[var(--ba-muted)]">{MEMBER_VIEWS.majlis.mapUnavailable}</p>
-        )}
-        <div className="mt-4">
-          <KsaRegionMap counts={counts} selected={null} comingSoon />
-        </div>
-        <div className="mt-4 flex flex-wrap gap-2" role="group" aria-label="Region filters">
-          <Chip pressed={!region} onClick={() => setFilter({ region: null })}>
-            All regions
-          </Chip>
-          {MAJLIS_REGIONS.map((name) => (
-            <Chip
-              key={name}
-              pressed={region === name}
-              onClick={() => setFilter({ region: region === name ? null : name })}
-            >
-              {counts[name] ? `${name} (${counts[name]})` : name}
-            </Chip>
-          ))}
-        </div>
-        {tags.length > 0 && (
-          <div className="mt-4 flex flex-wrap gap-2" role="group" aria-label="Focus filters">
-            <Chip pressed={!focus} onClick={() => setFilter({ focus: null })}>
-              All focus
-            </Chip>
-            {tags.map((tag) => (
-              <Chip key={tag} pressed={focus.toLowerCase() === tag.toLowerCase()} onClick={() => setFilter({ focus: focus.toLowerCase() === tag.toLowerCase() ? null : tag })}>
-                {tag}
-              </Chip>
-            ))}
-          </div>
-        )}
-      </section>
-
-      <section id="majlis-feed" className="mt-8 scroll-mt-24" aria-labelledby="majlis-feed-title">
-        <h2 id="majlis-feed-title" className="font-display text-[1.35rem] font-semibold">
-          Published
-        </h2>
-        {loading ? (
-          <div className="mt-4">
-            <CardSkeleton tone="member" label="Loading majlis" />
-          </div>
-        ) : error ? (
-          <div className="mt-4">
-            <ErrorBanner
-              tone="member"
-              message={MEMBER_VIEWS.majlis.error}
-              onRetry={() => {
-                setEvents(null)
-                setSponsorEvents(null)
-                setError('')
-                setAttempt((value) => value + 1)
-              }}
-              retryLabel={MEMBER_VIEWS.majlis.retry}
-            />
-          </div>
-        ) : published.length === 0 ? (
-          <div className="mt-4">
-            <EmptyState tone="member" message={MEMBER_VIEWS.majlis.empty} />
-          </div>
-        ) : filtered.length === 0 ? (
-          <div className="mt-4">
-            <FilteredZero
-              tone="member"
-              message={MEMBER_VIEWS.majlis.filtered}
-              clearLabel={MEMBER_VIEWS.majlis.clear}
-              onClear={() => setFilter({ region: null, focus: null })}
-            />
-          </div>
-        ) : (
-          <ul className="mt-4 space-y-3">
-            {filtered.map((event) => (
-              <li key={event.id} id={`majlis-${event.id}`}>
-                {sponsor || !('host_member_id' in event) ? (
-                  <SponsorCard
-                    event={event as MajlisSponsorEvent}
-                    nowMs={nowMs}
-                    onFocus={(tag) => setFilter({ focus: tag })}
-                    onRegion={(name) => setFilter({ region: name })}
-                  />
-                ) : (
-                  <MemberCard
-                    event={event as MajlisEventRow}
-                    userId={userId}
-                    nowMs={nowMs}
-                    tier={rsvpTier(member.seat)}
-                    highlighted={highlight === event.id}
-                    onFocus={(tag) => setFilter({ focus: tag })}
-                    onRegion={(name) => setFilter({ region: name })}
-                    onChanged={() => {
-                      setEvents(null)
-                      setAttempt((value) => value + 1)
-                    }}
-                  />
-                )}
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-
     </div>
   )
 }
 
+function upcomingLabel(count: number): string {
+  return count === 1 ? '1 upcoming' : `${count} upcoming`
+}
+
 function PageJump({ href, children }: { href: string; children: string }) {
   return (
-    <a
-      href={href}
-      className="inline-flex min-h-11 items-center justify-center border border-[var(--ba-line)] bg-white px-3 text-[0.92rem] text-ink"
-    >
+    <a href={href} className={jumpClass}>
       {children}
     </a>
   )
@@ -868,7 +903,7 @@ function ApplyForm({ onCreated }: { onCreated: () => void }) {
 
   return (
     <section id="majlis-apply" className="mt-8 max-w-3xl scroll-mt-24" aria-labelledby="majlis-apply-title">
-      <h2 id="majlis-apply-title" className="font-display text-[1.35rem] font-semibold">
+      <h2 id="majlis-apply-title" tabIndex={-1} className="font-display text-[1.35rem] font-semibold">
         Apply to host
       </h2>
       <p className="mt-2 text-[0.95rem] leading-relaxed text-[var(--ba-muted)]">

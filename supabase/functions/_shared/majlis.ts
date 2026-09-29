@@ -395,6 +395,48 @@ export function buildMajlisIcs(input: {
   return `${lines.map(foldIcs).join('\r\n')}\r\n`
 }
 
+const TEST_TITLE_WORDS = new Set(['a', 'the', 'test', 'tests', 'majlis'])
+
+/**
+ * Rehearsal titles such as "test majlis".
+ * The database row is left in place. Members simply do not see it.
+ */
+export function isTestMajlis(event: { title: string }): boolean {
+  const words = event.title
+    .trim()
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter(Boolean)
+  if (words.length === 0 || !words.includes('test')) return false
+  return words.every((word) => TEST_TITLE_WORDS.has(word))
+}
+
+/** Still running or not yet started. An event is past once it has ended. */
+export function isUpcomingMajlis(endsAt: string, nowMs: number): boolean {
+  const end = Date.parse(endsAt)
+  return Number.isFinite(end) && end > nowMs
+}
+
+export type MajlisFeedFields = {
+  title: string
+  ends_at: string
+  starts_at: string
+  featured?: boolean
+  status?: string | null
+}
+
+/** Upcoming gatherings for members, soonest first. Past and test rows stay stored. */
+export function memberMajlisFeed<T extends MajlisFeedFields>(events: readonly T[], nowMs: number): T[] {
+  return events
+    .filter((event) => {
+      if (event.status != null && event.status !== 'published') return false
+      if (!isUpcomingMajlis(event.ends_at, nowMs)) return false
+      if (isTestMajlis(event)) return false
+      return true
+    })
+    .sort((a, b) => a.starts_at.localeCompare(b.starts_at) || Number(Boolean(b.featured)) - Number(Boolean(a.featured)))
+}
+
 export function countPublishedByRegion(
   regions: readonly string[],
   events: { region: string }[],
