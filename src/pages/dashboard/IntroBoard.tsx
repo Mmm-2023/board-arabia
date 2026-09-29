@@ -8,6 +8,7 @@ import {
   INTRO_KIND_LABEL,
   introDirectionLabel,
   introStatusLabel,
+  staffRequestLine,
   type IntroKind,
   type IntroRow,
 } from '../../lib/memberIntros'
@@ -142,15 +143,21 @@ function IntroCard({
     row.status === 'pending' &&
     !row.is_demo &&
     (row.kind === 'mandate' || row.kind === 'real_estate' || row.kind === 'partner')
+  const requestLine = member ? null : staffRequestLine(row)
+  const heading = !member && row.kind === 'member' && requestLine ? requestLine : row.title
 
   return (
     <article className={`${panel} px-5 py-5`} data-intro-kind={row.kind} data-intro-status={row.status}>
       <div className="flex items-start justify-between gap-4">
         <p className="text-[0.72rem] font-semibold tracking-[0.12em] text-brass uppercase">
           {INTRO_KIND_LABEL[row.kind]}
-          <span className="sr-only">. </span>
-          <span aria-hidden="true"> · </span>
-          {introDirectionLabel(row.direction)}
+          {member ? (
+            <>
+              <span className="sr-only">. </span>
+              <span aria-hidden="true"> · </span>
+              {introDirectionLabel(row.direction)}
+            </>
+          ) : null}
         </p>
         <div className="text-end">
           {row.is_demo ? <ExampleMark /> : null}
@@ -158,9 +165,12 @@ function IntroCard({
         </div>
       </div>
       <h2 className={`mt-3 font-display text-[1.35rem] font-semibold tracking-[-0.03em] ${member ? '' : 'text-pearl'}`}>
-        {row.title}
+        {heading}
       </h2>
       {row.detail ? <p className={`mt-1 text-[0.95rem] ${muted}`}>{row.detail}</p> : null}
+      {!member && row.kind !== 'member' && requestLine ? (
+        <p className={`mt-2 text-[0.95rem] ${muted}`}>{requestLine}</p>
+      ) : null}
       {row.reason ? <p className={`mt-3 text-[1rem] leading-relaxed ${member ? 'text-ink/80' : 'text-pearl/85'}`}>{row.reason}</p> : null}
       {when ? <p className={`mt-3 text-[0.85rem] ${muted}`}>{when}</p> : null}
       {row.is_demo ? <p className={`mt-3 text-[0.92rem] ${muted}`}>{SAMPLE_NOTE}</p> : null}

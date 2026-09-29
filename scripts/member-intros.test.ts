@@ -11,6 +11,7 @@ import {
   outgoingMemberStatus,
   presentIntroList,
   presentIntroRow,
+  staffRequestLine,
   type IntroRow,
 } from '../src/lib/memberIntros.ts'
 import { buildHeadlines } from '../src/lib/homeSnapshot.ts'
@@ -177,6 +178,12 @@ test('member intro payloads do not select contact details', () => {
   assert.equal(mine.includes('counterparty_name'), false)
   assert.match(staff, /company_name/)
   assert.match(staff, /counterparty_name/)
+  assert.match(staff, /'requester_name'/)
+  assert.match(staff, /'target_name'/)
+  assert.equal(mine.includes('requester_name'), false)
+  assert.equal(mine.includes('target_name'), false)
+  assert.equal(staff.includes('m.email'), false)
+  assert.equal(staff.includes('p.email'), false)
   assert.match(migration, /revoke all on table public\.member_intros from public, anon, authenticated/)
   assert.match(migration, /position\('@' in reason\) = 0/)
   assert.equal(migration.includes('\u2014'), false)
@@ -283,6 +290,75 @@ test('sample directory cards stay inert and the old intros path opens the list',
   assert.equal(pulse.find((item) => item.id === 'intros')?.example, false)
   assert.equal(pulse.find((item) => item.id === 'intros')?.to, '/dashboard/people/intros')
   assert.equal(pulse.find((item) => item.id === 'intros' && item.example), undefined)
+
+  const staffRows: IntroRow[] = [
+    {
+      id: LIVE,
+      kind: 'member',
+      direction: 'outgoing',
+      status: 'pending',
+      title: 'Omar Al-Janub',
+      detail: '',
+      reason: 'A question on mining seats.',
+      is_demo: false,
+      subject_id: SAMPLE,
+      created_at: '2026-09-29T12:00:00.000Z',
+      requester_name: 'Amina Al-Harbi',
+      target_name: 'Omar Al-Janub',
+    },
+    {
+      id: '44444444-4444-4444-8444-444444444444',
+      kind: 'mandate',
+      direction: 'outgoing',
+      status: 'pending',
+      title: 'Nahla Industrial Holding',
+      detail: 'Energy transition · Growth equity',
+      reason: '',
+      is_demo: false,
+      subject_id: 'a2000001-0000-4000-8000-000000000001',
+      created_at: '2026-09-29T11:00:00.000Z',
+      requester_name: 'Member name',
+    },
+    {
+      id: '55555555-5555-4555-8555-555555555555',
+      kind: 'real_estate',
+      direction: 'outgoing',
+      status: 'approved',
+      title: 'West coast clinics',
+      detail: 'Health · Jeddah',
+      reason: '',
+      is_demo: false,
+      subject_id: '88888888-8888-4888-8888-888888888888',
+      created_at: '2026-09-27T11:05:00.000Z',
+      requester_name: 'Member name',
+    },
+  ]
+  assert.equal(staffRequestLine(staffRows[0]), 'Requested by Amina Al-Harbi for Omar Al-Janub')
+  assert.equal(staffRequestLine(staffRows[1]), 'Requested by Member name')
+  assert.equal(staffRequestLine(staffRows[2]), 'Requested by Member name')
+  assert.equal(staffRequestLine({ kind: 'partner', requester_name: 'Member name' }), 'Requested by Member name')
+  assert.equal(staffRequestLine({ kind: 'member', requester_name: 'Amina Al-Harbi' }), null)
+  assert.equal(staffRequestLine({ kind: 'mandate', requester_name: 'desk@example.com' }), null)
+  const staffBoard = page(
+    createElement(ui.IntroBoard, {
+      tone: 'staff',
+      rows: staffRows,
+      busyId: null,
+      error: '',
+      onDecide: () => {},
+    }),
+  )
+  assert.match(staffBoard, /Requested by Amina Al-Harbi for Omar Al-Janub/)
+  assert.match(staffBoard, /Requested by Member name/)
+  assert.match(staffBoard, />Member</)
+  assert.match(staffBoard, />Mandate</)
+  assert.match(staffBoard, />Real estate</)
+  assert.equal(staffBoard.includes('To you'), false)
+  assert.equal(staffBoard.includes('You sent'), false)
+  assert.equal(staffBoard.includes('@'), false)
+  assert.equal(staffBoard.includes('\u2014'), false)
+  assert.equal(staffBoard.includes('\u2013'), false)
+  assert.match(board, /To you/)
   } finally {
     await ui.vite.close()
   }

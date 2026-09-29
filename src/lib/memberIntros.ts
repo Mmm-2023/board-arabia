@@ -21,6 +21,9 @@ export type IntroRow = {
   is_demo: boolean
   subject_id: string
   created_at: string
+  /** Staff list only. Member payloads leave these empty. */
+  requester_name?: string
+  target_name?: string
 }
 
 const LEAK_KEYS = [
@@ -55,6 +58,24 @@ export function introStatusLabel(status: IntroStatus): string {
 
 export function introDirectionLabel(direction: IntroDirection): string {
   return direction === 'incoming' ? 'To you' : 'You sent'
+}
+
+/** Staff rows name who asked. Member rows keep To you / You sent instead. */
+export function staffRequestLine(row: Pick<IntroRow, 'kind' | 'requester_name' | 'target_name'>): string | null {
+  const requester = cleanName(row.requester_name)
+  if (!requester) return null
+  if (row.kind === 'member') {
+    const target = cleanName(row.target_name)
+    if (!target) return null
+    return `Requested by ${requester} for ${target}`
+  }
+  return `Requested by ${requester}`
+}
+
+function cleanName(value: string | undefined): string {
+  const name = (value ?? '').trim()
+  if (!name || name.includes('@') || PHONE.test(name)) return ''
+  return name
 }
 
 export function cleanIntroReason(raw: string): { ok: true; reason: string } | { ok: false; error: string } {
@@ -94,6 +115,11 @@ export function presentIntroRow(raw: unknown): IntroRow | null {
   const detail = text(row.detail, 240)
   if (detail.includes('@') || PHONE.test(detail)) return null
   if (title.includes('@')) return null
+  const requester = cleanName(text(row.requester_name, 200))
+  const target = cleanName(text(row.target_name, 200))
+  if ((typeof row.requester_name === 'string' && row.requester_name.trim() && !requester) || (typeof row.target_name === 'string' && row.target_name.trim() && !target)) {
+    return null
+  }
   return {
     id,
     kind,
@@ -105,6 +131,8 @@ export function presentIntroRow(raw: unknown): IntroRow | null {
     is_demo: row.is_demo === true,
     subject_id: subject,
     created_at: created,
+    requester_name: requester || undefined,
+    target_name: target || undefined,
   }
 }
 

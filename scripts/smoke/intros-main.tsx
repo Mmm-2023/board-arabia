@@ -109,12 +109,19 @@ const memberRows: IntroRow[] = [
 ]
 
 const staffRows: IntroRow[] = [
-  memberRows[0],
+  {
+    ...memberRows[0],
+    title: 'Omar Al-Janub',
+    detail: '',
+    requester_name: 'Amina Al-Harbi',
+    target_name: 'Omar Al-Janub',
+  },
   {
     ...memberRows[2],
     is_demo: false,
     title: 'Nahla Industrial Holding',
-    detail: 'Energy transition · Growth equity. Requested by Member name',
+    detail: 'Energy transition · Growth equity',
+    requester_name: 'Member name',
   },
   {
     id: '99999999-9999-4999-8999-999999999999',
@@ -122,11 +129,12 @@ const staffRows: IntroRow[] = [
     direction: 'outgoing',
     status: 'pending',
     title: 'Sample brief',
-    detail: 'Health · Acquisition. Requested by Member name',
+    detail: 'Health · Acquisition',
     reason: '',
     is_demo: true,
     subject_id: 'a2000001-0000-4000-8000-000000000002',
     created_at: '2026-09-26T10:00:00.000Z',
+    requester_name: 'Member name',
   },
 ]
 

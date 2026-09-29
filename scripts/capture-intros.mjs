@@ -34,7 +34,7 @@ const chrome = spawn(
 const shots = [
   ['directory', 'directory_request_form'],
   ['intros', 'intros_member_list'],
-  ['admin', 'intros_admin_list'],
+  ['admin', 'intros_admin_staff'],
 ]
 
 try {
