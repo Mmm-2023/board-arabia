@@ -66,11 +66,14 @@ type Attempt = {
   reason: string
 }
 
+export type ModelStage = 'model' | 'repair' | 'fallback'
+
 export async function extractDeckFactsWithOptionalLlm(
   text: string,
   fileName = '',
   numberedText = '',
-  onAttempt?: () => Promise<void>,
+  onStage?: (stage: ModelStage) => Promise<void>,
+  deadlineAt?: number,
 ): Promise<FactExtraction> {
   const heuristic = extractDeckFacts(text, fileName)
   const deck = (numberedText.trim() || (text.trim() ? numberDeckPages([text]) : '')).slice(0, 80_000)
@@ -78,7 +81,8 @@ export async function extractDeckFactsWithOptionalLlm(
   const run = await analyzeDeckText(deck, {
     companyHint,
     roundHint: heuristic.ask === NOT_STATED ? '' : heuristic.ask,
-    onAttempt,
+    onStage,
+    deadlineAt,
   })
   const modelCompany = preferredCompany(run.analysis?.meta.company || '')
   const ask = preferredAsk(run.analysis?.snapshot.round)
@@ -110,7 +114,13 @@ export async function extractDeckFactsWithOptionalLlm(
 
 export async function analyzeDeckText(
   numberedText: string,
-  hints: { companyHint?: string; roundHint?: string; onAttempt?: () => Promise<void> } = {},
+  hints: {
+    companyHint?: string
+    roundHint?: string
+    onStage?: (stage: ModelStage) => Promise<void>
+    deadlineAt?: number
+    callTimeoutMs?: number
+  } = {},
 ): Promise<{
   analysis: DeckAnalysis | null
   modelRan: boolean
@@ -138,8 +148,7 @@ export async function analyzeDeckText(
     user_question: 'default full DD',
   })
 
-  await hints.onAttempt?.()
-  const primary = await complete(target.url, target.model, key, SYSTEM_PROMPT, `${SCHEMA_PROMPT}\n\n${user}`)
+  const primary = await runCall(hints, 'model', target.url, target.model, key, SYSTEM_PROMPT, `${SCHEMA_PROMPT}\n\n${user}`)
   let modelId = target.model
   let usedFallback = false
   const reasons: string[] = []
@@ -151,8 +160,7 @@ export async function analyzeDeckText(
     if (target.model === FALLBACK_MODEL_ID) {
       return failed(target.model, reasons)
     }
-    await hints.onAttempt?.()
-    const backup = await complete(XAI_CHAT_URL, FALLBACK_MODEL_ID, key, SYSTEM_PROMPT, `${SCHEMA_PROMPT}\n\n${user}`)
+    const backup = await runCall(hints, 'fallback', XAI_CHAT_URL, FALLBACK_MODEL_ID, key, SYSTEM_PROMPT, `${SCHEMA_PROMPT}\n\n${user}`)
     usedFallback = true
     modelId = FALLBACK_MODEL_ID
     if (!backup.ok) return failed(FALLBACK_MODEL_ID, [...reasons, `fallback_${backup.reason}`])
@@ -163,8 +171,9 @@ export async function analyzeDeckText(
 
   let analysis = parseDeckAnalysis(parseModelJson(content))
   if (!analysis) {
-    await hints.onAttempt?.()
-    const repair = await complete(
+    const repair = await runCall(
+      hints,
+      'repair',
       usedFallback || target.url === XAI_CHAT_URL ? XAI_CHAT_URL : target.url,
       modelId,
       key,
@@ -175,8 +184,7 @@ export async function analyzeDeckText(
     if (!repair.ok) {
       reasons.push(`repair_${repair.reason}`)
       if (!usedFallback && target.model !== FALLBACK_MODEL_ID) {
-        await hints.onAttempt?.()
-        const backup = await complete(XAI_CHAT_URL, FALLBACK_MODEL_ID, key, SYSTEM_PROMPT, `${SCHEMA_PROMPT}\n\n${user}`)
+        const backup = await runCall(hints, 'fallback', XAI_CHAT_URL, FALLBACK_MODEL_ID, key, SYSTEM_PROMPT, `${SCHEMA_PROMPT}\n\n${user}`)
         usedFallback = true
         modelId = FALLBACK_MODEL_ID
         if (!backup.ok) return failed(FALLBACK_MODEL_ID, [...reasons, `fallback_${backup.reason}`])
@@ -215,7 +223,29 @@ function clipReason(value: string): string {
   return cleaned || 'model_request_failed'
 }
 
-async function complete(url: string, model: string, key: string, system: string, user: string): Promise<Attempt> {
+async function runCall(
+  hints: { onStage?: (stage: ModelStage) => Promise<void>; deadlineAt?: number; callTimeoutMs?: number },
+  stage: ModelStage,
+  url: string,
+  model: string,
+  key: string,
+  system: string,
+  user: string,
+): Promise<Attempt> {
+  const left = hints.deadlineAt == null ? ANALYSIS_TIMEOUT_MS : hints.deadlineAt - Date.now()
+  if (left < 5_000) return { ok: false, reason: 'deadline' }
+  await hints.onStage?.(stage)
+  const timeoutMs = Math.min(hints.callTimeoutMs ?? ANALYSIS_TIMEOUT_MS, Math.max(1_000, left - 2_000))
+  return complete(url, model, key, system, user, timeoutMs)
+}
+
+async function complete(url: string, model: string, key: string, system: string, user: string, timeoutMs: number): Promise<Attempt> {
+  const controller = new AbortController()
+  const timer = setTimeout(() => {
+    const error = new Error('timed out')
+    error.name = 'TimeoutError'
+    controller.abort(error)
+  }, timeoutMs)
   try {
     const response = await fetch(url, {
       method: 'POST',
@@ -233,7 +263,7 @@ async function complete(url: string, model: string, key: string, system: string,
           { role: 'user', content: user },
         ],
       }),
-      signal: AbortSignal.timeout(ANALYSIS_TIMEOUT_MS),
+      signal: controller.signal,
     })
     if (!response.ok) return { ok: false, reason: `http_${response.status}` }
     const body = (await response.json()) as { choices?: { message?: { content?: unknown } }[] }
@@ -242,8 +272,10 @@ async function complete(url: string, model: string, key: string, system: string,
     return { ok: true, content }
   } catch (err) {
     const name = err instanceof Error ? err.name : ''
-    if (name === 'TimeoutError' || name === 'AbortError') return { ok: false, reason: 'timeout' }
+    if (name === 'TimeoutError' || name === 'AbortError' || controller.signal.aborted) return { ok: false, reason: 'timeout' }
     return { ok: false, reason: 'request_failed' }
+  } finally {
+    clearTimeout(timer)
   }
 }
 

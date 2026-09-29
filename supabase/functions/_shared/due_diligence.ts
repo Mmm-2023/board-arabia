@@ -7,8 +7,22 @@ import { readStoredAnalysis, type DeckAnalysis } from './deck_analysis.ts'
 
 export const DECK_BUCKET = 'due-diligence-decks'
 
-/** One model call is about 75s. Heartbeats refresh updated_at between a repair and a backup call. */
-export const JOB_STALE_MS = 180_000
+/**
+ * Supabase Edge wall clock is 400s. This budget stays under it with margin
+ * and is shorter than a silent multi-minute hang. Heartbeats refresh updated_at
+ * at each stage. Silence or age past this budget means the worker died or the run ran out of time.
+ */
+export const JOB_DEADLINE_MS = 180_000
+
+export const DD_PROGRESS = {
+  extract: 18,
+  pages: 32,
+  model: 46,
+  repair: 58,
+  fallback: 70,
+  sources: 82,
+  save: 92,
+} as const
 export const DECK_MAX_BYTES = 15 * 1024 * 1024
 export const NOT_STATED = 'Not stated in the deck'
 
@@ -26,6 +40,7 @@ export const MEMBER_MESSAGES = {
   membersOnly: 'Only members can run a check.',
   start: 'Could not start the check.',
   finish: 'Could not finish the check. Try again later.',
+  timedOut: 'This check took too long and stopped. Try again.',
   url: 'Company site must be a public https link.',
   upload: 'Could not upload the deck. Try again.',
   missing: 'That note is not in your history.',
@@ -240,23 +255,43 @@ export function safeFileName(name: string, ext: DeckExt): string {
   return cleaned
 }
 
-export function stageLabel(status: string): string {
-  switch (status) {
-    case 'queued':
-      return 'Queued'
-    case 'reading':
-      return 'Reading the deck'
-    case 'checking':
-      return 'Checking public sources'
-    case 'writing':
-      return 'Writing the note'
-    case 'ready':
-      return 'Ready'
-    case 'failed':
-      return 'The check stopped'
-    default:
-      return 'Working'
-  }
+const LIVE_JOB = ['queued', 'reading', 'checking', 'writing']
+
+export function stageLabel(status: string, progress = 0): string {
+  if (status === 'queued') return 'Queued'
+  if (status === 'ready') return 'Ready'
+  if (status === 'failed') return 'The check stopped'
+  if (progress >= DD_PROGRESS.save) return 'Saving the draft'
+  if (progress >= DD_PROGRESS.sources) return 'Checking public sources'
+  if (progress >= DD_PROGRESS.fallback) return 'Trying the backup model'
+  if (progress >= DD_PROGRESS.repair) return 'Repairing the draft'
+  if (progress >= DD_PROGRESS.model) return 'Asking the model'
+  if (progress >= DD_PROGRESS.pages) return 'Numbering the pages'
+  if (progress >= DD_PROGRESS.extract || status === 'reading') return 'Reading the deck'
+  if (status === 'writing') return 'Writing the note'
+  return 'Working'
+}
+
+/** True when an in-flight job is past the deadline and should be marked failed. */
+export function shouldFailStaleJob(input: {
+  status: string
+  updatedAt: string
+  createdAt: string
+  nowMs: number
+}): boolean {
+  if (!LIVE_JOB.includes(input.status)) return false
+  const updated = Date.parse(input.updatedAt)
+  const created = Date.parse(input.createdAt)
+  if (!Number.isFinite(updated) || !Number.isFinite(created)) return true
+  if (input.nowMs - updated >= JOB_DEADLINE_MS) return true
+  return input.nowMs - created >= JOB_DEADLINE_MS
+}
+
+/** A model miss that should fail the job. A missing key still finishes as a degraded draft. */
+export function isTerminalModelFailure(skipReason: string | null, modelRan: boolean): boolean {
+  if (modelRan) return false
+  if (!skipReason) return true
+  return skipReason !== 'missing_api_key' && skipReason !== 'missing_model' && skipReason !== 'empty_deck'
 }
 
 export function parsePublicHttpsUrl(raw: string): { ok: true; url: URL } | { ok: false } {

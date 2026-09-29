@@ -144,6 +144,7 @@ export const REPORT_COPY = {
 const DESK_ERROR_REPLACEMENTS: Record<string, string> = {
   [MEMBER_MESSAGES.start]: DD_COPY.errorStart,
   [MEMBER_MESSAGES.finish]: DD_COPY.errorGeneric,
+  [MEMBER_MESSAGES.timedOut]: DD_COPY.errorTimeout,
   [MEMBER_MESSAGES.authUnavailable]: DD_COPY.errorAuth,
   [MEMBER_MESSAGES.unreadable]: DD_COPY.errorUnreadable,
   [MEMBER_MESSAGES.scanned]: DD_COPY.errorUnreadable,
@@ -166,7 +167,17 @@ export function deskCtaLabel(input: { busy: boolean; fileChosen: boolean }): str
 
 /** Map real job stage labels. Unknown stages use the generic running line. */
 export function deskProgressLine(stage: string): string {
-  const value = stage.trim().toLowerCase()
+  const trimmed = stage.trim()
+  const value = trimmed.toLowerCase()
+  if (
+    value === 'numbering the pages' ||
+    value === 'asking the model' ||
+    value === 'repairing the draft' ||
+    value === 'trying the backup model' ||
+    value === 'saving the draft'
+  ) {
+    return trimmed
+  }
   if (value.includes('reading')) return DD_COPY.statusReading
   if (value.includes('writing') || value.includes('building')) return DD_COPY.statusWriting
   if (value.includes('checking') || value.includes('looking')) return DD_COPY.statusResearching

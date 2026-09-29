@@ -141,6 +141,15 @@ async function capture(state, width, height, file) {
   if (!ready.result?.value?.ok) {
     throw new Error(`Memo preview was not ready for ${state} at ${width}: ${JSON.stringify(ready.result?.value)}`)
   }
+  await send('Runtime.evaluate', {
+    expression: `(() => {
+      const style = document.createElement('style')
+      style.textContent = 'html, body, .shell-root, .shell-frame, .shell-column, .shell-main { height: auto !important; max-height: none !important; min-height: 0 !important; overflow: visible !important; margin-bottom: 0 !important; } body { padding-bottom: 4.5rem !important; }'
+      document.head.appendChild(style)
+      return document.documentElement.scrollHeight
+    })()`,
+    returnByValue: true,
+  })
   const shot = await send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: true })
   const bytes = Buffer.from(shot.data, 'base64')
   writeFileSync(file, bytes)

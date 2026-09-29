@@ -10,13 +10,19 @@ import {
   preferredCompany,
 } from '../supabase/functions/_shared/deck_analysis.ts'
 import {
-  JOB_STALE_MS,
+  DD_PROGRESS,
+  JOB_DEADLINE_MS,
+  MEMBER_MESSAGES,
   extractDeckFacts,
+  isTerminalModelFailure,
   modelJobFields,
   NOT_STATED,
+  shouldFailStaleJob,
+  stageLabel,
   type BuiltReport,
 } from '../supabase/functions/_shared/due_diligence.ts'
-import { FALLBACK_MODEL_ID, extractDeckFactsWithOptionalLlm } from '../supabase/functions/due-diligence-start/llm.ts'
+import { FALLBACK_MODEL_ID, analyzeDeckText, extractDeckFactsWithOptionalLlm } from '../supabase/functions/due-diligence-start/llm.ts'
+import { deskProgressLine, DD_COPY } from '../src/lib/dueDiligenceCopy.ts'
 import { partialDraftAnalysis, partialDraftRaw, partialDraftReport, fullDraftAnalysis, fullDraftReport, FIXTURE_DECK } from '../src/lib/dueDiligenceMemoFixture.ts'
 import { REPORT_COPY } from '../src/lib/dueDiligenceCopy.ts'
 
@@ -182,15 +188,43 @@ test('a failed primary call is retried once and the reason is ready for the job 
   }
 })
 
-test('the job row stores the model and the stale window covers a long call', () => {
-  assert.equal(JOB_STALE_MS >= 150_000, true)
+test('the job row stores the model and a stale job is failed instead of restarted', () => {
+  assert.equal(JOB_DEADLINE_MS < 400_000, true)
+  assert.equal(JOB_DEADLINE_MS <= 240_000, true)
+  assert.equal(JOB_DEADLINE_MS > 75_000, true)
+  const steps = Object.values(DD_PROGRESS)
+  for (let index = 1; index < steps.length; index += 1) {
+    assert.equal(steps[index] > steps[index - 1], true)
+  }
+  const now = Date.parse('2026-09-29T12:00:00.000Z')
+  const fresh = new Date(now - 1_000).toISOString()
+  const old = new Date(now - JOB_DEADLINE_MS - 1_000).toISOString()
+  assert.equal(shouldFailStaleJob({ status: 'checking', updatedAt: fresh, createdAt: fresh, nowMs: now }), false)
+  assert.equal(shouldFailStaleJob({ status: 'checking', updatedAt: old, createdAt: fresh, nowMs: now }), true)
+  assert.equal(shouldFailStaleJob({ status: 'writing', updatedAt: fresh, createdAt: old, nowMs: now }), true)
+  assert.equal(shouldFailStaleJob({ status: 'queued', updatedAt: old, createdAt: old, nowMs: now }), true)
+  assert.equal(shouldFailStaleJob({ status: 'ready', updatedAt: old, createdAt: old, nowMs: now }), false)
+  assert.equal(shouldFailStaleJob({ status: 'failed', updatedAt: old, createdAt: old, nowMs: now }), false)
+  assert.equal(stageLabel('checking', DD_PROGRESS.model), 'Asking the model')
+  assert.equal(stageLabel('checking', DD_PROGRESS.repair), 'Repairing the draft')
+  assert.equal(stageLabel('checking', DD_PROGRESS.fallback), 'Trying the backup model')
+  assert.equal(stageLabel('writing', DD_PROGRESS.save), 'Saving the draft')
+  assert.equal(deskProgressLine('Asking the model'), 'Asking the model')
+  assert.equal(deskProgressLine('Reading the deck'), DD_COPY.statusReading)
+  assert.equal(isTerminalModelFailure('primary_timeout', false), true)
+  assert.equal(isTerminalModelFailure('missing_api_key', false), false)
+  assert.equal(isTerminalModelFailure(null, true), false)
   const status = readFileSync(path.join(root, 'supabase/functions/due-diligence-status/index.ts'), 'utf8')
   const run = readFileSync(path.join(root, 'supabase/functions/due-diligence-start/run.ts'), 'utf8')
   const migration = readFileSync(path.join(root, 'supabase/migrations/20261011120000_due_diligence_grok_draft.sql'), 'utf8')
-  assert.match(status, /JOB_STALE_MS/)
-  assert.equal(status.includes('90_000'), false)
+  assert.match(status, /shouldFailStaleJob/)
+  assert.match(status, /stale_worker/)
+  assert.match(status, /status: 'failed'/)
+  assert.equal(status.includes("status: 'queued'"), false)
   assert.match(run, /modelJobFields/)
   assert.match(run, /numberDeckPages/)
+  assert.match(run, /DD_PROGRESS/)
+  assert.match(run, /isTerminalModelFailure/)
   assert.match(run, /analysis_status: 'draft'/)
   assert.match(migration, /model_skip_reason/)
   assert.match(migration, /analysis_status = 'draft'/)
@@ -198,6 +232,66 @@ test('the job row stores the model and the stale window covers a long call', () 
   const blank = modelJobFields({ modelId: '', skipReason: 'missing_api_key' })
   assert.equal(blank.model_id, null)
   assert.equal(blank.model_skip_reason, 'missing_api_key')
+  const timed = modelJobFields({ modelId: 'unit-model-id', skipReason: 'primary_timeout' })
+  assert.equal(timed.model_id, 'unit-model-id')
+  assert.equal(timed.model_skip_reason, 'primary_timeout')
+  assert.equal(MEMBER_MESSAGES.timedOut.includes('\u2014'), false)
+})
+
+test('a model call that runs out of time fails with the model id stored', async () => {
+  const stages: string[] = []
+  const previousFetch = globalThis.fetch
+  const previousDeno = (globalThis as { Deno?: unknown }).Deno
+  ;(globalThis as { Deno?: { env: { get: (key: string) => string | undefined } } }).Deno = {
+    env: {
+      get: (key: string) =>
+        ({
+          BA_DD_LLM_PROVIDER: 'xai',
+          BA_DD_LLM_API_KEY: 'dd-unit-test-token',
+          BA_DD_LLM_MODEL: 'unit-model-id',
+        })[key],
+    },
+  }
+  globalThis.fetch = ((_url: RequestInfo | URL, init?: RequestInit) =>
+    new Promise((_resolve, reject) => {
+      const signal = init?.signal
+      if (!signal) {
+        reject(new Error('missing signal'))
+        return
+      }
+      const abort = () => {
+        const error = new Error('timed out')
+        error.name = 'TimeoutError'
+        reject(error)
+      }
+      if (signal.aborted) abort()
+      else signal.addEventListener('abort', abort, { once: true })
+    })) as typeof fetch
+  try {
+    const expired = await analyzeDeckText(`Page 1\n${FIXTURE_DECK}`, { deadlineAt: Date.now() - 1 })
+    assert.equal(expired.modelRan, false)
+    assert.match(expired.skipReason || '', /deadline/)
+    assert.equal(expired.modelId, FALLBACK_MODEL_ID)
+
+    const result = await analyzeDeckText(`Page 1\n${FIXTURE_DECK}`, {
+      callTimeoutMs: 30,
+      onStage: async (stage) => {
+        stages.push(stage)
+      },
+    })
+    assert.deepEqual(stages, ['model', 'fallback'])
+    assert.equal(result.modelRan, false)
+    assert.equal(result.modelId, FALLBACK_MODEL_ID)
+    assert.match(result.skipReason || '', /primary_timeout/)
+    assert.match(result.skipReason || '', /fallback_timeout/)
+    const fields = modelJobFields({ modelId: result.modelId, skipReason: result.skipReason })
+    assert.equal(fields.model_id, FALLBACK_MODEL_ID)
+    assert.match(fields.model_skip_reason || '', /timeout/)
+    assert.equal(isTerminalModelFailure(result.skipReason, result.modelRan), true)
+  } finally {
+    globalThis.fetch = previousFetch
+    ;(globalThis as { Deno?: unknown }).Deno = previousDeno
+  }
 })
 
 test('the draft memo renders at the hero, bars, math, risks, accordion, and footer', async () => {

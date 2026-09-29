@@ -87,7 +87,7 @@ export async function loadDueDiligenceDesk(userId: string): Promise<DeskLoad> {
     reports: reportsRes.data ?? [],
     activeJobId: active ? job.id : null,
     progress: active ? job.progress : 0,
-    stage: active ? stageLabel(job.status) : '',
+    stage: active ? stageLabel(job.status, job.progress) : '',
     failedMessage:
       job?.status === 'failed' ? memberFacingMessage(job.error, MEMBER_MESSAGES.finish) : null,
   }

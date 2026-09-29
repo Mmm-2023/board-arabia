@@ -1,10 +1,8 @@
 import { isLiveMember } from '../_shared/staff_auth.ts'
 import { corsHeaders, jsonResponse } from '../_shared/mail.ts'
 import { requireUser } from '../_shared/require_user.ts'
-import { isUuid, JOB_STALE_MS, MEMBER_MESSAGES, stageLabel } from '../_shared/due_diligence.ts'
+import { isUuid, MEMBER_MESSAGES, modelJobFields, shouldFailStaleJob, stageLabel } from '../_shared/due_diligence.ts'
 import { advanceDueDiligenceJob, deferJob } from '../due-diligence-start/run.ts'
-
-const ACTIVE = ['reading', 'checking', 'writing']
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders(req) })
@@ -33,29 +31,33 @@ Deno.serve(async (req) => {
 
   const loaded = await session.admin
     .from('due_diligence_jobs')
-    .select('id, status, progress, error, updated_at')
+    .select('id, status, progress, error, created_at, updated_at')
     .eq('id', jobId)
     .eq('member_id', session.user.id)
     .maybeSingle()
   if (loaded.error || !loaded.data) return jsonResponse(req, { error: MEMBER_MESSAGES.missingJob }, 404)
 
   let job = loaded.data
-  const staleBefore = new Date(Date.now() - JOB_STALE_MS).toISOString()
-  if (ACTIVE.includes(job.status) && job.updated_at < staleBefore) {
+  if (
+    shouldFailStaleJob({
+      status: job.status,
+      updatedAt: String(job.updated_at || ''),
+      createdAt: String(job.created_at || ''),
+      nowMs: Date.now(),
+    })
+  ) {
+    const failed = modelJobFields({ modelId: null, skipReason: 'stale_worker' })
     await session.admin
       .from('due_diligence_jobs')
-      .update({ status: 'queued', progress: 5, error: null })
+      .update({ status: 'failed', error: MEMBER_MESSAGES.timedOut, model_skip_reason: failed.model_skip_reason })
       .eq('id', job.id)
       .eq('member_id', session.user.id)
-      .in('status', ACTIVE)
-      .lt('updated_at', staleBefore)
-    const again = await session.admin
-      .from('due_diligence_jobs')
-      .select('id, status, progress, error, updated_at')
-      .eq('id', job.id)
-      .eq('member_id', session.user.id)
-      .maybeSingle()
-    if (again.data) job = again.data
+      .in('status', ['queued', 'reading', 'checking', 'writing'])
+    job = {
+      ...job,
+      status: 'failed',
+      error: MEMBER_MESSAGES.timedOut,
+    }
   }
   if (job.status === 'queued') {
     deferJob(advanceDueDiligenceJob(session.admin, job.id))
@@ -77,7 +79,7 @@ Deno.serve(async (req) => {
       id: job.id,
       status: job.status,
       progress: job.progress,
-      stage: stageLabel(job.status),
+      stage: stageLabel(job.status, job.progress),
       error: job.error,
       report_id: reportId,
     },

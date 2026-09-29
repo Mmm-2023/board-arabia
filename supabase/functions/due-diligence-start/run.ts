@@ -4,6 +4,7 @@ import {
   assessmentLog,
   buildReport,
   DECK_BUCKET,
+  DD_PROGRESS,
   DECK_MAX_BYTES,
   DEGRADED_NOTE_MODEL,
   DEGRADED_NOTE_MODEL_FAILED,
@@ -13,6 +14,8 @@ import {
   DEGRADED_NOTE_SEARCH_FAILED,
   extractCompanyUrl,
   independentSearchTerms,
+  isTerminalModelFailure,
+  JOB_DEADLINE_MS,
   MEMBER_MESSAGES,
   modelJobFields,
   packReportDisclaimer,
@@ -29,7 +32,7 @@ const ACTIVE = ['queued', 'reading', 'checking', 'writing']
 export async function advanceDueDiligenceJob(admin: SupabaseClient, jobId: string): Promise<void> {
   const claimed = await admin
     .from('due_diligence_jobs')
-    .update({ status: 'reading', progress: 20, error: null })
+    .update({ status: 'reading', progress: DD_PROGRESS.extract, error: null })
     .eq('id', jobId)
     .eq('status', 'queued')
     .select('id, deck_id, member_id')
@@ -60,6 +63,14 @@ export async function advanceDueDiligenceJob(admin: SupabaseClient, jobId: strin
       }),
     )
   }
+  const deadlineAt = Date.now() + JOB_DEADLINE_MS
+  const assertDeadline = () => {
+    if (Date.now() >= deadlineAt) {
+      const error = new Error(MEMBER_MESSAGES.timedOut)
+      error.name = 'JobDeadlineError'
+      throw error
+    }
+  }
   try {
     const deck = await admin
       .from('due_diligence_decks')
@@ -75,8 +86,11 @@ export async function advanceDueDiligenceJob(admin: SupabaseClient, jobId: strin
 
     const source = await readDeckSource(bytes, ext)
     const text = source.text
+    assertDeadline()
+    await touch(admin, jobId, DD_PROGRESS.pages)
     const numbered = numberDeckPages(source.pages).slice(0, 80_000)
-    await mark(admin, jobId, 'checking', 55)
+    assertDeadline()
+    await mark(admin, jobId, 'checking', DD_PROGRESS.model)
     const storedUrl = typeof deck.data.company_url === 'string' ? deck.data.company_url.trim() : ''
     let companyUrl: string | null = storedUrl || null
     if (!companyUrl) {
@@ -94,13 +108,30 @@ export async function advanceDueDiligenceJob(admin: SupabaseClient, jobId: strin
       text,
       String(deck.data.file_name || ''),
       numbered,
-      () => touch(admin, jobId, 68),
+      async (stage) => {
+        assertDeadline()
+        const progress =
+          stage === 'repair' ? DD_PROGRESS.repair : stage === 'fallback' ? DD_PROGRESS.fallback : DD_PROGRESS.model
+        await touch(admin, jobId, progress)
+      },
+      deadlineAt,
     )
     modelRan = extraction.modelRan
     modelSkipReason = extraction.skipReason
     modelId = extraction.modelId
     claimsReturned = extraction.claimsReturned
     claimsKept = extraction.claimsKept
+    if (isTerminalModelFailure(extraction.skipReason, extraction.modelRan)) {
+      const error = new Error(
+        (extraction.skipReason || '').includes('timeout') || (extraction.skipReason || '').includes('deadline')
+          ? MEMBER_MESSAGES.timedOut
+          : MEMBER_MESSAGES.finish,
+      )
+      error.name = 'ModelFailed'
+      throw error
+    }
+    assertDeadline()
+    await touch(admin, jobId, DD_PROGRESS.sources)
     const facts = extraction.facts
     const retrieval = await retrievePublicPages({
       companyUrl,
@@ -109,7 +140,8 @@ export async function advanceDueDiligenceJob(admin: SupabaseClient, jobId: strin
     sourcesFetched = retrieval.sourcesFetched
     searchRan = retrieval.searchRan
     searchSkipReason = retrieval.searchSkipReason
-    await mark(admin, jobId, 'writing', 85)
+    assertDeadline()
+    await mark(admin, jobId, 'writing', DD_PROGRESS.save)
     const degradedNotes: string[] = []
     if (!extraction.modelRan) {
       degradedNotes.push(extraction.skipReason === 'missing_api_key' ? DEGRADED_NOTE_MODEL : DEGRADED_NOTE_MODEL_FAILED)
@@ -165,14 +197,21 @@ export async function advanceDueDiligenceJob(admin: SupabaseClient, jobId: strin
       .eq('id', jobId)
       .in('status', ACTIVE)
   } catch (err) {
-    if (modelSkipReason === 'not_started') modelSkipReason = 'job_failed'
+    const deadline = err instanceof Error && err.name === 'JobDeadlineError'
+    if (deadline) {
+      modelSkipReason =
+        modelSkipReason && modelSkipReason !== 'not_started' ? `${modelSkipReason}:deadline_exceeded` : 'deadline_exceeded'
+    } else if (modelSkipReason === 'not_started') {
+      modelSkipReason = 'job_failed'
+    }
     if (searchSkipReason === 'not_started') searchSkipReason = 'job_failed'
     writeLog()
     const message = err instanceof Error ? err.message : ''
     const safe =
       message === MEMBER_MESSAGES.unreadable ||
       message === MEMBER_MESSAGES.scanned ||
-      message === MEMBER_MESSAGES.notDeck
+      message === MEMBER_MESSAGES.notDeck ||
+      message === MEMBER_MESSAGES.timedOut
         ? message
         : MEMBER_MESSAGES.finish
     await admin
