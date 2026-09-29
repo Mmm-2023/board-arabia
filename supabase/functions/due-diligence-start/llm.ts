@@ -31,8 +31,8 @@ export type FactExtraction = {
   claimsKept: number
 }
 
-export async function extractDeckFactsWithOptionalLlm(text: string): Promise<FactExtraction> {
-  const heuristic = extractDeckFacts(text)
+export async function extractDeckFactsWithOptionalLlm(text: string, fileName = ''): Promise<FactExtraction> {
+  const heuristic = extractDeckFacts(text, fileName)
   const key = Deno.env.get('BA_DD_LLM_API_KEY')?.trim()
   if (!key) {
     return {

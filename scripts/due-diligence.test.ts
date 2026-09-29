@@ -16,18 +16,23 @@ import {
   visibleNextSteps,
   WHO_PUBLIC_STEP,
 } from '../src/lib/dueDiligenceNextSteps.ts'
+import { degradedCoverReport, STAMPED_DECK, STAMPED_FILE } from './fixtures/degraded-cover.ts'
 import { northwindFixtureReport } from './fixtures/northwind-assessment.ts'
 import { MEMBER_VIEWS } from '../src/shell/viewCopy.ts'
 import {
   assessmentLog,
   buildReport,
+  companyFromFileName,
   containsVerdictLanguage,
+  degradedBannerText,
   DEGRADED_NOTE_MODEL,
   DEGRADED_NOTE_SEARCH,
   independentSearchTerms,
   INDEPENDENT_EVIDENCE_NOTE,
   isBlockedPublicSourceUrl,
+  isClassificationStamp,
   isCompanyOwnedUrl,
+  isDegradedCompact,
   packReportDisclaimer,
   presentReport,
   readModelFacts,
@@ -984,6 +989,61 @@ test('the Northwind fixture shows verdict, reason, evidence, and the degraded no
     assert.ok(html.includes('https://news.example/gulf-logistics'))
     assert.ok(html.includes('https://research.example/logistics-market'))
     assert.equal(html.includes('northwind.example'), false)
+    assert.equal(html.includes('\u2014'), false)
+    assert.equal(html.includes('\u2013'), false)
+  } finally {
+    await vite.close()
+  }
+})
+
+test('a stamped cover does not become the company name, and degraded mode stays compact', async () => {
+  assert.equal(isClassificationStamp('CONFIDENTIAL MANAGEMENT CASE'), true)
+  assert.equal(isClassificationStamp('Strictly confidential'), true)
+  assert.equal(isClassificationStamp('For discussion only'), true)
+  assert.equal(isClassificationStamp('Not for distribution'), true)
+  assert.equal(companyFromFileName(STAMPED_FILE), 'RHL')
+  const stampOnly = extractDeckFacts('CONFIDENTIAL MANAGEMENT CASE\nNot for distribution\n', STAMPED_FILE)
+  assert.equal(stampOnly.company, 'RHL')
+  assert.equal(/confidential|management case/i.test(stampOnly.company), false)
+
+  const facts = extractDeckFacts(STAMPED_DECK, STAMPED_FILE)
+  assert.equal(facts.company, 'Harborline Robotics')
+  assert.equal(facts.sector, 'Logistics')
+  assert.match(facts.ask, /seed round/i)
+  assert.ok(facts.claims.length > 0)
+  assert.equal(facts.claims.some((claim) => /2\.4 million|ARR/i.test(claim.text)), true)
+  assert.equal(facts.claims.some((claim) => /12 million|valuation/i.test(claim.text)), true)
+  assert.equal(facts.claims.some((claim) => /80 enterprise customers/i.test(claim.text)), true)
+  assert.equal(facts.claims.some((claim) => /40%|growth/i.test(claim.text)), true)
+  assert.equal(facts.claims.some((claim) => /Nora Hale/i.test(claim.text)), true)
+  assert.equal(facts.claims.some((claim) => isClassificationStamp(claim.text)), false)
+
+  const report = degradedCoverReport()
+  assert.equal(isDegradedCompact(report), true)
+  assert.equal(report.sources.length, 0)
+  assert.equal(report.claims.length > 0, true)
+  assert.match(degradedBannerText(report.degraded_notes || []), /language model was not used/)
+  assert.match(degradedBannerText(report.degraded_notes || []), /Independent web checks were not run/)
+  assert.match(degradedBannerText(report.degraded_notes || []), /Those checks are not available/)
+  const vite = await createServer({
+    server: { middlewareMode: true },
+    appType: 'custom',
+    logLevel: 'error',
+  })
+  try {
+    const mod = (await vite.ssrLoadModule('/src/shell/renderDueReport.tsx')) as {
+      renderDueReport: (value: BuiltReport, fileName: string, preparedAt: string) => string
+    }
+    const html = mod.renderDueReport(report, STAMPED_FILE, '2026-09-29T09:00:00.000Z')
+    assert.equal(html.split('data-dd-degraded="true"').length - 1, 1)
+    assert.equal(html.includes('data-dd-compact="true"'), true)
+    assert.equal(html.includes('data-dd-deck-summary="true"'), true)
+    assert.equal(html.includes('Harborline Robotics'), true)
+    assert.equal(html.includes('CONFIDENTIAL MANAGEMENT CASE'), false)
+    assert.equal(html.includes('No checkable point in this area.'), false)
+    assert.equal(html.includes('Area scorecard'), false)
+    assert.equal(html.includes('Finding 1'), false)
+    assert.equal(html.includes('Nora Hale'), true)
     assert.equal(html.includes('\u2014'), false)
     assert.equal(html.includes('\u2013'), false)
   } finally {
