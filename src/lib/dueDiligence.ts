@@ -7,7 +7,7 @@ import {
   type BuiltReport,
   type DeckExt,
 } from '../../supabase/functions/_shared/due_diligence.ts'
-import { DD_COPY } from './dueDiligenceCopy'
+import { postDueDiligenceStart, postDueDiligenceStatus } from './dueDiligenceRequests'
 import { supabase } from './supabase'
 
 export type ReadFailure = 'denied' | 'unavailable' | 'error'
@@ -118,77 +118,29 @@ export async function startDueDiligence(input: {
 }): Promise<{ ok: true; jobId: string } | { ok: false; error: string; kind: ReadFailure }> {
   const headers = await memberHeaders()
   if (!headers) return { ok: false, error: MEMBER_MESSAGES.unauthorized, kind: 'denied' }
-  try {
-    const res = await fetch(`${functionsBase()}/due-diligence-start`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({
-        deck_id: input.deckId,
-        storage_path: input.storagePath,
-        file_name: input.fileName,
-        company_url: input.companyUrl,
-      }),
-    })
-    const body = (await res.json().catch(() => ({}))) as { error?: string; job_id?: string }
-    if (!res.ok || !body.job_id) {
-      return {
-        ok: false,
-        error: memberFacingMessage(body.error, MEMBER_MESSAGES.start),
-        kind: res.status === 403 ? 'denied' : res.status === 404 ? 'unavailable' : 'error',
-      }
-    }
-    return { ok: true, jobId: body.job_id }
-  } catch {
-    return { ok: false, error: DD_COPY.errorNetwork, kind: 'error' }
-  }
+  return postDueDiligenceStart(
+    {
+      supabaseUrl: String(import.meta.env.VITE_SUPABASE_URL || ''),
+      deckId: input.deckId,
+      storagePath: input.storagePath,
+      fileName: input.fileName,
+      companyUrl: input.companyUrl,
+    },
+    { headers },
+  )
 }
 
 export async function fetchDueDiligenceStatus(jobId: string): Promise<StatusLoad> {
   const headers = await memberHeaders()
   if (!headers) return { ok: false, error: MEMBER_MESSAGES.unauthorized, kind: 'denied' }
-  try {
-    const res = await fetch(`${functionsBase()}/due-diligence-status`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({ job_id: jobId }),
-    })
-    const body = (await res.json().catch(() => ({}))) as {
-      error?: string
-      job?: {
-        status?: string
-        progress?: number
-        stage?: string
-        error?: string | null
-        report_id?: string | null
-      }
-    }
-    if (!res.ok || !body.job?.status) {
-      return {
-        ok: false,
-        error: memberFacingMessage(body.error, MEMBER_MESSAGES.finish),
-        kind: res.status === 403 ? 'denied' : res.status === 404 ? 'unavailable' : 'error',
-      }
-    }
-    const progress = typeof body.job.progress === 'number' ? Math.min(100, Math.max(0, body.job.progress)) : 0
-    return {
-      ok: true,
-      status: body.job.status,
-      progress,
-      stage: body.job.stage || stageLabel(body.job.status),
-      error: body.job.error ? memberFacingMessage(body.job.error, MEMBER_MESSAGES.finish) : null,
-      reportId: body.job.report_id ?? null,
-    }
-  } catch {
-    return { ok: false, error: MEMBER_MESSAGES.finish, kind: 'error' }
-  }
+  return postDueDiligenceStatus(
+    { supabaseUrl: String(import.meta.env.VITE_SUPABASE_URL || ''), jobId },
+    { headers },
+  )
 }
 
 export function uploadPath(userId: string, deckId: string, ext: DeckExt): string | null {
   return deckStoragePath(userId, deckId, ext)
-}
-
-function functionsBase() {
-  return `${String(import.meta.env.VITE_SUPABASE_URL || '').replace(/\/$/, '')}/functions/v1`
 }
 
 async function memberHeaders(): Promise<HeadersInit | null> {

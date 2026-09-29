@@ -34,6 +34,7 @@ export const DD_COPY = {
   ctaPrimary: 'Check this deck',
   ctaDisabled: 'Choose a deck first',
   ctaRunning: 'Starting\u2026',
+  starting: 'Starting the check.',
   siteLabel: 'Company site (optional)',
   sitePlaceholder: 'https://',
   siteHelper:
@@ -52,6 +53,10 @@ export const DD_COPY = {
   errorTooLarge: 'That file is too large. Use a PDF or PPTX up to 15 MB.',
   errorRate: 'You have reached today\u2019s check limit. Try again tomorrow, or open a past report below.',
   errorNetwork: 'Connection dropped. Check your network and try again.',
+  errorTimeout: 'That request took too long. Try again.',
+  errorAuth: 'Could not confirm your sign-in. Try again in a moment.',
+  errorPoll: 'Could not refresh this check. Try again.',
+  pollRetry: 'Retry',
   errorGeneric: 'Something went wrong on this check. Try again, or open a past report if you have one.',
 } as const
 
@@ -97,6 +102,7 @@ export const REPORT_COPY = {
 const DESK_ERROR_REPLACEMENTS: Record<string, string> = {
   [MEMBER_MESSAGES.start]: DD_COPY.errorStart,
   [MEMBER_MESSAGES.finish]: DD_COPY.errorGeneric,
+  [MEMBER_MESSAGES.authUnavailable]: DD_COPY.errorAuth,
   [MEMBER_MESSAGES.unreadable]: DD_COPY.errorUnreadable,
   [MEMBER_MESSAGES.scanned]: DD_COPY.errorUnreadable,
   [MEMBER_MESSAGES.rate]: DD_COPY.errorRate,
