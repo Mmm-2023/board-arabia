@@ -161,6 +161,8 @@ test('every staff_* function checks staff and is not executable by anon', () => 
     'staff_save_re_partner',
     'staff_assign_sponsor_category',
     'staff_set_re_opportunity_readiness',
+    'staff_list_re_partner_intros',
+    'staff_decide_re_partner_intro',
   ]
   for (const name of names) {
     const fn = latestFunction(name)

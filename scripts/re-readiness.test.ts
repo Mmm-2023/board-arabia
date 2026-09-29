@@ -39,11 +39,12 @@ function latestPrivate(name: string) {
   return body
 }
 
-test('the readiness migration sorts last and keeps redaction on the existing columns', () => {
+test('the readiness migration stays after deal rooms and keeps redaction on the existing columns', () => {
   const files = readdirSync(migrationsDir)
     .filter((file) => file.endsWith('.sql'))
     .sort()
-  assert.equal(files.at(-1), migrationName)
+  assert.ok(files.includes(migrationName))
+  assert.ok((files.at(-1) ?? '') > migrationName)
   assert.ok(migrationName > '20261002120000_member_deal_rooms.sql')
   assert.ok(files.includes('20261002120000_member_deal_rooms.sql'))
   assert.equal(migration.includes('\u2014'), false)

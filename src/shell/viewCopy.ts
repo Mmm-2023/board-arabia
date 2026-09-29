@@ -54,6 +54,16 @@ export const MEMBER_VIEWS = {
     denied: 'Real Estate is for admitted members.',
     filtered: 'No matches. Clear filters.',
     clear: 'Clear filters',
+    partnersIntro:
+      'Request intro asks an admin to make the introduction. This page does not open a message thread.',
+    partnersForming:
+      'Real estate partners are still forming. These examples stay until vetted firms can take their place.',
+    partnersEmpty: 'No partners yet. When an admin publishes a firm, it lands here.',
+    partnersDenied: 'Partners are for admitted members.',
+    partnersRequested: 'Intro requested. An admin reviews it before any outreach.',
+    partnersApproved:
+      'An admin approved this intro. The desk handles outreach. Contact details stay off this page.',
+    partnersDeclined: 'This intro was not approved.',
   },
   network: {
     invites: 'You have 2 peer invites.',
