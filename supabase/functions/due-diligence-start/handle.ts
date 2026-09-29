@@ -4,6 +4,7 @@
  */
 import { isLiveMember } from '../_shared/staff_auth.ts'
 import { corsHeaders, jsonResponse } from '../_shared/mail.ts'
+import { deliverAdminAlert } from '../_shared/notify_admin.ts'
 import {
   DECK_BUCKET,
   DECK_MAX_BYTES,
@@ -201,12 +202,39 @@ async function runStart(
     return jsonResponse(req, { error: MEMBER_MESSAGES.start, code: 'start_failed' }, 500)
   }
 
+  queueDueDiligenceAlert(admin, userId, fileName)
   try {
     deps.scheduleJob(admin, job.data.id)
   } catch {
     // The job row keeps the deck. Status polling picks the job up again.
   }
   return jsonResponse(req, { ok: true, job_id: job.data.id, deck_id: deck.data.id })
+}
+
+function queueDueDiligenceAlert(admin: DueDiligenceAdmin, userId: string, fileName: string) {
+  deliverAdminAlert(undefined, async () => {
+    let name = 'Member'
+    let kind: 'member' | 'sponsor' = 'member'
+    try {
+      const profile = await admin.from('profiles').select('full_name').eq('user_id', userId).maybeSingle()
+      const seat = await admin.from('members').select('seat').eq('user_id', userId).maybeSingle()
+      const profileRow = profile.data as { full_name?: unknown } | null
+      const seatRow = seat.data as { seat?: unknown } | null
+      if (typeof profileRow?.full_name === 'string' && profileRow.full_name.trim()) {
+        name = profileRow.full_name.trim()
+      }
+      if (seatRow?.seat === 'sponsor') kind = 'sponsor'
+    } catch {
+      // The run is already saved.
+    }
+    return {
+      requesterName: name,
+      requesterKind: kind,
+      requested: 'an AI Due Diligence run',
+      item: fileName,
+      approvePath: '/admin',
+    }
+  })
 }
 
 async function discardOwnedDeck(req: Request, userId: string | null, admin: DueDiligenceAdmin | null) {

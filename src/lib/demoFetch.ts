@@ -15,7 +15,11 @@ import {
   type ReOpportunityCard,
   type RePartnerCard,
 } from './reRedaction'
-import { supabase } from './supabase'
+import {
+  requestMandateIntro as postMandateIntro,
+  requestReOpportunityIntro as postReIntro,
+  supabase,
+} from './supabase'
 
 export type DemoLoad<T> =
   | { status: 'ready'; rows: T }
@@ -55,9 +59,7 @@ export function fetchHomeActivity(): Promise<DemoLoad<HomeActivity[]>> {
 }
 
 export async function requestMandateIntro(mandateId: string): Promise<'ok' | 'error'> {
-  const { error } = await supabase.rpc('request_mandate_intro', { p_mandate_id: mandateId })
-  if (error) return 'error'
-  return 'ok'
+  return postMandateIntro(mandateId)
 }
 
 export function fetchReOpportunities(): Promise<DemoLoad<ReOpportunityCard[]>> {
@@ -69,9 +71,5 @@ export function fetchRePartners(): Promise<DemoLoad<RePartnerCard[]>> {
 }
 
 export async function requestReOpportunityIntro(opportunityId: string): Promise<'ok' | 'error'> {
-  const { error } = await supabase.rpc('request_re_opportunity_intro', {
-    p_opportunity_id: opportunityId,
-  })
-  if (error) return 'error'
-  return 'ok'
+  return postReIntro(opportunityId)
 }

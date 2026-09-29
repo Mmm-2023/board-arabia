@@ -159,7 +159,7 @@ Preferred path: OAuth refresh token for the Workspace user in `GMAIL_FROM`.
 | `GMAIL_CLIENT_SECRET` | Yes for live email | OAuth client secret |
 | `GMAIL_REFRESH_TOKEN` | Yes for live email | Refresh token from a consent as the `GMAIL_FROM` mailbox, scope `https://www.googleapis.com/auth/gmail.send` |
 | `GMAIL_FROM` | Yes for live email | Visible From and Reply-To. Example: `"Board Arabia" <ops@example.com>`. No default in source. A `noreply@boardarabia.com` value is ignored. |
-| `ADMIN_NOTIFY_EMAIL` | Yes for staff notify and the master-invite default | Example: `staff@example.com`. No default in source. Missing value fails closed and does not send that mail. |
+| `ADMIN_NOTIFY_EMAIL` | Yes for staff notify, the master-invite default, and admin queue alerts | Example: `staff@example.com`. No default in source. Missing value fails closed for the existing staff notice. A queue alert logs a warning and the requester's action still succeeds. |
 | `PRIVATE_BOOKING_LINK` | Yes for Accept | Read only by `decide-application`. Accept fails closed when it is unset and does not send mail. Do not put that URL on a public page. |
 | `PUBLIC_SITE_URL` | Optional | Defaults to `https://boardarabia.com` |
 
@@ -167,7 +167,9 @@ Alternative, if domain-wide delegation is already approved: set `GMAIL_SERVICE_A
 
 Accept emails the private booking link from `decide-application` only, using `PRIVATE_BOOKING_LINK`. Do not put that URL on a public page.
 
-When the Gmail secrets are missing, or Gmail rejects the token (auth failure), every send is a dry-run (`email_events.status = dry_run`, provider `gmail`). No message leaves Workspace. Other Gmail errors stay `error` and are logged without tokens.
+When the Gmail secrets are missing, or Gmail rejects the token (auth failure), product mail is a dry-run (`email_events.status = dry_run`, provider `gmail`). No message leaves Workspace. Other Gmail errors stay `error` and are logged without tokens.
+
+Admin queue alerts use the existing `ADMIN_NOTIFY_EMAIL` recipient and the shared Gmail sender. A live alert needs `GMAIL_CLIENT_ID`, `GMAIL_CLIENT_SECRET`, and `GMAIL_REFRESH_TOKEN`. If `ADMIN_NOTIFY_EMAIL` or any of those three is unset, the alert is not sent and a warning is logged. The member or applicant action still succeeds. A Gmail failure is logged the same way and does not fail the request. There is no separate alert recipient secret.
 
 ```sql
 select created_at, kind, recipient, subject, status

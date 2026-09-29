@@ -26,6 +26,14 @@ verify_jwt = false
 [functions.due-diligence-start]
 verify_jwt = true
 
+# Member mandate intro. The anon key alone is not enough.
+[functions.request-mandate-intro]
+verify_jwt = true
+
+# Real estate opportunity intro. The anon key alone is not enough.
+[functions.request-re-intro]
+verify_jwt = true
+
 [functions.due-diligence-status]
 verify_jwt = true
 

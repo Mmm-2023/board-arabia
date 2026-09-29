@@ -73,7 +73,9 @@ export function AdminHome() {
         )}
       </section>
 
-      <MandateIntroQueue />
+      <div id="mandate-intro-queue" className="scroll-mt-24">
+        <MandateIntroQueue />
+      </div>
 
       <section aria-label="Status" className="mt-8">
         <h2 className={`text-[0.72rem] font-semibold tracking-[0.14em] uppercase ${styles.quiet}`}>

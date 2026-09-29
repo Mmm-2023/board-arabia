@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1'
+import { deliverAdminAlert } from '../_shared/notify_admin.ts'
 import { applicationAck } from '../_shared/transactional_copy.ts'
 import {
   adminNotifyEmail,
@@ -109,6 +110,14 @@ Deno.serve(async (req) => {
   if (insertError || !app) {
     return jsonResponse(req, { error: insertError?.message || 'Insert failed' }, 400)
   }
+
+  deliverAdminAlert(undefined, {
+    requesterName: app.full_name || 'Applicant',
+    requesterKind: 'applicant',
+    requested: 'a new application',
+    item: `Application ${app.id}`,
+    approvePath: '/admin/applications',
+  })
 
   const attached = pendingInvite
     ? await attachInvite(admin, pendingInvite, app.id, inviteReason)
