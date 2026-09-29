@@ -53,7 +53,7 @@ import {
   stageLabel,
   type BuiltReport,
 } from '../supabase/functions/_shared/due_diligence.ts'
-import { FALLBACK_MODEL_ID, PRIMARY_CALL_MS, analyzeDeckText, extractDeckFactsWithOptionalLlm } from '../supabase/functions/due-diligence-start/llm.ts'
+import { FALLBACK_MODEL_ID, PRIMARY_CALL_MS, PRIMARY_REASONING_EFFORT, analyzeDeckSection, analyzeDeckText, extractDeckFactsWithOptionalLlm } from '../supabase/functions/due-diligence-start/llm.ts'
 import { deskProgressLine, DD_COPY } from '../src/lib/dueDiligenceCopy.ts'
 import { partialDraftAnalysis, partialDraftRaw, partialDraftReport, fullDraftAnalysis, fullDraftRaw, fullDraftReport, FIXTURE_DECK } from '../src/lib/dueDiligenceMemoFixture.ts'
 import { REPORT_COPY } from '../src/lib/dueDiligenceCopy.ts'
@@ -230,6 +230,8 @@ test('the job row stores the model and a stale job is failed instead of restarte
   assert.equal(STEP_ANALYSIS_TTFT_MS < STEP_ANALYSIS_CAP_MS, true)
   assert.equal(STEP_ANALYSIS_CAP_MS < STEP_ANALYSIS_STALE_MS, true)
   assert.equal(STEP_ANALYSIS_STALE_MS < EDGE_WALL_CLOCK_MS, true)
+  assert.equal(STEP_SCORES_TTFT_MS, 30_000)
+  assert.equal(STEP_NARRATIVE_TTFT_MS, 30_000)
   assert.equal(STEP_SCORES_TTFT_MS < STEP_SCORES_CAP_MS, true)
   assert.equal(STEP_SCORES_CAP_MS < STEP_SCORES_STALE_MS, true)
   assert.equal(STEP_SCORES_STALE_MS < EDGE_WALL_CLOCK_MS, true)
@@ -666,6 +668,77 @@ test('posture follows scores and red flags, and a missing hero is repaired', asy
   assert.match(llm, /TtftError/)
   assert.match(llm, /stream: true/)
   assert.match(llm, /narrativeDeckExcerpt/)
+  assert.match(llm, /reasoning_effort/)
+})
+
+test('a reasoning chunk counts as life and a rejected effort is retried once', async () => {
+  const previousFetch = globalThis.fetch
+  const previousDeno = (globalThis as { Deno?: unknown }).Deno
+  ;(globalThis as { Deno?: { env: { get: (key: string) => string | undefined } } }).Deno = {
+    env: {
+      get: (key: string) =>
+        ({
+          BA_DD_LLM_PROVIDER: 'xai',
+          BA_DD_LLM_API_KEY: 'dd-unit-test-token',
+          BA_DD_LLM_MODEL: 'unit-model-id',
+        })[key],
+    },
+  }
+  const encoder = new TextEncoder()
+  try {
+    globalThis.fetch = (async () => {
+      const stream = new ReadableStream({
+        async start(controller) {
+          controller.enqueue(encoder.encode('data: {"choices":[{"delta":{"reasoning_content":"working"}}]}\n\n'))
+          await new Promise((resolve) => setTimeout(resolve, 90))
+          controller.enqueue(encoder.encode('data: {"choices":[{"delta":{"content":"{}"}}]}\n\n'))
+          controller.enqueue(encoder.encode('data: [DONE]\n\n'))
+          controller.close()
+        },
+      })
+      return new Response(stream, { status: 200, headers: { 'Content-Type': 'text/event-stream' } })
+    }) as typeof fetch
+    const lived = await analyzeDeckSection({
+      system: 'Return JSON.',
+      user: 'Page 1\nExample lane.',
+      mode: 'primary',
+      ttftMs: 40,
+      reasoningEffort: PRIMARY_REASONING_EFFORT,
+    })
+    assert.equal(lived.ok, true)
+    assert.equal(lived.content, '{}')
+    assert.equal(lived.reasoningEffort, 'low')
+    assert.ok((lived.firstChunkMs ?? 999) < 70)
+    assert.ok((lived.firstContentMs ?? 0) >= 70)
+
+    const bodies: { reasoning_effort?: string; model?: string }[] = []
+    globalThis.fetch = (async (_input: RequestInfo | URL, init?: RequestInit) => {
+      const body = JSON.parse(String(init?.body || '{}')) as { reasoning_effort?: string; model?: string }
+      bodies.push(body)
+      if (bodies.length === 1) return new Response('no', { status: 400 })
+      return new Response(JSON.stringify({ choices: [{ message: { content: '{}' } }] }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      })
+    }) as typeof fetch
+    const retried = await analyzeDeckSection({
+      system: 'Return JSON.',
+      user: 'Page 1\nExample lane.',
+      mode: 'primary',
+      reasoningEffort: PRIMARY_REASONING_EFFORT,
+    })
+    assert.equal(bodies.length, 2)
+    assert.equal(bodies[0]?.reasoning_effort, 'low')
+    assert.equal(bodies[1]?.reasoning_effort, undefined)
+    assert.equal(bodies[0]?.model, 'unit-model-id')
+    assert.equal(bodies[1]?.model, 'unit-model-id')
+    assert.equal(retried.ok, true)
+    assert.equal(retried.reasoningEffort, null)
+    assert.equal(retried.modelId, 'unit-model-id')
+  } finally {
+    globalThis.fetch = previousFetch
+    ;(globalThis as { Deno?: unknown }).Deno = previousDeno
+  }
 })
 
 test('the draft memo renders at the hero, bars, math, risks, accordion, and footer', async () => {

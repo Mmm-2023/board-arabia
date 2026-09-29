@@ -38,6 +38,12 @@ export const ANALYSIS_TIMEOUT_MS = 75_000
 export const PRIMARY_CALL_MS = PRIMARY_CAP_MS
 export const ANALYSIS_MAX_TOKENS = 4_000
 export const FALLBACK_MODEL_ID = 'grok-4.20-0309-non-reasoning'
+/**
+ * Lower reasoning effort for the primary scores and narrative calls.
+ * Verified for the current chat models: https://docs.x.ai/docs/guides/reasoning
+ * A 400 rejects the field. The call is retried once without it.
+ */
+export const PRIMARY_REASONING_EFFORT = 'low'
 
 function edgeEnv(name: string): string {
   const Deno = (globalThis as { Deno?: { env: { get: (key: string) => string | undefined } } }).Deno
@@ -76,13 +82,23 @@ export type FactExtraction = {
   usedFallback: boolean
 }
 
-type Attempt = {
-  ok: true
-  content: string
-} | {
-  ok: false
-  reason: string
+type CallTiming = {
+  firstChunkMs: number | null
+  firstContentMs: number | null
+  reasoningEffort: string | null
 }
+
+type Attempt =
+  | ({
+      ok: true
+      content: string
+    } & CallTiming)
+  | ({
+      ok: false
+      reason: string
+    } & CallTiming)
+
+const EMPTY_TIMING: CallTiming = { firstChunkMs: null, firstContentMs: null, reasoningEffort: null }
 
 export type ModelStage = 'model' | 'repair' | 'fallback'
 
@@ -137,6 +153,9 @@ export type SectionCall = {
   modelId: string
   ok: boolean
   reason: string | null
+  firstChunkMs: number | null
+  firstContentMs: number | null
+  reasoningEffort: string | null
 }
 
 /** One model call. Fallback and repair are separate invocations, not extra calls here. */
@@ -150,27 +169,37 @@ export async function analyzeDeckSection(input: {
   callTimeoutMs?: number
   ttftMs?: number
   repair?: boolean
+  reasoningEffort?: string | null
 }): Promise<SectionCall> {
   const key = edgeEnv('BA_DD_LLM_API_KEY')
   const target = llmChatTarget()
   const modelId = input.mode === 'fallback' ? FALLBACK_MODEL_ID : target?.model || ''
-  if (!key) return { content: '', modelId: modelId || FALLBACK_MODEL_ID, ok: false, reason: 'missing_api_key' }
-  if (!target || !modelId) return { content: '', modelId: FALLBACK_MODEL_ID, ok: false, reason: 'missing_model' }
+  if (!key) return { content: '', modelId: modelId || FALLBACK_MODEL_ID, ok: false, reason: 'missing_api_key', ...EMPTY_TIMING }
+  if (!target || !modelId) return { content: '', modelId: FALLBACK_MODEL_ID, ok: false, reason: 'missing_model', ...EMPTY_TIMING }
   const url = input.mode === 'fallback' || target.url === XAI_CHAT_URL ? XAI_CHAT_URL : target.url
   const stage: ModelStage = input.repair ? 'repair' : input.mode === 'fallback' ? 'fallback' : 'model'
-  const call = await runCall(
-    input,
-    stage,
-    url,
-    modelId,
-    key,
-    input.system,
-    input.user,
-  )
+  const effort = stage === 'model' ? input.reasoningEffort || null : null
+  const call = await runCall(input, stage, url, modelId, key, input.system, input.user, effort)
   if (!call.ok) {
-    return { content: '', modelId, ok: false, reason: `${input.mode === 'fallback' ? 'fallback' : 'primary'}_${call.reason}` }
+    return {
+      content: '',
+      modelId,
+      ok: false,
+      reason: `${input.mode === 'fallback' ? 'fallback' : 'primary'}_${call.reason}`,
+      firstChunkMs: call.firstChunkMs,
+      firstContentMs: call.firstContentMs,
+      reasoningEffort: call.reasoningEffort,
+    }
   }
-  return { content: call.content, modelId, ok: true, reason: null }
+  return {
+    content: call.content,
+    modelId,
+    ok: true,
+    reason: null,
+    firstChunkMs: call.firstChunkMs,
+    firstContentMs: call.firstContentMs,
+    reasoningEffort: call.reasoningEffort,
+  }
 }
 
 export function scoresUser(deck: string, companyHint: string, roundHint: string): string {
@@ -310,13 +339,14 @@ async function runCall(
   key: string,
   system: string,
   user: string,
+  reasoningEffort: string | null = null,
 ): Promise<Attempt> {
   const remaining = hints.deadlineAt == null ? STEP_ANALYSIS_CAP_MS : hints.deadlineAt - Date.now()
-  if (remaining < 5_000) return { ok: false, reason: 'deadline' }
+  if (remaining < 5_000) return { ok: false, reason: 'deadline', ...EMPTY_TIMING }
   await hints.onStage?.(stage, model)
   const timeoutMs = Math.min(hints.callTimeoutMs ?? stageCap(stage), remaining)
   const ttftMs = Math.min(hints.ttftMs ?? (stage === 'model' ? PRIMARY_TTFT_MS : timeoutMs), timeoutMs)
-  return complete(url, model, key, system, user, timeoutMs, ttftMs, (elapsed) => hints.onTick?.(elapsed, model))
+  return complete(url, model, key, system, user, timeoutMs, ttftMs, reasoningEffort, (elapsed) => hints.onTick?.(elapsed, model))
 }
 
 async function complete(
@@ -327,70 +357,99 @@ async function complete(
   user: string,
   timeoutMs: number,
   ttftMs: number,
+  reasoningEffort: string | null,
   onTick?: (elapsedMs: number) => Promise<void> | undefined,
 ): Promise<Attempt> {
   const controller = new AbortController()
   const started = Date.now()
-  let sawToken = false
+  let sawChunk = false
+  let firstChunkMs: number | null = null
+  let firstContentMs: number | null = null
   const capTimer = setTimeout(() => {
     const error = new Error('timed out')
     error.name = 'TimeoutError'
     controller.abort(error)
   }, timeoutMs)
-  const ttftTimer = setTimeout(() => {
-    if (sawToken) return
-    const error = new Error('slow first token')
+  const silenceTimer = setTimeout(() => {
+    if (sawChunk) return
+    const error = new Error('no stream chunk')
     error.name = 'TtftError'
     controller.abort(error)
   }, ttftMs)
+  const markChunk = () => {
+    const elapsed = Date.now() - started
+    if (!sawChunk) {
+      sawChunk = true
+      firstChunkMs = elapsed
+      clearTimeout(silenceTimer)
+    }
+    return onTick?.(elapsed)
+  }
+  const markContent = () => {
+    if (firstContentMs == null) firstContentMs = Date.now() - started
+  }
+  let effort: string | null = reasoningEffort
   try {
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${key}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model,
-        temperature: 0,
-        max_tokens: ANALYSIS_MAX_TOKENS,
-        stream: true,
-        response_format: { type: 'json_object' },
-        messages: [
-          { role: 'system', content: system },
-          { role: 'user', content: user },
-        ],
-      }),
-      signal: controller.signal,
-    })
-    if (!response.ok) return { ok: false, reason: `http_${response.status}` }
-    const content = await readModelContent(response, () => {
-      if (!sawToken) {
-        sawToken = true
-        clearTimeout(ttftTimer)
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${key}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model,
+          temperature: 0,
+          max_tokens: ANALYSIS_MAX_TOKENS,
+          stream: true,
+          response_format: { type: 'json_object' },
+          ...(effort ? { reasoning_effort: effort } : {}),
+          messages: [
+            { role: 'system', content: system },
+            { role: 'user', content: user },
+          ],
+        }),
+        signal: controller.signal,
+      })
+      if (response.status === 400 && effort && attempt === 0) {
+        await response.body?.cancel()
+        effort = null
+        continue
       }
-      return onTick?.(Date.now() - started)
-    })
-    if (!content.trim()) return { ok: false, reason: 'empty_content' }
-    return { ok: true, content }
+      if (!response.ok) {
+        return { ok: false, reason: `http_${response.status}`, firstChunkMs, firstContentMs, reasoningEffort: null }
+      }
+      const content = await readModelContent(response, markChunk, markContent)
+      if (!content.trim()) {
+        return { ok: false, reason: 'empty_content', firstChunkMs, firstContentMs, reasoningEffort: effort }
+      }
+      return { ok: true, content, firstChunkMs, firstContentMs, reasoningEffort: effort }
+    }
+    return { ok: false, reason: 'http_400', firstChunkMs, firstContentMs, reasoningEffort: null }
   } catch (err) {
     const aborted = controller.signal.reason
     const name = aborted instanceof Error ? aborted.name : err instanceof Error ? err.name : ''
-    if (name === 'TtftError') return { ok: false, reason: 'ttft' }
-    if (name === 'TimeoutError' || name === 'AbortError' || controller.signal.aborted) return { ok: false, reason: 'timeout' }
-    return { ok: false, reason: 'request_failed' }
+    const timing = { firstChunkMs, firstContentMs, reasoningEffort: effort }
+    if (name === 'TtftError') return { ok: false, reason: 'ttft', ...timing }
+    if (name === 'TimeoutError' || name === 'AbortError' || controller.signal.aborted) return { ok: false, reason: 'timeout', ...timing }
+    return { ok: false, reason: 'request_failed', ...timing }
   } finally {
     clearTimeout(capTimer)
-    clearTimeout(ttftTimer)
+    clearTimeout(silenceTimer)
   }
 }
 
-async function readModelContent(response: Response, onToken?: () => Promise<void> | undefined): Promise<string> {
+async function readModelContent(
+  response: Response,
+  onChunk: () => Promise<void> | undefined,
+  onContent: () => void,
+): Promise<string> {
   const kind = response.headers.get('content-type') || ''
   if (!kind.includes('text/event-stream') || !response.body) {
     const body = (await response.json()) as { choices?: { message?: { content?: unknown } }[] }
     const content = body.choices?.[0]?.message?.content
-    await onToken?.()
+    await onChunk()
+    if (typeof content === 'string' && content) onContent()
     return typeof content === 'string' ? content : ''
   }
   const reader = response.body.getReader()
@@ -408,21 +467,31 @@ async function readModelContent(response: Response, onToken?: () => Promise<void
       if (!trimmed.startsWith('data:')) continue
       const data = trimmed.slice(5).trim()
       if (!data || data === '[DONE]') continue
+      // Any SSE payload counts as life, including a reasoning delta with no content yet.
+      await onChunk()
       try {
         const json = JSON.parse(data) as {
-          choices?: { delta?: { content?: unknown }; message?: { content?: unknown } }[]
+          choices?: { delta?: Record<string, unknown>; message?: { content?: unknown } }[]
         }
-        const delta = json.choices?.[0]?.delta?.content
+        const delta = json.choices?.[0]?.delta
         const message = json.choices?.[0]?.message?.content
-        if (typeof delta === 'string') content += delta
-        else if (typeof message === 'string') content += message
-        if ((typeof delta === 'string' && delta) || (typeof message === 'string' && message)) await onToken?.()
+        const piece = contentPiece(delta, message)
+        if (piece) {
+          content += piece
+          onContent()
+        }
       } catch {
-        // A partial chunk is ignored. The next line still parses.
+        // A partial chunk already counted as life. The next line still parses.
       }
     }
   }
   return content
+}
+
+function contentPiece(delta: Record<string, unknown> | undefined, message: unknown): string {
+  if (typeof message === 'string' && message) return message
+  const content = delta?.content
+  return typeof content === 'string' ? content : ''
 }
 
 function llmEndpoint(): URL | null {
