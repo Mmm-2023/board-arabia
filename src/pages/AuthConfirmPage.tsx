@@ -197,7 +197,7 @@ export function AuthConfirmPage() {
         {phase === 'set_password' && (
           <form onSubmit={onSavePassword} className="mt-6 space-y-4">
             <p className="text-[1rem] leading-relaxed text-ink/65">
-              Choose a password for this account. After it is saved you return to sign in. Staff who are on the staff list continue to admin from there.
+              Choose a password for this account. After it is saved you return to member sign in. Staff use the staff sign-in link.
             </p>
             <label className="block">
               <span className="mb-2 block text-[0.72rem] font-semibold tracking-[0.08em] text-ink/45 uppercase">
@@ -247,13 +247,13 @@ export function AuthConfirmPage() {
                 to="/login"
                 className="text-[0.75rem] font-semibold tracking-[0.08em] text-brass uppercase"
               >
-                Staff sign in
+                Member sign in
               </Link>
               <Link
-                to="/login?next=/dashboard"
+                to="/login/staff"
                 className="text-[0.75rem] font-semibold tracking-[0.08em] text-brass uppercase"
               >
-                Member sign in
+                Staff sign in
               </Link>
             </div>
           </>

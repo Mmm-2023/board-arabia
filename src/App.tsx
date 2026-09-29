@@ -51,6 +51,7 @@ export default function App() {
       <Route path="/privacy" element={<PrivacyPage />} />
       <Route path="/terms" element={<TermsPage />} />
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/login/staff" element={<LoginPage />} />
       <Route path="/auth/confirm" element={<AuthConfirmPage />} />
       <Route path="/auth/reset" element={<AuthConfirmPage />} />
       <Route path="/admin" element={<AdminLayout />}>

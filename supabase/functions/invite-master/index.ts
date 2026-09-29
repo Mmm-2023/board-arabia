@@ -90,8 +90,8 @@ Deno.serve(async (req) => {
   const otpType = issued.mode === 'magic_link' ? issued.otpType : 'invite'
   const loginUrl = `${site}/login?next=${nextPath}&otp_type=${otpType}`
   const confirmUrl = confirmLink(site, issued, nextPath)
-  const staffLoginUrl = `${site}/login`
-  const memberLoginUrl = `${site}/login?next=/dashboard`
+  const staffLoginUrl = `${site}/login/staff`
+  const memberLoginUrl = `${site}/login`
   const copy = buildMasterInvite({
     greeting: admission.fullName || displayName(email),
     seatLabel: memberOk ? seatName(admission.seat || seat) : null,

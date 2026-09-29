@@ -71,6 +71,46 @@ test('members-only login never opens admin, even when next is /admin', () => {
     }),
     '/dashboard/invites',
   )
+  assert.equal(
+    postLoginDestination({
+      role: null,
+      memberStatus: 'active',
+      requested: '/dashboard/deals/rooms/room-1?tab=files#notes',
+    }),
+    '/dashboard/deals/rooms/room-1?tab=files#notes',
+  )
+  assert.equal(
+    postLoginDestination({
+      role: 'staff',
+      memberStatus: null,
+      requested: '/admin/people?status=open',
+    }),
+    '/admin/people?status=open',
+  )
+  assert.equal(
+    postLoginDestination({
+      role: 'staff',
+      memberStatus: null,
+      requested: '/admin?tab=applications',
+    }),
+    '/admin?tab=applications',
+  )
+  assert.equal(
+    postLoginDestination({
+      role: null,
+      memberStatus: 'active',
+      requested: '//evil.example/phish',
+    }),
+    '/dashboard',
+  )
+  assert.equal(
+    postLoginDestination({
+      role: null,
+      memberStatus: 'active',
+      requested: '/dashboard/../admin',
+    }),
+    '/dashboard',
+  )
 })
 
 test('staff and master land on admin unless they also have a live member row and asked for the dashboard', () => {

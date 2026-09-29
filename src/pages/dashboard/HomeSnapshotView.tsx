@@ -2,6 +2,7 @@ import { useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { ExampleMark } from '../../components/ExampleMark'
 import { formatActivityWhen, type HomeModel } from '../../lib/homeSnapshot'
+import { FORMING_TOTALS } from '../../lib/platformFloors'
 import { ErrorBanner, HomeSkeleton, toneClasses } from '../../shell/ViewState'
 import { MEMBER_VIEWS } from '../../shell/viewCopy'
 
@@ -261,7 +262,7 @@ export function HomeSnapshotView({
             ) : null}
 
             {model.platform.fill && model.platform.money.length === 0 ? (
-              <p className={`mt-4 text-[0.95rem] ${styles.muted}`}>Platform totals are not published yet.</p>
+              <p className={`mt-4 text-[0.95rem] ${styles.muted}`}>{FORMING_TOTALS}</p>
             ) : null}
 
             {model.platform.money.length > 0 ? (

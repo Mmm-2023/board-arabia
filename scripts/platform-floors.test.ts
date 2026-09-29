@@ -4,11 +4,16 @@ import path from 'node:path'
 import test from 'node:test'
 import { formatPublicUsd } from '../src/lib/capacity.ts'
 import { parsePlatformStats, seatLine } from '../src/lib/platformStats.ts'
+import { platformMoneyLines } from '../src/lib/homeSnapshot.ts'
 import {
+  FORMING_LABEL,
+  FORMING_TOTALS,
   PLATFORM_FLOOR_DEFAULTS,
+  SEAT_PUBLISH_MIN,
   displayPlatformMoney,
+  moneyAboveFloor,
   presentServerTotals,
-  quietFloorUsd,
+  seatsArePublic,
 } from '../src/lib/platformFloors.ts'
 
 const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..')
@@ -24,17 +29,22 @@ function floorsSql() {
   return migration.slice(start, end)
 }
 
-test('quiet floor is max(published, floor) and seats are not part of it', () => {
+test('money is shown only when the real sum passes the floor', () => {
   const floor = PLATFORM_FLOOR_DEFAULTS.investmentUsd
-  assert.equal(quietFloorUsd(null, floor), floor)
-  assert.equal(quietFloorUsd(0, floor), floor)
-  assert.equal(quietFloorUsd(-1, floor), floor)
-  assert.equal(quietFloorUsd(Number.NaN, floor), floor)
-  assert.equal(quietFloorUsd(50_000_000, floor), floor)
-  assert.equal(quietFloorUsd(floor, floor), floor)
-  assert.equal(quietFloorUsd(250_000_000, floor), 250_000_000)
-  assert.equal(quietFloorUsd(400_000_000, -5), 400_000_000)
-  assert.equal(quietFloorUsd(null, Number.NaN), 0)
+  assert.equal(moneyAboveFloor(null, floor), null)
+  assert.equal(moneyAboveFloor(0, floor), null)
+  assert.equal(moneyAboveFloor(-1, floor), null)
+  assert.equal(moneyAboveFloor(Number.NaN, floor), null)
+  assert.equal(moneyAboveFloor(50_000_000, floor), null)
+  assert.equal(moneyAboveFloor(floor, floor), null)
+  assert.equal(moneyAboveFloor(250_000_000, floor), 250_000_000)
+  assert.equal(moneyAboveFloor(400_000_000, -5), 400_000_000)
+  assert.equal(moneyAboveFloor(null, Number.NaN), null)
+  assert.equal(SEAT_PUBLISH_MIN, 15)
+  assert.equal(seatsArePublic(1), false)
+  assert.equal(seatsArePublic(14), false)
+  assert.equal(seatsArePublic(15), true)
+  assert.equal(seatsArePublic(null), false)
 
   const below = parsePlatformStats({
     investment_capability_usd: 50_000_000,
@@ -53,17 +63,22 @@ test('quiet floor is max(published, floor) and seats are not part of it', () => 
   assert.equal(below.foAum, null)
   assert.equal(below.admitted, 1)
   const money = displayPlatformMoney(below)
-  assert.equal(money.investment, 100_000_000)
-  assert.equal(money.foAum, 1_000_000_000)
+  assert.equal(money.investment, null)
+  assert.equal(money.foAum, null)
   assert.equal(money.turnover, 600_000_000)
   assert.equal(seatLine(below).label, '1 / 100')
-  assert.equal(seatLine(below).admitted, 1)
-  assert.equal(formatPublicUsd(money.investment), '$100m')
-  assert.equal(formatPublicUsd(money.foAum), '$1bn')
+  assert.equal(seatsArePublic(below.admitted), false)
+  assert.equal(formatPublicUsd(PLATFORM_FLOOR_DEFAULTS.investmentUsd), '$100m')
+  assert.equal(formatPublicUsd(PLATFORM_FLOOR_DEFAULTS.foAumUsd), '$1bn')
+  assert.equal(formatPublicUsd(PLATFORM_FLOOR_DEFAULTS.turnoverUsd), '$500m')
   assert.equal(formatPublicUsd(money.turnover), '$600m')
+  assert.deepEqual(
+    platformMoneyLines(below)?.map((line) => line.value),
+    ['$600m'],
+  )
 })
 
-test('unpublished money shows the floor and a live seat count stays put', () => {
+test('unpublished money and an early seat count stay hidden', () => {
   const early = parsePlatformStats({
     investment_capability_usd: null,
     fo_aum_usd: null,
@@ -80,16 +95,19 @@ test('unpublished money shows the floor and a live seat count stays put', () => 
   assert.equal(early.investment, null)
   const money = displayPlatformMoney(early)
   assert.deepEqual(money, {
-    investment: 100_000_000,
-    foAum: 1_000_000_000,
-    turnover: 500_000_000,
+    investment: null,
+    foAum: null,
+    turnover: null,
   })
   assert.equal(early.admitted, 1)
   assert.equal(seatLine(early).split, 'Saudi Arabia 0 · International 1')
-  assert.equal(displayPlatformMoney(null).investment, 100_000_000)
+  assert.equal(seatsArePublic(early.admitted), false)
+  assert.equal(displayPlatformMoney(null).investment, null)
+  assert.deepEqual(platformMoneyLines(early), [])
+  assert.equal(platformMoneyLines(null), null)
 })
 
-test('server totals are already combined and are not floored again', () => {
+test('server totals above the floor pass through and a substituted floor is withheld', () => {
   const parsed = presentServerTotals({
     investment_usd: '400000000',
     fo_aum_usd: 2_000_000_000,
@@ -106,7 +124,23 @@ test('server totals are already combined and are not floored again', () => {
   assert.equal(parsed.admitted, 7)
   assert.equal(parsed.ksa, 4)
   assert.equal(parsed.intl, 3)
+  assert.equal(seatsArePublic(parsed.admitted), false)
   assert.equal(JSON.stringify(parsed).includes('floor'), false)
+
+  const substituted = presentServerTotals({
+    investment_usd: 100_000_000,
+    fo_aum_usd: 1_000_000_000,
+    turnover_usd: 500_000_000,
+    founding_admitted_count: 1,
+    founding_ksa_count: 0,
+    founding_intl_count: 1,
+  })
+  assert.ok(substituted)
+  assert.equal(substituted.investment, null)
+  assert.equal(substituted.foAum, null)
+  assert.equal(substituted.turnover, null)
+  assert.equal(substituted.admitted, 1)
+  assert.equal(seatsArePublic(substituted.admitted), false)
 
   const missingSeats = presentServerTotals({
     investment_usd: 100_000_000,
@@ -116,6 +150,7 @@ test('server totals are already combined and are not floored again', () => {
     founding_ksa_count: null,
     founding_intl_count: null,
   })
+  assert.equal(missingSeats?.investment, null)
   assert.equal(missingSeats?.admitted, null)
   assert.equal(missingSeats?.ksa, null)
   assert.equal(presentServerTotals({ investment_usd: -1, fo_aum_usd: 1, turnover_usd: 1 }), null)
@@ -148,12 +183,25 @@ test('floor defaults live on demo_thresholds and match the migration', () => {
   assert.match(migration, /grant execute on function public\.landing_platform_totals\(\) to anon, authenticated/)
 })
 
-test('the public totals strip does not name the floor', () => {
+test('the public totals strip withholds floors and says Forming', () => {
   const source = readFileSync(path.join(root, 'src/components/StatsStrip.tsx'), 'utf8')
+  const home = readFileSync(path.join(root, 'src/pages/dashboard/HomeSnapshotView.tsx'), 'utf8')
   assert.match(source, /displayPlatformMoney/)
   assert.match(source, /presentServerTotals/)
+  assert.match(source, /seatsArePublic/)
+  assert.match(source, /FORMING_LABEL/)
+  assert.equal(FORMING_LABEL, 'Forming')
+  assert.equal(FORMING_TOTALS, 'Platform totals are forming.')
   assert.match(source, /Founding seats admitted/)
   assert.doesNotMatch(source, /\b(floor|example|demo|illustrative|preview)\b/i)
   assert.equal(source.includes('\u2014'), false)
+  assert.equal(source.includes('\u2013'), false)
+  assert.equal(source.includes('$100m'), false)
+  assert.equal(source.includes('$1bn'), false)
+  assert.equal(source.includes('$500m'), false)
   assert.match(source, /Figures reflect the network's represented capacity\. Individual amounts are never shown\./)
+  assert.match(home, /FORMING_TOTALS/)
+  assert.equal(home.includes('Platform totals are not published yet'), false)
+  assert.equal(home.includes('\u2014'), false)
+  assert.equal(home.includes('\u2013'), false)
 })

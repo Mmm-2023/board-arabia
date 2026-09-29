@@ -63,8 +63,11 @@ function assertPage(route, html) {
   if (!html.includes('>Log in<') && !html.includes('>Log in</a>')) {
     errors.push('missing Log in')
   }
-  if (!html.includes('/login?next=/dashboard')) {
+  if (!html.includes('href="/login"')) {
     errors.push('Log in is not the member path')
+  }
+  if (html.includes('/login/staff') || html.includes('/login?next=/dashboard')) {
+    errors.push('public page links to staff sign-in or the old member query')
   }
   if (route === '/' && !html.includes('No public booking calendar')) {
     errors.push('home missing answer-first blurb')
@@ -240,6 +243,7 @@ fs.writeFileSync(path.join(dist, '.nojekyll'), '')
 
 const appShells = [
   'login',
+  'login/staff',
   'admin',
   'admin/applications',
   'admin/people',
