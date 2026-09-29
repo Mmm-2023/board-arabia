@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict'
-import { deflateSync } from 'node:zlib'
+import { deflateRawSync, deflateSync } from 'node:zlib'
 import { readFileSync } from 'node:fs'
+import path from 'node:path'
 import test from 'node:test'
+import { buildFixtures } from './generate-pdf-fixtures.mjs'
 import { decidePdfText, literalPdfText, readPdfText } from '../supabase/functions/_shared/pdf_text.ts'
 
 const PITCH =
@@ -54,23 +56,97 @@ test('xref stream plus object stream still yields the pitch text', async () => {
   if (decision.ok) assert.match(decision.text, /enterprise customers across the Gulf/)
 })
 
-test('sample report PDF yields usable text when the fixture is on disk', async () => {
-  const paths = [
-    '/workspace/handoff/ba-ai-dd-fix-2026-09-26/sample-report-style.pdf',
-    '/home/ubuntu/.cursor/projects/workspace/uploads/sample-report-style_68c9.pdf',
-  ]
-  for (const path of paths) {
-    try {
-      const bytes = new Uint8Array(readFileSync(path))
-      const read = await readPdfText(bytes)
-      const decision = decidePdfText(read)
-      assert.equal(decision.ok, true, path)
-      if (decision.ok) assert.match(decision.text, /Goldman|assessment|Finding/i)
-      return
-    } catch (err) {
-      if (err && typeof err === 'object' && 'code' in err && err.code === 'ENOENT') continue
-      throw err
-    }
+test('indirect length still reads when endstream bytes sit inside the stream', async () => {
+  const payload = Buffer.from(`endstream\nBT /F1 12 Tf (${PITCH}) Tj ET`)
+  const bytes = classicPdf(storedZlib(payload), { length: 'indirect' })
+  const read = await readPdfText(bytes)
+  const decision = decidePdfText(read)
+  assert.equal(decision.ok, true)
+  if (decision.ok) assert.match(decision.text, /Northwind Logistics serves 120/)
+})
+
+test('a missing length keeps text when endstream is preceded by LF or CRLF', async () => {
+  for (const eol of ['\n', '\r\n']) {
+    const bytes = classicPdf(flateStream(`BT /F1 12 Tf (${PITCH}) Tj ET`), { length: 'missing', eol })
+    const read = await readPdfText(bytes)
+    const decision = decidePdfText(read)
+    assert.equal(decision.ok, true, eol === '\n' ? 'lf' : 'crlf')
+    if (decision.ok) assert.match(decision.text, /regional freight/)
+  }
+})
+
+test('a truncated flate stream keeps the pitch instead of dropping the page', async () => {
+  const full = deflateSync(Buffer.from(`BT /F1 12 Tf (${PITCH}) Tj ET`))
+  const chopped = full.subarray(0, full.length - 5)
+  const bytes = classicPdf({ dict: `<< /Length ${chopped.length} /Filter /FlateDecode >>`, data: chopped })
+  const read = await readPdfText(bytes)
+  assert.match(read.text, /Northwind Logistics/)
+})
+
+test('raw deflate content is read after zlib does not match', async () => {
+  const data = deflateRawSync(Buffer.from(`BT /F1 12 Tf (${PITCH}) Tj ET`))
+  const bytes = classicPdf({ dict: `<< /Length ${data.length} /Filter /FlateDecode >>`, data })
+  const read = await readPdfText(bytes)
+  assert.match(read.text, /enterprise customers across the Gulf/)
+})
+
+test('one bad stream does not throw away the rest of the document', async () => {
+  const good = flateStream(`BT /F1 12 Tf (${PITCH}) Tj ET`)
+  const junk = Buffer.from([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12])
+  const bytes = twoStreamPdf(
+    { dict: `<< /Length ${junk.length} /Filter /FlateDecode >>`, data: junk },
+    good,
+  )
+  const read = await readPdfText(bytes)
+  assert.match(read.text, /Northwind Logistics serves 120/)
+})
+
+test('winansi, macroman, and glyph names keep symbols and drop em dashes', async () => {
+  const win = await readPdfText(symbolPdf('win'))
+  const mac = await readPdfText(symbolPdf('mac'))
+  const names = await readPdfText(symbolPdf('names'))
+  for (const read of [win, mac, names]) {
+    assert.equal(read.text.includes('\u2014'), false)
+    assert.match(read.text, /Routes • Gulf – Levant … “priority” lanes/)
+    assert.match(read.text, /Riyadh - Jeddah corridor opens in 2027/)
+    assert.match(read.text, /80 refrigerated trucks/)
+  }
+})
+
+test('synthetic export fixtures yield readable Northwind sentences', async () => {
+  const built = buildFixtures()
+  const dir = path.join(path.dirname(new URL(import.meta.url).pathname), 'fixtures', 'decks')
+  const expect = {
+    'libreoffice-northwind.pdf': /Northwind Logistics serves 120 enterprise customers across the Gulf and is raising a seed round/,
+    'chrome-type3-northwind.pdf': /Northwind Logistics serves 120 enterprise customers across the Gulf and is raising a seed round/,
+    'powerpoint-northwind.pdf': /Northwind Logistics serves 120 enterprise customers across the Gulf and is raising a seed round/,
+    'canva-northwind.pdf': /Canva style deck hauls 80 refrigerated lanes for Gulf grocers/,
+  }
+  for (const [name, pattern] of Object.entries(expect)) {
+    const bytes = built[name]
+    assert.ok(bytes, name)
+    const onDisk = readFileSync(path.join(dir, name))
+    assert.deepEqual(Buffer.from(bytes), onDisk, name)
+    const read = await readPdfText(bytes)
+    const decision = decidePdfText(read)
+    assert.equal(decision.ok, true, name)
+    if (!decision.ok) continue
+    assert.match(decision.text, pattern, name)
+    assert.match(decision.text, /Routes • Gulf – Levant … “priority” lanes/, name)
+    assert.match(decision.text, /Riyadh - Jeddah corridor opens in 2027/, name)
+    assert.match(decision.text, /80 refrigerated trucks/, name)
+    assert.equal(decision.text.includes('\u2014'), false, name)
+    assert.equal(/\n[A-Za-z]\n/.test(decision.text), false, name)
+  }
+  const chrome = await readPdfText(built['chrome-type3-northwind.pdf'])
+  assert.match(chrome.text, /Northwind Logistics\nNorthwind Logistics serves 120/)
+  const canva = await readPdfText(built['canva-northwind.pdf'])
+  assert.match(canva.text, /Northwind Logistics/)
+  const wrapped = /Northwind Logistics serves 120 enterprise customers across the Gulf and is raising a seed round for regional freight\./
+  for (const name of ['libreoffice-northwind.pdf', 'chrome-type3-northwind.pdf']) {
+    const read = await readPdfText(built[name])
+    assert.match(read.text, wrapped, name)
+    assert.equal(/\n[A-Za-z]\n/.test(read.text), false, name)
   }
 })
 
@@ -92,28 +168,38 @@ function plainStream(content: string): { dict: string; data: Buffer } {
 
 function classicPdf(
   stream: { dict: string; data: Buffer },
-  options: { toUnicode?: string } = {},
+  options: { toUnicode?: string; length?: 'direct' | 'indirect' | 'missing'; eol?: string } = {},
 ): Uint8Array {
   const objects: Buffer[] = []
   const push = (body: string | Buffer) => {
     objects.push(Buffer.isBuffer(body) ? body : Buffer.from(body))
   }
+  const eol = options.eol ?? '\n'
+  const fontId = options.length === 'indirect' ? 6 : 5
   push('<< /Type /Catalog /Pages 2 0 R >>')
   push('<< /Type /Pages /Kids [3 0 R] /Count 1 >>')
   push(
-    '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>',
+    `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 ${fontId} 0 R >> >> >>`,
   )
+  const lengthDict =
+    options.length === 'indirect'
+      ? stream.dict.replace(/\/Length\s+\d+/, '/Length 5 0 R')
+      : options.length === 'missing'
+        ? stream.dict.replace(/\/Length\s+\d+\s*/, '')
+        : stream.dict
   push(
     Buffer.concat([
-      Buffer.from(`${stream.dict}\nstream\n`),
+      Buffer.from(`${lengthDict}\nstream\n`),
       stream.data,
-      Buffer.from('\nendstream'),
+      Buffer.from(`${eol}endstream`),
     ]),
   )
+  if (options.length === 'indirect') push(String(stream.data.length))
   if (options.toUnicode) {
     const cmap = Buffer.from(options.toUnicode)
+    const cmapId = options.length === 'indirect' ? 7 : 6
     push(
-      `<< /Type /Font /Subtype /Type0 /BaseFont /F1 /Encoding /Identity-H /ToUnicode 6 0 R >>`,
+      `<< /Type /Font /Subtype /Type0 /BaseFont /F1 /Encoding /Identity-H /ToUnicode ${cmapId} 0 R >>`,
     )
     push(
       Buffer.concat([
@@ -126,6 +212,72 @@ function classicPdf(
     push('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>')
   }
   return wrapClassic(objects)
+}
+
+function storedZlib(payload: Buffer): { dict: string; data: Buffer } {
+  const block = Buffer.alloc(5 + payload.length)
+  block[0] = 0x01
+  block.writeUInt16LE(payload.length, 1)
+  block.writeUInt16LE(payload.length ^ 0xffff, 3)
+  payload.copy(block, 5)
+  let a = 1
+  let b = 0
+  for (const byte of payload) {
+    a = (a + byte) % 65521
+    b = (b + a) % 65521
+  }
+  const sum = ((b << 16) | a) >>> 0
+  const data = Buffer.concat([
+    Buffer.from([0x78, 0x01]),
+    block,
+    Buffer.from([(sum >>> 24) & 0xff, (sum >>> 16) & 0xff, (sum >>> 8) & 0xff, sum & 0xff]),
+  ])
+  return { dict: `<< /Length ${data.length} /Filter /FlateDecode >>`, data }
+}
+
+function twoStreamPdf(
+  first: { dict: string; data: Buffer },
+  second: { dict: string; data: Buffer },
+): Uint8Array {
+  const streamObj = (stream: { dict: string; data: Buffer }) =>
+    Buffer.concat([Buffer.from(`${stream.dict}\nstream\n`), stream.data, Buffer.from('\nendstream')])
+  return wrapClassic([
+    Buffer.from('<< /Type /Catalog /Pages 2 0 R >>'),
+    Buffer.from('<< /Type /Pages /Kids [3 0 R] /Count 1 >>'),
+    Buffer.from(
+      '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents [4 0 R 5 0 R] /Resources << /Font << /F1 6 0 R >> >> >>',
+    ),
+    streamObj(first),
+    streamObj(second),
+    Buffer.from('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>'),
+  ])
+}
+
+function symbolPdf(kind: 'win' | 'mac' | 'names'): Uint8Array {
+  const win = 'Routes \\225 Gulf \\226 Levant \\205 \\223priority\\224 lanes. Riyadh \\227 Jeddah corridor opens in 2027. Fleet keeps 80\\240refrigerated trucks.'
+  const mac = 'Routes \\245 Gulf \\320 Levant \\311 \\322priority\\323 lanes. Riyadh \\321 Jeddah corridor opens in 2027. Fleet keeps 80\\312refrigerated trucks.'
+  const named = 'Routes \\200 Gulf \\201 Levant \\205 \\203priority\\204 lanes. Riyadh \\202 Jeddah corridor opens in 2027. Fleet keeps 80\\206refrigerated trucks.'
+  const text = kind === 'win' ? win : kind === 'mac' ? mac : named
+  const encoding =
+    kind === 'mac'
+      ? '/Encoding /MacRomanEncoding'
+      : kind === 'names'
+        ? '/Encoding << /Type /Encoding /BaseEncoding /WinAnsiEncoding /Differences [128 /bullet /endash /emdash /quotedblleft /quotedblright /ellipsis /nbspace] >>'
+        : '/Encoding /WinAnsiEncoding'
+  const content = Buffer.from(`BT /F1 12 Tf (${text}) Tj ET`)
+  return wrapClassic([
+    Buffer.from('<< /Type /Catalog /Pages 2 0 R >>'),
+    Buffer.from('<< /Type /Pages /Kids [3 0 R] /Count 1 >>'),
+    Buffer.from(
+      '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>',
+    ),
+    Buffer.concat([
+      Buffer.from(`<< /Length ${content.length} >>\nstream\n`),
+      content,
+      Buffer.from('\nendstream'),
+    ]),
+    Buffer.from(`<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica ${encoding} >>`),
+  ])
 }
 
 function imageOnlyPdf(): Uint8Array {
