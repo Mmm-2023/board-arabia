@@ -786,6 +786,48 @@ export async function decideMajlis(
   }
 }
 
+export async function requestReOpportunityIntro(opportunityId: string): Promise<'ok' | 'error'> {
+  try {
+    const { data } = await supabase.auth.getSession()
+    const token = data.session?.access_token
+    if (!token) return 'error'
+    const res = await fetch(`${functionsBase}/request-re-intro`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        apikey: anonKey,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ opportunity_id: opportunityId }),
+    })
+    if (!res.ok) return 'error'
+    return 'ok'
+  } catch {
+    return 'error'
+  }
+}
+
+export async function requestMandateIntro(mandateId: string): Promise<'ok' | 'error'> {
+  try {
+    const { data } = await supabase.auth.getSession()
+    const token = data.session?.access_token
+    if (!token) return 'error'
+    const res = await fetch(`${functionsBase}/request-mandate-intro`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        apikey: anonKey,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ mandate_id: mandateId }),
+    })
+    if (!res.ok) return 'error'
+    return 'ok'
+  } catch {
+    return 'error'
+  }
+}
+
 export async function fetchFoundingCapacity(): Promise<
   { error: string } | FoundingCapacity
 > {

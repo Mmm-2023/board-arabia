@@ -2,6 +2,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1'
 import { isLiveMember } from '../_shared/staff_auth.ts'
 import { validateMajlisApplication } from '../_shared/majlis.ts'
 import { corsHeaders, jsonResponse } from '../_shared/mail.ts'
+import { deliverAdminAlert } from '../_shared/notify_admin.ts'
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -95,6 +96,28 @@ Deno.serve(async (req) => {
   if (insertError || !created) {
     return jsonResponse(req, { error: 'Could not submit the application.' }, 500)
   }
+
+  const eventTitle = parsed.value.title
+  deliverAdminAlert(undefined, async () => {
+    let name = 'Member'
+    let kind: 'member' | 'sponsor' = 'member'
+    try {
+      const profile = await admin.from('profiles').select('full_name').eq('user_id', user.id).maybeSingle()
+      const seat = await admin.from('members').select('seat').eq('user_id', user.id).maybeSingle()
+      const found = typeof profile.data?.full_name === 'string' ? profile.data.full_name.trim() : ''
+      if (found) name = found
+      if (seat.data?.seat === 'sponsor') kind = 'sponsor'
+    } catch {
+      // The application is already saved.
+    }
+    return {
+      requesterName: name,
+      requesterKind: kind,
+      requested: 'a Majlis',
+      item: eventTitle,
+      approvePath: '/admin/majlis#admin-majlis-pending',
+    }
+  })
 
   return jsonResponse(req, { ok: true, id: created.id, status: created.status })
 })
