@@ -382,9 +382,10 @@ test('the client uses Edge functions and read RPCs, not raw room tables', () => 
 })
 
 test('the read migration sorts after 20261004120000 and returns no mailbox', () => {
-  const file = '20261005120000_member_deal_room_reads.sql'
+  const file = '20261007120000_member_deal_room_reads.sql'
   const name = `supabase/migrations/${file}`
   const sql = source(name)
+  assert.ok(file > '20261006120000')
   assert.ok(file > '20261004120000')
   assert.ok(file > '20261003120000_re_regulatory_readiness.sql')
   assert.ok(file > '20261002120000_member_deal_rooms.sql')
