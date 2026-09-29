@@ -162,8 +162,12 @@ async function fetchPublicPage(raw: string): Promise<RetrievedPage | null> {
     if (buffer.byteLength > 200_000) return null
     const text = htmlToText(new TextDecoder().decode(buffer)).slice(0, 8000)
     if (text.length < 80) return null
+    const headline = text
+      .split('\n')
+      .map((line) => line.replace(/\s+/g, ' ').trim())
+      .find((line) => line.length >= 4 && line.length <= 120) || parsed.url.hostname
     return {
-      title: parsed.url.hostname,
+      title: headline,
       url: `${parsed.url.origin}${parsed.url.pathname}`,
       text,
     }

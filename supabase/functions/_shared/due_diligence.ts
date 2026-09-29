@@ -368,8 +368,11 @@ const SKIP_URL_HOSTS = [
 export function extractCompanyUrl(text: string): string | null {
   const seen = new Set<string>()
   const candidates: { url: string; depth: number }[] = []
-  for (const match of text.matchAll(/https:\/\/[^\s<>"')\]]+/gi)) {
-    const cleaned = (match[0] || '').replace(/[),.;]+$/g, '')
+  // Accept https://, http://, and bare www. hosts (common in letter-style decks).
+  for (const match of text.matchAll(/(?:https?:\/\/|\bwww\.)[^\s<>"')\]]+/gi)) {
+    let cleaned = (match[0] || '').replace(/[),.;]+$/g, '')
+    if (/^www\./i.test(cleaned)) cleaned = `https://${cleaned}`
+    else if (/^http:\/\//i.test(cleaned)) cleaned = `https://${cleaned.slice('http://'.length)}`
     const parsed = parsePublicHttpsUrl(cleaned)
     if (!parsed.ok) continue
     const host = parsed.url.hostname.toLowerCase()
@@ -697,7 +700,22 @@ function entityScore(report: BuiltReport): { label: ClaimVerdict; reason: string
     }
   }
   const needle = report.company_label.toLowerCase()
-  const hit = report.sources.some((source) => source.title.toLowerCase().includes(needle))
+  const compact = needle.replace(/[^a-z0-9]+/g, '')
+  const tokens = distinctiveTokens(report.company_label).filter((token) => token.length >= 4)
+  const hit = report.sources.some((source) => {
+    const title = source.title.toLowerCase()
+    let host = ''
+    try {
+      host = new URL(source.url).hostname.toLowerCase().replace(/^www\./, '')
+    } catch {
+      host = ''
+    }
+    const hay = `${title} ${host} ${source.url.toLowerCase()}`
+    if (title.includes(needle) || host.includes(compact) || hay.includes(needle)) return true
+    if (compact && host.replace(/[^a-z0-9]+/g, '').includes(compact)) return true
+    const matched = tokens.filter((token) => title.includes(token) || host.includes(token))
+    return matched.length >= Math.min(2, tokens.length)
+  })
   if (hit) {
     return {
       label: 'publicly_consistent',

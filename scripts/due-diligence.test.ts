@@ -416,7 +416,7 @@ test('Clearlake-style wiki hit is rejected for Goldman Capital Consortium', () =
     publicHitMatchesTerm('Clearlake Capital', 'https://clearlake.example/about', 'Goldman Capital Consortium'),
     false,
   )
-  assert.equal(extractCompanyUrl(gcc), 'https://www.goldmancapital.example/about')
+  assert.equal(extractCompanyUrl(gcc), 'https://goldmancapital.example/home')
   assert.equal(publicSearchTerms(facts).some((term) => /clearlake/i.test(term)), false)
   assert.ok(publicSearchTerms(facts).includes('Goldman Capital Consortium'))
   const report = buildReport(facts, [], { companyUrl: null })

@@ -1,4 +1,4 @@
-import { unzipSync, strFromU8 } from 'https://esm.sh/fflate@0.8.2'
+import { unzipSync, strFromU8 } from '../_shared/fflate-browser.js'
 import { MEMBER_MESSAGES, textFromOfficeXml, type DeckExt } from '../_shared/due_diligence.ts'
 import { decidePdfText, readPdfText } from '../_shared/pdf_text.ts'
 
