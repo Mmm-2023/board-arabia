@@ -3,10 +3,17 @@ import { Link } from 'react-router-dom'
 import { MEMBER_LOGIN } from '../content/marketing'
 import { lockBlurClass } from '../lib/previewLock'
 import { previewIntro, type LandingDeal } from '../lib/landingPreview'
+import { MEMBER_DESTINATIONS } from '../shell/destinations'
 import { ExampleMark } from './ExampleMark'
 
-const RAIL = ['Directory', 'Mandate inbox', 'Availability', 'Introductions', 'Majlis']
-const SELECTED = 'Mandate inbox'
+const SELECTED = 'deals'
+
+function admissionLine(): string {
+  const rest = MEMBER_DESTINATIONS.filter((item) => item.id !== SELECTED).map((item) => item.label)
+  const tail = rest[rest.length - 1] ?? ''
+  const lead = rest.slice(0, -1).join(', ')
+  return `${lead}, and ${tail} open after admission.`
+}
 
 export function DashboardPreviewFrame({
   deals,
@@ -66,12 +73,13 @@ export function DashboardPreviewFrame({
                     : 'border-b border-ink/10 md:border-e md:border-b-0'
                 }
               >
-                {RAIL.map((item) => (
+                {MEMBER_DESTINATIONS.map((item) => (
                   <li
-                    key={item}
-                    className={`px-5 py-3 text-[0.92rem] ${item === SELECTED ? 'ba-primary' : 'text-ink/70'}`}
+                    key={item.id}
+                    aria-current={item.id === SELECTED ? 'true' : undefined}
+                    className={`px-5 py-3 text-[0.92rem] ${item.id === SELECTED ? 'ba-primary' : 'text-ink/70'}`}
                   >
-                    {item}
+                    {item.label}
                   </li>
                 ))}
               </ul>
@@ -109,7 +117,7 @@ export function DashboardPreviewFrame({
                   </p>
                 )}
                 <p className="mt-5 text-[0.92rem] leading-relaxed text-ink/50">
-                  Directory, availability, introductions, and the founding mark open after admission.
+                  {admissionLine()}
                 </p>
               </div>
             </div>
