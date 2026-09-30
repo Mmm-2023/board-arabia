@@ -62,6 +62,7 @@ const directory: DirectoryCard[] = [
     preferred_partner: true,
     portrait_asset: null,
     avatar_path: null,
+    avatar_style: 'female',
   },
   {
     id: 'a1000001-0000-4000-8000-000000000001',
@@ -78,6 +79,7 @@ const directory: DirectoryCard[] = [
     preferred_partner: false,
     portrait_asset: '/demo/portraits/nadira.svg',
     avatar_path: null,
+    avatar_style: 'female',
   },
 ]
 

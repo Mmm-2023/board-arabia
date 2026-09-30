@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { useLocation, useSearchParams } from 'react-router-dom'
+import { DefaultPicturePicker } from '../../components/DefaultPicturePicker'
 import { SponsorBadge } from '../../components/SponsorBadge'
+import { DEFAULT_PICTURE_NOTE, normalizeAvatarStyle, type AvatarStyle } from '../../lib/avatarStyle'
 import { formatPrivateUsd, readNumeric } from '../../lib/capacity'
 import { schemaMissing } from '../../lib/demoRows'
 import {
@@ -68,6 +70,15 @@ export function ProfilePage({ preview }: { preview?: { src: string | null } }) {
   const [savingProfile, setSavingProfile] = useState(false)
   const [savingPassword, setSavingPassword] = useState(false)
   const [avatarRefresh, setAvatarRefresh] = useState(0)
+  const [avatarStyle, setAvatarStyle] = useState<AvatarStyle>(normalizeAvatarStyle(profile?.avatar_style))
+  const [styleSource, setStyleSource] = useState(profile?.avatar_style)
+  const [savingStyle, setSavingStyle] = useState(false)
+  const [styleError, setStyleError] = useState('')
+  const [pendingStyle, setPendingStyle] = useState<AvatarStyle | null>(null)
+  if (profile?.avatar_style !== styleSource) {
+    setStyleSource(profile?.avatar_style)
+    if (pendingStyle == null) setAvatarStyle(normalizeAvatarStyle(profile?.avatar_style))
+  }
   const [linked, setLinked] = useState(() => LINKEDIN_CONNECT_ENABLED && linkedInLinked())
   const [liNote, setLiNote] = useState('')
   const [liError, setLiError] = useState<'' | 'cancel' | 'tech'>('')
@@ -291,6 +302,21 @@ export function ProfilePage({ preview }: { preview?: { src: string | null } }) {
     await reload()
   }
 
+  async function onAvatarStyle(patch: { avatar_style: AvatarStyle }) {
+    setStyleError('')
+    setSavingStyle(true)
+    setPendingStyle(patch.avatar_style)
+    const { error } = await supabase.from('profiles').update(patch).eq('user_id', userId)
+    setSavingStyle(false)
+    if (error) {
+      setStyleError('Could not save the default picture.')
+      return
+    }
+    setPendingStyle(null)
+    setAvatarStyle(patch.avatar_style)
+    await reload()
+  }
+
   return (
     <div className="max-w-xl">
       <div className="space-y-3">
@@ -333,6 +359,29 @@ export function ProfilePage({ preview }: { preview?: { src: string | null } }) {
 
       <div className="mt-8">
         <MemberAvatar preview={preview} refreshKey={avatarRefresh} />
+      </div>
+
+      <div className="mt-6">
+        <DefaultPicturePicker
+          value={pendingStyle ?? avatarStyle}
+          disabled={savingStyle || !profile}
+          onSave={(patch) => void onAvatarStyle(patch)}
+        />
+        <p className="mt-2 max-w-sm text-[0.95rem] leading-relaxed text-ink/60">{DEFAULT_PICTURE_NOTE}</p>
+        {styleError ? (
+          <p className="mt-3 text-[0.95rem] text-[var(--ba-error)]" role="alert">
+            {styleError}{' '}
+            {pendingStyle ? (
+              <button
+                type="button"
+                className="inline-flex min-h-11 items-center border-b border-brass font-semibold text-ink"
+                onClick={() => void onAvatarStyle({ avatar_style: pendingStyle })}
+              >
+                Try again
+              </button>
+            ) : null}
+          </p>
+        ) : null}
       </div>
 
       {member.must_set_password ? null : (

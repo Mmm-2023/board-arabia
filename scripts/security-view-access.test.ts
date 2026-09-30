@@ -73,9 +73,18 @@ test('majlis read models keep the previous rows and columns without a definer vi
   assert.ok(later.length > 0)
   for (const file of later) {
     const text = readFileSync(path.join(migrationsDir, file), 'utf8')
-    assert.equal(/create\s+(or\s+replace\s+)?(materialized\s+)?view\s+public\.majlis_/i.test(text), false, file)
     assert.equal(/_edge_boot_staging|_edge_boot_upload|_hex_scratch/.test(text), false, file)
     assert.equal(/security_invoker\s*=\s*false/.test(text), false, file)
+    const recreatesMajlis = /create\s+(or\s+replace\s+)?(materialized\s+)?view\s+public\.majlis_/i.test(text)
+    if (file === '20261028120000_profile_avatar_style.sql') {
+      assert.equal(recreatesMajlis, true)
+      assert.match(text, /security_barrier = true, security_invoker = true/)
+      assert.equal(/grant select on table public\.majlis_\w+ to anon/i.test(text), false)
+      assert.match(text, /host_avatar_style/)
+      assert.match(text, /coalesce\(p\.avatar_style, 'male'\)/)
+      continue
+    }
+    assert.equal(recreatesMajlis, false, file)
   }
 
   const sql = readFileSync(migrationPath, 'utf8')
@@ -152,6 +161,7 @@ test('every staff_* function checks staff and is not executable by anon', () => 
   const files = readdirSync(migrationsDir).filter((file) => file.endsWith('.sql')).sort()
   const sql = files.map((file) => readFileSync(path.join(migrationsDir, file), 'utf8')).join('\n')
   const names = [
+    'staff_set_avatar_style',
     'staff_set_member_capacity',
     'staff_list_all_intros',
     'staff_list_mandate_intros',

@@ -29,6 +29,7 @@ export type ProfileRow = {
   include_in_public_aggregates: boolean
   capacity_verified: boolean
   avatar_path: string | null
+  avatar_style?: 'male' | 'female' | null
   availability?: Availability | null
   sector_tags?: string[]
   vision_themes?: string[]
@@ -76,11 +77,3 @@ export function parseCapacity(value: unknown): FoundingCapacity | null {
   return parsed
 }
 
-export function initials(name: string | null, email: string) {
-  const parts = (name || '').trim().split(/\s+/).filter(Boolean)
-  if (parts.length >= 2) {
-    return `${parts[0]?.[0] ?? ''}${parts[parts.length - 1]?.[0] ?? ''}`.toUpperCase()
-  }
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase()
-  return email.slice(0, 2).toUpperCase()
-}

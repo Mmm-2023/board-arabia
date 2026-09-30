@@ -1,9 +1,8 @@
 import { useRef, useState } from 'react'
+import { Avatar } from '../../components/Avatar'
 import { AVATAR_BUCKET, AVATAR_COPY, avatarObjectPath } from '../../lib/avatar'
 import { prepareAvatarUpload } from '../../lib/avatarImage'
-import { initials } from '../../lib/member'
 import { supabase } from '../../lib/supabase'
-import { AvatarCircle } from './AvatarCircle'
 import { useMember } from './context'
 import { useSignedAvatar } from './useSignedAvatar'
 
@@ -19,7 +18,7 @@ export function MemberAvatar({
   preview?: { src: string | null }
   refreshKey?: number
 }) {
-  const { userId, email, profile, reload } = useMember()
+  const { userId, profile, reload } = useMember()
   const inputRef = useRef<HTMLInputElement>(null)
   const path = profile?.avatar_path ?? null
   const [uploadError, setUploadError] = useState(false)
@@ -28,7 +27,6 @@ export function MemberAvatar({
   const [confirming, setConfirming] = useState(false)
   const [loadAttempt, setLoadAttempt] = useState(0)
   const live = useSignedAvatar(path, refreshKey + loadAttempt, preview === undefined)
-  const mark = initials(profile?.full_name ?? null, email)
   const src = preview ? preview.src : live.failed ? null : live.url
   const waiting = preview ? false : live.loading
 
@@ -102,9 +100,9 @@ export function MemberAvatar({
 
   return (
     <div className="flex w-full flex-col items-start gap-4 sm:flex-row sm:items-center">
-      <AvatarCircle
+      <Avatar
         src={src}
-        initials={mark}
+        avatarStyle={profile?.avatar_style}
         size={112}
         busy={waiting || busy === 'save'}
         alt="Your profile photo"

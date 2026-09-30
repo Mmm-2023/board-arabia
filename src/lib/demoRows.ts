@@ -1,5 +1,6 @@
 /** Safe projections for directory, rooms, and trusted partners. */
 
+import { normalizeAvatarStyle, type AvatarStyle } from './avatarStyle.ts'
 import { isAvailability, normalizeTags, SECTOR_TAGS, VISION_2030_THEMES, type Availability } from './profileTags.ts'
 
 export type DirectoryCard = {
@@ -17,6 +18,7 @@ export type DirectoryCard = {
   preferred_partner: boolean
   portrait_asset: string | null
   avatar_path: string | null
+  avatar_style: AvatarStyle
 }
 
 export type RoomCard = {
@@ -85,6 +87,7 @@ export function presentDirectoryCard(raw: unknown): DirectoryCard | null {
     preferred_partner: row.preferred_partner === true || seat === 'sponsor',
     portrait_asset: portrait.startsWith('/demo/portraits/') ? portrait : null,
     avatar_path: /^[0-9a-f-]{36}\/avatar$/i.test(avatar) ? avatar : null,
+    avatar_style: normalizeAvatarStyle(row.avatar_style),
   }
 }
 

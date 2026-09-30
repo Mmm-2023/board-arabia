@@ -16,7 +16,7 @@ import { isAvailability, availabilityLabel, type Availability } from '../../lib/
 import { supabase } from '../../lib/supabase'
 import { FilteredZero } from '../../shell/ViewState'
 import { MEMBER_VIEWS } from '../../shell/viewCopy'
-import { AvatarCircle } from './AvatarCircle'
+import { Avatar } from '../../components/Avatar'
 import { DirectoryIntroAction } from './DirectoryIntroAction'
 import type { IntroStatus } from '../../lib/memberIntros'
 import type { SeatCountState } from './DirectoryEmpty'
@@ -213,17 +213,11 @@ function Field({ label, value }: { label: string; value: string }) {
 
 function Portrait({ card, src }: { card: DirectoryCard; src: string | null }) {
   const [failedSrc, setFailedSrc] = useState<string | null>(null)
-  const mark = card.full_name
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((part) => part[0] ?? '')
-    .join('')
-    .toUpperCase()
   const photo = src && failedSrc !== src ? src : null
   return (
-    <AvatarCircle
+    <Avatar
       src={photo}
-      initials={mark}
+      avatarStyle={card.avatar_style}
       size={56}
       alt=""
       onError={() => {

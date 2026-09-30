@@ -36,6 +36,8 @@ type ProfileCapacity = {
   turnover_usd: number | string | null
   include_in_public_aggregates: boolean
   capacity_verified: boolean
+  avatar_style?: 'male' | 'female' | null
+  avatar_path?: string | null
 }
 
 export type AdminRoom = {
@@ -188,7 +190,7 @@ function useAdminState(): AdminRoom {
         supabase
           .from('profiles')
           .select(
-            'user_id, full_name, company, investable_capacity_usd, fo_aum_usd, turnover_usd, include_in_public_aggregates, capacity_verified',
+            'user_id, full_name, company, investable_capacity_usd, fo_aum_usd, turnover_usd, include_in_public_aggregates, capacity_verified, avatar_path, avatar_style',
           ),
       ])
 

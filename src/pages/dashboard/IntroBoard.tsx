@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
+import { Avatar } from '../../components/Avatar'
 import { ExampleMark } from '../../components/ExampleMark'
 import { SAMPLE_NOTE } from '../../lib/sampleAction'
 import {
@@ -7,6 +8,7 @@ import {
   INTRO_KINDS,
   INTRO_KIND_LABEL,
   introDirectionLabel,
+  introHasPortrait,
   introStatusLabel,
   staffRequestLine,
   type IntroKind,
@@ -28,6 +30,7 @@ export function IntroBoard({
   error,
   onRespond,
   onDecide,
+  portrait,
 }: {
   tone: ShellTone
   rows: IntroRow[]
@@ -35,6 +38,7 @@ export function IntroBoard({
   error: string
   onRespond?: (id: string, decision: 'accepted' | 'declined') => void
   onDecide?: (id: string, kind: 'mandate' | 'real_estate' | 'partner', decision: 'approved' | 'declined') => void
+  portrait?: (row: IntroRow) => ReactNode
 }) {
   const [kind, setKind] = useState<IntroKind | null>(null)
   const [decline, setDecline] = useState<IntroRow | null>(null)
@@ -90,6 +94,7 @@ export function IntroBoard({
                 onRespond={onRespond}
                 onDecide={onDecide}
                 onDecline={() => setDecline(row)}
+                portrait={portrait}
               />
             </li>
           ))}
@@ -125,6 +130,7 @@ function IntroCard({
   onRespond,
   onDecide,
   onDecline,
+  portrait,
 }: {
   tone: ShellTone
   row: IntroRow
@@ -132,6 +138,7 @@ function IntroCard({
   onRespond?: (id: string, decision: 'accepted' | 'declined') => void
   onDecide?: (id: string, kind: 'mandate' | 'real_estate' | 'partner', decision: 'approved' | 'declined') => void
   onDecline: () => void
+  portrait?: (row: IntroRow) => ReactNode
 }) {
   const member = tone === 'member'
   const panel = member ? 'border border-[var(--ba-line)] bg-white' : 'border border-white/15 bg-white/[0.04]'
@@ -164,9 +171,18 @@ function IntroCard({
           <p className={`mt-1 text-[0.85rem] ${muted}`}>{introStatusLabel(row.status)}</p>
         </div>
       </div>
-      <h2 className={`mt-3 font-display text-[1.35rem] font-semibold tracking-[-0.03em] ${member ? '' : 'text-pearl'}`}>
-        {heading}
-      </h2>
+      <div className="mt-3 flex items-center gap-3">
+        {introHasPortrait(row) ? (
+          portrait ? (
+            portrait(row)
+          ) : (
+            <Avatar src={null} avatarStyle={row.avatar_style} size={48} alt="" />
+          )
+        ) : null}
+        <h2 className={`min-w-0 font-display text-[1.35rem] font-semibold tracking-[-0.03em] ${member ? '' : 'text-pearl'}`}>
+          {heading}
+        </h2>
+      </div>
       {row.detail ? <p className={`mt-1 text-[0.95rem] ${muted}`}>{row.detail}</p> : null}
       {!member && row.kind !== 'member' && requestLine ? (
         <p className={`mt-2 text-[0.95rem] ${muted}`}>{requestLine}</p>

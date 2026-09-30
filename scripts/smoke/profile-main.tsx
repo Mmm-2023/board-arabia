@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { MemoryRouter } from 'react-router-dom'
 import type { MemberRow, ProfileRow } from '../../src/lib/member'
 import { MemberContext, type MemberRoom } from '../../src/pages/dashboard/context'
-import { AvatarCircle } from '../../src/pages/dashboard/AvatarCircle'
+import { Avatar } from '../../src/components/Avatar'
 import { ProfilePage } from '../../src/pages/dashboard/ProfilePage'
 import { AppShell } from '../../src/shell/AppShell'
 import { MEMBER_DESTINATIONS, MEMBER_SECONDARY } from '../../src/shell/destinations'
@@ -44,6 +44,7 @@ const profile: ProfileRow = {
   include_in_public_aggregates: false,
   capacity_verified: false,
   avatar_path: withPhoto ? `${userId}/avatar` : null,
+  avatar_style: sponsor ? 'female' : 'male',
   availability: 'selective',
   sector_tags: ['Health', 'Energy transition'],
   vision_themes: ['Health transformation', 'Thriving economy'],
@@ -74,9 +75,9 @@ createRoot(root).render(
           onSignOut={() => {}}
           accountLabel={email}
           accountMark={
-            <AvatarCircle
+            <Avatar
               src={withPhoto ? photoSrc : null}
-              initials={sponsor ? 'ES' : 'EM'}
+              avatarStyle={sponsor ? 'female' : 'male'}
               size={36}
               alt=""
             />

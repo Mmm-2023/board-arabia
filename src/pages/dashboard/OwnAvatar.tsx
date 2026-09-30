@@ -1,23 +1,11 @@
 import { Link } from 'react-router-dom'
-import { initials } from '../../lib/member'
-import { AvatarCircle } from './AvatarCircle'
+import { SignedAvatar } from '../../components/SignedAvatar'
 import { useMember } from './context'
-import { useSignedAvatar } from './useSignedAvatar'
 
 export function OwnAvatar({ decorative = false, size = 36 }: { decorative?: boolean; size?: number }) {
-  const { email, profile } = useMember()
-  const path = profile?.avatar_path ?? null
-  const signed = useSignedAvatar(path)
-  const mark = initials(profile?.full_name ?? null, email)
+  const { profile } = useMember()
   const circle = (
-    <AvatarCircle
-      src={signed.failed ? null : signed.url}
-      initials={mark}
-      size={size}
-      busy={signed.loading}
-      alt=""
-      onError={signed.markFailed}
-    />
+    <SignedAvatar path={profile?.avatar_path ?? null} avatarStyle={profile?.avatar_style} size={size} alt="" />
   )
   if (decorative) return circle
   return (

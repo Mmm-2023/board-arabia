@@ -167,6 +167,7 @@ export function DashboardHome() {
     seat: String(member.seat),
     name: profile?.full_name?.trim() || "You're in",
     photoUrl,
+    avatarStyle: profile?.avatar_style,
     profileReady,
     mustSetPassword: member.must_set_password,
     invitesRemaining: member.invites_remaining,

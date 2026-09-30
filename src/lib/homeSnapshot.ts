@@ -6,6 +6,7 @@
  * Example rows follow public.demo_thresholds via demoRowsVisible.
  */
 import { formatMajlisWhen, MAJLIS_REGIONS, countPublishedByRegion } from '../../supabase/functions/_shared/majlis.ts'
+import { normalizeAvatarStyle } from './avatarStyle.ts'
 import { formatPublicUsd } from './capacity.ts'
 import { DEMO_THRESHOLD_DEFAULTS, demoRowsVisible } from './demoThreshold.ts'
 import { displayPlatformMoney } from './platformFloors.ts'
@@ -96,7 +97,7 @@ export type AttentionItem = {
 export type HomeModel = {
   identity: {
     name: string
-    initials: string
+    avatarStyle: 'male' | 'female'
     photoUrl: string | null
     badge: MembershipBadge
     founding: boolean
@@ -194,15 +195,6 @@ export function homeSeatLabel(seat: string): string {
 
 export function canRegisterMajlis(seat: string): boolean {
   return seat !== 'sponsor'
-}
-
-export function homeInitials(name: string): string {
-  const parts = name.trim().split(/\s+/).filter(Boolean)
-  if (parts.length >= 2) {
-    return `${parts[0]?.[0] ?? ''}${parts[parts.length - 1]?.[0] ?? ''}`.toUpperCase()
-  }
-  if (parts[0]) return parts[0].slice(0, 2).toUpperCase()
-  return 'BA'
 }
 
 export function applyDemoThreshold<T extends { is_demo: boolean }>(rows: T[], threshold: number): T[] {
@@ -429,6 +421,7 @@ export type AssembleInput = {
   seat: string
   name: string
   photoUrl: string | null
+  avatarStyle?: unknown
   profileReady: boolean
   mustSetPassword: boolean
   invitesRemaining: number
@@ -505,7 +498,7 @@ export function assembleHome(input: AssembleInput): HomeModel {
   return {
     identity: {
       name: input.name.trim() || "You're in",
-      initials: homeInitials(input.name),
+      avatarStyle: normalizeAvatarStyle(input.avatarStyle),
       photoUrl: input.photoUrl,
       badge: membershipBadge(input.seat),
       founding,

@@ -118,6 +118,7 @@ function card(
     preferred_partner: false,
     portrait_asset: `/demo/portraits/${portrait}.svg`,
     avatar_path: null,
+    avatar_style: 'male',
   }
 }
 

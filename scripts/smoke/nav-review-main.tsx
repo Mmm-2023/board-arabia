@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
+import { Avatar } from '../../src/components/Avatar'
 import { assembleHome } from '../../src/lib/homeSnapshot'
 import { CreateRoomForm } from '../../src/pages/dashboard/CreateRoomForm'
 import { HomeSnapshotView } from '../../src/pages/dashboard/HomeSnapshotView'
@@ -51,7 +52,7 @@ function Shell({
         accountName="Member name"
         dealsBadge={badge}
         initialAccountOpen={accountOpen}
-        accountMark={<span aria-hidden="true">MN</span>}
+        accountMark={<Avatar src={null} avatarStyle="male" size={36} alt="" />}
       >
         {children}
       </AppShell>
@@ -331,7 +332,7 @@ function RedirectProof() {
       onSignOut={() => {}}
       accountLabel="member@example.com"
       accountName="Member name"
-      accountMark={<span aria-hidden="true">MN</span>}
+      accountMark={<Avatar src={null} avatarStyle="male" size={36} alt="" />}
     >
       <p data-redirect-proof="">
         {location.pathname}
