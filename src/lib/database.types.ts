@@ -947,6 +947,18 @@ export type Database = {
         Args: { p_limit: number }
         Returns: Json
       }
+      staff_intro_funnel: {
+        Args: { p_from: string; p_to: string }
+        Returns: Json
+      }
+      staff_list_intro_deals: {
+        Args: Record<string, never>
+        Returns: Json
+      }
+      staff_set_intro_deal: {
+        Args: { p_intro_id: string; p_started: boolean }
+        Returns: Json
+      }
       list_my_intros: {
         Args: Record<string, never>
         Returns: Json

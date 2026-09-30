@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { Avatar } from '../../components/Avatar'
 import { ExampleMark } from '../../components/ExampleMark'
 import { SAMPLE_NOTE } from '../../lib/sampleAction'
+import { formatDealStartedWhen, introDealAllowed } from '../../lib/introFunnel'
 import {
   bookCallMailto,
   deskIntroLine,
@@ -37,8 +38,10 @@ export function IntroBoard({
   onRespond,
   onDecide,
   onMeet,
+  onDeal,
   portrait,
   contacts = {},
+  dealStartedAt = {},
 }: {
   tone: ShellTone
   rows: IntroRow[]
@@ -47,11 +50,14 @@ export function IntroBoard({
   onRespond?: (id: string, decision: 'accepted' | 'declined') => void
   onDecide?: (id: string, kind: 'mandate' | 'real_estate' | 'partner', decision: 'approved' | 'declined') => void
   onMeet?: (id: string, outcome: MeetOutcome) => void
+  onDeal?: (id: string, started: boolean) => void
   portrait?: (row: IntroRow) => ReactNode
   contacts?: Readonly<Record<string, IntroContact>>
+  dealStartedAt?: Readonly<Record<string, string>>
 }) {
   const [kind, setKind] = useState<IntroKind | null>(null)
   const [decline, setDecline] = useState<IntroRow | null>(null)
+  const [clearDeal, setClearDeal] = useState<IntroRow | null>(null)
   const visible = filterIntros(rows, kind)
   const member = tone === 'member'
 
@@ -105,7 +111,10 @@ export function IntroBoard({
                 onDecide={onDecide}
                 onMeet={onMeet}
                 onDecline={() => setDecline(row)}
+                onDeal={onDeal}
+                onClearDeal={() => setClearDeal(row)}
                 portrait={portrait}
+                dealStartedAt={dealStartedAt[row.id]}
                 contact={row.status === 'accepted' && row.kind === 'member' ? contacts[row.id] : undefined}
               />
             </li>
@@ -131,6 +140,19 @@ export function IntroBoard({
           }}
         />
       ) : null}
+      {clearDeal ? (
+        <ConfirmDialog
+          tone={tone}
+          title="Clear deal started?"
+          body="This introduction will no longer count as a deal started."
+          busy={busyId === clearDeal.id}
+          onCancel={() => setClearDeal(null)}
+          onConfirm={() => {
+            onDeal?.(clearDeal.id, false)
+            setClearDeal(null)
+          }}
+        />
+      ) : null}
     </div>
   )
 }
@@ -143,8 +165,11 @@ function IntroCard({
   onDecide,
   onMeet,
   onDecline,
+  onDeal,
+  onClearDeal,
   portrait,
   contact,
+  dealStartedAt,
 }: {
   tone: ShellTone
   row: IntroRow
@@ -153,8 +178,11 @@ function IntroCard({
   onDecide?: (id: string, kind: 'mandate' | 'real_estate' | 'partner', decision: 'approved' | 'declined') => void
   onMeet?: (id: string, outcome: MeetOutcome) => void
   onDecline: () => void
+  onDeal?: (id: string, started: boolean) => void
+  onClearDeal: () => void
   portrait?: (row: IntroRow) => ReactNode
   contact?: IntroContact
+  dealStartedAt?: string
 }) {
   const member = tone === 'member'
   const panel = member ? 'border border-[var(--ba-line)] bg-white' : 'border border-white/15 bg-white/[0.04]'
@@ -170,6 +198,8 @@ function IntroCard({
   const heading = !member && row.kind === 'member' && requestLine ? requestLine : row.title
   const deskLine = deskIntroLine(row, member ? 'member' : 'staff')
   const mailto = contact && row.status === 'accepted' ? bookCallMailto(contact.email) : null
+  const canDeal = !member && introDealAllowed(row) && Boolean(onDeal)
+  const dealWhen = dealStartedAt ? formatDealStartedWhen(dealStartedAt) : ''
 
   return (
     <article className={`${panel} px-5 py-5`} data-intro-kind={row.kind} data-intro-status={row.status}>
@@ -286,6 +316,32 @@ function IntroCard({
           >
             Decline intro
           </button>
+        </div>
+      ) : null}
+      {canDeal ? (
+        <div className="mt-4">
+          {dealStartedAt ? (
+            <p className={`text-[0.95rem] ${muted}`}>Deal started{dealWhen ? ` ${dealWhen}` : ''}</p>
+          ) : null}
+          {dealStartedAt ? (
+            <button
+              type="button"
+              disabled={busy}
+              onClick={onClearDeal}
+              className="mt-3 inline-flex min-h-11 max-w-full items-center self-start border border-white/25 px-4 text-left text-[0.75rem] font-semibold tracking-[0.08em] text-pearl uppercase disabled:opacity-40"
+            >
+              Clear deal started
+            </button>
+          ) : (
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => onDeal?.(row.id, true)}
+              className="ba-primary inline-flex min-h-11 max-w-full items-center self-start px-4 text-left text-[0.75rem] font-semibold tracking-[0.08em] uppercase disabled:opacity-40"
+            >
+              Deal started
+            </button>
+          )}
         </div>
       ) : null}
     </article>
