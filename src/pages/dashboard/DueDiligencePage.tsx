@@ -294,10 +294,7 @@ export function DueDiligenceDeskView({
 
   return (
     <div className="max-w-3xl">
-      <p className="hidden text-[0.72rem] font-semibold tracking-[0.14em] text-brass uppercase md:block">
-        AI Due Diligence
-      </p>
-      <h1 className="font-display text-[1.75rem] leading-tight font-bold tracking-[-0.03em] text-balance md:mt-3 md:text-[2.2rem]">
+      <h1 className="font-display text-[1.75rem] leading-tight font-bold tracking-[-0.03em] text-balance md:text-[2.2rem]">
         AI Due Diligence
       </h1>
       <p className="mt-3 max-w-xl text-[1.05rem] leading-relaxed text-ink">{DD_COPY.introPrimary}</p>
@@ -516,10 +513,7 @@ function ReportView({ reportId }: { reportId: string }) {
 
   return (
     <div className="max-w-5xl">
-      <p className="hidden text-[0.72rem] font-semibold tracking-[0.14em] text-brass uppercase md:block">
-        AI Due Diligence
-      </p>
-      <h1 className="font-display text-[1.75rem] leading-tight font-bold tracking-[-0.03em] break-words text-balance md:mt-3 md:text-[2.2rem]">
+      <h1 className="font-display text-[1.75rem] leading-tight font-bold tracking-[-0.03em] break-words text-balance md:text-[2.2rem]">
         {ready ? ready.report.company_label : 'AI Due Diligence'}
       </h1>
       <Link

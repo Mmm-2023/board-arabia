@@ -304,8 +304,7 @@ export function AccountAi() {
   const analysis = fullDraftAnalysis()
   return (
     <div data-screen="account-locked" data-hub="ai">
-      <p className="text-[0.72rem] font-semibold tracking-[0.14em] text-[var(--ba-indigo)] uppercase">AI</p>
-      <h2 className="mt-2 font-display text-[1.7rem] font-semibold tracking-[-0.03em]">AI Due Diligence</h2>
+      <h2 className="font-display text-[1.7rem] font-semibold tracking-[-0.03em]">AI Due Diligence</h2>
       <p className="mt-3 max-w-xl text-[1rem] leading-relaxed text-ink/75">
         Public source review of a pitch deck. Not legal advice.
       </p>

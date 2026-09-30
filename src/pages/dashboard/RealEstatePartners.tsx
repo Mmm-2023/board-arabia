@@ -1,4 +1,5 @@
 import { ExampleMark } from '../../components/ExampleMark'
+import { RePlace } from '../../components/RePlace'
 import { SampleAction } from '../../components/SampleAction'
 import { SAMPLE_NOTE } from '../../lib/sampleAction'
 import { SponsorBadge } from '../../components/SponsorBadge'
@@ -114,7 +115,9 @@ export function PartnerCard({
         </div>
       </div>
       <h3 className="mt-3 font-display text-[1.45rem] font-semibold tracking-[-0.03em] text-balance">{card.name}</h3>
-      <p className="mt-2 text-[0.95rem] text-ink/70">{card.city}</p>
+      <p className="mt-2 text-[0.95rem] text-ink/70">
+        <RePlace city={card.city} hint={card.blurb} />
+      </p>
       <p className="mt-3 text-[1rem] leading-relaxed text-ink/80">{card.blurb}</p>
       {card.access === 'locked' ? (
         <div className="mt-5 border-t border-[var(--ba-line)] pt-4">

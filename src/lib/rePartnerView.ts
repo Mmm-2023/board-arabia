@@ -1,9 +1,9 @@
 import {
-  RE_CITIES,
   RE_PARTNER_KINDS,
   type RePartnerCard,
   type RePartnerInventory,
 } from './reRedaction.ts'
+import { RE_REGIONS, reRegionFor, type ReRegion } from './reRegions.ts'
 
 export const RE_PARTNER_KIND_LABEL = {
   law: 'Law',
@@ -46,7 +46,7 @@ export type RePartnerDraft = {
   published: boolean
   name: string
   kind: (typeof RE_PARTNER_KINDS)[number] | ''
-  city: (typeof RE_CITIES)[number] | ''
+  city: ReRegion | ''
   blurb: string
   contact_name: string
   contact_email: string
@@ -87,7 +87,7 @@ export function draftFromPartner(card: RePartnerInventory, sortOrder = card.sort
     published: card.published,
     name: card.name,
     kind: card.kind,
-    city: card.city,
+    city: reRegionFor(card.city, card.blurb) ?? '',
     blurb: card.blurb,
     contact_name: card.contact_name,
     contact_email: card.contact_email,
@@ -105,7 +105,7 @@ export function partnerSaveArgs(draft: RePartnerDraft) {
   if (!name || !blurb || !contactName || !email || !phone) return null
   if (!draft.kind || !draft.city) return null
   if (!(RE_PARTNER_KINDS as readonly string[]).includes(draft.kind)) return null
-  if (!(RE_CITIES as readonly string[]).includes(draft.city)) return null
+  if (!(RE_REGIONS as readonly string[]).includes(draft.city)) return null
   if (name.includes('@') || blurb.includes('@') || email.includes(' ') || !email.includes('@')) return null
   if (blurb.toLowerCase().includes(contactName.toLowerCase())) return null
   if (blurb.toLowerCase().includes(email)) return null

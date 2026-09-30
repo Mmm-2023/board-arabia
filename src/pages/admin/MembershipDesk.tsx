@@ -270,6 +270,8 @@ export type DeskDetail = {
   seatsLeft: string
   events: { id: string; label: string }[]
   notes: { id: string; body: string; at: string }[]
+  firstTouch?: string | null
+  firstTouchPaid?: boolean
 }
 
 export function MembershipDetailView({
@@ -316,6 +318,14 @@ export function MembershipDetailView({
       <Link to="/admin/review" className="text-[0.95rem] underline">Back to the queue</Link>
       <h1 className="mt-3 font-display text-[2rem] font-semibold tracking-[-0.03em]">{detail.name}</h1>
       <p className="mt-1 text-pearl/65">{stateLabel(detail.state)} · {detail.region === 'ksa_gcc' ? 'KSA' : 'Intl'}</p>
+      {detail.firstTouch ? (
+        <p className="mt-3" data-chip="first-touch">
+          <span className="inline-flex min-h-11 items-center gap-2 border border-white/20 px-3 text-[0.95rem]">
+            <span>First touch {detail.firstTouch}</span>
+            {detail.firstTouchPaid ? <span className="text-[var(--ba-copper)]">Paid</span> : null}
+          </span>
+        </p>
+      ) : null}
       <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
         <section className="border border-white/10 px-4 py-4">
           <h2 className="text-[0.72rem] font-semibold tracking-[0.12em] uppercase text-pearl/45">Credentials</h2>

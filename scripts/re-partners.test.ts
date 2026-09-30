@@ -201,7 +201,7 @@ test('partner save args and reorder stay on the real estate category fields', ()
     published: false,
     name: 'Safa Court Works',
     kind: 'developer',
-    city: 'Qiddiya',
+    city: 'Makkah',
     blurb: 'A developer desk for a private property brief.',
     contact_name: 'Safa C.',
     contact_email: MAIL,
@@ -209,7 +209,8 @@ test('partner save args and reorder stay on the real estate category fields', ()
     sort_order: 6,
   }
   const args = partnerSaveArgs(draft)
-  assert.equal(args?.p_city, 'Qiddiya')
+  assert.equal(args?.p_city, 'Makkah')
+  assert.equal(partnerSaveArgs({ ...draft, city: 'Qiddiya' as RePartnerDraft['city'] }), null)
   assert.equal(args?.p_kind, 'developer')
   assert.equal(args?.p_published, false)
   assert.equal(partnerSaveArgs({ ...draft, blurb: `Reach ${MAIL}` }), null)

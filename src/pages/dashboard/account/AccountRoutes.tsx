@@ -160,13 +160,24 @@ export function AccountPeople() {
   )
 }
 
+export function AccountAiRoute() {
+  return (
+    <div>
+      <SectionTabs label="AI tools sections" sections={MEMBER_SECTIONS.ai ?? []} />
+      <div className="mt-6">
+        <AccountAi />
+      </div>
+    </div>
+  )
+}
+
 export function AccountSurface() {
   const { pathname } = useLocation()
   if (pathname === '/dashboard') return <AccountHome />
   if (pathname.startsWith('/dashboard/deals')) return <AccountDeals />
   if (pathname.startsWith('/dashboard/people')) return <AccountPeople />
   if (pathname === '/dashboard/majlis' || pathname.startsWith('/dashboard/majlis/')) return <AccountMajlis />
-  if (pathname.startsWith('/dashboard/ai')) return <AccountAi />
+  if (pathname.startsWith('/dashboard/ai')) return <AccountAiRoute />
   if (pathname === '/dashboard/membership' || pathname.startsWith('/dashboard/membership/')) return <MembershipScreen />
   if (pathname === '/dashboard/profile' || pathname.startsWith('/dashboard/profile/')) return <AccountProfile />
   if (pathname === '/dashboard/help' || pathname.startsWith('/dashboard/help/')) return <HelpPage desk={false} />

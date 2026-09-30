@@ -113,6 +113,11 @@ verify_jwt = true
 [functions.review-membership]
 verify_jwt = true
 
+# Staff marketing aggregates. The read key is the secret POSTHOG_PERSONAL_API_KEY.
+# Absent key, or ANALYTICS_ENABLED not exactly true, returns not_live. No key in the repo.
+[functions.marketing-stats]
+verify_jwt = true
+
 # Reminder cron. Header x-membership-reminder must match MEMBERSHIP_REMINDER_SECRET.
 [functions.remind-membership]
 verify_jwt = false
