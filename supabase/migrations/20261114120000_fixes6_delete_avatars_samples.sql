@@ -1,12 +1,13 @@
 -- Owner delete for a due diligence report, staff read of member avatars,
 -- and a sample flag on the home mandate intro queue.
+-- The deck file is removed with the Storage API. Do not delete storage.objects here.
 -- Apply after review. Not applied by the authoring agent.
 
 create or replace function public.delete_own_due_diligence_report(p_report_id uuid)
 returns jsonb
 language plpgsql
 security definer
-set search_path = public
+set search_path = ''
 as $$
 declare
   v_deck uuid;
@@ -30,15 +31,11 @@ begin
     raise exception 'not_allowed' using errcode = '42501';
   end if;
 
-  delete from storage.objects
-  where bucket_id = 'due-diligence-decks'
-    and name = v_path;
-
   delete from public.due_diligence_decks
   where id = v_deck
     and member_id = v_owner;
 
-  return jsonb_build_object('ok', true);
+  return jsonb_build_object('ok', true, 'storage_path', v_path);
 end;
 $$;
 

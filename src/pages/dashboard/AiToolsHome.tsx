@@ -1,8 +1,12 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { loadDueDiligenceDesk, type HistoryItem } from '../../lib/dueDiligence'
+import {
+  deleteOwnDueDiligenceReport,
+  loadDueDiligenceDesk,
+  removeOwnDeck,
+  type HistoryItem,
+} from '../../lib/dueDiligence'
 import { recentReports, type RecentReportRow } from '../../lib/recentReports'
-import { supabase } from '../../lib/supabase'
 import { useNoIndex } from '../../lib/usePageTitle'
 import { ConfirmDialog } from '../../shell/ConfirmDialog'
 import { CardSkeleton, ErrorBanner } from '../../shell/ViewState'
@@ -11,6 +15,7 @@ import { useMember } from './context'
 
 const DELETED = 'Report deleted.'
 const DELETE_FAILED = 'Could not delete that report. Retry.'
+const FILE_LEFT = 'The report was removed, but the uploaded deck could not be deleted. Retry.'
 
 export function AiToolsHome() {
   const { userId } = useMember()
@@ -21,6 +26,7 @@ export function AiToolsHome() {
   const [busy, setBusy] = useState(false)
   const [notice, setNotice] = useState('')
   const [alert, setAlert] = useState('')
+  const [fileLeft, setFileLeft] = useState<string | null>(null)
   useNoIndex('AI tools | Board Arabia')
 
   useEffect(() => {
@@ -44,21 +50,38 @@ export function AiToolsHome() {
 
   async function confirmDelete() {
     if (!pendingId) return
+    const reportId = pendingId
     setBusy(true)
     setNotice('')
     setAlert('')
-    const { error: rpcError } = await supabase.rpc('delete_own_due_diligence_report', {
-      p_report_id: pendingId,
-    })
+    const result = await deleteOwnDueDiligenceReport(reportId, userId)
     setBusy(false)
-    if (rpcError) {
-      setPendingId(null)
+    setPendingId(null)
+    if (!result.ok && result.kind === 'report') {
       setAlert(DELETE_FAILED)
       return
     }
-    const removed = pendingId
-    setPendingId(null)
-    setReports((current) => (current ? current.filter((report) => report.id !== removed) : current))
+    setReports((current) => (current ? current.filter((report) => report.id !== reportId) : current))
+    if (!result.ok) {
+      setFileLeft(result.path)
+      setAlert(FILE_LEFT)
+      return
+    }
+    setFileLeft(null)
+    setNotice(DELETED)
+  }
+
+  async function retryFile() {
+    if (!fileLeft) return
+    setBusy(true)
+    setAlert('')
+    const removed = await removeOwnDeck(fileLeft, userId)
+    setBusy(false)
+    if (!removed) {
+      setAlert(FILE_LEFT)
+      return
+    }
+    setFileLeft(null)
     setNotice(DELETED)
   }
 
@@ -94,7 +117,12 @@ export function AiToolsHome() {
         {notice ? <p className="mt-3 text-[1rem] text-ink">{notice}</p> : null}
         {alert ? (
           <p className="mt-3 text-[1rem] text-[var(--ba-error)]" role="alert">
-            {alert}
+            {alert}{' '}
+            {fileLeft ? (
+              <button type="button" className="min-h-11 font-semibold text-ink underline" disabled={busy} onClick={() => void retryFile()}>
+                Retry
+              </button>
+            ) : null}
           </p>
         ) : null}
         {reports === null ? (

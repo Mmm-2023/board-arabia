@@ -7,6 +7,7 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { MemoryRouter } from 'react-router-dom'
 import { createServer } from 'vite'
 import { joinCardMeta } from '../src/lib/cardMeta.ts'
+import { ownDeckPath } from '../src/lib/ownDeckPath.ts'
 import { isTwoTierRegisterEnabled, publicConsiderationCta, setTwoTierRegisterForTests } from '../src/lib/twoTierRegister.ts'
 
 const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..')
@@ -99,17 +100,18 @@ test('opportunity readiness cards omit empty separators', async () => {
 })
 
 test('a non-owner cannot delete a due diligence report or its deck', () => {
-  const sql = read('supabase/migrations/20261110120000_fixes6_delete_avatars_samples.sql')
+  const sql = read('supabase/migrations/20261114120000_fixes6_delete_avatars_samples.sql')
   const fn = latestFunction('delete_own_due_diligence_report')
   const header = sql.slice(sql.indexOf('function public.delete_own_due_diligence_report'), sql.indexOf('as $$'))
   assert.match(header, /security definer/)
-  assert.match(header, /set search_path = public/)
+  assert.match(header, /set search_path = ''/)
   const guard = fn.indexOf('not_allowed')
-  const storageDelete = fn.indexOf('delete from storage.objects')
   const deckDelete = fn.indexOf('delete from public.due_diligence_decks')
-  assert.ok(guard > 0 && storageDelete > guard && deckDelete > storageDelete)
+  assert.ok(guard > 0 && deckDelete > guard)
+  assert.equal(fn.includes('storage.objects'), false)
   assert.match(fn, /r\.member_id = v_owner/)
   assert.match(fn, /member_id = v_owner/)
+  assert.match(fn, /'storage_path', v_path/)
   assert.match(sql, /revoke all on function public\.delete_own_due_diligence_report\(uuid\) from public, anon/)
   assert.match(sql, /grant execute on function public\.delete_own_due_diligence_report\(uuid\) to authenticated/)
   assert.equal(/grant execute on function public\.delete_own_due_diligence_report\([^;]*\) to anon/.test(sql), false)
@@ -118,15 +120,28 @@ test('a non-owner cannot delete a due diligence report or its deck', () => {
   assert.equal(/for delete to anon/.test(sql), false)
   assert.equal(/for delete to public/.test(sql), false)
   const home = read('src/pages/dashboard/AiToolsHome.tsx')
-  assert.match(home, /delete_own_due_diligence_report/)
+  const client = read('src/lib/dueDiligence.ts')
+  const rpcAt = client.indexOf("rpc('delete_own_due_diligence_report'")
+  const removeAt = client.indexOf('.remove([path])')
+  assert.ok(rpcAt > 0 && removeAt > rpcAt)
+  assert.match(client, /due-diligence-decks|DECK_BUCKET/)
+  assert.match(home, /deleteOwnDueDiligenceReport/)
   assert.match(home, /Delete this report\?/)
   assert.match(home, /Report deleted\./)
   assert.match(home, /Could not delete that report\. Retry\./)
+  assert.match(home, /uploaded deck could not be deleted/)
   assert.equal(home.includes('service_role'), false)
+  assert.equal(client.includes('storage.objects'), false)
+  const owner = '11111111-1111-4111-8111-111111111111'
+  const other = '22222222-2222-4222-8222-222222222222'
+  const deck = '33333333-3333-4333-8333-333333333333'
+  assert.equal(ownDeckPath({ storage_path: `${owner}/${deck}/source.pdf` }, owner), `${owner}/${deck}/source.pdf`)
+  assert.equal(ownDeckPath({ storage_path: `${other}/${deck}/source.pdf` }, owner), null)
+  assert.equal(ownDeckPath({ storage_path: `${owner}/${deck}/source.pdf` }, other), null)
 })
 
 test('staff can read member avatars and members are not granted a wider raw read', () => {
-  const sql = read('supabase/migrations/20261110120000_fixes6_delete_avatars_samples.sql')
+  const sql = read('supabase/migrations/20261114120000_fixes6_delete_avatars_samples.sql')
   assert.match(sql, /member_avatars_select_staff/)
   assert.match(sql, /private\.is_staff\(\)/)
   assert.match(sql, /bucket_id = 'member-avatars'/)

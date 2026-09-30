@@ -1,4 +1,5 @@
 import {
+  DECK_BUCKET,
   deckStoragePath,
   MEMBER_MESSAGES,
   memberFacingMessage,
@@ -8,6 +9,7 @@ import {
   type DeckExt,
 } from '../../supabase/functions/_shared/due_diligence.ts'
 import { postDueDiligenceStart, postDueDiligenceStatus } from './dueDiligenceRequests'
+import { ownDeckPath } from './ownDeckPath'
 import { supabase } from './supabase'
 
 export type ReadFailure = 'denied' | 'unavailable' | 'error'
@@ -146,6 +148,29 @@ export async function fetchDueDiligenceStatus(jobId: string): Promise<StatusLoad
 
 export function uploadPath(userId: string, deckId: string, ext: DeckExt): string | null {
   return deckStoragePath(userId, deckId, ext)
+}
+
+export type OwnReportDelete =
+  | { ok: true }
+  | { ok: false; kind: 'report' }
+  | { ok: false; kind: 'file'; path: string | null }
+
+/** Drop the deck row first, then the file. A failed file remove does not leave a row pointing at nothing. */
+export async function deleteOwnDueDiligenceReport(reportId: string, ownerId: string): Promise<OwnReportDelete> {
+  const { data, error } = await supabase.rpc('delete_own_due_diligence_report', { p_report_id: reportId })
+  if (error) return { ok: false, kind: 'report' }
+  const path = ownDeckPath(data, ownerId)
+  if (!path) return { ok: false, kind: 'file', path: null }
+  const removed = await supabase.storage.from(DECK_BUCKET).remove([path])
+  if (removed.error) return { ok: false, kind: 'file', path }
+  return { ok: true }
+}
+
+export async function removeOwnDeck(path: string, ownerId: string): Promise<boolean> {
+  const safe = ownDeckPath({ storage_path: path }, ownerId)
+  if (!safe) return false
+  const removed = await supabase.storage.from(DECK_BUCKET).remove([safe])
+  return !removed.error
 }
 
 async function memberHeaders(): Promise<HeadersInit | null> {
