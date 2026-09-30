@@ -13,10 +13,6 @@ export const PRIVACY_EN: LegalDocument = {
     },
     {
       "kind": "p",
-      "text": "Status: draft replacement text for boardarabia.com/privacy. Not legal sign-off. Drafting support only, not advice from a licensed lawyer. Items marked \"Saudi lawyer to confirm\" need a licensed Saudi data protection lawyer before publication. The Arabic version is a working translation that needs native legal review. Under section 16, the Arabic version prevails for users in the Kingdom."
-    },
-    {
-      "kind": "p",
       "text": "Effective date: [EFFECTIVE DATE]"
     },
     {
@@ -40,7 +36,7 @@ export const PRIVACY_EN: LegalDocument = {
       "kind": "clause",
       "id": "c-1-3",
       "number": "1.3",
-      "text": "Data protection officer: [DPO CONTACT]. Saudi lawyer to confirm whether we must appoint a data protection officer. Until then, use the privacy contact."
+      "text": "Data protection officer: [DPO CONTACT]."
     },
     {
       "kind": "h2",
@@ -194,9 +190,9 @@ export const PRIVACY_EN: LegalDocument = {
           "Legitimate interest in running and improving the Platform"
         ],
         [
-          "Suggested introductions and nudges (when launched)",
+          "Suggested introductions and nudges",
           "Profile, sector tags, activity",
-          "Performance of our contract, or legitimate interest. You can opt out. Saudi lawyer to confirm"
+          "Performance of our contract, or legitimate interest. You can opt out."
         ],
         [
           "AI tools, including AI due diligence",
@@ -279,7 +275,7 @@ export const PRIVACY_EN: LegalDocument = {
       "kind": "clause",
       "id": "c-5-4",
       "number": "5.4",
-      "text": "Our processors, who act only on our instructions under a written data processing agreement:\n(a) Supabase, which hosts account, application and member data in Frankfurt, Germany (eu-central-1);\n(b) PostHog, through PostHog Cloud EU in Frankfurt, Germany, for site analytics;\n(c) [AI PROVIDER], for AI tools (hosting location to confirm); and\n(d) our email service provider, for sending emails."
+      "text": "Our processors, who act only on our instructions under a written data processing agreement:\n(a) Supabase, which hosts account, application and member data in Frankfurt, Germany (eu-central-1);\n(b) PostHog, through PostHog Cloud EU in Frankfurt, Germany, for site analytics;\n(c) [AI PROVIDER], for AI tools; and\n(d) our email service provider, for sending emails."
     },
     {
       "kind": "clause",
@@ -344,12 +340,6 @@ export const PRIVACY_EN: LegalDocument = {
       "id": "c-7-3",
       "number": "7.3",
       "text": "We transfer only the data needed for the purpose. Analytics use an internal identifier only, not your name or email."
-    },
-    {
-      "kind": "clause",
-      "id": "c-7-4",
-      "number": "7.4",
-      "text": "Saudi lawyer to confirm the transfer basis in force on the effective date."
     },
     {
       "kind": "h2",
@@ -435,7 +425,7 @@ export const PRIVACY_EN: LegalDocument = {
         ],
         [
           "Invoices and payment records",
-          "For the period Saudi law requires. Saudi lawyer to confirm"
+          "For the period Saudi law requires."
         ],
         [
           "Analytics events",
@@ -576,7 +566,7 @@ export const PRIVACY_EN: LegalDocument = {
     },
     {
       "kind": "p",
-      "text": "This notice is published in Arabic and English. If the two versions differ, the Arabic version prevails for users in the Kingdom of Saudi Arabia. Saudi lawyer to confirm whether it should prevail for all users."
+      "text": "This notice is published in Arabic and English. If the two versions differ, the Arabic version prevails for users in the Kingdom of Saudi Arabia."
     }
   ]
 }

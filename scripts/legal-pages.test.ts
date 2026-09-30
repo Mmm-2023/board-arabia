@@ -66,6 +66,25 @@ function draftingLeft(text: string) {
   return brackets(text).filter((token) => !ALLOWED_BRACKETS.has(token))
 }
 
+const DRAFTING_MARKERS = [
+  'Saudi lawyer',
+  'to confirm',
+  'Not legal sign-off',
+  'draft replacement',
+  'محامٍ سعودي',
+  'محام سعودي',
+  'نص بديل مقترح',
+]
+
+/** Privacy 11.2 asks the person to confirm their identity. That is not a drafting note. */
+function draftingMarkerHits(text: string) {
+  const rightsConfirm = 'to confirm your identity'
+  return DRAFTING_MARKERS.filter((phrase) => {
+    const visible = phrase === 'to confirm' ? text.split(rightsConfirm).join('') : text
+    return visible.includes(phrase)
+  })
+}
+
 function pageHtml(
   Provider: (props: { children?: ReturnType<typeof createElement> }) => ReturnType<typeof createElement>,
   View: () => ReturnType<typeof createElement>,
@@ -131,6 +150,7 @@ test('rendered legal copy has no drafting brackets and both retention states', (
       const resolved = resolveLegalDocument(doc, lang, retention30)
       const text = legalPlainText(resolved)
       assert.deepEqual(draftingLeft(text), [], `${name} ${lang} ${retention30} text`)
+      assert.deepEqual(draftingMarkerHits(text), [], `${name} ${lang} ${retention30}`)
       assert.equal(text.includes('Drafting note'), false, `${name} ${lang}`)
       assert.equal(text.includes('ملاحظة صياغة'), false)
       assert.equal(text.includes('[EFFECTIVE DATE]'), false)
@@ -164,6 +184,7 @@ test('rendered legal copy has no drafting brackets and both retention states', (
   const privacyEnOn = legalPlainText(resolveLegalDocument(PRIVACY_EN, 'en', true))
   const privacyArOff = legalPlainText(resolveLegalDocument(PRIVACY_AR, 'ar', false))
   const privacyArOn = legalPlainText(resolveLegalDocument(PRIVACY_AR, 'ar', true))
+  assert.match(privacyEnOff, /We may ask you to confirm your identity/)
   assert.match(privacyEnOff, /Kept while your account is active; you can delete them at any time/)
   assert.match(privacyEnOff, /Retained while your account is active; you can delete at any time/)
   assert.equal(privacyEnOff.includes('Final period to confirm'), false)
@@ -216,6 +237,7 @@ test('terms and privacy pages keep routes, anchors, toggle, and RTL', async () =
       assert.match(html, /العربية/)
       assert.equal(legalArticle(html).includes('Drafting note'), false)
       assert.deepEqual(draftingLeft(legalArticle(html)), [])
+      assert.deepEqual(draftingMarkerHits(legalArticle(html)), [], html.slice(0, 80))
     }
     assert.match(terms, /id="terms"/)
     assert.match(terms, /id="terms-title"/)
@@ -241,6 +263,8 @@ test('terms and privacy pages keep routes, anchors, toggle, and RTL', async () =
     assert.match(privacyOn, /Deleted after 30 days/)
     assert.deepEqual(draftingLeft(legalArticle(termsOn)), [])
     assert.deepEqual(draftingLeft(legalArticle(privacyOn)), [])
+    assert.deepEqual(draftingMarkerHits(legalArticle(termsOn)), [])
+    assert.deepEqual(draftingMarkerHits(legalArticle(privacyOn)), [])
     assert.equal(legalArticle(termsOn).includes('Drafting note'), false)
     assert.equal(legalArticle(privacyOn).includes('Drafting note'), false)
   } finally {

@@ -13,10 +13,6 @@ export const TERMS_EN: LegalDocument = {
     },
     {
       "kind": "p",
-      "text": "Status: draft replacement text for boardarabia.com/terms. Not legal sign-off. Drafting support only, not advice from a licensed lawyer. Items marked \"Saudi lawyer to confirm\" need a licensed Saudi lawyer before publication. The Arabic version is a working translation that needs native legal review. Under section 22, the Arabic version prevails for users in the Kingdom."
-    },
-    {
-      "kind": "p",
       "text": "Effective date: [EFFECTIVE DATE]"
     },
     {
@@ -444,7 +440,7 @@ export const TERMS_EN: LegalDocument = {
       "kind": "clause",
       "id": "c-11-6",
       "number": "11.6",
-      "text": "Fees and credits are not refundable once paid, except where these Terms say otherwise or where Saudi law requires a refund. Saudi lawyer to confirm whether consumer protection rules apply."
+      "text": "Fees and credits are not refundable once paid, except where these Terms say otherwise or where Saudi law requires a refund."
     },
     {
       "kind": "clause",
@@ -621,12 +617,6 @@ export const TERMS_EN: LegalDocument = {
       "text": "Nothing in these Terms limits or excludes liability that cannot be limited or excluded under Saudi law, including liability for fraud or gross negligence."
     },
     {
-      "kind": "clause",
-      "id": "c-17-4",
-      "number": "17.4",
-      "text": "Saudi lawyer to confirm the enforceability of this section, including for members who pay no fees."
-    },
-    {
       "kind": "h2",
       "id": "s-18",
       "text": "18. Indemnity"
@@ -641,7 +631,7 @@ export const TERMS_EN: LegalDocument = {
       "kind": "clause",
       "id": "c-18-2",
       "number": "18.2",
-      "text": "This section applies to the extent Saudi law allows. Saudi lawyer to confirm."
+      "text": "This section applies to the extent Saudi law allows."
     },
     {
       "kind": "h2",
@@ -721,7 +711,7 @@ export const TERMS_EN: LegalDocument = {
       "kind": "clause",
       "id": "c-22-2",
       "number": "22.2",
-      "text": "If the two versions differ, the Arabic version prevails for users in the Kingdom of Saudi Arabia. Saudi lawyer to confirm whether it should prevail for all users."
+      "text": "If the two versions differ, the Arabic version prevails for users in the Kingdom of Saudi Arabia."
     },
     {
       "kind": "h2",
