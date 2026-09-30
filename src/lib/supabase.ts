@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { cleanDeskNote } from '../../supabase/functions/_shared/desk_note.ts'
+import type { AvatarStyle, StoredAvatarStyle } from './avatarStyle'
 import type { Database } from './database.types'
 import type { CapacityPayload } from './capacity'
 import { parseCapacity, type FoundingCapacity, type FoundingSeat, type MemberSeat } from './member'
@@ -660,7 +661,7 @@ export async function setMemberStatus(
 
 export async function staffSetAvatarStyle(
   userId: string,
-  style: 'male' | 'female',
+  style: AvatarStyle,
 ): Promise<{ error?: string }> {
   const { error } = await supabase.rpc('staff_set_avatar_style', {
     p_user_id: userId,
@@ -732,7 +733,7 @@ export type MajlisEventRow = {
   waitlist_count: number
   my_rsvp_status: MajlisRsvpStatus | null
   my_waitlist_position: number | null
-  host_avatar_style?: 'male' | 'female' | null
+  host_avatar_style?: StoredAvatarStyle | null
   host_avatar_path?: string | null
 }
 
@@ -768,7 +769,7 @@ export type MajlisRosterRow = {
   cancelled_at: string | null
   email: string
   full_name: string | null
-  avatar_style?: 'male' | 'female' | null
+  avatar_style?: StoredAvatarStyle | null
   avatar_path?: string | null
 }
 

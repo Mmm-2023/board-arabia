@@ -6,6 +6,7 @@ import {
   parseCapacityPayload,
   type CapacityDraft,
 } from '../../lib/capacity'
+import type { StoredAvatarStyle } from '../../lib/avatarStyle'
 import type { FoundingCapacity, FoundingSeat } from '../../lib/member'
 import type { PlatformStats } from '../../lib/platformStats'
 import { endAuthSession } from '../../lib/endSession'
@@ -36,7 +37,7 @@ type ProfileCapacity = {
   turnover_usd: number | string | null
   include_in_public_aggregates: boolean
   capacity_verified: boolean
-  avatar_style?: 'male' | 'female' | null
+  avatar_style?: StoredAvatarStyle | null
   avatar_path?: string | null
 }
 

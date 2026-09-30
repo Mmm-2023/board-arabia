@@ -6,7 +6,7 @@
  * Example rows follow public.demo_thresholds via demoRowsVisible.
  */
 import { formatMajlisWhen, MAJLIS_REGIONS, countPublishedByRegion } from '../../supabase/functions/_shared/majlis.ts'
-import { normalizeAvatarStyle } from './avatarStyle.ts'
+import { normalizeAvatarStyle, type AvatarStyle } from './avatarStyle.ts'
 import { formatPublicUsd } from './capacity.ts'
 import { DEMO_THRESHOLD_DEFAULTS, demoRowsVisible } from './demoThreshold.ts'
 import { displayPlatformMoney } from './platformFloors.ts'
@@ -97,7 +97,7 @@ export type AttentionItem = {
 export type HomeModel = {
   identity: {
     name: string
-    avatarStyle: 'male' | 'female'
+    avatarStyle: AvatarStyle
     photoUrl: string | null
     badge: MembershipBadge
     founding: boolean
