@@ -37,7 +37,7 @@ export function DefaultPicturePicker({
       <p id={labelId} className={`text-[0.72rem] font-semibold tracking-[0.08em] uppercase ${legend}`}>
         {DEFAULT_PICTURE_LABEL}
       </p>
-      <div role="radiogroup" aria-labelledby={labelId} className="mt-2 flex max-w-full flex-wrap gap-2">
+      <div role="radiogroup" aria-labelledby={labelId} className="mt-2 grid w-fit max-w-full grid-cols-4 justify-items-start gap-2">
         {AVATAR_STYLES.map((style) => {
           const on = selected === style
           const label = AVATAR_STYLE_LABEL[style]

@@ -96,8 +96,9 @@ test('picker shows eight thumbnails and maps a legacy value onto the matching pi
       }),
     )
     assert.match(picker, new RegExp(DEFAULT_PICTURE_LABEL))
-    assert.match(picker, /flex-wrap/)
+    assert.match(picker, /grid-cols-4/)
     assert.match(picker, /size-11/)
+    assert.equal(picker.includes('flex-wrap'), false)
     for (const style of AVATAR_STYLES) {
       assert.match(picker, new RegExp(`data-avatar-choice="${style}"`))
       assert.match(picker, new RegExp(`aria-label="${AVATAR_STYLE_LABEL[style]}"`))
@@ -241,7 +242,7 @@ test('illustrated avatars are committed webp and avif with no external host', ()
     const path = AVATAR_ILLUSTRATION[style]
     assert.equal(path, `/avatars/${style}-256.webp`)
     for (const file of [
-      `public/avatars/${style}.png`,
+      `assets/avatars/${style}.png`,
       `public/avatars/${style}-96.webp`,
       `public/avatars/${style}-256.webp`,
       `public/avatars/${style}-96.avif`,
@@ -262,4 +263,11 @@ test('illustrated avatars are committed webp and avif with no external host', ()
   }
   assert.equal(existsSync(new URL('public/avatars/sheet.png', root)), false)
   assert.equal(existsSync(new URL('public/avatars/reference-8.jpg', root)), false)
+  assert.equal(existsSync(new URL(`public/avatars/${AVATAR_STYLES[0]}.png`, root)), false)
+  const avatar = source('src/components/Avatar.tsx')
+  const styles = source('src/lib/avatarStyle.ts')
+  assert.equal(avatar.includes('.png'), false)
+  assert.equal(styles.includes('.png'), false)
+  assert.match(avatar, /image\/avif/)
+  assert.match(avatar, /image\/webp/)
 })
