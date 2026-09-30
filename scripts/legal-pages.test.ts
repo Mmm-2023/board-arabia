@@ -74,6 +74,9 @@ const DRAFTING_MARKERS = [
   'محامٍ سعودي',
   'محام سعودي',
   'نص بديل مقترح',
+  'DRAFT',
+  'مسودة)',
+  '(مسودة',
 ]
 
 /** Privacy 11.2 asks the person to confirm their identity. That is not a drafting note. */
@@ -184,6 +187,8 @@ test('rendered legal copy has no drafting brackets and both retention states', (
   const privacyEnOn = legalPlainText(resolveLegalDocument(PRIVACY_EN, 'en', true))
   const privacyArOff = legalPlainText(resolveLegalDocument(PRIVACY_AR, 'ar', false))
   const privacyArOn = legalPlainText(resolveLegalDocument(PRIVACY_AR, 'ar', true))
+  assert.match(privacyEnOff, /opens a draft in your own mail app/)
+  assert.match(privacyArOff, /يفتح نموذج الشريك مسودة في تطبيق البريد/)
   assert.match(privacyEnOff, /We may ask you to confirm your identity/)
   assert.match(privacyEnOff, /Kept while your account is active; you can delete them at any time/)
   assert.match(privacyEnOff, /Retained while your account is active; you can delete at any time/)

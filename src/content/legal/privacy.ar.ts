@@ -9,7 +9,7 @@ export const PRIVACY_AR: LegalDocument = {
     {
       "kind": "h1",
       "id": "privacy-title",
-      "text": "إشعار الخصوصية لبورد أرابيا (مسودة)"
+      "text": "إشعار الخصوصية لبورد أرابيا"
     },
     {
       "kind": "p",

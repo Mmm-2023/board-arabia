@@ -9,7 +9,7 @@ export const TERMS_EN: LegalDocument = {
     {
       "kind": "h1",
       "id": "terms-title",
-      "text": "Board Arabia Terms of Membership (DRAFT)"
+      "text": "Board Arabia Terms of Membership"
     },
     {
       "kind": "p",

@@ -9,7 +9,7 @@ export const TERMS_AR: LegalDocument = {
     {
       "kind": "h1",
       "id": "terms-title",
-      "text": "شروط العضوية في بورد أرابيا (مسودة)"
+      "text": "شروط العضوية في بورد أرابيا"
     },
     {
       "kind": "p",

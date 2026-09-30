@@ -9,7 +9,7 @@ export const PRIVACY_EN: LegalDocument = {
     {
       "kind": "h1",
       "id": "privacy-title",
-      "text": "Board Arabia Privacy Notice (DRAFT)"
+      "text": "Board Arabia Privacy Notice"
     },
     {
       "kind": "p",
