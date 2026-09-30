@@ -258,6 +258,7 @@ export type Database = {
           linkedin_url: string | null
           bio: string | null
           phone: string | null
+          calendar_url: string | null
           investable_capacity_usd: number | null
           fo_aum_usd: number | null
           turnover_usd: number | null
@@ -280,6 +281,7 @@ export type Database = {
           linkedin_url?: string | null
           bio?: string | null
           phone?: string | null
+          calendar_url?: string | null
           investable_capacity_usd?: number | null
           fo_aum_usd?: number | null
           turnover_usd?: number | null
@@ -302,6 +304,7 @@ export type Database = {
           linkedin_url?: string | null
           bio?: string | null
           phone?: string | null
+          calendar_url?: string | null
           investable_capacity_usd?: number | null
           fo_aum_usd?: number | null
           turnover_usd?: number | null
@@ -913,11 +916,35 @@ export type Database = {
         Returns: Json
       }
       request_member_intro: {
-        Args: { p_target_id: string; p_reason: string }
+        Args: { p_target_id: string; p_reason: string; p_ask_desk?: boolean }
         Returns: Json
       }
       respond_member_intro: {
         Args: { p_intro_id: string; p_decision: string }
+        Returns: Json
+      }
+      list_accepted_intro_contacts: {
+        Args: Record<string, never>
+        Returns: Json
+      }
+      my_intro_quota: {
+        Args: Record<string, never>
+        Returns: Json
+      }
+      staff_list_desk_intros: {
+        Args: Record<string, never>
+        Returns: Json
+      }
+      staff_mark_desk_intro_sent: {
+        Args: { p_intro_id: string; p_note?: string }
+        Returns: Json
+      }
+      staff_get_intro_monthly_limit: {
+        Args: Record<string, never>
+        Returns: Json
+      }
+      staff_set_intro_monthly_limit: {
+        Args: { p_limit: number }
         Returns: Json
       }
       list_my_intros: {

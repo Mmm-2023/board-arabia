@@ -28,7 +28,26 @@ export type IntroRow = {
   target_name?: string
   avatar_style?: StoredAvatarStyle
   avatar_path?: string | null
+  ask_desk?: boolean
+  desk_status?: 'queued' | 'sent'
 }
+
+export type IntroContact = {
+  intro_id: string
+  email: string
+  linkedin_url: string
+  phone: string
+  calendar_url: string
+}
+
+export type IntroQuota = {
+  used: number
+  base: number
+  allowance: number
+  remaining: number
+}
+
+export const INTRO_BOOK_SUBJECT = 'Board Arabia introduction'
 
 const AVATAR_PATH = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\/avatar$/i
 
@@ -102,7 +121,111 @@ export function introRequestError(message: string): string {
   if (/invalid_reason/i.test(message)) return 'Write a short reason without an email or a phone number.'
   if (/not_found/i.test(message)) return 'That member is not available.'
   if (/not_allowed/i.test(message)) return 'You cannot send that request.'
+  if (/intro_limit/i.test(message)) return 'You have used this month\'s introductions.'
   return 'Could not send the request. Retry.'
+}
+
+export function introQuotaHint(remaining: number, allowance: number): string {
+  const left = Number.isFinite(remaining) ? Math.max(0, Math.floor(remaining)) : 0
+  const cap = Number.isFinite(allowance) ? Math.max(0, Math.floor(allowance)) : 0
+  return `${left} of ${cap} left`
+}
+
+/** Contacts exist only for an accepted intro, and only for the two parties. */
+export function introContactVisible(input: {
+  viewerId: string
+  requesterId: string
+  targetId: string
+  status: string
+}): boolean {
+  if (input.status !== 'accepted') return false
+  return input.viewerId === input.requesterId || input.viewerId === input.targetId
+}
+
+export function riyadhMonthKey(now: Date): string {
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Asia/Riyadh',
+    year: 'numeric',
+    month: '2-digit',
+  }).formatToParts(now)
+  const year = parts.find((part) => part.type === 'year')?.value ?? ''
+  const month = parts.find((part) => part.type === 'month')?.value ?? ''
+  return `${year}-${month}`
+}
+
+export function bookCallMailto(email: string): string | null {
+  const clean = email.trim()
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clean)) return null
+  return `mailto:${clean}?subject=${encodeURIComponent(INTRO_BOOK_SUBJECT)}`
+}
+
+export function safeProfileLink(value: string): string | null {
+  const clean = value.trim()
+  if (!/^https:\/\/\S+$/.test(clean)) return null
+  if (clean.includes('@')) return null
+  return clean
+}
+
+export function presentIntroContact(raw: unknown): IntroContact | null {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null
+  const row = raw as Record<string, unknown>
+  const introId = text(row.intro_id, 80)
+  if (!UUID.test(introId)) return null
+  const email = text(row.email, 320)
+  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return null
+  const phone = text(row.phone, 40)
+  if (phone && (phone.includes('@') || !PHONE.test(phone))) return null
+  return {
+    intro_id: introId,
+    email,
+    linkedin_url: safeProfileLink(text(row.linkedin_url, 500)) ?? '',
+    phone,
+    calendar_url: safeProfileLink(text(row.calendar_url, 500)) ?? '',
+  }
+}
+
+export function presentIntroContacts(raw: unknown): IntroContact[] {
+  const rows = Array.isArray(raw) ? raw : []
+  return rows.map(presentIntroContact).filter((row): row is IntroContact => row != null)
+}
+
+export function contactsByIntro(rows: readonly IntroContact[]): Record<string, IntroContact> {
+  const map: Record<string, IntroContact> = {}
+  for (const row of rows) map[row.intro_id] = row
+  return map
+}
+
+export function presentIntroQuota(raw: unknown): IntroQuota | null {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null
+  const row = raw as Record<string, unknown>
+  const used = countOf(row.used)
+  const base = countOf(row.base)
+  const allowance = countOf(row.allowance)
+  const remaining = countOf(row.remaining)
+  if (used == null || base == null || allowance == null || remaining == null) return null
+  return { used, base, allowance, remaining }
+}
+
+export function cleanDeskIntroNote(raw: string): { ok: true; note: string } | { ok: false; error: string } {
+  const note = raw.trim()
+  if (note.length > 280) return { ok: false, error: 'Keep the note under 280 characters.' }
+  return { ok: true, note }
+}
+
+export function deskIntroLine(
+  row: Pick<IntroRow, 'kind' | 'status' | 'direction' | 'ask_desk' | 'desk_status'>,
+  audience: 'member' | 'staff' = 'member',
+): string | null {
+  if (row.kind !== 'member' || !row.ask_desk || row.status === 'declined') return null
+  if (audience === 'staff') {
+    if (row.desk_status === 'sent') return 'Intro sent'
+    if (row.status === 'accepted') return 'Desk intro queued'
+    return 'Desk intro if accepted'
+  }
+  if (row.desk_status === 'sent') return 'Intro sent by the desk.'
+  if (row.status === 'accepted') return 'The desk will introduce you.'
+  if (row.direction === 'outgoing') return 'You asked the desk to introduce you.'
+  return 'They asked the desk to introduce you.'
 }
 
 export function presentIntroRow(raw: unknown): IntroRow | null {
@@ -145,6 +268,8 @@ export function presentIntroRow(raw: unknown): IntroRow | null {
     target_name: target || undefined,
     avatar_style: isStoredAvatarStyle(row.avatar_style) ? row.avatar_style : undefined,
     avatar_path: typeof row.avatar_path === 'string' && AVATAR_PATH.test(row.avatar_path) ? row.avatar_path : null,
+    ask_desk: row.ask_desk === true,
+    desk_status: row.desk_status === 'queued' || row.desk_status === 'sent' ? row.desk_status : undefined,
   }
 }
 
@@ -179,4 +304,9 @@ function isStatus(value: unknown): value is IntroStatus {
 function text(value: unknown, max: number): string {
   if (typeof value !== 'string') return ''
   return value.trim().slice(0, max)
+}
+
+function countOf(value: unknown): number | null {
+  if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) return null
+  return Math.floor(value)
 }

@@ -558,6 +558,19 @@ export async function lookupMemberInvite(token: string): Promise<InviteLookup> {
   return { valid: false, state: 'invalid' }
 }
 
+/** Best-effort desk alert. The queue is the record if this call is not deployed yet. */
+export async function notifyDeskIntro(introId: string): Promise<void> {
+  try {
+    await fetch(`${functionsBase}/notify-desk-intro`, {
+      method: 'POST',
+      headers: await staffHeaders(),
+      body: JSON.stringify({ intro_id: introId }),
+    })
+  } catch {
+    // Accept already saved. Staff still see the desk queue.
+  }
+}
+
 export async function sendDeskNote(input: { topic: string; message: string }): Promise<{ error?: string }> {
   const cleaned = cleanDeskNote(input)
   if (!cleaned.ok) return { error: cleaned.error }

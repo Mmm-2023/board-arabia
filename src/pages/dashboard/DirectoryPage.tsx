@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
-import { fetchDirectory, fetchMyIntros, requestMemberIntro } from '../../lib/demoFetch'
+import { fetchDirectory, fetchIntroQuota, fetchMyIntros, requestMemberIntro } from '../../lib/demoFetch'
 import type { DirectoryCard } from '../../lib/demoRows'
-import { outgoingMemberStatus, type IntroRow } from '../../lib/memberIntros'
+import { outgoingMemberStatus, type IntroQuota, type IntroRow } from '../../lib/memberIntros'
 import { sampleRow } from '../../lib/sampleAction'
 import { isProfileReady, loadFoundingAdmitted } from '../../lib/directoryGate'
 import { supabase } from '../../lib/supabase'
@@ -25,6 +25,7 @@ export function DirectoryPage() {
   const [busyId, setBusyId] = useState<string | null>(null)
   const [errorId, setErrorId] = useState<string | null>(null)
   const [requestError, setRequestError] = useState('')
+  const [quota, setQuota] = useState<IntroQuota | null>(null)
   const [attempt, setAttempt] = useState(0)
   useNoIndex('Directory | Board Arabia')
 
@@ -50,6 +51,9 @@ export function DirectoryPage() {
         return
       }
       setList({ status: 'ready', cards: result.status === 'ready' ? result.rows : [] })
+    })
+    void fetchIntroQuota().then((result) => {
+      if (!cancelled) setQuota(result)
     })
     void fetchMyIntros().then((result) => {
       if (cancelled || result.status !== 'ready') return
@@ -105,12 +109,12 @@ export function DirectoryPage() {
     )
   }
 
-  async function onRequestIntro(id: string, reason: string) {
+  async function onRequestIntro(id: string, reason: string, askDesk: boolean) {
     if (sampleRow(list.status === 'ready' ? list.cards : [], id)) return
     setRequestError('')
     setErrorId(null)
     setBusyId(id)
-    const message = await requestMemberIntro(id, reason)
+    const message = await requestMemberIntro(id, reason, askDesk)
     setBusyId(null)
     if (message) {
       setErrorId(id)
@@ -119,6 +123,7 @@ export function DirectoryPage() {
     }
     const refreshed = await fetchMyIntros()
     if (refreshed.status === 'ready') setIntros(refreshed.rows)
+    setQuota(await fetchIntroQuota())
   }
 
   return (
@@ -130,7 +135,8 @@ export function DirectoryPage() {
       busyId={busyId}
       errorId={errorId}
       requestError={requestError}
-      onRequestIntro={(id, reason) => void onRequestIntro(id, reason)}
+      quota={quota}
+      onRequestIntro={(id, reason, askDesk) => void onRequestIntro(id, reason, askDesk)}
     />
   )
 }

@@ -42,18 +42,30 @@ async function loadOwnProfile(userId: string): Promise<{ profile: ProfileRow | n
     .select(`${PROFILE_BASE}, avatar_path, avatar_style`)
     .eq('user_id', userId)
     .maybeSingle()
-  if (!full.error) return { profile: full.data, error: false }
+  if (!full.error) return withCalendar(userId, { profile: full.data, error: false })
   const withAvatar = await supabase
     .from('profiles')
     .select(`${PROFILE_BASE}, avatar_path`)
     .eq('user_id', userId)
     .maybeSingle()
-  if (!withAvatar.error && withAvatar.data) return { profile: { ...withAvatar.data, avatar_style: 'male' }, error: false }
+  if (!withAvatar.error && withAvatar.data) {
+    return withCalendar(userId, { profile: { ...withAvatar.data, avatar_style: 'male' }, error: false })
+  }
   if (!withAvatar.error) return { profile: null, error: false }
   const plain = await supabase.from('profiles').select(PROFILE_BASE).eq('user_id', userId).maybeSingle()
   if (plain.error) return { profile: null, error: true }
   if (!plain.data) return { profile: null, error: false }
-  return { profile: { ...plain.data, avatar_path: null, avatar_style: 'male' }, error: false }
+  return withCalendar(userId, { profile: { ...plain.data, avatar_path: null, avatar_style: 'male' }, error: false })
+}
+
+async function withCalendar(
+  userId: string,
+  loaded: { profile: ProfileRow | null; error: boolean },
+): Promise<{ profile: ProfileRow | null; error: boolean }> {
+  if (!loaded.profile) return loaded
+  const calendar = await supabase.from('profiles').select('calendar_url').eq('user_id', userId).maybeSingle()
+  if (calendar.error || !calendar.data) return loaded
+  return { profile: { ...loaded.profile, calendar_url: calendar.data.calendar_url }, error: false }
 }
 
 export function DashboardLayout() {

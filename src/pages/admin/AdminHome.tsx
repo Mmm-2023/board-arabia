@@ -28,14 +28,20 @@ export function AdminHome() {
       </div>
       <ReIntroQueue />
       <RePartnerIntroQueue />
-      <p className="mt-6">
+      <div className="mt-6 flex flex-wrap gap-x-5">
         <Link
           to="/admin/people/intros"
           className="inline-flex min-h-11 items-center text-[0.75rem] font-semibold tracking-[0.08em] text-brass-bright uppercase"
         >
           All intros
         </Link>
-      </p>
+        <Link
+          to="/admin/people/intros#desk-intros"
+          className="inline-flex min-h-11 items-center text-[0.75rem] font-semibold tracking-[0.08em] text-brass-bright uppercase"
+        >
+          Desk intros
+        </Link>
+      </div>
       <ReReadinessPanel />
       <RePartnersPanel />
     </StaffDesk>

@@ -15,8 +15,18 @@ import {
   type ReOpportunityCard,
   type RePartnerCard,
 } from './reRedaction'
-import { introRequestError, presentIntroList, type IntroRow } from './memberIntros'
 import {
+  contactsByIntro,
+  introRequestError,
+  presentIntroContacts,
+  presentIntroList,
+  presentIntroQuota,
+  type IntroContact,
+  type IntroQuota,
+  type IntroRow,
+} from './memberIntros'
+import {
+  notifyDeskIntro,
   requestMandateIntro as postMandateIntro,
   requestReOpportunityIntro as postReIntro,
   requestRePartnerIntro as postRePartnerIntro,
@@ -60,11 +70,15 @@ export function fetchMyIntros(): Promise<DemoLoad<IntroRow[]>> {
   return loadJson(supabase.rpc('list_my_intros'), presentIntroList)
 }
 
-export async function requestMemberIntro(targetId: string, reason: string): Promise<string | null> {
-  const { error } = await supabase.rpc('request_member_intro', {
-    p_target_id: targetId,
-    p_reason: reason,
-  })
+export async function requestMemberIntro(
+  targetId: string,
+  reason: string,
+  askDesk = false,
+): Promise<string | null> {
+  const args = askDesk
+    ? { p_target_id: targetId, p_reason: reason, p_ask_desk: true }
+    : { p_target_id: targetId, p_reason: reason }
+  const { error } = await supabase.rpc('request_member_intro', args)
   if (error) return introRequestError(error.message)
   return null
 }
@@ -73,7 +87,7 @@ export async function respondMemberIntro(
   introId: string,
   decision: 'accepted' | 'declined',
 ): Promise<string | null> {
-  const { error } = await supabase.rpc('respond_member_intro', {
+  const { data, error } = await supabase.rpc('respond_member_intro', {
     p_intro_id: introId,
     p_decision: decision,
   })
@@ -81,7 +95,23 @@ export async function respondMemberIntro(
     if (/sample_blocked/i.test(error.message)) return 'Sample cards cannot take a request.'
     return 'Could not save that answer. Retry.'
   }
+  const queued =
+    data != null &&
+    typeof data === 'object' &&
+    !Array.isArray(data) &&
+    (data as { desk_queued?: unknown }).desk_queued === true
+  if (queued) void notifyDeskIntro(introId)
   return null
+}
+
+export function fetchIntroContacts(): Promise<DemoLoad<Record<string, IntroContact>>> {
+  return loadJson(supabase.rpc('list_accepted_intro_contacts'), (data) => contactsByIntro(presentIntroContacts(data)))
+}
+
+export async function fetchIntroQuota(): Promise<IntroQuota | null> {
+  const { data, error } = await supabase.rpc('my_intro_quota')
+  if (error) return null
+  return presentIntroQuota(data)
 }
 
 export function fetchHomeActivity(): Promise<DemoLoad<HomeActivity[]>> {

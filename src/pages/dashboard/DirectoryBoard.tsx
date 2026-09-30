@@ -18,7 +18,7 @@ import { FilteredZero } from '../../shell/ViewState'
 import { MEMBER_VIEWS } from '../../shell/viewCopy'
 import { Avatar } from '../../components/Avatar'
 import { DirectoryIntroAction } from './DirectoryIntroAction'
-import type { IntroStatus } from '../../lib/memberIntros'
+import type { IntroQuota, IntroStatus } from '../../lib/memberIntros'
 import type { SeatCountState } from './DirectoryEmpty'
 import { chipOptions, FilterRow, MemberFilterControls } from './MemberFilters'
 
@@ -34,6 +34,7 @@ export function DirectoryBoard({
   busyId = null,
   errorId = null,
   requestError = '',
+  quota = null,
   onRequestIntro,
 }: {
   cards: DirectoryCard[]
@@ -44,7 +45,8 @@ export function DirectoryBoard({
   busyId?: string | null
   errorId?: string | null
   requestError?: string
-  onRequestIntro?: (id: string, reason: string) => void
+  quota?: IntroQuota | null
+  onRequestIntro?: (id: string, reason: string, askDesk: boolean) => void
 }) {
   const photos = useSignedPortraits(cards)
   const hasExamples = cards.some((card) => card.is_demo)
@@ -170,7 +172,8 @@ export function DirectoryBoard({
                   status={introStatus ? introStatus(card.id) : null}
                   busy={busyId === card.id}
                   error={errorId === card.id ? requestError : ''}
-                  onRequest={onRequestIntro ? (reason) => onRequestIntro(card.id, reason) : undefined}
+                  quota={quota}
+                  onRequest={onRequestIntro ? (reason, askDesk) => onRequestIntro(card.id, reason, askDesk) : undefined}
                 />
               </article>
             </li>

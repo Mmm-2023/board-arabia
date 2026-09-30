@@ -4,6 +4,8 @@ import { Avatar } from '../../components/Avatar'
 import { ExampleMark } from '../../components/ExampleMark'
 import { SAMPLE_NOTE } from '../../lib/sampleAction'
 import {
+  bookCallMailto,
+  deskIntroLine,
   filterIntros,
   INTRO_KINDS,
   INTRO_KIND_LABEL,
@@ -11,6 +13,7 @@ import {
   introHasPortrait,
   introStatusLabel,
   staffRequestLine,
+  type IntroContact,
   type IntroKind,
   type IntroRow,
 } from '../../lib/memberIntros'
@@ -31,6 +34,7 @@ export function IntroBoard({
   onRespond,
   onDecide,
   portrait,
+  contacts = {},
 }: {
   tone: ShellTone
   rows: IntroRow[]
@@ -39,6 +43,7 @@ export function IntroBoard({
   onRespond?: (id: string, decision: 'accepted' | 'declined') => void
   onDecide?: (id: string, kind: 'mandate' | 'real_estate' | 'partner', decision: 'approved' | 'declined') => void
   portrait?: (row: IntroRow) => ReactNode
+  contacts?: Readonly<Record<string, IntroContact>>
 }) {
   const [kind, setKind] = useState<IntroKind | null>(null)
   const [decline, setDecline] = useState<IntroRow | null>(null)
@@ -95,6 +100,7 @@ export function IntroBoard({
                 onDecide={onDecide}
                 onDecline={() => setDecline(row)}
                 portrait={portrait}
+                contact={row.status === 'accepted' && row.kind === 'member' ? contacts[row.id] : undefined}
               />
             </li>
           ))}
@@ -131,6 +137,7 @@ function IntroCard({
   onDecide,
   onDecline,
   portrait,
+  contact,
 }: {
   tone: ShellTone
   row: IntroRow
@@ -139,6 +146,7 @@ function IntroCard({
   onDecide?: (id: string, kind: 'mandate' | 'real_estate' | 'partner', decision: 'approved' | 'declined') => void
   onDecline: () => void
   portrait?: (row: IntroRow) => ReactNode
+  contact?: IntroContact
 }) {
   const member = tone === 'member'
   const panel = member ? 'border border-[var(--ba-line)] bg-white' : 'border border-white/15 bg-white/[0.04]'
@@ -152,6 +160,8 @@ function IntroCard({
     (row.kind === 'mandate' || row.kind === 'real_estate' || row.kind === 'partner')
   const requestLine = member ? null : staffRequestLine(row)
   const heading = !member && row.kind === 'member' && requestLine ? requestLine : row.title
+  const deskLine = deskIntroLine(row, member ? 'member' : 'staff')
+  const mailto = contact && row.status === 'accepted' ? bookCallMailto(contact.email) : null
 
   return (
     <article className={`${panel} px-5 py-5`} data-intro-kind={row.kind} data-intro-status={row.status}>
@@ -187,7 +197,11 @@ function IntroCard({
       {!member && row.kind !== 'member' && requestLine ? (
         <p className={`mt-2 text-[0.95rem] ${muted}`}>{requestLine}</p>
       ) : null}
+      {deskLine ? <p className={`mt-3 text-[0.95rem] ${muted}`}>{deskLine}</p> : null}
       {row.reason ? <p className={`mt-3 text-[1rem] leading-relaxed ${member ? 'text-ink/80' : 'text-pearl/85'}`}>{row.reason}</p> : null}
+      {contact && row.status === 'accepted' && row.kind === 'member' ? (
+        <IntroContactBlock contact={contact} mailto={mailto} />
+      ) : null}
       {when ? <p className={`mt-3 text-[0.85rem] ${muted}`}>{when}</p> : null}
       {row.is_demo ? <p className={`mt-3 text-[0.92rem] ${muted}`}>{SAMPLE_NOTE}</p> : null}
       {member && row.kind !== 'member' ? (
@@ -241,6 +255,58 @@ function IntroCard({
         </div>
       ) : null}
     </article>
+  )
+}
+
+function IntroContactBlock({ contact, mailto }: { contact: IntroContact; mailto: string | null }) {
+  const linkedin = contact.linkedin_url
+  const phone = contact.phone
+  const calendar = contact.calendar_url
+  if (!contact.email && !linkedin && !phone && !calendar && !mailto) return null
+  return (
+    <div className="mt-4 border border-[var(--ba-line)] bg-[var(--ba-porcelain)] px-4 py-4" data-intro-contact="accepted">
+      <dl className="space-y-2 text-[1rem]">
+        {contact.email ? (
+          <div className="min-w-0">
+            <dt className="text-[0.72rem] font-semibold tracking-[0.08em] text-ink/45 uppercase">Email</dt>
+            <dd className="mt-1 break-all text-ink">{contact.email}</dd>
+          </div>
+        ) : null}
+        {linkedin ? (
+          <div>
+            <dt className="text-[0.72rem] font-semibold tracking-[0.08em] text-ink/45 uppercase">LinkedIn</dt>
+            <dd className="mt-1">
+              <a href={linkedin} className="inline-flex min-h-11 items-center text-ink underline" target="_blank" rel="noreferrer">
+                LinkedIn profile
+              </a>
+            </dd>
+          </div>
+        ) : null}
+        {phone ? (
+          <div>
+            <dt className="text-[0.72rem] font-semibold tracking-[0.08em] text-ink/45 uppercase">Phone</dt>
+            <dd className="mt-1 break-all text-ink">{phone}</dd>
+          </div>
+        ) : null}
+      </dl>
+      <div className="mt-3 flex flex-wrap gap-3">
+        {mailto ? (
+          <a href={mailto} className="ba-primary inline-flex min-h-11 items-center px-4 text-[0.75rem] font-semibold tracking-[0.08em] uppercase">
+            Book a call
+          </a>
+        ) : null}
+        {calendar ? (
+          <a
+            href={calendar}
+            className="inline-flex min-h-11 items-center border border-[var(--ba-line)] bg-white px-4 text-[0.75rem] font-semibold tracking-[0.08em] text-ink uppercase"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Calendar
+          </a>
+        ) : null}
+      </div>
+    </div>
   )
 }
 

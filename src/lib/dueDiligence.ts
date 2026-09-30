@@ -16,6 +16,7 @@ export type ReadFailure = 'denied' | 'unavailable' | 'error'
 
 export type HistoryItem = {
   id: string
+  job_id?: string | null
   created_at: string
   file_name: string
   company_label: string
@@ -67,7 +68,7 @@ export async function loadDueDiligenceDesk(userId: string): Promise<DeskLoad> {
     supabase
       .from('due_diligence_reports')
       .select(
-        'id, created_at, file_name, company_label, publicly_consistent_pct, not_publicly_verifiable_pct',
+        'id, job_id, created_at, file_name, company_label, publicly_consistent_pct, not_publicly_verifiable_pct',
       )
       .eq('member_id', userId)
       .order('created_at', { ascending: false })

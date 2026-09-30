@@ -25,6 +25,7 @@ export type ProfileRow = {
   linkedin_url: string | null
   bio: string | null
   phone: string | null
+  calendar_url?: string | null
   investable_capacity_usd: number | string | null
   fo_aum_usd: number | string | null
   turnover_usd: number | string | null

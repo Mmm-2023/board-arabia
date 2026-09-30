@@ -7,6 +7,7 @@ import { useNoIndex } from '../../lib/usePageTitle'
 import { CardSkeleton, ErrorBanner } from '../../shell/ViewState'
 import { STAFF_VIEWS } from '../../shell/viewCopy'
 import { IntroBoard } from '../dashboard/IntroBoard'
+import { DeskIntrosQueue } from './DeskIntrosQueue'
 
 type ListState =
   | { status: 'loading' }
@@ -67,6 +68,9 @@ export function AdminIntrosPage() {
       <p className="mt-2 max-w-2xl text-[0.95rem] text-stone/65">
         Every intro request and its status. Members accept or decline a warm introduction. Mandate and real estate unlocks are still approved here.
       </p>
+      <div className="mt-8">
+        <DeskIntrosQueue />
+      </div>
       <div className="mt-8">
         {list.status === 'loading' ? <CardSkeleton tone="staff" label="Loading intros" /> : null}
         {list.status === 'error' ? (
