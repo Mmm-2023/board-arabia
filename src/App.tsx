@@ -4,6 +4,7 @@ import { AnalyticsRoot } from './components/AnalyticsRoot'
 import { SiteLanguageProvider } from './components/SiteLanguage'
 import { AboutPage } from './pages/AboutPage'
 import { ApplyPage } from './pages/ApplyPage'
+import { RegisterPage } from './pages/RegisterPage'
 import { VerifyPage } from './pages/VerifyPage'
 import { AuthConfirmPage } from './pages/AuthConfirmPage'
 import { ForCapitalPage } from './pages/ForCapitalPage'
@@ -82,7 +83,9 @@ export default function App() {
     <Routes>
       <Route path="/" element={<LandingPage />} />
       <Route path="/apply" element={<ApplyPage />} />
-      <Route path="/apply/verify" element={<VerifyPage />} />
+      <Route path="/apply/verify" element={<Navigate to="/register/verify" replace />} />
+      <Route path="/register" element={<RegisterPage />} />
+      <Route path="/register/verify" element={<VerifyPage />} />
       <Route path="/for-members" element={<ForMembersPage />} />
       <Route path="/for-capital" element={<ForCapitalPage />} />
       <Route path="/partners" element={<PartnersPage />} />

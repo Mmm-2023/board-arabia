@@ -112,7 +112,7 @@ export function VerifyScreen({
             {resendWait > 0 ? `Resend code in ${resendWait}s` : resending ? 'Sending…' : 'Resend code'}
           </button>
           <p className="mt-4">
-            <Link to="/apply" className="inline-flex min-h-11 items-center text-[0.95rem] text-ink underline">
+            <Link to="/register" className="inline-flex min-h-11 items-center text-[0.95rem] text-ink underline">
               Change email
             </Link>
           </p>
