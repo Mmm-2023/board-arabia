@@ -1,10 +1,13 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { CapacityFields } from '../../components/CapacityFields'
+import { DefaultPicturePicker } from '../../components/DefaultPicturePicker'
+import { SignedAvatar } from '../../components/SignedAvatar'
+import { normalizeAvatarStyle, type AvatarStyle } from '../../lib/avatarStyle'
 import { draftFromProfile } from '../../lib/capacity'
 import { adminMemberLine, type FoundingSeat } from '../../lib/member'
 import { firmByUserId, sponsorCapView } from '../../lib/sponsorSeat'
-import { inviteSponsor, type DryRunInvite, type MemberAdminRow } from '../../lib/supabase'
+import { inviteSponsor, staffSetAvatarStyle, type DryRunInvite, type MemberAdminRow } from '../../lib/supabase'
 import { useNoIndex } from '../../lib/usePageTitle'
 import { ConfirmDialog } from '../../shell/ConfirmDialog'
 import { CardSkeleton, EmptyState } from '../../shell/ViewState'
@@ -27,6 +30,9 @@ export function PeoplePage() {
   const [sponsorError, setSponsorError] = useState('')
   const [sponsorSuccess, setSponsorSuccess] = useState('')
   const [sponsorDryRun, setSponsorDryRun] = useState<DryRunInvite | null>(null)
+  const [styleBusy, setStyleBusy] = useState<string | null>(null)
+  const [styleOverride, setStyleOverride] = useState<Record<string, AvatarStyle>>({})
+  const [styleError, setStyleError] = useState('')
   const location = useLocation()
   const focusId = location.hash.startsWith('#member-') ? location.hash.slice(1) : ''
   useNoIndex('People | Board Arabia')
@@ -76,6 +82,25 @@ export function PeoplePage() {
     setSponsorOpen(false)
     setSponsorSuccess(result.message || 'Sponsor invited.')
     setSponsorDryRun(result.dryRunInvite ?? null)
+    room.refresh()
+  }
+
+  function styleFor(userId: string) {
+    return styleOverride[userId] ?? normalizeAvatarStyle(room.profileByUser[userId]?.avatar_style)
+  }
+
+  async function onStyle(userId: string, patch: { avatar_style: AvatarStyle }) {
+    const previous = styleFor(userId)
+    setStyleOverride((current) => ({ ...current, [userId]: patch.avatar_style }))
+    setStyleBusy(userId)
+    setStyleError('')
+    const result = await staffSetAvatarStyle(userId, patch.avatar_style)
+    setStyleBusy(null)
+    if (result.error) {
+      setStyleOverride((current) => ({ ...current, [userId]: previous }))
+      setStyleError('Could not save the default picture.')
+      return
+    }
     room.refresh()
   }
 
@@ -174,6 +199,11 @@ export function PeoplePage() {
             <PanelNotice />
           </div>
         ) : null}
+        {styleError ? (
+          <p className="mt-3 text-[0.95rem] text-red-300" role="alert">
+            {styleError}
+          </p>
+        ) : null}
         {room.members.length === 0 && !room.panelFailed.members ? (
           <div className="mt-4">
             <EmptyState
@@ -193,7 +223,14 @@ export function PeoplePage() {
                 }`}
               >
                 <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div>
+                  <div className="flex min-w-0 items-center gap-3">
+                    <SignedAvatar
+                      path={room.profileByUser[member.user_id]?.avatar_path ?? null}
+                      avatarStyle={styleFor(member.user_id)}
+                      size={40}
+                      alt=""
+                    />
+                    <div className="min-w-0">
                     <p className="text-[0.95rem] text-stone/85">{member.email}</p>
                     <p className="mt-1 text-[0.8rem] text-pearl/45">
                       {adminMemberLine(member.seat, member.status)}
@@ -204,6 +241,7 @@ export function PeoplePage() {
                         </>
                       )}
                     </p>
+                    </div>
                   </div>
                   {member.status === 'suspended' ? (
                     <button
@@ -224,6 +262,14 @@ export function PeoplePage() {
                       Suspend
                     </button>
                   )}
+                </div>
+                <div className="mt-4">
+                  <DefaultPicturePicker
+                    tone="staff"
+                    value={styleFor(member.user_id)}
+                    disabled={styleBusy === member.user_id}
+                    onSave={(patch) => void onStyle(member.user_id, patch)}
+                  />
                 </div>
                 <CapacityFields
                   idPrefix={member.user_id}
@@ -269,20 +315,32 @@ export function PeoplePage() {
                       {tier === 'Sponsor' ? 'No sponsors invited yet.' : 'None yet.'}
                     </li>
                   )}
-                  {rows.map((row) => (
+                  {rows.map((row) => {
+                    const member = room.members.find((item) => item.email.toLowerCase() === row.email.toLowerCase())
+                    const profile = member ? room.profileByUser[member.user_id] : null
+                    return (
                     <li
                       key={`${tier}-${row.email}`}
                       className="flex flex-wrap items-center justify-between gap-3 border border-pearl/10 px-5 py-4"
                     >
-                      <div>
+                      <div className="flex min-w-0 items-center gap-3">
+                        <SignedAvatar
+                          path={profile?.avatar_path ?? null}
+                          avatarStyle={member ? styleFor(member.user_id) : 'male'}
+                          size={36}
+                          alt=""
+                        />
+                        <div className="min-w-0">
                         <p className="text-[0.95rem] text-stone/85">{row.email}</p>
                         <p className="mt-1 text-[0.8rem] text-pearl/45">{row.detail}</p>
+                        </div>
                       </div>
                       <span className="border border-pearl/20 px-2 py-1 text-[0.68rem] font-semibold tracking-[0.08em] text-brass-bright uppercase">
                         {tier}
                       </span>
                     </li>
-                  ))}
+                    )
+                  })}
                 </ul>
               </div>
             )

@@ -24,6 +24,14 @@ export type IntroRow = {
   /** Staff list only. Member payloads leave these empty. */
   requester_name?: string
   target_name?: string
+  avatar_style?: 'male' | 'female'
+  avatar_path?: string | null
+}
+
+const AVATAR_PATH = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\/avatar$/i
+
+export function introHasPortrait(row: Pick<IntroRow, 'kind' | 'avatar_style' | 'avatar_path'>): boolean {
+  return row.kind === 'member' || row.avatar_style === 'male' || row.avatar_style === 'female' || Boolean(row.avatar_path)
 }
 
 const LEAK_KEYS = [
@@ -133,6 +141,8 @@ export function presentIntroRow(raw: unknown): IntroRow | null {
     created_at: created,
     requester_name: requester || undefined,
     target_name: target || undefined,
+    avatar_style: row.avatar_style === 'female' ? 'female' : row.avatar_style === 'male' ? 'male' : undefined,
+    avatar_path: typeof row.avatar_path === 'string' && AVATAR_PATH.test(row.avatar_path) ? row.avatar_path : null,
   }
 }
 

@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { MemoryRouter } from 'react-router-dom'
 import type { DirectoryCard } from '../../src/lib/demoRows'
 import type { IntroRow } from '../../src/lib/memberIntros'
+import { Avatar } from '../../src/components/Avatar'
 import { DirectoryBoard } from '../../src/pages/dashboard/DirectoryBoard'
 import { IntroBoard } from '../../src/pages/dashboard/IntroBoard'
 import { AppShell } from '../../src/shell/AppShell'
@@ -34,6 +35,7 @@ function directoryCard(partial: Partial<DirectoryCard> & Pick<DirectoryCard, 'id
     seat: 'ksa',
     portrait_asset: null,
     avatar_path: null,
+    avatar_style: 'male',
     ...partial,
   }
 }
@@ -51,6 +53,7 @@ const cards: DirectoryCard[] = [
     id: liveId,
     is_demo: false,
     full_name: 'Amina Al-Harbi',
+    avatar_style: 'female',
     headline: 'Non-executive director',
     company: 'Harbi Seat',
     availability: 'selective',
@@ -150,7 +153,7 @@ function MemberShell({ path, children }: { path: string; children: ReactNode }) 
         onSignOut={() => {}}
         accountLabel="Account"
         accountName="Member name"
-        accountMark={<span aria-hidden="true">MN</span>}
+        accountMark={<Avatar src={null} avatarStyle="male" size={36} alt="" />}
       >
         <div data-preview="">
           <SectionTabs label="People sections" sections={MEMBER_SECTIONS.people ?? []} />
@@ -173,7 +176,7 @@ function StaffShell({ children }: { children: ReactNode }) {
         onSignOut={() => {}}
         accountLabel="Account"
         accountName="Desk"
-        accountMark={<span aria-hidden="true">D</span>}
+        accountMark={<Avatar src={null} avatarStyle="female" size={36} alt="" />}
       >
         <div data-preview="">{children}</div>
       </AppShell>

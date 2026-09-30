@@ -130,7 +130,7 @@ test('avatar files stay JPG or PNG under 5 MB and storage stays private', () => 
   assert.equal(AVATAR_COPY.removeTitle, 'Remove photo?')
   assert.equal(
     AVATAR_COPY.removeBody,
-    'Your profile will show the empty photo placeholder until you add another.',
+    'Peers will see your default picture until you add another photo.',
   )
   assert.equal(Object.values(AVATAR_COPY).join('\n').includes('\u2014'), false)
   const avatarUi = readFileSync(new URL('../src/pages/dashboard/MemberAvatar.tsx', import.meta.url), 'utf8')

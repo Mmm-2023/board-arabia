@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" role="img" aria-label="Saudi woman in a hijab">
+  <rect width="160" height="160" fill="#E8E4F7"/>
+  <circle cx="80" cy="150" r="46" fill="#4B3F9A"/>
+  <path d="M26 100c6-46 24-68 54-68s48 22 54 68c4 18 4 36 0 48H26c-4-12-4-30 0-48z" fill="#1C1343"/>
+  <ellipse cx="80" cy="92" rx="24" ry="28" fill="#C9956B"/>
+  <path d="M56 80c6-14 14-20 24-20s18 6 24 20c-6-8-14-12-24-12s-18 4-24 12z" fill="#1C1343"/>
+  <path d="M58 84c3 16 6 30 8 42" fill="none" stroke="#B8896A" stroke-width="2.5" stroke-linecap="round"/>
+  <path d="M102 84c-3 16-6 30-8 42" fill="none" stroke="#B8896A" stroke-width="2.5" stroke-linecap="round"/>
+  <circle cx="70" cy="88" r="2.2" fill="#1C1343"/>
+  <circle cx="90" cy="88" r="2.2" fill="#1C1343"/>
+  <path d="M74 102c4 4 8 4 12 0" fill="none" stroke="#1C1343" stroke-width="1.6" stroke-linecap="round"/>
+</svg>

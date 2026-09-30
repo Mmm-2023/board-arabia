@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { SignedAvatar } from '../../components/SignedAvatar'
 import { schemaMissing } from '../../lib/demoRows'
 import { presentIntroList, type IntroKind, type IntroRow } from '../../lib/memberIntros'
 import { supabase } from '../../lib/supabase'
@@ -86,6 +87,9 @@ export function AdminIntrosPage() {
             busyId={busyId}
             error={error}
             onDecide={(id, kind, decision) => void onDecide(id, kind, decision)}
+            portrait={(row) => (
+              <SignedAvatar path={row.avatar_path ?? null} avatarStyle={row.avatar_style} size={48} alt="" />
+            )}
           />
         ) : null}
       </div>

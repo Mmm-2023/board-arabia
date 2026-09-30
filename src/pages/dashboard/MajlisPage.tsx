@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { MajlisCardTitle } from '../../components/MajlisCardTitle'
+import { SignedAvatar } from '../../components/SignedAvatar'
 import {
   MAJLIS_REGIONS,
   formatMajlisWhen,
@@ -463,8 +464,13 @@ function MemberCard({
       ? nowMs < new Date(event.founding_priority_ends_at).getTime()
       : false
   return (
-    <article className={`border bg-white px-4 py-4 ${highlighted ? 'border-[var(--ba-copper)]' : 'border-[var(--ba-line)]'}`}>
-      <CardHead title={event.title} featured={event.featured} sponsorLabel={event.sponsor_label} description={event.description} />
+    <article className={`border bg-white px-4 py-4 ${highlighted ? 'border-[var(--ba-copper)]' : 'border-[var(--ba-line)]'}`} data-majlis-card="">
+      <div className="flex items-start gap-3">
+        <SignedAvatar path={event.host_avatar_path ?? null} avatarStyle={event.host_avatar_style} size={40} alt="" />
+        <div className="min-w-0 flex-1">
+          <CardHead title={event.title} featured={event.featured} sponsorLabel={event.sponsor_label} description={event.description} />
+        </div>
+      </div>
       <Meta
         region={event.region}
         when={formatMajlisWhen(event.starts_at, event.ends_at)}
@@ -740,11 +746,14 @@ function HostRoster({ eventId, title }: { eventId: string; title: string }) {
           </button>
           <ul className="mt-3 space-y-2">
             {rows.map((row) => (
-              <li key={row.id} className="text-[0.95rem]">
-                <span className="font-semibold">{row.full_name || row.email}</span>
-                {row.full_name ? ` (${row.email})` : ''}
-                {` · ${row.status}`}
-                {row.status === 'waitlist' && row.waitlist_position ? ` ${row.waitlist_position}` : ''}
+              <li key={row.id} className="flex items-center gap-3 text-[0.95rem]">
+                <SignedAvatar path={row.avatar_path ?? null} avatarStyle={row.avatar_style} size={36} alt="" />
+                <span>
+                  <span className="font-semibold">{row.full_name || row.email}</span>
+                  {row.full_name ? ` (${row.email})` : ''}
+                  {` · ${row.status}`}
+                  {row.status === 'waitlist' && row.waitlist_position ? ` ${row.waitlist_position}` : ''}
+                </span>
               </li>
             ))}
           </ul>

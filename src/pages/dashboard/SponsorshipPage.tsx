@@ -4,6 +4,7 @@ import { sponsorDeskDenied, type SponsorDesk } from '../../lib/sponsorDesk'
 import { useNoIndex } from '../../lib/usePageTitle'
 import { CardSkeleton, ErrorBanner, PermissionState } from '../../shell/ViewState'
 import { useMember } from './context'
+import { OwnAvatar } from './OwnAvatar'
 import { SponsorshipView } from './SponsorshipView'
 
 export function SponsorshipPage() {
@@ -49,5 +50,5 @@ export function SponsorshipPage() {
     )
   }
   if (!desk) return <CardSkeleton tone="member" label="Loading sponsorship" />
-  return <SponsorshipView desk={desk} />
+  return <SponsorshipView desk={desk} portrait={<OwnAvatar decorative size={56} />} />
 }

@@ -8,6 +8,7 @@ import {
   rejectionFeedbackError,
   utcToRiyadhWall,
 } from '../../../supabase/functions/_shared/majlis.ts'
+import { SignedAvatar } from '../../components/SignedAvatar'
 import { KsaRegionMap } from '../../components/majlis/KsaRegionMap'
 import { downloadCsv, toCsv } from '../../lib/csv'
 import type { SponsorRosterRow } from '../../lib/sponsorDesk'
@@ -294,7 +295,10 @@ export function AdminMajlisPage() {
             {filtered.map((event) => (
               <li key={event.id} className="border border-pearl/10 bg-pearl/[0.03] px-5 py-5">
                 <div className="flex flex-wrap items-start justify-between gap-2">
-                  <p className="font-display text-[1.15rem] font-semibold">{event.title}</p>
+                  <div className="flex min-w-0 items-center gap-3">
+                    <SignedAvatar path={event.host_avatar_path ?? null} avatarStyle={event.host_avatar_style} size={40} alt="" />
+                    <p className="font-display text-[1.15rem] font-semibold">{event.title}</p>
+                  </div>
                   <p className="text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--ba-lavender)] uppercase">
                     {statusLabel(event.status)}
                   </p>
@@ -404,7 +408,10 @@ function PendingCard({ event, host, onDone }: { event: MajlisEventRow; host: str
   return (
     <article className="border border-[var(--ba-copper)] bg-ink px-4 py-4 sm:px-5 sm:py-5">
       <div className="flex flex-wrap items-start justify-between gap-2">
-        <p className="font-display text-[1.15rem] font-semibold">{event.title}</p>
+        <div className="flex min-w-0 items-center gap-3">
+          <SignedAvatar path={event.host_avatar_path ?? null} avatarStyle={event.host_avatar_style} size={40} alt="" />
+          <p className="font-display text-[1.15rem] font-semibold">{event.title}</p>
+        </div>
         <p className="inline-flex min-h-11 items-center border border-[var(--ba-copper)] px-3 text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--ba-copper)] uppercase">
           Pending approval
         </p>
@@ -709,11 +716,14 @@ function Ops({
           <ul className="mt-3 space-y-2">
             {roster.map((row) => (
               <li key={row.id} className="flex flex-wrap items-center justify-between gap-2 text-[0.95rem]">
-                <span>
-                  {row.full_name || row.email}
-                  {row.full_name ? ` (${row.email})` : ''}
-                  {` · ${row.status}`}
-                  {row.status === 'waitlist' && row.waitlist_position ? ` ${row.waitlist_position}` : ''}
+                <span className="flex min-w-0 items-center gap-3">
+                  <SignedAvatar path={row.avatar_path ?? null} avatarStyle={row.avatar_style} size={36} alt="" />
+                  <span>
+                    {row.full_name || row.email}
+                    {row.full_name ? ` (${row.email})` : ''}
+                    {` · ${row.status}`}
+                    {row.status === 'waitlist' && row.waitlist_position ? ` ${row.waitlist_position}` : ''}
+                  </span>
                 </span>
                 {row.status === 'waitlist' && (
                   <button type="button" className={quietBtn} disabled={busy} onClick={() => void run({ action: 'promote', member_id: row.member_id })}>

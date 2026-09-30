@@ -14,7 +14,7 @@ export const AVATAR_COPY = {
   uploadError: 'Couldn’t upload that photo. Try a JPG or PNG under 5 MB.',
   tryAgain: 'Try again',
   removeTitle: 'Remove photo?',
-  removeBody: 'Your profile will show the empty photo placeholder until you add another.',
+  removeBody: 'Peers will see your default picture until you add another photo.',
   cancel: 'Cancel',
 } as const
 

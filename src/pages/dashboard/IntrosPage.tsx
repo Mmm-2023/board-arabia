@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { SignedAvatar } from '../../components/SignedAvatar'
 import { fetchMyIntros, respondMemberIntro } from '../../lib/demoFetch'
 import type { IntroRow } from '../../lib/memberIntros'
 import { useNoIndex } from '../../lib/usePageTitle'
@@ -78,6 +79,9 @@ export function IntrosPage() {
             busyId={busyId}
             error={error}
             onRespond={(id, decision) => void onRespond(id, decision)}
+            portrait={(row) => (
+              <SignedAvatar path={row.avatar_path ?? null} avatarStyle={row.avatar_style} size={48} alt="" />
+            )}
           />
         ) : null}
       </div>

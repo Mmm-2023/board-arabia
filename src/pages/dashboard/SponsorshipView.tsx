@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { formatMajlisWhen } from '../../../supabase/functions/_shared/majlis.ts'
 import {
@@ -8,15 +9,20 @@ import {
   type SponsorDesk,
 } from '../../lib/sponsorDesk'
 
-export function SponsorshipView({ desk }: { desk: SponsorDesk }) {
+export function SponsorshipView({ desk, portrait = null }: { desk: SponsorDesk; portrait?: ReactNode }) {
   const face = sponsorPackageFace(desk.package)
   return (
     <div className="max-w-3xl" data-sponsorship="">
+      <div className="flex items-start gap-4">
+        {portrait}
+        <div className="min-w-0">
       <p className="text-[0.72rem] font-semibold tracking-[0.14em] text-brass uppercase">Sponsorship</p>
       <h1 className="mt-3 font-display text-[2.2rem] font-bold tracking-[-0.03em]">Sponsorship</h1>
       <p className="mt-3 max-w-xl text-[1rem] leading-relaxed text-ink/65">
         What this seat includes, and what has been used.
       </p>
+        </div>
+      </div>
 
       <section className="mt-8 border border-[var(--ba-line)] bg-white px-5 py-5">
         <h2 className="text-[0.72rem] font-semibold tracking-[0.08em] text-ink/45 uppercase">Package</h2>

@@ -1,5 +1,6 @@
 import { createRoot } from 'react-dom/client'
 import { MemoryRouter } from 'react-router-dom'
+import { Avatar } from '../../src/components/Avatar'
 import { MEMBER_ACCOUNT, MEMBER_DESTINATIONS } from '../../src/shell/destinations'
 import { AppShell } from '../../src/shell/AppShell'
 import { DashboardStatusContext, MemberContext, type MemberRoom } from '../../src/pages/dashboard/context'
@@ -68,7 +69,7 @@ createRoot(root).render(
           accountLabel="member@example.com"
           accountName="Member name"
           dealsBadge={2}
-          accountMark={<span aria-hidden="true">MN</span>}
+          accountMark={<Avatar src={null} avatarStyle="male" size={36} alt="" />}
         >
           {view === 'profile' ? <ProfilePage /> : <DashboardHome />}
         </AppShell>

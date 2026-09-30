@@ -503,6 +503,18 @@ export async function setMemberStatus(
   }
 }
 
+export async function staffSetAvatarStyle(
+  userId: string,
+  style: 'male' | 'female',
+): Promise<{ error?: string }> {
+  const { error } = await supabase.rpc('staff_set_avatar_style', {
+    p_user_id: userId,
+    p_style: style,
+  })
+  if (error) return { error: error.message }
+  return {}
+}
+
 export async function staffSetMemberCapacity(
   userId: string,
   capacity: CapacityPayload,
@@ -565,6 +577,8 @@ export type MajlisEventRow = {
   waitlist_count: number
   my_rsvp_status: MajlisRsvpStatus | null
   my_waitlist_position: number | null
+  host_avatar_style?: 'male' | 'female' | null
+  host_avatar_path?: string | null
 }
 
 export type MajlisSponsorEvent = {
@@ -599,6 +613,8 @@ export type MajlisRosterRow = {
   cancelled_at: string | null
   email: string
   full_name: string | null
+  avatar_style?: 'male' | 'female' | null
+  avatar_path?: string | null
 }
 
 const MAJLIS_BASE =
@@ -638,9 +654,19 @@ function normalizeEvent(row: MajlisEventRow): MajlisEventRow {
   }
 }
 
+const MAJLIS_HOST = 'host_avatar_style, host_avatar_path'
+
 export async function fetchMajlisEvents(): Promise<
   { error: string } | { events: MajlisEventRow[] }
 > {
+  const withHost = await supabase
+    .from('majlis_events_member')
+    .select(`${MAJLIS_COLUMNS}, ${MAJLIS_HOST}`)
+    .order('starts_at', { ascending: true })
+  if (!withHost.error) {
+    return { events: ((withHost.data ?? []) as MajlisEventRow[]).map(normalizeEvent) }
+  }
+  if (!shapeMissing(withHost.error.message)) return { error: withHost.error.message }
   const extended = await supabase
     .from('majlis_events_member')
     .select(MAJLIS_COLUMNS)
@@ -684,6 +710,15 @@ export async function fetchSponsorMajlis(): Promise<
 export async function fetchMajlisRoster(eventId: string): Promise<
   { error: string } | { rows: MajlisRosterRow[] }
 > {
+  const withStyle = await supabase
+    .from('majlis_roster')
+    .select(
+      'id, event_id, member_id, status, waitlist_position, registered_at, cancelled_at, email, full_name, avatar_style, avatar_path',
+    )
+    .eq('event_id', eventId)
+    .order('registered_at', { ascending: true })
+  if (!withStyle.error) return { rows: (withStyle.data ?? []) as MajlisRosterRow[] }
+  if (!shapeMissing(withStyle.error.message)) return { error: withStyle.error.message }
   const { data, error } = await supabase
     .from('majlis_roster')
     .select('id, event_id, member_id, status, waitlist_position, registered_at, cancelled_at, email, full_name')

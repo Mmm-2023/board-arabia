@@ -215,6 +215,7 @@ export type Database = {
           include_in_public_aggregates: boolean
           capacity_verified: boolean
           avatar_path: string | null
+          avatar_style: 'male' | 'female'
           availability: 'open' | 'selective' | 'at_capacity' | null
           sector_tags: string[]
           vision_themes: string[]
@@ -236,6 +237,7 @@ export type Database = {
           include_in_public_aggregates?: boolean
           capacity_verified?: boolean
           avatar_path?: string | null
+          avatar_style?: 'male' | 'female'
           availability?: 'open' | 'selective' | 'at_capacity' | null
           sector_tags?: string[]
           vision_themes?: string[]
@@ -257,6 +259,7 @@ export type Database = {
           include_in_public_aggregates?: boolean
           capacity_verified?: boolean
           avatar_path?: string | null
+          avatar_style?: 'male' | 'female'
           availability?: 'open' | 'selective' | 'at_capacity' | null
           sector_tags?: string[]
           vision_themes?: string[]
@@ -550,6 +553,8 @@ export type Database = {
           waitlist_count: number
           my_rsvp_status: 'registered' | 'waitlist' | 'cancelled' | null
           my_waitlist_position: number | null
+          host_avatar_style: 'male' | 'female' | null
+          host_avatar_path: string | null
         }
         Relationships: []
       }
@@ -588,6 +593,8 @@ export type Database = {
           cancelled_at: string | null
           email: string
           full_name: string | null
+          avatar_style: 'male' | 'female' | null
+          avatar_path: string | null
         }
         Relationships: []
       }
@@ -604,6 +611,13 @@ export type Database = {
           role: string
           created_at: string
         }[]
+      }
+      staff_set_avatar_style: {
+        Args: {
+          p_user_id: string
+          p_style: string
+        }
+        Returns: undefined
       }
       staff_set_member_capacity: {
         Args: {

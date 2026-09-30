@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
+import { Avatar } from '../../components/Avatar'
 import { ExampleMark } from '../../components/ExampleMark'
 import { formatActivityWhen, type HomeModel } from '../../lib/homeSnapshot'
 import { FORMING_TOTALS } from '../../lib/platformFloors'
@@ -48,7 +49,7 @@ export function HomeSnapshotView({
   return (
     <div className="max-w-3xl" data-home-snapshot="">
       <section aria-label="Identity" className="flex items-center gap-3 py-1">
-        <Photo initials={model.identity.initials} url={model.identity.photoUrl} />
+        <Avatar src={model.identity.photoUrl} avatarStyle={model.identity.avatarStyle} size={40} alt="Profile photo" />
         <div className="min-w-0">
           <h1 className="truncate font-display text-[1.35rem] font-bold tracking-[-0.03em] md:text-[1.7rem]">
             {model.identity.name}
@@ -452,20 +453,6 @@ function writeExampleSeen(userId: string) {
   } catch {
     // The explainer can show again if storage is blocked.
   }
-}
-
-function Photo({ initials, url }: { initials: string; url: string | null }) {
-  if (url) {
-    return <img src={url} alt="Profile photo" className="h-10 w-10 shrink-0 rounded-full object-cover" />
-  }
-  return (
-    <div
-      aria-hidden="true"
-      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--ba-lavender-mist)] font-display text-[0.8125rem] font-semibold text-[var(--ba-indigo)]"
-    >
-      {initials}
-    </div>
-  )
 }
 
 function TeaserGroup({
