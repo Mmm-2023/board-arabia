@@ -198,7 +198,7 @@ export function AppShell({
             showLabels ? 'w-64' : 'w-[4.75rem]'
           } transition-[width] duration-200 motion-reduce:transition-none`}
         >
-          <div className="shell-safe-y shell-safe-left sticky top-0 flex h-dvh w-full flex-col self-start">
+          <div className="shell-safe-y shell-safe-left flex h-full min-h-0 w-full flex-col overflow-y-auto">
             <div className="flex items-center justify-between gap-2 px-3 py-4">
               <BrandLockup to={home} tone="on-dark" markOnly={!showLabels} />
               {member ? null : (

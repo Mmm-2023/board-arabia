@@ -1,5 +1,7 @@
 /** Warm intros and the folded unlock list. Contact fields never pass through. */
 
+import { isStoredAvatarStyle, type StoredAvatarStyle } from './avatarStyle.ts'
+
 export const INTRO_REASON_MAX = 280
 
 export const INTRO_KINDS = ['member', 'mandate', 'real_estate', 'partner'] as const
@@ -24,14 +26,14 @@ export type IntroRow = {
   /** Staff list only. Member payloads leave these empty. */
   requester_name?: string
   target_name?: string
-  avatar_style?: 'male' | 'female'
+  avatar_style?: StoredAvatarStyle
   avatar_path?: string | null
 }
 
 const AVATAR_PATH = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\/avatar$/i
 
 export function introHasPortrait(row: Pick<IntroRow, 'kind' | 'avatar_style' | 'avatar_path'>): boolean {
-  return row.kind === 'member' || row.avatar_style === 'male' || row.avatar_style === 'female' || Boolean(row.avatar_path)
+  return row.kind === 'member' || isStoredAvatarStyle(row.avatar_style) || Boolean(row.avatar_path)
 }
 
 const LEAK_KEYS = [
@@ -141,7 +143,7 @@ export function presentIntroRow(raw: unknown): IntroRow | null {
     created_at: created,
     requester_name: requester || undefined,
     target_name: target || undefined,
-    avatar_style: row.avatar_style === 'female' ? 'female' : row.avatar_style === 'male' ? 'male' : undefined,
+    avatar_style: isStoredAvatarStyle(row.avatar_style) ? row.avatar_style : undefined,
     avatar_path: typeof row.avatar_path === 'string' && AVATAR_PATH.test(row.avatar_path) ? row.avatar_path : null,
   }
 }

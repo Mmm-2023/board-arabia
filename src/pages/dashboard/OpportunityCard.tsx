@@ -1,3 +1,4 @@
+import { CardMeta, PlaceMeta } from '../../components/CardMeta'
 import { ExampleMark } from '../../components/ExampleMark'
 import { SampleAction } from '../../components/SampleAction'
 import { SAMPLE_NOTE } from '../../lib/sampleAction'
@@ -10,7 +11,6 @@ import {
   type ReOpportunityInventory,
   type ReOpportunityOpen,
 } from '../../lib/reRedaction'
-import { RePlace } from '../../components/RePlace'
 import { ReadinessStrip } from './ReadinessStrip'
 
 export function OpportunityCard({
@@ -39,18 +39,16 @@ export function OpportunityCard({
         </div>
       </div>
       <h2 className="mt-3 font-display text-[1.45rem] font-semibold tracking-[-0.03em] text-balance">{card.one_liner}</h2>
-      <p className="mt-2 text-[0.95rem] text-ink/70">
-        <RePlace city={card.city} hint={card.one_liner} />
-        <span aria-hidden="true"> · </span>
-        <span className="sr-only">, </span>
-        {reAssetClassLabel(card.asset_class)}
-      </p>
-      <p className="mt-1 text-[0.95rem] text-ink/70">
-        {card.ticket_band}
-        <span aria-hidden="true"> · </span>
-        <span className="sr-only">, </span>
-        {reCapitalRoleLabel(card.capital_role)}
-      </p>
+      <PlaceMeta
+        city={card.city}
+        hint={card.one_liner}
+        trailing={[reAssetClassLabel(card.asset_class)]}
+        className="mt-2 text-[0.95rem] text-ink/70"
+      />
+      <CardMeta
+        parts={[card.ticket_band, reCapitalRoleLabel(card.capital_role)]}
+        className="mt-1 text-[0.95rem] text-ink/70"
+      />
       <ReadinessStrip card={card} />
       {card.unlocked ? (
         <OpenBrief card={card} />

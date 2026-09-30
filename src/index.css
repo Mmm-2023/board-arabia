@@ -129,6 +129,10 @@
     text-rendering: optimizeLegibility;
   }
 
+  #root {
+    min-height: 100dvh;
+  }
+
   ::selection {
     background: color-mix(in oklab, var(--ba-lavender) 45%, transparent);
     color: var(--ba-ink);
@@ -242,17 +246,30 @@
     padding-right: max(2rem, env(safe-area-inset-right));
   }
 
-  /* One row, two columns. The sidebar stretches to the document, not the viewport. */
+  /* Sidebar is one viewport tall and sticks. The page background fills the document. */
+  .shell-root {
+    min-height: 100dvh;
+  }
+
   .shell-frame {
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr);
-    align-items: stretch;
+    display: flex;
+    align-items: flex-start;
+    min-height: 100dvh;
+    width: 100%;
   }
 
   .shell-frame > aside {
-    align-self: stretch;
-    height: auto;
-    min-height: 100%;
+    position: sticky;
+    top: 0;
+    align-self: flex-start;
+    height: 100dvh;
+    max-height: 100dvh;
+    min-height: 100dvh;
+    overflow: hidden;
+  }
+
+  .shell-column {
+    min-height: 100dvh;
   }
 }
 

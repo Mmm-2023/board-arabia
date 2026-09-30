@@ -1,4 +1,4 @@
-import { AVATAR_ILLUSTRATION, resolveAvatar } from '../lib/avatarStyle'
+import { AVATAR_ILLUSTRATION, avatarSrcSet, resolveAvatar } from '../lib/avatarStyle'
 
 export function Avatar({
   src,
@@ -32,6 +32,8 @@ export function Avatar({
       <img
         src={choice.src}
         alt={alt}
+        width={size}
+        height={size}
         style={style}
         referrerPolicy="no-referrer"
         data-avatar="photo"
@@ -41,13 +43,18 @@ export function Avatar({
     )
   }
   return (
-    <img
-      src={AVATAR_ILLUSTRATION[choice.style]}
-      alt={alt}
-      style={style}
-      data-avatar="illustration"
-      data-avatar-style={choice.style}
-      className="shrink-0 rounded-full object-cover"
-    />
+    <picture className="inline-block shrink-0 overflow-hidden rounded-full" style={style}>
+      <source type="image/avif" srcSet={avatarSrcSet(choice.style, 'avif')} sizes={`${size}px`} />
+      <source type="image/webp" srcSet={avatarSrcSet(choice.style, 'webp')} sizes={`${size}px`} />
+      <img
+        src={AVATAR_ILLUSTRATION[choice.style]}
+        alt={alt}
+        width={size}
+        height={size}
+        data-avatar="illustration"
+        data-avatar-style={choice.style}
+        className="h-full w-full object-cover [clip-path:circle(50%)]"
+      />
+    </picture>
   )
 }

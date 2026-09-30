@@ -1,3 +1,5 @@
+import type { StoredAvatarStyle } from './avatarStyle.ts'
+
 export type Json =
   | string
   | number
@@ -263,7 +265,7 @@ export type Database = {
           include_in_public_aggregates: boolean
           capacity_verified: boolean
           avatar_path: string | null
-          avatar_style: 'male' | 'female'
+          avatar_style: StoredAvatarStyle
           availability: 'open' | 'selective' | 'at_capacity' | null
           sector_tags: string[]
           vision_themes: string[]
@@ -285,7 +287,7 @@ export type Database = {
           include_in_public_aggregates?: boolean
           capacity_verified?: boolean
           avatar_path?: string | null
-          avatar_style?: 'male' | 'female'
+          avatar_style?: StoredAvatarStyle
           availability?: 'open' | 'selective' | 'at_capacity' | null
           sector_tags?: string[]
           vision_themes?: string[]
@@ -307,7 +309,7 @@ export type Database = {
           include_in_public_aggregates?: boolean
           capacity_verified?: boolean
           avatar_path?: string | null
-          avatar_style?: 'male' | 'female'
+          avatar_style?: StoredAvatarStyle
           availability?: 'open' | 'selective' | 'at_capacity' | null
           sector_tags?: string[]
           vision_themes?: string[]
@@ -760,7 +762,7 @@ export type Database = {
           waitlist_count: number
           my_rsvp_status: 'registered' | 'waitlist' | 'cancelled' | null
           my_waitlist_position: number | null
-          host_avatar_style: 'male' | 'female' | null
+          host_avatar_style: StoredAvatarStyle | null
           host_avatar_path: string | null
         }
         Relationships: []
@@ -830,7 +832,7 @@ export type Database = {
           cancelled_at: string | null
           email: string
           full_name: string | null
-          avatar_style: 'male' | 'female' | null
+          avatar_style: StoredAvatarStyle | null
           avatar_path: string | null
         }
         Relationships: []
@@ -893,6 +895,10 @@ export type Database = {
       due_diligence_consume_run: {
         Args: { p_member: string }
         Returns: undefined
+      }
+      delete_own_due_diligence_report: {
+        Args: { p_report_id: string }
+        Returns: Json
       }
       list_directory: {
         Args: Record<string, never>
