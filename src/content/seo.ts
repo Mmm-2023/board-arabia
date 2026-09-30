@@ -51,6 +51,7 @@ export const MARKETING_PAGES: Record<MarketingPath, MarketingPage> = {
     title: 'Member tools: directory, mandates, majlis | Board Arabia',
     description:
       'Board Arabia members use a private directory, admin-gated mandates and intros, availability controls, founding badge, quarterly majlis, invite vouchers, Vision 2030 tags, and deal rooms.',
+    faq: true,
   },
   '/for-capital': {
     path: '/for-capital',
@@ -104,7 +105,34 @@ export type FaqItem = {
   toLabel?: string
 }
 
-/** Home FAQ. Answer text is also the FAQPage JSON-LD. */
+const APPLY_FAQ: FaqItem = {
+  question: 'How do I apply?',
+  answer:
+    'Submit the pre-vet form with your credentials (LinkedIn, titles, companies, turnover or family-office AUM). Applications are reviewed personally; accepted candidates receive a private next-step email.',
+  to: '/apply',
+  toLabel: 'Apply for consideration',
+}
+
+const CALENDAR_FAQ: FaqItem = {
+  question: 'Is there a public calendar or open booking link?',
+  answer:
+    'No. Visitors never see an open calendar. A private booking link is emailed only after acceptance.',
+  to: '/how-it-works',
+  toLabel: 'How admission works',
+}
+
+const FOUNDING_FAQ: FaqItem = {
+  question: 'What is the Founding 100?',
+  answer:
+    'A capped founding cohort: 50 Saudi and 50 international seats, with complimentary founding terms pending contribution as set by the desk.',
+}
+
+const NAMES_FAQ: FaqItem = {
+  question: 'Are there public member names or reviews?',
+  answer: 'No. The site does not publish invented member lists, photos, or reviews.',
+}
+
+/** Home FAQ. Five questions. Answer text is also the FAQPage JSON-LD. */
 export const FAQ: FaqItem[] = [
   {
     question: 'What is Board Arabia?',
@@ -115,60 +143,40 @@ export const FAQ: FaqItem[] = [
     question: 'Who is it for?',
     answer:
       'Chairpersons, Board members, and C-suite executives. Saudi, GCC, and international candidates in the Founding 100.',
-    to: '/for-members',
-    toLabel: 'Member tools',
   },
-  {
-    question: 'How do I apply?',
-    answer:
-      'Submit the pre-vet form at /apply with credentials (LinkedIn, titles, companies, turnover or family-office AUM). Applications are reviewed personally; accepted candidates receive a private next-step email.',
-    to: '/apply',
-    toLabel: 'Apply for consideration',
-  },
-  {
-    question: 'Is there a public calendar or open booking link?',
-    answer:
-      'No. Visitors never see an open calendar. A private booking link is emailed only after acceptance.',
-    to: '/how-it-works',
-    toLabel: 'How admission works',
-  },
-  {
-    question: 'What is the Founding 100?',
-    answer:
-      'A capped founding cohort: 50 Saudi and 50 international seats, with complimentary founding terms pending contribution as set by the desk.',
-  },
-  {
-    question: 'What do members get?',
-    answer:
-      'Access to capital through an admin-gated mandate inbox; business relationships through a private directory, Majlis, and warm intros; opening doors through deal rooms and peer vouchers; plus founding badge, sector and Vision 2030 tags, and AI Due Diligence for public-source governance support. Details on /for-members.',
-    to: '/for-members',
-    toLabel: 'See the tools',
-  },
+  APPLY_FAQ,
+  CALENDAR_FAQ,
   {
     question: 'How do family offices or FDI engage?',
     answer:
-      'Capital (FDI, family offices, PE, VC) engages through admin-gated mandates. There is no open outbound to members. See /for-capital; the public CTA remains Apply for consideration.',
+      'Capital (FDI, family offices, PE, VC) engages through admin-gated mandates. There is no open outbound to members.',
     to: '/for-capital',
     toLabel: 'For capital',
   },
+]
+
+/** Moved off the home page onto /for-members. */
+export const MEMBERS_FAQ: FaqItem[] = [
+  FOUNDING_FAQ,
   {
-    question: 'Are there public member names or reviews?',
+    question: 'What do members get?',
     answer:
-      'No. The site does not publish invented member lists, photos, or reviews.',
+      'Access to capital through an admin-gated mandate inbox; business relationships through a private directory, Majlis, and warm intros; opening doors through deal rooms and peer vouchers; plus founding badge, sector and Vision 2030 tags, and AI Due Diligence for public-source governance support.',
   },
+  NAMES_FAQ,
   {
     question: 'What do the platform totals mean?',
     answer:
-      'Platform totals show aggregate investment capability, family office assets, and business turnover. Founding seats are the count of admitted members. Names, photos, and individual amounts are never shown.',
+      'Platform totals show aggregate investment capability, family office assets, and business turnover. Founding seats are the count of admitted members. Names, photos, and individual amounts are never shown. Figures reflect the network\'s represented capacity. Individual amounts are never shown.',
   },
 ]
 
-/** /how-it-works reuses home questions 3–5 and 8, plus admission. */
+/** /how-it-works keeps apply, calendar, Founding 100, and public names, plus admission. */
 export const HOW_IT_WORKS_FAQ: FaqItem[] = [
-  FAQ[2],
-  FAQ[3],
-  FAQ[4],
-  FAQ[7],
+  APPLY_FAQ,
+  CALENDAR_FAQ,
+  FOUNDING_FAQ,
+  NAMES_FAQ,
   {
     question: 'What happens after I am admitted?',
     answer:
@@ -181,6 +189,7 @@ export const HOW_IT_WORKS_FAQ: FaqItem[] = [
 export function faqFor(path: string): FaqItem[] | null {
   if (path === '/') return FAQ
   if (path === '/how-it-works') return HOW_IT_WORKS_FAQ
+  if (path === '/for-members') return MEMBERS_FAQ
   return null
 }
 

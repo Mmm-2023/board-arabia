@@ -8,34 +8,39 @@ export function CtaBand({
   body = 'A pre-vet form. The desk reviews credentials. If you are accepted, the next step arrives by private email.',
   to = '/apply',
   label = 'Apply for consideration',
+  memberLogin = false,
+  compact = false,
 }: {
   eyebrow?: string
   title?: string
   body?: string
   to?: string
   label?: string
+  memberLogin?: boolean
+  compact?: boolean
 }) {
   return (
-    <section className="relative overflow-hidden bg-stone py-24 md:py-32">
-      <div
-        aria-hidden
-        className="pointer-events-none absolute left-1/2 top-0 h-[22rem] w-[22rem] -translate-x-1/2 rounded-full bg-brass/15 blur-3xl"
-      />
+    <section id={memberLogin ? 'closing' : undefined} className={`relative overflow-hidden bg-stone ${compact ? 'py-8 md:py-12' : 'py-16 md:py-24'}`}>
       <div className="relative mx-auto max-w-3xl px-5 text-center md:px-10">
         <Reveal>
           <Eyebrow>{eyebrow}</Eyebrow>
-          <h2 className="font-display text-[clamp(2.3rem,5.5vw,4rem)] font-bold leading-[1.02] tracking-[-0.04em] text-balance text-ink">
+          <h2 className={`font-display font-bold leading-[1.05] tracking-[-0.04em] text-balance text-ink ${compact ? 'text-[clamp(1.7rem,4vw,2.4rem)]' : 'text-[clamp(2.3rem,5.5vw,4rem)]'}`}>
             {title}
           </h2>
-          <p className="mx-auto mt-6 max-w-lg text-[1.05rem] leading-relaxed text-ink/65">
+          <p className="ba-quiet mx-auto mt-3 max-w-lg text-[0.9375rem] leading-relaxed">
             {body}
           </p>
-          <Link
-            to={to}
-            className="ba-primary mt-10 inline-flex items-center justify-center px-8 py-4 text-[0.78rem] font-semibold tracking-[0.08em] uppercase transition-colors"
-          >
+          <Link to={to} className="ba-primary mt-5 inline-flex min-h-12 items-center justify-center px-6 text-[0.9375rem] font-semibold">
             {label}
           </Link>
+          {memberLogin ? (
+            <p className="mt-3 text-[0.9375rem] text-ink">
+              Already a member?{' '}
+              <Link to="/login" className="ba-textlink inline-flex min-h-11 items-center">
+                Log in
+              </Link>
+            </p>
+          ) : null}
         </Reveal>
       </div>
     </section>

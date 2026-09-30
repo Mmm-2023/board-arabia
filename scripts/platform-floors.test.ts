@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import test from 'node:test'
 import { formatPublicUsd } from '../src/lib/capacity.ts'
+import { landingTotalsItems, seatDiamondFill } from '../src/lib/landingTotals.ts'
 import { parsePlatformStats, seatLine } from '../src/lib/platformStats.ts'
 import { platformMoneyLines } from '../src/lib/homeSnapshot.ts'
 import {
@@ -183,15 +184,18 @@ test('floor defaults live on demo_thresholds and match the migration', () => {
   assert.match(migration, /grant execute on function public\.landing_platform_totals\(\) to anon, authenticated/)
 })
 
-test('the public totals strip withholds floors and says Forming', () => {
-  const source = readFileSync(path.join(root, 'src/components/StatsStrip.tsx'), 'utf8')
+test('the public totals line hides when every figure is withheld', () => {
+  const source = [
+    readFileSync(path.join(root, 'src/components/StatsStrip.tsx'), 'utf8'),
+    readFileSync(path.join(root, 'src/lib/landingTotals.ts'), 'utf8'),
+  ].join('\n')
   const home = readFileSync(path.join(root, 'src/pages/dashboard/HomeSnapshotView.tsx'), 'utf8')
   assert.match(source, /displayPlatformMoney/)
   assert.match(source, /presentServerTotals/)
   assert.match(source, /seatsArePublic/)
-  assert.match(source, /FORMING_LABEL/)
   assert.equal(FORMING_LABEL, 'Forming')
   assert.equal(FORMING_TOTALS, 'Platform totals are forming.')
+  assert.equal(source.includes(FORMING_LABEL), false)
   assert.match(source, /Founding seats admitted/)
   assert.doesNotMatch(source, /\b(floor|example|demo|illustrative|preview)\b/i)
   assert.equal(source.includes('\u2014'), false)
@@ -204,4 +208,32 @@ test('the public totals strip withholds floors and says Forming', () => {
   assert.equal(home.includes('Platform totals are not published yet'), false)
   assert.equal(home.includes('\u2014'), false)
   assert.equal(home.includes('\u2013'), false)
+
+  const empty = {
+    investment: null,
+    foAum: null,
+    turnover: null,
+    admitted: 3,
+    ksa: 2,
+    intl: 1,
+  }
+  assert.deepEqual(landingTotalsItems(null), [])
+  assert.deepEqual(landingTotalsItems(empty), [])
+  assert.deepEqual(seatDiamondFill(empty), { ksa: 0, intl: 0 })
+  assert.deepEqual(seatDiamondFill(null), { ksa: 0, intl: 0 })
+  const shown = {
+    investment: 250_000_000,
+    foAum: null,
+    turnover: null,
+    admitted: 20,
+    ksa: 12,
+    intl: 8,
+  }
+  assert.deepEqual(
+    landingTotalsItems(shown).map((item) => item.label),
+    ['Platform investment capability', 'Founding seats admitted'],
+  )
+  assert.equal(landingTotalsItems(shown).some((item) => item.value === FORMING_LABEL), false)
+  assert.deepEqual(seatDiamondFill(shown), { ksa: 12, intl: 8 })
+  assert.equal(formatPublicUsd(shown.investment), landingTotalsItems(shown)[0]?.value)
 })

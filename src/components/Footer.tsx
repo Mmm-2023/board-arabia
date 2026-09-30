@@ -17,31 +17,28 @@ const LINKS = [
 export function Footer() {
   return (
     <footer className="border-t border-ink/10 bg-pearl">
-      <div className="mx-auto grid max-w-7xl gap-10 px-5 py-14 md:grid-cols-[1.4fr_1fr] md:px-10 md:py-16">
+      <div className="mx-auto grid max-w-7xl gap-3 px-5 py-4 md:grid-cols-[1.4fr_1fr] md:gap-6 md:px-10 md:py-8">
         <div>
-          <BrandLockup to="/" tone="on-light" />
-          <p className="mt-3 max-w-sm text-[0.98rem] leading-relaxed text-ink/55">
+          <BrandLockup to="/" tone="on-light" subline={false} />
+          <p className="mt-2 max-w-sm text-[0.875rem] leading-snug text-[var(--ba-muted)]">
             A selective founding membership for Saudi and international
             Chairpersons, Board members, and C-suite executives.
           </p>
-          <p className="mt-6 text-[0.8rem] tracking-wide text-ink/40">
+          <p className="mt-2 text-[0.8125rem] text-[var(--ba-muted)]">
             No public calendar. Admission by review.
           </p>
         </div>
         <nav aria-label="Footer">
-          <ul className="grid grid-cols-2 gap-x-6 gap-y-3">
+          <ul className="grid grid-cols-2 gap-x-6">
             {LINKS.map((item) => (
               <li key={item.to}>
-                <Link
-                  to={item.to}
-                  className="text-[0.95rem] text-ink/70 transition-colors hover:text-ink"
-                >
+                <Link to={item.to} className="ba-footer-link">
                   {item.label}
                 </Link>
               </li>
             ))}
           </ul>
-          <p className="mt-8 text-[0.8rem] tracking-wide text-ink/40">
+          <p className="mt-2 text-[0.8125rem] text-[var(--ba-muted)]">
             © {new Date().getFullYear()} Board Arabia
           </p>
         </nav>

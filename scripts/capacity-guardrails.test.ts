@@ -10,7 +10,7 @@ import {
   visiblePublicUsd,
 } from '../src/lib/capacity.ts'
 import { parsePlatformStats } from '../src/lib/platformStats.ts'
-import { FAQ } from '../src/content/seo.ts'
+import { MEMBERS_FAQ } from '../src/content/seo.ts'
 
 const migration = readFileSync(
   new URL('../supabase/migrations/20260922200000_platform_stats.sql', import.meta.url),
@@ -95,7 +95,7 @@ test('migration encodes the gates and does not seed members', () => {
 })
 
 test('platform totals FAQ is present and has no em dash', () => {
-  const item = FAQ.find((entry) => entry.question === 'What do the platform totals mean?')
+  const item = MEMBERS_FAQ.find((entry) => entry.question === 'What do the platform totals mean?')
   assert.ok(item)
   assert.match(item.answer, /never shown individually|never shown/i)
   assert.equal(`${item.question} ${item.answer}`.includes('\u2014'), false)

@@ -15,7 +15,7 @@ export function MarketingLayout({
     <>
       <Seo path={path} />
       <Nav />
-      <main className="min-h-dvh bg-pearl pt-16 md:pt-20">{children}</main>
+      <main className="ba-marketing min-h-dvh bg-pearl pt-16 md:pt-20">{children}</main>
       <Footer />
     </>
   )

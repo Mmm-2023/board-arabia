@@ -1,9 +1,6 @@
-import { motion, useScroll, useTransform } from 'motion/react'
-import { useRef } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { CtaBand } from '../components/CtaBand'
-import { DashboardPreview } from '../components/DashboardPreview'
-import { StatsStrip } from '../components/StatsStrip'
 import { FaqList } from '../components/FaqList'
 import { Footer } from '../components/Footer'
 import { Nav } from '../components/Nav'
@@ -11,181 +8,124 @@ import { Reveal } from '../components/Reveal'
 import { Seo } from '../components/Seo'
 import { DisplayHeading, Eyebrow } from '../components/Type'
 import { TrustedPartnersSection } from '../components/TrustedPartners'
-import { MEMBER_TOOLS, PARTNER_CATEGORIES, PROCESS_STEPS } from '../content/marketing'
+import { ConnectionGraphic, DiamondGrid, HeroEnter, HELD_FOR_LINE, IconCapital, IconDoors, IconRelationships } from '../components/landing/graphics'
+import { ProductFrame } from '../components/landing/ProductFrame'
+import { StepDiagram } from '../components/landing/StepDiagram'
+import { StickyApply } from '../components/landing/StickyApply'
+import { MEMBER_TOOLS } from '../content/marketing'
+import { FAQ } from '../content/seo'
+import { LANDING_PREVIEW_EXAMPLES, presentLandingDealList, type LandingDeal } from '../lib/landingPreview'
+import { supabase } from '../lib/supabase'
+import { PlatformTotalsLine, seatDiamondFill, useLandingTotals } from '../components/StatsStrip'
 
-const PATHS = [
-  'Chairperson',
-  'Board members',
-  'C-suite executives',
-  'Saudi Arabia & the GCC',
-  'International',
-]
+const WHY = [
+  {
+    title: 'Access to capital',
+    body: 'Mandates from family offices, FDI, funds, and strategic investors arrive through an admin-gated inbox. Members are not left open to cold outreach on the open web.',
+    icon: IconCapital,
+  },
+  {
+    title: 'Business relationships',
+    body: 'Saudi and international Chairpersons, Board members, and C-suite executives admitted on one standard: credentials first, then a decision. Fifty founding seats for Saudi Arabia and the GCC. Fifty for international counterparts.',
+    icon: IconRelationships,
+  },
+  {
+    title: 'Opening doors',
+    body: 'Warm introductions, deal rooms, Majlis, and a private directory open the right doors without an open messaging wall. Nothing opens from this public site.',
+    icon: IconDoors,
+  },
+] as const
 
 export function LandingPage() {
+  const [menuOpen, setMenuOpen] = useState(false)
   return (
-    <>
+    <div className="ba-landing">
       <Seo path="/" />
-      <Nav />
+      <Nav onMenuChange={setMenuOpen} />
       <main>
         <Hero />
-        <StatsStrip />
-        <DashboardPreview density="landing" />
-        <PathsStrip />
         <WhySection />
         <FoundingSection />
-        <ToolsSection />
+        <MembershipSection />
         <ProcessSection />
-        <PartnersSection />
         <TrustedPartnersSection />
-        <TrustSection />
-        <FaqList />
+        <FaqList items={FAQ} compact />
         <CtaBand
           eyebrow="Begin"
           title="Apply for consideration."
           body="Submit the pre-vet. If you are accepted, the next step arrives by private email."
           label="Apply for consideration"
+          memberLogin
+          compact
         />
       </main>
       <Footer />
-    </>
+      <StickyApply menuOpen={menuOpen} />
+    </div>
   )
 }
 
 function Hero() {
-  const ref = useRef<HTMLElement | null>(null)
-  const { scrollYProgress } = useScroll({
-    target: ref,
-    offset: ['start start', 'end start'],
-  })
-  const contentY = useTransform(scrollYProgress, [0, 1], ['0%', '6%'])
-  const opacity = useTransform(scrollYProgress, [0, 0.7], [1, 0.45])
-
   return (
-    <section id="top" ref={ref} className="relative min-h-dvh overflow-hidden bg-ink">
+    <section id="top" className="ba-on-dark relative overflow-hidden bg-ink text-pearl">
       <div
-        aria-hidden
+        aria-hidden="true"
         className="absolute inset-0"
         style={{
           background:
-            'radial-gradient(ellipse 80% 55% at 18% 12%, rgba(167,150,220,0.28), transparent 55%), radial-gradient(ellipse 70% 50% at 88% 82%, rgba(75,63,154,0.85), transparent 50%), linear-gradient(165deg, #1C1343 0%, #2a2158 42%, #120c2e 100%)',
+            'radial-gradient(ellipse 80% 55% at 18% 12%, rgba(167,150,220,0.22), transparent 55%), linear-gradient(165deg, #1C1343 0%, #2a2158 48%, #120c2e 100%)',
         }}
       />
-
-      <motion.div
-        style={{ y: contentY, opacity }}
-        className="relative z-10 mx-auto flex min-h-dvh max-w-7xl flex-col px-5 pb-12 pt-28 sm:px-6 md:px-10 md:pb-16 md:pt-32"
-      >
-        <div className="mt-auto max-w-4xl pb-2 md:pb-4">
-          <motion.p
-            initial={{ opacity: 1, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
-            className="mb-4 font-serif text-[1.1rem] italic text-stone/85 md:text-[1.25rem]"
-          >
-            Founding membership · Saudi Arabia & international
-          </motion.p>
-
-          <motion.h1
-            initial={{ opacity: 1, y: 24 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{
-              duration: 1.05,
-              delay: 0.18,
-              ease: [0.22, 1, 0.36, 1],
-            }}
-            className="font-display text-[clamp(3.4rem,11vw,8.5rem)] font-extrabold leading-[0.9] tracking-[-0.03em] text-pearl"
-          >
+      <div className="ba-hero-inner relative z-10 mx-auto grid max-w-7xl items-center gap-4 pt-20 pb-5 md:grid-cols-[minmax(0,1fr)_minmax(220px,440px)] md:gap-8 md:pt-24 md:pb-8">
+        <div>
+          <HeroEnter index={0}>
+            <p className="mb-2 font-serif text-[1.05rem] italic text-[#E8E4F7]">
+              Founding membership · Saudi Arabia & international
+            </p>
+          </HeroEnter>
+          <h1 className="font-display text-[clamp(2.35rem,6vw,4.25rem)] font-extrabold leading-[0.92] tracking-[-0.03em] text-[#F6F5FB]">
             Board
             <br />
             Arabia
-          </motion.h1>
-
-          <motion.div
-            initial={{ opacity: 1, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.9, delay: 0.4, ease: [0.22, 1, 0.36, 1] }}
-            className="mt-7 flex max-w-3xl flex-col gap-7 md:mt-9 md:flex-row md:items-end md:justify-between md:gap-12"
-          >
-            <p className="max-w-md text-[1.05rem] leading-relaxed text-stone/90 md:text-[1.12rem]">
-              Connect Saudi boardrooms with international Chairpersons, Board
-              members, and C-suite executives. Access to capital. Business
-              relationships. Opening doors. Credentials before any conversation.
-              No public booking calendar.
-            </p>
-
-            <div className="flex shrink-0 flex-col gap-3 sm:flex-row">
-              <Link
-                to="/apply"
-                className="ba-primary inline-flex items-center justify-center px-6 py-3.5 text-[0.78rem] font-semibold tracking-[0.08em] uppercase transition-colors"
-              >
+          </h1>
+          <p className="mt-3 max-w-xl text-[1rem] leading-relaxed text-[#F6F5FB] md:text-[1.05rem]">
+            Connect Saudi boardrooms with international Chairpersons, Board
+            members, and C-suite executives. Access to capital. Business
+            relationships. Opening doors. Credentials before any conversation.
+            No public booking calendar.
+          </p>
+          <HeroEnter index={1}>
+            <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+              <Link id="hero-apply" to="/apply" className="ba-primary inline-flex min-h-12 items-center justify-center px-5 text-[0.9375rem] font-semibold">
                 Apply for consideration
               </Link>
-              <a
-                href="#process"
-                className="inline-flex items-center justify-center border border-pearl/35 px-6 py-3.5 text-[0.78rem] font-semibold tracking-[0.08em] text-pearl uppercase transition-colors hover:border-pearl hover:bg-pearl/5"
-              >
+              <a href="#process" className="ba-secondary inline-flex min-h-12 items-center justify-center px-5 text-[0.9375rem] font-semibold">
                 How it works
               </a>
             </div>
-          </motion.div>
+          </HeroEnter>
+          <HeroEnter index={2}>
+            <p className="mt-4 text-[0.875rem] leading-relaxed text-[#E8E4F7]">{HELD_FOR_LINE}</p>
+          </HeroEnter>
         </div>
-      </motion.div>
-    </section>
-  )
-}
-
-function PathsStrip() {
-  return (
-    <section className="border-b border-ink/8 bg-pearl py-9 md:py-11">
-      <div className="mx-auto max-w-7xl px-5 md:px-10">
-        <p className="text-center text-[0.7rem] font-semibold tracking-[0.16em] text-ink/40 uppercase">
-          Held for
-        </p>
-        <ul className="mt-4 flex flex-wrap items-center justify-center gap-x-3 gap-y-2 md:mt-5 md:gap-x-2">
-          {PATHS.map((label, i) => (
-            <li key={label} className="flex items-center gap-3 md:gap-4">
-              {i > 0 && (
-                <span aria-hidden className="hidden h-3 w-px bg-ink/15 sm:block" />
-              )}
-              <span className="font-display text-[0.9rem] font-semibold tracking-[-0.02em] text-ink/70 md:text-[1rem]">
-                {label}
-              </span>
-            </li>
-          ))}
-        </ul>
+        <HeroEnter index={3} className="ba-g1-wrap">
+          <ConnectionGraphic />
+        </HeroEnter>
       </div>
     </section>
   )
 }
 
 function WhySection() {
-  const points = [
-    {
-      n: '01',
-      title: 'Access to capital',
-      body: 'Mandates from family offices, FDI, funds, and strategic investors arrive through an admin-gated inbox. Members are not left open to cold outreach on the open web.',
-    },
-    {
-      n: '02',
-      title: 'Business relationships',
-      body: 'Saudi and international Chairpersons, Board members, and C-suite executives admitted on one standard: credentials first, then a decision. Fifty founding seats for Saudi Arabia and the GCC. Fifty for international counterparts.',
-    },
-    {
-      n: '03',
-      title: 'Opening doors',
-      body: 'Warm introductions, deal rooms, Majlis, and a private directory open the right doors without an open messaging wall. Nothing opens from this public site.',
-    },
-  ]
-
   return (
-    <section id="why" className="grain relative overflow-hidden bg-pearl py-24 md:py-32">
-      <div className="relative mx-auto max-w-7xl px-5 md:px-10">
+    <section id="why" className="bg-pearl py-5 md:py-10">
+      <div className="mx-auto max-w-7xl px-5 md:px-10">
         <Reveal>
           <Eyebrow>Why Board Arabia</Eyebrow>
-          <DisplayHeading className="max-w-3xl">
+          <DisplayHeading compact className="max-w-3xl">
             Access to capital. Business relationships. Opening doors.
           </DisplayHeading>
-          <p className="mt-6 max-w-xl text-[1.05rem] leading-relaxed text-ink/60">
+          <p className="ba-quiet mt-3 max-w-3xl text-[0.9375rem] leading-relaxed">
             Board Arabia is a reviewed founding membership. It links Saudi
             Arabia’s boardrooms with international counterparts for
             Chairpersons, Board members, and C-suite executives. Growth and
@@ -193,23 +133,23 @@ function WhySection() {
             search, and it is not a calendar you can book.
           </p>
         </Reveal>
-
-        <ol className="mt-16 grid gap-12 md:mt-20 md:grid-cols-3 md:gap-10">
-          {points.map((point, i) => (
-            <li key={point.n} className="border-t border-ink/12 pt-6">
-              <Reveal delay={0.06 * i}>
-                <span className="font-display text-[0.78rem] font-semibold tracking-[0.18em] text-brass">
-                  {point.n}
-                </span>
-                <h3 className="mt-4 font-display text-[1.45rem] font-semibold tracking-[-0.03em] text-ink">
-                  {point.title}
-                </h3>
-                <p className="mt-3 text-[0.98rem] leading-relaxed text-ink/60">
-                  {point.body}
-                </p>
-              </Reveal>
-            </li>
-          ))}
+        <ol className="mt-3 grid gap-2 md:mt-5 md:grid-cols-3 md:gap-3">
+          {WHY.map((point, index) => {
+            const Icon = point.icon
+            return (
+              <li key={point.title}>
+                <Reveal delay={0.06 * index}>
+                  <article className="ba-card h-full px-3 py-3">
+                    <Icon />
+                    <h3 className="mt-2 font-display text-[1.05rem] font-semibold tracking-[-0.02em] text-ink">
+                      {point.title}
+                    </h3>
+                    <p className="ba-quiet mt-1 text-[0.8125rem] leading-snug">{point.body}</p>
+                  </article>
+                </Reveal>
+              </li>
+            )
+          })}
         </ol>
       </div>
     </section>
@@ -217,99 +157,115 @@ function WhySection() {
 }
 
 function FoundingSection() {
+  const shown = useLandingTotals()
+  const fill = seatDiamondFill(shown)
   return (
-    <section id="founding" className="bg-stone">
-      <div className="mx-auto grid max-w-7xl md:grid-cols-2">
-        <div className="bg-ink px-5 py-20 text-pearl md:px-10 md:py-28">
+    <section id="founding" className="bg-stone py-8 md:py-10">
+      <div className="mx-auto max-w-7xl px-5 md:px-10">
+        <div className="grid items-start gap-6 lg:grid-cols-[1.15fr_0.85fr]">
           <Reveal>
-            <Eyebrow tone="brass">Founding 100</Eyebrow>
-            <DisplayHeading tone="light" className="max-w-md">
-              Fifty and fifty.
-            </DisplayHeading>
-            <p className="mt-6 max-w-md text-[1.05rem] leading-relaxed text-stone/75">
+            <Eyebrow>Founding 100</Eyebrow>
+            <DisplayHeading compact>Fifty and fifty.</DisplayHeading>
+            <p className="ba-quiet mt-3 max-w-xl text-[0.9375rem] leading-relaxed">
               One hundred founding places, split evenly: fifty in Saudi Arabia,
               fifty international. Complimentary founding terms pending
               contribution, as set by the desk. Places are not priced on this
               site.
             </p>
           </Reveal>
-        </div>
-        <div className="grid h-full sm:grid-cols-2">
-          <div className="flex flex-col justify-end border-ink/10 px-5 py-14 sm:border-r md:px-10 md:py-16">
-            <p className="font-display text-[clamp(4.5rem,8vw,7rem)] font-extrabold leading-none tracking-[-0.05em] text-ink">
-              50
-            </p>
-            <h3 className="mt-4 font-display text-[1.35rem] font-semibold tracking-[-0.03em] text-ink">
-              Saudi Arabia
-            </h3>
-            <p className="mt-3 text-[0.98rem] leading-relaxed text-ink/60">
-              Chairpersons, Board members, and C-suite executives held for
-              Saudi Arabia and the GCC.
-            </p>
-          </div>
-          <div className="flex flex-col justify-end px-5 py-14 md:px-10 md:py-16">
-            <p className="font-display text-[clamp(4.5rem,8vw,7rem)] font-extrabold leading-none tracking-[-0.05em] text-ink">
-              50
-            </p>
-            <h3 className="mt-4 font-display text-[1.35rem] font-semibold tracking-[-0.03em] text-ink">
-              International
-            </h3>
-            <p className="mt-3 text-[0.98rem] leading-relaxed text-ink/60">
-              International Chairpersons, Board members, and C-suite executives.
-              The room is not a GCC-only practice.
-            </p>
+          <div className="grid grid-cols-2 gap-4">
+            <Split
+              count="50"
+              title="Saudi Arabia"
+              body="Chairpersons, Board members, and C-suite executives held for Saudi Arabia and the GCC."
+              filled={fill.ksa}
+            />
+            <Split
+              count="50"
+              title="International"
+              body="International Chairpersons, Board members, and C-suite executives. The room is not a GCC-only practice."
+              filled={fill.intl}
+            />
           </div>
         </div>
+        <PlatformTotalsLine shown={shown} />
       </div>
     </section>
   )
 }
 
-function ToolsSection() {
+function Split({
+  count,
+  title,
+  body,
+  filled,
+}: {
+  count: string
+  title: string
+  body: string
+  filled: number
+}) {
   return (
-    <section id="tools" className="bg-pearl py-24 md:py-32">
+    <div>
+      <p className="font-display text-[2.4rem] font-extrabold leading-none tracking-[-0.04em] text-[var(--ba-indigo)] md:text-[2.75rem]">
+        {count}
+      </p>
+      <h3 className="mt-2 font-display text-[1rem] font-semibold text-ink">{title}</h3>
+      <DiamondGrid filled={filled} />
+      <p className="ba-quiet mt-2 text-[0.8125rem] leading-relaxed">{body}</p>
+    </div>
+  )
+}
+
+function useLandingDeals(): LandingDeal[] {
+  const [deals, setDeals] = useState<LandingDeal[]>(LANDING_PREVIEW_EXAMPLES)
+  useEffect(() => {
+    let cancelled = false
+    void supabase.rpc('list_landing_preview_deals').then(({ data, error }) => {
+      if (cancelled || error) return
+      const next = presentLandingDealList(data)
+      if (next.length > 0) setDeals(next)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+  return deals
+}
+
+function MembershipSection() {
+  const deals = useLandingDeals()
+  return (
+    <section id="membership" className="bg-pearl py-5 md:py-10">
       <div className="mx-auto max-w-7xl px-5 md:px-10">
         <Reveal>
           <Eyebrow>Inside the membership</Eyebrow>
-          <DisplayHeading className="max-w-3xl">
+          <DisplayHeading compact className="max-w-3xl">
             Tools that support capital, relationships, and open doors.
           </DisplayHeading>
-          <p className="mt-6 max-w-xl text-[1.05rem] leading-relaxed text-ink/60">
+          <p className="ba-quiet mt-3 max-w-3xl text-[0.9375rem] leading-relaxed">
             After admission you work in a private directory, an admin-gated
             mandate path, warm introductions, deal rooms, a quarterly Majlis,
             and tools that support diligence and sector fit. Each tile opens on
             the member page. Capital reads the mandate path separately.
           </p>
-          <p className="mt-4">
-            <Link to="/for-capital" className="border-b border-brass text-ink">
-              How FDI and family offices engage
-            </Link>
-          </p>
         </Reveal>
-
-        <ul className="mt-14 grid border-t border-l border-ink/10 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-3">
+          <ProductFrame deals={deals} />
+        </div>
+        <ul className="ba-tool-list mt-3">
           {MEMBER_TOOLS.map((tool) => (
-            <li key={tool.id} className="border-r border-b border-ink/10">
-              <Link
-                to={tool.href}
-                className="group flex h-full flex-col px-6 py-7 transition-colors hover:bg-white/70 md:px-7 md:py-8"
-              >
-                <span className="font-display text-[0.75rem] font-semibold tracking-[0.18em] text-brass">
-                  {tool.n}
-                </span>
-                <h3 className="mt-4 font-display text-[1.35rem] font-semibold tracking-[-0.03em] text-ink">
-                  {tool.title}
-                </h3>
-                <p className="mt-3 flex-1 text-[0.95rem] leading-relaxed text-ink/60">
-                  {tool.home}
-                </p>
-                <span className="mt-6 text-[0.72rem] font-semibold tracking-[0.12em] text-ink/45 uppercase transition-colors group-hover:text-brass">
-                  Read
-                </span>
-              </Link>
-            </li>
+            <li key={tool.id}>{tool.title}</li>
           ))}
         </ul>
+        <p className="mt-2 flex flex-wrap gap-x-6">
+          <Link to="/for-members" className="ba-textlink inline-flex min-h-11 items-center text-[0.9375rem]">
+            See all member tools
+          </Link>
+          <Link to="/for-capital" className="ba-textlink inline-flex min-h-11 items-center text-[0.9375rem]">
+            How FDI and family offices engage
+          </Link>
+        </p>
       </div>
     </section>
   )
@@ -317,143 +273,23 @@ function ToolsSection() {
 
 function ProcessSection() {
   return (
-    <section id="process" className="relative bg-ink py-24 text-pearl md:py-32">
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 opacity-[0.07]"
-        style={{
-          backgroundImage:
-            'linear-gradient(to right, #e8e4f7 1px, transparent 1px), linear-gradient(to bottom, #e8e4f7 1px, transparent 1px)',
-          backgroundSize: '72px 72px',
-          maskImage:
-            'radial-gradient(ellipse at center, black 20%, transparent 75%)',
-        }}
-      />
-      <div className="relative mx-auto max-w-7xl px-5 md:px-10">
-        <Reveal>
-          <Eyebrow tone="brass">How it works</Eyebrow>
-          <DisplayHeading tone="light" className="max-w-3xl">
-            Consideration before any conversation.
-          </DisplayHeading>
-          <p className="mt-6 max-w-xl text-[1.05rem] leading-relaxed text-stone/75">
-            Pre-vet, personal review by the desk, accept, a private booking
-            email, then the member dashboard.
-          </p>
-        </Reveal>
-
-        <ol className="mt-16 grid gap-10 md:mt-20 md:grid-cols-2 lg:grid-cols-5 lg:gap-6">
-          {PROCESS_STEPS.map((step, i) => (
-            <li key={step.n}>
-              <Reveal delay={0.05 * i}>
-                <span className="font-display text-[0.85rem] font-semibold tracking-[0.2em] text-brass-bright">
-                  {step.n}
-                </span>
-                <h3 className="mt-4 font-display text-[1.2rem] font-semibold tracking-[-0.02em]">
-                  {step.title}
-                </h3>
-                <p className="mt-3 text-[0.92rem] leading-relaxed text-stone/70">
-                  {step.home}
-                </p>
-              </Reveal>
-            </li>
-          ))}
-        </ol>
-
-        <Reveal>
-          <Link
-            to="/how-it-works"
-            className="mt-14 inline-flex border-b border-brass-bright pb-0.5 text-[0.78rem] font-semibold tracking-[0.1em] text-pearl uppercase"
-          >
-            Full sequence
-          </Link>
-        </Reveal>
-      </div>
-    </section>
-  )
-}
-
-function PartnersSection() {
-  const sample = PARTNER_CATEGORIES.slice(0, 6)
-
-  return (
-    <section id="partners" className="bg-pearl py-24 md:py-32">
-      <div className="mx-auto grid max-w-7xl gap-14 px-5 md:px-10 lg:grid-cols-[1.1fr_0.9fr] lg:gap-20">
-        <Reveal>
-          <Eyebrow>Founding Ecosystem Partners</Eyebrow>
-          <DisplayHeading>Three seats a year.</DisplayHeading>
-          <p className="mt-6 max-w-xl text-[1.05rem] leading-relaxed text-ink/60">
-            Three annual seats for firms on the finance rails of a deal, not a
-            wall of logos. We do not scrape names, publish a partner directory,
-            or show a price.
-          </p>
-          <Link
-            to="/partners"
-            className="ba-primary mt-8 inline-flex items-center justify-center px-7 py-3.5 text-[0.78rem] font-semibold tracking-[0.08em] uppercase transition-colors"
-          >
-            Partner with us
-          </Link>
-        </Reveal>
-
-        <Reveal delay={0.08}>
-          <p className="text-[0.7rem] font-semibold tracking-[0.16em] text-ink/40 uppercase">
-            Finance first
-          </p>
-          <ul className="mt-5 divide-y divide-ink/10 border-y border-ink/10">
-            {sample.map((category) => (
-              <li
-                key={category.name}
-                className="py-3.5 font-display text-[1.05rem] font-semibold tracking-[-0.02em] text-ink/80"
-              >
-                {category.name}
-              </li>
-            ))}
-          </ul>
-          <p className="mt-4 text-[0.92rem] text-ink/50">
-            Fifteen categories in full on the partners page.
-          </p>
-        </Reveal>
-      </div>
-    </section>
-  )
-}
-
-function TrustSection() {
-  const points = [
-    {
-      title: 'Credentials are reviewed',
-      body: 'No conversation on the strength of an unread form.',
-    },
-    {
-      title: 'No open calendar',
-      body: 'A booking link, when offered, is emailed after acceptance.',
-    },
-    {
-      title: 'Admin oversight',
-      body: 'Outreach, warm introductions, and mandates pass admin before they reach a member.',
-    },
-  ]
-
-  return (
-    <section id="trust" className="border-t border-ink/10 bg-pearl pb-24 md:pb-32">
+    <section id="process" className="ba-on-dark bg-ink py-8 text-pearl md:py-10">
       <div className="mx-auto max-w-7xl px-5 md:px-10">
         <Reveal>
-          <Eyebrow>Trust and discretion</Eyebrow>
-          <DisplayHeading className="max-w-3xl">
-            Reviewed. Gated. Off the open web.
+          <Eyebrow tone="light">How it works</Eyebrow>
+          <DisplayHeading tone="light" compact className="max-w-3xl">
+            Consideration before any conversation.
           </DisplayHeading>
         </Reveal>
-        <ul className="mt-14 grid gap-8 md:grid-cols-3">
-          {points.map((point) => (
-            <li key={point.title} className="border-l border-brass pl-5">
-              <h3 className="font-display text-[1.25rem] font-semibold tracking-[-0.02em] text-ink">
-                {point.title}
-              </h3>
-              <p className="mt-3 text-[0.98rem] leading-relaxed text-ink/60">
-                {point.body}
-              </p>
-            </li>
-          ))}
-        </ul>
+        <div className="mt-4">
+          <StepDiagram />
+        </div>
+        <p className="mt-4 max-w-3xl text-[0.9375rem] leading-relaxed text-[#E8E4F7]">
+          Reviewed. Gated. Off the open web. Outreach, warm introductions, and mandates pass admin before they reach a member.
+        </p>
+        <Link to="/how-it-works" className="ba-textlink mt-2 inline-flex min-h-11 items-center text-[0.9375rem] text-[#F6F5FB]">
+          Full sequence
+        </Link>
       </div>
     </section>
   )

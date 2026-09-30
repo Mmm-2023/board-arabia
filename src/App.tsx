@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { AboutPage } from './pages/AboutPage'
 import { ApplyPage } from './pages/ApplyPage'
@@ -10,41 +11,69 @@ import { LoginPage } from './pages/LoginPage'
 import { PartnersPage } from './pages/PartnersPage'
 import { PrivacyPage } from './pages/PrivacyPage'
 import { TermsPage } from './pages/TermsPage'
-import { AdminLayout } from './pages/admin/AdminLayout'
-import { AdminMandateMatchPage } from './pages/admin/AdminMandateMatchPage'
-import { AdminMandatesPage } from './pages/admin/AdminMandatesPage'
-import { AdminHome } from './pages/admin/AdminHome'
-import { ApplicationsPage } from './pages/admin/ApplicationsPage'
-import { CapacityPage } from './pages/admin/CapacityPage'
-import { EmailPage } from './pages/admin/EmailPage'
-import { AdminMajlisPage } from './pages/admin/MajlisPage'
-import { StaffRoomsPage } from './pages/admin/StaffRoomsPage'
-import { AdminIntrosPage } from './pages/admin/AdminIntrosPage'
-import { PeoplePage } from './pages/admin/PeoplePage'
-import { SettingsPage } from './pages/admin/SettingsPage'
-import { DashboardHome } from './pages/dashboard/DashboardHome'
-import { DashboardLayout } from './pages/dashboard/DashboardLayout'
-import { AiToolsHome } from './pages/dashboard/AiToolsHome'
-import { AiToolsLayout } from './pages/dashboard/AiToolsLayout'
-import { DealsIndexRedirect, DealsLayout } from './pages/dashboard/DealsLayout'
-import { DirectoryPage } from './pages/dashboard/DirectoryPage'
-import { DueDiligencePage } from './pages/dashboard/DueDiligencePage'
-import { HelpPage } from './pages/dashboard/HelpPage'
-import { IntrosPage } from './pages/dashboard/IntrosPage'
-import { MajlisPage } from './pages/dashboard/MajlisPage'
-import { MandatesPage } from './pages/dashboard/MandatesPage'
-import { PeopleIndexRedirect, PeopleLayout } from './pages/dashboard/PeopleLayout'
-import { RealEstatePage } from './pages/dashboard/RealEstatePage'
-import { CreateRoomPage } from './pages/dashboard/CreateRoomPage'
-import { DealRoomPage } from './pages/dashboard/DealRoomPage'
-import { RoomsPage } from './pages/dashboard/RoomsPage'
-import { NetworkPage } from './pages/dashboard/NetworkPage'
-import { ProfilePage } from './pages/dashboard/ProfilePage'
-import { SponsorshipPage } from './pages/dashboard/SponsorshipPage'
 import { RedirectKeep } from './shell/RedirectKeep'
+
+const AdminLayout = lazy(() => import('./pages/admin/AdminLayout').then((m) => ({ default: m.AdminLayout })))
+const AdminMandateMatchPage = lazy(() =>
+  import('./pages/admin/AdminMandateMatchPage').then((m) => ({ default: m.AdminMandateMatchPage })),
+)
+const AdminMandatesPage = lazy(() =>
+  import('./pages/admin/AdminMandatesPage').then((m) => ({ default: m.AdminMandatesPage })),
+)
+const AdminHome = lazy(() => import('./pages/admin/AdminHome').then((m) => ({ default: m.AdminHome })))
+const ApplicationsPage = lazy(() =>
+  import('./pages/admin/ApplicationsPage').then((m) => ({ default: m.ApplicationsPage })),
+)
+const CapacityPage = lazy(() => import('./pages/admin/CapacityPage').then((m) => ({ default: m.CapacityPage })))
+const EmailPage = lazy(() => import('./pages/admin/EmailPage').then((m) => ({ default: m.EmailPage })))
+const AdminMajlisPage = lazy(() => import('./pages/admin/MajlisPage').then((m) => ({ default: m.AdminMajlisPage })))
+const StaffRoomsPage = lazy(() => import('./pages/admin/StaffRoomsPage').then((m) => ({ default: m.StaffRoomsPage })))
+const AdminIntrosPage = lazy(() => import('./pages/admin/AdminIntrosPage').then((m) => ({ default: m.AdminIntrosPage })))
+const PeoplePage = lazy(() => import('./pages/admin/PeoplePage').then((m) => ({ default: m.PeoplePage })))
+const SettingsPage = lazy(() => import('./pages/admin/SettingsPage').then((m) => ({ default: m.SettingsPage })))
+const DashboardHome = lazy(() =>
+  import('./pages/dashboard/DashboardHome').then((m) => ({ default: m.DashboardHome })),
+)
+const DashboardLayout = lazy(() =>
+  import('./pages/dashboard/DashboardLayout').then((m) => ({ default: m.DashboardLayout })),
+)
+const AiToolsHome = lazy(() => import('./pages/dashboard/AiToolsHome').then((m) => ({ default: m.AiToolsHome })))
+const AiToolsLayout = lazy(() =>
+  import('./pages/dashboard/AiToolsLayout').then((m) => ({ default: m.AiToolsLayout })),
+)
+const DealsLayout = lazy(() => import('./pages/dashboard/DealsLayout').then((m) => ({ default: m.DealsLayout })))
+const DealsIndexRedirect = lazy(() =>
+  import('./pages/dashboard/DealsLayout').then((m) => ({ default: m.DealsIndexRedirect })),
+)
+const DirectoryPage = lazy(() => import('./pages/dashboard/DirectoryPage').then((m) => ({ default: m.DirectoryPage })))
+const DueDiligencePage = lazy(() =>
+  import('./pages/dashboard/DueDiligencePage').then((m) => ({ default: m.DueDiligencePage })),
+)
+const HelpPage = lazy(() => import('./pages/dashboard/HelpPage').then((m) => ({ default: m.HelpPage })))
+const IntrosPage = lazy(() => import('./pages/dashboard/IntrosPage').then((m) => ({ default: m.IntrosPage })))
+const MajlisPage = lazy(() => import('./pages/dashboard/MajlisPage').then((m) => ({ default: m.MajlisPage })))
+const MandatesPage = lazy(() => import('./pages/dashboard/MandatesPage').then((m) => ({ default: m.MandatesPage })))
+const PeopleLayout = lazy(() => import('./pages/dashboard/PeopleLayout').then((m) => ({ default: m.PeopleLayout })))
+const PeopleIndexRedirect = lazy(() =>
+  import('./pages/dashboard/PeopleLayout').then((m) => ({ default: m.PeopleIndexRedirect })),
+)
+const RealEstatePage = lazy(() =>
+  import('./pages/dashboard/RealEstatePage').then((m) => ({ default: m.RealEstatePage })),
+)
+const CreateRoomPage = lazy(() =>
+  import('./pages/dashboard/CreateRoomPage').then((m) => ({ default: m.CreateRoomPage })),
+)
+const DealRoomPage = lazy(() => import('./pages/dashboard/DealRoomPage').then((m) => ({ default: m.DealRoomPage })))
+const RoomsPage = lazy(() => import('./pages/dashboard/RoomsPage').then((m) => ({ default: m.RoomsPage })))
+const NetworkPage = lazy(() => import('./pages/dashboard/NetworkPage').then((m) => ({ default: m.NetworkPage })))
+const ProfilePage = lazy(() => import('./pages/dashboard/ProfilePage').then((m) => ({ default: m.ProfilePage })))
+const SponsorshipPage = lazy(() =>
+  import('./pages/dashboard/SponsorshipPage').then((m) => ({ default: m.SponsorshipPage })),
+)
 
 export default function App() {
   return (
+    <Suspense fallback={<p role="status">Loading</p>}>
     <Routes>
       <Route path="/" element={<LandingPage />} />
       <Route path="/apply" element={<ApplyPage />} />
@@ -118,5 +147,6 @@ export default function App() {
       <Route path="/verify" element={<Navigate to="/apply" replace />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
+    </Suspense>
   )
 }
