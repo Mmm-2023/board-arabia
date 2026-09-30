@@ -13,18 +13,22 @@ import {
   sniffDeck,
 } from '../../../supabase/functions/_shared/due_diligence.ts'
 import {
+  deleteOwnDueDiligenceReport,
   fetchDueDiligenceStatus,
   loadDueDiligenceDesk,
   loadDueDiligenceReport,
+  removeOwnDeck,
   startDueDiligence,
   uploadPath,
   type HistoryItem,
   type ReadFailure,
 } from '../../lib/dueDiligence'
+import { priorNotes } from '../../lib/priorNotes'
 import { DD_COPY, deskCtaLabel, deskProgressLine, presentDeskError } from '../../lib/dueDiligenceCopy'
 import { deskPhase, nextPollFailures, type DeskPhase } from '../../lib/dueDiligencePhase'
 import { supabase } from '../../lib/supabase'
 import { useNoIndex } from '../../lib/usePageTitle'
+import { ConfirmDialog } from '../../shell/ConfirmDialog'
 import { CardSkeleton, EmptyState, ErrorBanner, PermissionState } from '../../shell/ViewState'
 import { MEMBER_VIEWS } from '../../shell/viewCopy'
 import { useMember } from './context'
@@ -63,6 +67,10 @@ function Desk() {
   const [stage, setStage] = useState('')
   const [jobError, setJobError] = useState('')
   const [pollGaveUp, setPollGaveUp] = useState(false)
+  const [pendingDelete, setPendingDelete] = useState<string | null>(null)
+  const [deleteNote, setDeleteNote] = useState('')
+  const [deleteAlert, setDeleteAlert] = useState('')
+  const [fileLeft, setFileLeft] = useState<string | null>(null)
   const pollFailures = useRef(0)
 
   useEffect(() => {
@@ -194,6 +202,46 @@ function Desk() {
     setActiveJobId(started.jobId)
   }
 
+  async function confirmDelete() {
+    if (!pendingDelete) return
+    const reportId = pendingDelete
+    const jobId = reports.find((report) => report.id === reportId)?.job_id
+    setBusy(true)
+    setDeleteNote('')
+    setDeleteAlert('')
+    const result = await deleteOwnDueDiligenceReport(reportId, userId)
+    setBusy(false)
+    setPendingDelete(null)
+    if (!result.ok && result.kind === 'report') {
+      setDeleteAlert('Could not delete that report. Retry.')
+      return
+    }
+    setReports((current) =>
+      current.filter((report) => report.id !== reportId && (!jobId || report.job_id !== jobId)),
+    )
+    if (!result.ok) {
+      setFileLeft(result.path)
+      setDeleteAlert('The report was removed, but the uploaded deck could not be deleted. Retry.')
+      return
+    }
+    setFileLeft(null)
+    setDeleteNote('Report deleted.')
+  }
+
+  async function retryFile() {
+    if (!fileLeft) return
+    setBusy(true)
+    setDeleteAlert('')
+    const removed = await removeOwnDeck(fileLeft, userId)
+    setBusy(false)
+    if (!removed) {
+      setDeleteAlert('The report was removed, but the uploaded deck could not be deleted. Retry.')
+      return
+    }
+    setFileLeft(null)
+    setDeleteNote('Report deleted.')
+  }
+
   function onSubmit(event: FormEvent) {
     event.preventDefault()
     void runCheck()
@@ -225,6 +273,7 @@ function Desk() {
   })
 
   return (
+    <>
     <DueDiligenceDeskView
       phase={phase}
       loadState={loadState}
@@ -236,6 +285,11 @@ function Desk() {
       progressLabel={deskProgressLine(stage)}
       actionError={presentDeskError(formError || jobError)}
       reports={reports}
+      deleteNote={deleteNote}
+      deleteAlert={deleteAlert}
+      onDelete={setPendingDelete}
+      onRetryFile={() => void retryFile()}
+      fileLeft={Boolean(fileLeft)}
       onCompanyUrl={setCompanyUrl}
       onFile={(next) => {
         setFile(next)
@@ -246,10 +300,24 @@ function Desk() {
       onRetry={onRetry}
       retryLabel={pollGaveUp ? DD_COPY.pollRetry : DD_COPY.errorRetry}
       onReload={() => {
+        setPendingDelete(null)
         setLoadState('loading')
         setAttempt((value) => value + 1)
       }}
     />
+    {pendingDelete ? (
+      <ConfirmDialog
+        tone="member"
+        title="Delete this report?"
+        body="This removes the report, the check, and the uploaded deck."
+        busy={busy}
+        onCancel={() => {
+          if (!busy) setPendingDelete(null)
+        }}
+        onConfirm={() => void confirmDelete()}
+      />
+    ) : null}
+    </>
   )
 }
 
@@ -264,6 +332,11 @@ export function DueDiligenceDeskView({
   progressLabel,
   actionError,
   reports,
+  deleteNote = '',
+  deleteAlert = '',
+  fileLeft = false,
+  onDelete,
+  onRetryFile,
   onCompanyUrl,
   onFile,
   onSubmit,
@@ -281,6 +354,11 @@ export function DueDiligenceDeskView({
   progressLabel: string
   actionError: string
   reports: HistoryItem[]
+  deleteNote?: string
+  deleteAlert?: string
+  fileLeft?: boolean
+  onDelete?: (id: string) => void
+  onRetryFile?: () => void
   onCompanyUrl: (value: string) => void
   onFile: (file: File | null) => void
   onSubmit: (event: FormEvent) => void
@@ -442,14 +520,25 @@ export function DueDiligenceDeskView({
               <h2 id="dd-history" className="font-display text-[1.35rem] font-semibold">
                 Prior notes
               </h2>
+              {deleteNote ? <p className="mt-3 text-[1rem] text-ink">{deleteNote}</p> : null}
+              {deleteAlert ? (
+                <p className="mt-3 text-[1rem] text-[var(--ba-error)]" role="alert">
+                  {deleteAlert}{' '}
+                  {fileLeft ? (
+                    <button type="button" className="min-h-11 font-semibold text-ink underline" disabled={busy} onClick={onRetryFile}>
+                      Retry
+                    </button>
+                  ) : null}
+                </p>
+              ) : null}
               <ul className="mt-4 space-y-3">
-                {reports.map((report) => (
-                  <li key={report.id}>
+                {priorNotes(reports).map((report) => (
+                  <li key={report.id} className="flex items-stretch border border-[var(--ba-line)] bg-white">
                     <Link
                       to={`/dashboard/ai/due-diligence/${report.id}`}
-                      className="flex min-h-11 flex-col justify-center border border-[var(--ba-line)] bg-white px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+                      className="flex min-h-11 min-w-0 flex-1 flex-col justify-center px-4 py-3"
                     >
-                      <span className="text-[1rem] text-ink">{report.company_label}</span>
+                      <span className="text-[1rem] break-words text-ink">{report.title}</span>
                       <span className="text-[0.92rem] text-[var(--ba-muted)]">
                         {report.publicly_consistent_pct === null
                           ? 'No percentage'
@@ -458,6 +547,14 @@ export function DueDiligenceDeskView({
                         {formatWhen(report.created_at)}
                       </span>
                     </Link>
+                    <button
+                      type="button"
+                      className="inline-flex min-h-11 shrink-0 items-center border-s border-[var(--ba-line)] px-4 text-[0.95rem] font-semibold text-ink"
+                      disabled={busy}
+                      onClick={() => onDelete?.(report.id)}
+                    >
+                      Delete
+                    </button>
                   </li>
                 ))}
               </ul>
