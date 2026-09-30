@@ -148,6 +148,8 @@ export default function App() {
           <Route index element={<AiToolsHome />} />
           <Route path="due-diligence" element={<DueDiligencePage />} />
           <Route path="due-diligence/:reportId" element={<DueDiligencePage />} />
+          <Route path=":toolSlug" element={<AiToolPage />} />
+          <Route path=":toolSlug/:jobId" element={<AiToolPage />} />
         </Route>
         <Route path="profile" element={<ProfilePage />} />
         <Route path="help" element={<HelpPage />} />
@@ -175,3 +177,5 @@ export default function App() {
     </SiteLanguageProvider>
   )
 }
+
+const AiToolPage = lazy(() => import('./pages/dashboard/AiToolPage').then((m) => ({ default: m.AiToolPage })))

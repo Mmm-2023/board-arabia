@@ -5,6 +5,7 @@ import { NO_TRACK_COOKIE, noTrackCookiePair, trackPrefCookiePair } from '../../l
 import { useNoIndex } from '../../lib/usePageTitle'
 import { FormSkeleton, toneClasses } from '../../shell/ViewState'
 import { UtmBuilder } from '../../components/UtmBuilder'
+import { AiToolSettingsPanel } from './AiToolSettingsPanel'
 import { IntroAllowancePanel } from './IntroAllowancePanel'
 import { SponsorPackagesPanel } from './SponsorPackagesPanel'
 import { STAFF_VIEWS } from '../../shell/viewCopy'
@@ -37,6 +38,7 @@ export function SettingsPage() {
 
       <SponsorPackagesPanel />
       <IntroAllowancePanel />
+      <AiToolSettingsPanel />
 
       <section className={`${styles.panel} mt-8 px-5 py-5`}>
         <h2 className={`text-[0.72rem] font-semibold tracking-[0.12em] uppercase ${styles.quiet}`}>

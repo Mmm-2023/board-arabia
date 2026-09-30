@@ -6,6 +6,8 @@ import {
   removeOwnDeck,
   type HistoryItem,
 } from '../../lib/dueDiligence'
+import { AiToolCardList } from '../../components/ai/AiToolCards'
+import { readAiToolFrame, type AiToolFlags } from '../../lib/aiToolApi'
 import { recentReports, type RecentReportRow } from '../../lib/recentReports'
 import { useNoIndex } from '../../lib/usePageTitle'
 import { ConfirmDialog } from '../../shell/ConfirmDialog'
@@ -18,7 +20,10 @@ const DELETE_FAILED = 'Could not delete that report. Retry.'
 const FILE_LEFT = 'The report was removed, but the uploaded deck could not be deleted. Retry.'
 
 export function AiToolsHome() {
-  const { userId } = useMember()
+  const { userId, staffRole } = useMember()
+  const [flags, setFlags] = useState<AiToolFlags | null>(null)
+  const [flagsError, setFlagsError] = useState(false)
+  const [flagsAttempt, setFlagsAttempt] = useState(0)
   const [reports, setReports] = useState<HistoryItem[] | null>(null)
   const [error, setError] = useState(false)
   const [attempt, setAttempt] = useState(0)
@@ -45,6 +50,23 @@ export function AiToolsHome() {
       cancelled = true
     }
   }, [attempt, userId])
+
+  useEffect(() => {
+    let cancelled = false
+    void readAiToolFrame().then((frame) => {
+      if (cancelled) return
+      if (!frame) {
+        setFlags(null)
+        setFlagsError(true)
+        return
+      }
+      setFlagsError(false)
+      setFlags(frame.flags)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [flagsAttempt])
 
   const rows = reports ? recentReports(reports) : null
 
@@ -86,11 +108,26 @@ export function AiToolsHome() {
   }
 
   return (
-    <div className="max-w-3xl">
+    <div className="max-w-3xl pe-16">
       <h1 className="font-display text-[2.2rem] font-bold tracking-[-0.03em]">AI tools</h1>
       <p className="mt-3 max-w-xl text-[1rem] leading-relaxed text-ink/65">
         Live tools only. Each one says what it checks and what it will not do.
       </p>
+      {flagsError ? (
+        <div className="mt-6">
+          <ErrorBanner
+            tone="member"
+            message="Could not load the tool list. Retry."
+            retryLabel="Retry"
+            onRetry={() => setFlagsAttempt((value) => value + 1)}
+          />
+        </div>
+      ) : null}
+      {flags ? <AiToolCardList flags={flags} staff={staffRole !== null} /> : flagsError ? null : (
+        <div className="mt-6">
+          <CardSkeleton tone="member" label="Loading tools" />
+        </div>
+      )}
       <ul className="mt-8 space-y-3">
         <li>
           <Link
