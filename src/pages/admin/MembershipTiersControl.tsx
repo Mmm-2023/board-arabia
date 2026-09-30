@@ -96,7 +96,7 @@ export function MembershipTiersControl({
           Founding and Member cannot both be on. Sponsor can sit with either. Founding uses a numbered seat in this region.
         </p>
         <div
-          className="mt-2 flex max-w-full flex-wrap gap-1 rounded-full bg-[var(--ba-lavender-mist)] p-1"
+          className="tier-chip-track mt-2 flex max-w-full flex-wrap items-center gap-2 md:gap-1 md:rounded-full md:bg-[var(--ba-lavender-mist)] md:p-1"
           role="group"
           aria-label="Membership tiers"
         >
@@ -110,8 +110,10 @@ export function MembershipTiersControl({
                 aria-checked={on}
                 aria-disabled={busy}
                 onClick={() => toggle(id)}
-                className={`tier-chip inline-flex min-h-11 items-center gap-1.5 rounded-full px-3 text-[0.875rem] font-semibold ${
-                  on ? 'bg-[var(--ba-indigo)] text-white' : 'text-[var(--ba-ink)] hover:bg-white'
+                className={`tier-chip inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-full px-3 text-[0.875rem] font-semibold whitespace-nowrap ${
+                  on
+                    ? 'bg-[var(--ba-indigo)] text-white'
+                    : 'bg-[var(--ba-lavender-mist)] text-[var(--ba-ink)] hover:bg-white md:bg-transparent'
                 } ${busy ? 'pointer-events-none' : ''}`}
               >
                 {on ? (

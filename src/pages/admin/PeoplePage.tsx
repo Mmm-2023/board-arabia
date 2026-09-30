@@ -324,7 +324,7 @@ export function PeoplePage({ tierShots }: { tierShots?: Record<string, TierShot>
                     return (
                     <li
                       key={`${tier}-${row.email}`}
-                      className="flex flex-wrap items-center justify-between gap-3 border border-pearl/10 px-5 py-4"
+                      className="flex max-w-full flex-wrap items-center justify-between gap-3 border border-pearl/10 py-4 ps-5 pe-16"
                     >
                       <div className="flex min-w-0 items-center gap-3">
                         <SignedAvatar
@@ -334,13 +334,21 @@ export function PeoplePage({ tierShots }: { tierShots?: Record<string, TierShot>
                           alt=""
                         />
                         <div className="min-w-0">
-                        <p className="text-[0.95rem] text-stone/85">{row.email}</p>
+                        <p className="text-[0.95rem] break-words text-stone/85">{row.email}</p>
                         <p className="mt-1 text-[0.8rem] text-pearl/45">{row.detail}</p>
                         </div>
                       </div>
-                      <span className="border border-pearl/20 px-2 py-1 text-[0.68rem] font-semibold tracking-[0.08em] text-brass-bright uppercase">
-                        {tier}
-                      </span>
+                      <div className="flex max-w-full flex-wrap gap-1.5" aria-label={`Tiers for ${row.email}`}>
+                        {row.pills.map((pill) => (
+                          <span
+                            key={pill.id}
+                            data-tier-pill={pill.id}
+                            className="inline-flex items-center rounded-full bg-[var(--ba-lavender-mist)] px-2.5 py-1 text-[12px] font-semibold text-[var(--ba-ink)]"
+                          >
+                            {pill.label}
+                          </span>
+                        ))}
+                      </div>
                     </li>
                     )
                   })}
