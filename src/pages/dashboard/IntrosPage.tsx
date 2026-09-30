@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { SignedAvatar } from '../../components/SignedAvatar'
-import { fetchMyIntros, respondMemberIntro } from '../../lib/demoFetch'
-import type { IntroRow } from '../../lib/memberIntros'
+import { fetchIntroContacts, fetchIntroQuota, fetchMyIntros, respondMemberIntro } from '../../lib/demoFetch'
+import { introQuotaHint, type IntroContact, type IntroQuota, type IntroRow } from '../../lib/memberIntros'
 import { useNoIndex } from '../../lib/usePageTitle'
 import { CardSkeleton, ErrorBanner } from '../../shell/ViewState'
 import { MEMBER_VIEWS } from '../../shell/viewCopy'
@@ -17,6 +17,8 @@ export function IntrosPage() {
   const [attempt, setAttempt] = useState(0)
   const [busyId, setBusyId] = useState<string | null>(null)
   const [error, setError] = useState('')
+  const [contacts, setContacts] = useState<Record<string, IntroContact>>({})
+  const [quota, setQuota] = useState<IntroQuota | null>(null)
   useNoIndex('Intros | Board Arabia')
 
   useEffect(() => {
@@ -28,6 +30,13 @@ export function IntrosPage() {
         return
       }
       setList({ status: 'ready', rows: result.status === 'ready' ? result.rows : [] })
+    })
+    void fetchIntroContacts().then((result) => {
+      if (cancelled) return
+      setContacts(result.status === 'ready' ? result.rows : {})
+    })
+    void fetchIntroQuota().then((result) => {
+      if (!cancelled) setQuota(result)
     })
     return () => {
       cancelled = true
@@ -56,8 +65,11 @@ export function IntrosPage() {
         Requests you sent, and requests sent to you. Mandate and real estate unlocks are in this list too.
       </p>
       <p className="mt-3 max-w-xl text-[1rem] leading-relaxed text-ink/65">
-        Email and phone are not shared. After someone accepts, you still see only the directory card.
+        After someone accepts, you both see email, LinkedIn, and phone when it is set. Before that, those stay private.
       </p>
+      {quota ? (
+        <p className="mt-3 text-[1rem] text-ink/70">{introQuotaHint(quota.remaining, quota.allowance)} this month.</p>
+      ) : null}
       <div className="mt-8">
         {list.status === 'loading' ? <CardSkeleton tone="member" label="Loading intros" /> : null}
         {list.status === 'error' ? (
@@ -77,6 +89,7 @@ export function IntrosPage() {
             rows={list.rows}
             busyId={busyId}
             error={error}
+            contacts={contacts}
             onRespond={(id, decision) => void onRespond(id, decision)}
             portrait={(row) => (
               <SignedAvatar path={row.avatar_path ?? null} avatarStyle={row.avatar_style} size={48} alt="" />

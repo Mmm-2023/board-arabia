@@ -40,6 +40,8 @@ export function ProfilePage({ preview }: { preview?: { src: string | null } }) {
   const [location, setLocation] = useState(profile?.location ?? '')
   const [linkedin, setLinkedin] = useState(profile?.linkedin_url ?? '')
   const [phone, setPhone] = useState(profile?.phone ?? '')
+  const [calendar, setCalendar] = useState(profile?.calendar_url ?? '')
+  const calendarKnown = profile?.calendar_url !== undefined
   const [bio, setBio] = useState(profile?.bio ?? '')
   const tagsFromProfile =
     profile?.availability !== undefined ||
@@ -224,6 +226,11 @@ export function ProfilePage({ preview }: { preview?: { src: string | null } }) {
       setProfileError('LinkedIn needs a full https link, or leave it blank.')
       return
     }
+    const calendarUrl = calendar.trim()
+    if (calendarUrl && (!/^https:\/\/\S+$/.test(calendarUrl) || calendarUrl.includes('@'))) {
+      setProfileError('Calendar needs a full https link, or leave it blank.')
+      return
+    }
     if (fullName.trim().length > 200 || bio.trim().length > 2000) {
       setProfileError('Shorten the name or the bio.')
       return
@@ -238,6 +245,7 @@ export function ProfilePage({ preview }: { preview?: { src: string | null } }) {
       phone: emptyToNull(phone),
       bio: emptyToNull(bio),
       include_in_public_aggregates: includeInPublic,
+      ...(calendarKnown || calendarUrl ? { calendar_url: calendarUrl || null } : {}),
     }
     const tagsReady = tagStatus === 'ready'
     const withTags = tagsReady
@@ -246,8 +254,15 @@ export function ProfilePage({ preview }: { preview?: { src: string | null } }) {
 
     setSavingProfile(true)
     let saved = await supabase.from('profiles').update(withTags).eq('user_id', userId)
+    if (saved.error && schemaMissing(saved.error.message) && 'calendar_url' in withTags) {
+      const rest = { ...withTags }
+      delete rest.calendar_url
+      saved = await supabase.from('profiles').update(rest).eq('user_id', userId)
+    }
     if (saved.error && tagsReady && schemaMissing(saved.error.message)) {
-      saved = await supabase.from('profiles').update(base).eq('user_id', userId)
+      const rest = { ...base }
+      delete rest.calendar_url
+      saved = await supabase.from('profiles').update(rest).eq('user_id', userId)
       setSavingProfile(false)
       if (saved.error) {
         setProfileError(saved.error.message)
@@ -458,6 +473,17 @@ export function ProfilePage({ preview }: { preview?: { src: string | null } }) {
           autoComplete="url"
         />
         <Field label="Phone" value={phone} onChange={setPhone} type="tel" autoComplete="tel" />
+        <Field
+          label="Calendar link"
+          value={calendar}
+          onChange={setCalendar}
+          type="url"
+          placeholder="https://example.com/calendar"
+          autoComplete="url"
+        />
+        <p className="-mt-2 text-[0.92rem] leading-relaxed text-ink/55">
+          Optional. Shared only after an introduction is accepted.
+        </p>
         <label className="block">
           <span className="text-[0.72rem] font-semibold tracking-[0.08em] text-ink/45 uppercase">
             Short note
