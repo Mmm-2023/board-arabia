@@ -11,16 +11,16 @@ import {
 } from '../../../supabase/functions/_shared/ai_tools.ts'
 import type { StubOutput } from '../../../supabase/functions/ai-tool-job/tools/types.ts'
 import { AiToolForm, AiToolJobStatus, AiToolReport, AiToolShell } from '../../components/ai/AiToolDesk'
-import { MarketBriefForm, MarketUnavailable } from '../../components/ai/MarketBriefForm'
+import { MarketBriefForm } from '../../components/ai/MarketBriefForm'
 import { PricingInputs } from '../../components/ai/PricingInputs'
 import { isMarketSector, marketFileName, type MarketSector } from '../../../supabase/functions/ai-tool-job/tools/market_brief.ts'
 import { AI_UI } from '../../lib/aiToolUi'
 import {
   acceptAiToolFile,
+  acceptCfoFile,
   listAiToolJobs,
   postAiTool,
   readAiToolFrame,
-  readMarketSearchStatus,
   recordAiToolConsent,
   uploadAiToolFile,
   type AiToolNote,
@@ -35,7 +35,6 @@ import { ErrorBanner, FormSkeleton, PermissionState } from '../../shell/ViewStat
 import { useMember } from './context'
 
 type Load = 'loading' | 'ready' | 'error' | 'denied'
-type SearchState = 'loading' | 'ready' | 'missing' | 'error'
 
 export function AiToolPage() {
   const { toolSlug, jobId } = useParams()
@@ -57,7 +56,6 @@ export function AiToolPage() {
   const [jobStep, setJobStep] = useState('')
   const [pendingDelete, setPendingDelete] = useState<string | null>(null)
   const [sector, setSector] = useState<MarketSector | ''>('')
-  const [search, setSearch] = useState<SearchState>(tool === 'market_brief' ? 'loading' : 'ready')
   const queryKey = `${tool ?? ''}|${jobId ?? ''}|${attempt}`
   const [seenQuery, setSeenQuery] = useState(queryKey)
   if (seenQuery !== queryKey) {
@@ -65,7 +63,6 @@ export function AiToolPage() {
     setLoad('loading')
     setOutput(null)
     setSector('')
-    setSearch(tool === 'market_brief' ? 'loading' : 'ready')
   }
   useNoIndex(tool ? 'AI tool | Board Arabia' : 'AI tools | Board Arabia')
 
@@ -73,9 +70,7 @@ export function AiToolPage() {
     if (!tool) return
     let cancelled = false
     void (async () => {
-      const framePromise = readAiToolFrame()
-      const searchPromise = tool === 'market_brief' ? readMarketSearchStatus() : Promise.resolve('ready' as const)
-      const [frame, searchStatus] = await Promise.all([framePromise, searchPromise])
+      const frame = await readAiToolFrame()
       if (cancelled) return
       if (!frame) {
         setLoad('error')
@@ -86,15 +81,6 @@ export function AiToolPage() {
       if (!on) {
         setLoad('denied')
         return
-      }
-      if (tool === 'market_brief') {
-        if (searchStatus === 'ready') setSearch('ready')
-        else if (searchStatus === 'not_configured') setSearch('missing')
-        else setSearch('error')
-        if (searchStatus === null) {
-          setLoad('error')
-          return
-        }
       }
       const listed = await listAiToolJobs(tool)
       if (cancelled) return
@@ -166,13 +152,10 @@ export function AiToolPage() {
       mime_type: 'text/plain',
       byte_size: note.size,
       sector,
+      lang,
     })
     setBusy(false)
     if (!started.ok) {
-      if (started.code === 'search_not_configured') {
-        setSearch('missing')
-        return
-      }
       setError(started.error)
       return
     }
@@ -182,7 +165,7 @@ export function AiToolPage() {
   async function onRun() {
     const upload = file ?? (tool === 'pricing_sense_check' ? pricingFile(pricing) : null)
     if (!tool || !upload || !consented) return
-    const problem = acceptAiToolFile(upload)
+    const problem = tool === 'cfo_check' ? acceptCfoFile(upload) : acceptAiToolFile(upload)
     if (problem) {
       setError(problem)
       return
@@ -217,6 +200,7 @@ export function AiToolPage() {
       file_name: upload.name,
       mime_type: mime,
       byte_size: upload.size,
+      lang,
     })
     setBusy(false)
     if (!started.ok) {
@@ -279,13 +263,7 @@ export function AiToolPage() {
       {load === 'ready' && !output && jobId ? (
         <AiToolJobStatus status={jobStatus || 'queued'} step={jobStep || 'intake'} />
       ) : null}
-      {load === 'ready' && !jobId && tool === 'market_brief' && search === 'missing' ? (
-        <>
-          <MarketUnavailable lang={lang} />
-          <Notes notes={notes} tool={tool} lang={lang} onDelete={setPendingDelete} />
-        </>
-      ) : null}
-      {load === 'ready' && !jobId && !(tool === 'market_brief' && search === 'missing') ? (
+      {load === 'ready' && !jobId ? (
         <>
           {error ? (
             <p className="mb-4 text-[0.98rem] text-[var(--ba-error)]" role="alert">
@@ -298,7 +276,7 @@ export function AiToolPage() {
               lang={lang}
               sector={sector}
               consented={consented}
-              busy={busy || search !== 'ready'}
+              busy={busy}
               onSector={(next) => {
                 if (isMarketSector(next)) setSector(next)
               }}
@@ -312,6 +290,8 @@ export function AiToolPage() {
               consented={consented}
               fileName={file?.name || ''}
               busy={busy}
+              accept={tool === 'cfo_check' ? CFO_ACCEPT : undefined}
+              fileHint={tool === 'cfo_check' ? (lang === 'ar' ? CFO_HINT.ar : CFO_HINT.en) : undefined}
               inputsReady={tool === 'pricing_sense_check' ? Boolean(file) || digitsOnly(pricing.asking).length > 0 : undefined}
               extra={
                 tool === 'pricing_sense_check' ? (
@@ -389,6 +369,13 @@ function Notes({
     </section>
   )
 }
+
+const CFO_ACCEPT = '.pdf,.csv,.xlsx,application/pdf,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+
+const CFO_HINT = {
+  en: 'PDF, CSV, or XLSX. 15 MB max. The file and the output are deleted after the retention period.',
+  ar: 'ملف PDF أو CSV أو XLSX. الحد 15 ميغابايت. يُحذف الملف والنتيجة بعد مدة الحفظ.',
+} as const
 
 const EMPTY_PRICING: PricingDraft = {
   company: '',

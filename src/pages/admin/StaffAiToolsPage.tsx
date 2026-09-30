@@ -104,9 +104,9 @@ export function StaffAiToolPage() {
             {ui.allTools}
           </Link>
         </p>
-        <div className="rounded-none bg-pearl p-4 text-ink">
+        <div className="w-full bg-pearl p-4 text-ink">
           {market && search === 'loading' ? <FormSkeleton tone="member" /> : null}
-          {market && search === 'not_configured' ? <MarketSearchNotice tone="member" /> : null}
+          {market && search === 'not_configured' ? <MarketSearchNotice lang={lang} surface="tool" /> : null}
           {market && search === 'error' ? (
             <p className="text-[0.98rem] text-ink/70" role="status">
               Could not check search. Retry.

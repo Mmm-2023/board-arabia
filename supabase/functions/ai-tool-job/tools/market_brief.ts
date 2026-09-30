@@ -43,10 +43,10 @@ export const MARKET_SECTORS = [
 export type MarketSector = (typeof MARKET_SECTORS)[number]['en']
 
 export const MARKET_TOPICS = [
-  { id: 'licences', label: 'Licences' },
-  { id: 'ownership', label: 'Foreign ownership and local partner' },
-  { id: 'saudization', label: 'Saudization (Nitaqat)' },
-  { id: 'incentives', label: 'Incentives' },
+  { id: 'licences', en: 'Licences', ar: 'التراخيص' },
+  { id: 'ownership', en: 'Foreign ownership and local partner', ar: 'الملكية الأجنبية والشريك المحلي' },
+  { id: 'saudization', en: 'Saudization (Nitaqat)', ar: 'التوطين (نطاقات)' },
+  { id: 'incentives', en: 'Incentives', ar: 'الحوافز' },
 ] as const
 
 export type MarketTopicId = (typeof MARKET_TOPICS)[number]['id']
@@ -125,15 +125,66 @@ function usableHit(hit: MarketSearchHit): boolean {
   return true
 }
 
+const AR_MONTHS = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'] as const
+const EN_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] as const
+const AR_DIGITS = '٠١٢٣٤٥٦٧٨٩'
+
+function arDigits(value: string): string {
+  return value.replace(/\d/g, (digit) => AR_DIGITS[Number(digit)] ?? digit)
+}
+
+/** Arabic dates follow the legal pages: eastern digits and the Arabic month name. */
+export function localizeReportDate(dated: string, lang: 'en' | 'ar'): string {
+  if (lang !== 'ar') return dated
+  const match = /^(\d{2}) (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) (\d{4})$/.exec(dated.trim())
+  if (!match) return dated
+  const monthIndex = EN_MONTHS.findIndex((item) => item === match[2])
+  const month = AR_MONTHS[monthIndex]
+  if (!month) return dated
+  return `${arDigits(match[1])} ${month} ${arDigits(match[3])}`
+}
+
+function sectorLabel(sector: string, lang: 'en' | 'ar'): string {
+  const found = MARKET_SECTORS.find((item) => item.en === sector)
+  if (!found) return lang === 'ar' ? 'هذا القطاع' : 'this sector'
+  return lang === 'ar' ? found.ar : found.en
+}
+
+const QUESTIONS = {
+  en: [
+    'Which licence applies to this sector today, and which authority issues it?',
+    'Does this sector still require a local partner or a foreign ownership limit?',
+    'What Nitaqat band applies, and which roles count toward Saudization?',
+    'Which incentives are open now, and what are the conditions?',
+    'What should a licensed Saudi lawyer and MISA confirm before you act?',
+  ],
+  ar: [
+    'أي ترخيص ينطبق على هذا القطاع اليوم، وأي جهة تصدره؟',
+    'هل ما زال هذا القطاع يتطلب شريكاً محلياً أو حداً للملكية الأجنبية؟',
+    'ما نطاق نطاقات الذي ينطبق، وأي أدوار تُحتسب في التوطين؟',
+    'أي حوافز متاحة الآن، وما شروطها؟',
+    'ما الذي يجب أن يؤكده محامٍ سعودي مرخّص ووزارة الاستثمار قبل التصرف؟',
+  ],
+} as const
+
+const LIMITS = {
+  en: 'This brief does not confirm what applies to your specific case. It does not replace a licensed Saudi lawyer, tax adviser, or the relevant government authority. Confirm current rules with a licensed Saudi lawyer and the relevant authority.',
+  ar: 'لا يؤكد هذا الموجز ما ينطبق على حالتك تحديداً. ولا يغني عن محامٍ سعودي مرخّص أو مستشار ضريبي أو الجهة الحكومية المختصة. تحقّق من الأنظمة السارية مع محامٍ سعودي مرخّص والجهة المختصة.',
+} as const
+
 /**
  * One-page brief. Every source is one of the hits passed in.
  * An empty hit list stays empty. Nothing is filled in from memory.
+ * Arabic runs use Arabic findings, questions, and the Arabic disclaimer.
+ * Source titles stay in the language of the page.
  */
 export function buildMarketBrief(input: {
   sector: string
   hits: readonly MarketSearchHit[]
   generatedOn: string
+  lang?: 'en' | 'ar'
 }): StubOutput {
+  const lang = input.lang === 'ar' ? 'ar' : 'en'
   const seen = new Set<string>()
   const kept: MarketSearchHit[] = []
   for (const hit of input.hits) {
@@ -145,7 +196,7 @@ export function buildMarketBrief(input: {
       topic: hit.topic,
       title: cleanText(hit.title, 180),
       url,
-      dated: hit.dated,
+      dated: localizeReportDate(hit.dated, lang),
       snippet: cleanText(hit.snippet, 320),
     })
   }
@@ -153,32 +204,37 @@ export function buildMarketBrief(input: {
   const findings: string[] = []
   for (const topic of MARKET_TOPICS) {
     const rows = kept.filter((hit) => hit.topic === topic.id).slice(0, 2)
+    const label = topic[lang]
     if (rows.length === 0) {
-      findings.push(`${topic.label}: No dated public source was returned for this point.`)
+      findings.push(
+        lang === 'ar'
+          ? `${label}: لم يُرجع مصدر عام مؤرخ لهذه النقطة.`
+          : `${label}: No dated public source was returned for this point.`,
+      )
+      continue
+    }
+    if (lang === 'ar') {
+      findings.push(`${label}: وُجد مصدر عام مؤرخ في القائمة أدناه. النقطة عامة وليست تأكيداً لما ينطبق على حالتك.`)
       continue
     }
     for (const row of rows) {
-      findings.push(`${topic.label}: ${row.snippet}`)
+      findings.push(`${label}: ${row.snippet}`)
     }
   }
 
-  const sector = isMarketSector(input.sector) ? input.sector : 'this sector'
+  const sector = sectorLabel(input.sector, lang)
+  const summary = lang === 'ar'
+    ? `موجز عام عن دخول السوق السعودي في ${sector}، مبني فقط على المصادر العامة المؤرخة أدناه. لا يؤكد ما ينطبق على حالة بعينها. تتغير الأنظمة كثيراً. هذه ليست استشارة قانونية أو ضريبية.`
+    : `A general brief on entering the Saudi market in ${sector}, drawn only from the dated public sources below. It does not confirm what applies to a specific case. Rules change often. This is not legal or tax advice.`
   return {
     tool_key: 'market_brief',
-    title: 'Market brief',
-    summary: `A general brief on entering the Saudi market in ${sector}, drawn only from the dated public sources below. It does not confirm what applies to a specific case. Rules change often. This is not legal or tax advice.`,
+    title: lang === 'ar' ? 'موجز دخول السوق السعودي' : 'Market brief',
+    summary,
     findings,
-    questions: [
-      'Which licence applies to this sector today, and which authority issues it?',
-      'Does this sector still require a local partner or a foreign ownership limit?',
-      'What Nitaqat band applies, and which roles count toward Saudization?',
-      'Which incentives are open now, and what are the conditions?',
-      'What should a licensed Saudi lawyer and MISA confirm before you act?',
-    ],
+    questions: [...QUESTIONS[lang]],
     sources: kept.map((hit) => ({ title: hit.title, url: hit.url, dated: hit.dated })),
-    limits:
-      'This brief does not confirm what applies to your specific case. It does not replace a licensed Saudi lawyer, tax adviser, or the relevant government authority. Confirm current rules with a licensed Saudi lawyer and the relevant authority.',
-    generated_on: input.generatedOn,
+    limits: LIMITS[lang],
+    generated_on: localizeReportDate(input.generatedOn, lang),
     model_id: null,
     model_skip_reason: 'public_search',
   }

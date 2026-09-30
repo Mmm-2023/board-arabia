@@ -46,15 +46,19 @@ export function MarketUnavailable({ lang }: { lang: UiLang }) {
   )
 }
 
-/** Staff-only. The phrase is the operational state, not member copy. */
-export function MarketSearchNotice({ tone }: { tone: 'staff' | 'member' }) {
-  const className =
-    tone === 'staff'
-      ? 'mt-4 border border-[var(--ba-copper)] px-4 py-3 text-[1rem] font-semibold text-pearl'
-      : 'mt-4 border border-[var(--ba-copper)] bg-white px-4 py-3 text-[1rem] font-semibold text-ink'
+const STAFF_SEARCH = {
+  en: 'Search is not set up yet. Market brief needs the search key before it can run.',
+  ar: 'البحث غير مُعد بعد. يحتاج موجز السوق إلى مفتاح البحث قبل أن يعمل.',
+} as const
+
+/** Staff only. Members do not see this, because the tool stays off until staff turn it on. */
+export function MarketSearchNotice({ lang, surface = 'settings' }: { lang: 'en' | 'ar'; surface?: 'settings' | 'tool' }) {
+  const className = surface === 'settings'
+    ? 'mt-4 block w-full border border-pearl/15 px-3 py-3 text-[1rem] leading-relaxed text-pearl'
+    : 'block w-full border border-[var(--ba-line)] bg-white px-3 py-3 text-[1rem] leading-relaxed text-ink'
   return (
     <p role="status" data-market-search="not_configured" className={className}>
-      search not configured
+      {STAFF_SEARCH[lang]}
     </p>
   )
 }

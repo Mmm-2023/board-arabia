@@ -3,8 +3,8 @@ import { mkdirSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 import { createServer } from 'vite'
 
-const port = 4197
-const chromePort = 9347
+const port = 4198
+const chromePort = 9348
 const outDir = '/opt/cursor/artifacts'
 mkdirSync(outDir, { recursive: true })
 
@@ -25,28 +25,28 @@ const chrome = spawn(
     '--disable-background-networking',
     '--no-first-run',
     `--remote-debugging-port=${chromePort}`,
-    '--user-data-dir=/tmp/aitools-market-chrome',
+    '--user-data-dir=/tmp/aitools-cfo-chrome',
     'about:blank',
   ],
   { stdio: 'ignore' },
 )
 
 const shots = [
-  ['report-ar', 1280, 'aitools-market-report-ar-v2-1280.png'],
-  ['report-ar', 390, 'aitools-market-report-ar-v2-390.png'],
-  ['staff-search', 1280, 'aitools-market-search-not-configured-v2-1280.png'],
-  ['staff-search', 390, 'aitools-market-search-not-configured-v2-390.png'],
+  ['tool-en', 'aitools-cfo-tool-en', 'not accounting, audit or financial advice'],
+  ['tool-ar', 'aitools-cfo-tool-ar', 'ليست استشارة محاسبية'],
+  ['report-en', 'aitools-cfo-report-en', 'not socpa accounting or audit'],
+  ['report-ar', 'aitools-cfo-report-ar', '1,700,000'],
+  ['settings', 'aitools-cfo-settings', 'off for members'],
 ]
 
 try {
   await waitForBrowser()
-  for (const [view, width, file] of shots) {
-    await capture(
-      `http://127.0.0.1:${port}/scripts/smoke/aitools-market.html?view=${view}`,
-      Number(width),
-      path.join(outDir, file),
-      view,
-    )
+  for (const [view, name, marker] of shots) {
+    for (const width of [1280, 390]) {
+      const height = width === 390 ? 2200 : 1600
+      const file = path.join(outDir, `${name}-${width}.png`)
+      await capture(`http://127.0.0.1:${port}/scripts/smoke/aitools-cfo.html?view=${view}`, width, height, file, marker)
+    }
   }
 } finally {
   chrome.kill('SIGKILL')
@@ -116,25 +116,19 @@ async function withPage(width, height, url, run) {
   }
 }
 
-async function capture(url, width, file, view) {
-  const height = width === 390 ? 844 : 900
+async function capture(url, width, height, file, marker) {
   await withPage(width, height, url, async (send) => {
-    const placed = await send('Runtime.evaluate', {
+    const ready = await send('Runtime.evaluate', {
       expression: `new Promise((resolve) => {
         const started = Date.now()
         const tick = () => {
+          const text = document.body.textContent || ''
           const root = document.querySelector('[data-preview]')
-          const text = document.body.innerText || ''
-          const ready = root && text.length > 40
-          if (ready) {
-            resolve({
-              ok: true,
-              height: Math.max(document.body.scrollHeight, document.documentElement.scrollHeight),
-              text: text.slice(0, 180),
-            })
+          if (root && text.toLowerCase().includes(${JSON.stringify(marker.toLowerCase())})) {
+            resolve({ ok: true })
             return
           }
-          if (Date.now() - started > 8000) resolve({ ok: false, text: text.slice(0, 240) })
+          if (Date.now() - started > 8000) resolve({ ok: false, text: text.slice(0, 500) })
           else setTimeout(tick, 50)
         }
         tick()
@@ -142,15 +136,31 @@ async function capture(url, width, file, view) {
       awaitPromise: true,
       returnByValue: true,
     })
-    const value = placed.result?.value
-    if (!value?.ok) throw new Error(`${view} at ${width} did not render: ${JSON.stringify(placed).slice(0, 800)}`)
-    const full = Math.min(Math.max(value.height, height), 6000)
-    await send('Emulation.setDeviceMetricsOverride', {
-      width,
-      height: full,
-      deviceScaleFactor: 1,
-      mobile: width < 500,
+    if (!ready.result?.value?.ok) {
+      throw new Error(`${file} did not render: ${JSON.stringify(ready.result?.value)}`)
+    }
+    const fit = await send('Runtime.evaluate', {
+      expression: `(() => {
+        const width = window.innerWidth
+        const overflow = Math.max(document.documentElement.scrollWidth, document.body.scrollWidth) - width
+        const targets = [...document.querySelectorAll('button, a.ba-primary, nav a, [role="switch"]')]
+          .filter((node) => node.getClientRects().length)
+          .map((node) => {
+            const box = node.getBoundingClientRect()
+            return { text: (node.textContent || '').trim().slice(0, 40), w: Math.round(box.width), h: Math.round(box.height) }
+          })
+          .filter((item) => item.h > 0 && item.h < 44 && item.w > 24)
+        return { overflow, targets }
+      })()`,
+      returnByValue: true,
     })
+    const check = fit.result?.value
+    if (width === 390 && check?.overflow > 1) {
+      throw new Error(`${file} overflows by ${check.overflow}px`)
+    }
+    if (width === 390 && check?.targets?.length) {
+      throw new Error(`${file} targets under 44px: ${JSON.stringify(check.targets)}`)
+    }
     const shot = await send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: true })
     const bytes = Buffer.from(shot.data, 'base64')
     writeFileSync(file, bytes)

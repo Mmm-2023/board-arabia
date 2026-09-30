@@ -496,6 +496,7 @@ function memoryStore(toolOn = true): AiToolStore & {
     jobById: async (jobId) => jobs.get(jobId) ?? null,
     outputByJob: async (jobId) => outputs.get(jobId) ?? null,
     fileReady: async () => true,
+    downloadFile: async () => null,
     insertJob: async (row) => {
       if (jobs.has(row.id)) return 'conflict'
       jobs.set(row.id, {

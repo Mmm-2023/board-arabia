@@ -1,17 +1,15 @@
 import { StrictMode, type ReactNode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { MemoryRouter } from 'react-router-dom'
+import csvText from '../../fixtures/cfo/example-holdings.csv?raw'
 import { AI_TOOL_FLAG_DEFAULTS } from '../../supabase/functions/_shared/ai_tools.ts'
-import { buildMarketBrief } from '../../supabase/functions/ai-tool-job/tools/market_brief.ts'
-import { AiToolReport, AiToolShell } from '../../src/components/ai/AiToolDesk'
-import { MarketBriefForm } from '../../src/components/ai/MarketBriefForm'
+import { cfoCheckOutput } from '../../supabase/functions/ai-tool-job/tools/cfo_check.ts'
+import { AiToolForm, AiToolReport, AiToolShell } from '../../src/components/ai/AiToolDesk'
 import { PRIVACY_LINK, TERMS_LINK } from '../../src/lib/aiToolConfig'
 import { renderToolCopy, type LegalSlots } from '../../src/lib/aiToolCopy'
-import { AI_UI } from '../../src/lib/aiToolUi'
 import { AiToolSettingsPanel } from '../../src/pages/admin/AiToolSettingsPanel'
 import { AppShell } from '../../src/shell/AppShell'
 import { MEMBER_ACCOUNT, MEMBER_DESTINATIONS, STAFF_DESTINATIONS, STAFF_SECONDARY } from '../../src/shell/destinations'
-import { MARKET_SEARCH_FIXTURE } from '../fixtures/market-brief-search.ts'
 import './home.css'
 
 const slots: LegalSlots = {
@@ -24,18 +22,23 @@ const slots: LegalSlots = {
   date: '30 Sep 2026',
 }
 
-const view = new URLSearchParams(window.location.search).get('view') || 'tool-en'
-
-function memberNav(lang: 'en' | 'ar') {
-  if (lang !== 'ar') return MEMBER_DESTINATIONS
-  return MEMBER_DESTINATIONS.map((item) => (item.id === 'ai' ? { ...item, label: AI_UI.ar.hub } : item))
+const CFO_ACCEPT = '.pdf,.csv,.xlsx,application/pdf,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+const CFO_HINT = {
+  en: 'PDF, CSV, or XLSX. 15 MB max. The file and the output are deleted after the retention period.',
+  ar: 'ملف PDF أو CSV أو XLSX. الحد 15 ميغابايت. يُحذف الملف والنتيجة بعد مدة الحفظ.',
 }
 
-function memberShell(node: ReactNode, lang: 'en' | 'ar' = 'en') {
+const view = new URLSearchParams(window.location.search).get('view') || 'tool-en'
+
+function memberShell(node: ReactNode, lang: 'en' | 'ar') {
+  const destinations =
+    lang === 'ar'
+      ? MEMBER_DESTINATIONS.map((item) => (item.id === 'ai' ? { ...item, label: 'أدوات الذكاء الاصطناعي' } : item))
+      : MEMBER_DESTINATIONS
   return (
     <AppShell
       tone="member"
-      destinations={memberNav(lang)}
+      destinations={destinations}
       secondary={MEMBER_ACCOUNT}
       updatedLabel="Updated 09:00"
       roleSwitch={null}
@@ -65,18 +68,20 @@ function staffShell(node: ReactNode) {
   )
 }
 
-function toolPage(lang: 'en' | 'ar') {
-  const copy = renderToolCopy('market_brief', lang, slots)
+function toolForm(lang: 'en' | 'ar') {
+  const copy = renderToolCopy('cfo_check', lang, slots)
   return memberShell(
     <AiToolShell lang={lang} title={copy.title}>
-      <MarketBriefForm
+      <AiToolForm
         copy={copy}
         lang={lang}
-        sector="Health"
         consented={false}
+        fileName=""
         busy={false}
-        onSector={() => undefined}
+        accept={CFO_ACCEPT}
+        fileHint={CFO_HINT[lang]}
         onConsent={() => undefined}
+        onFile={() => undefined}
         onRun={() => undefined}
       />
     </AiToolShell>,
@@ -85,13 +90,15 @@ function toolPage(lang: 'en' | 'ar') {
 }
 
 function report(lang: 'en' | 'ar') {
-  const output = buildMarketBrief({
-    sector: 'Health',
-    hits: MARKET_SEARCH_FIXTURE,
+  const copy = renderToolCopy('cfo_check', lang, slots)
+  const output = cfoCheckOutput({
+    fileName: 'example-holdings.csv',
     generatedOn: '30 Sep 2026',
+    modelId: null,
+    modelSkipReason: 'provider_not_configured',
+    sourceText: csvText,
     lang,
   })
-  const copy = renderToolCopy('market_brief', lang, { ...slots, date: output.generated_on })
   return memberShell(
     <AiToolShell lang={lang} title={copy.title}>
       <AiToolReport
@@ -107,38 +114,22 @@ function report(lang: 'en' | 'ar') {
   )
 }
 
-function settings() {
-  return staffShell(
-    <div className="max-w-3xl pe-16">
-      <h1 className="font-display text-[2rem] font-semibold tracking-[-0.03em]">Settings</h1>
-      <AiToolSettingsPanel
-        shot={{ retentionDays: 30, flags: { ...AI_TOOL_FLAG_DEFAULTS }, searchConfigured: false }}
-      />
-    </div>,
-  )
-}
-
-function staffSearch() {
-  return staffShell(
-    <div className="w-full max-w-3xl pe-16">
-      <h1 className="font-display text-[2rem] font-semibold tracking-[-0.03em]">Settings</h1>
-      <AiToolSettingsPanel
-        shot={{ retentionDays: 30, flags: { ...AI_TOOL_FLAG_DEFAULTS }, searchConfigured: false }}
-      />
-    </div>,
-  )
-}
-
 function screen() {
-  if (view === 'tool-ar') return toolPage('ar')
+  if (view === 'tool-ar') return toolForm('ar')
   if (view === 'report-en') return report('en')
   if (view === 'report-ar') return report('ar')
-  if (view === 'settings') return settings()
-  if (view === 'staff-search') return staffSearch()
-  return toolPage('en')
+  if (view === 'settings') {
+    return staffShell(
+      <div className="max-w-3xl pe-16">
+        <h1 className="font-display text-[2rem] font-semibold tracking-[-0.03em]">Settings</h1>
+        <AiToolSettingsPanel shot={{ retentionDays: 30, flags: { ...AI_TOOL_FLAG_DEFAULTS } }} />
+      </div>,
+    )
+  }
+  return toolForm('en')
 }
 
-const entry = view === 'settings' || view === 'staff-search' ? '/admin/settings' : '/dashboard/ai/market-brief'
+const entry = view === 'settings' ? '/admin/settings' : '/dashboard/ai/cfo-check'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

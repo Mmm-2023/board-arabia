@@ -449,8 +449,13 @@ test('market form, unavailable state, and staff search notice', async () => {
     assert.match(unavailable, /Nothing was generated/)
     assert.equal(unavailable.includes('search not configured'), false)
     assert.equal(unavailable.includes('example.com'), false)
-    const notice = renderToStaticMarkup(createElement(formMod.MarketSearchNotice, { tone: 'staff' }))
-    assert.match(notice, /search not configured/)
+  const notice = renderToStaticMarkup(createElement(formMod.MarketSearchNotice, { lang: 'en' }))
+  assert.match(notice, /Search is not set up yet\. Market brief needs the search key before it can run\./)
+  assert.match(notice, /class="[^"]*w-full/)
+  const noticeAr = renderToStaticMarkup(createElement(formMod.MarketSearchNotice, { lang: 'ar' }))
+  assert.match(noticeAr, /البحث غير مُعد بعد\. يحتاج موجز السوق إلى مفتاح البحث قبل أن يعمل\./)
+  assert.equal(arabicHtml.includes('Search is not set up yet'), false)
+  assert.equal(unavailable.includes('Search is not set up yet'), false)
     const output = brief.buildMarketBrief({
       sector: 'Health',
       hits: MARKET_SEARCH_FIXTURE,
@@ -480,11 +485,58 @@ test('market form, unavailable state, and staff search notice', async () => {
     )
     assert.match(panel, /Market brief/)
     assert.match(panel, /Off for members/)
-    assert.match(panel, /search not configured/)
+    assert.match(panel, /Search is not set up yet/)
+    assert.match(panel, /w-full/)
     assert.equal(/\bvaluation\b/i.test(locked + arabicHtml + report + panel), false)
   } finally {
     await vite.close()
   }
+})
+
+test('an Arabic run writes Arabic findings, questions, and the disclaimer', async () => {
+  const output = buildMarketBrief({
+    sector: 'Health',
+    hits: MARKET_SEARCH_FIXTURE,
+    generatedOn: '30 Sep 2026',
+    lang: 'ar',
+  })
+  const prose = [output.summary, output.limits, ...output.findings, ...output.questions].join('\n')
+  let withoutTitles = prose
+  for (const source of output.sources) withoutTitles = withoutTitles.split(source.title).join(' ')
+  assert.equal(/[A-Za-z]{2,}(?:\s+[A-Za-z]{2,})+/.test(withoutTitles), false)
+  assert.match(output.summary, /الصحة/)
+  assert.match(output.findings.join('\n'), /التراخيص/)
+  assert.match(output.findings.join('\n'), /لم يُرجع مصدر|وُجد مصدر عام/)
+  assert.match(output.questions.join('\n'), /وزارة الاستثمار/)
+  assert.match(output.limits, /لا يؤكد هذا الموجز ما ينطبق على حالتك تحديداً/)
+  assert.equal(output.limits.includes('does not confirm'), false)
+  assert.equal(output.sources[0]?.title, MARKET_SEARCH_FIXTURE[0]?.title)
+  assert.equal(output.sources[0]?.dated, '١٥ يناير ٢٠٢٦')
+  assert.equal(output.generated_on, '٣٠ سبتمبر ٢٠٢٦')
+  const footer = renderToolCopy('market_brief', 'ar', { ...slots, date: output.generated_on })
+  assert.match(footer.footerLead, /موجز دخول السوق السعودي\. مبني على مصادر عامة حتى تاريخ ٣٠ سبتمبر ٢٠٢٦/)
+  assert.match(footer.footer, /أُعدّ هذا التقرير بالذكاء الاصطناعي/)
+  assert.equal(/[A-Za-z]{2,}(?:\s+[A-Za-z]{2,})+/.test(footer.footerLead), false)
+
+  const { store, consents } = memoryStore(true)
+  consents.set(JOB, consent('market_brief'))
+  const ran = await handleAiToolJob(request({ ...marketStart(), lang: 'ar' }), {
+    resolveUser: async () => ({ ok: true, userId: USER }),
+    store: () => store,
+    now: () => NOW,
+    newId: () => '33333333-3333-4333-8333-333333333333',
+    searchConfigured: () => true,
+    searchMarket: async () => ({ ok: true, hits: MARKET_SEARCH_FIXTURE }),
+  })
+  assert.equal(ran.status, 200)
+  const body = await ran.json()
+  assert.match(body.output.summary, /موجز عام/)
+  assert.match(body.output.questions[0], /ترخيص/)
+  assert.match(body.output.limits, /لا يؤكد هذا الموجز/)
+  assert.equal(body.output.sources[0].title, 'Example note on investment registration')
+  let live = [body.output.summary, body.output.limits, ...body.output.findings, ...body.output.questions].join('\n')
+  for (const source of body.output.sources) live = live.split(source.title).join(' ')
+  assert.equal(/[A-Za-z]{2,}(?:\s+[A-Za-z]{2,})+/.test(live), false)
 })
 
 test('added market lines do not use em dashes', () => {

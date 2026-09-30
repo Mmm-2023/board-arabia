@@ -1,8 +1,8 @@
 /**
  * On-page legal copy for the four AI tools.
- * English banners, consent, and footers follow the 2026-09-30 legal draft.
- * Arabic will and will-not lines, including the shared will-not lines, follow
- * the 2026-09-30 bullets file.
+ * English and Arabic banners, will and will-not lines, consent, and footers
+ * follow the 2026-09-30 legal draft. Arabic will and will-not lines, including
+ * the shared will-not lines, follow the 2026-09-30 bullets file.
  * Pricing English uses the product name Pricing sense-check.
  */
 import {
@@ -17,6 +17,7 @@ export const SHARED_WILL_NOT = [
   'Guarantee that its output is accurate, complete or current.',
 ] as const
 
+/** Shared Arabic will-not lines. Each tool appends these once on the Arabic list. */
 export const SHARED_WILL_NOT_AR = [
   'لا تقدّم استشارة قانونية أو مالية أو استثمارية أو ضريبية أو محاسبية.',
   'لا توصي بشراء أي شيء أو بيعه أو الاحتفاظ به، ولا تقدّم أي عرض أو دعوة.',
