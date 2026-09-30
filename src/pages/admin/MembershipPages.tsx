@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { domainMatches } from '../../../supabase/functions/_shared/membership_steps.ts'
+import { firstTouchChip, isPaidMedium } from '../../lib/marketing'
 import { reviewMembership } from '../../lib/supabase'
 import { useNoIndex } from '../../lib/usePageTitle'
 import { supabase } from '../../lib/supabase'
@@ -170,6 +171,8 @@ export function MembershipDetailPage() {
           body: item.body,
           at: new Date(item.created_at).toLocaleString('en-GB'),
         })),
+        firstTouch: firstTouchChip(row.ft_source, row.ft_medium),
+        firstTouchPaid: isPaidMedium(row.ft_medium),
       })
       setError('')
     })

@@ -41,6 +41,7 @@ const StaffRoomsPage = lazy(() => import('./pages/admin/StaffRoomsPage').then((m
 const AdminIntrosPage = lazy(() => import('./pages/admin/AdminIntrosPage').then((m) => ({ default: m.AdminIntrosPage })))
 const PeoplePage = lazy(() => import('./pages/admin/PeoplePage').then((m) => ({ default: m.PeoplePage })))
 const SettingsPage = lazy(() => import('./pages/admin/SettingsPage').then((m) => ({ default: m.SettingsPage })))
+const MarketingPage = lazy(() => import('./pages/admin/MarketingPage').then((m) => ({ default: m.MarketingPage })))
 const DashboardHome = lazy(() =>
   import('./pages/dashboard/DashboardHome').then((m) => ({ default: m.DashboardHome })),
 )
@@ -112,6 +113,7 @@ export default function App() {
         <Route path="people/intros" element={<AdminIntrosPage />} />
         <Route path="capacity" element={<CapacityPage />} />
         <Route path="settings" element={<SettingsPage />} />
+        <Route path="marketing" element={<MarketingPage />} />
         <Route path="email" element={<EmailPage />} />
         <Route path="majlis" element={<AdminMajlisPage />} />
         <Route path="mandates" element={<AdminMandatesPage />} />

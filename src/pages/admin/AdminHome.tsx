@@ -13,6 +13,7 @@ import { RePartnersPanel } from './RePartnersPanel'
 import { ReReadinessPanel } from './ReReadinessPanel'
 import { sponsorSeatHolders } from '../../lib/sponsorSeat'
 import { useAdmin } from './context'
+import { MarketingHomeCard } from './MarketingHomeCard'
 
 export function AdminHome() {
   const room = useAdmin()
@@ -129,6 +130,8 @@ export function StaffDesk({ children }: { children?: ReactNode }) {
           </ul>
         )}
       </section>
+
+      <MarketingHomeCard />
 
       {children}
 
