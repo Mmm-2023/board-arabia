@@ -36,7 +36,7 @@ function sliceFn(source: string, signature: string) {
   return source.slice(start, source.indexOf('\n$$;', start) + 4)
 }
 
-const migration = read('supabase/migrations/20261109120000_member_tiers.sql')
+const migration = read('supabase/migrations/20261113120000_member_tiers.sql')
 const setTiers = sliceFn(migration, 'create or replace function public.set_member_tiers')
 const claim = sliceFn(migration, 'create function public.claim_founding_seat')
 const sync = sliceFn(migration, 'create or replace function private.sync_member_tiers')
@@ -168,7 +168,15 @@ test('people card shows tiers, a save control, and mapped errors clear of the ri
   const people = read('src/pages/admin/PeoplePage.tsx')
   assert.match(people, /pe-16/)
   assert.match(people, /staffSetMemberTiers/)
-  assert.match(read('src/pages/admin/MembershipTiersControl.tsx'), /Membership tiers/)
+  assert.match(people, /flex items-start justify-between gap-3/)
+  assert.match(people, /shrink-0 items-center border border-pearl\/30/)
+  const control = read('src/pages/admin/MembershipTiersControl.tsx')
+  assert.match(control, /Membership tiers/)
+  assert.match(control, /role="checkbox"/)
+  assert.match(control, /tier-chip/)
+  assert.match(control, /disabled=\{!dirty \|\| busy\}/)
+  assert.match(read('src/index.css'), /\.tier-chip:focus-visible\s*\{[^}]*outline:\s*2px solid/)
+  assert.equal(control.includes('scripts/tiers-preview'), false)
 
   const vite = await createServer({
     server: { middlewareMode: true },
@@ -195,8 +203,15 @@ test('people card shows tiers, a save control, and mapped errors clear of the ri
     )
   assert.match(before, /Membership tiers/)
   assert.match(before, /min-h-11/)
-  assert.match(before, /data-tier-badge="founding"/)
-  assert.match(before, />Save</)
+  assert.match(before, /<span[^>]*data-tier-badge="founding"[^>]*>Founding No\. 7</)
+  assert.equal(/<button[^>]*data-tier-badge/.test(before), false)
+  assert.match(before, /role="checkbox"/)
+  assert.match(before, /aria-checked="true"/)
+  assert.match(before, /bg-\[var\(--ba-indigo\)\]/)
+  assert.match(before, /text-white/)
+  assert.match(before, /text-\[var\(--ba-ink\)\]/)
+  assert.match(before, /tier-chip/)
+  assert.match(before, /disabled=""[^>]*>Save</)
   assert.equal(before.includes('Saving'), false)
 
     after = renderToStaticMarkup(
@@ -280,7 +295,7 @@ test('with the two tier flag off, /apply posts to submit-application', async () 
     const gate = read('src/lib/twoTierRegister.ts')
     assert.equal(publicConsiderationCta(false).to, '/apply')
     assert.equal(publicConsiderationCta(false).label, 'Apply for consideration')
-    assert.equal(lineOf(app, 'path="/apply" element={<ApplyPage />}'), 91)
+    assert.equal(lineOf(app, 'path="/apply" element={<ApplyPage />}'), 95)
     assert.equal(lineOf(apply, 'submitApplication('), 144)
     assert.equal(lineOf(submit, '/submit-application'), 161)
     assert.equal(lineOf(gate, "return { to: '/apply', label: 'Apply for consideration' }"), 27)
@@ -326,7 +341,6 @@ test('tier files carry no secrets, mailboxes, or dash punctuation', () => {
     read('src/lib/membershipTiers.ts'),
     read('src/pages/admin/MembershipTiersControl.tsx'),
     read('src/pages/admin/PeoplePage.tsx'),
-    read('scripts/tiers-preview/main.tsx'),
   ]
   for (const source of files) {
     assert.equal(source.includes('\u2014') || source.includes('\u2013'), false)

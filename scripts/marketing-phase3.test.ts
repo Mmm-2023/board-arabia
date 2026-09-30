@@ -158,8 +158,6 @@ test('only the TR-3 migration number is 20261107120000', () => {
   const files = readdirSync(new URL('../supabase/migrations', import.meta.url))
   const tr3 = files.filter((name) => name.startsWith('20261107120000'))
   assert.deepEqual(tr3, ['20261107120000_marketing_funnel.sql'])
-  const later = files.filter((name) => /^\d{14}/.test(name) && name.slice(0, 14) > '20261107120000')
-  assert.deepEqual(later, [])
 })
 
 test('marketing-stats stays not_live without the read key and returns aggregates only', () => {

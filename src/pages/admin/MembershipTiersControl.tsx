@@ -17,6 +17,15 @@ export type TierShot = {
   message?: string
 }
 
+function sameTiers(left: readonly MembershipTierId[], right: readonly MembershipTierId[]) {
+  return left.length === right.length && left.every((id, index) => id === right[index])
+}
+
+function badgeLabel(id: MembershipTierId, foundingNumber: number | null | undefined) {
+  if (id === 'founding' && typeof foundingNumber === 'number') return `Founding No. ${foundingNumber}`
+  return MEMBERSHIP_TIER_LABELS[id]
+}
+
 export function MembershipTiersControl({
   member,
   onSave,
@@ -33,6 +42,7 @@ export function MembershipTiersControl({
   const [message, setMessage] = useState(shot?.message ?? '')
   const frozen = Boolean(shot)
   const busy = phase === 'saving'
+  const dirty = !sameTiers(selected, saved)
 
   function toggle(id: MembershipTierId) {
     if (frozen || busy) return
@@ -47,7 +57,7 @@ export function MembershipTiersControl({
   }
 
   async function save() {
-    if (frozen || busy) return
+    if (frozen || busy || !dirty) return
     const invalid = membershipTiersInvalid(selected)
     if (invalid) {
       setPhase('error')
@@ -68,62 +78,72 @@ export function MembershipTiersControl({
   }
 
   return (
-    <div className="mt-4 max-w-full" data-membership-tiers={member.user_id} data-tier-phase={phase}>
-      <div className="flex max-w-full flex-wrap gap-2" aria-label="Current tiers">
+    <div className="mt-3 max-w-full" data-membership-tiers={member.user_id} data-tier-phase={phase}>
+      <div className="flex max-w-full flex-wrap gap-1.5" aria-label="Current tiers">
         {saved.map((id) => (
           <span
             key={id}
             data-tier-badge={id}
-            className="inline-flex min-h-11 items-center border border-pearl/20 px-3 text-[0.68rem] font-semibold tracking-[0.08em] text-brass-bright uppercase"
+            className="inline-flex items-center rounded-full bg-[var(--ba-lavender-mist)] px-2.5 py-0.5 text-[12px] font-semibold text-[var(--ba-ink)]"
           >
-            {MEMBERSHIP_TIER_LABELS[id]}
+            {badgeLabel(id, member.founding_number)}
           </span>
         ))}
       </div>
-      <fieldset className="mt-3 max-w-full" disabled={busy}>
-        <legend className="text-[0.68rem] font-semibold tracking-[0.08em] text-pearl/45 uppercase">
-          Membership tiers
-        </legend>
-        <p className="mt-2 max-w-xl text-[0.85rem] text-stone/65">
+      <div className="mt-3 max-w-full">
+        <p className="text-[0.95rem] font-semibold text-pearl">Membership tiers</p>
+        <p className="mt-1 max-w-xl text-[0.9rem] leading-snug text-stone/80">
           Founding and Member cannot both be on. Sponsor can sit with either. Founding uses a numbered seat in this region.
         </p>
-        <div className="mt-3 flex max-w-full flex-wrap gap-2">
+        <div
+          className="mt-2 flex max-w-full flex-wrap gap-1 rounded-full bg-[var(--ba-lavender-mist)] p-1"
+          role="group"
+          aria-label="Membership tiers"
+        >
           {MEMBERSHIP_TIER_IDS.map((id) => {
             const on = selected.includes(id)
             return (
               <button
                 key={id}
                 type="button"
-                aria-pressed={on}
-                disabled={busy}
+                role="checkbox"
+                aria-checked={on}
+                aria-disabled={busy}
                 onClick={() => toggle(id)}
-                className={`inline-flex min-h-11 items-center border px-3 text-[0.72rem] font-semibold tracking-[0.06em] uppercase disabled:opacity-40 ${
-                  on ? 'border-brass/70 text-brass-bright' : 'border-pearl/20 text-pearl/70'
-                }`}
+                className={`tier-chip inline-flex min-h-11 items-center gap-1.5 rounded-full px-3 text-[0.875rem] font-semibold ${
+                  on ? 'bg-[var(--ba-indigo)] text-white' : 'text-[var(--ba-ink)] hover:bg-white'
+                } ${busy ? 'pointer-events-none' : ''}`}
               >
+                {on ? (
+                  <svg aria-hidden="true" viewBox="0 0 16 16" className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M3.5 8.5 6.5 11.5 12.5 4.5" />
+                  </svg>
+                ) : null}
                 {MEMBERSHIP_TIER_LABELS[id]}
               </button>
             )
           })}
         </div>
-        <button
-          type="button"
-          onClick={() => void save()}
-          disabled={busy}
-          aria-busy={busy}
-          className="mt-3 inline-flex min-h-11 items-center border border-brass/60 px-3 text-[0.68rem] font-semibold tracking-[0.06em] text-brass-bright uppercase disabled:opacity-40"
-        >
-          {busy ? 'Saving' : 'Save'}
-        </button>
-      </fieldset>
-      {message ? (
-        <p
-          className={`mt-3 max-w-xl text-[0.95rem] ${phase === 'error' ? 'text-red-300' : 'text-brass-bright'}`}
-          role={phase === 'error' ? 'alert' : 'status'}
-        >
-          {message}
-        </p>
-      ) : null}
+        <div className="mt-2 flex max-w-full flex-wrap items-center gap-3">
+          <button
+            type="button"
+            onClick={() => void save()}
+            disabled={!dirty || busy}
+            aria-busy={busy}
+            className="ba-primary inline-flex min-h-11 items-center px-4 text-[0.875rem] font-semibold disabled:opacity-40"
+          >
+            {busy ? 'Saving' : 'Save'}
+          </button>
+          {message ? (
+            <p
+              className={`min-w-0 text-[0.95rem] ${phase === 'error' ? 'text-red-300' : 'text-pearl'}`}
+              role={phase === 'error' ? 'alert' : 'status'}
+            >
+              {message}
+            </p>
+          ) : null}
+        </div>
+      </div>
     </div>
   )
 }

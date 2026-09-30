@@ -13,13 +13,13 @@ import { useNoIndex } from '../../lib/usePageTitle'
 import { ConfirmDialog } from '../../shell/ConfirmDialog'
 import { CardSkeleton, EmptyState } from '../../shell/ViewState'
 import { STAFF_VIEWS } from '../../shell/viewCopy'
-import { MembershipTiersControl } from './MembershipTiersControl'
+import { MembershipTiersControl, type TierShot } from './MembershipTiersControl'
 import { PEOPLE_TIERS, PanelNotice, peopleInTier } from './bits'
 import { useAdmin } from './context'
 import { SponsorInvitePanel } from './SponsorInvitePanel'
 import { SponsorSeatPanel } from './SponsorSeatPanel'
 
-export function PeoplePage() {
+export function PeoplePage({ tierShots }: { tierShots?: Record<string, TierShot> } = {}) {
   const room = useAdmin()
   const [inviteEmail, setInviteEmail] = useState('')
   const [inviteSeat, setInviteSeat] = useState<FoundingSeat>('ksa')
@@ -216,8 +216,8 @@ export function PeoplePage() {
                   focusId === `member-${member.user_id}` ? 'border-brass/70' : 'border-pearl/10'
                 }`}
               >
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div className="flex min-w-0 items-center gap-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex min-w-0 flex-1 items-center gap-3">
                     <SignedAvatar
                       path={room.profileByUser[member.user_id]?.avatar_path ?? null}
                       avatarStyle={styleFor(member.user_id)}
@@ -225,7 +225,7 @@ export function PeoplePage() {
                       alt=""
                     />
                     <div className="min-w-0">
-                    <p className="text-[0.95rem] break-words text-stone/85">{member.email}</p>
+                    <p className="truncate text-[0.95rem] text-stone/85">{member.email}</p>
                     <p className="mt-1 text-[0.8rem] break-words text-pearl/45">
                       {peopleCardLine(member)}
                       {member.seat !== 'sponsor' && (
@@ -242,7 +242,7 @@ export function PeoplePage() {
                       type="button"
                       disabled={room.updatingId === member.user_id}
                       onClick={() => void room.onMemberStatus(member, 'restore')}
-                      className="inline-flex min-h-11 items-center border border-pearl/20 px-3 text-[0.68rem] font-semibold tracking-[0.06em] text-pearl/70 uppercase disabled:opacity-40"
+                      className="inline-flex min-h-11 shrink-0 items-center border border-pearl/30 px-3 text-[0.75rem] font-semibold text-pearl/80 disabled:opacity-40"
                     >
                       Restore
                     </button>
@@ -251,7 +251,7 @@ export function PeoplePage() {
                       type="button"
                       disabled={room.updatingId === member.user_id}
                       onClick={() => setSuspending(member)}
-                      className="inline-flex min-h-11 items-center border border-pearl/20 px-3 text-[0.68rem] font-semibold tracking-[0.06em] text-pearl/70 uppercase disabled:opacity-40"
+                      className="inline-flex min-h-11 shrink-0 items-center border border-pearl/30 px-3 text-[0.75rem] font-semibold text-pearl/80 disabled:opacity-40"
                     >
                       Suspend
                     </button>
@@ -259,6 +259,7 @@ export function PeoplePage() {
                 </div>
                 <MembershipTiersControl
                   member={member}
+                  shot={tierShots?.[member.user_id]}
                   onSave={async (tiers) => {
                     const result = await staffSetMemberTiers(member.user_id, tiers)
                     if (!result.error) room.refresh()
