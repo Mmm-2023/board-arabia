@@ -6,11 +6,12 @@ import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { MemoryRouter } from 'react-router-dom'
 import { createServer } from 'vite'
-import { FAQ, pageGraph, publicFaqItems } from '../src/content/seo.ts'
+import { FAQ, MARKETING_PAGES, pageGraph, publicFaqItems, publicMarketingTitle } from '../src/content/seo.ts'
 import {
   ACCOUNT_FLOW_PROMISES,
   ACCOUNT_OPENS_LINE,
-  HOW_IT_WORKS_HEADING,
+  HOW_IT_WORKS_HEADING_OFF,
+  howItWorksHeading,
   NO_INSTANT_ACCOUNT_LINE,
   publicProcessSteps,
 } from '../src/content/twoTierCopy.ts'
@@ -34,6 +35,10 @@ function walk(dir: string, out: string[] = []) {
     else out.push(full)
   }
   return out
+}
+
+function visibleText(html: string) {
+  return html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ')
 }
 
 function anchors(html: string) {
@@ -67,14 +72,27 @@ test('two tier register flag accepts only the exact string true', () => {
   assert.deepEqual(publicConsiderationCta(true), { to: '/register', label: 'Register for consideration' })
 })
 
-test('account flow lines stay behind the flag and the heading ships either way', () => {
+test('account flow lines and Register or Complete wording stay behind the flag', () => {
   setTwoTierRegisterForTests(false)
   try {
+    assert.equal(howItWorksHeading(), HOW_IT_WORKS_HEADING_OFF)
+    assert.equal(HOW_IT_WORKS_HEADING_OFF, 'Apply. Review. Invite.')
     assert.equal(publicProcessSteps()[0]?.title, 'Pre-vet')
     assert.equal(publicProcessSteps().some((step) => step.home.includes('An account opens')), false)
     assert.equal(publicFaqItems(FAQ)[2]?.answer.includes('Submit the pre-vet form'), true)
     assert.equal(publicFaqItems(FAQ)[2]?.to, '/apply')
     assert.equal(publicFaqItems(FAQ)[2]?.toLabel, 'Apply for consideration')
+    assert.equal(
+      publicMarketingTitle(MARKETING_PAGES['/how-it-works']),
+      'How Board Arabia works: apply, review, invite',
+    )
+    for (const page of Object.values(MARKETING_PAGES)) {
+      const title = publicMarketingTitle(page)
+      assert.equal(/\bRegister\b/i.test(title), false, title)
+      assert.equal(/\bComplete\b/i.test(title), false, title)
+      assert.equal(/\bRegister\b/i.test(page.description), false, page.description)
+      assert.equal(/\bComplete\b/i.test(page.description), false, page.description)
+    }
     const graph = JSON.stringify(pageGraph({ path: '/', title: 'Home', description: 'Home page description for the test graph only.' }))
     assert.equal(graph.includes('An account opens'), false)
     assert.equal(graph.includes('Submit the pre-vet form'), true)
@@ -84,6 +102,11 @@ test('account flow lines stay behind the flag and the heading ships either way',
 
   setTwoTierRegisterForTests(true)
   try {
+    assert.equal(howItWorksHeading(), 'Register. Complete. Review.')
+    assert.equal(
+      publicMarketingTitle(MARKETING_PAGES['/how-it-works']),
+      'How Board Arabia works: register, complete, review',
+    )
     assert.equal(publicProcessSteps()[0]?.home, 'An account opens so you can see how the membership works.')
     assert.equal(publicProcessSteps()[1]?.home, 'Complete your credentials inside the account.')
     assert.equal(publicProcessSteps()[4]?.home, 'On approval, everything opens with the same sign-in.')
@@ -95,8 +118,6 @@ test('account flow lines stay behind the flag and the heading ships either way',
   } finally {
     setTwoTierRegisterForTests(null)
   }
-
-  assert.equal(HOW_IT_WORKS_HEADING, 'Register. Complete. Review.')
 })
 
 test('the flag env is read in one helper', () => {
@@ -185,8 +206,11 @@ test('flag off keeps /apply and the legacy form; flag on points CTAs at /registe
     }
     assert.equal(off.html.includes(NO_INSTANT_ACCOUNT_LINE), true)
     assert.equal(off.html.includes(ACCOUNT_OPENS_LINE), false)
-    assert.equal(off.html.includes(HOW_IT_WORKS_HEADING), true)
-    assert.equal(off.html.includes('Apply. Review. Invite.'), false)
+    assert.equal(off.html.includes('Apply. Review. Invite.'), true)
+    assert.equal(off.html.includes('Register. Complete. Review.'), false)
+    const offCopy = visibleText(off.combined)
+    assert.equal(/\bRegister\b/i.test(offCopy), false, offCopy.match(/.{0,40}\bRegister\b.{0,40}/i)?.[0])
+    assert.equal(/\bComplete\b/i.test(offCopy), false, offCopy.match(/.{0,40}\bComplete\b.{0,40}/i)?.[0])
 
     const on = renderSet(true)
     const onCtas = anchors(`${on.combined}\n${stickyHtml(stickyMod, true)}`)
@@ -199,6 +223,8 @@ test('flag off keeps /apply and the legacy form; flag on points CTAs at /registe
     assert.match(on.apply, /Submit for consideration/)
     assert.match(on.apply, /LinkedIn/)
     assert.equal(on.apply.includes('register-candidate'), false)
+    assert.equal(on.html.includes('Register. Complete. Review.'), true)
+    assert.equal(on.html.includes('Apply. Review. Invite.'), false)
     assert.equal(on.html.includes(ACCOUNT_OPENS_LINE), true)
     assert.equal(on.html.includes(NO_INSTANT_ACCOUNT_LINE), false)
     assert.equal(on.html.includes('inside the account'), true)

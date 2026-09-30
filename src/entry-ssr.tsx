@@ -12,13 +12,15 @@ import {
   OG_IMAGE_WIDTH,
   OG_TITLE,
   pageGraph,
+  publicMarketingTitle,
   type MarketingPath,
 } from './content/seo'
 
 export function render(url: string) {
   const path = (url === '' ? '/' : url) as MarketingPath
-  const page = MARKETING_PAGES[path]
-  if (!page) throw new Error(`No SEO record for ${url}`)
+  const stored = MARKETING_PAGES[path]
+  if (!stored) throw new Error(`No SEO record for ${url}`)
+  const page = { ...stored, title: publicMarketingTitle(stored) }
 
   const base = import.meta.env.BASE_URL || '/'
   const basename = base === '/' ? undefined : base.replace(/\/$/, '')

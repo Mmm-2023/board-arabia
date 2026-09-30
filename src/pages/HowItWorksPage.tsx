@@ -6,7 +6,7 @@ import { REVIEW_SLA } from '../content/marketing'
 import { HOW_IT_WORKS_FAQ } from '../content/seo'
 import {
   closingCtaBody,
-  HOW_IT_WORKS_HEADING,
+  howItWorksHeading,
   instantAccountLine,
   publicProcessSteps,
 } from '../content/twoTierCopy'
@@ -33,7 +33,7 @@ export function HowItWorksPage() {
           How it works
         </p>
         <h1 className="max-w-3xl font-display text-[clamp(2.5rem,5.5vw,4.4rem)] font-bold leading-[1.02] tracking-[-0.04em] text-balance text-ink">
-          {HOW_IT_WORKS_HEADING}
+          {howItWorksHeading()}
         </h1>
         <p className="mt-6 max-w-2xl text-[1.08rem] leading-relaxed text-ink/65">
           {enabled ? (

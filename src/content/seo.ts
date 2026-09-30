@@ -70,7 +70,7 @@ export const MARKETING_PAGES: Record<MarketingPath, MarketingPage> = {
   },
   '/how-it-works': {
     path: '/how-it-works',
-    title: 'How Board Arabia works: register, complete, review',
+    title: 'How Board Arabia works: apply, review, invite',
     description:
       'Apply with credentials, personal review, then a private invite by email if accepted. No open calendar. After admission, members use the Board Arabia dashboard.',
     faq: true,
@@ -208,6 +208,14 @@ export function publicFaqItems(items: FaqItem[], enabled = isTwoTierRegisterEnab
       toLabel: cta.label,
     }
   })
+}
+
+const HOW_IT_WORKS_TITLE_ON = 'How Board Arabia works: register, complete, review'
+
+/** Page title follows the flag. Off keeps the pre-TT-4 title. */
+export function publicMarketingTitle(page: MarketingPage, enabled = isTwoTierRegisterEnabled()): string {
+  if (page.path === '/how-it-works' && enabled) return HOW_IT_WORKS_TITLE_ON
+  return page.title
 }
 
 export function canonicalUrl(path: string) {

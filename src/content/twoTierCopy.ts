@@ -1,8 +1,15 @@
 import { PROCESS_STEPS, type ProcessStep } from './marketing.ts'
 import { isTwoTierRegisterEnabled } from '../lib/twoTierRegister.ts'
 
-/** Approved How it works heading. It does not promise an account, so it ships with the flag off. */
-export const HOW_IT_WORKS_HEADING = 'Register. Complete. Review.'
+/** Pre-TT-4 heading. Shown while the register flag is off. */
+export const HOW_IT_WORKS_HEADING_OFF = 'Apply. Review. Invite.'
+
+/** Approved heading. Shown only when the register flag is on. */
+export const HOW_IT_WORKS_HEADING_ON = 'Register. Complete. Review.'
+
+export function howItWorksHeading(enabled = isTwoTierRegisterEnabled()): string {
+  return enabled ? HOW_IT_WORKS_HEADING_ON : HOW_IT_WORKS_HEADING_OFF
+}
 
 export const NO_INSTANT_ACCOUNT_LINE =
   'No instant account. Admission follows review and a conversation.'
