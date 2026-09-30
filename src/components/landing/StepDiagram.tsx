@@ -1,13 +1,15 @@
-import { firstSentence, PROCESS_STEPS } from '../../content/marketing'
+import { firstSentence } from '../../content/marketing'
+import { publicProcessSteps } from '../../content/twoTierCopy'
 import { usePendingReveal } from '../Reveal'
 
 export function StepDiagram() {
   const ref = usePendingReveal<HTMLOListElement>()
+  const steps = publicProcessSteps()
   return (
     <ol ref={ref} className="ba-steps">
-      {PROCESS_STEPS.map((step, index) => (
+      {steps.map((step, index) => (
         <li key={step.n}>
-          <span className="ba-node" data-last={index === PROCESS_STEPS.length - 1 ? 'true' : undefined}>
+          <span className="ba-node" data-last={index === steps.length - 1 ? 'true' : undefined}>
             <i aria-hidden="true" />
             <b>{index + 1}</b>
           </span>

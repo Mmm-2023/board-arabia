@@ -2,18 +2,30 @@ import { Link } from 'react-router-dom'
 import { CtaBand } from '../components/CtaBand'
 import { FaqList } from '../components/FaqList'
 import { MarketingLayout } from '../components/MarketingLayout'
-import { PROCESS_STEPS, REVIEW_SLA } from '../content/marketing'
-import { trackApplyClick } from '../lib/tracking/browser'
+import { REVIEW_SLA } from '../content/marketing'
 import { HOW_IT_WORKS_FAQ } from '../content/seo'
+import {
+  closingCtaBody,
+  howItWorksHeading,
+  instantAccountLine,
+  publicProcessSteps,
+} from '../content/twoTierCopy'
+import { isTwoTierRegisterEnabled, publicConsiderationCta } from '../lib/twoTierRegister'
+import { trackApplyClick } from '../lib/tracking/browser'
 
-const REFUSALS = [
-  'No public calendar, and no booking link anywhere on these pages.',
-  'No payment, and no fee schedule.',
-  'No instant account. Admission follows review and a conversation.',
-  'No published list of who applied, who was declined, or who was admitted.',
-]
+const FORM_CLOSING =
+  'Name, email, LinkedIn, titles, companies, and turnover or family-office size. Review follows. A calendar does not.'
 
 export function HowItWorksPage() {
+  const enabled = isTwoTierRegisterEnabled()
+  const cta = publicConsiderationCta()
+  const steps = publicProcessSteps()
+  const refusals = [
+    'No public calendar, and no booking link anywhere on these pages.',
+    'No payment, and no fee schedule.',
+    instantAccountLine(),
+    'No published list of who applied, who was declined, or who was admitted.',
+  ]
   return (
     <MarketingLayout path="/how-it-works">
       <header className="mx-auto max-w-7xl px-5 pt-12 md:px-10 md:pt-20">
@@ -21,12 +33,22 @@ export function HowItWorksPage() {
           How it works
         </p>
         <h1 className="max-w-3xl font-display text-[clamp(2.5rem,5.5vw,4.4rem)] font-bold leading-[1.02] tracking-[-0.04em] text-balance text-ink">
-          Apply. Review. Invite.
+          {howItWorksHeading()}
         </h1>
         <p className="mt-6 max-w-2xl text-[1.08rem] leading-relaxed text-ink/65">
-          Board Arabia admission is credentials-first. Submit a pre-vet form
-          and await personal review. If accepted, you receive a private booking
-          link by email before joining the member dashboard. {REVIEW_SLA}
+          {enabled ? (
+            <>
+              Board Arabia admission is credentials-first. Register for consideration.
+              An account opens so you can see how the membership works. Complete your
+              credentials inside the account, then request full membership. {REVIEW_SLA}
+            </>
+          ) : (
+            <>
+              Board Arabia admission is credentials-first. Submit a pre-vet form
+              and await personal review. If accepted, you receive a private booking
+              link by email before joining the member dashboard. {REVIEW_SLA}
+            </>
+          )}
         </p>
         <p className="mt-4">
           <a href="#faq" className="border-b border-brass text-ink">
@@ -36,7 +58,7 @@ export function HowItWorksPage() {
       </header>
 
       <ol className="mx-auto max-w-7xl px-5 py-12 md:px-10 md:py-16">
-        {PROCESS_STEPS.map((step) => (
+        {steps.map((step) => (
           <li
             key={step.n}
             id={step.title.toLowerCase().replace(/\s+/g, '-')}
@@ -61,18 +83,19 @@ export function HowItWorksPage() {
             What this site will not do
           </h2>
           <ul className="mt-8 grid gap-4 md:grid-cols-2">
-            {REFUSALS.map((item) => (
+            {refusals.map((item) => (
               <li key={item} className="border border-pearl/15 px-5 py-4 text-[1.02rem] text-stone/85">
                 {item}
               </li>
             ))}
           </ul>
           <Link
-            to="/apply"
+            to={cta.to}
             className="ba-primary mt-10 inline-flex items-center justify-center px-7 py-3.5 text-[0.78rem] font-semibold tracking-[0.08em] uppercase"
-            onClick={() => trackApplyClick('section-how-it-works', 'Apply for consideration')}
+            data-consideration-cta="public"
+            onClick={() => trackApplyClick('section-how-it-works', cta.label)}
           >
-            Apply for consideration
+            {cta.label}
           </Link>
         </div>
       </section>
@@ -81,8 +104,8 @@ export function HowItWorksPage() {
 
       <CtaBand
         eyebrow="The form"
-        title="Start with the pre-vet."
-        body="Name, email, LinkedIn, titles, companies, and turnover or family-office size. Review follows. A calendar does not."
+        title={enabled ? undefined : 'Start with the pre-vet.'}
+        body={closingCtaBody(enabled, FORM_CLOSING)}
         location="section-how-it-works-close"
       />
     </MarketingLayout>

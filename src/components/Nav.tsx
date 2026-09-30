@@ -2,17 +2,21 @@ import { useEffect, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { BrandLockup } from './BrandLockup'
 import { MEMBER_LOGIN, NAV_LINKS } from '../content/marketing'
+import { publicConsiderationCta } from '../lib/twoTierRegister'
 import { trackApplyClick, trackLoginClick } from '../lib/tracking/browser'
 
 export function Nav({
-  ctaTo = '/apply',
-  ctaLabel = 'Apply for consideration',
+  ctaTo,
+  ctaLabel,
   onMenuChange,
 }: {
   ctaTo?: string
   ctaLabel?: string
   onMenuChange?: (open: boolean) => void
 }) {
+  const consideration = publicConsiderationCta()
+  const to = ctaTo ?? consideration.to
+  const label = ctaLabel ?? consideration.label
   const [scrolled, setScrolled] = useState(false)
   const [openPath, setOpenPath] = useState<string | null>(null)
   const location = useLocation()
@@ -74,13 +78,14 @@ export function Nav({
             Log in
           </Link>
           <Link
-            to={ctaTo}
+            to={to}
             className="ba-primary ba-header-apply"
+            data-consideration-cta={to === consideration.to ? 'public' : undefined}
             onClick={() => {
-              if (ctaTo === '/apply') trackApplyClick('header', ctaLabel)
+              if (to === consideration.to) trackApplyClick('header', label)
             }}
           >
-            {ctaLabel}
+            {label}
           </Link>
           <button
             type="button"
@@ -113,13 +118,14 @@ export function Nav({
             ))}
             <li className="pt-2">
               <Link
-                to={ctaTo}
+                to={to}
                 className="ba-primary ba-menu-apply"
+                data-consideration-cta={to === consideration.to ? 'public' : undefined}
                 onClick={() => {
-                  if (ctaTo === '/apply') trackApplyClick('menu', ctaLabel)
+                  if (to === consideration.to) trackApplyClick('menu', label)
                 }}
               >
-                {ctaLabel}
+                {label}
               </Link>
             </li>
             <li className="pt-2 pb-3">

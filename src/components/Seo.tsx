@@ -10,6 +10,7 @@ import {
   OG_IMAGE_WIDTH,
   OG_TITLE,
   pageGraph,
+  publicMarketingTitle,
   type MarketingPath,
 } from '../content/seo'
 
@@ -38,10 +39,11 @@ function upsertLink(rel: string, href: string) {
 
 export function Seo({ path }: { path: MarketingPath }) {
   const page = MARKETING_PAGES[path]
+  const title = publicMarketingTitle(page)
 
   useEffect(() => {
     const url = canonicalUrl(page.path)
-    document.title = page.title
+    document.title = title
     document.documentElement.lang = 'en'
     upsertMeta('name', 'description', page.description)
     upsertMeta('name', 'robots', 'index, follow')
@@ -70,8 +72,8 @@ export function Seo({ path }: { path: MarketingPath }) {
       script.type = 'application/ld+json'
       document.head.appendChild(script)
     }
-    script.textContent = JSON.stringify(pageGraph(page))
-  }, [page])
+    script.textContent = JSON.stringify(pageGraph({ ...page, title }))
+  }, [page, title])
 
   return null
 }

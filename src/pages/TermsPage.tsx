@@ -1,7 +1,10 @@
 import { Link } from 'react-router-dom'
 import { MarketingLayout } from '../components/MarketingLayout'
+import { isTwoTierRegisterEnabled, publicConsiderationCta } from '../lib/twoTierRegister'
 
 export function TermsPage() {
+  const cta = publicConsiderationCta()
+  const enabled = isTwoTierRegisterEnabled()
   return (
     <MarketingLayout path="/terms">
       <article className="mx-auto max-w-3xl px-5 pt-12 pb-20 md:px-10 md:pt-20">
@@ -48,8 +51,8 @@ export function TermsPage() {
               privacy
             </Link>{' '}
             page. To request consideration, use{' '}
-            <Link to="/apply" className="border-b border-brass text-ink">
-              the pre-vet
+            <Link to={cta.to} className="border-b border-brass text-ink" data-consideration-cta="public">
+              {enabled ? cta.label : 'the pre-vet'}
             </Link>
             .
           </p>

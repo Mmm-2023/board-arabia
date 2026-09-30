@@ -58,7 +58,7 @@ function assertPage(route, html) {
   if (/ReserveAction|SearchAction/.test(html)) errors.push('unexpected site action')
   if (!html.includes('"@type":"Organization"')) errors.push('missing Organization')
   if (!html.includes('"@type":"WebSite"')) errors.push('missing WebSite')
-  if (route === '/' && !html.includes('Apply for consideration')) {
+  if (route === '/' && !/Apply for consideration|Register for consideration/.test(html)) {
     errors.push('home missing consideration CTA')
   }
   if (!html.includes('>Log in<') && !html.includes('>Log in</a>')) {

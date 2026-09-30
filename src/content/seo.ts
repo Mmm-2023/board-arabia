@@ -1,3 +1,6 @@
+import { ACCOUNT_FLOW_APPLY_ANSWER } from './twoTierCopy.ts'
+import { isTwoTierRegisterEnabled, publicConsiderationCta } from '../lib/twoTierRegister.ts'
+
 export const SITE_ORIGIN = 'https://boardarabia.com'
 
 export const OG_TITLE = 'Board Arabia'
@@ -193,6 +196,28 @@ export function faqFor(path: string): FaqItem[] | null {
   return null
 }
 
+/** Apply FAQ link follows the consideration CTA. The account-flow answer is flag-on only. */
+export function publicFaqItems(items: FaqItem[], enabled = isTwoTierRegisterEnabled()): FaqItem[] {
+  const cta = publicConsiderationCta(enabled)
+  return items.map((item) => {
+    if (item.question !== 'How do I apply?') return item
+    return {
+      ...item,
+      answer: enabled ? ACCOUNT_FLOW_APPLY_ANSWER : item.answer,
+      to: cta.to,
+      toLabel: cta.label,
+    }
+  })
+}
+
+const HOW_IT_WORKS_TITLE_ON = 'How Board Arabia works: register, complete, review'
+
+/** Page title follows the flag. Off keeps the pre-TT-4 title. */
+export function publicMarketingTitle(page: MarketingPage, enabled = isTwoTierRegisterEnabled()): string {
+  if (page.path === '/how-it-works' && enabled) return HOW_IT_WORKS_TITLE_ON
+  return page.title
+}
+
 export function canonicalUrl(path: string) {
   if (path === '/' || path === '') return `${SITE_ORIGIN}/`
   return `${SITE_ORIGIN}${path.startsWith('/') ? path : `/${path}`}`
@@ -267,12 +292,13 @@ export function pageGraph(page: MarketingPage) {
 
   const faqs = faqFor(page.path)
   if (faqs) {
+    const shown = publicFaqItems(faqs)
     graph.push({
       '@type': 'FAQPage',
       '@id': `${url}#faq`,
       url,
       isPartOf: { '@id': `${SITE_ORIGIN}/#website` },
-      mainEntity: faqs.map((item) => ({
+      mainEntity: shown.map((item) => ({
         '@type': 'Question',
         name: item.question,
         acceptedAnswer: {
