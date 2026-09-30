@@ -214,14 +214,8 @@ export function StaffDesk({ children }: { children?: ReactNode }) {
             <p className={`text-[0.72rem] font-semibold tracking-[0.12em] uppercase ${styles.quiet}`}>
               Sponsors
             </p>
-            {room.panelFailed.members && room.members.length === 0 ? (
-              <div className="mt-2">
-                <PanelNotice />
-              </div>
-            ) : (
-              <p className="mt-2 font-display text-[1.6rem] font-semibold">{sponsors}</p>
-            )}
-            {room.panelFailed.members && room.members.length > 0 ? (
+            <p className="mt-2 font-display text-[1.6rem] font-semibold">{sponsors}</p>
+            {room.panelFailed.members ? (
               <div className="mt-2">
                 <PanelNotice />
               </div>
