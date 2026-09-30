@@ -36,7 +36,7 @@ function sliceFn(source: string, signature: string) {
   return source.slice(start, source.indexOf('\n$$;', start) + 4)
 }
 
-const migration = read('supabase/migrations/20261113120000_member_tiers.sql')
+const migration = read('supabase/migrations/20261115120000_member_tiers.sql')
 const setTiers = sliceFn(migration, 'create or replace function public.set_member_tiers')
 const claim = sliceFn(migration, 'create function public.claim_founding_seat')
 const sync = sliceFn(migration, 'create or replace function private.sync_member_tiers')
