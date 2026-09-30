@@ -256,6 +256,24 @@
   }
 }
 
+/* Hub sub-tabs sit tight under the page header. */
+.shell-main:has([data-section-tabs]) {
+  padding-top: 0.5rem;
+}
+
+.section-tab:focus-visible {
+  outline: 2px solid var(--ba-indigo-deep);
+  outline-offset: 2px;
+}
+
+.section-tabs-fade {
+  background: linear-gradient(to left, var(--ba-porcelain), transparent);
+}
+
+.shell-tone-staff .section-tabs-fade {
+  background: linear-gradient(to left, var(--ba-ink), transparent);
+}
+
 /* Mobile: the fixed tab bar stays out of the scrollport. shell-main padding keeps the last control clear of that bar and the safe area. */
 @media (max-width: 767px) {
   .shell-root {

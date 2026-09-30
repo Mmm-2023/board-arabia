@@ -1,3 +1,5 @@
+import { RE_STORED_CITIES, type ReStoredCity } from './reRegions.ts'
+
 /**
  * Client allowlist for real estate opportunity and partner payloads.
  * The server omits counterparty and terms until that member is entitled.
@@ -16,6 +18,25 @@ export const RE_ASSET_CLASSES = [
   'student housing',
   'healthcare RE',
 ] as const
+
+export type ReAssetClass = (typeof RE_ASSET_CLASSES)[number]
+
+/** Display only. Stored values stay in RE_ASSET_CLASSES. */
+export const RE_ASSET_CLASS_LABEL: Record<ReAssetClass, string> = {
+  residential: 'Residential',
+  hospitality: 'Hospitality',
+  office: 'Office',
+  retail: 'Retail',
+  'industrial/logistics': 'Industrial and logistics',
+  'mixed-use': 'Mixed use',
+  'land bank': 'Land bank',
+  'student housing': 'Student housing',
+  'healthcare RE': 'Healthcare real estate',
+}
+
+export function reAssetClassLabel(value: string) {
+  return RE_ASSET_CLASS_LABEL[value as ReAssetClass] ?? value
+}
 
 export const RE_CITIES = [
   'Riyadh',
@@ -37,6 +58,23 @@ export const RE_CAPITAL_ROLES = [
   'offtake',
   'operator',
 ] as const
+
+export type ReCapitalRole = (typeof RE_CAPITAL_ROLES)[number]
+
+/** Display only. Stored values stay in RE_CAPITAL_ROLES. */
+export const RE_CAPITAL_ROLE_LABEL: Record<ReCapitalRole, string> = {
+  equity: 'Equity',
+  mezzanine: 'Mezzanine',
+  'sukuk/REIT': 'Sukuk or REIT',
+  'JV partner': 'JV partner',
+  'land contribution': 'Land contribution',
+  offtake: 'Offtake',
+  operator: 'Operator',
+}
+
+export function reCapitalRoleLabel(value: string) {
+  return RE_CAPITAL_ROLE_LABEL[value as ReCapitalRole] ?? value
+}
 
 export const RE_TICKET_BANDS = [
   'Under $10m',
@@ -98,7 +136,7 @@ type ReClear = {
   id: string
   is_demo: boolean
   sector: string
-  city: (typeof RE_CITIES)[number]
+  city: ReStoredCity
   asset_class: (typeof RE_ASSET_CLASSES)[number]
   capital_role: (typeof RE_CAPITAL_ROLES)[number]
   ticket_band: (typeof RE_TICKET_BANDS)[number]
@@ -145,7 +183,7 @@ export type RePartnerClear = {
   category_slug: typeof RE_CATEGORY_SLUG
   name: string
   kind: (typeof RE_PARTNER_KINDS)[number]
-  city: (typeof RE_CITIES)[number]
+  city: ReStoredCity
   blurb: string
   intro_status: ReIntroStatus | null
   sponsor_tied: boolean
@@ -205,7 +243,7 @@ export function presentReOpportunity(raw: unknown): ReOpportunityCard | null {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null
   const row = raw as Record<string, unknown>
   const id = text(row.id, 80)
-  const city = oneOf(row.city, RE_CITIES)
+  const city = oneOf(row.city, RE_STORED_CITIES)
   const assetClass = oneOf(row.asset_class, RE_ASSET_CLASSES)
   const capitalRole = oneOf(row.capital_role, RE_CAPITAL_ROLES)
   const ticket = oneOf(row.ticket_band, RE_TICKET_BANDS)
@@ -290,7 +328,7 @@ export function presentRePartner(raw: unknown): RePartnerCard | null {
   const secretContact = text(row.contact_name, 120)
   const name = untainted(untainted(text(row.name, 120), secretEmail), secretPhone)
   const kind = oneOf(row.kind, RE_PARTNER_KINDS)
-  const city = oneOf(row.city, RE_CITIES)
+  const city = oneOf(row.city, RE_STORED_CITIES)
   const blurb = untainted(
     untainted(untainted(text(row.blurb, 400), secretEmail), secretPhone),
     secretContact,

@@ -107,15 +107,7 @@ export function PeoplePage() {
   return (
     <div>
       <h1 className="font-display text-[2rem] font-semibold tracking-[-0.03em]">People</h1>
-      <p className="mt-3">
-        <Link
-          to="/admin/people/intros"
-          className="inline-flex min-h-11 items-center text-[0.75rem] font-semibold tracking-[0.08em] text-brass-bright uppercase"
-        >
-          Intros
-        </Link>
-      </p>
-      <p className="mt-2 max-w-2xl text-[0.95rem] text-stone/65">
+      <p className="mt-3 max-w-2xl text-[0.95rem] text-stone/65">
         Members, admins, and sponsors. Invite, suspend, or restore. This screen does not remove
         people. The last master stays in place.
       </p>

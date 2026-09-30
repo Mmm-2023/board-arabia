@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { schemaMissing } from '../../lib/demoRows'
+import { reAssetClassLabel } from '../../lib/reRedaction'
 import { parseReIntros, type ReIntroRow } from '../../lib/reIntroQueue'
 import { supabase } from '../../lib/supabase'
 import { ConfirmDialog } from '../../shell/ConfirmDialog'
@@ -71,7 +72,7 @@ export function ReIntroQueue() {
           <li key={row.id} className={`${styles.panel} px-4 py-4`}>
             <p className="font-display text-[1.2rem] font-semibold">{row.counterparty_name}</p>
             <p className={`mt-1 ${styles.muted}`}>
-              {row.sector}. {row.city}. {row.asset_class}. Requested by {row.member_name}.
+              {row.sector}. {row.city}. {reAssetClassLabel(row.asset_class)}. Requested by {row.member_name}.
             </p>
             <div className="mt-3 flex flex-wrap gap-3">
               <button

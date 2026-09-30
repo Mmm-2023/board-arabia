@@ -39,6 +39,9 @@ const EmailPage = lazy(() => import('./pages/admin/EmailPage').then((m) => ({ de
 const AdminMajlisPage = lazy(() => import('./pages/admin/MajlisPage').then((m) => ({ default: m.AdminMajlisPage })))
 const StaffRoomsPage = lazy(() => import('./pages/admin/StaffRoomsPage').then((m) => ({ default: m.StaffRoomsPage })))
 const AdminIntrosPage = lazy(() => import('./pages/admin/AdminIntrosPage').then((m) => ({ default: m.AdminIntrosPage })))
+const AdminPeopleLayout = lazy(() =>
+  import('./pages/admin/PeopleLayout').then((m) => ({ default: m.AdminPeopleLayout })),
+)
 const PeoplePage = lazy(() => import('./pages/admin/PeoplePage').then((m) => ({ default: m.PeoplePage })))
 const SettingsPage = lazy(() => import('./pages/admin/SettingsPage').then((m) => ({ default: m.SettingsPage })))
 const MarketingPage = lazy(() => import('./pages/admin/MarketingPage').then((m) => ({ default: m.MarketingPage })))
@@ -109,8 +112,10 @@ export default function App() {
         <Route path="applications" element={<ApplicationsPage />} />
         <Route path="review" element={<MembershipQueuePage />} />
         <Route path="review/:candidateId" element={<MembershipDetailPage />} />
-        <Route path="people" element={<PeoplePage />} />
-        <Route path="people/intros" element={<AdminIntrosPage />} />
+        <Route path="people" element={<AdminPeopleLayout />}>
+          <Route index element={<PeoplePage />} />
+          <Route path="intros" element={<AdminIntrosPage />} />
+        </Route>
         <Route path="capacity" element={<CapacityPage />} />
         <Route path="settings" element={<SettingsPage />} />
         <Route path="marketing" element={<MarketingPage />} />

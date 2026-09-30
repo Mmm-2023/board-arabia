@@ -45,8 +45,7 @@ export function RoomsBoard({ rooms, embedded = false }: { rooms: RoomCard[]; emb
   }
   return (
     <div className="max-w-3xl">
-      <p className="text-[0.72rem] font-semibold tracking-[0.14em] text-brass uppercase">Rooms</p>
-      <h1 className="mt-3 font-display text-[2.2rem] font-bold tracking-[-0.03em]">Rooms</h1>
+      <h1 className="font-display text-[2.2rem] font-bold tracking-[-0.03em]">Rooms</h1>
       <p className="mt-3 max-w-xl text-[1rem] leading-relaxed text-ink/65">{intro}</p>
       {cards}
     </div>
