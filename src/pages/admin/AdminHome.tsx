@@ -36,6 +36,12 @@ export function AdminHome() {
           All intros
         </Link>
         <Link
+          to="/admin/people/intros#intro-funnel"
+          className="inline-flex min-h-11 items-center text-[0.75rem] font-semibold tracking-[0.08em] text-brass-bright uppercase"
+        >
+          Intro funnel
+        </Link>
+        <Link
           to="/admin/people/intros#desk-intros"
           className="inline-flex min-h-11 items-center text-[0.75rem] font-semibold tracking-[0.08em] text-brass-bright uppercase"
         >
