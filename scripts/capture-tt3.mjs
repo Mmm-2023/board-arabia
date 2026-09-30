@@ -67,7 +67,7 @@ const shots = [
   ['register', 1280, 900, 'register-disposable-error-1280.png', 'Disposable addresses are not accepted', true],
   ['register', 390, 844, 'register-disposable-error-390.png', 'Disposable addresses are not accepted', true],
   ['chips', 1280, 900, 'admin-review-chips-1280.png', 'Membership requests', false],
-  ['chips', 390, 1100, 'admin-review-chips-390.png', 'Membership requests', false],
+  ['chips', 390, 844, 'admin-review-chips-390.png', 'Membership requests', false],
 ]
 
 try {
@@ -133,24 +133,57 @@ async function capture(state, width, height, file, marker, beyond) {
   if (!ready.ok) throw new Error(`Preview was not ready for ${state} at ${width}: ${JSON.stringify(ready)}`)
   if (state === 'chips') {
     const check = await send('Runtime.evaluate', {
-      expression: `(() => {
+      expression: `(() => new Promise((resolve) => {
         const labels = ['Submitted', 'In review', 'Needs info', 'Review call', 'Waitlisted', 'Approved', 'Declined', 'Closed']
-        const visible = [...document.querySelectorAll('[data-state-option]')]
-          .filter((node) => node.getClientRects().length > 0)
-          .map((node) => (node.textContent || '').replace(/\\s+/g, ' ').trim())
-        const bar = document.querySelector('nav[aria-label="Primary"]')
-        const tabs = bar ? [...bar.querySelectorAll('[data-nav="primary"], [data-nav="more"]')].map((node) => (node.getAttribute('data-destination') || node.getAttribute('aria-label') || '').trim()) : []
-        const barVisible = Boolean(bar && bar.getClientRects().length > 0)
-        return { visible, tabs, barVisible, scrollWidth: document.documentElement.scrollWidth, clientWidth: document.documentElement.clientWidth }
-      })()`,
+        const read = () => {
+          const row = document.querySelector('.ba-state-chips')
+          const options = [...document.querySelectorAll('[data-state-option]')]
+          const texts = options.map((node) => (node.textContent || '').replace(/\\s+/g, ' ').trim())
+          const rowBox = row ? row.getBoundingClientRect() : null
+          const active = row ? row.querySelector('[aria-selected="true"]') : null
+          const activeBox = active ? active.getBoundingClientRect() : null
+          const card = document.querySelector('[data-screen="membership-queue"] a')
+          const cardBox = card ? card.getBoundingClientRect() : null
+          const bar = document.querySelector('nav[aria-label="Primary"]')
+          const tabs = bar ? [...bar.querySelectorAll('[data-nav="primary"], [data-nav="more"]')].map((node) => (node.getAttribute('data-destination') || node.getAttribute('aria-label') || '').trim()) : []
+          const activeInView = Boolean(rowBox && activeBox && activeBox.left >= rowBox.left - 1 && activeBox.right <= rowBox.right + 1)
+          return {
+            texts,
+            rowHeight: rowBox ? rowBox.height : 0,
+            cardGap: rowBox && cardBox ? cardBox.top - rowBox.bottom : 999,
+            activeInView,
+            tabs,
+            barVisible: Boolean(bar && bar.getClientRects().length > 0),
+            scrollWidth: document.documentElement.scrollWidth,
+            clientWidth: document.documentElement.clientWidth,
+          }
+        }
+        let tries = 0
+        const tick = () => {
+          const value = read()
+          if (value.activeInView || tries > 20) resolve(value)
+          else {
+            tries += 1
+            setTimeout(tick, 50)
+          }
+        }
+        tick()
+      }))()`,
+      awaitPromise: true,
       returnByValue: true,
     })
     const value = check.result?.value
     if (!value) throw new Error(`Chip check failed at ${width}`)
     for (const label of ['Submitted', 'In review', 'Needs info', 'Review call', 'Waitlisted', 'Approved', 'Declined', 'Closed']) {
-      if (!value.visible.some((text) => text.includes(label))) {
-        throw new Error(`State ${label} is not visible at ${width}: ${JSON.stringify(value.visible)}`)
+      if (!value.texts.some((text) => text.includes(label))) {
+        throw new Error(`State ${label} is missing at ${width}: ${JSON.stringify(value.texts)}`)
       }
+    }
+    if (value.rowHeight > 56) {
+      throw new Error(`Chip row is taller than one line at ${width}: ${value.rowHeight}`)
+    }
+    if (!value.activeInView) {
+      throw new Error(`Active chip is not in view at ${width}: ${JSON.stringify(value)}`)
     }
     if (width === 390) {
       if (!value.barVisible || value.tabs.length !== 7) {
@@ -158,6 +191,9 @@ async function capture(state, width, height, file, marker, beyond) {
       }
       if (value.scrollWidth > value.clientWidth + 1) {
         throw new Error(`Horizontal overflow at 390: ${value.scrollWidth} > ${value.clientWidth}`)
+      }
+      if (value.cardGap > 220) {
+        throw new Error(`First card is too far below the chips at 390: ${value.cardGap}`)
       }
     }
   }

@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { REASON_CODES, ageLabel, roleLabel, slaTone } from '../../../supabase/functions/_shared/membership_steps.ts'
 
@@ -171,54 +171,71 @@ function StateChips({
   onState: (value: string) => void
 }) {
   const scroller = useRef<HTMLDivElement>(null)
+  const [fade, setFade] = useState<'none' | 'start' | 'end' | 'both'>('none')
+
+  function paintFade() {
+    const root = scroller.current
+    if (!root) return
+    const max = root.scrollWidth - root.clientWidth
+    const start = root.scrollLeft > 2
+    const end = max > 2 && root.scrollLeft < max - 2
+    const next = start && end ? 'both' : start ? 'start' : end ? 'end' : 'none'
+    setFade((current) => (current === next ? current : next))
+  }
+
   useEffect(() => {
-    const active = scroller.current?.querySelector<HTMLElement>('[aria-selected="true"]')
+    const root = scroller.current
+    if (!root) return
+    const active = root.querySelector<HTMLElement>('[aria-selected="true"]')
     active?.scrollIntoView({ inline: 'nearest', block: 'nearest' })
+    paintFade()
+    function onScroll() {
+      paintFade()
+    }
+    root.addEventListener('scroll', onScroll, { passive: true })
+    window.addEventListener('resize', onScroll)
+    return () => {
+      root.removeEventListener('scroll', onScroll)
+      window.removeEventListener('resize', onScroll)
+    }
   }, [state])
 
+  function onKeyDown(event: ReactKeyboardEvent<HTMLDivElement>) {
+    if (event.key !== 'ArrowRight' && event.key !== 'ArrowLeft') return
+    event.preventDefault()
+    const index = STATES.indexOf(state as (typeof STATES)[number])
+    const step = event.key === 'ArrowRight' ? 1 : -1
+    const next = STATES[(index + step + STATES.length) % STATES.length]
+    onState(next)
+    window.requestAnimationFrame(() => {
+      scroller.current?.querySelector<HTMLElement>('[aria-selected="true"]')?.focus()
+    })
+  }
+
   return (
-    <div data-state-chips="">
-      <div className="mt-5 md:hidden" role="listbox" aria-label="Request state">
+    <div className={`ba-state-chip-fade relative mt-5`} data-state-chips="" data-fade={fade}>
+      <div
+        ref={scroller}
+        className="ba-state-chips flex gap-2 overflow-x-auto"
+        role="tablist"
+        aria-label="Request state"
+        onKeyDown={onKeyDown}
+      >
         {STATES.map((item) => (
           <button
             key={item}
             type="button"
-            role="option"
+            role="tab"
             data-state-option={item}
             aria-selected={state === item}
-            className={`mt-2 flex min-h-11 w-full items-center justify-between border px-3 text-left text-[0.95rem] ${
-              state === item ? 'ba-primary border-transparent' : 'border-pearl/20 text-pearl/80'
+            className={`inline-flex h-11 shrink-0 items-center border px-3 text-[0.75rem] font-semibold tracking-[0.06em] uppercase ${
+              state === item ? 'ba-primary border-transparent' : 'border-pearl/20 text-pearl/70'
             }`}
             onClick={() => onState(item)}
           >
-            <span>{stateLabel(item)}</span>
-            <span>{counts[item] ?? 0}</span>
+            {stateLabel(item)} {counts[item] ?? 0}
           </button>
         ))}
-      </div>
-      <div className="ba-state-chip-fade relative mt-5 hidden md:block">
-        <div
-          ref={scroller}
-          className="ba-state-chips flex gap-2 overflow-x-auto pb-1"
-          role="tablist"
-          aria-label="Request state"
-        >
-          {STATES.map((item) => (
-            <button
-              key={item}
-              type="button"
-              role="tab"
-              data-state-option={item}
-              aria-selected={state === item}
-              className={`inline-flex min-h-11 shrink-0 items-center border px-3 text-[0.75rem] font-semibold tracking-[0.06em] uppercase ${
-                state === item ? 'ba-primary border-transparent' : 'border-pearl/20 text-pearl/70'
-              }`}
-              onClick={() => onState(item)}
-            >
-              {stateLabel(item)} {counts[item] ?? 0}
-            </button>
-          ))}
-        </div>
       </div>
     </div>
   )

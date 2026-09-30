@@ -4,10 +4,8 @@ import test from 'node:test'
 import { idleAccountReminderMail } from '../supabase/functions/_shared/membership_copy.ts'
 import {
   DISPOSABLE_EMAIL_DOMAINS,
-  disposableDomain,
+  FREE_WEBMAIL_DOMAINS,
   domainListed,
-  emailDomain,
-  isFreeWebmail,
 } from '../supabase/functions/_shared/email_domains.ts'
 import { nextRateHit } from '../supabase/functions/_shared/rate_limit.ts'
 import { registerCandidate } from '../supabase/functions/_shared/candidate_flow.ts'
@@ -68,13 +66,13 @@ function body(extra: Record<string, unknown> = {}) {
 }
 
 test('disposable domains block the address and free webmail is only a flag', () => {
-  assert.equal(disposableDomain('ada@mailinator.com'), true)
-  assert.equal(disposableDomain('ada@spam.mailinator.com'), true)
-  assert.equal(disposableDomain('ada@example.com'), false)
-  assert.equal(isFreeWebmail('ada@gmail.com'), true)
-  assert.equal(isFreeWebmail('ada@example.com'), false)
-  assert.equal(domainListed(emailDomain('ada@sub.yopmail.com'), DISPOSABLE_EMAIL_DOMAINS), true)
-  const sql = read('supabase/migrations/20261106120000_abuse_retention.sql')
+  assert.equal(domainListed('mailinator.com', DISPOSABLE_EMAIL_DOMAINS), true)
+  assert.equal(domainListed('spam.mailinator.com', DISPOSABLE_EMAIL_DOMAINS), true)
+  assert.equal(domainListed('sub.yopmail.com', DISPOSABLE_EMAIL_DOMAINS), true)
+  assert.equal(domainListed('example.com', DISPOSABLE_EMAIL_DOMAINS), false)
+  assert.equal(domainListed('gmail.com', FREE_WEBMAIL_DOMAINS), true)
+  assert.equal(domainListed('example.com', FREE_WEBMAIL_DOMAINS), false)
+  const sql = read('supabase/migrations/20261111120000_abuse_retention.sql')
   for (const domain of DISPOSABLE_EMAIL_DOMAINS) {
     assert.equal(sql.includes(`'${domain}'`), true, domain)
   }
@@ -101,7 +99,7 @@ test('registration rate limit allows 3 an hour and 10 a day, then stops', () => 
 
 test('register rejects a disposable address, a fast submit, and a full rate limit', async () => {
   const disposable = await registerCandidate(
-    body({ email: 'ada@mailinator.com' }),
+    body({ email: 'ada@example.com' }),
     '203.0.113.8',
     deps({ domainStatus: async () => 'disposable' as const }),
   )
@@ -198,7 +196,7 @@ test('retention classes keep a 119 day confirmed account and delete the older ro
 })
 
 test('invite return does not refill a decline and candidates get no invites', () => {
-  const sql = read('supabase/migrations/20261106120000_abuse_retention.sql')
+  const sql = read('supabase/migrations/20261111120000_abuse_retention.sql')
   assert.match(sql, /private\.return_applied_invite/)
   assert.match(sql, /status = 'applied'/)
   assert.match(sql, /email_verified_at is null/)
@@ -269,8 +267,12 @@ test('review chips list all 8 states and the staff bar stays at 7 items', () => 
   }
   assert.match(desk, /data-state-chips/)
   assert.match(desk, /ba-state-chip-fade/)
+  assert.match(desk, /role="tablist"/)
+  assert.match(desk, /role="tab"/)
   assert.match(desk, /scrollIntoView/)
-  assert.match(desk, /md:hidden/)
+  assert.match(desk, /overflow-x-auto/)
+  assert.match(desk, /h-11/)
+  assert.equal(desk.includes('role="listbox"'), false)
   assert.equal(STAFF_DESTINATIONS.length, 6)
   const css = read('src/index.css')
   assert.match(css, /grid-template-columns: 0\.64fr 1\.55fr 0\.84fr 0\.76fr 1fr 0\.94fr 0\.56fr/)
@@ -281,7 +283,7 @@ test('review chips list all 8 states and the staff bar stays at 7 items', () => 
 test('delete account confirms, and members are refused', () => {
   const view = read('src/pages/dashboard/account/DeleteAccountView.tsx')
   const fn = read('supabase/functions/delete-candidate-account/index.ts')
-  const sql = read('supabase/migrations/20261106120000_abuse_retention.sql')
+  const sql = read('supabase/migrations/20261111120000_abuse_retention.sql')
   assert.match(view, /I understand this removes my account/)
   assert.match(view, /data-screen="delete-account"/)
   assert.equal(/\bBasic\b/.test(view), false)
