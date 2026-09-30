@@ -209,7 +209,7 @@ export function PeoplePage() {
             <EmptyState
               tone="staff"
               message={STAFF_VIEWS.people.empty}
-              action={{ label: 'Applications', to: '/admin/applications' }}
+              action={{ label: 'Review', to: '/admin/applications' }}
             />
           </div>
         ) : room.members.length > 0 ? (

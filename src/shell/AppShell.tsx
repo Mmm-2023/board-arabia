@@ -20,6 +20,7 @@ export function AppShell({
   renderAccountMark,
   dealsBadge = 0,
   lockedDestinationIds = [],
+  headerChip = null,
   children,
   initialMoreOpen = false,
   initialAccountOpen = false,
@@ -38,6 +39,7 @@ export function AppShell({
   dealsBadge?: number
   /** Hubs that stay visible and show a lock. Home is never in this list. */
   lockedDestinationIds?: readonly string[]
+  headerChip?: string | null
   children: ReactNode
   initialMoreOpen?: boolean
   initialAccountOpen?: boolean
@@ -351,6 +353,9 @@ export function AppShell({
                   >
                     Sign out
                   </button>
+                ) : null}
+                {member && headerChip ? (
+                  <p className="hidden text-[0.75rem] font-semibold text-[var(--ba-indigo)] lg:block">{headerChip}</p>
                 ) : null}
                 {member ? (
                   <button

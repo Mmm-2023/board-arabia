@@ -4,6 +4,7 @@ import { readCookie } from '../../lib/tracking/consent'
 import { NO_TRACK_COOKIE, noTrackCookiePair, trackPrefCookiePair } from '../../lib/tracking/staffOptOut'
 import { useNoIndex } from '../../lib/usePageTitle'
 import { FormSkeleton, toneClasses } from '../../shell/ViewState'
+import { UtmBuilder } from '../../components/UtmBuilder'
 import { SponsorPackagesPanel } from './SponsorPackagesPanel'
 import { STAFF_VIEWS } from '../../shell/viewCopy'
 import { useAdmin } from './context'
@@ -109,6 +110,7 @@ export function SettingsPage() {
           </>
         )}
       </section>
+      <UtmBuilder tone="staff" />
     </div>
   )
 }

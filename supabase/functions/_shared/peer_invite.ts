@@ -22,7 +22,12 @@ export type InviterRef = {
 /** Personal apply link. The token is the only secret in the URL. */
 export function applyInviteUrl(site: string, token: string): string {
   const base = site.replace(/\/$/, '')
-  return `${base}/apply?invite=${encodeURIComponent(token)}`
+  const url = new URL(`${base}/apply`)
+  url.searchParams.set('invite', token)
+  url.searchParams.set('utm_source', 'member-invite')
+  url.searchParams.set('utm_medium', 'referral')
+  url.searchParams.set('utm_campaign', 'peer-invite')
+  return url.toString()
 }
 
 export function inviterName(name: string): string {

@@ -5,6 +5,7 @@ import { Nav } from '../components/Nav'
 import { Seo } from '../components/Seo'
 import { REVIEW_SLA } from '../content/marketing'
 import { parseUsdInput } from '../lib/capacity'
+import { track } from '../lib/analytics'
 import { lookupMemberInvite, submitApplication } from '../lib/supabase'
 import { readSubmitAttribution } from '../lib/tracking/touch'
 
@@ -161,6 +162,10 @@ export function ApplyPage() {
       setError(result.error)
       return
     }
+    track('application_submitted', {
+      has_invite: inviteView.kind === 'valid',
+      path: '/apply',
+    })
 
     const parts: string[] = []
     if (result.dryRun) {

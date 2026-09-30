@@ -104,3 +104,15 @@ verify_jwt = false
 # Email code or one-time link. Returns a sign-in token hash after a match.
 [functions.verify-candidate]
 verify_jwt = false
+
+# Signed-in candidate. The service role inside the function submits or replies.
+[functions.request-membership]
+verify_jwt = true
+
+# Staff review. Review call reads PRIVATE_BOOKING_LINK and never returns it.
+[functions.review-membership]
+verify_jwt = true
+
+# Reminder cron. Header x-membership-reminder must match MEMBERSHIP_REMINDER_SECRET.
+[functions.remind-membership]
+verify_jwt = false

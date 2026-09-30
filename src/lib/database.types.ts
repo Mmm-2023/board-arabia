@@ -151,6 +151,8 @@ export type Database = {
           invites_granted: number
           invites_remaining: number
           is_demo: boolean
+          tier: 'founding' | 'member'
+          founding_number: number | null
           created_at: string
           updated_at: string
         }
@@ -166,6 +168,8 @@ export type Database = {
           invites_granted?: number
           invites_remaining?: number
           is_demo?: boolean
+          tier?: 'founding' | 'member'
+          founding_number?: number | null
           created_at?: string
           updated_at?: string
         }
@@ -181,6 +185,8 @@ export type Database = {
           invites_granted?: number
           invites_remaining?: number
           is_demo?: boolean
+          tier?: 'founding' | 'member'
+          founding_number?: number | null
           created_at?: string
           updated_at?: string
         }
@@ -601,6 +607,25 @@ export type Database = {
           lt_campaign: string | null
           analytics_id: string | null
           attribution_version: number | null
+          needs_info_items: string[] | null
+          needs_info_question: string | null
+          needs_info_reply: string | null
+          needs_info_at: string | null
+          decision_reason: string | null
+          decision_note: string | null
+          decided_at: string | null
+          declined_until: string | null
+          waitlist_revisit_at: string | null
+          approved_at: string | null
+          closed_reason: string | null
+          review_seat: 'ksa' | 'intl' | null
+          review_tier: 'founding' | 'member' | null
+          linkedin_checked: boolean
+          cr_checked: boolean
+          capacity_verified: boolean
+          state_changed_at: string | null
+          consent_at: string | null
+          checklist_reminded_at: string | null
           created_at: string
           updated_at: string
         }
@@ -634,6 +659,26 @@ export type Database = {
           invited_by_member_id?: string | null
           invite_token_id?: string | null
           invite_reason?: string | null
+          board_seats?: string | null
+          company_name?: string | null
+          job_title?: string | null
+          company_website?: string | null
+          linkedin_url?: string | null
+          scale_kind?: 'turnover' | 'aum' | null
+          scale_band?: string | null
+          sector_tags?: string[] | null
+          vision_tags?: string[] | null
+          statement?: string | null
+          cr_number?: string | null
+          cr_country?: string | null
+          referral_name?: string | null
+          investable_capacity_usd?: number | null
+          include_in_public_aggregates?: boolean | null
+          phone?: string | null
+          linkedin_checked?: boolean
+          cr_checked?: boolean
+          checklist_reminded_at?: string | null
+          waitlist_revisit_at?: string | null
         }
         Relationships: []
       }

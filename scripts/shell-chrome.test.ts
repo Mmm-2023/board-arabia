@@ -15,7 +15,7 @@ test('desktop sidebar and mobile tabs share the locked destinations', async () =
     }
     const memberLabels = ['Home', 'Deals', 'People', 'Majlis', 'AI tools']
     assertMemberChrome(mod.renderMemberShell(), memberLabels)
-    assertChrome(mod.renderStaffShell(), ['Home', 'Applications', 'People', 'Capacity', 'Settings'], 'Switch to member')
+    assertChrome(mod.renderStaffShell(), ['Home', 'Review', 'People', 'Capacity', 'Settings'], 'Switch to member')
     const account = mod.renderMemberShell(true)
     assert.match(account, /id="shell-account"/)
     const sheet = account.slice(account.indexOf('id="shell-account"'))

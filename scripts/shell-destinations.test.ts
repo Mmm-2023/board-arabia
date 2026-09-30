@@ -41,7 +41,7 @@ test('member primaries stay in the locked order', () => {
 test('staff primaries stay in the locked order', () => {
   assert.deepEqual(
     STAFF_DESTINATIONS.map((item) => item.label),
-    ['Home', 'Applications', 'People', 'Capacity', 'Settings'],
+    ['Home', 'Review', 'People', 'Capacity', 'Settings'],
   )
   assert.deepEqual(
     STAFF_DESTINATIONS.map((item) => item.to),
@@ -87,7 +87,7 @@ test('section title follows the active destination', () => {
     ['Sponsorship', 'Profile', 'Help'],
   )
   assert.equal(memberAccountLinks('sponsor').some((item) => MEMBER_DESTINATIONS.some((tab) => tab.label === item.label)), false)
-  assert.equal(shellSectionTitle('/admin/applications', STAFF_DESTINATIONS, STAFF_SECONDARY), 'Applications')
+  assert.equal(shellSectionTitle('/admin/applications', STAFF_DESTINATIONS, STAFF_SECONDARY), 'Review')
   assert.equal(shellSectionTitle('/admin/email', STAFF_DESTINATIONS, STAFF_SECONDARY), 'Email')
   assert.equal(shellSectionTitle('/admin/majlis', STAFF_DESTINATIONS, STAFF_SECONDARY), 'Majlis')
   assert.equal(shellSectionTitle('/admin/rooms', STAFF_DESTINATIONS, STAFF_SECONDARY), 'Rooms')
@@ -119,7 +119,7 @@ test('state copy matches the brief and has no em dash', () => {
   assert.equal(MEMBER_VIEWS.network.intros, 'No intro requests yet.')
   assert.equal(STAFF_VIEWS.home.empty, 'No pending applications.')
   assert.equal(STAFF_VIEWS.applications.filtered, 'No applications in this filter.')
-  assert.equal(STAFF_VIEWS.people.empty, 'No members yet. Admit from Applications.')
+  assert.equal(STAFF_VIEWS.people.empty, 'No members yet. Admit from Review.')
   assert.match(STAFF_VIEWS.people.denied, /cannot open full member records/)
   assert.match(STAFF_VIEWS.capacity.early, /Aggregates appear after verified opted-in admits/)
   assert.match(STAFF_VIEWS.settings.booking, /not shown on this page/)

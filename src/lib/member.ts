@@ -11,6 +11,8 @@ export type MemberRow = {
   must_set_password: boolean
   invites_remaining: number
   invites_granted: number
+  founding_number?: number | null
+  tier?: 'founding' | 'member' | null
 }
 
 export type ProfileRow = {

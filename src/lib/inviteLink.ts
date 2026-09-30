@@ -4,7 +4,12 @@ const FALLBACK_NAME = 'A Board Arabia member'
 
 export function applyInviteUrl(site: string, token: string): string {
   const base = site.replace(/\/$/, '')
-  return `${base}/apply?invite=${encodeURIComponent(token)}`
+  const url = new URL(`${base}/apply`)
+  url.searchParams.set('invite', token)
+  url.searchParams.set('utm_source', 'member-invite')
+  url.searchParams.set('utm_medium', 'referral')
+  url.searchParams.set('utm_campaign', 'peer-invite')
+  return url.toString()
 }
 
 export function whatsAppInviteText(applyUrl: string, name: string): string {

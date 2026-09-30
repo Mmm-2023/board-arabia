@@ -262,6 +262,7 @@ test('an open account cannot request member-private endpoints', () => {
   assert.equal(accountRequestAllowed('https://example.supabase.co/rest/v1/candidates'), true)
   assert.equal(accountRequestAllowed('https://example.supabase.co/functions/v1/register-candidate'), true)
   assert.equal(accountRequestAllowed('https://example.supabase.co/functions/v1/verify-candidate'), true)
+  assert.equal(accountRequestAllowed('https://example.supabase.co/functions/v1/request-membership'), true)
   for (const blocked of [
     '/rest/v1/members',
     '/rest/v1/profiles',

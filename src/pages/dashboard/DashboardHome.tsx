@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react'
+import { FoundingWelcome } from './FoundingWelcome'
+import { membershipLine } from '../../../supabase/functions/_shared/membership_steps.ts'
 import { Link } from 'react-router-dom'
 import { dismissAdmitShareCard, loadAdmitShareCard, type AdmitShareCardState } from '../../lib/admitShareCard'
 import { SponsorBadge } from '../../components/SponsorBadge'
@@ -48,7 +50,18 @@ export function DashboardHome() {
   const [shareCard, setShareCard] = useState<AdmitShareCardState>({ show: false })
   const [shareDismissing, setShareDismissing] = useState(false)
   const [shareDismissError, setShareDismissError] = useState('')
+  const [upgradeOpen, setUpgradeOpen] = useState(false)
   useNoIndex('Home | Board Arabia')
+
+  useEffect(() => {
+    if (!membershipLine(member.tier, member.founding_number)) return
+    try {
+      if (localStorage.getItem(`ba-upgrade-${userId}`) === '1') return
+    } catch {
+      // The welcome can show again.
+    }
+    setUpgradeOpen(true)
+  }, [member.founding_number, member.tier, userId])
 
   useEffect(() => {
     const path = profile?.avatar_path
@@ -193,6 +206,20 @@ export function DashboardHome() {
 
   return (
     <div>
+      {upgradeOpen ? (
+        <FoundingWelcome
+          tier={member.tier}
+          foundingNumber={member.founding_number}
+          onDismiss={() => {
+            try {
+              localStorage.setItem(`ba-upgrade-${userId}`, '1')
+            } catch {
+              // The welcome can show again.
+            }
+            setUpgradeOpen(false)
+          }}
+        />
+      ) : null}
       {status.refreshError ? (
         <div className="mb-6 max-w-3xl">
           <ErrorBanner

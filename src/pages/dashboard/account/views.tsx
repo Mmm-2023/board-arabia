@@ -12,6 +12,8 @@ import {
 } from '../../../lib/accountPreview'
 import { DueDiligenceMemo } from '../DueDiligenceMemo'
 import { fullDraftAnalysis } from '../../../lib/dueDiligenceMemoFixture'
+import { MembershipChecklistView, MembershipMeter } from './MembershipChecklistView'
+import { checklistFromRecord, missingRequired } from '../../../../supabase/functions/_shared/membership_steps.ts'
 
 const card = 'border border-[var(--ba-line)] bg-white px-5 py-5'
 const primary =
@@ -59,12 +61,16 @@ export function AccountHomeView({
   onRetryTotals,
   showWelcome,
   onDismissWelcome,
+  stepsDone = null,
+  nextStep = '',
 }: {
   totals: DisplayTotals | null
   totalsState: 'loading' | 'ready' | 'error'
   onRetryTotals: () => void
   showWelcome: boolean
   onDismissWelcome: () => void
+  stepsDone?: number | null
+  nextStep?: string
 }) {
   return (
     <div className="account-main max-w-5xl lg:pe-8" data-screen="account-home">
@@ -101,13 +107,22 @@ export function AccountHomeView({
       ) : null}
 
       <p className="text-[0.72rem] font-semibold tracking-[0.14em] text-[var(--ba-indigo)] uppercase">Needs attention</p>
-      <section className={`${card} mt-3 bg-[var(--ba-porcelain)]`}>
+      <section className={`${card} mt-3 bg-[var(--ba-porcelain)]`} data-screen="membership-home-card">
         <h2 className="font-display text-[1.7rem] font-semibold tracking-[-0.03em]">Your path to full membership</h2>
-        <p className="mt-3 max-w-xl text-[1rem] leading-relaxed text-ink/75">
-          Your account is open. Member-only sections stay locked until the desk approves full membership.
-        </p>
+        {typeof stepsDone === 'number' ? (
+          <div className="mt-4">
+            <MembershipMeter done={stepsDone} />
+            <p className="mt-3 text-[1rem] leading-relaxed text-ink/75">
+              {stepsDone} of 7 required steps done. Next: {nextStep || 'your credentials'}.
+            </p>
+          </div>
+        ) : (
+          <p className="mt-3 max-w-xl text-[1rem] leading-relaxed text-ink/75">
+            Complete your credentials, then request full membership.
+          </p>
+        )}
         <Link to="/dashboard/membership" className={`${primary} mt-5`}>
-          Request full membership
+          Continue
         </Link>
       </section>
 
@@ -305,19 +320,49 @@ export function AccountAi() {
   )
 }
 
+const previewChecklist = checklistFromRecord({
+  email_verified_at: '2026-09-30T08:00:00.000Z',
+  role: 'chairperson',
+  board_seats: 'Board member',
+  company_name: 'Example Holdings',
+  job_title: 'Chief Executive',
+  linkedin_url: 'https://www.linkedin.com/in/example-chair',
+  scale_kind: 'turnover',
+  scale_band: 't_50m_to_250m',
+})
+
 export function AccountMembership() {
+  const input = previewChecklist
+  const next = missingRequired(input)[0]?.label || ''
   return (
-    <div className="account-main max-w-xl lg:pe-8" data-screen="account-membership">
-      <p className="text-[0.72rem] font-semibold tracking-[0.14em] text-[var(--ba-indigo)] uppercase">Membership</p>
-      <h1 className="mt-3 font-display text-[2rem] font-semibold tracking-[-0.03em]">Your account</h1>
-      <p className="mt-4 text-[1rem] leading-relaxed text-ink/75">
-        Your account is open. Full membership is by review. The desk reviews every request personally. There is no fixed
-        response time.
-      </p>
-      <button type="button" className={`${primary} mt-6`} disabled>
-        Request full membership
-      </button>
-      <p className="mt-3 text-[0.95rem] text-ink/55">Credentials are collected before a request can be sent.</p>
+    <div data-screen="account-membership">
+      <MembershipChecklistView
+        model={{
+          input,
+          state: 'open',
+          submittedAt: null,
+          declinedUntil: null,
+          needsQuestion: '',
+          needsItems: [],
+          emailVerifiedAt: '2026-09-30T08:00:00.000Z',
+        }}
+        mode="list"
+        active={null}
+        draft={input}
+        saving={false}
+        error=""
+        consent={false}
+        submitting={false}
+        reply=""
+        onOpen={() => {}}
+        onDraft={() => {}}
+        onSave={() => {}}
+        onConsent={() => {}}
+        onSubmit={() => {}}
+        onReply={() => {}}
+        onReplyChange={() => {}}
+      />
+      <p className="sr-only">Next: {next}. Request full membership</p>
     </div>
   )
 }

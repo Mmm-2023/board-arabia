@@ -28,6 +28,12 @@ const AdminHome = lazy(() => import('./pages/admin/AdminHome').then((m) => ({ de
 const ApplicationsPage = lazy(() =>
   import('./pages/admin/ApplicationsPage').then((m) => ({ default: m.ApplicationsPage })),
 )
+const MembershipQueuePage = lazy(() =>
+  import('./pages/admin/MembershipPages').then((m) => ({ default: m.MembershipQueuePage })),
+)
+const MembershipDetailPage = lazy(() =>
+  import('./pages/admin/MembershipPages').then((m) => ({ default: m.MembershipDetailPage })),
+)
 const CapacityPage = lazy(() => import('./pages/admin/CapacityPage').then((m) => ({ default: m.CapacityPage })))
 const EmailPage = lazy(() => import('./pages/admin/EmailPage').then((m) => ({ default: m.EmailPage })))
 const AdminMajlisPage = lazy(() => import('./pages/admin/MajlisPage').then((m) => ({ default: m.AdminMajlisPage })))
@@ -99,7 +105,9 @@ export default function App() {
       <Route path="/auth/reset" element={<AuthConfirmPage />} />
       <Route path="/admin" element={<AdminLayout />}>
         <Route index element={<AdminHome />} />
-        <Route path="applications" element={<ApplicationsPage />} />
+        <Route path="applications" element={<MembershipQueuePage />} />
+        <Route path="applications/legacy" element={<ApplicationsPage />} />
+        <Route path="applications/:candidateId" element={<MembershipDetailPage />} />
         <Route path="people" element={<PeoplePage />} />
         <Route path="people/intros" element={<AdminIntrosPage />} />
         <Route path="capacity" element={<CapacityPage />} />

@@ -125,7 +125,7 @@ export const STAFF_VIEWS = {
     denied: 'A member-only account cannot review applications.',
   },
   people: {
-    empty: 'No members yet. Admit from Applications.',
+    empty: 'No members yet. Admit from Review.',
     error: REFRESH_ERROR,
     retry: 'Retry',
     denied: 'A sponsor login cannot open full member records here.',

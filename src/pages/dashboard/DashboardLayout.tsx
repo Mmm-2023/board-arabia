@@ -16,6 +16,7 @@ import type { MemberRow, ProfileRow } from '../../lib/member'
 import { useNoIndex } from '../../lib/usePageTitle'
 import { DashboardStatusContext, MemberContext, type MemberRoom } from './context'
 import { AccountRoomContext, type AccountRoom } from './account/context'
+import { checklistFromRecord, requiredDoneCount } from '../../../supabase/functions/_shared/membership_steps.ts'
 import { AccountSurface } from './account/AccountRoutes'
 import { Avatar } from '../../components/Avatar'
 import { OwnAvatar } from './OwnAvatar'
@@ -92,12 +93,14 @@ export function DashboardLayout() {
       supabase.from('staff_users').select('role').eq('user_id', sessionUserId).maybeSingle(),
       supabase
         .from('members')
-        .select('user_id, email, seat, status, must_set_password, invites_remaining, invites_granted')
+        .select('user_id, email, seat, status, must_set_password, invites_remaining, invites_granted, founding_number, tier')
         .eq('user_id', sessionUserId)
         .maybeSingle(),
       supabase
         .from('candidates')
-        .select('user_id, email, full_name, role, region, request_state, email_verified_at')
+        .select(
+          'user_id, email, full_name, role, region, request_state, email_verified_at, board_seats, company_name, job_title, company_website, linkedin_url, scale_kind, scale_band, sector_tags, vision_tags, statement, cr_number, cr_country, referral_name, invited_by_member_id, investable_capacity_usd, phone, submitted_at, declined_until, needs_info_question, needs_info_items',
+        )
         .eq('user_id', sessionUserId)
         .maybeSingle(),
     ])
@@ -146,6 +149,7 @@ export function DashboardLayout() {
           setGate({ status: 'unverified', email: candidate.email })
           return
         }
+        const checklist = checklistFromRecord(candidate)
         const room: AccountRoom = {
           userId: user.id,
           email: user.email || candidate.email,
@@ -153,6 +157,12 @@ export function DashboardLayout() {
           role: candidate.role,
           region: candidate.region,
           requestState: candidate.request_state,
+          checklist,
+          submittedAt: candidate.submitted_at,
+          declinedUntil: candidate.declined_until,
+          needsQuestion: candidate.needs_info_question || '',
+          needsItems: candidate.needs_info_items || [],
+          emailVerifiedAt: candidate.email_verified_at,
           reload: async () => {
             await loadRef.current()
           },
@@ -307,6 +317,11 @@ export function DashboardLayout() {
             accountLabel={gate.room.email}
             accountName={gate.room.fullName.trim() || 'Account'}
             renderAccountMark={(size) => <Avatar src={null} size={size} alt="" />}
+            headerChip={
+              gate.room.requestState === 'open'
+                ? `Membership: ${requiredDoneCount(gate.room.checklist)} of 7`
+                : null
+            }
           >
             <AccountSurface />
           </AppShell>
