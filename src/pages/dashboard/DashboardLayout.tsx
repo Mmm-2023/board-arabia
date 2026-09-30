@@ -272,7 +272,7 @@ export function DashboardLayout() {
 
   if (gate.status === 'unverified') {
     rememberVerifyEmail(gate.email)
-    return <Navigate to="/apply/verify" replace />
+    return <Navigate to="/register/verify" replace />
   }
 
   if (gate.status === 'account_error') {

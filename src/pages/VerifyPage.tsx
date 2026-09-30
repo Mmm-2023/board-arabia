@@ -48,14 +48,14 @@ export function VerifyPage({ security = 'live' as 'live' | 'preview' }) {
     if (result.error || !result.tokenHash) {
       setSubmitting(false)
       setError(result.error || 'That code is not valid.')
-      track('register_error', { step: 'verify', error_code: result.errorCode || 'invalid_code', path: '/apply/verify' })
+      track('register_error', { step: 'verify', error_code: result.errorCode || 'invalid_code', path: '/register/verify' })
       return
     }
     const verified = await supabase.auth.verifyOtp({ token_hash: result.tokenHash, type: 'magiclink' })
     setSubmitting(false)
     if (verified.error) {
       setError('Confirmed, but sign-in did not start. Request a new code.')
-      track('register_error', { step: 'verify', error_code: 'server', path: '/apply/verify' })
+      track('register_error', { step: 'verify', error_code: 'server', path: '/register/verify' })
       return
     }
     if (result.alreadyVerified) {
@@ -87,7 +87,7 @@ export function VerifyPage({ security = 'live' as 'live' | 'preview' }) {
     setResending(false)
     if (result.error) {
       setError(result.error)
-      track('register_error', { step: 'verify', error_code: result.errorCode || 'server', path: '/apply/verify' })
+      track('register_error', { step: 'verify', error_code: result.errorCode || 'server', path: '/register/verify' })
       return
     }
     rememberVerifyEmail(current)

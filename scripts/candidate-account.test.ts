@@ -21,7 +21,7 @@ function read(rel: string) {
 const UI_FILES = [
   'src/pages/apply/RegisterScreen.tsx',
   'src/pages/apply/VerifyScreen.tsx',
-  'src/pages/ApplyPage.tsx',
+  'src/pages/RegisterPage.tsx',
   'src/pages/VerifyPage.tsx',
   'src/pages/dashboard/account/views.tsx',
   'src/pages/dashboard/account/AccountRoutes.tsx',
