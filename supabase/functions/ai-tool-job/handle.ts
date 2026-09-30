@@ -1,5 +1,5 @@
 import { corsHeaders, jsonResponse } from '../_shared/mail.ts'
-import { aiProviderNote } from '../_shared/ai_tool_provider.ts'
+import { aiProviderNote, completeAiToolPrompt } from '../_shared/ai_tool_provider.ts'
 import {
   AI_TOOL_FLAG_DEFAULTS,
   consentMatches,
@@ -12,6 +12,8 @@ import {
   type AiToolKey,
   type ConsentRow,
 } from '../_shared/ai_tools.ts'
+import { appendCfoModelQuestions, CFO_MODEL_SYSTEM, cfoModelUser } from './tools/cfo_check.ts'
+import { readCfoUpload } from './tools/cfo_read.ts'
 import { guardStubOutput } from './tools/legal_guard.ts'
 import { runToolStub } from './tools/index.ts'
 import type { StubOutput } from './tools/types.ts'
@@ -56,6 +58,7 @@ export type AiToolStore = {
   jobById: (jobId: string) => Promise<JobRow | null>
   outputByJob: (jobId: string) => Promise<OutputRow | null>
   fileReady: (path: string) => Promise<boolean>
+  downloadFile: (path: string) => Promise<Uint8Array | null>
   insertJob: (row: {
     id: string
     member_id: string
@@ -136,6 +139,9 @@ async function startJob(
   if (!isAiToolKey(tool) || !isUuid(jobId) || !fileName || !ext || !ownedAiToolPath(userId, jobId, storagePath)) {
     return jsonResponse(req, { error: AI_TOOL_MESSAGES.file, code: 'bad_request' }, 400)
   }
+  if (tool === 'cfo_check' && ext !== 'pdf' && ext !== 'csv' && ext !== 'xlsx') {
+    return jsonResponse(req, { error: AI_TOOL_MESSAGES.file, code: 'bad_request' }, 400)
+  }
   if (!Number.isInteger(byteSize) || byteSize < 1 || byteSize > 15_728_640) {
     return jsonResponse(req, { error: AI_TOOL_MESSAGES.file, code: 'bad_request' }, 400)
   }
@@ -173,7 +179,7 @@ async function startJob(
     if (inserted === 'error') return jsonResponse(req, { error: AI_TOOL_MESSAGES.start, code: 'start_failed' }, 500)
   }
 
-  const stepped = await runStep(store, userId, jobId, deps)
+  const stepped = await runStep(store, userId, jobId, deps, reportLang(body))
   if (!stepped.ok) return jsonResponse(req, { error: stepped.error, code: stepped.code }, stepped.status)
   return jsonResponse(req, { ok: true, job_id: jobId, status: 'ready', output: stepped.output })
 }
@@ -200,7 +206,7 @@ async function stepJob(
 ): Promise<Response> {
   const jobId = String(body.job_id || '')
   if (!isUuid(jobId)) return jsonResponse(req, { error: AI_TOOL_MESSAGES.missing, code: 'not_found' }, 404)
-  const stepped = await runStep(store, userId, jobId, deps)
+  const stepped = await runStep(store, userId, jobId, deps, reportLang(body))
   if (!stepped.ok) return jsonResponse(req, { error: stepped.error, code: stepped.code }, stepped.status)
   return jsonResponse(req, { ok: true, job_id: jobId, status: 'ready', output: stepped.output })
 }
@@ -223,7 +229,13 @@ type StepResult =
   | { ok: true; output: StubOutput }
   | { ok: false; status: number; error: string; code: string }
 
-async function runStep(store: AiToolStore, userId: string, jobId: string, deps: AiToolDeps): Promise<StepResult> {
+async function runStep(
+  store: AiToolStore,
+  userId: string,
+  jobId: string,
+  deps: AiToolDeps,
+  lang: 'en' | 'ar',
+): Promise<StepResult> {
   const job = await store.jobById(jobId)
   if (!job || job.member_id !== userId) {
     return { ok: false, status: 404, error: AI_TOOL_MESSAGES.missing, code: 'not_found' }
@@ -234,14 +246,26 @@ async function runStep(store: AiToolStore, userId: string, jobId: string, deps: 
   const existing = await store.outputByJob(jobId)
   if (existing && job.status === 'ready') return { ok: true, output: existing.body }
   const provider = aiProviderNote()
-  const output = guardStubOutput(runToolStub(job.tool_key, {
+  const sourceText = await readJobSource(store, job)
+  let output = runToolStub(job.tool_key, {
     fileName: job.file_name,
     generatedOn: formatReportDate(deps.now()),
     modelId: provider.modelId,
     modelSkipReason: provider.skipReason,
+    sourceText,
+    lang,
     mimeType: job.mime_type,
-    sourceText: await readJobSource(store, job),
-  }))
+  })
+  if (job.tool_key === 'cfo_check' && output.metrics && output.metrics.length > 0 && !provider.skipReason) {
+    const completion = await completeAiToolPrompt(CFO_MODEL_SYSTEM, cfoModelUser(output))
+    output = appendCfoModelQuestions(output, completion.text)
+    output = {
+      ...output,
+      model_id: completion.modelId ?? output.model_id,
+      model_skip_reason: completion.skipReason,
+    }
+  }
+  output = guardStubOutput(output)
   const saved = await store.saveOutput({
     id: newUuid(deps),
     job_id: jobId,
@@ -264,7 +288,20 @@ async function runStep(store: AiToolStore, userId: string, jobId: string, deps: 
   return { ok: true, output }
 }
 
+function reportLang(body: Record<string, unknown>): 'en' | 'ar' {
+  return body.lang === 'ar' ? 'ar' : 'en'
+}
+
 async function readJobSource(store: AiToolStore, job: JobRow): Promise<string> {
+  if (job.tool_key === 'cfo_check') {
+    try {
+      const bytes = await store.downloadFile(job.storage_path)
+      if (!bytes || bytes.byteLength < 1) return ''
+      return await readCfoUpload(job.mime_type, bytes)
+    } catch {
+      return ''
+    }
+  }
   if (job.mime_type !== 'text/plain' && job.mime_type !== 'text/csv') return ''
   if (!store.readSource) return ''
   const text = await store.readSource(job.storage_path)

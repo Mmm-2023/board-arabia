@@ -15,6 +15,7 @@ import { PricingInputs } from '../../components/ai/PricingInputs'
 import { AI_UI } from '../../lib/aiToolUi'
 import {
   acceptAiToolFile,
+  acceptCfoFile,
   listAiToolJobs,
   postAiTool,
   readAiToolFrame,
@@ -122,7 +123,7 @@ export function AiToolPage() {
   async function onRun() {
     const upload = file ?? (tool === 'pricing_sense_check' ? pricingFile(pricing) : null)
     if (!tool || !upload || !consented) return
-    const problem = acceptAiToolFile(upload)
+    const problem = tool === 'cfo_check' ? acceptCfoFile(upload) : acceptAiToolFile(upload)
     if (problem) {
       setError(problem)
       return
@@ -157,6 +158,7 @@ export function AiToolPage() {
       file_name: upload.name,
       mime_type: mime,
       byte_size: upload.size,
+      lang,
     })
     setBusy(false)
     if (!started.ok) {
@@ -232,6 +234,8 @@ export function AiToolPage() {
             consented={consented}
             fileName={file?.name || ''}
             busy={busy}
+            accept={tool === 'cfo_check' ? CFO_ACCEPT : undefined}
+            fileHint={tool === 'cfo_check' ? (lang === 'ar' ? CFO_HINT.ar : CFO_HINT.en) : undefined}
             inputsReady={tool === 'pricing_sense_check' ? Boolean(file) || digitsOnly(pricing.asking).length > 0 : undefined}
             extra={
               tool === 'pricing_sense_check' ? (
@@ -308,6 +312,13 @@ function Notes({
     </section>
   )
 }
+
+const CFO_ACCEPT = '.pdf,.csv,.xlsx,application/pdf,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+
+const CFO_HINT = {
+  en: 'PDF, CSV, or XLSX. 15 MB max. The file and the output are deleted after the retention period.',
+  ar: 'ملف PDF أو CSV أو XLSX. الحد 15 ميغابايت. يُحذف الملف والنتيجة بعد مدة الحفظ.',
+} as const
 
 const EMPTY_PRICING: PricingDraft = {
   company: '',

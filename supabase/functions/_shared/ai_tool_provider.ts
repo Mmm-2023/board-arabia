@@ -38,3 +38,42 @@ export function aiProviderNote(): { modelId: string | null; skipReason: string |
   if (!key || !target) return { modelId: null, skipReason: 'provider_not_configured' }
   return { modelId: target.model, skipReason: null }
 }
+
+/** One chat completion on the same BA_DD_LLM_* secrets. No new secret names. */
+export async function completeAiToolPrompt(
+  system: string,
+  user: string,
+): Promise<{ text: string | null; modelId: string | null; skipReason: string | null }> {
+  const note = aiProviderNote()
+  const target = aiProviderTarget()
+  const key = edgeEnv('BA_DD_LLM_API_KEY')
+  if (note.skipReason || !target || !key) {
+    return { text: null, modelId: note.modelId, skipReason: note.skipReason || 'provider_not_configured' }
+  }
+  const signal = typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function' ? AbortSignal.timeout(12_000) : undefined
+  try {
+    const res = await fetch(target.url, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: target.model,
+        temperature: 0,
+        messages: [
+          { role: 'system', content: system },
+          { role: 'user', content: user },
+        ],
+      }),
+      signal,
+    })
+    if (!res.ok) return { text: null, modelId: target.model, skipReason: 'provider_error' }
+    const payload = (await res.json()) as { choices?: { message?: { content?: unknown } }[] }
+    const text = payload.choices?.[0]?.message?.content
+    return {
+      text: typeof text === 'string' && text.trim() ? text : null,
+      modelId: target.model,
+      skipReason: typeof text === 'string' && text.trim() ? null : 'provider_error',
+    }
+  } catch {
+    return { text: null, modelId: target.model, skipReason: 'provider_error' }
+  }
+}

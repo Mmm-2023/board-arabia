@@ -1,0 +1,60 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>
+endobj
+4 0 obj
+<< /Length 480 >>
+stream
+BT
+/F1 12 Tf
+72 740 Td
+(Company Example Holdings) Tj
+0 -16 Td
+(Website example.com) Tj
+0 -16 Td
+(Currency SAR) Tj
+0 -16 Td
+(Cash 2400000) Tj
+0 -16 Td
+(Monthly burn 200000) Tj
+0 -16 Td
+(Revenue 3600000) Tj
+0 -16 Td
+(Cost of goods sold 1440000) Tj
+0 -16 Td
+(Operating expenses 2400000) Tj
+0 -16 Td
+(Net income -240000) Tj
+0 -16 Td
+(Current assets 3100000) Tj
+0 -16 Td
+(Current liabilities 1400000) Tj
+0 -16 Td
+(Accounts receivable 980000) Tj
+0 -16 Td
+(Accounts payable 410000) Tj
+ET
+endstream
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000241 00000 n 
+0000000772 00000 n 
+trailer
+<< /Size 6 /Root 1 0 R >>
+startxref
+842
+%%EOF
