@@ -137,6 +137,36 @@ function inRange(iso: string | null, from: Date, to: Date): boolean {
   return time >= from.getTime() && time < to.getTime()
 }
 
+export type MeetYesAnswer = {
+  introId: string
+  outcome: 'yes' | 'not_yet' | 'no'
+  at: string
+  sample?: boolean
+}
+
+/**
+ * Distinct introductions where either party answered yes.
+ * The introduction is dated by the earliest yes, inside a half-open range.
+ * Sample pairs are skipped. A later yes does not move that date.
+ */
+export function introMetCount(answers: readonly MeetYesAnswer[], from: Date, to: Date): number {
+  if (!(from.getTime() < to.getTime())) return 0
+  const earliest = new Map<string, { at: number; sample: boolean }>()
+  for (const answer of answers) {
+    if (answer.outcome !== 'yes' || !answer.introId) continue
+    const at = new Date(answer.at).getTime()
+    if (Number.isNaN(at)) continue
+    const current = earliest.get(answer.introId)
+    if (!current || at < current.at) earliest.set(answer.introId, { at, sample: answer.sample === true })
+  }
+  let count = 0
+  for (const row of earliest.values()) {
+    if (row.sample) continue
+    if (row.at >= from.getTime() && row.at < to.getTime()) count += 1
+  }
+  return count
+}
+
 /** Stage counts for a half-open range. Sample rows are skipped. Met stays 0 when metAt is null. */
 export function countIntroFunnel(rows: readonly IntroFunnelEvent[], from: Date, to: Date): IntroFunnelCounts {
   const counts: IntroFunnelCounts = { requested: 0, accepted: 0, met: 0, deal_started: 0 }

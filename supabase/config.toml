@@ -135,3 +135,9 @@ verify_jwt = true
 # dry_run=1 lists rows and does not delete. POST only.
 [functions.retention-sweep]
 verify_jwt = false
+
+# Daily suggestions and nudges. Header x-intros-schedule-secret must match INTROS_SCHEDULE_SECRET.
+# verify_jwt stays off so the anon key is not a credential. An unset secret rejects every call.
+# ?dry_run=1 returns the plan and does not write or send. POST only.
+[functions.suggest-intros]
+verify_jwt = false

@@ -15,6 +15,7 @@ import {
   type ReOpportunityCard,
   type RePartnerCard,
 } from './reRedaction'
+import { presentIntroSuggestions, type IntroSuggestion } from './introSuggestions'
 import {
   contactsByIntro,
   introRequestError,
@@ -24,6 +25,7 @@ import {
   type IntroContact,
   type IntroQuota,
   type IntroRow,
+  type MeetOutcome,
 } from './memberIntros'
 import {
   notifyDeskIntro,
@@ -68,6 +70,16 @@ export function fetchPartners(): Promise<DemoLoad<PartnerCard[]>> {
 
 export function fetchMyIntros(): Promise<DemoLoad<IntroRow[]>> {
   return loadJson(supabase.rpc('list_my_intros'), presentIntroList)
+}
+
+export function fetchMyIntroSuggestions(): Promise<DemoLoad<IntroSuggestion[]>> {
+  return loadJson(supabase.rpc('list_my_intro_suggestions'), presentIntroSuggestions)
+}
+
+export async function recordIntroMeet(introId: string, outcome: MeetOutcome): Promise<string | null> {
+  const { error } = await supabase.rpc('record_intro_meet', { p_intro_id: introId, p_outcome: outcome })
+  if (error) return 'Could not save that answer. Retry.'
+  return null
 }
 
 export async function requestMemberIntro(

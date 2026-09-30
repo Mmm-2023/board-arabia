@@ -963,6 +963,14 @@ export type Database = {
         Args: Record<string, never>
         Returns: Json
       }
+      list_my_intro_suggestions: {
+        Args: Record<string, never>
+        Returns: Json
+      }
+      record_intro_meet: {
+        Args: { p_intro_id: string; p_outcome: string }
+        Returns: Json
+      }
       staff_list_all_intros: {
         Args: Record<string, never>
         Returns: Json
