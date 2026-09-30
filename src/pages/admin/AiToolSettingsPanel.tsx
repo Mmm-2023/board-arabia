@@ -6,7 +6,9 @@ import {
   AI_TOOL_RETENTION_DAYS_DEFAULT,
   type AiToolKey,
 } from '../../../supabase/functions/_shared/ai_tools.ts'
-import { readAiToolFrame, saveAiToolFlag, saveAiToolRetention, type AiToolFlags } from '../../lib/aiToolApi'
+import { MarketSearchNotice } from '../../components/ai/MarketBriefForm'
+import { useSiteLanguage } from '../../components/SiteLanguage'
+import { readAiToolFrame, readMarketSearchStatus, saveAiToolFlag, saveAiToolRetention, type AiToolFlags } from '../../lib/aiToolApi'
 import { toneClasses } from '../../shell/ViewState'
 
 const fieldClass =
@@ -15,8 +17,9 @@ const fieldClass =
 export function AiToolSettingsPanel({
   shot,
 }: {
-  shot?: { retentionDays: number; flags: AiToolFlags }
+  shot?: { retentionDays: number; flags: AiToolFlags; searchConfigured?: boolean }
 } = {}) {
+  const { lang } = useSiteLanguage()
   const styles = toneClasses('staff')
   const [days, setDays] = useState(String(shot?.retentionDays ?? AI_TOOL_RETENTION_DAYS_DEFAULT))
   const [flags, setFlags] = useState<AiToolFlags>(shot?.flags ?? { ...AI_TOOL_FLAG_DEFAULTS })
@@ -25,6 +28,9 @@ export function AiToolSettingsPanel({
   const [error, setError] = useState('')
   const [note, setNote] = useState('')
   const [attempt, setAttempt] = useState(0)
+  const [search, setSearch] = useState<'unknown' | 'ready' | 'not_configured' | 'error'>(
+    shot?.searchConfigured === false ? 'not_configured' : shot?.searchConfigured === true ? 'ready' : 'unknown',
+  )
 
   useEffect(() => {
     if (shot) return
@@ -38,6 +44,12 @@ export function AiToolSettingsPanel({
       }
       setDays(String(frame.retentionDays))
       setFlags(frame.flags)
+    })
+    void readMarketSearchStatus().then((status) => {
+      if (cancelled) return
+      if (status === 'ready') setSearch('ready')
+      else if (status === 'not_configured') setSearch('not_configured')
+      else setSearch('error')
     })
     return () => {
       cancelled = true
@@ -81,7 +93,7 @@ export function AiToolSettingsPanel({
   }
 
   return (
-    <section className={`${styles.panel} mt-8 px-5 py-5 pe-16`} aria-label="AI tool settings" data-ai-settings="">
+    <section className={`${styles.panel} mt-8 px-5 py-5 md:pe-16`} aria-label="AI tool settings" data-ai-settings="">
       <h2 className={`text-[0.72rem] font-semibold tracking-[0.12em] uppercase ${styles.quiet}`}>AI tools</h2>
       <p className="mt-3 text-[1rem] leading-relaxed text-pearl/80">
         Uploads and outputs are kept for this many days, then removed. The default is {AI_TOOL_RETENTION_DAYS_DEFAULT} days.
@@ -125,6 +137,12 @@ export function AiToolSettingsPanel({
           </li>
         ))}
       </ul>
+      {search === 'not_configured' ? <MarketSearchNotice lang={lang} /> : null}
+      {search === 'error' ? (
+        <p className="mt-4 text-[0.95rem] text-pearl/80" role="status">
+          Could not check search. Retry.
+        </p>
+      ) : null}
       {error ? (
         <p className="mt-3 text-[0.95rem] text-red-300" role="alert">
           {error}{' '}

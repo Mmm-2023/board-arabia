@@ -11,7 +11,9 @@ import {
 } from '../../../supabase/functions/_shared/ai_tools.ts'
 import type { StubOutput } from '../../../supabase/functions/ai-tool-job/tools/types.ts'
 import { AiToolForm, AiToolJobStatus, AiToolReport, AiToolShell } from '../../components/ai/AiToolDesk'
+import { MarketBriefForm } from '../../components/ai/MarketBriefForm'
 import { PricingInputs } from '../../components/ai/PricingInputs'
+import { isMarketSector, marketFileName, type MarketSector } from '../../../supabase/functions/ai-tool-job/tools/market_brief.ts'
 import { AI_UI } from '../../lib/aiToolUi'
 import {
   acceptAiToolFile,
@@ -53,12 +55,14 @@ export function AiToolPage() {
   const [jobStatus, setJobStatus] = useState('')
   const [jobStep, setJobStep] = useState('')
   const [pendingDelete, setPendingDelete] = useState<string | null>(null)
+  const [sector, setSector] = useState<MarketSector | ''>('')
   const queryKey = `${tool ?? ''}|${jobId ?? ''}|${attempt}`
   const [seenQuery, setSeenQuery] = useState(queryKey)
   if (seenQuery !== queryKey) {
     setSeenQuery(queryKey)
     setLoad('loading')
     setOutput(null)
+    setSector('')
   }
   useNoIndex(tool ? 'AI tool | Board Arabia' : 'AI tools | Board Arabia')
 
@@ -119,6 +123,44 @@ export function AiToolPage() {
   const copy = renderToolCopy(tool, lang, slots)
   const reportDate = output?.generated_on || slots.date
   const reportCopy = renderToolCopy(tool, lang, { ...slots, date: reportDate })
+
+  async function onRunMarket() {
+    if (!tool || tool !== 'market_brief' || !sector || !consented) return
+    setBusy(true)
+    setError('')
+    const id = crypto.randomUUID()
+    const consentedOk = await recordAiToolConsent(tool, id)
+    if (!consentedOk) {
+      setBusy(false)
+      setError('Consent is required before a run.')
+      return
+    }
+    const note = new File([`Sector: ${sector}\n`], marketFileName(sector), { type: 'text/plain' })
+    const path = aiToolStoragePath(userId, id, 'txt')
+    const uploaded = await uploadAiToolFile(path, note)
+    if (!uploaded) {
+      setBusy(false)
+      setError('Could not save that sector. Retry.')
+      return
+    }
+    const started = await postAiTool({
+      action: 'start',
+      tool_key: tool,
+      job_id: id,
+      storage_path: path,
+      file_name: note.name,
+      mime_type: 'text/plain',
+      byte_size: note.size,
+      sector,
+      lang,
+    })
+    setBusy(false)
+    if (!started.ok) {
+      setError(started.error)
+      return
+    }
+    navigate(toolPath(tool, id))
+  }
 
   async function onRun() {
     const upload = file ?? (tool === 'pricing_sense_check' ? pricingFile(pricing) : null)
@@ -228,33 +270,48 @@ export function AiToolPage() {
               {error}
             </p>
           ) : null}
-          <AiToolForm
-            copy={copy}
-            lang={lang}
-            consented={consented}
-            fileName={file?.name || ''}
-            busy={busy}
-            accept={tool === 'cfo_check' ? CFO_ACCEPT : undefined}
-            fileHint={tool === 'cfo_check' ? (lang === 'ar' ? CFO_HINT.ar : CFO_HINT.en) : undefined}
-            inputsReady={tool === 'pricing_sense_check' ? Boolean(file) || digitsOnly(pricing.asking).length > 0 : undefined}
-            extra={
-              tool === 'pricing_sense_check' ? (
-                <PricingInputs draft={pricing} lang={lang} disabled={busy} onChange={setPricing} />
-              ) : tool === 'term_sheet_review' ? (
-                <p className="mt-6 text-[0.95rem] leading-relaxed text-ink/70">
-                  {lang === 'ar'
-                    ? 'ملف نصي أوضح. ضع كل بند في سطر، مثل: Liquidation preference: 1x non-participating.'
-                    : 'A text file works best. Put one term on each line, for example: Liquidation preference: 1x non-participating.'}
-                </p>
-              ) : null
-            }
-            onConsent={setConsented}
-            onFile={(next) => {
-              setError('')
-              setFile(next)
-            }}
-            onRun={() => void onRun()}
-          />
+          {tool === 'market_brief' ? (
+            <MarketBriefForm
+              copy={copy}
+              lang={lang}
+              sector={sector}
+              consented={consented}
+              busy={busy}
+              onSector={(next) => {
+                if (isMarketSector(next)) setSector(next)
+              }}
+              onConsent={setConsented}
+              onRun={() => void onRunMarket()}
+            />
+          ) : (
+            <AiToolForm
+              copy={copy}
+              lang={lang}
+              consented={consented}
+              fileName={file?.name || ''}
+              busy={busy}
+              accept={tool === 'cfo_check' ? CFO_ACCEPT : undefined}
+              fileHint={tool === 'cfo_check' ? (lang === 'ar' ? CFO_HINT.ar : CFO_HINT.en) : undefined}
+              inputsReady={tool === 'pricing_sense_check' ? Boolean(file) || digitsOnly(pricing.asking).length > 0 : undefined}
+              extra={
+                tool === 'pricing_sense_check' ? (
+                  <PricingInputs draft={pricing} lang={lang} disabled={busy} onChange={setPricing} />
+                ) : tool === 'term_sheet_review' ? (
+                  <p className="mt-6 text-[0.95rem] leading-relaxed text-ink/70">
+                    {lang === 'ar'
+                      ? 'ملف نصي أوضح. ضع كل بند في سطر، مثل: Liquidation preference: 1x non-participating.'
+                      : 'A text file works best. Put one term on each line, for example: Liquidation preference: 1x non-participating.'}
+                  </p>
+                ) : null
+              }
+              onConsent={setConsented}
+              onFile={(next) => {
+                setError('')
+                setFile(next)
+              }}
+              onRun={() => void onRun()}
+            />
+          )}
           <Notes notes={notes} tool={tool} lang={lang} onDelete={setPendingDelete} />
         </>
       ) : null}

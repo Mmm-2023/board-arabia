@@ -47,6 +47,24 @@ function LegalAnchor({ href, children }: { href: string; children: string }) {
   )
 }
 
+function isolateRuns(text: string): ReactNode[] {
+  if (!text) return []
+  const re = /[A-Za-z0-9][A-Za-z0-9'./:-]*(?:\s+[A-Za-z0-9][A-Za-z0-9'./:-]*)*/g
+  const nodes: ReactNode[] = []
+  let last = 0
+  let guard = 0
+  for (const match of text.matchAll(re)) {
+    guard += 1
+    if (guard > 40) break
+    const index = match.index ?? 0
+    if (index > last) nodes.push(text.slice(last, index))
+    nodes.push(<bdi key={`latin-${index}-${guard}`}>{match[0]}</bdi>)
+    last = index + match[0].length
+  }
+  if (last < text.length) nodes.push(text.slice(last))
+  return nodes.length > 0 ? nodes : [text]
+}
+
 function withoutTrailingLabel(before: string, label: string): string {
   const trimmed = before.replace(/\s+$/, '')
   if (!trimmed.endsWith(label)) return before
@@ -74,10 +92,10 @@ export function LegalText({ text, className, lang = 'en' }: { text: string; clas
       }
     }
     if (at < 0 || !hit) {
-      nodes.push(rest)
+      nodes.push(isolateRuns(rest))
       break
     }
-    nodes.push(withoutTrailingLabel(rest.slice(0, at), hit.label))
+    nodes.push(isolateRuns(withoutTrailingLabel(rest.slice(0, at), hit.label)))
     nodes.push(
       <LegalAnchor key={`${hit.href}-${guard}`} href={hit.href}>
         {hit.label}
@@ -268,13 +286,13 @@ export function AiToolReport({
         </>
       ) : null}
       <h3 className="mt-6 text-[1rem] font-semibold">{AI_UI[lang].findings}</h3>
-      <ul className="mt-2 list-disc space-y-2 ps-5 text-[0.98rem] leading-relaxed">
+      <ul className="mt-2 list-disc space-y-2 ps-5 text-[0.98rem] leading-relaxed break-words">
         {output.findings.map((item) => (
           <li key={item}>{item}</li>
         ))}
       </ul>
       <h3 className="mt-6 text-[1rem] font-semibold">{AI_UI[lang].questions}</h3>
-      <ul className="mt-2 list-disc space-y-2 ps-5 text-[0.98rem] leading-relaxed">
+      <ul className="mt-2 list-disc space-y-2 ps-5 text-[0.98rem] leading-relaxed break-words">
         {output.questions.map((item) => (
           <li key={item}>{item}</li>
         ))}
@@ -285,10 +303,13 @@ export function AiToolReport({
           <ul className="mt-2 space-y-2 text-[0.98rem] leading-relaxed">
             {output.sources.map((source) => (
               <li key={source.url}>
-                <a href={source.url} className="underline">
+                <a href={source.url} className="underline" dir="ltr">
                   {source.title}
                 </a>
-                <span className="text-ink/65"> {AI_UI[lang].dated} {source.dated}.</span>
+                <span className="text-ink/65">
+                  {' '}
+                  {AI_UI[lang].dated} <bdi>{`${source.dated}.`}</bdi>
+                </span>
               </li>
             ))}
           </ul>
