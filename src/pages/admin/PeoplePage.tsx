@@ -9,7 +9,7 @@ import { useNoIndex } from '../../lib/usePageTitle'
 import { ConfirmDialog } from '../../shell/ConfirmDialog'
 import { CardSkeleton, EmptyState } from '../../shell/ViewState'
 import { STAFF_VIEWS } from '../../shell/viewCopy'
-import { PEOPLE_TIERS, peopleInTier } from './bits'
+import { PEOPLE_TIERS, PanelNotice, peopleInTier } from './bits'
 import { useAdmin } from './context'
 import { SponsorInvitePanel } from './SponsorInvitePanel'
 import { SponsorSeatPanel } from './SponsorSeatPanel'
@@ -36,9 +36,7 @@ export function PeoplePage() {
     document.getElementById(focusId)?.scrollIntoView({ block: 'start' })
   }, [focusId, room.members.length])
   const sponsorCap = sponsorCapView(room.members)
-  const sponsorCapKnown = room.hasLoaded && !room.refreshError
-
-  if (!room.refreshedAt && room.refreshError && room.members.length === 0) return null
+  const sponsorCapKnown = room.hasLoaded && !room.panelFailed.members
 
   if (room.loading && room.members.length === 0 && room.staffRows.length === 0 && !room.listError) {
     return <CardSkeleton tone="staff" label="Loading people" />
@@ -101,7 +99,7 @@ export function PeoplePage() {
         members={room.members}
         firmByUser={firmByUserId(room.profileByUser)}
         capKnown={sponsorCapKnown}
-        countError={Boolean(room.refreshError)}
+        countError={Boolean(room.panelFailed.members)}
         submitting={sponsorSubmitting}
         open={sponsorOpen && !sponsorCap.full}
         firm={sponsorFirm}
@@ -166,7 +164,17 @@ export function PeoplePage() {
 
       <section className="mt-10">
         <h2 className="font-display text-[1.5rem] font-semibold tracking-[-0.02em]">Members</h2>
-        {room.members.length === 0 ? (
+        {room.panelFailed.profiles ? (
+          <div className="mt-4 border border-pearl/10 px-5 py-4">
+            <PanelNotice />
+          </div>
+        ) : null}
+        {room.panelFailed.members ? (
+          <div className="mt-4 border border-pearl/10 px-5 py-4">
+            <PanelNotice />
+          </div>
+        ) : null}
+        {room.members.length === 0 && !room.panelFailed.members ? (
           <div className="mt-4">
             <EmptyState
               tone="staff"
@@ -174,7 +182,7 @@ export function PeoplePage() {
               action={{ label: 'Applications', to: '/admin/applications' }}
             />
           </div>
-        ) : (
+        ) : room.members.length > 0 ? (
           <ul className="mt-4 space-y-3">
             {room.members.map((member) => (
               <li
@@ -237,11 +245,16 @@ export function PeoplePage() {
               </li>
             ))}
           </ul>
-        )}
+        ) : null}
       </section>
 
       <section className="mt-12">
         <h2 className="font-display text-[1.5rem] font-semibold tracking-[-0.02em]">Tiers</h2>
+        {room.panelFailed.staff ? (
+          <div className="mt-4 border border-pearl/10 px-5 py-4">
+            <PanelNotice />
+          </div>
+        ) : null}
         <div className="mt-6 space-y-8">
           {PEOPLE_TIERS.map((tier) => {
             const rows = peopleInTier(tier, room.staffRows, room.members)

@@ -9,8 +9,8 @@ import {
 import type { FoundingCapacity, FoundingSeat } from '../../lib/member'
 import type { PlatformStats } from '../../lib/platformStats'
 import { endAuthSession } from '../../lib/endSession'
-import { REFRESH_ERROR } from '../../shell/viewCopy'
 import { isStaffRole, showRoleSwitch, type StaffRole } from '../../../supabase/functions/_shared/staff_auth.ts'
+import { isKeep, settleAdminLoad, type AdminLoadPanel } from './load'
 import {
   admitMember,
   decideApplication,
@@ -48,6 +48,7 @@ export type AdminRoom = {
   listError: string
   refreshError: string
   queryDetail: string
+  panelFailed: Partial<Record<AdminLoadPanel, true>>
   actionNote: string
   apps: Application[]
   members: MemberAdminRow[]
@@ -93,6 +94,10 @@ export function useAdmin() {
   return value
 }
 
+export function AdminPreview({ room, children }: { room: AdminRoom; children: ReactNode }) {
+  return <AdminContext.Provider value={room}>{children}</AdminContext.Provider>
+}
+
 function useAdminState(): AdminRoom {
   const [session, setSession] = useState<Session | null | undefined>(undefined)
   const signingOut = useRef(false)
@@ -108,6 +113,7 @@ function useAdminState(): AdminRoom {
   const [listError, setListError] = useState('')
   const [refreshError, setRefreshError] = useState('')
   const [queryDetail, setQueryDetail] = useState('')
+  const [panelFailed, setPanelFailed] = useState<Partial<Record<AdminLoadPanel, true>>>({})
   const [updatingId, setUpdatingId] = useState<string | null>(null)
   const [actionNote, setActionNote] = useState('')
   const [seatById, setSeatById] = useState<Record<string, FoundingSeat | ''>>({})
@@ -128,6 +134,7 @@ function useAdminState(): AdminRoom {
       setEvents([])
       setStaffRows([])
       setProfileByUser({})
+      setPanelFailed({})
       setHasLoaded(false)
       setLoading(false)
       return
@@ -149,6 +156,7 @@ function useAdminState(): AdminRoom {
       setEvents([])
       setStaffRows([])
       setProfileByUser({})
+      setPanelFailed({})
       setListError('')
       setLoading(false)
       setHasLoaded(true)
@@ -184,33 +192,28 @@ function useAdminState(): AdminRoom {
           ),
       ])
 
-    if (!('error' in capacityResult)) setCapacity(capacityResult)
-    if (platformResult) setPlatform(platformResult)
-    if (!appsRes.error) setApps((appsRes.data ?? []) as Application[])
-    if (!membersRes.error) setMembers((membersRes.data ?? []) as MemberAdminRow[])
-    if (!invitesRes.error) setPeerInvites((invitesRes.data ?? []) as MemberInviteAdminRow[])
-    if (!eventsRes.error) setEvents((eventsRes.data ?? []) as EmailEventAdminRow[])
-    if (!directoryRes.error) setStaffRows((directoryRes.data ?? []) as StaffDirectoryRow[])
-    if (!profilesRes.error) {
-      const nextProfiles: Record<string, ProfileCapacity> = {}
-      for (const row of profilesRes.data ?? []) {
-        nextProfiles[row.user_id] = row
-      }
-      setProfileByUser(nextProfiles)
-    }
-
-    const problems = [
-      'error' in capacityResult ? { message: capacityResult.error } : null,
-      appsRes.error,
-      membersRes.error,
-      invitesRes.error,
-      eventsRes.error,
-      directoryRes.error,
-      profilesRes.error,
-    ].filter((item) => item != null)
-    setQueryDetail(problems.map((item) => item.message).join(' '))
-    setRefreshError(problems.length ? REFRESH_ERROR : '')
-    if (problems.length === 0) setRefreshedAt(new Date())
+    const settled = settleAdminLoad({
+      capacity: capacityResult,
+      platform: platformResult,
+      apps: appsRes,
+      members: membersRes,
+      invites: invitesRes,
+      events: eventsRes,
+      directory: directoryRes,
+      profiles: profilesRes,
+    })
+    if (!isKeep(settled.capacity)) setCapacity(settled.capacity)
+    if (!isKeep(settled.platform)) setPlatform(settled.platform)
+    if (!isKeep(settled.apps)) setApps(settled.apps as Application[])
+    if (!isKeep(settled.members)) setMembers(settled.members as MemberAdminRow[])
+    if (!isKeep(settled.peerInvites)) setPeerInvites(settled.peerInvites as MemberInviteAdminRow[])
+    if (!isKeep(settled.events)) setEvents(settled.events as EmailEventAdminRow[])
+    if (!isKeep(settled.staffRows)) setStaffRows(settled.staffRows as StaffDirectoryRow[])
+    if (!isKeep(settled.profileByUser)) setProfileByUser(settled.profileByUser as Record<string, ProfileCapacity>)
+    setPanelFailed(settled.failed)
+    setQueryDetail('')
+    setRefreshError('')
+    setRefreshedAt(new Date())
     setHasLoaded(true)
     setLoading(false)
   }, [])
@@ -441,6 +444,7 @@ function useAdminState(): AdminRoom {
     listError,
     refreshError,
     queryDetail,
+    panelFailed,
     actionNote,
     apps,
     members,

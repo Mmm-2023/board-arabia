@@ -17,6 +17,8 @@ export type ViewCopy = {
 
 export const REFRESH_ERROR = "Couldn't refresh. Showing last update …"
 
+export const ADMIN_PANEL_NOTICE = "This panel couldn't load. Try again shortly."
+
 export const MEMBER_VIEWS = {
   home: {
     empty: "You're in. Finish profile to unlock Directory.",
