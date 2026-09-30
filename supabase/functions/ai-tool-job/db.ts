@@ -138,7 +138,22 @@ export function createAiToolStore(admin: AiToolAdmin): AiToolStore {
       const { error } = await admin.storage.from(AI_TOOL_BUCKET).remove([path])
       return !error
     },
+    async readSource(path) {
+      const { data, error } = await admin.storage.from(AI_TOOL_BUCKET).download(path)
+      if (error || data == null) return ''
+      const text = await textFromDownload(data)
+      return text.slice(0, 80_000)
+    },
   }
+}
+
+async function textFromDownload(data: unknown): Promise<string> {
+  if (typeof data === 'string') return data
+  if (data instanceof Uint8Array) return new TextDecoder().decode(data)
+  if (typeof data === 'object' && data && typeof (data as Blob).text === 'function') {
+    return (data as Blob).text()
+  }
+  return ''
 }
 
 export function toolKeyOrNull(value: string): AiToolKey | null {

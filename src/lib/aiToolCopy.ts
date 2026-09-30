@@ -1,8 +1,8 @@
 /**
  * On-page legal copy for the four AI tools.
- * English and Arabic banners, will and will-not lines, consent, and footers
- * follow the 2026-09-30 legal draft. Will and will-not bullets are English in
- * that draft, so both languages show those lines as written.
+ * English banners, consent, and footers follow the 2026-09-30 legal draft.
+ * Arabic will and will-not lines, including the shared will-not lines, follow
+ * the 2026-09-30 bullets file. CFO has not landed those shared lines yet.
  * Pricing English uses the product name Pricing sense-check.
  */
 import {
@@ -15,6 +15,13 @@ export const SHARED_WILL_NOT = [
   'Recommend buying, selling or holding anything, or make any offer or solicitation.',
   'Act as a CMA-authorised person or replace a licensed adviser.',
   'Guarantee that its output is accurate, complete or current.',
+] as const
+
+export const SHARED_WILL_NOT_AR = [
+  'لا تقدّم استشارة قانونية أو مالية أو استثمارية أو ضريبية أو محاسبية.',
+  'لا توصي بشراء أي شيء أو بيعه أو الاحتفاظ به، ولا تقدّم أي عرض أو دعوة.',
+  'لا تعمل بصفة شخص مرخّص من هيئة السوق المالية، ولا تغني عن مستشار مرخّص.',
+  'لا تضمن دقة نتائجها أو اكتمالها أو حداثتها.',
 ] as const
 
 export const SHARED_FOOTER = {
@@ -32,8 +39,8 @@ type Lang = 'en' | 'ar'
 type ToolCopy = {
   title: Record<Lang, string>
   banner: Record<Lang, string>
-  will: readonly string[]
-  willNot: readonly string[]
+  will: Record<Lang, readonly string[]>
+  willNot: Record<Lang, readonly string[]>
   consentLead: Record<Lang, string>
   footerLead: Record<Lang, string>
 }
@@ -44,16 +51,30 @@ const CFO: ToolCopy = {
     en: 'An AI first read of your accounts or model. It flags runway, margins and red flags and suggests questions for your finance team. It is not accounting, audit or financial advice.',
     ar: 'قراءة أولية بالذكاء الاصطناعي لحساباتك أو نموذجك المالي. تُبرز مدة التشغيل المتبقية والهوامش ونقاط الخطر، وتقترح أسئلة لفريقك المالي. ليست استشارة محاسبية أو تدقيقاً أو استشارة مالية.',
   },
-  will: [
-    'Read the accounts or model you upload.',
-    'Estimate runway and margins from your figures.',
-    'Flag possible red flags and inconsistencies.',
-    'Suggest questions to ask your CFO or auditor.',
-  ],
-  willNot: [
-    'Audit, review or certify accounts, or check them against IFRS or SOCPA standards.',
-    'Verify that your figures are true.',
-  ],
+  will: {
+    en: [
+      'Read the accounts or model you upload.',
+      'Estimate runway and margins from your figures.',
+      'Flag possible red flags and inconsistencies.',
+      'Suggest questions to ask your CFO or auditor.',
+    ],
+    ar: [
+      'تقرأ الحسابات أو النموذج المالي الذي ترفعه.',
+      'تقدّر مدة التشغيل المتبقية والهوامش بناءً على أرقامك.',
+      'تُبرز نقاط الخطر المحتملة وأوجه عدم الاتساق.',
+      'تقترح أسئلة لتطرحها على مديرك المالي أو مراجع حساباتك.',
+    ],
+  },
+  willNot: {
+    en: [
+      'Audit, review or certify accounts, or check them against IFRS or SOCPA standards.',
+      'Verify that your figures are true.',
+    ],
+    ar: [
+      'لا تدقّق الحسابات أو تراجعها أو تعتمدها، ولا تتحقق من مطابقتها للمعايير الدولية لإعداد التقارير المالية أو معايير الهيئة السعودية للمراجعين والمحاسبين.',
+      'لا تتحقق من صحة أرقامك.',
+    ],
+  },
   consentLead: {
     en: 'I own or am authorised to share these financials, and I will not upload a listed company\'s non-public information.',
     ar: 'أملك هذه البيانات المالية أو مخوَّل بمشاركتها، ولن أرفع أي معلومات غير معلنة لشركة مدرجة.',
@@ -70,15 +91,28 @@ const TERM: ToolCopy = {
     en: 'An AI read of a term sheet. It flags terms that look unusual compared with common market practice so you know what to ask. It is not legal or investment advice.',
     ar: 'قراءة بالذكاء الاصطناعي لورقة الشروط. تُبرز البنود التي تبدو غير مألوفة مقارنة بالممارسات الشائعة في السوق لتعرف ما تسأل عنه. ليست استشارة قانونية أو استثمارية.',
   },
-  will: [
-    'Summarise the key terms in plain words.',
-    'Flag terms that look unusual against general market practice.',
-    'Suggest questions for your lawyer.',
-  ],
-  willNot: [
-    'Tell you whether to sign, invest or negotiate a term.',
-    'Give a legal opinion or check enforceability under any law.',
-  ],
+  will: {
+    en: [
+      'Summarise the key terms in plain words.',
+      'Flag terms that look unusual against general market practice.',
+      'Suggest questions for your lawyer.',
+    ],
+    ar: [
+      'تلخّص البنود الرئيسية بلغة واضحة.',
+      'تُبرز البنود التي تبدو غير مألوفة مقارنة بالممارسات العامة في السوق.',
+      'تقترح أسئلة لتطرحها على محاميك.',
+    ],
+  },
+  willNot: {
+    en: [
+      'Tell you whether to sign, invest or negotiate a term.',
+      'Give a legal opinion or check enforceability under any law.',
+    ],
+    ar: [
+      'لا تخبرك ما إذا كان عليك التوقيع أو الاستثمار أو التفاوض على أي بند.',
+      'لا تقدّم رأياً قانونياً ولا تتحقق من قابلية النفاذ بموجب أي نظام.',
+    ],
+  },
   consentLead: {
     en: 'I am allowed to share this term sheet, including under any confidentiality obligation, and I will not upload a listed company\'s non-public information.',
     ar: 'يحق لي مشاركة ورقة الشروط هذه، بما في ذلك وفق أي التزام بالسرية، ولن أرفع أي معلومات غير معلنة لشركة مدرجة.',
@@ -90,28 +124,42 @@ const TERM: ToolCopy = {
 }
 
 const PRICING: ToolCopy = {
-  title: { en: AI_TOOL_NAMES.pricing_sense_check, ar: 'التحقق الأولي من التقييم' },
+  title: { en: AI_TOOL_NAMES.pricing_sense_check, ar: 'التحقق الأولي من السعر' },
   banner: {
     en: 'An AI comparison of an asking price with public comparables and reported regional deals. It is a sense-check for your own thinking, not a price opinion, fairness opinion or investment advice.',
-    ar: 'مقارنة بالذكاء الاصطناعي بين التقييم المطلوب وشركات مماثلة معلنة وصفقات إقليمية منشورة. هي أداة للتحقق الأولي لتفكيرك، وليست تقييماً أو رأياً بعدالة السعر أو استشارة استثمارية.',
+    ar: 'مقارنة بالذكاء الاصطناعي بين الرقم المطلوب وشركات مماثلة معلنة وصفقات إقليمية منشورة. هي أداة للتحقق الأولي لتفكيرك، وليست رأياً في السعر أو رأياً بشأن عدالة السعر أو استشارة استثمارية.',
   },
-  will: [
-    'Compare the asking figure with public comparables and reported regional deals.',
-    'Show the ranges and sources it used.',
-    'Note the main gaps in the comparison.',
-  ],
-  willNot: [
-    'Give a price opinion, price target or fairness opinion.',
-    'Say whether a price is right or whether to invest.',
-    'Use private deal data or non-public information.',
-  ],
+  will: {
+    en: [
+      'Compare the asking figure with public comparables and reported regional deals.',
+      'Show the ranges and sources it used.',
+      'Note the main gaps in the comparison.',
+    ],
+    ar: [
+      'تقارن الرقم المطلوب بشركات مماثلة معلنة وصفقات إقليمية منشورة.',
+      'تعرض النطاقات والمصادر التي استخدمتها.',
+      'توضّح أبرز أوجه القصور في المقارنة.',
+    ],
+  },
+  willNot: {
+    en: [
+      'Give a price opinion, price target or fairness opinion.',
+      'Say whether a price is right or whether to invest.',
+      'Use private deal data or non-public information.',
+    ],
+    ar: [
+      'لا تقدّم رأياً في السعر أو سعراً مستهدفاً أو رأياً بشأن عدالة السعر.',
+      'لا تحدّد ما إذا كان السعر مناسباً أو ما إذا كان عليك الاستثمار.',
+      'لا تستخدم بيانات صفقات خاصة أو معلومات غير معلنة.',
+    ],
+  },
   consentLead: {
     en: 'I understand this is not a price opinion by a Taqeem-accredited valuer or a CMA-authorised person, and I will not rely on it to price, buy or sell any security.',
-    ar: 'أُدرك أن هذا ليس تقييماً صادراً عن مقيّم معتمد من الهيئة السعودية للمقيّمين المعتمدين (تقييم) أو عن شخص مرخّص من هيئة السوق المالية، ولن أعتمد عليه في تسعير أي ورقة مالية أو شرائها أو بيعها.',
+    ar: 'أُدرك أن هذا ليس رأياً في السعر صادراً عن مقيّم معتمد من الهيئة السعودية للمقيّمين المعتمدين أو عن شخص مرخّص من هيئة السوق المالية، ولن أعتمد عليه في تسعير أي ورقة مالية أو شرائها أو بيعها.',
   },
   footerLead: {
     en: 'Pricing sense-check. Comparables and deal data come from public sources and may be incomplete or stale. Not a price opinion or investment recommendation.',
-    ar: 'التحقق الأولي من التقييم. بيانات الشركات المماثلة والصفقات مأخوذة من مصادر عامة وقد تكون ناقصة أو قديمة. ليس تقييماً ولا توصية استثمارية.',
+    ar: 'التحقق الأولي من السعر. بيانات الشركات المماثلة والصفقات مأخوذة من مصادر عامة وقد تكون ناقصة أو قديمة. ليس رأياً في السعر ولا توصية استثمارية.',
   },
 }
 
@@ -121,15 +169,28 @@ const MARKET: ToolCopy = {
     en: 'An AI brief on entering the Saudi market: licences, local partner rules, Saudization and incentives, from public sources. Rules change often. It is not legal or tax advice.',
     ar: 'موجز بالذكاء الاصطناعي عن دخول السوق السعودي: التراخيص وقواعد الشريك المحلي والتوطين والحوافز، من مصادر عامة. تتغير الأنظمة كثيراً. ليس استشارة قانونية أو ضريبية.',
   },
-  will: [
-    'Outline common licences, foreign ownership and local partner points, Saudization (Nitaqat) and incentives for your sector.',
-    'Link the public sources it used.',
-    'List questions for a Saudi lawyer and MISA.',
-  ],
-  willNot: [
-    'Confirm what applies to your specific case.',
-    'Replace a licensed Saudi lawyer, tax adviser or the relevant government authority.',
-  ],
+  will: {
+    en: [
+      'Outline common licences, foreign ownership and local partner points, Saudization (Nitaqat) and incentives for your sector.',
+      'Link the public sources it used.',
+      'List questions for a Saudi lawyer and MISA.',
+    ],
+    ar: [
+      'تستعرض التراخيص الشائعة، ومسائل الملكية الأجنبية والشريك المحلي، والتوطين (نطاقات)، والحوافز المتاحة لقطاعك.',
+      'ترفق روابط المصادر العامة التي استخدمتها.',
+      'تسرد أسئلة لتطرحها على محامٍ سعودي ووزارة الاستثمار.',
+    ],
+  },
+  willNot: {
+    en: [
+      'Confirm what applies to your specific case.',
+      'Replace a licensed Saudi lawyer, tax adviser or the relevant government authority.',
+    ],
+    ar: [
+      'لا تؤكد ما ينطبق على حالتك تحديداً.',
+      'لا تغني عن محامٍ سعودي مرخّص أو مستشار ضريبي أو الجهة الحكومية المختصة.',
+    ],
+  },
   consentLead: {
     en: 'I understand Saudi rules change often and this brief may be out of date, and I will confirm requirements with a licensed Saudi lawyer and the relevant authority.',
     ar: 'أُدرك أن الأنظمة السعودية تتغير كثيراً وأن هذا الموجز قد يكون غير محدّث، وسأتحقق من المتطلبات مع محامٍ سعودي مرخّص والجهة الحكومية المختصة.',
@@ -206,8 +267,8 @@ export function renderToolCopy(tool: AiToolKey, lang: Lang, slots: LegalSlots): 
   return {
     title: block.title[lang],
     banner: fillLegal(block.banner[lang], slots),
-    will: block.will,
-    willNot: [...block.willNot, ...SHARED_WILL_NOT],
+    will: block.will[lang],
+    willNot: [...block.willNot[lang], ...(lang === 'ar' ? SHARED_WILL_NOT_AR : SHARED_WILL_NOT)],
     consent: `${lead} ${core}`,
     footerLead,
     footerShared,
