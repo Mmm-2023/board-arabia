@@ -32,10 +32,8 @@ const chrome = spawn(
 )
 
 const shots = [
-  ['report-ar', 1280, 'aitools-market-report-ar-v2-1280.png'],
-  ['report-ar', 390, 'aitools-market-report-ar-v2-390.png'],
-  ['staff-search', 1280, 'aitools-market-search-not-configured-v2-1280.png'],
-  ['staff-search', 390, 'aitools-market-search-not-configured-v2-390.png'],
+  ['staff-search', 390, 'aitools-market-search-not-configured-v3-390.png'],
+  ['settings', 390, 'aitools-market-settings-v3-390.png'],
 ]
 
 try {

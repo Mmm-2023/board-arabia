@@ -109,7 +109,7 @@ function report(lang: 'en' | 'ar') {
 
 function settings() {
   return staffShell(
-    <div className="max-w-3xl pe-16">
+    <div className="max-w-3xl md:pe-16">
       <h1 className="font-display text-[2rem] font-semibold tracking-[-0.03em]">Settings</h1>
       <AiToolSettingsPanel
         shot={{ retentionDays: 30, flags: { ...AI_TOOL_FLAG_DEFAULTS }, searchConfigured: false }}
@@ -120,7 +120,7 @@ function settings() {
 
 function staffSearch() {
   return staffShell(
-    <div className="w-full max-w-3xl pe-16">
+    <div className="w-full max-w-3xl md:pe-16">
       <h1 className="font-display text-[2rem] font-semibold tracking-[-0.03em]">Settings</h1>
       <AiToolSettingsPanel
         shot={{ retentionDays: 30, flags: { ...AI_TOOL_FLAG_DEFAULTS }, searchConfigured: false }}

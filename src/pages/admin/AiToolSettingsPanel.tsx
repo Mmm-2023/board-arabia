@@ -93,7 +93,7 @@ export function AiToolSettingsPanel({
   }
 
   return (
-    <section className={`${styles.panel} mt-8 px-5 py-5 pe-16`} aria-label="AI tool settings" data-ai-settings="">
+    <section className={`${styles.panel} mt-8 px-5 py-5 md:pe-16`} aria-label="AI tool settings" data-ai-settings="">
       <h2 className={`text-[0.72rem] font-semibold tracking-[0.12em] uppercase ${styles.quiet}`}>AI tools</h2>
       <p className="mt-3 text-[1rem] leading-relaxed text-pearl/80">
         Uploads and outputs are kept for this many days, then removed. The default is {AI_TOOL_RETENTION_DAYS_DEFAULT} days.
