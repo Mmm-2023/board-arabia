@@ -5,6 +5,7 @@ export { SPONSOR_CAP }
 export type SponsorSeatRow = {
   seat: string
   status: string
+  tiers?: readonly string[] | null
 }
 
 export type SponsorCapView = {
@@ -14,11 +15,15 @@ export type SponsorCapView = {
   full: boolean
 }
 
-/** Invited and active sponsor rows. Suspended sponsors do not hold a seat. */
+/** Invited and active sponsor rows. A combined tier counts. Suspended sponsors do not hold a seat. */
+export function holdsSponsorSeat(row: SponsorSeatRow): boolean {
+  if (row.status !== 'invited' && row.status !== 'active') return false
+  if (row.seat === 'sponsor') return true
+  return (row.tiers ?? []).includes('sponsor')
+}
+
 export function sponsorSeatHolders<T extends SponsorSeatRow>(rows: readonly T[]): T[] {
-  return rows.filter(
-    (row) => row.seat === 'sponsor' && (row.status === 'invited' || row.status === 'active'),
-  )
+  return rows.filter((row) => holdsSponsorSeat(row))
 }
 
 export function sponsorCapView(rows: readonly SponsorSeatRow[]): SponsorCapView {

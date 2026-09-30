@@ -116,7 +116,7 @@ test('Add Sponsor calls invite-sponsor with the staff session and does not take 
   assert.match(panel, /disabled=\{addDisabled\}/)
   assert.equal(panel.includes('claim_founding_seat'), false)
   assert.equal(panel.includes('from(\'staff_users\')'), false)
-  assert.match(bits, /sponsorSeatHolders/)
+  assert.match(bits, /holdsSponsorSeat/)
   assert.equal(bits.includes('The sponsor portal is not open'), false)
   assert.match(layout, /clientAdminGate/)
   assert.equal(people.includes('staff allowlist'), false)

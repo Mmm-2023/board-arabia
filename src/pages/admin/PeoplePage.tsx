@@ -5,13 +5,15 @@ import { DefaultPicturePicker } from '../../components/DefaultPicturePicker'
 import { SignedAvatar } from '../../components/SignedAvatar'
 import { normalizeAvatarStyle, type AvatarStyle } from '../../lib/avatarStyle'
 import { draftFromProfile } from '../../lib/capacity'
-import { adminMemberLine, type FoundingSeat } from '../../lib/member'
+import { peopleCardLine } from '../../lib/membershipTiers'
+import type { FoundingSeat } from '../../lib/member'
 import { firmByUserId, sponsorCapView } from '../../lib/sponsorSeat'
-import { inviteSponsor, staffSetAvatarStyle, type DryRunInvite, type MemberAdminRow } from '../../lib/supabase'
+import { inviteSponsor, staffSetAvatarStyle, staffSetMemberTiers, type DryRunInvite, type MemberAdminRow } from '../../lib/supabase'
 import { useNoIndex } from '../../lib/usePageTitle'
 import { ConfirmDialog } from '../../shell/ConfirmDialog'
 import { CardSkeleton, EmptyState } from '../../shell/ViewState'
 import { STAFF_VIEWS } from '../../shell/viewCopy'
+import { MembershipTiersControl } from './MembershipTiersControl'
 import { PEOPLE_TIERS, PanelNotice, peopleInTier } from './bits'
 import { useAdmin } from './context'
 import { SponsorInvitePanel } from './SponsorInvitePanel'
@@ -218,7 +220,7 @@ export function PeoplePage() {
               <li
                 key={member.user_id}
                 id={`member-${member.user_id}`}
-                className={`scroll-mt-24 border px-5 py-4 ${
+                className={`scroll-mt-24 max-w-full border py-4 ps-5 pe-16 ${
                   focusId === `member-${member.user_id}` ? 'border-brass/70' : 'border-pearl/10'
                 }`}
               >
@@ -231,9 +233,9 @@ export function PeoplePage() {
                       alt=""
                     />
                     <div className="min-w-0">
-                    <p className="text-[0.95rem] text-stone/85">{member.email}</p>
-                    <p className="mt-1 text-[0.8rem] text-pearl/45">
-                      {adminMemberLine(member.seat, member.status)}
+                    <p className="text-[0.95rem] break-words text-stone/85">{member.email}</p>
+                    <p className="mt-1 text-[0.8rem] break-words text-pearl/45">
+                      {peopleCardLine(member)}
                       {member.seat !== 'sponsor' && (
                         <>
                           {' · '}
@@ -263,6 +265,14 @@ export function PeoplePage() {
                     </button>
                   )}
                 </div>
+                <MembershipTiersControl
+                  member={member}
+                  onSave={async (tiers) => {
+                    const result = await staffSetMemberTiers(member.user_id, tiers)
+                    if (!result.error) room.refresh()
+                    return result
+                  }}
+                />
                 <div className="mt-4">
                   <DefaultPicturePicker
                     tone="staff"
