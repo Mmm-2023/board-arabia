@@ -6,6 +6,10 @@ import {
   removeOwnDeck,
   type HistoryItem,
 } from '../../lib/dueDiligence'
+import { AiToolCardList } from '../../components/ai/AiToolCards'
+import { useSiteLanguage } from '../../components/SiteLanguage'
+import { readAiToolFrame, type AiToolFlags } from '../../lib/aiToolApi'
+import { AI_UI } from '../../lib/aiToolUi'
 import { recentReports, type RecentReportRow } from '../../lib/recentReports'
 import { useNoIndex } from '../../lib/usePageTitle'
 import { ConfirmDialog } from '../../shell/ConfirmDialog'
@@ -19,6 +23,11 @@ const FILE_LEFT = 'The report was removed, but the uploaded deck could not be de
 
 export function AiToolsHome() {
   const { userId } = useMember()
+  const { lang } = useSiteLanguage()
+  const ui = AI_UI[lang]
+  const [flags, setFlags] = useState<AiToolFlags | null>(null)
+  const [flagsError, setFlagsError] = useState(false)
+  const [flagsAttempt, setFlagsAttempt] = useState(0)
   const [reports, setReports] = useState<HistoryItem[] | null>(null)
   const [error, setError] = useState(false)
   const [attempt, setAttempt] = useState(0)
@@ -45,6 +54,23 @@ export function AiToolsHome() {
       cancelled = true
     }
   }, [attempt, userId])
+
+  useEffect(() => {
+    let cancelled = false
+    void readAiToolFrame().then((frame) => {
+      if (cancelled) return
+      if (!frame) {
+        setFlags(null)
+        setFlagsError(true)
+        return
+      }
+      setFlagsError(false)
+      setFlags(frame.flags)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [flagsAttempt])
 
   const rows = reports ? recentReports(reports) : null
 
@@ -86,11 +112,24 @@ export function AiToolsHome() {
   }
 
   return (
-    <div className="max-w-3xl">
-      <h1 className="font-display text-[2.2rem] font-bold tracking-[-0.03em]">AI tools</h1>
-      <p className="mt-3 max-w-xl text-[1rem] leading-relaxed text-ink/65">
-        Live tools only. Each one says what it checks and what it will not do.
-      </p>
+    <div className="max-w-3xl pe-16" dir={lang === 'ar' ? 'rtl' : 'ltr'} lang={lang}>
+      <h1 className="font-display text-[2.2rem] font-bold tracking-[-0.03em]">{ui.hub}</h1>
+      <p className="mt-3 max-w-xl text-[1rem] leading-relaxed text-ink/65">{ui.intro}</p>
+      {flagsError ? (
+        <div className="mt-6">
+          <ErrorBanner
+            tone="member"
+            message={ui.listError}
+            retryLabel={ui.retry}
+            onRetry={() => setFlagsAttempt((value) => value + 1)}
+          />
+        </div>
+      ) : null}
+      {flags ? <AiToolCardList flags={flags} lang={lang} /> : flagsError ? null : (
+        <div className="mt-6">
+          <CardSkeleton tone="member" label={ui.loadingTools} />
+        </div>
+      )}
       <ul className="mt-8 space-y-3">
         <li>
           <Link

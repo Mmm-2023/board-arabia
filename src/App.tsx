@@ -118,6 +118,8 @@ export default function App() {
         </Route>
         <Route path="capacity" element={<CapacityPage />} />
         <Route path="settings" element={<SettingsPage />} />
+        <Route path="ai" element={<StaffAiToolsPage />} />
+        <Route path="ai/:toolSlug" element={<StaffAiToolPage />} />
         <Route path="marketing" element={<MarketingPage />} />
         <Route path="email" element={<EmailPage />} />
         <Route path="majlis" element={<AdminMajlisPage />} />
@@ -148,6 +150,8 @@ export default function App() {
           <Route index element={<AiToolsHome />} />
           <Route path="due-diligence" element={<DueDiligencePage />} />
           <Route path="due-diligence/:reportId" element={<DueDiligencePage />} />
+          <Route path=":toolSlug" element={<AiToolPage />} />
+          <Route path=":toolSlug/:jobId" element={<AiToolPage />} />
         </Route>
         <Route path="profile" element={<ProfilePage />} />
         <Route path="help" element={<HelpPage />} />
@@ -175,3 +179,11 @@ export default function App() {
     </SiteLanguageProvider>
   )
 }
+
+const AiToolPage = lazy(() => import('./pages/dashboard/AiToolPage').then((m) => ({ default: m.AiToolPage })))
+const StaffAiToolsPage = lazy(() =>
+  import('./pages/admin/StaffAiToolsPage').then((m) => ({ default: m.StaffAiToolsPage })),
+)
+const StaffAiToolPage = lazy(() =>
+  import('./pages/admin/StaffAiToolsPage').then((m) => ({ default: m.StaffAiToolPage })),
+)

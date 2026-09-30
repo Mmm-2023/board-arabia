@@ -133,8 +133,14 @@ verify_jwt = true
 # Daily GitHub Action. Header x-retention-sweep must match RETENTION_SWEEP_SECRET.
 # verify_jwt stays off so the anon key is not a credential. An unset secret rejects every call.
 # dry_run=1 lists rows and does not delete. POST only.
+# Redeploy after the AI tools migration so staged files are purged with the Storage API.
 [functions.retention-sweep]
 verify_jwt = false
+
+# Member AI tool frame. Start, status, step, and delete. The anon key is not enough.
+# No new secret. Model calls, when a later tool adds them, use the due diligence provider secrets.
+[functions.ai-tool-job]
+verify_jwt = true
 
 # Daily suggestions and nudges. Header x-intros-schedule-secret must match INTROS_SCHEDULE_SECRET.
 # verify_jwt stays off so the anon key is not a credential. An unset secret rejects every call.

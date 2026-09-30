@@ -1134,6 +1134,30 @@ export type Database = {
         Args: { p_event_id: string; p_member_id: string | null; p_label: string }
         Returns: Json
       }
+      read_ai_tool_frame: {
+        Args: Record<string, never>
+        Returns: Json
+      }
+      set_ai_tool_retention: {
+        Args: { p_days: number }
+        Returns: Json
+      }
+      set_ai_tool_flag: {
+        Args: { p_tool: string; p_enabled: boolean }
+        Returns: Json
+      }
+      record_ai_tool_consent: {
+        Args: { p_tool: string; p_job_id: string; p_copy_version: string }
+        Returns: Json
+      }
+      list_own_ai_tool_jobs: {
+        Args: { p_tool: string }
+        Returns: Json
+      }
+      delete_own_ai_tool_job: {
+        Args: { p_job_id: string }
+        Returns: Json
+      }
     }
     Enums: Record<string, never>
     CompositeTypes: Record<string, never>

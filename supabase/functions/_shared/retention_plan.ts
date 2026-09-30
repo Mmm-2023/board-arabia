@@ -65,3 +65,10 @@ export function consentExpired(createdAt: string, now: Date) {
   const created = Date.parse(createdAt)
   return Number.isFinite(created) && created <= monthsBefore(now, 13)
 }
+
+/** True when an AI tool job is older than the live retention setting. Default 30 days. */
+export function aiToolRetentionDue(createdAt: string, retentionDays: number, now: Date): boolean {
+  const created = Date.parse(createdAt)
+  const days = Number.isInteger(retentionDays) && retentionDays > 0 ? retentionDays : 30
+  return Number.isFinite(created) && now.getTime() - created > days * DAY_MS
+}

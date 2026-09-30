@@ -14,6 +14,9 @@ type Plan = {
   events?: number
   cache?: number
   invites_returned?: number
+  ai_tool_jobs?: string[]
+  ai_tool_files?: string[]
+  ai_tool_retention_days?: number
 }
 
 Deno.serve(async (req) => {
@@ -44,6 +47,7 @@ Deno.serve(async (req) => {
   }
 
   const posthog = dry ? { sent: 0, pending: 0, failed: false } : await flushPosthog(admin)
+  const aiFiles = dry ? { removed: 0, failed: false } : await purgeAiToolFiles(admin, arrayOf(plan.ai_tool_files))
   const counts = {
     unverified_7d: arrayOf(plan.unverified).length,
     never_submitted_120d: arrayOf(plan.never_submitted).length,
@@ -58,6 +62,8 @@ Deno.serve(async (req) => {
     cache_24h: Number(plan.cache || 0),
     posthog_sent: posthog.sent,
     posthog_pending: posthog.pending,
+    ai_tool_jobs: arrayOf(plan.ai_tool_jobs).length,
+    ai_tool_files: dry ? arrayOf(plan.ai_tool_files).length : aiFiles.removed,
   }
 
   await admin.from('retention_runs').insert({ dry_run: dry, counts })
@@ -73,9 +79,11 @@ Deno.serve(async (req) => {
       invites: arrayOf(plan.invites),
       reminders: reminders,
       consent: arrayOf(plan.consent),
+      ai_tool_jobs: arrayOf(plan.ai_tool_jobs),
+      ai_tool_files: arrayOf(plan.ai_tool_files),
     }
   }
-  if (reminderFailed || posthog.failed) return jsonResponse(req, body, 500)
+  if (reminderFailed || posthog.failed || aiFiles.failed) return jsonResponse(req, body, 500)
   return jsonResponse(req, body)
 })
 
@@ -137,6 +145,33 @@ async function flushPosthog(admin: ReturnType<typeof createClient>) {
     }
   }
   return { sent, pending: ids.length - sent, failed }
+}
+
+/**
+ * Redeploy retention-sweep after the AI tools migration.
+ * Files are removed with the Storage API. SQL does not delete storage.objects.
+ */
+async function purgeAiToolFiles(
+  admin: ReturnType<typeof createClient>,
+  paths: string[],
+): Promise<{ removed: number; failed: boolean }> {
+  let removed = 0
+  let failed = false
+  for (const path of paths) {
+    if (!/^[0-9a-f-]{36}\/[0-9a-f-]{36}\/source\.(pdf|txt|csv|xlsx|docx)$/i.test(path) || path.includes('..')) {
+      failed = true
+      continue
+    }
+    const { error } = await admin.storage.from('ai-tool-uploads').remove([path])
+    if (error) {
+      failed = true
+      continue
+    }
+    const cleared = await admin.from('ai_tool_file_purge').delete().eq('storage_path', path)
+    if (cleared.error) failed = true
+    else removed += 1
+  }
+  return { removed, failed }
 }
 
 function authorized(req: Request) {

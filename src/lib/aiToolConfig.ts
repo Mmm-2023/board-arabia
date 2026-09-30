@@ -1,0 +1,27 @@
+/**
+ * AI tool legal slots. One source: src/config/legal.ts.
+ * Entity, commercial registration, and provider default to
+ * "To be confirmed" in English and "قيد التأكيد" in Arabic.
+ * Privacy and terms stay the labelled in-app routes.
+ */
+import { legalField, PRIVACY_LINK, TERMS_LINK, type LegalLang } from '../config/legal'
+import { retentionDaysOrDefault } from '../../supabase/functions/_shared/ai_tools.ts'
+import type { LegalSlots } from './aiToolCopy.ts'
+
+export { PRIVACY_LINK, TERMS_LINK }
+
+export function legalSlotsFromEnv(
+  retentionDays: number,
+  date: string,
+  lang: LegalLang = 'en',
+): LegalSlots {
+  return {
+    entity: legalField('baEntity', lang),
+    cr: legalField('cr', lang),
+    provider: legalField('aiProvider', lang),
+    privacy: PRIVACY_LINK,
+    terms: TERMS_LINK,
+    retentionDays: retentionDaysOrDefault(retentionDays),
+    date,
+  }
+}

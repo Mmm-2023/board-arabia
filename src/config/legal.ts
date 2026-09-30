@@ -57,9 +57,12 @@ export function SERVICE_EMAIL(lang: LegalLang = 'en'): string {
   return legalField('serviceEmail', lang)
 }
 
-/** Only the exact boolean true or the string true turns the 30 day AI upload promise on. */
+/**
+ * Default is on: retention-sweep deletes AI uploads, outputs, and staged files.
+ * Only the exact boolean false or the string false turns the 30 day wording off.
+ */
 export function readAiUploads30DayRetention(raw: unknown): boolean {
-  return raw === true || raw === 'true'
+  return raw !== false && raw !== 'false'
 }
 
 export const AI_UPLOADS_30_DAY_RETENTION = readAiUploads30DayRetention(
