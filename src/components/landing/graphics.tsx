@@ -1,6 +1,6 @@
 import { useEffect, useRef, type ReactNode } from 'react'
 import { HELD_FOR_LINE } from '../../content/marketing'
-import { motionAllowed, usePendingReveal } from '../Reveal'
+import { armMotionRoot, motionAllowed, usePendingReveal } from '../Reveal'
 
 export { HELD_FOR_LINE }
 
@@ -107,6 +107,7 @@ export function HeroEnter({
   useEffect(() => {
     const el = ref.current
     if (!el || !motionAllowed()) return
+    armMotionRoot()
     el.style.animationDelay = `${Math.min(4, index) * 80}ms`
     el.classList.add('ba-hero-enter')
   }, [index])

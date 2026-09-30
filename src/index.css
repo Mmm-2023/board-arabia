@@ -768,7 +768,7 @@
 }
 
 .ba-node[data-last] b {
-  color: #1c1343;
+  color: #f6f5fb;
 }
 
 .ba-steps h3 {
@@ -924,53 +924,53 @@
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  .ba-reveal {
+  html.ba-motion .ba-reveal:not(.is-in) {
     opacity: 0;
     transform: translateY(12px);
   }
 
-  .ba-reveal.is-in {
+  html.ba-motion .ba-reveal.is-in {
     opacity: 1;
     transform: none;
     transition: opacity 300ms cubic-bezier(0.2, 0.7, 0.2, 1), transform 300ms cubic-bezier(0.2, 0.7, 0.2, 1);
   }
 
-  .ba-hero-enter {
+  html.ba-motion .ba-hero-enter {
     animation: ba-rise 400ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
   }
 
-  .ba-g1.ba-draw .ba-g1-arc {
+  html.ba-motion .ba-g1.ba-draw .ba-g1-arc {
     animation: ba-draw 600ms cubic-bezier(0.2, 0.7, 0.2, 1) 420ms forwards;
   }
 
-  .ba-steps.ba-pending:not(.is-in)::before {
+  html.ba-motion .ba-steps.ba-pending:not(.is-in)::before {
     transform: scaleY(0);
   }
 
-  .ba-steps.ba-pending.is-in::before {
+  html.ba-motion .ba-steps.ba-pending.is-in::before {
     transform: scaleY(1);
     transition: transform 500ms cubic-bezier(0.2, 0.7, 0.2, 1);
   }
 
-  .ba-steps.ba-pending:not(.is-in) .ba-node i {
+  html.ba-motion .ba-steps.ba-pending:not(.is-in) .ba-node i {
     opacity: 0;
   }
 
-  .ba-steps.ba-pending.is-in .ba-node i {
+  html.ba-motion .ba-steps.ba-pending.is-in .ba-node i {
     opacity: 1;
     transition: opacity 300ms cubic-bezier(0.2, 0.7, 0.2, 1);
   }
 
-  .ba-steps.ba-pending.is-in li:nth-child(2) .ba-node i { transition-delay: 60ms; }
-  .ba-steps.ba-pending.is-in li:nth-child(3) .ba-node i { transition-delay: 120ms; }
-  .ba-steps.ba-pending.is-in li:nth-child(4) .ba-node i { transition-delay: 180ms; }
-  .ba-steps.ba-pending.is-in li:nth-child(5) .ba-node i { transition-delay: 240ms; }
+  html.ba-motion .ba-steps.ba-pending.is-in li:nth-child(2) .ba-node i { transition-delay: 60ms; }
+  html.ba-motion .ba-steps.ba-pending.is-in li:nth-child(3) .ba-node i { transition-delay: 120ms; }
+  html.ba-motion .ba-steps.ba-pending.is-in li:nth-child(4) .ba-node i { transition-delay: 180ms; }
+  html.ba-motion .ba-steps.ba-pending.is-in li:nth-child(5) .ba-node i { transition-delay: 240ms; }
 
-  .ba-diamonds.ba-pending li[data-on='1'] {
+  html.ba-motion .ba-diamonds.ba-pending li[data-on='1'] {
     background: transparent;
   }
 
-  .ba-diamonds.ba-pending.is-in li[data-on='1'] {
+  html.ba-motion .ba-diamonds.ba-pending.is-in li[data-on='1'] {
     background: #4b3f9a;
     transition: background-color 400ms cubic-bezier(0.2, 0.7, 0.2, 1);
   }
@@ -992,12 +992,26 @@
 }
 
 @media (min-width: 768px) and (prefers-reduced-motion: no-preference) {
-  .ba-steps.ba-pending:not(.is-in)::before {
+  html.ba-motion .ba-steps.ba-pending:not(.is-in)::before {
     transform: scaleX(0);
   }
 
-  .ba-steps.ba-pending.is-in::before {
+  html.ba-motion .ba-steps.ba-pending.is-in::before {
     transform: scaleX(1);
+  }
+}
+
+@media print {
+  html.ba-motion .ba-reveal,
+  html.ba-motion .ba-hero-enter,
+  html.ba-motion .ba-steps.ba-pending .ba-node i {
+    opacity: 1 !important;
+    transform: none !important;
+    animation: none !important;
+  }
+
+  html.ba-motion .ba-steps.ba-pending::before {
+    transform: none !important;
   }
 }
 

@@ -4,6 +4,11 @@ import path from 'node:path'
 import test from 'node:test'
 import { firstSentence, HELD_FOR_LINE, NAV_LINKS, PROCESS_STEPS } from '../src/content/marketing.ts'
 import { FAQ, MEMBERS_FAQ } from '../src/content/seo.ts'
+import {
+  REVEAL_FAILSAFE_MS,
+  revealShouldHide,
+  revealUnseen,
+} from '../src/lib/revealMotion.ts'
 
 const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..')
 
@@ -81,3 +86,49 @@ test('landing source keeps locked cards, new strings, and no analytics or dashes
   assert.match(source('src/shell/destinations.ts'), /Home/)
   assert.match(source('src/shell/destinations.ts'), /AI tools/)
 })
+
+test('reveal stays visible until script arms motion, then a failsafe shows it', () => {
+  const css = source('src/index.css')
+  const reveal = source('src/components/Reveal.tsx')
+  const steps = source('src/components/landing/StepDiagram.tsx')
+  assert.equal(revealShouldHide({ motion: false, inView: false, failed: false }), false)
+  assert.equal(revealShouldHide({ motion: true, inView: true, failed: false }), false)
+  assert.equal(revealShouldHide({ motion: true, inView: false, failed: true }), false)
+  assert.equal(revealShouldHide({ motion: true, inView: false, failed: false }), true)
+  assert.equal(REVEAL_FAILSAFE_MS > 0 && REVEAL_FAILSAFE_MS <= 2000, true)
+
+  const nodes = [
+    classes('ba-reveal'),
+    classes('ba-reveal is-in'),
+    classes('ba-pending'),
+  ]
+  revealUnseen(nodes)
+  assert.equal(nodes[0].classList.contains('is-in'), true)
+  assert.equal(nodes[1].names.filter((name) => name === 'is-in').length, 1)
+  assert.equal(nodes[2].classList.contains('is-in'), true)
+
+  assert.match(css, /html\.ba-motion \.ba-reveal:not\(\.is-in\)/)
+  assert.equal(/^[ \t]*\.ba-reveal \{\s*opacity:\s*0/m.test(css), false)
+  assert.match(css, /@media print[\s\S]*html\.ba-motion \.ba-reveal/)
+  assert.match(reveal, /REVEAL_FAILSAFE_MS/)
+  assert.match(reveal, /armMotionRoot/)
+  assert.equal(reveal.includes("className=\"ba-reveal\""), false)
+  assert.match(steps, /\{index \+ 1\}/)
+  assert.match(css, /\.ba-node\[data-last\] b \{\s*color: #f6f5fb;/)
+  assert.equal(css.includes('.ba-node[data-last] b {\n  color: #1c1343;'), false)
+})
+
+function classes(initial: string) {
+  const names = initial.split(/\s+/).filter(Boolean)
+  return {
+    names,
+    classList: {
+      contains(name: string) {
+        return names.includes(name)
+      },
+      add(name: string) {
+        if (!names.includes(name)) names.push(name)
+      },
+    },
+  }
+}
