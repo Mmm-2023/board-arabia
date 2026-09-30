@@ -1,15 +1,15 @@
 import {
   RE_ASSET_CLASSES,
   RE_CAPITAL_ROLES,
-  RE_CITIES,
   isReReadinessStatus,
   type ReOpportunityCard,
   type ReReadinessStatus,
 } from './reRedaction.ts'
+import { reRegionFor, type ReRegion } from './reRegions.ts'
 
 export type ReOpportunityFilters = {
   assetClass: (typeof RE_ASSET_CLASSES)[number] | null
-  city: (typeof RE_CITIES)[number] | null
+  city: ReRegion | null
   capitalRole: (typeof RE_CAPITAL_ROLES)[number] | null
 }
 
@@ -26,7 +26,7 @@ export function reFiltersActive(filters: ReOpportunityFilters) {
 export function filterReOpportunities(cards: readonly ReOpportunityCard[], filters: ReOpportunityFilters) {
   return cards.filter((card) => {
     if (filters.assetClass && card.asset_class !== filters.assetClass) return false
-    if (filters.city && card.city !== filters.city) return false
+    if (filters.city && reRegionFor(card.city, card.one_liner) !== filters.city) return false
     if (filters.capitalRole && card.capital_role !== filters.capitalRole) return false
     return true
   })

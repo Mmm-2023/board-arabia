@@ -90,7 +90,8 @@ test('opportunity readiness cards omit empty separators', async () => {
       }),
     )
     assert.match(filled, /Riyadh/)
-    assert.match(filled, /residential/)
+    assert.match(filled, />Residential</)
+    assert.match(filled, />Equity</)
     assert.match(filled, /·/)
   } finally {
     await vite.close()

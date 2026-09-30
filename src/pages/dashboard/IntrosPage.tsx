@@ -51,8 +51,7 @@ export function IntrosPage() {
 
   return (
     <div className="max-w-3xl">
-      <p className="text-[0.72rem] font-semibold tracking-[0.14em] text-brass uppercase">Intros</p>
-      <h1 className="mt-3 font-display text-[2.2rem] font-bold tracking-[-0.03em]">Intros</h1>
+      <h1 className="font-display text-[2.2rem] font-bold tracking-[-0.03em]">Intros</h1>
       <p className="mt-3 max-w-xl text-[1rem] leading-relaxed text-ink/65">
         Requests you sent, and requests sent to you. Mandate and real estate unlocks are in this list too.
       </p>

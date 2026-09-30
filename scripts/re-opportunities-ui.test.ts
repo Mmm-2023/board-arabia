@@ -8,10 +8,14 @@ import { createServer } from 'vite'
 import { parseReIntros } from '../src/lib/reIntroQueue.ts'
 import {
   RE_ASSET_CLASSES,
+  RE_ASSET_CLASS_LABEL,
   RE_CAPITAL_ROLES,
+  RE_CAPITAL_ROLE_LABEL,
   RE_CITIES,
   RE_READINESS_STATUS,
   presentReOpportunity,
+  reAssetClassLabel,
+  reCapitalRoleLabel,
 } from '../src/lib/reRedaction.ts'
 import { filterReOpportunities, readinessLines, reFeedIsForming, RE_READINESS_NOTE, RE_READINESS_STATUS_LABEL } from '../src/lib/reOpportunityView.ts'
 import { MEMBER_VIEWS } from '../src/shell/viewCopy.ts'
@@ -206,8 +210,8 @@ test('locked opportunity markup blurs placeholders and keeps secrets out of the 
     assert.match(html, /Request intro/)
     assert.match(html, /Housing/)
     assert.match(html, /Riyadh/)
-    assert.match(html, /residential/)
-    assert.match(html, /equity/)
+    assert.match(html, />Residential</)
+    assert.match(html, />Equity</)
     assert.match(html, /\$10-25m/)
     assert.match(html, /Foreign ownership path/)
     assert.match(html, /Escrow \/ off-plan registration/)
@@ -220,10 +224,15 @@ test('locked opportunity markup blurs placeholders and keeps secrets out of the 
     assert.equal((html.match(/role="tab"/g) || []).length, 2)
     assert.match(html, />Opportunities</)
     assert.match(html, /Asset class/)
-    assert.match(html, /industrial\/logistics/)
-    assert.match(html, /ROSHN/)
-    assert.match(html, /sukuk\/REIT/)
-    assert.match(html, /aria-label="City"/)
+    assert.match(html, /Industrial and logistics/)
+    assert.equal(html.includes('industrial/logistics'), false)
+    assert.match(html, /Eastern Province/)
+    assert.match(html, /Ha&#x27;il|Ha'il/)
+    assert.equal(html.includes('>ROSHN<'), false)
+    assert.equal(html.includes('>NEOM<'), false)
+    assert.match(html, /Sukuk or REIT/)
+    assert.equal(html.includes('sukuk/REIT'), false)
+    assert.match(html, /aria-label="Region"/)
     assert.match(html, /aria-label="Capital role"/)
     const blurAt = html.indexOf('re-locked-copy')
     const readinessAt = html.indexOf('data-re-readiness')
@@ -278,4 +287,60 @@ test('locked opportunity markup blurs placeholders and keeps secrets out of the 
   } finally {
     await vite.close()
   }
+})
+
+test('asset class and capital role labels are display only', () => {
+  assert.deepEqual(RE_ASSET_CLASSES, [
+    'residential',
+    'hospitality',
+    'office',
+    'retail',
+    'industrial/logistics',
+    'mixed-use',
+    'land bank',
+    'student housing',
+    'healthcare RE',
+  ])
+  assert.deepEqual(RE_CAPITAL_ROLES, [
+    'equity',
+    'mezzanine',
+    'sukuk/REIT',
+    'JV partner',
+    'land contribution',
+    'offtake',
+    'operator',
+  ])
+  assert.equal(reAssetClassLabel('industrial/logistics'), 'Industrial and logistics')
+  assert.equal(reAssetClassLabel('mixed-use'), 'Mixed use')
+  assert.equal(reAssetClassLabel('healthcare RE'), 'Healthcare real estate')
+  assert.equal(reCapitalRoleLabel('sukuk/REIT'), 'Sukuk or REIT')
+  assert.equal(reCapitalRoleLabel('land contribution'), 'Land contribution')
+  for (const value of RE_ASSET_CLASSES) {
+    const label = RE_ASSET_CLASS_LABEL[value]
+    assert.equal(label.includes('/'), false, value)
+    assert.equal(label.includes('-'), false, value)
+    assert.equal(label[0], label[0]?.toUpperCase(), value)
+  }
+  for (const value of RE_CAPITAL_ROLES) {
+    const label = RE_CAPITAL_ROLE_LABEL[value]
+    assert.equal(label.includes('/'), false, value)
+    assert.equal(label[0], label[0]?.toUpperCase(), value)
+  }
+  const logistics = presentReOpportunity(
+    raw({
+      id: 'b1000001-0000-4000-8000-000000000008',
+      asset_class: 'industrial/logistics',
+      capital_role: 'sukuk/REIT',
+    }),
+  )
+  assert.equal(logistics?.asset_class, 'industrial/logistics')
+  assert.equal(logistics?.capital_role, 'sukuk/REIT')
+  assert.equal(
+    filterReOpportunities(logistics ? [logistics] : [], {
+      assetClass: 'industrial/logistics',
+      city: null,
+      capitalRole: 'sukuk/REIT',
+    }).length,
+    1,
+  )
 })

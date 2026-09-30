@@ -264,7 +264,7 @@ test('desk status never stacks the empty state with an error', () => {
   assert.match(page, /AI Due Diligence/)
   assert.match(copy, /Check this deck/)
   assert.match(page, /\{progress\}%/)
-  assert.match(page, /hidden text-\[0\.72rem\][^"]*md:block/)
+  assert.equal(/hidden text-\[0\.72rem\][^"]*md:block/.test(page), false)
   assert.equal(page.includes('Ready to check this deck'), false)
   assert.equal(copy.includes('Ready to check this deck'), false)
 })

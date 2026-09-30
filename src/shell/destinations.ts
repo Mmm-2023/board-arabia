@@ -52,7 +52,10 @@ export const MEMBER_SECTIONS: Readonly<Record<string, readonly SectionLink[]>> =
     { id: 'intros', label: 'Intros', to: '/dashboard/people/intros', end: true },
     { id: 'invites', label: 'Invites', to: '/dashboard/people/invites', end: true },
   ],
-  ai: [{ id: 'due-diligence', label: 'Due diligence', to: '/dashboard/ai/due-diligence', end: false }],
+  ai: [
+    { id: 'tools', label: 'Tools', to: '/dashboard/ai', end: true },
+    { id: 'due-diligence', label: 'Due diligence', to: '/dashboard/ai/due-diligence', end: false },
+  ],
 }
 
 /** Account links. Not tabs. Sponsorship is added only for a sponsor seat. */
@@ -79,11 +82,20 @@ export function memberAccountLinks(seat: string | null | undefined): readonly Se
 export const MEMBER_SECONDARY = MEMBER_ACCOUNT
 
 export const STAFF_SECONDARY: readonly SecondaryLink[] = [
+  { id: 'marketing', label: 'Marketing', to: '/admin/marketing' },
   { id: 'majlis', label: 'Majlis', to: '/admin/majlis' },
   { id: 'mandates', label: 'Mandates', to: '/admin/mandates' },
   { id: 'rooms', label: 'Rooms', to: '/admin/rooms' },
   { id: 'email', label: 'Email', to: '/admin/email' },
 ]
+
+/** Staff hub sections. Review queue state chips are not in this list. */
+export const STAFF_SECTIONS: Readonly<Record<string, readonly SectionLink[]>> = {
+  people: [
+    { id: 'people', label: 'People', to: '/admin/people', end: true },
+    { id: 'intros', label: 'Intros', to: '/admin/people/intros', end: true },
+  ],
+}
 
 const DEALS_SECTIONS = [
   '/dashboard/deals/mandates',

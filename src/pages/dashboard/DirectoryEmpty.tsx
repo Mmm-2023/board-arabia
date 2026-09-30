@@ -34,10 +34,7 @@ export function DirectoryEmpty({
 
   return (
     <div className="max-w-3xl pb-[max(1.5rem,env(safe-area-inset-bottom))]">
-      <p className="text-[0.72rem] font-semibold tracking-[0.14em] text-brass uppercase">
-        {DIRECTORY_COPY.kicker}
-      </p>
-      <h1 className="mt-3 font-display text-[2.3rem] font-bold tracking-[-0.03em] text-balance md:text-[2.8rem]">
+      <h1 className="font-display text-[2.3rem] font-bold tracking-[-0.03em] text-balance md:text-[2.8rem]">
         {DIRECTORY_COPY.heading}
       </h1>
       <p className="mt-4 max-w-xl text-[1.05rem] leading-relaxed text-ink/65">{DIRECTORY_COPY.body}</p>

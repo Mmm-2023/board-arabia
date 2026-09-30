@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { CardMeta } from '../../components/CardMeta'
+import { PlaceMeta } from '../../components/CardMeta'
 import { ReadinessStrip } from '../dashboard/ReadinessStrip'
 import {
   readinessDraft,
@@ -11,7 +11,7 @@ import {
   type ReReadinessDraft,
   type ReReadinessKey,
 } from '../../lib/reOpportunityView'
-import { RE_READINESS_STATUS, isReReadinessStatus, type ReOpportunityCard, type ReOpportunityInventory } from '../../lib/reRedaction'
+import { RE_READINESS_STATUS, isReReadinessStatus, reAssetClassLabel, type ReOpportunityCard, type ReOpportunityInventory } from '../../lib/reRedaction'
 import { ErrorBanner, toneClasses } from '../../shell/ViewState'
 
 export type ReReadinessEditorStatus = 'loading' | 'error' | 'denied' | 'unavailable' | 'ready'
@@ -75,7 +75,12 @@ export function ReReadinessEditor({
                 )}
               </div>
               <p className="mt-2 font-display text-[1.2rem] font-semibold text-balance">{card.one_liner}</p>
-              <CardMeta parts={[card.city, card.asset_class]} className={`mt-1 text-[0.92rem] ${styles.muted}`} />
+              <PlaceMeta
+                city={card.city}
+                hint={card.one_liner}
+                trailing={[reAssetClassLabel(card.asset_class)]}
+                className={`mt-1 text-[0.92rem] ${styles.muted}`}
+              />
               {card.access === 'inventory' && !card.is_demo ? (
                 <ReadinessForm card={card} busy={busyId === card.id} onSave={onSave} />
               ) : (
