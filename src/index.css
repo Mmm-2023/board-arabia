@@ -1260,3 +1260,42 @@
     scroll-behavior: auto !important;
   }
 }
+
+.ba-state-chip-fade::before,
+.ba-state-chip-fade::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1.5rem;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0;
+}
+
+.ba-state-chip-fade::before {
+  inset-inline-start: 0;
+  background: linear-gradient(to right, var(--ba-ink), transparent);
+}
+
+.ba-state-chip-fade::after {
+  inset-inline-end: 0;
+  background: linear-gradient(to left, var(--ba-ink), transparent);
+}
+
+.ba-state-chip-fade[data-fade="start"]::before,
+.ba-state-chip-fade[data-fade="both"]::before,
+.ba-state-chip-fade[data-fade="end"]::after,
+.ba-state-chip-fade[data-fade="both"]::after {
+  opacity: 1;
+}
+
+.ba-state-chips {
+  max-width: 100%;
+  scroll-padding-inline: 1.5rem;
+  scrollbar-width: none;
+}
+
+.ba-state-chips::-webkit-scrollbar {
+  display: none;
+}

@@ -180,6 +180,21 @@ export async function submitApplication(payload: {
   }
 }
 
+export async function deleteCandidateAccount(): Promise<{ error?: string }> {
+  try {
+    const res = await fetch(`${functionsBase}/delete-candidate-account`, {
+      method: 'POST',
+      headers: await staffHeaders(),
+      body: JSON.stringify({}),
+    })
+    const payload = (await res.json().catch(() => ({}))) as { error?: string }
+    if (!res.ok) return { error: payload.error || 'Could not delete the account.' }
+    return {}
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : 'Could not delete the account.' }
+  }
+}
+
 export async function requestMembership(body: Record<string, unknown>): Promise<{ error?: string; state?: string }> {
   try {
     const res = await fetch(`${functionsBase}/request-membership`, {
@@ -264,6 +279,8 @@ export async function registerCandidate(payload: {
   last_touch?: Record<string, string | null>
   analytics_id?: string | null
   resend?: boolean
+  company_fax?: string
+  form_started_at?: number
 }): Promise<{ error?: string; errorCode?: string; dryRun?: boolean }> {
   try {
     const res = await fetch(`${functionsBase}/register-candidate`, {

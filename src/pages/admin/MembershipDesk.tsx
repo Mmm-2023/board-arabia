@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { REASON_CODES, ageLabel, roleLabel, slaTone } from '../../../supabase/functions/_shared/membership_steps.ts'
 
@@ -75,22 +76,7 @@ export function MembershipQueueView({
       <p className="mt-2 max-w-2xl text-[0.95rem] text-pearl/65">
         The desk decides. Review call is the only action that emails a private link, and that link is never shown here.
       </p>
-      <div className="mt-5 flex gap-2 overflow-x-auto pb-1" role="tablist" aria-label="Request state">
-        {STATES.map((item) => (
-          <button
-            key={item}
-            type="button"
-            role="tab"
-            aria-selected={state === item}
-            className={`inline-flex min-h-11 shrink-0 items-center border px-3 text-[0.75rem] font-semibold tracking-[0.06em] uppercase ${
-              state === item ? 'ba-primary border-transparent' : 'border-pearl/20 text-pearl/70'
-            }`}
-            onClick={() => onState(item)}
-          >
-            {stateLabel(item)} {counts[item] ?? 0}
-          </button>
-        ))}
-      </div>
+      <StateChips state={state} counts={counts} onState={onState} />
       <div className="mt-4 flex flex-wrap gap-2">
         <button
           type="button"
@@ -175,6 +161,86 @@ export function MembershipQueueView({
   )
 }
 
+function StateChips({
+  state,
+  counts,
+  onState,
+}: {
+  state: string
+  counts: Record<string, number>
+  onState: (value: string) => void
+}) {
+  const scroller = useRef<HTMLDivElement>(null)
+  const [fade, setFade] = useState<'none' | 'start' | 'end' | 'both'>('none')
+
+  function paintFade() {
+    const root = scroller.current
+    if (!root) return
+    const max = root.scrollWidth - root.clientWidth
+    const start = root.scrollLeft > 2
+    const end = max > 2 && root.scrollLeft < max - 2
+    const next = start && end ? 'both' : start ? 'start' : end ? 'end' : 'none'
+    setFade((current) => (current === next ? current : next))
+  }
+
+  useEffect(() => {
+    const root = scroller.current
+    if (!root) return
+    const active = root.querySelector<HTMLElement>('[aria-selected="true"]')
+    active?.scrollIntoView({ inline: 'nearest', block: 'nearest' })
+    paintFade()
+    function onScroll() {
+      paintFade()
+    }
+    root.addEventListener('scroll', onScroll, { passive: true })
+    window.addEventListener('resize', onScroll)
+    return () => {
+      root.removeEventListener('scroll', onScroll)
+      window.removeEventListener('resize', onScroll)
+    }
+  }, [state])
+
+  function onKeyDown(event: ReactKeyboardEvent<HTMLDivElement>) {
+    if (event.key !== 'ArrowRight' && event.key !== 'ArrowLeft') return
+    event.preventDefault()
+    const index = STATES.indexOf(state as (typeof STATES)[number])
+    const step = event.key === 'ArrowRight' ? 1 : -1
+    const next = STATES[(index + step + STATES.length) % STATES.length]
+    onState(next)
+    window.requestAnimationFrame(() => {
+      scroller.current?.querySelector<HTMLElement>('[aria-selected="true"]')?.focus()
+    })
+  }
+
+  return (
+    <div className={`ba-state-chip-fade relative mt-5`} data-state-chips="" data-fade={fade}>
+      <div
+        ref={scroller}
+        className="ba-state-chips flex gap-2 overflow-x-auto"
+        role="tablist"
+        aria-label="Request state"
+        onKeyDown={onKeyDown}
+      >
+        {STATES.map((item) => (
+          <button
+            key={item}
+            type="button"
+            role="tab"
+            data-state-option={item}
+            aria-selected={state === item}
+            className={`inline-flex h-11 shrink-0 items-center border px-3 text-[0.75rem] font-semibold tracking-[0.06em] uppercase ${
+              state === item ? 'ba-primary border-transparent' : 'border-pearl/20 text-pearl/70'
+            }`}
+            onClick={() => onState(item)}
+          >
+            {stateLabel(item)} {counts[item] ?? 0}
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 function toneClass(tone: 'ok' | 'attention' | 'late') {
   if (tone === 'late') return 'text-[var(--ba-copper-deep)]'
   if (tone === 'attention') return 'text-[var(--ba-copper)]'
@@ -197,6 +263,7 @@ export type DeskDetail = {
   phone: string
   vouch: string
   state: string
+  personalEmail?: boolean
   domainMatch: boolean
   linkedinChecked: boolean
   crChecked: boolean
@@ -267,6 +334,9 @@ export function MembershipDetailView({
             <Row label="Company" value={`${detail.company || 'Not listed'}, ${detail.title || 'Title not listed'}`} />
             <Row label="Website" value={detail.website || 'Not listed'} />
             <Row label="Domain" value={detail.domainMatch ? 'Domain matches' : 'No domain match'} />
+            {detail.personalEmail ? (
+              <Row label="Email domain" value="Personal email domain. The desk can still review this request." />
+            ) : null}
             <Row label="LinkedIn" value={detail.linkedin || 'Not listed'} />
             <Row label="Statement" value={detail.statement || 'Not listed'} />
             <Row label="CR number" value={detail.crNumber || 'Not listed'} />

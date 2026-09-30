@@ -489,6 +489,7 @@ test('due diligence start is the only caller of the local auth helper', () => {
   assert.deepEqual(importers("from '../_shared/require_user.ts'"), [
     'supabase/functions/admit-li-share-card/index.ts',
     'supabase/functions/contact-desk/index.ts',
+    'supabase/functions/delete-candidate-account/index.ts',
     'supabase/functions/due-diligence-status/index.ts',
     'supabase/functions/linkedin-oauth/index.ts',
     'supabase/functions/majlis-ics/index.ts',

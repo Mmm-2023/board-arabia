@@ -155,6 +155,7 @@ export function MembershipDetailPage() {
         phone: row.phone || '',
         vouch: row.referral_name || '',
         state: row.request_state,
+        personalEmail: Boolean(row.free_webmail),
         domainMatch: domainMatches(row.email, row.company_website || ''),
         linkedinChecked: Boolean(row.linkedin_checked),
         crChecked: Boolean(row.cr_checked),
