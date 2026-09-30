@@ -558,6 +558,124 @@ export type Database = {
         }
         Relationships: []
       }
+      candidates: {
+        Row: {
+          user_id: string
+          email: string
+          full_name: string
+          role: 'chairperson' | 'board_member' | 'c_suite' | 'other'
+          region: 'ksa_gcc' | 'intl'
+          request_state: 'open' | 'submitted' | 'in_review' | 'needs_info' | 'review_call' | 'waitlisted' | 'approved' | 'declined' | 'closed'
+          email_verified_at: string | null
+          owner: string | null
+          submitted_at: string | null
+          board_seats: string | null
+          company_name: string | null
+          job_title: string | null
+          company_website: string | null
+          linkedin_url: string | null
+          scale_kind: 'turnover' | 'aum' | null
+          scale_band: string | null
+          sector_tags: string[] | null
+          vision_tags: string[] | null
+          statement: string | null
+          cr_number: string | null
+          cr_country: string | null
+          referral_name: string | null
+          invited_by_member_id: string | null
+          invite_token_id: string | null
+          invite_reason: string | null
+          investable_capacity_usd: number | null
+          include_in_public_aggregates: boolean | null
+          phone: string | null
+          ft_source: string | null
+          ft_medium: string | null
+          ft_campaign: string | null
+          ft_content: string | null
+          ft_term: string | null
+          ft_referrer_host: string | null
+          ft_landing_path: string | null
+          ft_at: string | null
+          lt_source: string | null
+          lt_medium: string | null
+          lt_campaign: string | null
+          analytics_id: string | null
+          attribution_version: number | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          user_id: string
+          email: string
+          full_name: string
+          role: 'chairperson' | 'board_member' | 'c_suite' | 'other'
+          region: 'ksa_gcc' | 'intl'
+          request_state?: 'open' | 'submitted' | 'in_review' | 'needs_info' | 'review_call' | 'waitlisted' | 'approved' | 'declined' | 'closed'
+          invite_reason?: string | null
+          ft_source?: string | null
+          ft_medium?: string | null
+          ft_campaign?: string | null
+          ft_content?: string | null
+          ft_term?: string | null
+          ft_referrer_host?: string | null
+          ft_landing_path?: string | null
+          ft_at?: string | null
+          lt_source?: string | null
+          lt_medium?: string | null
+          lt_campaign?: string | null
+          analytics_id?: string | null
+          attribution_version?: number | null
+        }
+        Update: {
+          full_name?: string
+          role?: 'chairperson' | 'board_member' | 'c_suite' | 'other'
+          region?: 'ksa_gcc' | 'intl'
+          email_verified_at?: string | null
+          invited_by_member_id?: string | null
+          invite_token_id?: string | null
+          invite_reason?: string | null
+        }
+        Relationships: []
+      }
+      candidate_events: {
+        Row: {
+          id: string
+          candidate_user_id: string
+          kind: string
+          detail: Json
+          actor_id: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          candidate_user_id: string
+          kind: string
+          detail?: Json
+          actor_id?: string | null
+        }
+        Update: {
+          detail?: Json
+        }
+        Relationships: []
+      }
+      candidate_notes: {
+        Row: {
+          id: string
+          candidate_user_id: string
+          author_id: string
+          body: string
+          created_at: string
+        }
+        Insert: {
+          candidate_user_id: string
+          author_id: string
+          body: string
+        }
+        Update: {
+          body?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       majlis_events_member: {

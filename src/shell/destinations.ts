@@ -60,6 +60,15 @@ export const MEMBER_ACCOUNT: readonly SecondaryLink[] = [
   { id: 'help', label: 'Help', to: '/dashboard/help' },
 ]
 
+/** Open account sheet. Membership is a row, not a sixth tab. */
+export const ACCOUNT_SHEET_LINKS: readonly SecondaryLink[] = [
+  { id: 'profile', label: 'Profile', to: '/dashboard/profile' },
+  { id: 'membership', label: 'Membership', to: '/dashboard/membership' },
+  { id: 'help', label: 'Help', to: '/dashboard/help' },
+]
+
+export const LOCKED_HUBS = ['deals', 'people', 'majlis', 'ai'] as const
+
 export function memberAccountLinks(seat: string | null | undefined): readonly SecondaryLink[] {
   if (seat !== 'sponsor') return MEMBER_ACCOUNT
   return [{ id: 'sponsorship', label: 'Sponsorship', to: '/dashboard/sponsorship' }, ...MEMBER_ACCOUNT]

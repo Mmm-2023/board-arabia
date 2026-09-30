@@ -6,7 +6,7 @@ import { fetchMyDealRooms } from '../../lib/dealRoomApi'
 import { stillMustSetPassword } from '../../lib/passwordSet'
 import { dealsNavCount } from '../../lib/dealRoomView'
 import { AppShell } from '../../shell/AppShell'
-import { MEMBER_ACCOUNT, MEMBER_DESTINATIONS, memberAccountLinks, staleBanner } from '../../shell/destinations'
+import { ACCOUNT_SHEET_LINKS, LOCKED_HUBS, MEMBER_ACCOUNT, MEMBER_DESTINATIONS, memberAccountLinks, staleBanner } from '../../shell/destinations'
 import { HomeSkeleton, PermissionState } from '../../shell/ViewState'
 import { REFRESH_ERROR } from '../../shell/viewCopy'
 import { endAuthSession } from '../../lib/endSession'
@@ -15,7 +15,10 @@ import { supabase } from '../../lib/supabase'
 import type { MemberRow, ProfileRow } from '../../lib/member'
 import { useNoIndex } from '../../lib/usePageTitle'
 import { DashboardStatusContext, MemberContext, type MemberRoom } from './context'
+import { AccountRoomContext, type AccountRoom } from './account/context'
+import { AccountSurface } from './account/AccountRoutes'
 import { OwnAvatar } from './OwnAvatar'
+import { rememberVerifyEmail } from '../../lib/verifyEmail'
 
 type Gate =
   | { status: 'loading' }
@@ -23,6 +26,9 @@ type Gate =
   | { status: 'forbidden'; email: string }
   | { status: 'suspended'; email: string }
   | { status: 'staff_home' }
+  | { status: 'unverified'; email: string }
+  | { status: 'account_error' }
+  | { status: 'account'; room: AccountRoom }
   | { status: 'ready'; room: MemberRoom }
 
 const PROFILE_BASE =
@@ -80,7 +86,7 @@ export function DashboardLayout() {
       return
     }
     const sessionUserId = sessionData.session.user.id
-    const [userRes, staffRes, memberRes, loaded] = await Promise.all([
+    const [userRes, staffRes, memberRes, candidateRes] = await Promise.all([
       supabase.auth.getUser(),
       supabase.from('staff_users').select('role').eq('user_id', sessionUserId).maybeSingle(),
       supabase
@@ -88,7 +94,11 @@ export function DashboardLayout() {
         .select('user_id, email, seat, status, must_set_password, invites_remaining, invites_granted')
         .eq('user_id', sessionUserId)
         .maybeSingle(),
-      loadOwnProfile(sessionUserId),
+      supabase
+        .from('candidates')
+        .select('user_id, email, full_name, role, region, request_state, email_verified_at')
+        .eq('user_id', sessionUserId)
+        .maybeSingle(),
     ])
     if (seq !== loadSeq.current) return
     const user = userRes.data.user
@@ -112,6 +122,7 @@ export function DashboardLayout() {
     const claimedRole = staffRes.data?.role
     const staffRole = !staffRes.error && isStaffRole(claimedRole) ? claimedRole : null
     const member = memberRes.data as MemberRow | null
+    const candidate = candidateRes.data
     if (staffRole && (!member || member.status === 'suspended')) {
       readyRef.current = null
       setRefreshing(false)
@@ -125,12 +136,42 @@ export function DashboardLayout() {
         setGate({ status: 'suspended', email: user.email || member.email })
         return
       }
+      if (candidateRes.error) {
+        setGate({ status: 'account_error' })
+        return
+      }
+      if (candidate) {
+        if (!candidate.email_verified_at) {
+          setGate({ status: 'unverified', email: candidate.email })
+          return
+        }
+        const room: AccountRoom = {
+          userId: user.id,
+          email: user.email || candidate.email,
+          fullName: candidate.full_name,
+          role: candidate.role,
+          region: candidate.region,
+          requestState: candidate.request_state,
+          reload: async () => {
+            await loadRef.current()
+          },
+        }
+        setRefreshError('')
+        const now = new Date()
+        seenAt.current = now
+        setUpdatedAt(now)
+        setGate({ status: 'account', room })
+        return
+      }
       setGate({
         status: 'forbidden',
         email: user.email || '',
       })
       return
     }
+
+    const loaded = await loadOwnProfile(sessionUserId)
+    if (seq !== loadSeq.current) return
 
     if (loaded.error && readyRef.current) {
       setRefreshing(false)
@@ -226,6 +267,50 @@ export function DashboardLayout() {
 
   if (gate.status === 'staff_home') {
     return <Navigate to="/admin" replace />
+  }
+
+  if (gate.status === 'unverified') {
+    rememberVerifyEmail(gate.email)
+    return <Navigate to="/apply/verify" replace />
+  }
+
+  if (gate.status === 'account_error') {
+    return (
+      <div className="shell-safe-top shell-safe-x shell-safe-bottom min-h-dvh bg-pearl px-5 py-16 text-ink">
+        <div className="mx-auto max-w-lg">
+          <PermissionState tone="member" message="Could not open your account." />
+          <button
+            type="button"
+            onClick={() => void load()}
+            className="ba-primary mt-6 inline-flex min-h-11 items-center px-4 text-[0.75rem] font-semibold tracking-[0.08em] uppercase"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  if (gate.status === 'account') {
+    return (
+      <DashboardStatusContext.Provider value={status}>
+        <AccountRoomContext.Provider value={gate.room}>
+          <AppShell
+            tone="member"
+            destinations={MEMBER_DESTINATIONS}
+            secondary={ACCOUNT_SHEET_LINKS}
+            lockedDestinationIds={LOCKED_HUBS}
+            updatedLabel={null}
+            roleSwitch={null}
+            onSignOut={() => void onSignOut()}
+            accountLabel={gate.room.email}
+            accountName={gate.room.fullName.trim() || 'Account'}
+          >
+            <AccountSurface />
+          </AppShell>
+        </AccountRoomContext.Provider>
+      </DashboardStatusContext.Provider>
+    )
   }
 
   if (gate.status === 'suspended' || gate.status === 'forbidden') {

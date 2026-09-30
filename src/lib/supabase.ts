@@ -180,6 +180,73 @@ export async function submitApplication(payload: {
   }
 }
 
+export async function registerCandidate(payload: {
+  full_name: string
+  email: string
+  role: string
+  region: string
+  consent: boolean
+  turnstile_token: string
+  invite_token?: string | null
+  invite_reason?: string | null
+  first_touch?: Record<string, string | null>
+  last_touch?: Record<string, string | null>
+  analytics_id?: string | null
+  resend?: boolean
+}): Promise<{ error?: string; errorCode?: string; dryRun?: boolean }> {
+  try {
+    const res = await fetch(`${functionsBase}/register-candidate`, {
+      method: 'POST',
+      headers: await anonHeaders(),
+      body: JSON.stringify(payload),
+    })
+    const body = (await res.json().catch(() => ({}))) as {
+      error?: string
+      error_code?: string
+      dry_run?: boolean
+    }
+    if (!res.ok) return { error: body.error || 'Could not register.', errorCode: body.error_code || 'server' }
+    return { dryRun: Boolean(body.dry_run), errorCode: '' }
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : 'Could not register.', errorCode: 'server' }
+  }
+}
+
+export async function verifyCandidate(payload: {
+  email?: string
+  code?: string
+  token?: string
+}): Promise<{
+  error?: string
+  errorCode?: string
+  tokenHash?: string
+  alreadyVerified?: boolean
+  method?: string
+}> {
+  try {
+    const res = await fetch(`${functionsBase}/verify-candidate`, {
+      method: 'POST',
+      headers: await anonHeaders(),
+      body: JSON.stringify(payload),
+    })
+    const body = (await res.json().catch(() => ({}))) as {
+      error?: string
+      error_code?: string
+      token_hash?: string
+      already_verified?: boolean
+      method?: string
+    }
+    if (!res.ok) return { error: body.error || 'That code is not valid.', errorCode: body.error_code || 'invalid_code' }
+    return {
+      tokenHash: body.token_hash,
+      alreadyVerified: Boolean(body.already_verified),
+      method: body.method,
+    }
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : 'That code is not valid.', errorCode: 'server' }
+  }
+}
+
 export async function decideApplication(
   applicationId: string,
   decision: 'accepted' | 'rejected',

@@ -95,3 +95,12 @@ verify_jwt = true
 # The function inserts one row and stores no IP and no user agent.
 [functions.consent-log]
 verify_jwt = true
+
+# Public registration. Turnstile plus the service role inside the function.
+# The anon key is not a credential for the candidates table.
+[functions.register-candidate]
+verify_jwt = false
+
+# Email code or one-time link. Returns a sign-in token hash after a match.
+[functions.verify-candidate]
+verify_jwt = false

@@ -19,6 +19,7 @@ export function AppShell({
   accountMark = null,
   renderAccountMark,
   dealsBadge = 0,
+  lockedDestinationIds = [],
   children,
   initialMoreOpen = false,
   initialAccountOpen = false,
@@ -35,6 +36,8 @@ export function AppShell({
   /** Fresh mark for each chrome slot, so the sheet can show the same photo as the header. */
   renderAccountMark?: (size: number) => ReactNode
   dealsBadge?: number
+  /** Hubs that stay visible and show a lock. Home is never in this list. */
+  lockedDestinationIds?: readonly string[]
   children: ReactNode
   initialMoreOpen?: boolean
   initialAccountOpen?: boolean
@@ -72,6 +75,12 @@ export function AppShell({
     location.pathname.startsWith('/dashboard/sponsorship/')
   const moreCurrent = moreOpen || secondaryActive
   const displayName = accountName.trim() || accountLabel
+  const lockedHubs = new Set(lockedDestinationIds)
+  function destinationAria(item: Destination) {
+    if (lockedHubs.has(item.id)) return `${item.label}, locked`
+    if (item.id === 'deals' && dealsBadge > 0) return dealsBadgeLabel(dealsBadge)
+    return undefined
+  }
 
   useEffect(() => {
     if (!moreOpen) return
@@ -211,7 +220,8 @@ export function AppShell({
                       end={item.end}
                       data-nav="primary"
                       data-destination={item.label}
-                      aria-label={item.id === 'deals' && dealsBadge > 0 ? dealsBadgeLabel(dealsBadge) : undefined}
+                      data-locked={lockedHubs.has(item.id) ? 'true' : undefined}
+                      aria-label={destinationAria(item)}
                       onClick={(event) => retap(event, item, event.currentTarget.getAttribute('aria-current') === 'page')}
                       className={({ isActive }) =>
                         `flex min-h-11 items-center gap-3 px-3 text-[0.95rem] ${
@@ -219,8 +229,9 @@ export function AppShell({
                         }`
                       }
                     >
-                      <span className="inline-flex shrink-0">
+                      <span className="relative inline-flex shrink-0">
                         <DestinationIcon id={item.id} />
+                        {lockedHubs.has(item.id) ? <LockMark /> : null}
                       </span>
                       <span className={showLabels ? 'truncate' : 'sr-only'}>{item.label}</span>
                       {item.id === 'deals' ? <CountBadge count={dealsBadge} place="sidebar" /> : null}
@@ -382,7 +393,8 @@ export function AppShell({
                 end={item.end}
                 data-nav="primary"
                 data-destination={item.label}
-                aria-label={item.id === 'deals' && dealsBadge > 0 ? dealsBadgeLabel(dealsBadge) : undefined}
+                data-locked={lockedHubs.has(item.id) ? 'true' : undefined}
+                aria-label={destinationAria(item)}
                 onClick={(event) => retap(event, item, event.currentTarget.getAttribute('aria-current') === 'page')}
                 className={({ isActive }) =>
                   `flex min-h-11 w-full flex-col items-center justify-center gap-0.5 px-0.5 py-1 text-center text-[12px] leading-none whitespace-nowrap ${
@@ -398,6 +410,7 @@ export function AppShell({
                       }`}
                     >
                       <DestinationIcon id={item.id} className="h-6 w-6 shrink-0" />
+                      {lockedHubs.has(item.id) ? <LockMark /> : null}
                       {item.id === 'deals' ? <CountBadge count={dealsBadge} place="tab" /> : null}
                     </span>
                     <span className="max-w-full truncate">{item.label}</span>
@@ -580,6 +593,15 @@ function MoreIcon() {
       <circle cx="6" cy="12" r="1.7" />
       <circle cx="12" cy="12" r="1.7" />
       <circle cx="18" cy="12" r="1.7" />
+    </svg>
+  )
+}
+
+function LockMark() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 16 16" className="absolute -end-1 -bottom-0.5 h-3 w-3">
+      <rect x="3.2" y="7" width="9.6" height="6.2" rx="1" fill="currentColor" />
+      <path d="M5.2 7V5.2a2.8 2.8 0 0 1 5.6 0V7" fill="none" stroke="currentColor" strokeWidth="1.4" />
     </svg>
   )
 }
