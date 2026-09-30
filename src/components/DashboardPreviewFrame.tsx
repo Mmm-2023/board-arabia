@@ -5,6 +5,7 @@ import { lockBlurClass } from '../lib/previewLock'
 import { previewIntro, type LandingDeal } from '../lib/landingPreview'
 import { MEMBER_DESTINATIONS } from '../shell/destinations'
 import { ExampleMark } from './ExampleMark'
+import { trackApplyClick, trackLoginClick } from '../lib/tracking/browser'
 
 const SELECTED = 'deals'
 
@@ -145,12 +146,14 @@ export function DashboardPreviewFrame({
                 <Link
                   to="/apply"
                   className="ba-primary inline-flex min-h-11 items-center justify-center px-6 text-[0.78rem] font-semibold tracking-[0.08em] uppercase"
+                  onClick={() => trackApplyClick('section-preview', 'Apply for consideration')}
                 >
                   Apply for consideration
                 </Link>
                 <Link
                   to={MEMBER_LOGIN}
                   className="inline-flex min-h-11 items-center justify-center border border-ink/20 bg-white px-6 text-[0.78rem] font-semibold tracking-[0.08em] text-ink uppercase"
+                  onClick={() => trackLoginClick('section-preview')}
                 >
                   Sign in
                 </Link>

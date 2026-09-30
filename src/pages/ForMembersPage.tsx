@@ -164,7 +164,7 @@ export function ForMembersPage() {
       </div>
 
       <FaqList items={MEMBERS_FAQ} heading="Membership questions" />
-      <CtaBand />
+      <CtaBand location="section-for-members" />
     </MarketingLayout>
   )
 }

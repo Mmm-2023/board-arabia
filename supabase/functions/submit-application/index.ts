@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1'
+import { attributionColumns } from '../_shared/attribution.ts'
 import { deliverAdminAlert } from '../_shared/notify_admin.ts'
 import { applicationAck } from '../_shared/transactional_copy.ts'
 import {
@@ -88,6 +89,7 @@ Deno.serve(async (req) => {
     return jsonResponse(req, { error: 'Say why you were invited.' }, 400)
   }
 
+  const attribution = attributionColumns(body)
   const { data: app, error: insertError } = await admin
     .from('applications')
     .insert({
@@ -103,6 +105,7 @@ Deno.serve(async (req) => {
       companies,
       calendar_slot: null,
       status: 'pending',
+      ...attribution,
     })
     .select('id, full_name, email, phone, turnover, fo_aum, job_titles, companies, linkedin_url')
     .single()

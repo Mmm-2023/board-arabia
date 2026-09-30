@@ -90,3 +90,8 @@ verify_jwt = true
 # Member Help note. The anon key alone is not enough. Address comes from ADMIN_NOTIFY_EMAIL.
 [functions.contact-desk]
 verify_jwt = true
+
+# Public consent log. The anon key is the gateway credential.
+# The function inserts one row and stores no IP and no user agent.
+[functions.consent-log]
+verify_jwt = true

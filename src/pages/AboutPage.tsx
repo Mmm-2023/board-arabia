@@ -44,7 +44,7 @@ export function AboutPage() {
           </p>
         </div>
       </article>
-      <CtaBand />
+      <CtaBand location="section-about" />
     </MarketingLayout>
   )
 }

@@ -17,6 +17,7 @@ import { FAQ } from '../content/seo'
 import { LANDING_PREVIEW_EXAMPLES, presentLandingDealList, type LandingDeal } from '../lib/landingPreview'
 import { supabase } from '../lib/supabase'
 import { PlatformTotalsLine, seatDiamondFill, useLandingTotals } from '../components/StatsStrip'
+import { trackApplyClick } from '../lib/tracking/browser'
 
 const WHY = [
   {
@@ -57,6 +58,7 @@ export function LandingPage() {
           label="Apply for consideration"
           memberLogin
           compact
+          location="closing"
         />
       </main>
       <Footer />
@@ -96,7 +98,12 @@ function Hero() {
           </p>
           <HeroEnter index={1}>
             <div className="mt-4 flex flex-col gap-2 sm:flex-row">
-              <Link id="hero-apply" to="/apply" className="ba-primary inline-flex min-h-12 items-center justify-center px-5 text-[0.9375rem] font-semibold">
+              <Link
+                id="hero-apply"
+                to="/apply"
+                className="ba-primary inline-flex min-h-12 items-center justify-center px-5 text-[0.9375rem] font-semibold"
+                onClick={() => trackApplyClick('hero', 'Apply for consideration')}
+              >
                 Apply for consideration
               </Link>
               <a href="#process" className="ba-secondary inline-flex min-h-12 items-center justify-center px-5 text-[0.9375rem] font-semibold">

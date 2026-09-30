@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { trackApplyClick } from '../../lib/tracking/browser'
 
 export function StickyApply({ menuOpen }: { menuOpen: boolean }) {
   const [narrow, setNarrow] = useState(false)
@@ -50,6 +51,7 @@ export function StickyApply({ menuOpen }: { menuOpen: boolean }) {
         className="ba-primary ba-sticky-btn"
         tabIndex={open ? undefined : -1}
         aria-hidden={open ? undefined : true}
+        onClick={() => trackApplyClick('sticky-mobile', 'Apply for consideration')}
       >
         Apply for consideration
       </Link>

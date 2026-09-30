@@ -1,5 +1,7 @@
 import { lazy, Suspense } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
+import { AnalyticsRoot } from './components/AnalyticsRoot'
+import { SiteLanguageProvider } from './components/SiteLanguage'
 import { AboutPage } from './pages/AboutPage'
 import { ApplyPage } from './pages/ApplyPage'
 import { AuthConfirmPage } from './pages/AuthConfirmPage'
@@ -73,6 +75,8 @@ const SponsorshipPage = lazy(() =>
 
 export default function App() {
   return (
+    <SiteLanguageProvider>
+    <AnalyticsRoot />
     <Suspense fallback={<p role="status">Loading</p>}>
     <Routes>
       <Route path="/" element={<LandingPage />} />
@@ -148,5 +152,6 @@ export default function App() {
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
     </Suspense>
+    </SiteLanguageProvider>
   )
 }

@@ -1,4 +1,7 @@
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { readCookie } from '../../lib/tracking/consent'
+import { NO_TRACK_COOKIE, noTrackCookiePair, trackPrefCookiePair } from '../../lib/tracking/staffOptOut'
 import { useNoIndex } from '../../lib/usePageTitle'
 import { FormSkeleton, toneClasses } from '../../shell/ViewState'
 import { SponsorPackagesPanel } from './SponsorPackagesPanel'
@@ -8,7 +11,20 @@ import { useAdmin } from './context'
 export function SettingsPage() {
   const room = useAdmin()
   const styles = toneClasses('staff')
+  const [stopped, setStopped] = useState(false)
   useNoIndex('Settings | Board Arabia')
+
+  useEffect(() => {
+    setStopped(readCookie(document.cookie, NO_TRACK_COOKIE) === '1')
+  }, [])
+
+  function toggleTracking() {
+    const secure = window.location.protocol === 'https:'
+    const next = !stopped
+    document.cookie = noTrackCookiePair(next, secure)
+    document.cookie = trackPrefCookiePair(next ? 'off' : 'on', secure)
+    setStopped(next)
+  }
 
   if (room.loading && !room.hasLoaded) return <FormSkeleton tone="staff" />
 
@@ -18,6 +34,24 @@ export function SettingsPage() {
       <p className="mt-3 text-[0.98rem] leading-relaxed text-stone/70">{STAFF_VIEWS.settings.optional}</p>
 
       <SponsorPackagesPanel />
+
+      <section className={`${styles.panel} mt-8 px-5 py-5`}>
+        <h2 className={`text-[0.72rem] font-semibold tracking-[0.12em] uppercase ${styles.quiet}`}>
+          Site analytics
+        </h2>
+        <p className="mt-3 text-[1rem] leading-relaxed text-pearl/80">
+          Stop tracking this browser. This device is left out of site analytics, including while signed out.
+        </p>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={stopped}
+          onClick={toggleTracking}
+          className="mt-4 inline-flex min-h-11 items-center border border-pearl/30 px-4 text-[0.95rem] text-pearl"
+        >
+          {stopped ? 'Tracking stopped on this browser' : 'Stop tracking this browser'}
+        </button>
+      </section>
 
       <section className={`${styles.panel} mt-8 px-5 py-5`}>
         <h2 className={`text-[0.72rem] font-semibold tracking-[0.12em] uppercase ${styles.quiet}`}>

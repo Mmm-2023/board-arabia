@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { Reveal } from './Reveal'
 import { Eyebrow } from './Type'
+import { trackApplyClick, trackLoginClick } from '../lib/tracking/browser'
 
 export function CtaBand({
   eyebrow = 'Consideration',
@@ -10,6 +11,7 @@ export function CtaBand({
   label = 'Apply for consideration',
   memberLogin = false,
   compact = false,
+  location = 'closing',
 }: {
   eyebrow?: string
   title?: string
@@ -18,6 +20,7 @@ export function CtaBand({
   label?: string
   memberLogin?: boolean
   compact?: boolean
+  location?: string
 }) {
   return (
     <section id={memberLogin ? 'closing' : undefined} className={`relative overflow-hidden bg-stone ${compact ? 'py-8 md:py-12' : 'py-16 md:py-24'}`}>
@@ -30,13 +33,23 @@ export function CtaBand({
           <p className="ba-quiet mx-auto mt-3 max-w-lg text-[0.9375rem] leading-relaxed">
             {body}
           </p>
-          <Link to={to} className="ba-primary mt-5 inline-flex min-h-12 items-center justify-center px-6 text-[0.9375rem] font-semibold">
+          <Link
+            to={to}
+            className="ba-primary mt-5 inline-flex min-h-12 items-center justify-center px-6 text-[0.9375rem] font-semibold"
+            onClick={() => {
+              if (to === '/apply') trackApplyClick(location, label)
+            }}
+          >
             {label}
           </Link>
           {memberLogin ? (
             <p className="mt-3 text-[0.9375rem] text-ink">
               Already a member?{' '}
-              <Link to="/login" className="ba-textlink inline-flex min-h-11 items-center">
+              <Link
+                to="/login"
+                className="ba-textlink inline-flex min-h-11 items-center"
+                onClick={() => trackLoginClick('closing')}
+              >
                 Log in
               </Link>
             </p>

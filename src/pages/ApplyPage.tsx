@@ -6,6 +6,7 @@ import { Seo } from '../components/Seo'
 import { REVIEW_SLA } from '../content/marketing'
 import { parseUsdInput } from '../lib/capacity'
 import { lookupMemberInvite, submitApplication } from '../lib/supabase'
+import { readSubmitAttribution } from '../lib/tracking/touch'
 
 type FormState = {
   fullName: string
@@ -152,6 +153,7 @@ export function ApplyPage() {
       companies,
       invite_token: inviteView.kind === 'valid' ? inviteView.token : null,
       invite_reason: inviteView.kind === 'valid' ? reason : null,
+      ...readSubmitAttribution(),
     })
     setSubmitting(false)
 
@@ -224,6 +226,12 @@ export function ApplyPage() {
             form. The desk reviews credentials; accepted candidates receive a
             private conversation invite by email. {REVIEW_SLA} That link is
             not on this website.
+          </p>
+          <p className="mt-4 text-[0.95rem] leading-relaxed text-ink/70">
+            We record which link brought you here to understand how people find Board Arabia.{' '}
+            <Link to="/privacy" className="border-b border-brass text-ink">
+              Privacy
+            </Link>
           </p>
 
           {inviteView.kind === 'checking' && (
