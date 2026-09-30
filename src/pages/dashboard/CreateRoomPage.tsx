@@ -63,8 +63,7 @@ export function CreateRoomPage() {
   if (mandates === null || opportunities === null) {
     return (
       <div className="max-w-xl">
-        <p className="text-[0.72rem] font-semibold tracking-[0.14em] text-brass uppercase">Rooms</p>
-        <h1 className="mt-3 font-display text-[2.2rem] font-bold tracking-[-0.03em]">Create a room</h1>
+        <h1 className="font-display text-[2.2rem] font-bold tracking-[-0.03em]">Create a room</h1>
         <div className="mt-8">
           <FormSkeleton tone="member" />
         </div>

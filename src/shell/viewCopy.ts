@@ -47,7 +47,7 @@ export const MEMBER_VIEWS = {
   },
   realEstate: {
     intro:
-      'Sector, city, asset class, ticket band, capital role, and readiness stay visible. Counterparty and terms stay locked until you request an intro and an admin approves it for you.',
+      'Sector, region, asset class, ticket band, capital role, and readiness stay visible. Counterparty and terms stay locked until you request an intro and an admin approves it for you.',
     forming:
       'Real estate opportunities are still forming. These examples stay until real briefs can take their place.',
     empty: 'No opportunities yet. When an admin publishes a brief, it lands here.',

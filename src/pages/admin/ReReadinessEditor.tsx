@@ -10,7 +10,8 @@ import {
   type ReReadinessDraft,
   type ReReadinessKey,
 } from '../../lib/reOpportunityView'
-import { RE_READINESS_STATUS, isReReadinessStatus, type ReOpportunityCard, type ReOpportunityInventory } from '../../lib/reRedaction'
+import { RePlace } from '../../components/RePlace'
+import { RE_READINESS_STATUS, isReReadinessStatus, reAssetClassLabel, type ReOpportunityCard, type ReOpportunityInventory } from '../../lib/reRedaction'
 import { ErrorBanner, toneClasses } from '../../shell/ViewState'
 
 export type ReReadinessEditorStatus = 'loading' | 'error' | 'denied' | 'unavailable' | 'ready'
@@ -75,10 +76,10 @@ export function ReReadinessEditor({
               </div>
               <p className="mt-2 font-display text-[1.2rem] font-semibold text-balance">{card.one_liner}</p>
               <p className={`mt-1 text-[0.92rem] ${styles.muted}`}>
-                {card.city}
+                <RePlace city={card.city} hint={card.one_liner} />
                 <span aria-hidden="true"> · </span>
                 <span className="sr-only">, </span>
-                {card.asset_class}
+                {reAssetClassLabel(card.asset_class)}
               </p>
               {card.access === 'inventory' && !card.is_demo ? (
                 <ReadinessForm card={card} busy={busyId === card.id} onSave={onSave} />

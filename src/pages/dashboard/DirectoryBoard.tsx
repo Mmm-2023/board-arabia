@@ -84,8 +84,7 @@ export function DirectoryBoard({
 
   return (
     <div className="max-w-3xl">
-      <p className="text-[0.72rem] font-semibold tracking-[0.14em] text-brass uppercase">Directory</p>
-      <h1 className="mt-3 font-display text-[2.2rem] font-bold tracking-[-0.03em]">Directory</h1>
+      <h1 className="font-display text-[2.2rem] font-bold tracking-[-0.03em]">Directory</h1>
       <p className="mt-3 max-w-xl text-[1rem] leading-relaxed text-ink/65">
         {hasExamples
           ? 'Admitted members. Cards marked Example are samples and step aside once enough real members are here.'

@@ -787,6 +787,36 @@ export type Database = {
         }
         Relationships: []
       }
+      marketing_campaigns: {
+        Row: {
+          id: string
+          campaign: string
+          channel: string
+          month: string
+          spend_sar: number
+          notes: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          campaign: string
+          channel: string
+          month: string
+          spend_sar?: number
+          notes?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          campaign?: string
+          channel?: string
+          month?: string
+          spend_sar?: number
+          notes?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
       majlis_roster: {
         Row: {
           id: string
@@ -807,6 +837,14 @@ export type Database = {
     Functions: {
       founding_capacity: {
         Args: Record<string, never>
+        Returns: Json
+      }
+      marketing_funnel_counts: {
+        Args: {
+          p_from: string
+          p_to: string
+          p_channel?: string
+        }
         Returns: Json
       }
       list_staff_directory: {
