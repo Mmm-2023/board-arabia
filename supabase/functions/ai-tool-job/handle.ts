@@ -14,6 +14,7 @@ import {
 } from '../_shared/ai_tools.ts'
 import { appendCfoModelQuestions, CFO_MODEL_SYSTEM, cfoModelUser } from './tools/cfo_check.ts'
 import { readCfoUpload } from './tools/cfo_read.ts'
+import { guardStubOutput } from './tools/legal_guard.ts'
 import { runToolStub } from './tools/index.ts'
 import type { StubOutput } from './tools/types.ts'
 
@@ -74,6 +75,7 @@ export type AiToolStore = {
   markJob: (jobId: string, patch: { status: string; step: string; error?: string | null }) => Promise<boolean>
   deleteOwned: (jobId: string, userId: string) => Promise<{ storagePath: string } | null>
   removeFile: (path: string) => Promise<boolean>
+  readSource?: (path: string) => Promise<string>
 }
 
 export type AiAuth =
@@ -244,7 +246,7 @@ async function runStep(
   const existing = await store.outputByJob(jobId)
   if (existing && job.status === 'ready') return { ok: true, output: existing.body }
   const provider = aiProviderNote()
-  const sourceText = await sourceForJob(store, job)
+  const sourceText = await readJobSource(store, job)
   let output = runToolStub(job.tool_key, {
     fileName: job.file_name,
     generatedOn: formatReportDate(deps.now()),
@@ -252,6 +254,7 @@ async function runStep(
     modelSkipReason: provider.skipReason,
     sourceText,
     lang,
+    mimeType: job.mime_type,
   })
   if (job.tool_key === 'cfo_check' && output.metrics && output.metrics.length > 0 && !provider.skipReason) {
     const completion = await completeAiToolPrompt(CFO_MODEL_SYSTEM, cfoModelUser(output))
@@ -262,6 +265,7 @@ async function runStep(
       model_skip_reason: completion.skipReason,
     }
   }
+  output = guardStubOutput(output)
   const saved = await store.saveOutput({
     id: newUuid(deps),
     job_id: jobId,
@@ -288,15 +292,20 @@ function reportLang(body: Record<string, unknown>): 'en' | 'ar' {
   return body.lang === 'ar' ? 'ar' : 'en'
 }
 
-async function sourceForJob(store: AiToolStore, job: JobRow): Promise<string> {
-  if (job.tool_key !== 'cfo_check') return ''
-  try {
-    const bytes = await store.downloadFile(job.storage_path)
-    if (!bytes || bytes.byteLength < 1) return ''
-    return await readCfoUpload(job.mime_type, bytes)
-  } catch {
-    return ''
+async function readJobSource(store: AiToolStore, job: JobRow): Promise<string> {
+  if (job.tool_key === 'cfo_check') {
+    try {
+      const bytes = await store.downloadFile(job.storage_path)
+      if (!bytes || bytes.byteLength < 1) return ''
+      return await readCfoUpload(job.mime_type, bytes)
+    } catch {
+      return ''
+    }
   }
+  if (job.mime_type !== 'text/plain' && job.mime_type !== 'text/csv') return ''
+  if (!store.readSource) return ''
+  const text = await store.readSource(job.storage_path)
+  return typeof text === 'string' ? text.slice(0, 80_000) : ''
 }
 
 function publicJob(job: JobRow) {

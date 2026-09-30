@@ -5,6 +5,7 @@ export type StubInput = {
   modelSkipReason: string | null
   sourceText?: string
   lang?: 'en' | 'ar'
+  mimeType?: string
 }
 
 export type CfoMetric = {

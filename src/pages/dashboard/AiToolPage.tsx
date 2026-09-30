@@ -11,6 +11,7 @@ import {
 } from '../../../supabase/functions/_shared/ai_tools.ts'
 import type { StubOutput } from '../../../supabase/functions/ai-tool-job/tools/types.ts'
 import { AiToolForm, AiToolJobStatus, AiToolReport, AiToolShell } from '../../components/ai/AiToolDesk'
+import { PricingInputs } from '../../components/ai/PricingInputs'
 import { AI_UI } from '../../lib/aiToolUi'
 import {
   acceptAiToolFile,
@@ -22,6 +23,7 @@ import {
   uploadAiToolFile,
   type AiToolNote,
 } from '../../lib/aiToolApi'
+import { digitsOnly, pricingSourceFromDraft, type PricingDraft } from '../../../supabase/functions/ai-tool-job/tools/pricing_format.ts'
 import { legalSlotsFromEnv } from '../../lib/aiToolConfig'
 import { renderToolCopy } from '../../lib/aiToolCopy'
 import { useSiteLanguage } from '../../components/SiteLanguage'
@@ -43,6 +45,7 @@ export function AiToolPage() {
   const [attempt, setAttempt] = useState(0)
   const [consented, setConsented] = useState(false)
   const [file, setFile] = useState<File | null>(null)
+  const [pricing, setPricing] = useState<PricingDraft>(EMPTY_PRICING)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [notes, setNotes] = useState<AiToolNote[]>([])
@@ -118,13 +121,14 @@ export function AiToolPage() {
   const reportCopy = renderToolCopy(tool, lang, { ...slots, date: reportDate })
 
   async function onRun() {
-    if (!tool || !file || !consented) return
-    const problem = tool === 'cfo_check' ? acceptCfoFile(file) : acceptAiToolFile(file)
+    const upload = file ?? (tool === 'pricing_sense_check' ? pricingFile(pricing) : null)
+    if (!tool || !upload || !consented) return
+    const problem = tool === 'cfo_check' ? acceptCfoFile(upload) : acceptAiToolFile(upload)
     if (problem) {
       setError(problem)
       return
     }
-    const mime = file.type || mimeFor(file.name)
+    const mime = upload.type || mimeFor(upload.name)
     const ext = extensionForMime(mime)
     if (!ext) {
       setError('Use a PDF, text file, CSV, spreadsheet, or document.')
@@ -140,7 +144,7 @@ export function AiToolPage() {
       return
     }
     const path = aiToolStoragePath(userId, id, ext)
-    const uploaded = await uploadAiToolFile(path, file)
+    const uploaded = await uploadAiToolFile(path, upload)
     if (!uploaded) {
       setBusy(false)
       setError('Could not upload that file. Retry.')
@@ -151,9 +155,9 @@ export function AiToolPage() {
       tool_key: tool,
       job_id: id,
       storage_path: path,
-      file_name: file.name,
+      file_name: upload.name,
       mime_type: mime,
-      byte_size: file.size,
+      byte_size: upload.size,
       lang,
     })
     setBusy(false)
@@ -232,6 +236,18 @@ export function AiToolPage() {
             busy={busy}
             accept={tool === 'cfo_check' ? CFO_ACCEPT : undefined}
             fileHint={tool === 'cfo_check' ? (lang === 'ar' ? CFO_HINT.ar : CFO_HINT.en) : undefined}
+            inputsReady={tool === 'pricing_sense_check' ? Boolean(file) || digitsOnly(pricing.asking).length > 0 : undefined}
+            extra={
+              tool === 'pricing_sense_check' ? (
+                <PricingInputs draft={pricing} lang={lang} disabled={busy} onChange={setPricing} />
+              ) : tool === 'term_sheet_review' ? (
+                <p className="mt-6 text-[0.95rem] leading-relaxed text-ink/70">
+                  {lang === 'ar'
+                    ? 'ملف نصي أوضح. ضع كل بند في سطر، مثل: Liquidation preference: 1x non-participating.'
+                    : 'A text file works best. Put one term on each line, for example: Liquidation preference: 1x non-participating.'}
+                </p>
+              ) : null
+            }
             onConsent={setConsented}
             onFile={(next) => {
               setError('')
@@ -303,6 +319,22 @@ const CFO_HINT = {
   en: 'PDF, CSV, or XLSX. 15 MB max. The file and the output are deleted after the retention period.',
   ar: 'ملف PDF أو CSV أو XLSX. الحد 15 ميغابايت. يُحذف الملف والنتيجة بعد مدة الحفظ.',
 } as const
+
+const EMPTY_PRICING: PricingDraft = {
+  company: '',
+  sector: '',
+  stage: '',
+  region: '',
+  asking: '',
+  revenue: '',
+  notes: '',
+}
+
+function pricingFile(draft: PricingDraft): File | null {
+  if (!digitsOnly(draft.asking)) return null
+  const body = pricingSourceFromDraft(draft)
+  return new File([body], 'pricing-inputs.txt', { type: 'text/plain' })
+}
 
 function mimeFor(name: string): string {
   const lower = name.toLowerCase()
