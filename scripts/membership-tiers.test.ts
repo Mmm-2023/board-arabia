@@ -335,6 +335,121 @@ test('with the two tier flag off, /apply posts to submit-application', async () 
   }
 })
 
+test('tiers overview shows every pill on each row for a person in several groups', async () => {
+  const combined = {
+    user_id: '33333333-3333-4333-8333-333333333333',
+    email: 'hanan.alsafi@example.com',
+    seat: 'intl' as const,
+    status: 'active' as const,
+    invites_remaining: 1,
+    invites_granted: 2,
+    tier: 'member' as const,
+    tiers: ['member', 'sponsor'],
+    founding_number: null,
+  }
+  const foundingOnly = {
+    ...member,
+    email: 'layla.alnadira@example.com',
+  }
+  process.env.VITE_SUPABASE_URL = 'https://example.supabase.co'
+  process.env.VITE_SUPABASE_ANON_KEY = 'example-anon-key'
+  process.env.VITE_TWO_TIER_REGISTER_ENABLED = 'false'
+  const vite = await createServer({
+    server: { middlewareMode: true },
+    appType: 'custom',
+    logLevel: 'error',
+  })
+  try {
+    const peopleMod = await vite.ssrLoadModule('/src/pages/admin/PeoplePage.tsx')
+    const previewMod = await vite.ssrLoadModule('/src/pages/admin/context.tsx')
+    const html = renderToStaticMarkup(
+      createElement(
+        MemoryRouter,
+        { initialEntries: ['/admin/people'] },
+        createElement(
+          previewMod.AdminPreview,
+          {
+            room: {
+              session: null,
+              booting: false,
+              isStaff: true,
+              staffRole: 'staff',
+              loading: false,
+              hasLoaded: true,
+              listError: '',
+              refreshError: '',
+              queryDetail: '',
+              panelFailed: {},
+              actionNote: '',
+              apps: [],
+              members: [foundingOnly, combined],
+              peerInvites: [],
+              events: [],
+              staffRows: [],
+              profileByUser: {},
+              capacity: null,
+              platform: null,
+              refreshedAt: null,
+              updatingId: null,
+              dryRunInvite: null,
+              email: 'staff@example.com',
+              isMember: false,
+              masterKnown: true,
+              seatById: {},
+              setSeat: () => {},
+              draftFor: (_key: string, fallback: unknown) => fallback,
+              setDraft: () => {},
+              refresh: () => {},
+              onAccept: async () => {},
+              onAdmit: async () => {},
+              onReject: async () => {},
+              runInvite: async () => {},
+              onMemberStatus: async () => {},
+              onSaveCapacity: async () => {},
+              signOut: async () => {},
+            },
+          },
+          createElement(peopleMod.PeoplePage),
+        ),
+      ),
+    )
+    const sponsor = overviewSection(html, 'Sponsor')
+    const memberGroup = overviewSection(html, 'Member')
+    const founding = overviewSection(html, 'Founding Member')
+    const sponsorRow = overviewRow(sponsor, combined.email)
+    const memberRow = overviewRow(memberGroup, combined.email)
+    for (const row of [sponsorRow, memberRow]) {
+      assert.match(row, /data-tier-pill="member"/)
+      assert.match(row, /data-tier-pill="sponsor"/)
+      assert.match(row, />Member</)
+      assert.match(row, />Sponsor</)
+    }
+    const foundingRow = overviewRow(founding, foundingOnly.email)
+    assert.match(foundingRow, /data-tier-pill="founding"/)
+    assert.equal(foundingRow.includes('data-tier-pill="sponsor"'), false)
+    assert.equal(html.includes('\u2014') || html.includes('\u2013'), false)
+  } finally {
+    await vite.close()
+  }
+})
+
+function overviewSection(html: string, title: string) {
+  const match = new RegExp(`<h3\\b[^>]*>\\s*${title}\\s*</h3>`, 'i').exec(html)
+  assert.ok(match, title)
+  const start = match.index + match[0].length
+  const next = html.indexOf('<h3', start)
+  return html.slice(start, next === -1 ? html.length : next)
+}
+
+function overviewRow(section: string, email: string) {
+  const at = section.indexOf(email)
+  assert.ok(at >= 0, email)
+  const start = section.lastIndexOf('<li', at)
+  const end = section.indexOf('</li>', at)
+  assert.ok(start >= 0 && end > start)
+  return section.slice(start, end)
+}
+
 test('tier files carry no secrets, mailboxes, or dash punctuation', () => {
   const files = [
     migration,

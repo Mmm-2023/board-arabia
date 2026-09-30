@@ -1,4 +1,4 @@
-import { membershipTiersOf } from '../../lib/membershipTiers'
+import { MEMBERSHIP_TIER_LABELS, membershipTiersOf } from '../../lib/membershipTiers'
 import { seatLabel } from '../../lib/member'
 import { ADMIN_PANEL_NOTICE } from '../../shell/viewCopy'
 import { holdsSponsorSeat } from '../../lib/sponsorSeat'
@@ -15,20 +15,38 @@ const PEOPLE_TIERS = ['Master', 'Admin', 'Sponsor', 'Founding Member', 'Member']
 export type PersonTier = (typeof PEOPLE_TIERS)[number]
 export { PEOPLE_TIERS }
 
+export type TierPill = { id: string; label: string }
+
+/** Every membership tier this person holds, in catalog order. */
+export function membershipTierPills(member: MemberAdminRow): TierPill[] {
+  return membershipTiersOf(member).map((id) => ({
+    id,
+    label: MEMBERSHIP_TIER_LABELS[id],
+  }))
+}
+
 export function peopleInTier(
   tier: PersonTier,
   staffRows: StaffDirectoryRow[],
   members: MemberAdminRow[],
-): { email: string; detail: string }[] {
+): { email: string; detail: string; pills: TierPill[] }[] {
   if (tier === 'Master') {
     return staffRows
       .filter((row) => row.role === 'master')
-      .map((row) => ({ email: row.email, detail: new Date(row.created_at).toLocaleString() }))
+      .map((row) => ({
+        email: row.email,
+        detail: new Date(row.created_at).toLocaleString(),
+        pills: [{ id: 'master', label: 'Master' }],
+      }))
   }
   if (tier === 'Admin') {
     return staffRows
       .filter((row) => row.role === 'staff')
-      .map((row) => ({ email: row.email, detail: new Date(row.created_at).toLocaleString() }))
+      .map((row) => ({
+        email: row.email,
+        detail: new Date(row.created_at).toLocaleString(),
+        pills: [{ id: 'admin', label: 'Admin' }],
+      }))
   }
   if (tier === 'Sponsor') {
     return members
@@ -36,6 +54,7 @@ export function peopleInTier(
       .map((member) => ({
         email: member.email,
         detail: `${seatLabel(member.seat)} · ${member.status}`,
+        pills: membershipTierPills(member),
       }))
   }
   if (tier === 'Founding Member') {
@@ -44,6 +63,7 @@ export function peopleInTier(
       .map((member) => ({
         email: member.email,
         detail: `${seatLabel(member.seat)} · ${member.status}`,
+        pills: membershipTierPills(member),
       }))
   }
   return members
@@ -51,6 +71,7 @@ export function peopleInTier(
     .map((member) => ({
       email: member.email,
       detail: `${seatLabel(member.seat)} · ${member.status}`,
+      pills: membershipTierPills(member),
     }))
 }
 
