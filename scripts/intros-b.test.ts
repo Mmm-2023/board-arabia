@@ -18,6 +18,7 @@ import {
   type PlanMember,
   type PlannedNudge,
 } from '../supabase/functions/_shared/suggest_intros.ts'
+import { introMetCount, presentIntroFunnel } from '../src/lib/introFunnel.ts'
 import { presentIntroSuggestion, presentIntroSuggestions } from '../src/lib/introSuggestions.ts'
 import { presentIntroRow } from '../src/lib/memberIntros.ts'
 
@@ -299,6 +300,53 @@ test('RLS lets a member read only their own suggestions and dry_run does not wri
   })
   assert.equal(meet?.meet_due, true)
   assert.equal(meet?.meet_outcome, 'not_yet')
+})
+
+test('funnel Met counts a yes outcome once, dated by the earliest yes', () => {
+  const from = new Date('2026-09-01T00:00:00.000Z')
+  const to = new Date('2026-10-01T00:00:00.000Z')
+  const intro = '44444444-4444-4444-8444-444444444444'
+  const other = '55555555-5555-4555-8555-555555555555'
+  assert.equal(
+    introMetCount(
+      [
+        { introId: intro, outcome: 'not_yet', at: '2026-09-08T00:00:00.000Z' },
+        { introId: intro, outcome: 'yes', at: '2026-09-20T00:00:00.000Z' },
+        { introId: intro, outcome: 'yes', at: '2026-09-05T00:00:00.000Z' },
+        { introId: other, outcome: 'no', at: '2026-09-12T00:00:00.000Z' },
+        { introId: '66666666-6666-4666-8666-666666666666', outcome: 'yes', at: '2026-09-03T00:00:00.000Z', sample: true },
+        { introId: '77777777-7777-4777-8777-777777777777', outcome: 'yes', at: '2026-10-01T00:00:00.000Z' },
+        { introId: '88888888-8888-4888-8888-888888888888', outcome: 'yes', at: '2026-09-01T00:00:00.000Z' },
+      ],
+      from,
+      to,
+    ),
+    2,
+  )
+  assert.equal(introMetCount([{ introId: intro, outcome: 'yes', at: '2026-08-01T00:00:00.000Z' }], from, to), 0)
+  assert.equal(introMetCount([{ introId: intro, outcome: 'yes', at: '2026-09-05T00:00:00.000Z' }], to, from), 0)
+  assert.equal(presentIntroFunnel({ requested: 12, accepted: 7, met: 2, deal_started: 1 }, 'staff').met, '2')
+
+  const start = migration.indexOf('function private.intro_met_count')
+  assert.ok(start > 0)
+  const header = migration.slice(start, migration.indexOf('as $$', start))
+  const body = migration.slice(start, migration.indexOf('revoke all on function private.intro_met_count', start))
+  assert.match(header, /private\.intro_met_count\(p_from timestamptz, p_to timestamptz\)/)
+  assert.match(header, /returns integer/)
+  assert.match(header, /language plpgsql/)
+  assert.match(header, /security definer/)
+  assert.match(header, /set search_path = public/)
+  assert.match(body, /o\.outcome = 'yes'/)
+  assert.match(body, /min\(o\.updated_at\)/)
+  assert.match(body, /count\(distinct|group by o\.intro_id/)
+  assert.match(body, /yeses\.met_at >= p_from/)
+  assert.match(body, /yeses\.met_at < p_to/)
+  assert.match(body, /intro_meet_outcomes/)
+  assert.match(
+    migration,
+    /revoke all on function private\.intro_met_count\(timestamptz, timestamptz\) from public, anon, authenticated/,
+  )
+  assert.equal(/grant execute on function private\.intro_met_count\([^;]*\) to (anon|authenticated)/.test(migration), false)
 })
 
 test('home and intros show the suggestion and the meet prompt', async () => {

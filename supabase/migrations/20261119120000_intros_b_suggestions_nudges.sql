@@ -297,3 +297,38 @@ $$;
 
 revoke all on function public.list_my_intros() from public, anon;
 grant execute on function public.list_my_intros() to authenticated;
+
+-- Replaces INTROS-C's reader. A yes from either party counts the introduction
+-- once, dated by the earliest yes answer, inside the half-open range.
+create or replace function private.intro_met_count(p_from timestamptz, p_to timestamptz)
+returns integer
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_count integer := 0;
+begin
+  if p_from is null or p_to is null or p_from >= p_to then
+    return 0;
+  end if;
+
+  select count(*)::int
+  into v_count
+  from (
+    select o.intro_id, min(o.updated_at) as met_at
+    from public.intro_meet_outcomes o
+    where o.outcome = 'yes'
+    group by o.intro_id
+  ) yeses
+  join public.member_intros i on i.id = yeses.intro_id
+  where yeses.met_at >= p_from
+    and yeses.met_at < p_to
+    and not private.sample_subject(i.requester_id)
+    and not private.sample_subject(i.target_id);
+
+  return coalesce(v_count, 0);
+end;
+$$;
+
+revoke all on function private.intro_met_count(timestamptz, timestamptz) from public, anon, authenticated;

@@ -36,6 +36,7 @@ const shots = [
   ['home', 'intros-b-home-suggestions', 'Suggested introductions'],
   ['intros', 'intros-b-intros-suggestions', 'Both work on energy transition in Riyadh'],
   ['meet', 'intros-b-did-you-meet', 'Did you meet?'],
+  ['funnel', 'intros-b-funnel-met', 'layla@example.com'],
 ]
 
 try {

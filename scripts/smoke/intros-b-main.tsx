@@ -5,11 +5,12 @@ import { Avatar } from '../../src/components/Avatar'
 import { assembleHome } from '../../src/lib/homeSnapshot'
 import type { IntroSuggestion } from '../../src/lib/introSuggestions'
 import type { IntroRow } from '../../src/lib/memberIntros'
+import { IntroFunnelView } from '../../src/pages/admin/IntroFunnel'
 import { HomeSnapshotView } from '../../src/pages/dashboard/HomeSnapshotView'
 import { IntroBoard } from '../../src/pages/dashboard/IntroBoard'
 import { IntroSuggestions } from '../../src/pages/dashboard/IntroSuggestions'
 import { AppShell } from '../../src/shell/AppShell'
-import { MEMBER_ACCOUNT, MEMBER_DESTINATIONS, MEMBER_SECTIONS } from '../../src/shell/destinations'
+import { MEMBER_ACCOUNT, MEMBER_DESTINATIONS, MEMBER_SECTIONS, STAFF_DESTINATIONS, STAFF_SECTIONS, STAFF_SECONDARY } from '../../src/shell/destinations'
 import { SectionTabs } from '../../src/shell/SectionTabs'
 import '../../src/index.css'
 
@@ -141,10 +142,55 @@ function suggestionBlock() {
   )
 }
 
+function StaffShell({ children }: { children: ReactNode }) {
+  return (
+    <MemoryRouter initialEntries={['/admin/people/intros']}>
+      <AppShell
+        tone="staff"
+        destinations={STAFF_DESTINATIONS}
+        secondary={STAFF_SECONDARY}
+        updatedLabel="Updated 14:50"
+        roleSwitch={null}
+        onSignOut={() => {}}
+        accountLabel="Account"
+        accountName="Desk"
+        accountMark={<Avatar src={null} avatarStyle="female" size={36} alt="" />}
+      >
+        <div data-preview="">
+          <SectionTabs label="People sections" sections={STAFF_SECTIONS.people ?? []} />
+          <div className="mt-6 max-w-3xl min-w-0">
+            <h1 className="font-display text-[2rem] font-semibold tracking-[-0.03em] text-pearl">Intros</h1>
+            <div className="mt-8">{children}</div>
+          </div>
+        </div>
+      </AppShell>
+    </MemoryRouter>
+  )
+}
+
 const root = document.getElementById('root')
 if (root) {
   createRoot(root).render(
-    view === 'intros' ? (
+    view === 'funnel' ? (
+      <StaffShell>
+        <IntroFunnelView
+          range="month"
+          customFrom=""
+          customTo=""
+          counts={{ requested: 12, accepted: 7, met: 4, deal_started: 2 }}
+          loading={false}
+          error=""
+          denied={false}
+          updatedAt={new Date('2026-09-30T11:50:00.000Z')}
+          onRange={() => {}}
+          onCustomFrom={() => {}}
+          onCustomTo={() => {}}
+          onApplyCustom={() => {}}
+          onRetry={() => {}}
+        />
+        <p className="mt-6 break-all text-[0.95rem] text-pearl/75">layla@example.com recorded a meeting.</p>
+      </StaffShell>
+    ) : view === 'intros' ? (
       <MemberShell path="/dashboard/people/intros" sections={MEMBER_SECTIONS.people}>
         <div className="max-w-3xl">
           <h1 className="font-display text-[2.2rem] font-bold tracking-[-0.03em]">Intros</h1>
