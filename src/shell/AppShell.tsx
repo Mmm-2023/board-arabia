@@ -195,12 +195,19 @@ export function AppShell({
           onMouseEnter={() => setHovered(true)}
           onMouseLeave={() => setHovered(false)}
           className={`relative hidden min-h-dvh shrink-0 flex-col self-stretch border-r md:flex ${styles.sidebarBorder} ${styles.sidebar} ${
-            showLabels ? 'w-64' : 'w-[4.75rem]'
+            member || hovered || pinned ? 'w-64' : 'w-[4.75rem] lg:w-64'
           } transition-[width] duration-200 motion-reduce:transition-none`}
         >
           <div className="shell-safe-y shell-safe-left flex h-full min-h-0 w-full flex-col overflow-y-auto">
             <div className="flex items-center justify-between gap-2 px-3 py-4">
-              <BrandLockup to={home} tone="on-dark" markOnly={!showLabels} />
+              <span className={member || hovered || pinned ? '' : 'max-lg:hidden'}>
+                <BrandLockup to={home} tone="on-dark" />
+              </span>
+              {member || hovered || pinned ? null : (
+                <span className="lg:hidden">
+                  <BrandLockup to={home} tone="on-dark" markOnly />
+                </span>
+              )}
               {member ? null : (
                 <button
                   type="button"
@@ -235,7 +242,7 @@ export function AppShell({
                         <DestinationIcon id={item.id} />
                         {lockedHubs.has(item.id) ? <LockMark /> : null}
                       </span>
-                      <span className={showLabels ? 'truncate' : 'sr-only'}>{item.label}</span>
+                      <span className={`${member || hovered || pinned ? '' : 'max-lg:sr-only'} truncate`}>{item.label}</span>
                       {item.id === 'deals' ? <CountBadge count={dealsBadge} place="sidebar" /> : null}
                     </NavLink>
                   </li>
@@ -289,8 +296,8 @@ export function AppShell({
               </div>
             ) : (
               <div className={`border-t px-3 py-4 ${styles.border}`}>
-                {showLabels && secondary.length > 0 && (
-                  <ul className="mb-3 space-y-1">
+                {secondary.length > 0 && (
+                  <ul className={`mb-3 space-y-1 ${showLabels ? '' : 'max-lg:hidden'}`}>
                     {secondary.map((item) => (
                       <li key={item.to}>
                         <NavLink

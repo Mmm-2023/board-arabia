@@ -154,6 +154,17 @@ export const AI_TOOL_CARD_LINES: Record<AiToolKey, string> = {
   pricing_sense_check: 'A comparison with public comparables. General and educational only.',
 }
 
+export const AI_TOOL_CARD_LINES_AR: Record<AiToolKey, string> = {
+  cfo_check: 'قراءة أولى للحسابات أو النموذج. ليست محاسبة أو تدقيقاً.',
+  market_brief: 'موجز عن دخول السوق السعودي. ليست استشارة قانونية أو ضريبية.',
+  term_sheet_review: 'قراءة لورقة الشروط مقابل الممارسة الشائعة. ليست استشارة قانونية.',
+  pricing_sense_check: 'مقارنة مع بيانات معلنة. للتعليم العام فقط.',
+}
+
+export function toolTitle(tool: AiToolKey, lang: 'en' | 'ar'): string {
+  return TOOLS[tool].title[lang]
+}
+
 export type LegalSlots = {
   entity: string
   cr: string

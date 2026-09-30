@@ -26,8 +26,8 @@ create table public.ai_tool_flags (
 );
 
 insert into public.ai_tool_flags (tool_key, enabled) values
-  ('cfo_check', true),
-  ('market_brief', true),
+  ('cfo_check', false),
+  ('market_brief', false),
   ('term_sheet_review', false),
   ('pricing_sense_check', false);
 
@@ -146,7 +146,7 @@ comment on table public.ai_tool_settings is
   'Retention days for AI tool uploads and outputs. Default 30. Staff can change it.';
 
 comment on table public.ai_tool_flags is
-  'Per-tool staff flags. Term sheet and pricing default off. CFO check and market brief default on.';
+  'Per-tool staff flags. All four default off until a later tool PR turns one on.';
 
 comment on table public.ai_tool_jobs is
   'One run of a member AI tool. The file lives in the ai-tool-uploads bucket.';

@@ -3,27 +3,32 @@ import { Link } from 'react-router-dom'
 import type { StubOutput } from '../../../supabase/functions/ai-tool-job/tools/types.ts'
 import { PRIVACY_LINK, TERMS_LINK } from '../../lib/aiToolConfig'
 import type { RenderedToolCopy } from '../../lib/aiToolCopy'
+import { AI_UI, type UiLang } from '../../lib/aiToolUi'
 
-type CopyLang = 'en' | 'ar'
+type CopyLang = UiLang
 
 const LINK_LABELS: Record<CopyLang, { privacy: string; terms: string }> = {
   en: { privacy: 'Privacy Notice', terms: 'Terms' },
   ar: { privacy: 'إشعار الخصوصية', terms: 'الشروط' },
 }
 
-const STATUS_LABEL: Record<string, string> = {
-  queued: 'Queued',
-  reading: 'Reading',
-  checking: 'Checking',
-  writing: 'Writing',
-  ready: 'Ready',
-  failed: 'Could not finish',
+function statusLabel(lang: CopyLang, status: string) {
+  const ui = AI_UI[lang]
+  if (status === 'queued') return ui.queued
+  if (status === 'reading') return ui.reading
+  if (status === 'checking') return ui.checking
+  if (status === 'writing') return ui.writing
+  if (status === 'ready') return ui.ready
+  if (status === 'failed') return ui.failed
+  return status
 }
 
-const STEP_LABEL: Record<string, string> = {
-  intake: 'Intake',
-  draft: 'Draft',
-  done: 'Done',
+function stepLabel(lang: CopyLang, step: string) {
+  const ui = AI_UI[lang]
+  if (step === 'intake') return ui.intake
+  if (step === 'draft') return ui.draft
+  if (step === 'done') return ui.done
+  return step
 }
 
 function LegalAnchor({ href, children }: { href: string; children: string }) {
@@ -92,19 +97,28 @@ export function AiToolBanner({ text }: { text: string }) {
   )
 }
 
-export function AiToolWillList({ will, willNot }: { will: readonly string[]; willNot: readonly string[] }) {
+export function AiToolWillList({
+  will,
+  willNot,
+  lang = 'en',
+}: {
+  will: readonly string[]
+  willNot: readonly string[]
+  lang?: CopyLang
+}) {
+  const ui = AI_UI[lang]
   return (
     <div className="mt-6 grid gap-4 md:grid-cols-2">
-      <section className="border border-[var(--ba-line)] bg-white px-4 py-4" aria-label="Will">
-        <h2 className="font-display text-[1.2rem] font-semibold">Will</h2>
+      <section className="border border-[var(--ba-line)] bg-white px-4 py-4" aria-label={ui.will}>
+        <h2 className="font-display text-[1.2rem] font-semibold">{ui.will}</h2>
         <ul className="mt-3 list-disc space-y-2 ps-5 text-[0.98rem] leading-relaxed text-ink/80">
           {will.map((item) => (
             <li key={item}>{item}</li>
           ))}
         </ul>
       </section>
-      <section className="border border-[var(--ba-line)] bg-white px-4 py-4" aria-label="Will not">
-        <h2 className="font-display text-[1.2rem] font-semibold">Will not</h2>
+      <section className="border border-[var(--ba-line)] bg-white px-4 py-4" aria-label={ui.willNot}>
+        <h2 className="font-display text-[1.2rem] font-semibold">{ui.willNot}</h2>
         <ul className="mt-3 list-disc space-y-2 ps-5 text-[0.98rem] leading-relaxed text-ink/80">
           {willNot.map((item) => (
             <li key={item}>{item}</li>
@@ -118,17 +132,20 @@ export function AiToolWillList({ will, willNot }: { will: readonly string[]; wil
 export function AiToolUpload({
   fileName,
   disabled,
+  lang = 'en',
   onFile,
 }: {
   fileName: string
   disabled?: boolean
+  lang?: CopyLang
   onFile: (file: File | null) => void
 }) {
+  const ui = AI_UI[lang]
   const input = useRef<HTMLInputElement>(null)
   return (
     <div className="mt-6">
       <label className="block text-[0.95rem] text-ink" htmlFor="ai-tool-file">
-        Upload
+        {ui.upload}
       </label>
       <input
         ref={input}
@@ -148,10 +165,10 @@ export function AiToolUpload({
         disabled={disabled}
         onClick={() => input.current?.click()}
       >
-        Choose a file
+        {ui.choose}
       </button>
       {fileName ? <p className="mt-2 text-[0.95rem] text-ink">{fileName}</p> : null}
-      <p className="mt-2 text-[0.92rem] leading-relaxed text-ink/65">PDF, text, CSV, spreadsheet, or document. 15 MB max.</p>
+      <p className="mt-2 text-[0.92rem] leading-relaxed text-ink/65">{ui.fileHint}</p>
     </div>
   )
 }
@@ -187,12 +204,11 @@ export function AiToolConsent({
   )
 }
 
-export function AiToolJobStatus({ status, step }: { status: string; step: string }) {
-  const statusLabel = STATUS_LABEL[status] || status
-  const stepLabel = STEP_LABEL[step] || step
+export function AiToolJobStatus({ status, step, lang = 'en' }: { status: string; step: string; lang?: CopyLang }) {
+  const ui = AI_UI[lang]
   return (
     <p className="border border-[var(--ba-line)] bg-white px-4 py-3 text-[1rem]" role="status" data-ai-job-status={status}>
-      Status: {statusLabel}. Step: {stepLabel}.
+      {ui.status}: {statusLabel(lang, status)}. {ui.step}: {stepLabel(lang, step)}.
     </p>
   )
 }
@@ -211,26 +227,28 @@ export function AiToolReport({
   footerLead,
   footerShared,
   lang = 'en',
+  heading,
   onDelete,
 }: {
   output: StubOutput
   footerLead: string
   footerShared: string
   lang?: CopyLang
+  heading?: string
   onDelete?: () => void
 }) {
   return (
     <article className="border border-[var(--ba-line)] bg-white px-4 py-5" data-ai-report="">
       <p className="text-[0.72rem] font-semibold tracking-[0.14em] text-[var(--ba-indigo)] uppercase">AI</p>
-      <h2 className="mt-2 font-display text-[1.6rem] font-semibold tracking-[-0.02em]">{output.title}</h2>
+      <h2 className="mt-2 font-display text-[1.6rem] font-semibold tracking-[-0.02em]">{heading || output.title}</h2>
       <p className="mt-3 text-[1rem] leading-relaxed text-ink">{output.summary}</p>
-      <h3 className="mt-6 text-[1rem] font-semibold">Findings</h3>
+      <h3 className="mt-6 text-[1rem] font-semibold">{AI_UI[lang].findings}</h3>
       <ul className="mt-2 list-disc space-y-2 ps-5 text-[0.98rem] leading-relaxed">
         {output.findings.map((item) => (
           <li key={item}>{item}</li>
         ))}
       </ul>
-      <h3 className="mt-6 text-[1rem] font-semibold">Questions</h3>
+      <h3 className="mt-6 text-[1rem] font-semibold">{AI_UI[lang].questions}</h3>
       <ul className="mt-2 list-disc space-y-2 ps-5 text-[0.98rem] leading-relaxed">
         {output.questions.map((item) => (
           <li key={item}>{item}</li>
@@ -238,14 +256,14 @@ export function AiToolReport({
       </ul>
       {output.sources.length > 0 ? (
         <>
-          <h3 className="mt-6 text-[1rem] font-semibold">Sources</h3>
+          <h3 className="mt-6 text-[1rem] font-semibold">{AI_UI[lang].sources}</h3>
           <ul className="mt-2 space-y-2 text-[0.98rem] leading-relaxed">
             {output.sources.map((source) => (
               <li key={source.url}>
                 <a href={source.url} className="underline">
                   {source.title}
                 </a>
-                <span className="text-ink/65"> Dated {source.dated}.</span>
+                <span className="text-ink/65"> {AI_UI[lang].dated} {source.dated}.</span>
               </li>
             ))}
           </ul>
@@ -258,7 +276,7 @@ export function AiToolReport({
           className="mt-6 inline-flex min-h-11 items-center border border-[var(--ba-line)] px-4 text-[0.95rem] font-semibold"
           onClick={onDelete}
         >
-          Delete
+          {AI_UI[lang].delete}
         </button>
       ) : null}
       <AiToolFooter lead={footerLead} rest={footerShared} lang={lang} />
@@ -294,8 +312,8 @@ export function AiToolForm({
       }}
     >
       <AiToolBanner text={copy.banner} />
-      <AiToolWillList will={copy.will} willNot={copy.willNot} />
-      <AiToolUpload fileName={fileName} disabled={busy} onFile={onFile} />
+      <AiToolWillList will={copy.will} willNot={copy.willNot} lang={lang} />
+      <AiToolUpload fileName={fileName} disabled={busy} lang={lang} onFile={onFile} />
       <AiToolConsent text={copy.consent} lang={lang} checked={consented} disabled={busy} onChange={onConsent} />
       <button
         type="submit"
@@ -304,7 +322,7 @@ export function AiToolForm({
         data-ai-run={canRun ? 'on' : 'off'}
         data-consent={consented ? 'on' : 'off'}
       >
-        {busy ? 'Running' : 'Run'}
+        {busy ? AI_UI[lang].running : AI_UI[lang].run}
       </button>
     </form>
   )
@@ -313,20 +331,20 @@ export function AiToolForm({
 export function AiToolShell({
   lang,
   title,
-  offForMembers,
+  staffPreview,
   children,
 }: {
   lang: 'en' | 'ar'
   title: string
-  offForMembers?: boolean
+  staffPreview?: boolean
   children: ReactNode
 }) {
   return (
     <article className="max-w-3xl pe-16" dir={lang === 'ar' ? 'rtl' : 'ltr'} lang={lang} data-ai-tool="">
       <h1 className="font-display text-[2.2rem] font-bold tracking-[-0.03em]">{title}</h1>
-      {offForMembers ? (
-        <p className="mt-3 inline-flex min-h-11 items-center border border-[var(--ba-copper)] px-3 text-[0.95rem] font-semibold text-[var(--ba-copper-deep)]">
-          Off for members
+      {staffPreview ? (
+        <p className="mt-3 inline-flex min-h-11 items-center border border-[var(--ba-copper)] px-3 text-[0.95rem] font-semibold text-[var(--ba-copper-deep)]" data-staff-preview="">
+          {AI_UI[lang].staffPreview}
         </p>
       ) : null}
       <div className="mt-6">{children}</div>

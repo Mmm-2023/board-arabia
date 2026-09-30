@@ -42,17 +42,19 @@ function daysAgo(days: number) {
   return new Date(NOW.getTime() - days * 86_400_000).toISOString()
 }
 
-test('term sheet and pricing flags default off, and the other two default on', () => {
+test('all four tool flags default off', () => {
+  assert.equal(AI_TOOL_FLAG_DEFAULTS.cfo_check, false)
+  assert.equal(AI_TOOL_FLAG_DEFAULTS.market_brief, false)
   assert.equal(AI_TOOL_FLAG_DEFAULTS.term_sheet_review, false)
   assert.equal(AI_TOOL_FLAG_DEFAULTS.pricing_sense_check, false)
-  assert.equal(AI_TOOL_FLAG_DEFAULTS.cfo_check, true)
-  assert.equal(AI_TOOL_FLAG_DEFAULTS.market_brief, true)
   assert.equal(AI_TOOL_RETENTION_DAYS_DEFAULT, 30)
   const sql = read('supabase/migrations/20261120120000_aitools_frame.sql')
-  assert.match(sql, /\('cfo_check', true\)/)
-  assert.match(sql, /\('market_brief', true\)/)
+  assert.match(sql, /\('cfo_check', false\)/)
+  assert.match(sql, /\('market_brief', false\)/)
   assert.match(sql, /\('term_sheet_review', false\)/)
   assert.match(sql, /\('pricing_sense_check', false\)/)
+  assert.equal(sql.includes("('cfo_check', true)"), false)
+  assert.equal(sql.includes("('market_brief', true)"), false)
   assert.match(sql, /retention_days integer not null default 30/)
   assert.match(sql, /force row level security/)
   assert.match(sql, /set search_path = public/)
@@ -153,6 +155,21 @@ test('shared footer and the cfo banner keep the legal wording', () => {
   assert.match(copy.footer, /https:\/\/example.com\/terms/)
   assert.match(copy.footer, /30 Sep 2026/)
   assert.equal(copy.willNot.includes('Give legal, financial, investment, tax or accounting advice.'), true)
+})
+
+test('start rejects an off tool even for staff', async () => {
+  const store = memoryStore(false)
+  store.isStaff = async () => true
+  store.consents.set(JOB, consent('cfo_check'))
+  const denied = await handleAiToolJob(request(startBody()), {
+    resolveUser: allow,
+    store: () => store,
+    now: () => NOW,
+  })
+  assert.equal(denied.status, 403)
+  const body = await denied.json()
+  assert.equal(body.code, 'tool_off')
+  assert.equal(store.jobs.size, 0)
 })
 
 test('a run without a matching consent is rejected', async () => {
@@ -275,20 +292,23 @@ test('run stays disabled until consent is ticked', async () => {
     assert.match(unticked, /Will not/)
     assert.match(unticked, /not accounting, audit or financial advice/)
     const cards = await vite.ssrLoadModule('/src/components/ai/AiToolCards.tsx')
-    const html = renderToStaticMarkup(
+    const hidden = renderToStaticMarkup(
+      createElement(MemoryRouter, null, createElement(cards.AiToolCardList, { flags: AI_TOOL_FLAG_DEFAULTS })),
+    )
+    assert.equal(hidden.includes('Start a check'), false)
+    assert.equal(hidden.includes('Off for members'), false)
+    assert.match(hidden, /No checks are available yet/)
+    const preview = renderToStaticMarkup(
       createElement(
         MemoryRouter,
         null,
-        createElement(cards.AiToolCardList, {
-          flags: AI_TOOL_FLAG_DEFAULTS,
-          staff: true,
-        }),
+        createElement(cards.AiToolCardList, { flags: AI_TOOL_FLAG_DEFAULTS, preview: true }),
       ),
     )
-    assert.match(html, /Pricing sense-check/)
-    assert.match(html, /Off for members/)
-    assert.equal((html.match(/Start a check/g) || []).length, 4)
-    assert.equal(/\bvaluation\b/i.test(html), false)
+    assert.match(preview, /Staff preview/)
+    assert.equal(preview.includes('Start a check'), false)
+    assert.equal(preview.includes('Off for members'), false)
+    assert.equal(/\bvaluation\b/i.test(preview + hidden), false)
   } finally {
     await vite.close()
   }
@@ -438,7 +458,7 @@ function job(tool: AiToolKey): JobRow {
   }
 }
 
-function memoryStore(): AiToolStore & {
+function memoryStore(toolOn = true): AiToolStore & {
   jobs: Map<string, JobRow>
   outputs: Map<string, OutputRow>
   notes: Map<string, boolean>
@@ -464,7 +484,7 @@ function memoryStore(): AiToolStore & {
     removed,
     memberLive: async () => true,
     isStaff: async () => false,
-    toolEnabled: async (tool) => AI_TOOL_FLAG_DEFAULTS[tool],
+    toolEnabled: async () => toolOn,
     consentByJob: async (jobId) => consents.get(jobId) ?? null,
     jobById: async (jobId) => jobs.get(jobId) ?? null,
     outputByJob: async (jobId) => outputs.get(jobId) ?? null,

@@ -11,6 +11,7 @@ import {
 } from '../../../supabase/functions/_shared/ai_tools.ts'
 import type { StubOutput } from '../../../supabase/functions/ai-tool-job/tools/types.ts'
 import { AiToolForm, AiToolJobStatus, AiToolReport, AiToolShell } from '../../components/ai/AiToolDesk'
+import { AI_UI } from '../../lib/aiToolUi'
 import {
   acceptAiToolFile,
   listAiToolJobs,
@@ -34,12 +35,10 @@ export function AiToolPage() {
   const { toolSlug, jobId } = useParams()
   const tool = toolFromSlug(toolSlug)
   const navigate = useNavigate()
-  const { userId, staffRole } = useMember()
-  const staff = staffRole !== null
+  const { userId } = useMember()
   const { lang } = useSiteLanguage()
   const [load, setLoad] = useState<Load>('loading')
   const [retentionDays, setRetentionDays] = useState(30)
-  const [enabled, setEnabled] = useState(true)
   const [attempt, setAttempt] = useState(0)
   const [consented, setConsented] = useState(false)
   const [file, setFile] = useState<File | null>(null)
@@ -50,7 +49,7 @@ export function AiToolPage() {
   const [jobStatus, setJobStatus] = useState('')
   const [jobStep, setJobStep] = useState('')
   const [pendingDelete, setPendingDelete] = useState<string | null>(null)
-  const queryKey = `${tool ?? ''}|${jobId ?? ''}|${attempt}|${staff ? 'staff' : 'member'}`
+  const queryKey = `${tool ?? ''}|${jobId ?? ''}|${attempt}`
   const [seenQuery, setSeenQuery] = useState(queryKey)
   if (seenQuery !== queryKey) {
     setSeenQuery(queryKey)
@@ -71,8 +70,7 @@ export function AiToolPage() {
       }
       setRetentionDays(frame.retentionDays)
       const on = frame.flags[tool]
-      setEnabled(on)
-      if (!on && !staff) {
+      if (!on) {
         setLoad('denied')
         return
       }
@@ -104,7 +102,7 @@ export function AiToolPage() {
     return () => {
       cancelled = true
     }
-  }, [attempt, jobId, staff, tool])
+  }, [attempt, jobId, tool])
 
   if (!tool) {
     return (
@@ -112,6 +110,7 @@ export function AiToolPage() {
     )
   }
 
+  const ui = AI_UI[lang]
   const slots = legalSlotsFromEnv(retentionDays, formatReportDate(new Date()))
   const copy = renderToolCopy(tool, lang, slots)
   const reportDate = output?.generated_on || slots.date
@@ -179,28 +178,34 @@ export function AiToolPage() {
   }
 
   return (
-    <AiToolShell lang={lang} title={copy.title} offForMembers={!enabled && staff}>
+    <AiToolShell lang={lang} title={copy.title}>
       <p className="mb-4">
         <Link to="/dashboard/ai" className="inline-flex min-h-11 items-center text-[0.95rem] font-semibold text-[var(--ba-indigo)]">
-          All tools
+          {ui.allTools}
         </Link>
       </p>
       {load === 'loading' ? <FormSkeleton tone="member" /> : null}
       {load === 'error' ? (
         <ErrorBanner
           tone="member"
-          message="Could not load this tool. Retry."
-          retryLabel="Retry"
+          message={ui.loadError}
+          retryLabel={ui.retry}
           onRetry={() => setAttempt((value) => value + 1)}
         />
       ) : null}
-      {load === 'denied' ? <PermissionState tone="member" message="This tool is off for members." /> : null}
+      {load === 'denied' ? (
+        <div data-ai-unavailable="">
+          <h2 className="font-display text-[1.6rem] font-semibold">{ui.unavailableTitle}</h2>
+          <p className="mt-3 text-[1rem] leading-relaxed text-ink/70">{ui.unavailable}</p>
+        </div>
+      ) : null}
       {load === 'ready' && output ? (
         <div className="space-y-4">
           {jobStatus ? <AiToolJobStatus status={jobStatus} step={jobStep} /> : null}
           <AiToolReport
             output={output}
             lang={lang}
+            heading={reportCopy.title}
             footerLead={reportCopy.footerLead}
             footerShared={reportCopy.footerShared}
             onDelete={() => jobId && setPendingDelete(jobId)}
@@ -230,7 +235,7 @@ export function AiToolPage() {
             }}
             onRun={() => void onRun()}
           />
-          <Notes notes={notes} tool={tool} onDelete={setPendingDelete} />
+          <Notes notes={notes} tool={tool} lang={lang} onDelete={setPendingDelete} />
         </>
       ) : null}
       {pendingDelete ? (
@@ -252,17 +257,20 @@ export function AiToolPage() {
 function Notes({
   notes,
   tool,
+  lang,
   onDelete,
 }: {
   notes: AiToolNote[]
   tool: AiToolKey
+  lang: 'en' | 'ar'
   onDelete: (id: string) => void
 }) {
+  const ui = AI_UI[lang]
   return (
-    <section className="mt-10" aria-label="Prior notes">
-      <h2 className="font-display text-[1.35rem] font-semibold">Prior notes</h2>
+    <section className="mt-10" aria-label={ui.prior}>
+      <h2 className="font-display text-[1.35rem] font-semibold">{ui.prior}</h2>
       {notes.length === 0 ? (
-        <p className="mt-3 text-[1rem] text-ink/65">No earlier checks yet. Run one when you are ready.</p>
+        <p className="mt-3 text-[1rem] text-ink/65">{ui.priorEmpty}</p>
       ) : (
         <ul className="mt-4 space-y-3">
           {notes.map((note) => (
@@ -275,7 +283,7 @@ function Notes({
                 className="inline-flex min-h-11 items-center border-s border-[var(--ba-line)] px-4 text-[0.95rem] font-semibold"
                 onClick={() => onDelete(note.id)}
               >
-                Delete
+                {ui.delete}
               </button>
             </li>
           ))}

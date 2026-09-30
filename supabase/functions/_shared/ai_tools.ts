@@ -9,10 +9,10 @@ export type AiToolKey = (typeof AI_TOOL_KEYS)[number]
 
 export const AI_TOOL_ORDER: readonly AiToolKey[] = AI_TOOL_KEYS
 
-/** Staff flags. Term sheet and pricing stay off until a later launch. */
+/** All four stay off until a later tool PR turns its own flag on. */
 export const AI_TOOL_FLAG_DEFAULTS: Record<AiToolKey, boolean> = {
-  cfo_check: true,
-  market_brief: true,
+  cfo_check: false,
+  market_brief: false,
   term_sheet_review: false,
   pricing_sense_check: false,
 }
@@ -127,8 +127,9 @@ export function formatReportDate(date: Date): string {
   return `${day} ${month} ${date.getUTCFullYear()}`
 }
 
-export function visibleAiTools(flags: Record<AiToolKey, boolean>, staff: boolean): AiToolKey[] {
-  return AI_TOOL_ORDER.filter((key) => staff || flags[key])
+/** Members only see tools whose flag is on. */
+export function visibleAiTools(flags: Record<AiToolKey, boolean>): AiToolKey[] {
+  return AI_TOOL_ORDER.filter((key) => flags[key])
 }
 
 export type ConsentRow = {

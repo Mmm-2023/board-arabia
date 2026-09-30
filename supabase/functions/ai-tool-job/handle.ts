@@ -141,9 +141,8 @@ async function startJob(
     return jsonResponse(req, { error: AI_TOOL_MESSAGES.unauthorized, code: 'forbidden' }, 403)
   }
   const enabled = await store.toolEnabled(tool)
-  const staff = await store.isStaff(userId)
   const on = enabled === null ? AI_TOOL_FLAG_DEFAULTS[tool] : enabled
-  if (!on && !staff) return jsonResponse(req, { error: AI_TOOL_MESSAGES.off, code: 'tool_off' }, 403)
+  if (!on) return jsonResponse(req, { error: AI_TOOL_MESSAGES.off, code: 'tool_off' }, 403)
 
   const consent = await store.consentByJob(jobId)
   if (!consentMatches(consent, userId, tool, jobId)) {
