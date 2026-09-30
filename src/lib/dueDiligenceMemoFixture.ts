@@ -9,6 +9,7 @@ import {
   DEGRADED_NOTE_MODEL_PARTIAL,
   DEGRADED_NOTE_SEARCH,
   extractDeckFacts,
+  NOT_STATED,
   type BuiltReport,
 } from '../../supabase/functions/_shared/due_diligence.ts'
 
@@ -257,6 +258,115 @@ export function rangeBreachReport(): BuiltReport {
   report.company_label = 'Northwind Freight'
   report.model_id = 'unit-model-id'
   report.model_skip_reason = null
+  return report
+}
+
+/** Mirrors a stored draft row: analysis present, claims empty, public checks not run. Example data only. */
+export function exampleCoRaw(): Record<string, unknown> {
+  return {
+    meta: {
+      company: 'Example Co',
+      document: 'Example seed deck',
+      as_of: '2026-09-30',
+      review_type: 'deck_only',
+      disclaimer:
+        'Document review only. Illustrative. Not investment advice, not an audit, and not a substitute for legal, financial, or regulatory diligence.',
+    },
+    snapshot: {
+      one_liner: 'Example Co wants a seed round to run a pilot cold-chain lane.',
+      round: { amount: 4500000, equity_pct: 15, pre_money: 25500000, post_money: 30000000, currency: 'USD' },
+      stage: 'pilot',
+      posture: 'evidence_required',
+      posture_reason: 'The spreadsheet is coherent, and proof of customers is missing.',
+    },
+    scores: {
+      story_clarity: 2,
+      unit_economics: 2,
+      model_integrity: 2,
+      traction_evidence: 2,
+      team_and_governance: 2,
+      regulatory_and_operations: 2,
+      market_and_competition: 2,
+      use_of_funds: 2,
+      valuation_fit: 2,
+      overall: 2,
+    },
+    claims: [
+      {
+        claim: 'The gauge reads 40 celsius, which is inside the 2 to 8 celsius band.',
+        page: '4',
+        status: 'supported_in_deck',
+        note: 'Deck-stated.',
+      },
+    ],
+    math_checks: [
+      {
+        name: 'Post-money',
+        formula: '25,500,000 + 4,500,000',
+        deck_value: '30,000,000',
+        recomputed: '30,000,000',
+        result: 'ties',
+      },
+    ],
+    unit_economics: {
+      unit: 'lane month',
+      price: '900 USD',
+      full_cost: '1,100 USD',
+      break_even_volume: '310 months',
+      year1_volume_assumption: '220 months',
+      year1_vs_breakeven: 'below',
+      comment: 'Year-1 volume is below the break-even volume stated in the deck.',
+    },
+    risks: [
+      {
+        title: 'No named customers',
+        severity: 'high',
+        why: 'The deck names a target account, not a signed customer.',
+        evidence_that_would_retire_it: 'A contract or paid invoice.',
+      },
+    ],
+    missing: ['Cap table'],
+    questions_for_management: [
+      'Which customer has paid, and for how many months?',
+      'What reading should replace the value outside the stated band?',
+    ],
+    suggested_structure: {
+      comment: 'Release the round in two tranches.',
+      tranches: [{ name: 'First', release_when: 'A signed customer is named.' }],
+    },
+    memo_markdown:
+      'The gauge reads 40 celsius, which is inside the 2 to 8 celsius band.\n\nThe round arithmetic ties. Proof of customers is still missing.',
+    hero: {
+      company: 'Example Co',
+      one_liner: 'Example Co wants a seed round to run a pilot cold-chain lane.',
+      posture: 'evidence_required',
+      overall: 2,
+      pre_money: 25500000,
+      post_money: 30000000,
+      currency: 'USD',
+    },
+  }
+}
+
+export function exampleCoReport(): BuiltReport {
+  const analysis = parseDeckAnalysis(exampleCoRaw())
+  if (!analysis) throw new Error('example draft did not parse')
+  const report = buildReport(
+    {
+      company: 'Example Co',
+      sector: NOT_STATED,
+      ask: 'Raise of 4500000 USD for 15% equity',
+      claims: [],
+    },
+    [],
+    { degradedNotes: [DEGRADED_NOTE_SEARCH] },
+  )
+  report.analysis = analysis
+  report.claims = []
+  report.company_label = 'Example Co'
+  report.sector_label = NOT_STATED
+  report.ask_label = 'Raise of 4500000 USD for 15% equity'
+  report.sources = []
   return report
 }
 

@@ -3,7 +3,7 @@
  * Citations are only pages actually retrieved. Unknown stays unknown.
  */
 
-import { readStoredAnalysis, type DeckAnalysis } from './deck_analysis.ts'
+import { preferredAsk, preferredCompany, readStoredAnalysis, type DeckAnalysis } from './deck_analysis.ts'
 
 export const DECK_BUCKET = 'due-diligence-decks'
 
@@ -864,6 +864,57 @@ export function modelJobFields(input: { modelId: string | null; skipReason: stri
     model_id: modelId || null,
     model_skip_reason: reason || null,
   }
+}
+
+/** Memo view whenever analysis parsed. Status and the claims list do not choose it. */
+export function showsAnalysisReport(report: {
+  analysis?: DeckAnalysis | null
+  claims: readonly unknown[]
+  analysis_status?: string | null
+}): boolean {
+  return report.analysis != null
+}
+
+/** Compose stores ready when an analysis exists. Draft stays the fallback and is not a certified record. */
+export function analysisStatusFor(analysis: DeckAnalysis | null): 'draft' | 'ready' {
+  return analysis ? 'ready' : 'draft'
+}
+
+/** Deck claims for the claims-only view when the local extract found none. */
+export function claimsFromAnalysis(analysis: DeckAnalysis): DeckClaim[] {
+  const claims: DeckClaim[] = []
+  const seen = new Set<string>()
+  for (const item of analysis.claims) {
+    if (claims.length >= 8) break
+    const text = item.claim.replace(/\s+/g, ' ').trim()
+    if (text.length < 8 || text.length > 400) continue
+    const key = text.toLowerCase()
+    if (seen.has(key)) continue
+    seen.add(key)
+    claims.push({ text, kind: kindForAnalysisClaim(text) })
+  }
+  return claims
+}
+
+export function applyAnalysisFacts(facts: DeckFacts, analysis: DeckAnalysis | null): DeckFacts {
+  if (!analysis) return facts
+  const company = preferredCompany(analysis.meta.company)
+  const ask = preferredAsk(analysis.snapshot.round)
+  return {
+    company: company || facts.company,
+    sector: facts.sector,
+    ask: ask || facts.ask,
+    claims: facts.claims.length > 0 ? facts.claims : claimsFromAnalysis(analysis),
+  }
+}
+
+function kindForAnalysisClaim(text: string): ClaimKind {
+  const value = text.toLowerCase()
+  if (/\b(founder|founders|director|directors|ceo|team)\b/.test(value)) return 'team'
+  if (/\b(customer|customers|revenue|pilot|traction|partner|partnership)\b/.test(value)) return 'traction'
+  if (/\b(market|tam|growth)\b/.test(value)) return 'market'
+  if (/\b(patent|trademark|intellectual property)\b/.test(value)) return 'ip'
+  return 'other'
 }
 
 export function buildReport(

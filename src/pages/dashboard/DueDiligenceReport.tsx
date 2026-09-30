@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import {
   degradedBannerText,
+  DEGRADED_NOTE_SEARCH,
   isDegradedCompact,
   parsePublicHttpsUrl,
+  showsAnalysisReport,
   VERDICT_SHORT,
   type BuiltReport,
   type ClaimVerdict,
@@ -39,11 +41,13 @@ export function DueDiligenceReport({
   const compact = isDegradedCompact(report)
   const banner = degradedBannerText(degraded)
   const analysis = report.analysis ?? null
+  const searchSkipped = degraded.includes(DEGRADED_NOTE_SEARCH)
+  const analysisBanner = degradedBannerText(degraded.filter((note) => note !== DEGRADED_NOTE_SEARCH))
 
-  if (analysis) {
+  if (showsAnalysisReport(report) && analysis) {
     return (
-      <article className="mt-6">
-        {banner ? (
+      <article className="mt-6" data-dd-view="analysis">
+        {analysisBanner ? (
           <div
             role="status"
             data-dd-degraded="true"
@@ -51,8 +55,13 @@ export function DueDiligenceReport({
             className="max-w-3xl rounded-xl border border-[var(--ba-line)] border-s-2 border-s-[var(--ba-copper)] bg-[var(--ba-porcelain)] px-4 py-3"
           >
             <p className="text-[0.82rem] font-semibold text-[var(--ba-copper-deep)]">{REPORT_COPY.degradedLabel}</p>
-            <p className="mt-2 text-[1rem] leading-relaxed text-ink">{banner}</p>
+            <p className="mt-2 text-[1rem] leading-relaxed text-ink">{analysisBanner}</p>
           </div>
+        ) : null}
+        {searchSkipped ? (
+          <p className="mt-3 max-w-3xl text-[0.92rem] leading-relaxed text-[var(--ba-muted)]" data-dd-search-note="true">
+            {DEGRADED_NOTE_SEARCH}
+          </p>
         ) : null}
         <DueDiligenceMemo analysis={analysis} companyLabel={report.company_label} preparedAt={preparedAt} />
         <p className="mt-4 max-w-3xl text-[0.95rem] leading-relaxed text-ink/80">{report.disclaimer}</p>
@@ -77,7 +86,7 @@ export function DueDiligenceReport({
   }
 
   return (
-    <article className="mt-6">
+    <article className="mt-6" data-dd-view="claims">
       {banner ? (
         <div
           role="status"
@@ -238,10 +247,6 @@ function DeckSummary({ claims }: { claims: BuiltReport['claims'] }) {
           {claims.map((claim) => (
             <li key={claim.text} className="rounded-xl border border-[var(--ba-line)] bg-white px-4 py-3">
               <p className="text-[1rem] leading-relaxed font-semibold break-words text-ink">{claim.text}</p>
-              <div className="mt-2">
-                <StatusPill verdict="insufficient_public_data" />
-              </div>
-              <p className="mt-2 text-[0.95rem] leading-relaxed text-[var(--ba-muted)]">{REPORT_COPY.unverifiedBecause}</p>
             </li>
           ))}
         </ul>
