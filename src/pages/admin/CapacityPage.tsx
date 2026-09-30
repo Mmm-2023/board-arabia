@@ -3,14 +3,13 @@ import { seatLine } from '../../lib/platformStats'
 import { useNoIndex } from '../../lib/usePageTitle'
 import { CardSkeleton, toneClasses } from '../../shell/ViewState'
 import { STAFF_VIEWS } from '../../shell/viewCopy'
+import { PanelNotice } from './bits'
 import { useAdmin } from './context'
 
 export function CapacityPage() {
   const room = useAdmin()
   const styles = toneClasses('staff')
   useNoIndex('Capacity | Board Arabia')
-
-  if (!room.refreshedAt && room.refreshError && !room.capacity) return null
 
   if (room.loading && !room.capacity && !room.listError) {
     return <CardSkeleton tone="staff" label="Loading capacity" />
@@ -31,12 +30,17 @@ export function CapacityPage() {
         <h2 className={`text-[0.72rem] font-semibold tracking-[0.12em] uppercase ${styles.quiet}`}>
           Founding 100
         </h2>
+        {room.panelFailed.capacity ? (
+          <div className="mt-4">
+            <PanelNotice />
+          </div>
+        ) : null}
         {room.capacity ? (
           <div className="mt-4 space-y-4">
             <Meter label="Saudi Arabia" value={room.capacity.ksa} cap={room.capacity.ksa_cap} />
             <Meter label="International" value={room.capacity.intl} cap={room.capacity.intl_cap} />
           </div>
-        ) : (
+        ) : room.panelFailed.capacity ? null : (
           <p className={`mt-3 ${styles.muted}`}>
             Saudi Arabia 0 · International 0. Totals are unavailable right now.
           </p>

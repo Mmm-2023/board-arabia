@@ -7,7 +7,7 @@ import { useNoIndex } from '../../lib/usePageTitle'
 import { ConfirmDialog } from '../../shell/ConfirmDialog'
 import { CardSkeleton, EmptyState, FilteredZero } from '../../shell/ViewState'
 import { STAFF_VIEWS } from '../../shell/viewCopy'
-import { StatusBadge, peerMeta } from './bits'
+import { PanelNotice, StatusBadge, peerMeta } from './bits'
 import { useAdmin } from './context'
 
 type AppFilter = 'all' | 'pending' | 'review' | 'admitted' | 'closed'
@@ -25,8 +25,6 @@ export function ApplicationsPage() {
   const [filter, setFilter] = useState<AppFilter>('all')
   const [rejecting, setRejecting] = useState<Application | null>(null)
   useNoIndex('Applications | Board Arabia')
-
-  if (!room.refreshedAt && room.refreshError && room.apps.length === 0) return null
 
   if (room.loading && room.apps.length === 0 && !room.listError) {
     return <CardSkeleton tone="staff" label="Loading applications" />
@@ -59,11 +57,16 @@ export function ApplicationsPage() {
         ))}
       </div>
 
-      {room.apps.length === 0 ? (
+      {room.panelFailed.applications ? (
+        <div className="mt-6 border border-pearl/10 px-5 py-4">
+          <PanelNotice />
+        </div>
+      ) : null}
+      {room.apps.length === 0 && !room.panelFailed.applications ? (
         <div className="mt-6">
           <EmptyState tone="staff" message={STAFF_VIEWS.applications.empty} />
         </div>
-      ) : visible.length === 0 ? (
+      ) : room.apps.length > 0 && visible.length === 0 ? (
         <div className="mt-6">
           <FilteredZero
             tone="staff"
@@ -72,7 +75,7 @@ export function ApplicationsPage() {
             onClear={() => setFilter('all')}
           />
         </div>
-      ) : (
+      ) : room.apps.length > 0 ? (
         <ul className="mt-6 space-y-4">
           {visible.map((app) => (
             <li key={app.id} className="border border-pearl/10 bg-pearl/[0.03] px-5 py-5 md:px-6">
@@ -244,7 +247,7 @@ export function ApplicationsPage() {
             </li>
           ))}
         </ul>
-      )}
+      ) : null}
 
       {rejecting && (
         <ConfirmDialog

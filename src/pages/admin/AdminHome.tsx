@@ -1,9 +1,11 @@
+import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { formatPublicUsd } from '../../lib/capacity'
 import { seatLine } from '../../lib/platformStats'
 import { useNoIndex } from '../../lib/usePageTitle'
 import { EmptyState, HomeSkeleton, toneClasses } from '../../shell/ViewState'
 import { STAFF_VIEWS } from '../../shell/viewCopy'
+import { PanelNotice } from './bits'
 import { MandateIntroQueue } from './MandateIntroQueue'
 import { ReIntroQueue } from './ReIntroQueue'
 import { RePartnerIntroQueue } from './RePartnerIntroQueue'
@@ -14,13 +16,34 @@ import { useAdmin } from './context'
 
 export function AdminHome() {
   const room = useAdmin()
-  const styles = toneClasses('staff')
   useNoIndex('Home | Board Arabia')
-
-  if (!room.refreshedAt && room.refreshError) return null
 
   if (room.loading && !room.hasLoaded) return <HomeSkeleton tone="staff" />
 
+  return (
+    <StaffDesk>
+      <div id="mandate-intro-queue" className="scroll-mt-24">
+        <MandateIntroQueue />
+      </div>
+      <ReIntroQueue />
+      <RePartnerIntroQueue />
+      <p className="mt-6">
+        <Link
+          to="/admin/people/intros"
+          className="inline-flex min-h-11 items-center text-[0.75rem] font-semibold tracking-[0.08em] text-brass-bright uppercase"
+        >
+          All intros
+        </Link>
+      </p>
+      <ReReadinessPanel />
+      <RePartnersPanel />
+    </StaffDesk>
+  )
+}
+
+export function StaffDesk({ children }: { children?: ReactNode }) {
+  const room = useAdmin()
+  const styles = toneClasses('staff')
   const pending = room.apps.filter((row) => row.status === 'pending')
   const failedMail = room.events.filter((row) => row.status === 'error' || row.status === 'failed')
   const awaiting = room.peerInvites.filter((row) => row.status === 'pending' || row.status === 'opened')
@@ -53,12 +76,26 @@ export function AdminHome() {
         <h2 className={`text-[0.72rem] font-semibold tracking-[0.14em] uppercase ${styles.quiet}`}>
           Needs attention
         </h2>
-        {!attention ? (
+        {room.panelFailed.invites ? (
+          <div className="mt-3">
+            <PanelNotice />
+          </div>
+        ) : null}
+        {room.panelFailed.applications && room.apps.length === 0 && !attention ? (
+          <div className="mt-3">
+            <PanelNotice />
+          </div>
+        ) : !attention ? (
           <div className="mt-3">
             <EmptyState tone="staff" message={STAFF_VIEWS.home.empty} action={{ label: 'People', to: '/admin/people' }} />
           </div>
         ) : (
           <ul className="mt-3 space-y-3">
+            {room.panelFailed.applications ? (
+              <li className={`${styles.panel} px-4 py-4`}>
+                <PanelNotice />
+              </li>
+            ) : null}
             {pending.length > 0 && (
               <li className={`${styles.panel} px-4 py-4`}>
                 <p className="font-display text-[1.4rem] font-semibold">{pending.length}</p>
@@ -93,21 +130,7 @@ export function AdminHome() {
         )}
       </section>
 
-      <div id="mandate-intro-queue" className="scroll-mt-24">
-        <MandateIntroQueue />
-      </div>
-      <ReIntroQueue />
-      <RePartnerIntroQueue />
-      <p className="mt-6">
-        <Link
-          to="/admin/people/intros"
-          className="inline-flex min-h-11 items-center text-[0.75rem] font-semibold tracking-[0.08em] text-brass-bright uppercase"
-        >
-          All intros
-        </Link>
-      </p>
-      <ReReadinessPanel />
-      <RePartnersPanel />
+      {children}
 
       <section aria-label="Status" className="mt-8">
         <h2 className={`text-[0.72rem] font-semibold tracking-[0.14em] uppercase ${styles.quiet}`}>
@@ -118,22 +141,46 @@ export function AdminHome() {
             <p className={`text-[0.72rem] font-semibold tracking-[0.12em] uppercase ${styles.quiet}`}>
               Pending applications
             </p>
-            <p className="mt-2 font-display text-[1.6rem] font-semibold">{pending.length}</p>
+            {room.panelFailed.applications && room.apps.length === 0 ? (
+              <div className="mt-2">
+                <PanelNotice />
+              </div>
+            ) : (
+              <p className="mt-2 font-display text-[1.6rem] font-semibold">{pending.length}</p>
+            )}
+            {room.panelFailed.applications && room.apps.length > 0 ? (
+              <div className="mt-2">
+                <PanelNotice />
+              </div>
+            ) : null}
           </article>
           <article className={`${styles.panel} px-4 py-4`}>
             <p className={`text-[0.72rem] font-semibold tracking-[0.12em] uppercase ${styles.quiet}`}>
               Founding admitted
             </p>
-            <p className="mt-2 font-display text-[1.6rem] font-semibold">
-              {admitted ? admitted.label : room.capacity ? `${room.capacity.ksa + room.capacity.intl} / ${room.capacity.total_cap}` : '0 / 100'}
-            </p>
-            <p className={`mt-1 text-[0.9rem] ${styles.muted}`}>
-              {admitted
-                ? admitted.split
-                : room.capacity
-                  ? `Saudi Arabia ${room.capacity.ksa} · International ${room.capacity.intl}`
-                  : 'Saudi Arabia 0 · International 0'}
-            </p>
+            {room.panelFailed.capacity && !room.capacity && !admitted ? (
+              <div className="mt-2">
+                <PanelNotice />
+              </div>
+            ) : (
+              <>
+                <p className="mt-2 font-display text-[1.6rem] font-semibold">
+                  {admitted ? admitted.label : room.capacity ? `${room.capacity.ksa + room.capacity.intl} / ${room.capacity.total_cap}` : '0 / 100'}
+                </p>
+                <p className={`mt-1 text-[0.9rem] ${styles.muted}`}>
+                  {admitted
+                    ? admitted.split
+                    : room.capacity
+                      ? `Saudi Arabia ${room.capacity.ksa} · International ${room.capacity.intl}`
+                      : 'Saudi Arabia 0 · International 0'}
+                </p>
+                {room.panelFailed.capacity ? (
+                  <div className="mt-2">
+                    <PanelNotice />
+                  </div>
+                ) : null}
+              </>
+            )}
           </article>
           <article className={`${styles.panel} px-4 py-4 sm:col-span-2`}>
             <p className={`text-[0.72rem] font-semibold tracking-[0.12em] uppercase ${styles.quiet}`}>
@@ -150,13 +197,29 @@ export function AdminHome() {
             <p className={`text-[0.72rem] font-semibold tracking-[0.12em] uppercase ${styles.quiet}`}>
               Admins
             </p>
-            <p className="mt-2 font-display text-[1.6rem] font-semibold">{admins}</p>
+            {room.panelFailed.staff && room.staffRows.length === 0 ? (
+              <div className="mt-2">
+                <PanelNotice />
+              </div>
+            ) : (
+              <p className="mt-2 font-display text-[1.6rem] font-semibold">{admins}</p>
+            )}
+            {room.panelFailed.staff && room.staffRows.length > 0 ? (
+              <div className="mt-2">
+                <PanelNotice />
+              </div>
+            ) : null}
           </article>
           <article className={`${styles.panel} px-4 py-4`}>
             <p className={`text-[0.72rem] font-semibold tracking-[0.12em] uppercase ${styles.quiet}`}>
               Sponsors
             </p>
             <p className="mt-2 font-display text-[1.6rem] font-semibold">{sponsors}</p>
+            {room.panelFailed.members ? (
+              <div className="mt-2">
+                <PanelNotice />
+              </div>
+            ) : null}
           </article>
         </div>
       </section>
@@ -194,9 +257,15 @@ export function AdminHome() {
         <h2 className={`text-[0.72rem] font-semibold tracking-[0.14em] uppercase ${styles.quiet}`}>
           Recent email
         </h2>
-        {recent.length === 0 ? (
+        {room.panelFailed.email ? (
+          <div className={`${styles.panel} mt-3 px-4 py-4`}>
+            <PanelNotice />
+          </div>
+        ) : null}
+        {recent.length === 0 && !room.panelFailed.email ? (
           <p className={`mt-3 ${styles.muted}`}>No email events yet.</p>
-        ) : (
+        ) : null}
+        {recent.length > 0 ? (
           <ul className="mt-3 space-y-3">
             {recent.map((event) => (
               <li key={event.id} className={`${styles.panel} px-4 py-3`}>
@@ -207,7 +276,7 @@ export function AdminHome() {
               </li>
             ))}
           </ul>
-        )}
+        ) : null}
         <Link to="/admin/email" className="mt-3 inline-flex min-h-11 items-center text-[0.75rem] font-semibold tracking-[0.08em] text-brass-bright uppercase">
           Email
         </Link>

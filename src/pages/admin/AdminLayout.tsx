@@ -2,8 +2,6 @@ import { Navigate, Outlet, useLocation } from 'react-router-dom'
 import { clientAdminGate } from '../../../supabase/functions/_shared/staff_auth.ts'
 import { AppShell } from '../../shell/AppShell'
 import { STAFF_DESTINATIONS, STAFF_SECONDARY, formatUpdated } from '../../shell/destinations'
-import { ErrorBanner } from '../../shell/ViewState'
-import { STAFF_VIEWS } from '../../shell/viewCopy'
 import { currentReturnPath, loginHref } from '../../lib/returnPath'
 import { useNoIndex } from '../../lib/usePageTitle'
 import { AdminProvider, useAdmin } from './context'
@@ -51,16 +49,6 @@ function AdminFrame() {
       accountLabel={room.email}
     >
       <div className="mx-auto max-w-5xl">
-        {room.refreshError && (
-          <div className="mb-4">
-            <ErrorBanner
-              tone="staff"
-              message={room.queryDetail ? `${room.refreshError} ${room.queryDetail}` : room.refreshError}
-              onRetry={room.refresh}
-              retryLabel={STAFF_VIEWS.home.retry}
-            />
-          </div>
-        )}
         {room.listError && (
           <p className="mb-4 text-[0.95rem] text-red-300" role="alert">
             {room.listError}

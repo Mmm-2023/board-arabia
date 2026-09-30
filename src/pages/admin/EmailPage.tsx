@@ -1,12 +1,11 @@
 import { useNoIndex } from '../../lib/usePageTitle'
 import { CardSkeleton, EmptyState } from '../../shell/ViewState'
+import { PanelNotice } from './bits'
 import { useAdmin } from './context'
 
 export function EmailPage() {
   const room = useAdmin()
   useNoIndex('Email | Board Arabia')
-
-  if (!room.refreshedAt && room.refreshError && room.events.length === 0) return null
 
   if (room.loading && room.events.length === 0 && !room.listError) {
     return <CardSkeleton tone="staff" label="Loading email" />
@@ -16,11 +15,17 @@ export function EmailPage() {
     <div className="max-w-3xl">
       <h1 className="font-display text-[2rem] font-semibold tracking-[-0.03em]">Email</h1>
       <p className="mt-2 text-[0.95rem] text-stone/65">Kind, recipient, subject, and status only.</p>
-      {room.events.length === 0 ? (
+      {room.panelFailed.email ? (
+        <div className="mt-6 border border-pearl/10 px-5 py-4">
+          <PanelNotice />
+        </div>
+      ) : null}
+      {room.events.length === 0 && !room.panelFailed.email ? (
         <div className="mt-6">
           <EmptyState tone="staff" message="No email events yet." />
         </div>
-      ) : (
+      ) : null}
+      {room.events.length > 0 ? (
         <ul className="mt-6 space-y-3">
           {room.events.map((event) => (
             <li key={event.id} className="border border-pearl/10 px-5 py-4">
@@ -42,7 +47,7 @@ export function EmailPage() {
             </li>
           ))}
         </ul>
-      )}
+      ) : null}
     </div>
   )
 }

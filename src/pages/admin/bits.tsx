@@ -1,4 +1,5 @@
 import { seatLabel } from '../../lib/member'
+import { ADMIN_PANEL_NOTICE } from '../../shell/viewCopy'
 import { sponsorSeatHolders } from '../../lib/sponsorSeat'
 import type {
   Application,
@@ -52,6 +53,14 @@ export function peerMeta(rows: MemberInviteAdminRow[], app: Application) {
   if (!row) return ''
   const channel = row.channel === 'whatsapp' ? 'WhatsApp' : 'Email'
   return `${channel} · ${row.status}`
+}
+
+export function PanelNotice() {
+  return (
+    <p role="alert" className="text-[0.95rem] leading-relaxed text-pearl/80">
+      {ADMIN_PANEL_NOTICE}
+    </p>
+  )
 }
 
 export function StatusBadge({ status }: { status: ApplicationStatus }) {
