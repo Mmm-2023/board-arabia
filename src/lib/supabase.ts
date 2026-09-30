@@ -195,6 +195,47 @@ export async function requestMembership(body: Record<string, unknown>): Promise<
   }
 }
 
+export async function fetchMarketingFunnel(
+  from: string,
+  to: string,
+  channel: string,
+): Promise<{ data?: unknown; error?: string; denied?: boolean }> {
+  const { data, error } = await supabase.rpc('marketing_funnel_counts', {
+    p_from: from,
+    p_to: to,
+    p_channel: channel,
+  })
+  if (error) {
+    const denied = error.code === '42501' || /forbidden/i.test(error.message)
+    return { error: denied ? 'You do not have access to marketing counts.' : 'Marketing counts could not be loaded.', denied }
+  }
+  return { data }
+}
+
+export async function fetchMarketingStats(
+  from: string,
+  to: string,
+  channel: string,
+): Promise<{ status: 'ok' | 'not_live' | 'error'; body?: unknown; lastGoodAt?: string | null }> {
+  try {
+    const res = await fetch(`${functionsBase}/marketing-stats`, {
+      method: 'POST',
+      headers: await staffHeaders(),
+      body: JSON.stringify({ from, to, channel }),
+    })
+    if (res.status === 403) return { status: 'error' }
+    if (res.status === 404) return { status: 'not_live' }
+    const payload = (await res.json().catch(() => null)) as { status?: string; last_good_at?: string | null } | null
+    if (!payload) return { status: 'not_live' }
+    if (payload.status === 'not_live') return { status: 'not_live' }
+    if (payload.status === 'error') return { status: 'error', lastGoodAt: payload.last_good_at ?? null }
+    if (payload.status === 'ok') return { status: 'ok', body: payload }
+    return { status: 'not_live' }
+  } catch {
+    return { status: 'not_live' }
+  }
+}
+
 export async function reviewMembership(body: Record<string, unknown>): Promise<{ error?: string; state?: string }> {
   try {
     const res = await fetch(`${functionsBase}/review-membership`, {

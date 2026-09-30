@@ -79,6 +79,7 @@ export function memberAccountLinks(seat: string | null | undefined): readonly Se
 export const MEMBER_SECONDARY = MEMBER_ACCOUNT
 
 export const STAFF_SECONDARY: readonly SecondaryLink[] = [
+  { id: 'marketing', label: 'Marketing', to: '/admin/marketing' },
   { id: 'majlis', label: 'Majlis', to: '/admin/majlis' },
   { id: 'mandates', label: 'Mandates', to: '/admin/mandates' },
   { id: 'rooms', label: 'Rooms', to: '/admin/rooms' },

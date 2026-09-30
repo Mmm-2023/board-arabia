@@ -43,6 +43,8 @@ function AdminFrame() {
 }
 
 function StaffFrame({ room }: { room: ReturnType<typeof useAdmin> }) {
+  const location = useLocation()
+  const wide = location.pathname === '/admin/marketing' || location.pathname.startsWith('/admin/marketing/')
   useEffect(() => {
     noteStaffSession(true)
     const secure = window.location.protocol === 'https:'
@@ -63,7 +65,7 @@ function StaffFrame({ room }: { room: ReturnType<typeof useAdmin> }) {
       onSignOut={() => void room.signOut()}
       accountLabel={room.email}
     >
-      <div className="mx-auto max-w-5xl">
+      <div className={wide ? 'mx-auto max-w-6xl' : 'mx-auto max-w-5xl'}>
         {room.listError && (
           <p className="mb-4 text-[0.95rem] text-red-300" role="alert">
             {room.listError}
