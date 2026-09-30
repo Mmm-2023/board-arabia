@@ -251,7 +251,7 @@ export function AiToolReport({
           {output.metrics.map((item) => (
             <div key={item.label} className="min-w-0 border border-[var(--ba-line)] bg-[var(--ba-lavender-mist)] px-3 py-3">
               <dt className="text-[0.72rem] font-semibold tracking-[0.12em] text-[var(--ba-indigo)] uppercase">{item.label}</dt>
-              <dd className="mt-1 font-display text-[1.45rem] font-semibold break-words">{item.value}</dd>
+              <dd dir="ltr" className="mt-1 text-start font-display text-[1.45rem] font-semibold break-words">{item.value}</dd>
               {item.note ? <dd className="mt-1 text-[0.92rem] leading-relaxed text-ink/70 break-words">{item.note}</dd> : null}
             </div>
           ))}

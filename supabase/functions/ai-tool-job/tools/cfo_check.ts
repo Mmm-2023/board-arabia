@@ -76,6 +76,11 @@ function emptyOutput(input: StubInput, lang: 'en' | 'ar'): StubOutput {
   }
 }
 
+function shown(lang: 'en' | 'ar', text: string): string {
+  if (lang === 'ar' && text.startsWith('-')) return `\u200E${text}`
+  return text
+}
+
 function computedOutput(input: StubInput, lang: 'en' | 'ar', read: CfoRead): StubOutput {
   const metrics = metricCards(read, lang)
   const redFlags = redFlagLines(read, lang)
@@ -106,15 +111,23 @@ function summary(input: StubInput, lang: 'en' | 'ar', read: CfoRead): string {
     )
   }
   if (read.grossMargin != null) {
-    bits.push(lang === 'ar' ? `هامش مجمل الربح ${formatPercent(read.grossMargin)}` : `gross margin is ${formatPercent(read.grossMargin)}`)
+    bits.push(
+      lang === 'ar'
+        ? `هامش مجمل الربح ${shown(lang, formatPercent(read.grossMargin))}`
+        : `gross margin is ${formatPercent(read.grossMargin)}`,
+    )
   }
   if (read.netMargin != null) {
-    bits.push(lang === 'ar' ? `هامش صافي الربح ${formatPercent(read.netMargin)}` : `net margin is ${formatPercent(read.netMargin)}`)
+    bits.push(
+      lang === 'ar'
+        ? `هامش صافي الربح ${shown(lang, formatPercent(read.netMargin))}`
+        : `net margin is ${formatPercent(read.netMargin)}`,
+    )
   }
   if (read.workingCapital != null) {
     bits.push(
       lang === 'ar'
-        ? `رأس المال العامل ${formatMoney(read.currency, read.workingCapital)}`
+        ? `رأس المال العامل ${shown(lang, formatMoney(read.currency, read.workingCapital))}`
         : `working capital is ${formatMoney(read.currency, read.workingCapital)}`,
     )
   }
@@ -159,7 +172,7 @@ function metricCards(read: CfoRead, lang: 'en' | 'ar'): CfoMetric[] {
   if (read.netMargin != null && read.revenue != null && read.netIncome != null) {
     cards.push({
       label: lang === 'ar' ? 'هامش صافي الربح' : 'Net margin',
-      value: formatPercent(read.netMargin),
+      value: shown(lang, formatPercent(read.netMargin)),
       note:
         lang === 'ar'
           ? `صافي الدخل ${incomePhrase(read, 'ar')} على إيراد ${formatMoney(read.currency, read.revenue)}.`
@@ -169,7 +182,7 @@ function metricCards(read: CfoRead, lang: 'en' | 'ar'): CfoMetric[] {
   if (read.workingCapital != null && read.currentAssets != null && read.currentLiabilities != null) {
     cards.push({
       label: lang === 'ar' ? 'رأس المال العامل' : 'Working capital',
-      value: formatMoney(read.currency, read.workingCapital),
+      value: shown(lang, formatMoney(read.currency, read.workingCapital)),
       note:
         lang === 'ar'
           ? `الأصول المتداولة ${formatMoney(read.currency, read.currentAssets)} ناقص الالتزامات المتداولة ${formatMoney(read.currency, read.currentLiabilities)}.`
@@ -215,14 +228,14 @@ function redFlagLines(read: CfoRead, lang: 'en' | 'ar'): string[] {
   if (read.workingCapital != null && read.workingCapital < 0) {
     flags.push(
       lang === 'ar'
-        ? `رأس المال العامل سالب عند ${formatMoney(read.currency, read.workingCapital)}. الالتزامات المتداولة أعلى من الأصول المتداولة.`
+        ? `رأس المال العامل سالب عند ${shown(lang, formatMoney(read.currency, read.workingCapital))}. الالتزامات المتداولة أعلى من الأصول المتداولة.`
         : `Working capital is negative at ${formatMoney(read.currency, read.workingCapital)}. Current liabilities are higher than current assets.`,
     )
   }
   if (read.grossMargin != null && read.grossMargin < 0) {
     flags.push(
       lang === 'ar'
-        ? `هامش مجمل الربح سالب (${formatPercent(read.grossMargin)}). تكلفة المبيعات أعلى من الإيراد في الملف.`
+        ? `هامش مجمل الربح سالب (${shown(lang, formatPercent(read.grossMargin))}). تكلفة المبيعات أعلى من الإيراد في الملف.`
         : `Gross margin is negative (${formatPercent(read.grossMargin)}). Cost of goods sold is higher than revenue in the file.`,
     )
   }
