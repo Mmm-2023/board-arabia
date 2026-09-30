@@ -111,7 +111,7 @@ export function AiToolPage() {
   }
 
   const ui = AI_UI[lang]
-  const slots = legalSlotsFromEnv(retentionDays, formatReportDate(new Date()))
+  const slots = legalSlotsFromEnv(retentionDays, formatReportDate(new Date()), lang)
   const copy = renderToolCopy(tool, lang, slots)
   const reportDate = output?.generated_on || slots.date
   const reportCopy = renderToolCopy(tool, lang, { ...slots, date: reportDate })

@@ -314,22 +314,20 @@ test('run stays disabled until consent is ticked', async () => {
   }
 })
 
-test('legal placeholders stay in one module until LEGAL-PAGES lands', () => {
+test('AI tool legal slots read the shared legal config', () => {
   const config = read('src/lib/aiToolConfig.ts')
-  assert.match(config, /VITE_LEGAL_ENTITY/)
-  assert.match(config, /VITE_LEGAL_CR/)
-  assert.match(config, /VITE_LEGAL_AI_PROVIDER/)
-  assert.match(config, /export const PRIVACY_LINK/)
-  assert.match(config, /export const TERMS_LINK/)
-  assert.equal(config.includes('src/config/legal.ts') && config.includes("from '../config/legal"), false)
-  let legalFile = false
-  try {
-    read('src/config/legal.ts')
-    legalFile = true
-  } catch {
-    legalFile = false
-  }
-  assert.equal(legalFile, false)
+  const legal = read('src/config/legal.ts')
+  assert.match(config, /from '\.\.\/config\/legal'/)
+  assert.equal(config.includes('VITE_LEGAL_'), false)
+  assert.match(config, /legalField\('baEntity'/)
+  assert.match(config, /legalField\('cr'/)
+  assert.match(config, /legalField\('aiProvider'/)
+  assert.match(config, /PRIVACY_LINK/)
+  assert.match(config, /TERMS_LINK/)
+  assert.match(legal, /VITE_LEGAL_BA_ENTITY/)
+  assert.match(legal, /VITE_LEGAL_CR/)
+  assert.match(legal, /VITE_LEGAL_AI_PROVIDER/)
+  assert.equal(legal.includes('VITE_LEGAL_ENTITY'), false)
 })
 
 test('with no env set, consent links point at the in-app pages', async () => {
@@ -341,6 +339,15 @@ test('with no env set, consent links point at the in-app pages', async () => {
     assert.equal(config.PRIVACY_LINK, '/privacy')
     assert.equal(config.TERMS_LINK, '/terms')
     const slots = config.legalSlotsFromEnv(30, '30 Sep 2026')
+    assert.equal(slots.entity, 'To be confirmed')
+    assert.equal(slots.cr, 'To be confirmed')
+    assert.equal(slots.provider, 'To be confirmed')
+    assert.equal(slots.privacy, '/privacy')
+    assert.equal(slots.terms, '/terms')
+    const arabicSlots = config.legalSlotsFromEnv(30, '30 Sep 2026', 'ar')
+    assert.equal(arabicSlots.entity, 'قيد التأكيد')
+    assert.equal(arabicSlots.cr, 'قيد التأكيد')
+    assert.equal(arabicSlots.provider, 'قيد التأكيد')
     const copy = copyMod.renderToolCopy('cfo_check', 'en', slots)
     const html = renderToStaticMarkup(
       createElement(

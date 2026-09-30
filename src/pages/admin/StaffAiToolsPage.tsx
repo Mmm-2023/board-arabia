@@ -79,7 +79,7 @@ export function StaffAiToolPage() {
     return <p className="text-pearl/80">{ui.unavailable}</p>
   }
 
-  const copy = renderToolCopy(tool, lang, legalSlotsFromEnv(30, formatReportDate(new Date())))
+  const copy = renderToolCopy(tool, lang, legalSlotsFromEnv(30, formatReportDate(new Date()), lang))
   const on = flags[tool]
   return (
     <div className={lang === 'ar' ? 'text-pearl' : ''}>

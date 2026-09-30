@@ -104,10 +104,13 @@ function pageHtml(
 
 describe('legal pages', { concurrency: false }, () => {
 test('legal config defaults, links, and the 30 day flag', () => {
-  assert.equal(AI_UPLOADS_30_DAY_RETENTION, false)
-  assert.equal(readAiUploads30DayRetention(undefined), false)
+  assert.equal(AI_UPLOADS_30_DAY_RETENTION, true)
+  assert.equal(readAiUploads30DayRetention(undefined), true)
+  assert.equal(readAiUploads30DayRetention(null), true)
+  assert.equal(readAiUploads30DayRetention(''), true)
   assert.equal(readAiUploads30DayRetention('false'), false)
-  assert.equal(readAiUploads30DayRetention('TRUE'), false)
+  assert.equal(readAiUploads30DayRetention(false), false)
+  assert.equal(readAiUploads30DayRetention('TRUE'), true)
   assert.equal(readAiUploads30DayRetention('true'), true)
   assert.equal(readAiUploads30DayRetention(true), true)
   assert.equal(PRIVACY_LINK, '/privacy')
@@ -141,7 +144,7 @@ test('legal config defaults, links, and the 30 day flag', () => {
     'VITE_LEGAL_AI_PROVIDER',
     'VITE_LEGAL_PARTNERS_EMAIL',
     'VITE_LEGAL_SERVICE_EMAIL',
-    'VITE_LEGAL_AI_UPLOADS_30_DAY_RETENTION=false',
+    'VITE_LEGAL_AI_UPLOADS_30_DAY_RETENTION=true',
   ]) {
     assert.equal(example.includes(name), true, name)
   }
@@ -230,6 +233,13 @@ test('terms and privacy pages keep routes, anchors, toggle, and RTL', async () =
     const termsMod = await vite.ssrLoadModule('/src/pages/TermsPage.tsx')
     const privacyMod = await vite.ssrLoadModule('/src/pages/PrivacyPage.tsx')
     const Provider = language.SiteLanguageProvider
+    legal.setAiUploads30DayRetentionForTests(null)
+    const privacyDefault = pageHtml(Provider, privacyMod.PrivacyPage, '/privacy')
+    const termsDefault = pageHtml(Provider, termsMod.TermsPage, '/terms')
+    assert.match(privacyDefault, /data-ai-retention="30-day"/)
+    assert.match(privacyDefault, /Deleted after 30 days/)
+    assert.match(termsDefault, /data-ai-retention="30-day"/)
+    assert.match(termsDefault, /kept for 30 days/)
     legal.setAiUploads30DayRetentionForTests(false)
     const terms = pageHtml(Provider, termsMod.TermsPage, '/terms')
     const termsAr = pageHtml(Provider, termsMod.TermsPage, '/terms?lang=ar')
