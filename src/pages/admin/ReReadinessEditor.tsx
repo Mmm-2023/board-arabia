@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { CardMeta } from '../../components/CardMeta'
 import { ReadinessStrip } from '../dashboard/ReadinessStrip'
 import {
   readinessDraft,
@@ -74,12 +75,7 @@ export function ReReadinessEditor({
                 )}
               </div>
               <p className="mt-2 font-display text-[1.2rem] font-semibold text-balance">{card.one_liner}</p>
-              <p className={`mt-1 text-[0.92rem] ${styles.muted}`}>
-                {card.city}
-                <span aria-hidden="true"> · </span>
-                <span className="sr-only">, </span>
-                {card.asset_class}
-              </p>
+              <CardMeta parts={[card.city, card.asset_class]} className={`mt-1 text-[0.92rem] ${styles.muted}`} />
               {card.access === 'inventory' && !card.is_demo ? (
                 <ReadinessForm card={card} busy={busyId === card.id} onSave={onSave} />
               ) : (

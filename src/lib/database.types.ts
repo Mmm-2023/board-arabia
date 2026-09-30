@@ -844,6 +844,10 @@ export type Database = {
         Args: { p_member: string }
         Returns: undefined
       }
+      delete_own_due_diligence_report: {
+        Args: { p_report_id: string }
+        Returns: Json
+      }
       list_directory: {
         Args: Record<string, never>
         Returns: Json

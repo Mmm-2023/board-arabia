@@ -1,3 +1,4 @@
+import { CardMeta } from '../../components/CardMeta'
 import { ExampleMark } from '../../components/ExampleMark'
 import { SampleAction } from '../../components/SampleAction'
 import { SAMPLE_NOTE } from '../../lib/sampleAction'
@@ -36,18 +37,8 @@ export function OpportunityCard({
         </div>
       </div>
       <h2 className="mt-3 font-display text-[1.45rem] font-semibold tracking-[-0.03em] text-balance">{card.one_liner}</h2>
-      <p className="mt-2 text-[0.95rem] text-ink/70">
-        {card.city}
-        <span aria-hidden="true"> · </span>
-        <span className="sr-only">, </span>
-        {card.asset_class}
-      </p>
-      <p className="mt-1 text-[0.95rem] text-ink/70">
-        {card.ticket_band}
-        <span aria-hidden="true"> · </span>
-        <span className="sr-only">, </span>
-        {card.capital_role}
-      </p>
+      <CardMeta parts={[card.city, card.asset_class]} className="mt-2 text-[0.95rem] text-ink/70" />
+      <CardMeta parts={[card.ticket_band, card.capital_role]} className="mt-1 text-[0.95rem] text-ink/70" />
       <ReadinessStrip card={card} />
       {card.unlocked ? (
         <OpenBrief card={card} />
