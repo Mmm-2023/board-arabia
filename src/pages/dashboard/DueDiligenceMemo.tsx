@@ -5,6 +5,7 @@ import {
   POSTURE_LABEL,
   SCORE_KEYS,
   SCORE_LABEL,
+  type ClaimStatus,
   type DeckAnalysis,
   type MathResult,
   type Posture,
@@ -26,6 +27,12 @@ const SEVERITY_LABEL: Record<Severity, string> = {
 }
 
 const BAR_KEYS = SCORE_KEYS.filter((key) => key !== 'overall')
+
+const CLAIM_STATUS_LABEL: Record<ClaimStatus, string> = {
+  supported_in_deck: REPORT_COPY.findingInDeck,
+  contradicted: REPORT_COPY.findingContradicted,
+  unverified: REPORT_COPY.findingDeckOnly,
+}
 
 export function DueDiligenceMemo({
   analysis,
@@ -96,6 +103,27 @@ export function DueDiligenceMemo({
             </li>
           ))}
         </ul>
+      </section>
+
+      <section className="mt-8" aria-labelledby="dd-findings" data-dd-findings="true">
+        <h2 id="dd-findings" className="font-display text-[1.35rem] font-semibold">
+          {REPORT_COPY.sectionFindings}
+        </h2>
+        {analysis.claims.length === 0 ? (
+          <p className="mt-4 text-[1rem] leading-relaxed text-ink/70">{REPORT_COPY.findingsEmpty}</p>
+        ) : (
+          <ul className="mt-4 space-y-3">
+            {analysis.claims.map((claim) => (
+              <li key={`${claim.page}-${claim.claim}`} className="rounded-xl border border-[var(--ba-line)] bg-white px-4 py-3">
+                <p className="text-[1rem] leading-relaxed font-semibold break-words text-ink">{claim.claim}</p>
+                <p className="mt-2 text-[0.82rem] font-semibold text-[var(--ba-muted)]" data-dd-finding-status={claim.status}>
+                  {CLAIM_STATUS_LABEL[claim.status]}
+                </p>
+                {claim.note ? <p className="mt-2 text-[0.95rem] leading-relaxed text-ink/80">{claim.note}</p> : null}
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
 
       <section className="mt-8" aria-labelledby="dd-math">
@@ -191,6 +219,23 @@ export function DueDiligenceMemo({
               </table>
             </div>
           </>
+        )}
+      </section>
+
+      <section className="mt-8 max-w-3xl" aria-labelledby="dd-analysis-next" data-dd-analysis-next="true">
+        <h2 id="dd-analysis-next" className="font-display text-[1.35rem] font-semibold">
+          {REPORT_COPY.sectionNext}
+        </h2>
+        {analysis.questions_for_management.length === 0 ? (
+          <p className="mt-4 text-[1rem] leading-relaxed text-ink/70">{REPORT_COPY.nextEmpty}</p>
+        ) : (
+          <ol className="mt-4 list-decimal space-y-3 ps-5">
+            {analysis.questions_for_management.map((question) => (
+              <li key={question} className="text-[1rem] leading-relaxed text-ink">
+                {question}
+              </li>
+            ))}
+          </ol>
         )}
       </section>
 

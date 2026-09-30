@@ -45,17 +45,23 @@ import {
   STEP_SCORES_CAP_MS,
   STEP_SCORES_STALE_MS,
   STEP_SCORES_TTFT_MS,
+  analysisStatusFor,
+  applyAnalysisFacts,
   extractDeckFacts,
   isTerminalModelFailure,
   modelJobFields,
   NOT_STATED,
+  packReportDisclaimer,
+  readStoredReport,
   shouldFailStaleJob,
+  showsAnalysisReport,
   stageLabel,
+  DEGRADED_NOTE_SEARCH,
   type BuiltReport,
 } from '../supabase/functions/_shared/due_diligence.ts'
 import { FALLBACK_MODEL_ID, PRIMARY_CALL_MS, PRIMARY_REASONING_EFFORT, analyzeDeckSection, analyzeDeckText, extractDeckFactsWithOptionalLlm } from '../supabase/functions/due-diligence-start/llm.ts'
 import { deskProgressLine, DD_COPY } from '../src/lib/dueDiligenceCopy.ts'
-import { partialDraftAnalysis, partialDraftRaw, partialDraftReport, fullDraftAnalysis, fullDraftRaw, fullDraftReport, FIXTURE_DECK } from '../src/lib/dueDiligenceMemoFixture.ts'
+import { exampleCoReport, partialDraftAnalysis, partialDraftRaw, partialDraftReport, fullDraftAnalysis, fullDraftRaw, fullDraftReport, FIXTURE_DECK } from '../src/lib/dueDiligenceMemoFixture.ts'
 import { REPORT_COPY } from '../src/lib/dueDiligenceCopy.ts'
 
 const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..')
@@ -319,7 +325,9 @@ test('the job row stores the model and a stale job is failed instead of restarte
   assert.match(run, /numberDeckPages/)
   assert.match(run, /DD_PROGRESS/)
   assert.match(run, /isTerminalModelFailure/)
-  assert.match(run, /analysis_status: 'draft'/)
+  assert.match(run, /analysisStatusFor\(analysis\)/)
+  assert.match(run, /Local read only/)
+  assert.match(run, /called: false/)
   assert.match(run, /step_claim/)
   assert.match(run, /pipeline_step/)
   assert.match(run, /due-diligence-step/)
@@ -342,6 +350,12 @@ test('the job row stores the model and a stale job is failed instead of restarte
   assert.match(migration, /model_skip_reason/)
   assert.match(migration, /analysis_status = 'draft'/)
   assert.match(migration, /Not applied by the authoring agent/)
+  const readyMigration = readFileSync(path.join(root, 'supabase/migrations/20261101120000_due_diligence_analysis_ready.sql'), 'utf8')
+  assert.match(readyMigration, /analysis_status in \('draft', 'ready'\)/)
+  assert.match(readyMigration, /BEFORE redeploying/)
+  assert.equal(readyMigration.includes('\u2014'), false)
+  assert.equal(analysisStatusFor(null), 'draft')
+  assert.equal(analysisStatusFor(fullDraftAnalysis()), 'ready')
   const blank = modelJobFields({ modelId: '', skipReason: 'missing_api_key' })
   assert.equal(blank.model_id, null)
   assert.equal(blank.model_skip_reason, 'missing_api_key')
@@ -792,6 +806,85 @@ test('the draft memo renders at the hero, bars, math, risks, accordion, and foot
     assert.ok(partial.includes('marked missing'))
     assert.equal(partial.includes('\u2014'), false)
     assert.equal(partial.includes('\u2013'), false)
+  } finally {
+    await vite.close()
+  }
+})
+
+test('analysis renders for a draft with empty claims, and claims view is only for no analysis', async () => {
+  const draft = exampleCoReport()
+  assert.equal(draft.claims.length, 0)
+  assert.equal(draft.analysis?.hero.overall, 2)
+  assert.equal(draft.analysis?.hero.posture, 'evidence_required')
+  assert.equal(draft.analysis?.hero.pre_money, 25500000)
+  assert.equal(draft.analysis?.hero.post_money, 30000000)
+  assert.equal(draft.analysis?.risks.some((risk) => /outside the stated band/i.test(risk.why)), true)
+  assert.equal(
+    showsAnalysisReport({ analysis: draft.analysis, claims: [], analysis_status: 'draft' }),
+    true,
+  )
+  assert.equal(
+    showsAnalysisReport({ analysis: draft.analysis, claims: draft.claims, analysis_status: 'draft' }),
+    true,
+  )
+  assert.equal(showsAnalysisReport({ analysis: null, claims: [], analysis_status: 'draft' }), false)
+  assert.equal(showsAnalysisReport({ analysis: null, claims: [{ text: 'A public claim.' }], analysis_status: 'ready' }), false)
+
+  const stored = readStoredReport({
+    company_label: draft.company_label,
+    sector_label: draft.sector_label,
+    ask_label: draft.ask_label,
+    disclaimer: packReportDisclaimer(draft.degraded_notes),
+    publicly_consistent_pct: draft.publicly_consistent_pct,
+    not_publicly_verifiable_pct: draft.not_publicly_verifiable_pct,
+    claims: [],
+    sources: [],
+    next_steps: draft.next_steps,
+    analysis: draft.analysis,
+  })
+  assert.ok(stored?.analysis)
+  assert.equal(stored?.claims.length, 0)
+  assert.deepEqual(stored?.degraded_notes, [DEGRADED_NOTE_SEARCH])
+  assert.equal(showsAnalysisReport({ ...stored!, analysis_status: 'draft' }), true)
+
+  const filled = applyAnalysisFacts(
+    { company: 'Example Co', sector: NOT_STATED, ask: NOT_STATED, claims: [] },
+    draft.analysis,
+  )
+  assert.ok(filled.claims.length > 0)
+  assert.equal(filled.ask, 'Raise of 4500000 USD for 15% equity')
+
+  const vite = await createServer({ server: { middlewareMode: true }, appType: 'custom', logLevel: 'error' })
+  try {
+    const mod = (await vite.ssrLoadModule('/src/shell/renderDueReport.tsx')) as {
+      renderDueReport: (value: BuiltReport, fileName: string, preparedAt: string) => string
+    }
+    const analysisHtml = mod.renderDueReport(stored!, 'example-seed.pdf', '2026-09-30T09:00:00.000Z')
+    assert.ok(analysisHtml.includes('data-dd-view="analysis"'))
+    assert.ok(analysisHtml.includes('data-dd-memo="true"'))
+    assert.ok(analysisHtml.includes('data-dd-posture="evidence_required"'))
+    assert.ok(analysisHtml.includes('data-dd-overall="2"'))
+    assert.ok(analysisHtml.includes('25,500,000 USD'))
+    assert.ok(analysisHtml.includes('30,000,000 USD'))
+    assert.ok(analysisHtml.includes('data-dd-findings="true"'))
+    assert.ok(analysisHtml.includes('data-dd-finding-status="contradicted"'))
+    assert.ok(analysisHtml.includes('data-dd-risk="high"'))
+    assert.ok(analysisHtml.includes('data-dd-analysis-next="true"'))
+    assert.ok(analysisHtml.includes('data-dd-search-note="true"'))
+    assert.ok(analysisHtml.includes(DEGRADED_NOTE_SEARCH))
+    assert.equal(analysisHtml.includes('No checkable point'), false)
+    assert.equal(analysisHtml.includes('Area scorecard'), false)
+    assert.equal(analysisHtml.includes('Not verified'), false)
+    assert.equal(analysisHtml.includes('\u2014'), false)
+    assert.equal(analysisHtml.includes('\u2013'), false)
+
+    const claimsOnly = { ...stored!, analysis: null }
+    const claimsHtml = mod.renderDueReport(claimsOnly, 'example-seed.pdf', '2026-09-30T09:00:00.000Z')
+    assert.ok(claimsHtml.includes('data-dd-view="claims"'))
+    assert.equal(claimsHtml.includes('data-dd-memo="true"'), false)
+    assert.equal(claimsHtml.includes('data-dd-view="analysis"'), false)
+    assert.equal(claimsHtml.includes('Not verified'), false)
+    assert.equal(claimsHtml.includes('Area scorecard'), false)
   } finally {
     await vite.close()
   }

@@ -60,6 +60,8 @@ const chrome = spawn(
 try {
   await waitForBrowser()
   const shots = [
+    ['example', 1280, 900, 'dd-report-example-1280.png'],
+    ['example', 390, 844, 'dd-report-example-390.png'],
     ['pass', 1280, 900, 'dd-report-pass-1280.png'],
     ['pass', 390, 844, 'dd-report-pass-390.png'],
     ['range', 1280, 900, 'dd-report-range-1280.png'],
@@ -130,7 +132,8 @@ async function capture(state, width, height, file) {
     expression: `new Promise((resolve) => {
       const started = Date.now()
       const tick = () => {
-        if (document.querySelector('[data-dd-memo="true"]') && document.body.innerText.includes('Northwind Freight')) {
+        const marker = new URLSearchParams(location.search).get('state') === 'example' ? 'Example Co' : 'Northwind Freight'
+        if (document.querySelector('[data-dd-memo="true"]') && document.body.innerText.includes(marker)) {
           resolve({ ok: true })
           return
         }

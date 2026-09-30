@@ -1,7 +1,9 @@
 import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1'
-import { fitNumberedDeck, mergeSectionDrafts, narrativeDeckExcerpt, numberDeckPages, parseDeckAnalysis, parseModelJson, preferredAsk, preferredCompany, type DeckAnalysis } from '../_shared/deck_analysis.ts'
+import { fitNumberedDeck, mergeSectionDrafts, narrativeDeckExcerpt, numberDeckPages, parseDeckAnalysis, parseModelJson, type DeckAnalysis } from '../_shared/deck_analysis.ts'
 import {
   afterModelAttempt,
+  analysisStatusFor,
+  applyAnalysisFacts,
   assessmentLog,
   buildReport,
   claimAllowed,
@@ -184,6 +186,7 @@ async function runExtract(admin: SupabaseClient, job: HeldJob, pipeline: Pipelin
   pipeline.deck_text = numbered
   pipeline.file_name = String(deck.data.file_name || '')
   pipeline.company_url = companyUrl
+  // Local read only. No model call, so the step record stays called: false and pass: none.
   noteStep(pipeline, 'extract', {
     modelId: knownModel(pipeline, 'extract'),
     called: false,
@@ -384,13 +387,7 @@ async function finishReport(
   analysis: DeckAnalysis | null,
 ) {
   await touch(admin, job, DD_PROGRESS.sources, knownModel(pipeline, 'compose'))
-  const heuristic = extractDeckFacts(pipeline.deck_text, pipeline.file_name)
-  if (analysis) {
-    const company = preferredCompany(analysis.meta.company)
-    const ask = preferredAsk(analysis.snapshot.round)
-    if (company) heuristic.company = company
-    if (ask) heuristic.ask = ask
-  }
+  const heuristic = applyAnalysisFacts(extractDeckFacts(pipeline.deck_text, pipeline.file_name), analysis)
   const retrieval = await retrievePublicPages({
     companyUrl: pipeline.company_url,
     searchTerms: independentSearchTerms(heuristic),
@@ -441,7 +438,7 @@ async function finishReport(
       sources: report.sources,
       next_steps: report.next_steps,
       analysis: report.analysis,
-      analysis_status: 'draft',
+      analysis_status: analysisStatusFor(analysis),
       model_id: report.model_id,
       model_skip_reason: report.model_skip_reason,
     })
