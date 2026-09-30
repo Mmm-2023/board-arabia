@@ -4,12 +4,12 @@ import { resolveLegalDocument } from '../content/legal/resolve'
 import type { LegalDocument } from '../content/legal/types'
 import { useSiteLanguage, type SiteLang } from './SiteLanguage'
 
-const EMAIL = /([A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,})/g
-
 function MixedText({ text }: { text: string }) {
-  const parts = text.split(EMAIL)
+  const latinRun =
+    /(\([^)\n]*[A-Za-z][^)\n]*\)|[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}|[A-Za-z][A-Za-z0-9.+_:/@'-]*(?:\s+[A-Za-z0-9][A-Za-z0-9.+_:/@'-]*)*)/g
+  const parts = text.split(latinRun)
   return parts.map((part, index) =>
-    part.includes('@') ? (
+    /[A-Za-z]/.test(part) ? (
       <bdi key={index} dir="ltr">
         {part}
       </bdi>
