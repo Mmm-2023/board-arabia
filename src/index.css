@@ -1039,6 +1039,171 @@
   stroke-dasharray: 4 5;
 }
 
+/* Consent banner is always visible. It does not use ba-reveal or ba-motion. */
+.ba-consent[dir='rtl'],
+.ba-privacy[dir='rtl'],
+.ba-privacy[dir='rtl'] h1,
+.ba-privacy[dir='rtl'] h2,
+.ba-privacy[dir='rtl'] .font-display,
+.ba-privacy[dir='rtl'] .font-serif {
+  font-family: "Noto Naskh Arabic", "Noto Kufi Arabic", sans-serif;
+}
+
+.ba-consent {
+  position: fixed;
+  z-index: 46;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: block;
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+  animation: none;
+  padding: 1rem 1rem calc(1rem + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--ba-line);
+  background: var(--ba-porcelain);
+  color: var(--ba-ink);
+  box-shadow: 0 -8px 24px rgba(28, 19, 67, 0.08);
+}
+
+.ba-consent-inner {
+  max-width: 72rem;
+  margin-inline: auto;
+}
+
+.ba-consent-langs {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.ba-consent-lang {
+  min-height: 44px;
+  padding: 0.25rem 0.25rem;
+  border: 0;
+  background: transparent;
+  color: var(--ba-muted);
+  font: inherit;
+  font-size: 0.875rem;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.ba-consent-lang[aria-pressed='true'] {
+  color: var(--ba-ink);
+  font-weight: 650;
+}
+
+.ba-consent-kicker {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ba-muted);
+}
+
+.ba-consent-body {
+  margin: 0.4rem 0 0;
+  max-width: 46rem;
+  font-size: 0.9375rem;
+  line-height: 1.45;
+  color: var(--ba-ink);
+}
+
+.ba-consent-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 0.75rem;
+  margin-top: 0.85rem;
+}
+
+.ba-consent-choice {
+  flex: 1 1 8.5rem;
+  min-width: 8.5rem;
+  min-height: 48px;
+  padding: 0.75rem 1.25rem;
+  border: 1.5px solid var(--ba-indigo);
+  border-radius: 6px;
+  background: var(--ba-indigo);
+  color: var(--ba-porcelain);
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 650;
+  line-height: 1.2;
+  cursor: pointer;
+}
+
+.ba-consent-choice:focus-visible,
+.ba-consent-notice:focus-visible,
+.ba-consent-lang:focus-visible {
+  outline: 2px solid var(--ba-copper);
+  outline-offset: 2px;
+}
+
+.ba-consent-notice {
+  flex: 1 1 8.5rem;
+  display: inline-flex;
+  min-height: 48px;
+  align-items: center;
+  justify-content: center;
+  color: var(--ba-indigo);
+  font-size: 1rem;
+  font-weight: 650;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.ba-notice-switch {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.ba-notice-switch button {
+  min-height: 44px;
+  padding: 0.25rem 0;
+  border: 0;
+  background: transparent;
+  color: var(--ba-muted);
+  font: inherit;
+  font-size: 0.9375rem;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.ba-notice-switch button[aria-pressed='true'] {
+  color: var(--ba-ink);
+  font-weight: 650;
+}
+
+@media (max-width: 767px) {
+  .ba-consent-choice,
+  .ba-consent-notice {
+    flex: 1 1 100%;
+  }
+}
+
+@media (min-width: 1024px) {
+  .ba-consent {
+    padding-right: 5rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ba-consent,
+  .ba-consent * {
+    opacity: 1 !important;
+    visibility: visible !important;
+    transform: none !important;
+    animation: none !important;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;

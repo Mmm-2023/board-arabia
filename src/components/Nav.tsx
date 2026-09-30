@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { BrandLockup } from './BrandLockup'
 import { MEMBER_LOGIN, NAV_LINKS } from '../content/marketing'
+import { trackApplyClick, trackLoginClick } from '../lib/tracking/browser'
 
 export function Nav({
   ctaTo = '/apply',
@@ -65,10 +66,20 @@ export function Nav({
         </nav>
 
         <div className="flex items-center gap-2 sm:gap-3">
-          <Link to={MEMBER_LOGIN} className={darkNav ? 'ba-login is-light' : 'ba-login is-dark'}>
+          <Link
+            to={MEMBER_LOGIN}
+            className={darkNav ? 'ba-login is-light' : 'ba-login is-dark'}
+            onClick={() => trackLoginClick('header')}
+          >
             Log in
           </Link>
-          <Link to={ctaTo} className="ba-primary ba-header-apply">
+          <Link
+            to={ctaTo}
+            className="ba-primary ba-header-apply"
+            onClick={() => {
+              if (ctaTo === '/apply') trackApplyClick('header', ctaLabel)
+            }}
+          >
             {ctaLabel}
           </Link>
           <button
@@ -101,12 +112,22 @@ export function Nav({
               </li>
             ))}
             <li className="pt-2">
-              <Link to={ctaTo} className="ba-primary ba-menu-apply">
+              <Link
+                to={ctaTo}
+                className="ba-primary ba-menu-apply"
+                onClick={() => {
+                  if (ctaTo === '/apply') trackApplyClick('menu', ctaLabel)
+                }}
+              >
                 {ctaLabel}
               </Link>
             </li>
             <li className="pt-2 pb-3">
-              <Link to={MEMBER_LOGIN} className="ba-secondary ba-menu-login">
+              <Link
+                to={MEMBER_LOGIN}
+                className="ba-secondary ba-menu-login"
+                onClick={() => trackLoginClick('menu')}
+              >
                 Log in
               </Link>
             </li>

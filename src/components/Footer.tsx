@@ -1,6 +1,10 @@
 import { Link } from 'react-router-dom'
 import { BrandLockup } from './BrandLockup'
+import { useSiteLanguage } from './SiteLanguage'
 import { MEMBER_LOGIN } from '../content/marketing'
+import { CONSENT_COPY } from '../content/privacyNotice'
+import { ANALYTICS_CONFIG } from '../lib/tracking/flags'
+import { trackApplyClick, trackLoginClick } from '../lib/tracking/browser'
 
 const LINKS = [
   { label: 'Log in', to: MEMBER_LOGIN },
@@ -15,6 +19,7 @@ const LINKS = [
 ]
 
 export function Footer() {
+  const { lang } = useSiteLanguage()
   return (
     <footer className="border-t border-ink/10 bg-pearl">
       <div className="mx-auto grid max-w-7xl gap-3 px-5 py-4 md:grid-cols-[1.4fr_1fr] md:gap-6 md:px-10 md:py-8">
@@ -32,11 +37,29 @@ export function Footer() {
           <ul className="grid grid-cols-2 gap-x-6">
             {LINKS.map((item) => (
               <li key={item.to}>
-                <Link to={item.to} className="ba-footer-link">
+                <Link
+                  to={item.to}
+                  className="ba-footer-link"
+                  onClick={() => {
+                    if (item.to === '/apply') trackApplyClick('footer', item.label)
+                    if (item.to === MEMBER_LOGIN) trackLoginClick('footer')
+                  }}
+                >
                   {item.label}
                 </Link>
               </li>
             ))}
+            {ANALYTICS_CONFIG.enabled ? (
+              <li>
+                <button
+                  type="button"
+                  className="ba-footer-link"
+                  onClick={() => window.dispatchEvent(new Event('ba-open-consent'))}
+                >
+                  {CONSENT_COPY[lang].settings}
+                </button>
+              </li>
+            ) : null}
           </ul>
           <p className="mt-2 text-[0.8125rem] text-[var(--ba-muted)]">
             © {new Date().getFullYear()} Board Arabia

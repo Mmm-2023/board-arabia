@@ -1,4 +1,7 @@
+import { useEffect } from 'react'
 import { Navigate, Outlet, useLocation } from 'react-router-dom'
+import { noteStaffSession } from '../../lib/tracking/browser'
+import { applyStaffBrowserOptOut } from '../../lib/tracking/staffOptOut'
 import { clientAdminGate } from '../../../supabase/functions/_shared/staff_auth.ts'
 import { AppShell } from '../../shell/AppShell'
 import { STAFF_DESTINATIONS, STAFF_SECONDARY, formatUpdated } from '../../shell/destinations'
@@ -35,6 +38,18 @@ function AdminFrame() {
   if (clientAdminGate(true, room.staffRole) !== 'allow') {
     return <Navigate to="/dashboard" replace />
   }
+
+  return <StaffFrame room={room} />
+}
+
+function StaffFrame({ room }: { room: ReturnType<typeof useAdmin> }) {
+  useEffect(() => {
+    noteStaffSession(true)
+    const secure = window.location.protocol === 'https:'
+    for (const line of applyStaffBrowserOptOut(document.cookie, secure)) {
+      document.cookie = line
+    }
+  }, [])
 
   return (
     <AppShell

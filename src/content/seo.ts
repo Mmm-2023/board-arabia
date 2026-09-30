@@ -88,7 +88,7 @@ export const MARKETING_PAGES: Record<MarketingPath, MarketingPage> = {
     path: '/privacy',
     title: 'Privacy | Board Arabia',
     description:
-      'Board Arabia collects the credentials you submit for a personal review. This site does not publish a member directory, sell personal information, or open a public calendar.',
+      'Privacy notice for Board Arabia: what the pre-vet collects, how site analytics works after consent, how long data is kept, and how to ask for access or deletion. No public directory and no public calendar.',
   },
   '/terms': {
     path: '/terms',

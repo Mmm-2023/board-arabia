@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { CtaBand } from '../components/CtaBand'
 import { MarketingLayout } from '../components/MarketingLayout'
+import { trackApplyClick } from '../lib/tracking/browser'
 
 const AUDIENCES = [
   {
@@ -169,6 +170,7 @@ export function ForCapitalPage() {
             <Link
               to="/apply"
               className="ba-primary inline-flex items-center justify-center px-7 py-3.5 text-[0.78rem] font-semibold tracking-[0.08em] uppercase"
+              onClick={() => trackApplyClick('section-for-capital', 'Apply for consideration')}
             >
               Apply for consideration
             </Link>
@@ -186,6 +188,7 @@ export function ForCapitalPage() {
         eyebrow="Principals"
         title="If you belong in the room, ask."
         body="Consideration is the door. A mandate is what you file after you are admitted, not from this page."
+        location="section-for-capital-close"
       />
     </MarketingLayout>
   )

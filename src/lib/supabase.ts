@@ -103,6 +103,19 @@ export type Application = {
   invited_by_member_id: string | null
   invite_token_id: string | null
   invite_reason: string | null
+  ft_source: string | null
+  ft_medium: string | null
+  ft_campaign: string | null
+  ft_content: string | null
+  ft_term: string | null
+  ft_referrer_host: string | null
+  ft_landing_path: string | null
+  ft_at: string | null
+  lt_source: string | null
+  lt_medium: string | null
+  lt_campaign: string | null
+  analytics_id: string | null
+  attribution_version: number | null
 }
 
 const functionsBase = `${url.replace(/\/$/, '')}/functions/v1`
@@ -139,6 +152,10 @@ export async function submitApplication(payload: {
   companies: string
   invite_token?: string | null
   invite_reason?: string | null
+  first_touch?: Record<string, unknown> | null
+  last_touch?: Record<string, unknown> | null
+  analytics_id?: string | null
+  attribution_version?: number | null
 }): Promise<{ error?: string; dryRun?: boolean; id?: string; inviteAttached?: boolean }> {
   try {
     const res = await fetch(`${functionsBase}/submit-application`, {

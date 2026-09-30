@@ -3,6 +3,7 @@ import { CtaBand } from '../components/CtaBand'
 import { FaqList } from '../components/FaqList'
 import { MarketingLayout } from '../components/MarketingLayout'
 import { PROCESS_STEPS, REVIEW_SLA } from '../content/marketing'
+import { trackApplyClick } from '../lib/tracking/browser'
 import { HOW_IT_WORKS_FAQ } from '../content/seo'
 
 const REFUSALS = [
@@ -69,6 +70,7 @@ export function HowItWorksPage() {
           <Link
             to="/apply"
             className="ba-primary mt-10 inline-flex items-center justify-center px-7 py-3.5 text-[0.78rem] font-semibold tracking-[0.08em] uppercase"
+            onClick={() => trackApplyClick('section-how-it-works', 'Apply for consideration')}
           >
             Apply for consideration
           </Link>
@@ -81,6 +83,7 @@ export function HowItWorksPage() {
         eyebrow="The form"
         title="Start with the pre-vet."
         body="Name, email, LinkedIn, titles, companies, and turnover or family-office size. Review follows. A calendar does not."
+        location="section-how-it-works-close"
       />
     </MarketingLayout>
   )
