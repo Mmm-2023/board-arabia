@@ -14,6 +14,8 @@ import { StepDiagram } from '../components/landing/StepDiagram'
 import { StickyApply } from '../components/landing/StickyApply'
 import { MEMBER_TOOLS } from '../content/marketing'
 import { FAQ } from '../content/seo'
+import { closingCtaBody } from '../content/twoTierCopy'
+import { publicConsiderationCta } from '../lib/twoTierRegister'
 import { LANDING_PREVIEW_EXAMPLES, presentLandingDealList, type LandingDeal } from '../lib/landingPreview'
 import { supabase } from '../lib/supabase'
 import { PlatformTotalsLine, seatDiamondFill, useLandingTotals } from '../components/StatsStrip'
@@ -53,9 +55,7 @@ export function LandingPage() {
         <FaqList items={FAQ} compact />
         <CtaBand
           eyebrow="Begin"
-          title="Apply for consideration."
-          body="Submit the pre-vet. If you are accepted, the next step arrives by private email."
-          label="Apply for consideration"
+          body={closingCtaBody()}
           memberLogin
           compact
           location="closing"
@@ -63,6 +63,26 @@ export function LandingPage() {
       </main>
       <Footer />
       <StickyApply menuOpen={menuOpen} />
+    </div>
+  )
+}
+
+function HeroConsideration() {
+  const cta = publicConsiderationCta()
+  return (
+    <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+      <Link
+        id="hero-apply"
+        to={cta.to}
+        className="ba-primary inline-flex min-h-12 items-center justify-center px-5 text-[0.9375rem] font-semibold"
+        data-consideration-cta="public"
+        onClick={() => trackApplyClick('hero', cta.label)}
+      >
+        {cta.label}
+      </Link>
+      <a href="#process" className="ba-secondary inline-flex min-h-12 items-center justify-center px-5 text-[0.9375rem] font-semibold">
+        How it works
+      </a>
     </div>
   )
 }
@@ -97,19 +117,7 @@ function Hero() {
             No public booking calendar.
           </p>
           <HeroEnter index={1}>
-            <div className="mt-4 flex flex-col gap-2 sm:flex-row">
-              <Link
-                id="hero-apply"
-                to="/apply"
-                className="ba-primary inline-flex min-h-12 items-center justify-center px-5 text-[0.9375rem] font-semibold"
-                onClick={() => trackApplyClick('hero', 'Apply for consideration')}
-              >
-                Apply for consideration
-              </Link>
-              <a href="#process" className="ba-secondary inline-flex min-h-12 items-center justify-center px-5 text-[0.9375rem] font-semibold">
-                How it works
-              </a>
-            </div>
+            <HeroConsideration />
           </HeroEnter>
           <HeroEnter index={2}>
             <p className="mt-4 text-[0.875rem] leading-relaxed text-[#E8E4F7]">{HELD_FOR_LINE}</p>

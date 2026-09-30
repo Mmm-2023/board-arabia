@@ -1,9 +1,16 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { publicConsiderationCta } from '../../lib/twoTierRegister'
 import { trackApplyClick } from '../../lib/tracking/browser'
 
+function viewportIsNarrow(): boolean {
+  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return false
+  return window.matchMedia('(max-width: 767px)').matches
+}
+
 export function StickyApply({ menuOpen }: { menuOpen: boolean }) {
-  const [narrow, setNarrow] = useState(false)
+  const cta = publicConsiderationCta()
+  const [narrow, setNarrow] = useState(viewportIsNarrow)
   const [show, setShow] = useState(false)
 
   useEffect(() => {
@@ -47,13 +54,14 @@ export function StickyApply({ menuOpen }: { menuOpen: boolean }) {
   return (
     <div className="ba-sticky" data-state={open ? 'shown' : 'hidden'}>
       <Link
-        to="/apply"
+        to={cta.to}
         className="ba-primary ba-sticky-btn"
+        data-consideration-cta="public"
         tabIndex={open ? undefined : -1}
         aria-hidden={open ? undefined : true}
-        onClick={() => trackApplyClick('sticky-mobile', 'Apply for consideration')}
+        onClick={() => trackApplyClick('sticky-mobile', cta.label)}
       >
-        Apply for consideration
+        {cta.label}
       </Link>
     </div>
   )

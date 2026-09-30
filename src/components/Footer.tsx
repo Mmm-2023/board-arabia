@@ -3,23 +3,28 @@ import { BrandLockup } from './BrandLockup'
 import { useSiteLanguage } from './SiteLanguage'
 import { MEMBER_LOGIN } from '../content/marketing'
 import { CONSENT_COPY } from '../content/privacyNotice'
+import { publicConsiderationCta } from '../lib/twoTierRegister'
 import { ANALYTICS_CONFIG } from '../lib/tracking/flags'
 import { trackApplyClick, trackLoginClick } from '../lib/tracking/browser'
 
-const LINKS = [
-  { label: 'Log in', to: MEMBER_LOGIN },
-  { label: 'For members', to: '/for-members' },
-  { label: 'For capital', to: '/for-capital' },
-  { label: 'How it works', to: '/how-it-works' },
-  { label: 'About', to: '/about' },
-  { label: 'Partners', to: '/partners' },
-  { label: 'Apply for consideration', to: '/apply' },
-  { label: 'Privacy', to: '/privacy' },
-  { label: 'Terms', to: '/terms' },
-]
+function footerLinks() {
+  const cta = publicConsiderationCta()
+  return [
+    { label: 'Log in', to: MEMBER_LOGIN, consideration: false },
+    { label: 'For members', to: '/for-members', consideration: false },
+    { label: 'For capital', to: '/for-capital', consideration: false },
+    { label: 'How it works', to: '/how-it-works', consideration: false },
+    { label: 'About', to: '/about', consideration: false },
+    { label: 'Partners', to: '/partners', consideration: false },
+    { label: cta.label, to: cta.to, consideration: true },
+    { label: 'Privacy', to: '/privacy', consideration: false },
+    { label: 'Terms', to: '/terms', consideration: false },
+  ]
+}
 
 export function Footer() {
   const { lang } = useSiteLanguage()
+  const links = footerLinks()
   return (
     <footer className="border-t border-ink/10 bg-pearl">
       <div className="mx-auto grid max-w-7xl gap-3 px-5 py-4 md:grid-cols-[1.4fr_1fr] md:gap-6 md:px-10 md:py-8">
@@ -35,13 +40,14 @@ export function Footer() {
         </div>
         <nav aria-label="Footer">
           <ul className="grid grid-cols-2 gap-x-6">
-            {LINKS.map((item) => (
-              <li key={item.to}>
+            {links.map((item) => (
+              <li key={item.label}>
                 <Link
                   to={item.to}
                   className="ba-footer-link"
+                  data-consideration-cta={item.consideration ? 'public' : undefined}
                   onClick={() => {
-                    if (item.to === '/apply') trackApplyClick('footer', item.label)
+                    if (item.consideration) trackApplyClick('footer', item.label)
                     if (item.to === MEMBER_LOGIN) trackLoginClick('footer')
                   }}
                 >

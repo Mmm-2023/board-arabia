@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { CtaBand } from '../components/CtaBand'
 import { MarketingLayout } from '../components/MarketingLayout'
+import { publicConsiderationCta } from '../lib/twoTierRegister'
 import { trackApplyClick } from '../lib/tracking/browser'
 
 const AUDIENCES = [
@@ -167,13 +168,7 @@ export function ForCapitalPage() {
             path (three seats a year, still gated).
           </p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-            <Link
-              to="/apply"
-              className="ba-primary inline-flex items-center justify-center px-7 py-3.5 text-[0.78rem] font-semibold tracking-[0.08em] uppercase"
-              onClick={() => trackApplyClick('section-for-capital', 'Apply for consideration')}
-            >
-              Apply for consideration
-            </Link>
+            <CapitalConsideration />
             <Link
               to="/partners"
               className="inline-flex items-center justify-center border border-ink/20 px-7 py-3.5 text-[0.78rem] font-semibold tracking-[0.08em] text-ink uppercase"
@@ -191,5 +186,19 @@ export function ForCapitalPage() {
         location="section-for-capital-close"
       />
     </MarketingLayout>
+  )
+}
+
+function CapitalConsideration() {
+  const cta = publicConsiderationCta()
+  return (
+    <Link
+      to={cta.to}
+      className="ba-primary inline-flex items-center justify-center px-7 py-3.5 text-[0.78rem] font-semibold tracking-[0.08em] uppercase"
+      data-consideration-cta="public"
+      onClick={() => trackApplyClick('section-for-capital', cta.label)}
+    >
+      {cta.label}
+    </Link>
   )
 }

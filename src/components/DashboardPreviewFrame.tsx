@@ -5,9 +5,41 @@ import { lockBlurClass } from '../lib/previewLock'
 import { previewIntro, type LandingDeal } from '../lib/landingPreview'
 import { MEMBER_DESTINATIONS } from '../shell/destinations'
 import { ExampleMark } from './ExampleMark'
+import { publicConsiderationCta } from '../lib/twoTierRegister'
 import { trackApplyClick, trackLoginClick } from '../lib/tracking/browser'
 
 const SELECTED = 'deals'
+
+function PreviewLockPanel() {
+  const cta = publicConsiderationCta()
+  return (
+    <div className="w-full max-w-md border border-ink/10 bg-[var(--ba-porcelain)] px-5 py-6 text-center">
+      <p
+        id="preview-lock-title"
+        className="font-display text-[1.35rem] font-semibold tracking-[-0.03em] text-balance text-ink"
+      >
+        See live deals as a member
+      </p>
+      <div className="mt-5 flex flex-col items-stretch justify-center gap-3 sm:flex-row">
+        <Link
+          to={cta.to}
+          className="ba-primary inline-flex min-h-11 items-center justify-center px-6 text-[0.78rem] font-semibold tracking-[0.08em] uppercase"
+          data-consideration-cta="public"
+          onClick={() => trackApplyClick('section-preview', cta.label)}
+        >
+          {cta.label}
+        </Link>
+        <Link
+          to={MEMBER_LOGIN}
+          className="inline-flex min-h-11 items-center justify-center border border-ink/20 bg-white px-6 text-[0.78rem] font-semibold tracking-[0.08em] text-ink uppercase"
+          onClick={() => trackLoginClick('section-preview')}
+        >
+          Sign in
+        </Link>
+      </div>
+    </div>
+  )
+}
 
 function admissionLine(): string {
   const rest = MEMBER_DESTINATIONS.filter((item) => item.id !== SELECTED).map((item) => item.label)
@@ -135,30 +167,7 @@ export function DashboardPreviewFrame({
           }
         >
           {locked ? (
-            <div className="w-full max-w-md border border-ink/10 bg-[var(--ba-porcelain)] px-5 py-6 text-center">
-              <p
-                id="preview-lock-title"
-                className="font-display text-[1.35rem] font-semibold tracking-[-0.03em] text-balance text-ink"
-              >
-                See live deals as a member
-              </p>
-              <div className="mt-5 flex flex-col items-stretch justify-center gap-3 sm:flex-row">
-                <Link
-                  to="/apply"
-                  className="ba-primary inline-flex min-h-11 items-center justify-center px-6 text-[0.78rem] font-semibold tracking-[0.08em] uppercase"
-                  onClick={() => trackApplyClick('section-preview', 'Apply for consideration')}
-                >
-                  Apply for consideration
-                </Link>
-                <Link
-                  to={MEMBER_LOGIN}
-                  className="inline-flex min-h-11 items-center justify-center border border-ink/20 bg-white px-6 text-[0.78rem] font-semibold tracking-[0.08em] text-ink uppercase"
-                  onClick={() => trackLoginClick('section-preview')}
-                >
-                  Sign in
-                </Link>
-              </div>
-            </div>
+            <PreviewLockPanel />
           ) : null}
         </div>
       </div>

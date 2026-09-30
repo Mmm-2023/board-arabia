@@ -1,3 +1,6 @@
+import { ACCOUNT_FLOW_APPLY_ANSWER } from './twoTierCopy.ts'
+import { isTwoTierRegisterEnabled, publicConsiderationCta } from '../lib/twoTierRegister.ts'
+
 export const SITE_ORIGIN = 'https://boardarabia.com'
 
 export const OG_TITLE = 'Board Arabia'
@@ -67,7 +70,7 @@ export const MARKETING_PAGES: Record<MarketingPath, MarketingPage> = {
   },
   '/how-it-works': {
     path: '/how-it-works',
-    title: 'How Board Arabia works: apply, review, invite',
+    title: 'How Board Arabia works: register, complete, review',
     description:
       'Apply with credentials, personal review, then a private invite by email if accepted. No open calendar. After admission, members use the Board Arabia dashboard.',
     faq: true,
@@ -193,6 +196,20 @@ export function faqFor(path: string): FaqItem[] | null {
   return null
 }
 
+/** Apply FAQ link follows the consideration CTA. The account-flow answer is flag-on only. */
+export function publicFaqItems(items: FaqItem[], enabled = isTwoTierRegisterEnabled()): FaqItem[] {
+  const cta = publicConsiderationCta(enabled)
+  return items.map((item) => {
+    if (item.question !== 'How do I apply?') return item
+    return {
+      ...item,
+      answer: enabled ? ACCOUNT_FLOW_APPLY_ANSWER : item.answer,
+      to: cta.to,
+      toLabel: cta.label,
+    }
+  })
+}
+
 export function canonicalUrl(path: string) {
   if (path === '/' || path === '') return `${SITE_ORIGIN}/`
   return `${SITE_ORIGIN}${path.startsWith('/') ? path : `/${path}`}`
@@ -267,12 +284,13 @@ export function pageGraph(page: MarketingPage) {
 
   const faqs = faqFor(page.path)
   if (faqs) {
+    const shown = publicFaqItems(faqs)
     graph.push({
       '@type': 'FAQPage',
       '@id': `${url}#faq`,
       url,
       isPartOf: { '@id': `${SITE_ORIGIN}/#website` },
-      mainEntity: faqs.map((item) => ({
+      mainEntity: shown.map((item) => ({
         '@type': 'Question',
         name: item.question,
         acceptedAnswer: {
