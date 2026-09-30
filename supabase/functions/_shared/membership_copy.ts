@@ -38,6 +38,22 @@ ${input.dashboardUrl}`,
   )
 }
 
+/** One reminder for an account that never submits a membership request. */
+export function idleAccountReminderMail(input: { dashboardUrl: string }) {
+  return seal(
+    `You opened an account and have not sent a membership request. One reminder only.
+
+If you still want the desk to review you, complete your credentials and request full membership. If you do nothing, this account is deleted 30 days after this note.
+
+Open your account:
+${input.dashboardUrl}`,
+    `<p>You opened an account and have not sent a membership request. One reminder only.</p>
+<p>If you still want the desk to review you, complete your credentials and request full membership. If you do nothing, this account is deleted 30 days after this note.</p>
+<p><a href="${escapeHtml(input.dashboardUrl)}">Open your account</a></p>`,
+    'Your Board Arabia account is still open',
+  )
+}
+
 export function requestReceivedMail(input: { dashboardUrl: string }) {
   return seal(
     `Thank you. The desk reviews every request personally. There is no fixed response time; we will write when there is news.

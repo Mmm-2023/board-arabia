@@ -6,6 +6,7 @@ import { fetchPlatformStats, supabase } from '../../../lib/supabase'
 import { MEMBER_SECTIONS } from '../../../shell/destinations'
 import { SectionTabs } from '../../../shell/SectionTabs'
 import { HelpPage } from '../HelpPage'
+import { DeleteAccountScreen } from './DeleteAccountScreen'
 import { useAccountRoom } from './context'
 import { MembershipScreen } from './MembershipScreen'
 import { missingRequired, requiredDoneCount } from '../../../../supabase/functions/_shared/membership_steps.ts'
@@ -180,6 +181,7 @@ export function AccountSurface() {
   if (pathname === '/dashboard/membership' || pathname.startsWith('/dashboard/membership/')) return <MembershipScreen />
   if (pathname === '/dashboard/profile' || pathname.startsWith('/dashboard/profile/')) return <AccountProfile />
   if (pathname === '/dashboard/help' || pathname.startsWith('/dashboard/help/')) return <HelpPage desk={false} />
+  if (pathname === '/dashboard/account/delete') return <DeleteAccountScreen />
   return <Navigate to="/dashboard" replace />
 }
 

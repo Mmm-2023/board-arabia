@@ -1,5 +1,6 @@
 import { storeAttribution, type StoredAttribution } from './attribution.ts'
 import { accountOpenMail, registrationCodeMail } from './candidate_copy.ts'
+import { isFreeWebmail } from './email_domains.ts'
 
 export const CODE_TTL_MS = 10 * 60 * 1000
 
@@ -19,6 +20,8 @@ export type RegisterBody = {
   last_touch?: unknown
   analytics_id?: unknown
   resend?: unknown
+  company_fax?: unknown
+  form_started_at?: unknown
 }
 
 export type CandidateRow = {
@@ -45,8 +48,12 @@ export type RegisterDeps = {
     role: string
     region: string
     inviteReason: string | null
+    freeWebmail: boolean
     attribution: StoredAttribution
   }) => Promise<{ error?: string }>
+  domainStatus: (email: string) => Promise<'ok' | 'disposable' | 'blocked'>
+  mailboxOk: (email: string) => Promise<boolean>
+  consumeRegisterLimit: (email: string, remoteIp: string) => Promise<'ok' | 'limited' | 'error'>
   issueCode: (userId: string, codeHash: string, linkHash: string, expiresAt: string) => Promise<'ok' | 'cooldown' | 'rate_limited' | 'error'>
   voidLatestCode: (userId: string) => Promise<void>
   sendMail: (message: MailMessage) => Promise<{ ok: boolean; dryRun: boolean }>
@@ -150,6 +157,20 @@ export async function registerCandidate(
     if (!passed) {
       return result(400, { error: 'The security check did not pass. Try again.', error_code: 'turnstile' })
     }
+    const domain = await deps.domainStatus(email)
+    if (domain === 'disposable' || domain === 'blocked') {
+      return result(400, {
+        error: 'Use a work email. Disposable addresses are not accepted.',
+        error_code: 'disposable_email',
+      })
+    }
+    const limited = await deps.consumeRegisterLimit(email, remoteIp)
+    if (limited === 'limited') {
+      return result(429, { error: 'Too many attempts. Try again later.', error_code: 'rate_limited' })
+    }
+    if (limited === 'error') {
+      return result(503, { error: 'Registration is not available yet.', error_code: 'not_configured' })
+    }
     const existing = await deps.findCandidate(email)
     if (!existing) {
       return result(200, { ok: true, created: false, dry_run: false, error_code: '' })
@@ -179,6 +200,13 @@ export async function registerCandidate(
   if (inviteToken && !inviteReason) {
     return result(400, { error: 'Say why you were invited.', error_code: 'invite_reason' })
   }
+  if (typeof body.company_fax === 'string' && body.company_fax.trim()) {
+    return result(400, { error: 'Could not open the account. Try again.', error_code: 'rejected' })
+  }
+  const started = typeof body.form_started_at === 'number' ? body.form_started_at : Number(body.form_started_at)
+  if (!Number.isFinite(started) || deps.now().getTime() - started < 3000) {
+    return result(400, { error: 'Wait a moment, then try again.', error_code: 'too_fast' })
+  }
   if (!token) {
     return result(400, { error: 'Complete the security check, then try again.', error_code: 'turnstile' })
   }
@@ -186,6 +214,24 @@ export async function registerCandidate(
   const passed = await deps.verifyTurnstile(token, deps.turnstileSecret, remoteIp)
   if (!passed) {
     return result(400, { error: 'The security check did not pass. Try again.', error_code: 'turnstile' })
+  }
+
+  const domain = await deps.domainStatus(email)
+  if (domain === 'disposable' || domain === 'blocked') {
+    return result(400, {
+      error: 'Use a work email. Disposable addresses are not accepted.',
+      error_code: 'disposable_email',
+    })
+  }
+  if (!(await deps.mailboxOk(email))) {
+    return result(400, { error: 'Use an email address that can receive mail.', error_code: 'mailbox' })
+  }
+  const limited = await deps.consumeRegisterLimit(email, remoteIp)
+  if (limited === 'limited') {
+    return result(429, { error: 'Too many attempts. Try again later.', error_code: 'rate_limited' })
+  }
+  if (limited === 'error') {
+    return result(503, { error: 'Registration is not available yet.', error_code: 'not_configured' })
   }
 
   if (await deps.emailIsMember(email)) {
@@ -219,6 +265,7 @@ export async function registerCandidate(
       role,
       region,
       inviteReason: inviteToken ? inviteReason : null,
+      freeWebmail: isFreeWebmail(email),
       attribution,
     })
     if (inserted.error) {
