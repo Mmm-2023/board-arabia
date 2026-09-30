@@ -106,6 +106,8 @@ export function RegisterPage({ security = 'live' as 'live' | 'preview' }) {
       turnstile_token: values.turnstileToken,
       invite_token: inviteView.kind === 'valid' ? inviteView.token : null,
       invite_reason: inviteView.kind === 'valid' ? reason : null,
+      company_fax: values.companyFax,
+      form_started_at: values.formStartedAt,
       ...readSubmitAttribution(),
     })
     setSubmitting(false)

@@ -37,7 +37,7 @@ export function readConsent(cookieHeader: string, now: number): StoredConsent | 
   const bannerVersion = parts[3] ?? ''
   const noticeVersion = parts[4] ?? ''
   if (!/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(bannerVersion)) return null
-  if (!/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(noticeVersion)) return null
+  if (!/^[0-9]{4}-[0-9]{2}-[0-9]{2}(?:\.[0-9]+)?$/.test(noticeVersion)) return null
   const expiresAt = Number(parts[5])
   if (!Number.isFinite(expiresAt) || expiresAt <= now) return null
   const analyticsRaw = parts[6] ?? ''

@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { REASON_CODES, ageLabel, roleLabel, slaTone } from '../../../supabase/functions/_shared/membership_steps.ts'
 
@@ -75,22 +76,7 @@ export function MembershipQueueView({
       <p className="mt-2 max-w-2xl text-[0.95rem] text-pearl/65">
         The desk decides. Review call is the only action that emails a private link, and that link is never shown here.
       </p>
-      <div className="mt-5 flex gap-2 overflow-x-auto pb-1" role="tablist" aria-label="Request state">
-        {STATES.map((item) => (
-          <button
-            key={item}
-            type="button"
-            role="tab"
-            aria-selected={state === item}
-            className={`inline-flex min-h-11 shrink-0 items-center border px-3 text-[0.75rem] font-semibold tracking-[0.06em] uppercase ${
-              state === item ? 'ba-primary border-transparent' : 'border-pearl/20 text-pearl/70'
-            }`}
-            onClick={() => onState(item)}
-          >
-            {stateLabel(item)} {counts[item] ?? 0}
-          </button>
-        ))}
-      </div>
+      <StateChips state={state} counts={counts} onState={onState} />
       <div className="mt-4 flex flex-wrap gap-2">
         <button
           type="button"
@@ -175,6 +161,69 @@ export function MembershipQueueView({
   )
 }
 
+function StateChips({
+  state,
+  counts,
+  onState,
+}: {
+  state: string
+  counts: Record<string, number>
+  onState: (value: string) => void
+}) {
+  const scroller = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    const active = scroller.current?.querySelector<HTMLElement>('[aria-selected="true"]')
+    active?.scrollIntoView({ inline: 'nearest', block: 'nearest' })
+  }, [state])
+
+  return (
+    <div data-state-chips="">
+      <div className="mt-5 md:hidden" role="listbox" aria-label="Request state">
+        {STATES.map((item) => (
+          <button
+            key={item}
+            type="button"
+            role="option"
+            data-state-option={item}
+            aria-selected={state === item}
+            className={`mt-2 flex min-h-11 w-full items-center justify-between border px-3 text-left text-[0.95rem] ${
+              state === item ? 'ba-primary border-transparent' : 'border-pearl/20 text-pearl/80'
+            }`}
+            onClick={() => onState(item)}
+          >
+            <span>{stateLabel(item)}</span>
+            <span>{counts[item] ?? 0}</span>
+          </button>
+        ))}
+      </div>
+      <div className="ba-state-chip-fade relative mt-5 hidden md:block">
+        <div
+          ref={scroller}
+          className="ba-state-chips flex gap-2 overflow-x-auto pb-1"
+          role="tablist"
+          aria-label="Request state"
+        >
+          {STATES.map((item) => (
+            <button
+              key={item}
+              type="button"
+              role="tab"
+              data-state-option={item}
+              aria-selected={state === item}
+              className={`inline-flex min-h-11 shrink-0 items-center border px-3 text-[0.75rem] font-semibold tracking-[0.06em] uppercase ${
+                state === item ? 'ba-primary border-transparent' : 'border-pearl/20 text-pearl/70'
+              }`}
+              onClick={() => onState(item)}
+            >
+              {stateLabel(item)} {counts[item] ?? 0}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function toneClass(tone: 'ok' | 'attention' | 'late') {
   if (tone === 'late') return 'text-[var(--ba-copper-deep)]'
   if (tone === 'attention') return 'text-[var(--ba-copper)]'
@@ -197,6 +246,7 @@ export type DeskDetail = {
   phone: string
   vouch: string
   state: string
+  personalEmail?: boolean
   domainMatch: boolean
   linkedinChecked: boolean
   crChecked: boolean
@@ -257,6 +307,9 @@ export function MembershipDetailView({
             <Row label="Company" value={`${detail.company || 'Not listed'}, ${detail.title || 'Title not listed'}`} />
             <Row label="Website" value={detail.website || 'Not listed'} />
             <Row label="Domain" value={detail.domainMatch ? 'Domain matches' : 'No domain match'} />
+            {detail.personalEmail ? (
+              <Row label="Email domain" value="Personal email domain. The desk can still review this request." />
+            ) : null}
             <Row label="LinkedIn" value={detail.linkedin || 'Not listed'} />
             <Row label="Statement" value={detail.statement || 'Not listed'} />
             <Row label="CR number" value={detail.crNumber || 'Not listed'} />

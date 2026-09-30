@@ -26,6 +26,8 @@ export type RegisterValues = {
   consent: boolean
   turnstileToken: string
   inviteReason: string
+  companyFax: string
+  formStartedAt: number
 }
 
 export function RegisterScreen({
@@ -54,6 +56,8 @@ export function RegisterScreen({
   const [consent, setConsent] = useState(false)
   const [inviteReason, setInviteReason] = useState('')
   const [token, setToken] = useState('')
+  const [companyFax, setCompanyFax] = useState('')
+  const [formStartedAt] = useState(() => Date.now())
   const securityReady = security === 'preview' || Boolean(token)
   const blocked = submitting || !securityReady
 
@@ -67,6 +71,8 @@ export function RegisterScreen({
       consent,
       turnstileToken: security === 'preview' ? 'preview-token' : token,
       inviteReason,
+      companyFax,
+      formStartedAt,
     })
   }
 
@@ -75,7 +81,7 @@ export function RegisterScreen({
       {nav}
       <main className="min-h-dvh bg-pearl pt-24 pb-20 md:pt-28" data-screen="register">
         <div className="mx-auto grid max-w-6xl gap-10 px-5 lg:grid-cols-2 lg:items-start lg:px-10">
-          <form className="order-1 space-y-5 lg:order-2" onSubmit={submit}>
+          <form className="relative order-1 space-y-5 lg:order-2" onSubmit={submit}>
             <p className="text-[0.72rem] font-semibold tracking-[0.14em] text-[var(--ba-indigo)] uppercase">
               Register for consideration
             </p>
@@ -112,6 +118,17 @@ export function RegisterScreen({
               </div>
             ) : null}
 
+            <div className="pointer-events-none absolute h-0 w-0 overflow-hidden opacity-0" aria-hidden="true">
+              <label>
+                Fax
+                <input
+                  tabIndex={-1}
+                  autoComplete="off"
+                  value={companyFax}
+                  onChange={(event) => setCompanyFax(event.target.value)}
+                />
+              </label>
+            </div>
             <label className="block">
               <span className={labelClass}>Full name</span>
               <input required value={fullName} onChange={(event) => setFullName(event.target.value)} onFocus={onFocus} className={fieldClass} autoComplete="name" />

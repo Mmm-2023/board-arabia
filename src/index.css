@@ -1237,3 +1237,13 @@
     scroll-behavior: auto !important;
   }
 }
+
+.ba-state-chips {
+  scroll-padding-inline: 1.5rem;
+  scrollbar-width: none;
+  mask-image: linear-gradient(to right, transparent, #000 1.25rem, #000 calc(100% - 1.25rem), transparent);
+}
+
+.ba-state-chips::-webkit-scrollbar {
+  display: none;
+}

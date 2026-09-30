@@ -42,7 +42,9 @@ export const PRIVACY_NOTICE_EN: PrivacyNotice = {
       heading: 'What we collect',
       paragraphs: [
         'Application and member data: name, email, LinkedIn, title, company, turnover or AUM band, optional phone, commercial registration number, sector tags, statement, first-touch campaign values, and referrer host.',
+        'If you open an account for consideration, we keep that account: your name, work email, role, region, and the credentials you save for the desk. We also keep which link brought you here. You can delete that account yourself from Account after you confirm. Deleting it removes those credentials and the sign-in. It does not remove a full member record.',
         'Site analytics: pages, engaged time, scroll depth, coarse location taken from an IP address that is not stored, campaign source, and named events.',
+        'Site analytics are not the membership file. Cookies for analytics run only after you choose Accept. Before that, visits are counted without an identifier that could tie one visit to the next.',
         'If you leave the public-totals box checked, a verified capacity figure can be added into a platform sum after you are admitted. The public site shows that sum only. It does not show your name, your company, or your amount.',
       ],
     },
@@ -76,7 +78,7 @@ export const PRIVACY_NOTICE_EN: PrivacyNotice = {
     {
       heading: 'How long we keep it',
       paragraphs: [
-        'Basic accounts that never submit a request are deleted at 120 days, with a reminder at 90 days.',
+        'An account that opens for consideration and never submits a membership request is deleted at 120 days. One reminder is sent at 90 days. A sign-up that never confirms its email is deleted after 7 days.',
         'Rejected, declined, withdrawn, or closed requests, and legacy applications, are deleted 12 months after the decision.',
         'Members who leave are deleted or anonymised within 24 months of exit, unless a legal hold applies.',
         'Analytics events are kept for 13 months maximum. The consent log is kept for 13 months. The marketing stats cache is kept for 24 hours.',
@@ -86,6 +88,7 @@ export const PRIVACY_NOTICE_EN: PrivacyNotice = {
       heading: 'Your rights',
       paragraphs: [
         'You can ask to be informed, to access your data, to obtain a copy, to correct it, and to have it destroyed. You can withdraw consent at any time. You can complain to SDAIA (the Saudi Data and AI Authority).',
+        'From Account, you can delete an account that has not become a full member. Confirming that deletion destroys the credentials on the account and the sign-in.',
         `To exercise these rights, write to the privacy contact in the first section once it is published. Until then the contact remains ${PLACEHOLDER_CONFIRM}.`,
       ],
     },
@@ -123,7 +126,9 @@ export const PRIVACY_NOTICE_AR: PrivacyNotice = {
       heading: 'ماذا نجمع',
       paragraphs: [
         'بيانات الطلب والعضوية: الاسم، والبريد الإلكتروني، ولينكدإن، والمسمى، والشركة، ونطاق حجم الأعمال أو الأصول المدارة، والهاتف الاختياري، ورقم السجل التجاري، ووسوم القطاعات، والنص التعريفي، وقيم أول زيارة للحملة، ومضيف صفحة الإحالة.',
+        'إذا سجّلت للنظر في العضوية، نحتفظ بالحساب الذي يُفتح: اسمك، وبريدك الإلكتروني للعمل، ودورك، ومنطقتك، والبيانات التي تحفظها للمكتب. نحتفظ أيضا بالرابط الذي أوصلك إلى الموقع. يمكنك حذف هذا الحساب بنفسك من الحساب بعد التأكيد. الحذف يزيل تلك البيانات وتسجيل الدخول. لا يزيل سجل العضوية الكاملة.',
         'تحليلات الموقع: الصفحات، ووقت التفاعل، وعمق التمرير، والموقع التقريبي المستمد من عنوان شبكة لا يُخزَّن، ومصدر الحملة، والأحداث المسماة.',
+        'تحليلات الموقع ليست ملف العضوية. تعمل ملفات تعريف الارتباط للتحليلات فقط بعد اختيار موافق. قبل ذلك تُعد الزيارات من غير معرّف يربط زيارة بأخرى.',
         'إذا أبقيت خانة المجاميع العامة محددة، يمكن إضافة رقم القدرة المتحقق منه إلى مجموع المنصة بعد قبولك. يعرض الموقع العام ذلك المجموع فقط. لا يعرض اسمك ولا شركتك ولا مبلغك.',
       ],
     },
@@ -157,7 +162,7 @@ export const PRIVACY_NOTICE_AR: PrivacyNotice = {
     {
       heading: 'كم نحتفظ بها',
       paragraphs: [
-        'تُحذف الحسابات الأساسية التي لا يُقدَّم معها طلب بعد 120 يوما، مع تذكير عند 90 يوما.',
+        'يُحذف الحساب الذي يُفتح للنظر ولا يُرسل معه طلب عضوية بعد 120 يوما. يُرسل تذكير واحد عند 90 يوما. يُحذف التسجيل الذي لم يؤكد البريد الإلكتروني بعد 7 أيام.',
         'تُحذف الطلبات المرفوضة أو المغلقة أو المنسحبة، وطلبات النموذج السابق، بعد 12 شهرا من القرار.',
         'يُحذف الأعضاء الذين يغادرون أو تُخفى هويتهم خلال 24 شهرا من المغادرة، ما لم يُطبَّق حفظ نظامي.',
         'تُحفظ أحداث التحليلات 13 شهرا كحد أقصى. يُحفظ سجل الموافقة 13 شهرا. تُحفظ ذاكرة إحصاءات التسويق المؤقتة 24 ساعة.',
@@ -167,6 +172,7 @@ export const PRIVACY_NOTICE_AR: PrivacyNotice = {
       heading: 'حقوقك',
       paragraphs: [
         'يمكنك أن تطلب العلم، والوصول إلى بياناتك، والحصول على نسخة، وتصحيحها، وإتلافها. يمكنك سحب الموافقة في أي وقت. يمكنك التقدم بشكوى إلى سدايا (الهيئة السعودية للبيانات والذكاء الاصطناعي).',
+        'من صفحة الحساب يمكنك حذف حساب لم يصبح عضوية كاملة. تأكيد الحذف يتلف البيانات المحفوظة على الحساب وتسجيل الدخول.',
         `لممارسة هذه الحقوق، راسل جهة تواصل الخصوصية في القسم الأول عندما تُنشر. إلى ذلك الحين تبقى جهة التواصل ${PLACEHOLDER_CONFIRM}.`,
       ],
     },

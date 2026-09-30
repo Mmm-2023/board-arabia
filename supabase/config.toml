@@ -116,3 +116,13 @@ verify_jwt = true
 # Reminder cron. Header x-membership-reminder must match MEMBERSHIP_REMINDER_SECRET.
 [functions.remind-membership]
 verify_jwt = false
+
+# Signed-in candidate. Refuses a member or staff sign-in.
+[functions.delete-candidate-account]
+verify_jwt = true
+
+# Daily GitHub Action. Header x-retention-sweep must match RETENTION_SWEEP_SECRET.
+# verify_jwt stays off so the anon key is not a credential. An unset secret rejects every call.
+# dry_run=1 lists rows and does not delete. POST only.
+[functions.retention-sweep]
+verify_jwt = false

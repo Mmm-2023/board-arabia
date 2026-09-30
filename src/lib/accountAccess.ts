@@ -8,6 +8,7 @@ const ALLOWED_PATHS = [
   '/functions/v1/register-candidate',
   '/functions/v1/verify-candidate',
   '/functions/v1/request-membership',
+  '/functions/v1/delete-candidate-account',
   '/auth/v1/token',
   '/auth/v1/user',
   '/auth/v1/verify',
