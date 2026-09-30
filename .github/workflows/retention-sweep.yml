@@ -1,0 +1,44 @@
+# Nightly retention. No-op until RETENTION_SWEEP_SECRET is set on this
+# repository and the same value is set as an Edge secret.
+# The function rejects every call when that secret is unset.
+# POST only. Header x-retention-sweep. Add ?dry_run=1 to list rows.
+
+name: Retention sweep
+
+on:
+  schedule:
+    - cron: '40 4 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sweep:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run retention sweep
+        env:
+          RETENTION_SWEEP_SECRET: ${{ secrets.RETENTION_SWEEP_SECRET }}
+        run: |
+          if [ -z "$RETENTION_SWEEP_SECRET" ]; then
+            echo "RETENTION_SWEEP_SECRET is unset. Retention run is a no-op."
+            exit 0
+          fi
+          code=$(curl -sS --max-time 120 -o /tmp/retention-sweep-body.txt -w '%{http_code}' \
+            -X POST \
+            -H "Content-Type: application/json" \
+            -H "x-retention-sweep: ${RETENTION_SWEEP_SECRET}" \
+            --data '{}' \
+            "https://iirqbizwanyhgkhanntq.supabase.co/functions/v1/retention-sweep")
+          echo "status ${code}"
+          python3 - <<'PY'
+          import pathlib, re
+          text = pathlib.Path("/tmp/retention-sweep-body.txt").read_text(encoding="utf-8", errors="replace")
+          text = re.sub(r"[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}", "[redacted]", text)
+          print(text[:300])
+          PY
+          if [ "$code" -lt 200 ] || [ "$code" -ge 300 ]; then
+            echo "retention sweep failed"
+            exit 1
+          fi

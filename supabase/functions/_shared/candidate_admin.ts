@@ -9,7 +9,9 @@ import {
   type VerifyBody,
   type VerifyDeps,
 } from './candidate_flow.ts'
+import { disposableDomain, domainSuffixes, emailDomain } from './email_domains.ts'
 import { publicSite, sendEmail } from './mail.ts'
+import { bumpKeyedLimit } from './rate_limit.ts'
 
 type Admin = SupabaseClient
 
@@ -66,6 +68,7 @@ function registerDeps(admin: Admin): RegisterDeps {
         region: row.region,
         request_state: 'open',
         invite_reason: row.inviteReason,
+        free_webmail: row.freeWebmail,
         ft_source: row.attribution.ft_source,
         ft_medium: row.attribution.ft_medium,
         ft_campaign: row.attribution.ft_campaign,
@@ -104,6 +107,11 @@ function registerDeps(admin: Admin): RegisterDeps {
         detail,
       })
     },
+    domainStatus: (email) => domainStatus(admin, email),
+    mailboxOk: async (email) => mailboxAccepts(emailDomain(email)),
+    consumeRegisterLimit: (email, remoteIp) => consumeRegisterLimit(admin, email, remoteIp),
+    // The invite is spent here, when the invitee registers. The wallet returns
+    // it only if this person never verifies. A decline does not refill it.
     claimInvite: async (userId, token, reason) => {
       if (!/^[A-Za-z0-9_-]{43,80}$/.test(token)) return false
       const { data: invite } = await admin
@@ -190,6 +198,42 @@ function verifyDeps(admin: Admin): VerifyDeps {
       })
     },
   }
+}
+
+async function domainStatus(admin: Admin, email: string): Promise<'ok' | 'disposable' | 'blocked'> {
+  if (disposableDomain(email)) return 'disposable'
+  const suffixes = domainSuffixes(emailDomain(email))
+  if (suffixes.length === 0) return 'ok'
+  const { data: extra, error } = await admin.from('disposable_email_domains').select('domain').in('domain', suffixes)
+  if (!error && extra && extra.length > 0) return 'disposable'
+  const { data: blocked, error: blockedError } = await admin
+    .from('blocked_email_domains')
+    .select('domain')
+    .in('domain', suffixes)
+  if (!blockedError && blocked && blocked.length > 0) return 'blocked'
+  return 'ok'
+}
+
+async function mailboxAccepts(domain: string) {
+  if (!domain || domain === 'example.com') return true
+  try {
+    const mx = await Deno.resolveDns(domain, 'MX')
+    if (Array.isArray(mx) && mx.length > 0) return true
+    const addresses = await Deno.resolveDns(domain, 'A')
+    return Array.isArray(addresses) && addresses.length > 0
+  } catch {
+    return true
+  }
+}
+
+async function consumeRegisterLimit(admin: Admin, email: string, remoteIp: string) {
+  const hour = 60 * 60 * 1000
+  const day = 24 * hour
+  const emailHit = await bumpKeyedLimit(admin, 'register_rate_limits', `reg:email:${email}`, hour, 3)
+  const ipHit = await bumpKeyedLimit(admin, 'register_rate_limits', `reg:ip:${remoteIp || 'unknown'}`, day, 10)
+  if (emailHit === 'error' || ipHit === 'error') return 'error' as const
+  if (emailHit === 'limited' || ipHit === 'limited') return 'limited' as const
+  return 'ok' as const
 }
 
 export async function handleRegister(admin: Admin, body: RegisterBody, remoteIp: string) {
