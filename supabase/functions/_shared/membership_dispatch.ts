@@ -31,7 +31,7 @@ function dashboard() {
 }
 
 function adminLink(userId: string) {
-  return emailLink(`/admin/applications/${userId}`, 'membership-request')
+  return emailLink(`/admin/review/${userId}`, 'membership-request')
 }
 
 function liveLink() {

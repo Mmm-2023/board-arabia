@@ -175,7 +175,7 @@ let tree = memberShell('Membership: 5 of 7', checklist(partial))
 if (state === 'gate') tree = memberShell('Membership: 7 of 7', checklist(complete))
 if (state === 'queue' || state === 'tabs') {
   tree = staffShell(
-    '/admin/applications',
+    '/admin/review',
     <MembershipQueueView
       rows={state === 'tabs' ? rows.slice(0, 1) : rows}
       state="submitted"
@@ -195,7 +195,7 @@ if (state === 'queue' || state === 'tabs') {
 }
 if (state === 'detail') {
   tree = staffShell(
-    '/admin/applications/11111111-1111-4111-8111-111111111111',
+    '/admin/review/11111111-1111-4111-8111-111111111111',
     <MembershipDetailView
       detail={detail}
       seat="ksa"

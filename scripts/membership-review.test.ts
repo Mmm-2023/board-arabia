@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import test from 'node:test'
+import { createElement, type ReactNode } from 'react'
+import { renderToStaticMarkup } from 'react-dom/server'
+import { MemoryRouter } from 'react-router-dom'
+import { createServer } from 'vite'
 import { hasBoardFooter, hasSubstantiveBody, marketingSignatureHit } from '../supabase/functions/_shared/mail.ts'
 import {
   declinedMail,
@@ -152,7 +156,7 @@ test('only review call carries the booking link, and the live letter has no cred
     region: 'KSA',
     company: 'Example Holdings',
     vouch: '',
-    adminUrl: 'https://boardarabia.com/admin/applications/11111111-1111-4111-8111-111111111111',
+    adminUrl: 'https://boardarabia.com/admin/review/11111111-1111-4111-8111-111111111111',
   })
   assert.equal(/capacity|statement|phone|cr number/i.test(desk.text), false)
 })
@@ -241,6 +245,80 @@ test('review function reads the booking secret and does not return it', () => {
   assert.match(apply, /application_submitted/)
   assert.equal(/register-candidate/.test(apply), false)
 })
+
+test('/admin/applications renders the legacy list', async () => {
+  const app = read('src/App.tsx')
+  assert.match(app, /path="applications" element=\{<ApplicationsPage \/>\}/)
+  assert.equal(app.includes('applications/legacy'), false)
+  assert.equal(app.includes('applications/:candidateId'), false)
+  const html = await renderAdmin('/admin/applications', 'ApplicationsPage')
+  assert.match(html, /<h1[^>]*>Applications<\/h1>/)
+  assert.match(html, /Accept, reject, or admit/)
+  assert.match(html, /No applications yet/)
+  assert.equal(html.includes('Membership requests'), false)
+  assert.equal(html.includes('Legacy applications'), false)
+})
+
+test('/admin/review renders the new queue', async () => {
+  const app = read('src/App.tsx')
+  assert.match(app, /path="review" element=\{<MembershipQueuePage \/>\}/)
+  assert.match(app, /path="review\/:candidateId" element=\{<MembershipDetailPage \/>\}/)
+  const desk = read('src/pages/admin/MembershipDesk.tsx')
+  const dispatch = read('supabase/functions/_shared/membership_dispatch.ts')
+  const remind = read('supabase/functions/remind-membership/index.ts')
+  assert.equal(desk.includes('/admin/applications'), false)
+  assert.match(desk, /\/admin\/review\/\$\{row\.userId\}/)
+  assert.match(desk, /to="\/admin\/review"/)
+  assert.match(dispatch, /\/admin\/review\/\$\{userId\}/)
+  assert.equal(dispatch.includes('/admin/applications/'), false)
+  assert.match(remind, /\/admin\/review\/\$\{row\.user_id\}/)
+  assert.equal(remind.includes('/admin/applications/'), false)
+  const html = await renderAdmin('/admin/review', 'MembershipQueuePage')
+  assert.match(html, /data-screen="membership-queue"/)
+  assert.match(html, /Membership requests/)
+  assert.match(html, /Loading the queue/)
+  assert.equal(html.includes('Accept, reject, or admit'), false)
+  assert.equal(html.includes('Legacy applications'), false)
+})
+
+async function renderAdmin(path: string, exportName: 'ApplicationsPage' | 'MembershipQueuePage') {
+  const vite = await createServer({
+    server: { middlewareMode: true },
+    appType: 'custom',
+    logLevel: 'error',
+  })
+  try {
+    const pages = (await vite.ssrLoadModule('/src/pages/admin/MembershipPages.tsx')) as Record<string, () => ReactNode>
+    const legacy = (await vite.ssrLoadModule('/src/pages/admin/ApplicationsPage.tsx')) as {
+      ApplicationsPage: () => ReactNode
+    }
+    const preview = (await vite.ssrLoadModule('/src/pages/admin/context.tsx')) as {
+      AdminPreview: (props: { room: Record<string, unknown>; children: ReactNode }) => ReactNode
+    }
+    const View = exportName === 'ApplicationsPage' ? legacy.ApplicationsPage : pages.MembershipQueuePage
+    return renderToStaticMarkup(
+      createElement(
+        MemoryRouter,
+        { initialEntries: [path] },
+        createElement(
+          preview.AdminPreview,
+          {
+            room: {
+              loading: false,
+              apps: [],
+              listError: '',
+              panelFailed: {},
+              session: null,
+            },
+          },
+          createElement(View),
+        ),
+      ),
+    )
+  } finally {
+    await vite.close()
+  }
+}
 
 test('founding number line is member-only and campaign links carry UTMs', () => {
   assert.equal(membershipLine('founding', 7), 'You are Founding Member No. 7.')

@@ -68,7 +68,8 @@ const shots = [
   ['detail', 390, 844, 'admin-detail-390.png', true, 'Review call'],
   ['approved', 1280, 900, 'member-approved-1280.png', false, 'Welcome to full membership'],
   ['approved', 390, 844, 'member-approved-390.png', false, 'Founding Member No. 7'],
-  ['tabs', 390, 844, 'admin-tabs-390.png', false, 'Review'],
+  ['tabs', 1280, 900, 'admin-tabs-1280.png', false, 'Applications'],
+  ['tabs', 390, 844, 'admin-tabs-390.png', false, 'Applications'],
 ]
 
 try {
@@ -93,6 +94,32 @@ async function waitForBrowser() {
     await new Promise((resolve) => setTimeout(resolve, 100))
   }
   throw new Error('Chrome did not open a debugging port')
+}
+
+async function waitForMarker(send, marker) {
+  const started = Date.now()
+  let last = ''
+  while (Date.now() - started < 15000) {
+    let ready
+    try {
+      ready = await send('Runtime.evaluate', {
+        expression: `(() => {
+          const text = document.body ? document.body.innerText : ''
+          return { ok: text.includes(${JSON.stringify(marker)}), text: text.slice(-500) }
+        })()`,
+        returnByValue: true,
+      })
+    } catch (error) {
+      last = error instanceof Error ? error.message : String(error)
+      await new Promise((resolve) => setTimeout(resolve, 100))
+      continue
+    }
+    const value = ready.result?.value
+    if (value?.ok) return value
+    if (value?.text) last = value.text
+    await new Promise((resolve) => setTimeout(resolve, 80))
+  }
+  return { ok: false, text: last }
 }
 
 async function capture(state, width, height, file, beyond, marker) {
@@ -130,25 +157,46 @@ async function capture(state, width, height, file, beyond, marker) {
     mobile: width < 500,
   })
   await send('Page.navigate', { url: `http://127.0.0.1:${port}/tt2?state=${state}` })
-  const ready = await send('Runtime.evaluate', {
-    expression: `new Promise((resolve) => {
-      const started = Date.now()
-      const marker = ${JSON.stringify(marker)}
-      const tick = () => {
-        if (document.body.innerText.includes(marker)) {
-          resolve({ ok: true })
-          return
+  const ready = await waitForMarker(send, marker)
+  if (!ready.ok) {
+    throw new Error(`Preview was not ready for ${state} at ${width}: ${JSON.stringify(ready)}`)
+  }
+  if (state === 'tabs') {
+    const labels = await send('Runtime.evaluate', {
+      expression: `(() => {
+        const bars = [...document.querySelectorAll('aside[aria-label="Primary"], nav[aria-label="Primary"]')]
+        const bar = bars.find((node) => node.getClientRects().length > 0)
+        if (!bar) return { error: 'no visible primary nav' }
+        return {
+          labels: [...bar.querySelectorAll('[data-nav="primary"]')].map((link) => {
+            const span = link.querySelector('.shell-tab-label, span:last-of-type')
+            const text = (span && span.textContent || '').trim()
+            const previous = span.style.fontWeight
+            span.style.fontWeight = '700'
+            const bold = span.scrollWidth
+            const client = span.clientWidth
+            span.style.fontWeight = previous
+            return {
+              text,
+              truncated: bold > client + 1,
+              bold,
+              client,
+            }
+          }),
         }
-        if (Date.now() - started > 8000) resolve({ ok: false, text: (document.body && document.body.innerText || '').slice(-800) })
-        else setTimeout(tick, 50)
-      }
-      tick()
-    })`,
-    awaitPromise: true,
-    returnByValue: true,
-  })
-  if (!ready.result?.value?.ok) {
-    throw new Error(`Preview was not ready for ${state} at ${width}: ${JSON.stringify(ready.result?.value)}`)
+      })()`,
+      returnByValue: true,
+    })
+    const value = labels.result?.value
+    if (!value || value.error) throw new Error(`Tab nav was not visible at ${width}: ${JSON.stringify(value)}`)
+    const names = value.labels.map((item) => item.text)
+    if (!names.includes('Applications') || !names.includes('Review')) {
+      throw new Error(`Staff nav is missing Applications or Review at ${width}: ${names.join(', ')}`)
+    }
+    const clipped = value.labels.filter((item) => item.text === 'Applications' || item.text === 'Review').filter((item) => item.truncated)
+    if (width === 390 && clipped.length) {
+      throw new Error(`Tab labels truncated at 390: ${JSON.stringify(clipped)}`)
+    }
   }
   if (beyond) {
     await send('Runtime.evaluate', {

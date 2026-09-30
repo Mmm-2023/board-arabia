@@ -15,7 +15,7 @@ test('desktop sidebar and mobile tabs share the locked destinations', async () =
     }
     const memberLabels = ['Home', 'Deals', 'People', 'Majlis', 'AI tools']
     assertMemberChrome(mod.renderMemberShell(), memberLabels)
-    assertChrome(mod.renderStaffShell(), ['Home', 'Review', 'People', 'Capacity', 'Settings'], 'Switch to member')
+    assertChrome(mod.renderStaffShell(), ['Home', 'Applications', 'Review', 'People', 'Capacity', 'Settings'], 'Switch to member')
     const account = mod.renderMemberShell(true)
     assert.match(account, /id="shell-account"/)
     const sheet = account.slice(account.indexOf('id="shell-account"'))
@@ -36,7 +36,8 @@ test('desktop sidebar and mobile tabs share the locked destinations', async () =
     assert.equal(bar.includes('data-nav="more"'), false)
     assert.match(bar, /grid-cols-5/)
     assert.equal((bar.match(/data-nav="primary"/g) || []).length, 5)
-    assert.match(tabBar(mod.renderStaffShell()), /grid-cols-6/)
+    assert.match(tabBar(mod.renderStaffShell()), /grid-cols-7/)
+    assert.match(tabBar(mod.renderStaffShell()), /shell-staff-tabs/)
     assert.equal(header(home).includes('aria-label="More"'), false)
     assert.equal(header(home).includes('Sign out'), false)
     const ai = mod.renderMemberShell(false, '/dashboard/ai/due-diligence')

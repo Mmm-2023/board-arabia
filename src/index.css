@@ -206,6 +206,26 @@
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
+.shell-tab-label {
+  display: block;
+  max-width: 100%;
+  white-space: nowrap;
+  line-height: 1.1;
+  text-align: center;
+}
+
+/* Six staff destinations plus More. Applications is the long label. */
+@media (max-width: 767px) {
+  .shell-staff-tabs {
+    grid-template-columns: 0.64fr 1.55fr 0.84fr 0.76fr 1fr 0.94fr 0.56fr;
+  }
+
+  .shell-staff-tabs .shell-tab-label {
+    font-size: 11px;
+    letter-spacing: -0.03em;
+  }
+}
+
 .mandate-locked-copy,
 .re-locked-copy {
   filter: blur(7px);

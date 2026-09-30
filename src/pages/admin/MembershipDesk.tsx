@@ -117,11 +117,6 @@ export function MembershipQueueView({
           </select>
         </label>
       </div>
-      <p className="mt-4">
-        <Link to="/admin/applications/legacy" className="text-[0.95rem] text-pearl/70 underline">
-          Legacy applications
-        </Link>
-      </p>
       {loading ? <p className="mt-6 text-pearl/60">Loading the queue.</p> : null}
       {error ? (
         <div className="mt-6" role="alert">
@@ -147,7 +142,7 @@ export function MembershipQueueView({
             {rows.map((row) => (
               <tr key={row.userId} className="border-t border-white/10">
                 <td className="px-2 py-3">
-                  <Link to={`/admin/applications/${row.userId}`} className="underline">{row.name}</Link>
+                  <Link to={`/admin/review/${row.userId}`} className="underline">{row.name}</Link>
                 </td>
                 <td className="px-2 py-3">{roleLabel(row.role) || row.role}</td>
                 <td className="px-2 py-3">{row.region === 'ksa_gcc' ? 'KSA' : 'Intl'}</td>
@@ -165,7 +160,7 @@ export function MembershipQueueView({
       <ul className="mt-4 space-y-3 md:hidden">
         {rows.map((row) => (
           <li key={row.userId} className="border border-white/10 px-4 py-4">
-            <Link to={`/admin/applications/${row.userId}`} className="font-display text-[1.15rem] font-semibold underline">
+            <Link to={`/admin/review/${row.userId}`} className="font-display text-[1.15rem] font-semibold underline">
               {row.name}
             </Link>
             <p className="mt-1 text-[0.95rem] text-pearl/70">{roleLabel(row.role) || row.role}</p>
@@ -251,7 +246,7 @@ export function MembershipDetailView({
 }) {
   return (
     <div data-screen="membership-detail" className="pb-28">
-      <Link to="/admin/applications" className="text-[0.95rem] underline">Back to the queue</Link>
+      <Link to="/admin/review" className="text-[0.95rem] underline">Back to the queue</Link>
       <h1 className="mt-3 font-display text-[2rem] font-semibold tracking-[-0.03em]">{detail.name}</h1>
       <p className="mt-1 text-pearl/65">{stateLabel(detail.state)} · {detail.region === 'ksa_gcc' ? 'KSA' : 'Intl'}</p>
       <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">

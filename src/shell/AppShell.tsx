@@ -418,7 +418,7 @@ export function AppShell({
                       {lockedHubs.has(item.id) ? <LockMark /> : null}
                       {item.id === 'deals' ? <CountBadge count={dealsBadge} place="tab" /> : null}
                     </span>
-                    <span className="max-w-full truncate">{item.label}</span>
+                    <span className="shell-tab-label">{item.label}</span>
                   </>
                 )}
               </NavLink>
@@ -588,7 +588,7 @@ function CountBadge({ count, place }: { count: number; place: 'tab' | 'sidebar' 
 
 /** Staff tab bar: one column per primary destination, plus More. */
 function tabGridClass(destinationCount: number) {
-  if (destinationCount + 1 === 7) return 'grid-cols-7'
+  if (destinationCount + 1 === 7) return 'grid-cols-7 shell-staff-tabs'
   return 'grid-cols-6'
 }
 

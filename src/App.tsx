@@ -105,9 +105,9 @@ export default function App() {
       <Route path="/auth/reset" element={<AuthConfirmPage />} />
       <Route path="/admin" element={<AdminLayout />}>
         <Route index element={<AdminHome />} />
-        <Route path="applications" element={<MembershipQueuePage />} />
-        <Route path="applications/legacy" element={<ApplicationsPage />} />
-        <Route path="applications/:candidateId" element={<MembershipDetailPage />} />
+        <Route path="applications" element={<ApplicationsPage />} />
+        <Route path="review" element={<MembershipQueuePage />} />
+        <Route path="review/:candidateId" element={<MembershipDetailPage />} />
         <Route path="people" element={<PeoplePage />} />
         <Route path="people/intros" element={<AdminIntrosPage />} />
         <Route path="capacity" element={<CapacityPage />} />

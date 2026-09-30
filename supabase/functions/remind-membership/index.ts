@@ -67,7 +67,7 @@ async function remindWaitlist(admin: ReturnType<typeof createClient>, dry: boole
     if (dry || !desk) continue
     const mail = waitlistOwnerMail({
       name: String(row.full_name || 'A candidate'),
-      adminUrl: emailLink(`/admin/applications/${row.user_id}`, 'waitlist-revisit'),
+      adminUrl: emailLink(`/admin/review/${row.user_id}`, 'waitlist-revisit'),
     })
     await sendEmail({ to: desk, subject: mail.subject, html: mail.html, text: mail.text })
     const next = new Date(Date.now() + 30 * 86_400_000).toISOString()

@@ -37,6 +37,14 @@ function paths(id: string) {
           <path d="M8 17h5" />
         </>
       )
+    case 'review':
+      return (
+        <>
+          <rect x="6" y="3.5" width="12" height="17" rx="1.5" />
+          <path d="M9 3.5h6V6H9z" />
+          <path d="M9 12.2 11 14l4-4" />
+        </>
+      )
     case 'real-estate':
       return (
         <>
