@@ -56,8 +56,8 @@ function inRange(value: string | null, from: string, to: string) {
   return value >= from && value < to
 }
 
-function excluded(email: string, demo: boolean, staff: boolean) {
-  return demo || staff || isTestEmail(email)
+function excluded(email: string, demo: boolean, staff: boolean, testDomain: string | null) {
+  return demo || staff || isTestEmail(email, testDomain)
 }
 
 function channelOk(medium: string | null, channel: 'all' | 'paid' | 'organic') {
@@ -82,10 +82,11 @@ export function rawFunnel(
   from: string,
   to: string,
   channel: 'all' | 'paid' | 'organic' = 'all',
+  testDomain: string | null = '@example.com',
 ): Raw {
-  const people = candidates.filter((row) => !excluded(row.email, row.demo, row.staff) && channelOk(row.ftMedium, channel))
-  const apps = legacy.filter((row) => !excluded(row.email, row.memberDemo, row.staff) && channelOk(row.ftMedium, channel))
-  const events = steps.filter((row) => !excluded(row.email, row.demo, row.staff) && channelOk(row.ftMedium, channel))
+  const people = candidates.filter((row) => !excluded(row.email, row.demo, row.staff, testDomain) && channelOk(row.ftMedium, channel))
+  const apps = legacy.filter((row) => !excluded(row.email, row.memberDemo, row.staff, testDomain) && channelOk(row.ftMedium, channel))
+  const events = steps.filter((row) => !excluded(row.email, row.demo, row.staff, testDomain) && channelOk(row.ftMedium, channel))
   const form_sent = people.filter((row) => inRange(row.createdAt, from, to)).length
   const email_verified = people.filter((row) => inRange(row.emailVerifiedAt, from, to)).length
   const legacy_applications = apps.filter((row) => inRange(row.createdAt, from, to)).length

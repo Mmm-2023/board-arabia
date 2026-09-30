@@ -104,10 +104,16 @@ export const CHECKLIST_LABELS: Record<string, string> = {
 
 const TEST_EMAIL = /(^|[.+_-])test([.+_@-]|$)/
 
-export function isTestEmail(email: string | null | undefined) {
+/**
+ * A test token in the local part, or the whole example.com domain.
+ * Pass null to check the token only. The default domain is example.com.
+ */
+export function isTestEmail(email: string | null | undefined, testDomain: string | null = '@example.com') {
   const value = (email || '').trim().toLowerCase()
   if (!value) return false
-  return TEST_EMAIL.test(value) || value.endsWith('@example.com')
+  if (TEST_EMAIL.test(value)) return true
+  if (!testDomain) return false
+  return value.endsWith(testDomain.toLowerCase())
 }
 
 export function isPaidMedium(medium: string | null | undefined) {

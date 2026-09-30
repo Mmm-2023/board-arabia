@@ -1,3 +1,7 @@
+/**
+ * Screenshot-only preview for scripts/capture-tr3.mjs.
+ * Not imported by App, main, or any route, so the production bundle leaves it out.
+ */
 import { StrictMode, type ReactNode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { MemoryRouter } from 'react-router-dom'

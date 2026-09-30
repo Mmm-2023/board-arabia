@@ -37,7 +37,7 @@ const TO = '2026-10-01T00:00:00.000Z'
 
 function legacy(partial: Partial<LegacyCount>): LegacyCount {
   return {
-    email: 'guest@boardarabia.com',
+    email: 'guest@example.com',
     createdAt: '2026-09-02T00:00:00.000Z',
     status: 'accepted',
     admittedAt: null,
@@ -55,7 +55,7 @@ test('two accepted legacy applications count as approved through the date fallba
   const apps = [
     legacy({ decisionAt: '2026-09-10T00:00:00.000Z', admittedAt: null, memberCreatedAt: null }),
     legacy({
-      email: 'second@boardarabia.com',
+      email: 'second@example.com',
       admittedAt: null,
       memberCreatedAt: '2026-09-12T00:00:00.000Z',
       decisionAt: null,
@@ -65,12 +65,14 @@ test('two accepted legacy applications count as approved through the date fallba
   assert.equal(legacyApprovedAt(apps[1]), '2026-09-12T00:00:00.000Z')
   assert.equal(legacyApprovedAt(legacy({ status: 'pending', decisionAt: '2026-09-10T00:00:00.000Z' })), null)
   assert.equal(legacyApprovedAt(legacy({ memberDemo: true, memberCreatedAt: '2026-09-12T00:00:00.000Z', decisionAt: null, admittedAt: null })), null)
-  const raw = rawFunnel([], apps, [], FROM, TO)
+  const raw = rawFunnel([], apps, [], FROM, TO, 'all', null)
   assert.equal(raw.legacy_approved, 2)
   assert.equal(raw.approved, 2)
   assert.equal(maskedFunnel(raw).legacy_approved, 'lt5')
   assert.equal(maskedFunnel(raw).approved, 'lt5')
-  const staff = rawFunnel([], [legacy({ staff: true }), legacy({ email: 'qa+test@boardarabia.com' })], [], FROM, TO)
+  const hidden = rawFunnel([], apps, [], FROM, TO)
+  assert.equal(hidden.legacy_approved, 0)
+  const staff = rawFunnel([], [legacy({ staff: true }), legacy({ email: 'qa+test@example.com' })], [], FROM, TO, 'all', null)
   assert.equal(staff.legacy_approved, 0)
   const demo = rawFunnel(
     [],
@@ -78,6 +80,8 @@ test('two accepted legacy applications count as approved through the date fallba
     [],
     FROM,
     TO,
+    'all',
+    null,
   )
   assert.equal(demo.legacy_approved, 0)
 })
@@ -85,7 +89,7 @@ test('two accepted legacy applications count as approved through the date fallba
 test('candidate funnel steps and paid filter stay out of person fields', () => {
   const people: CandidateCount[] = [
     {
-      email: 'ada@boardarabia.com',
+      email: 'ada@example.com',
       createdAt: '2026-09-03T00:00:00.000Z',
       emailVerifiedAt: '2026-09-04T00:00:00.000Z',
       submittedAt: '2026-09-08T00:00:00.000Z',
@@ -96,7 +100,7 @@ test('candidate funnel steps and paid filter stay out of person fields', () => {
       staff: false,
     },
     {
-      email: 'staff@boardarabia.com',
+      email: 'staff@example.com',
       createdAt: '2026-09-03T00:00:00.000Z',
       emailVerifiedAt: '2026-09-04T00:00:00.000Z',
       submittedAt: null,
@@ -107,14 +111,14 @@ test('candidate funnel steps and paid filter stay out of person fields', () => {
       staff: true,
     },
   ]
-  const all = rawFunnel(people, [], [], FROM, TO, 'all')
+  const all = rawFunnel(people, [], [], FROM, TO, 'all', null)
   assert.equal(all.form_sent, 1)
   assert.equal(all.email_verified, 1)
   assert.equal(all.full_requested, 1)
   assert.equal(all.candidate_approved, 1)
-  const organic = rawFunnel(people, [], [], FROM, TO, 'organic')
+  const organic = rawFunnel(people, [], [], FROM, TO, 'organic', null)
   assert.equal(organic.form_sent, 0)
-  const paid = rawFunnel(people, [legacy({ ftMedium: 'cpc', createdAt: '2026-09-05T00:00:00.000Z' })], [], FROM, TO, 'paid')
+  const paid = rawFunnel(people, [legacy({ ftMedium: 'cpc', createdAt: '2026-09-05T00:00:00.000Z' })], [], FROM, TO, 'paid', null)
   assert.equal(paid.form_sent, 1)
   assert.equal(paid.legacy_applications, 1)
   assert.equal(bucketCount(4), 'lt5')
@@ -233,8 +237,10 @@ test('first touch chip is source and medium, and hides when empty', async () => 
   assert.equal(firstTouchChip('LinkedIn', 'Paid_Social'), 'linkedin / paid_social')
   assert.equal(firstTouchChip(null, null), null)
   assert.equal(firstTouchChip('ada@example.com', 'social'), null)
-  assert.equal(isTestEmail('qa+test@boardarabia.com'), true)
-  assert.equal(isTestEmail('contest@boardarabia.com'), false)
+  assert.equal(isTestEmail('qa+test@example.com', null), true)
+  assert.equal(isTestEmail('contest@example.com', null), false)
+  assert.equal(isTestEmail('guest@example.com'), true)
+  assert.equal(isTestEmail('qa+test@example.com'), true)
   const vite = await createServer({ server: { middlewareMode: true }, appType: 'custom', logLevel: 'error' })
   try {
     const desk = (await vite.ssrLoadModule('/src/pages/admin/MembershipDesk.tsx')) as {
@@ -290,6 +296,13 @@ test('home card and marketing nav stay secondary, with no public route edit', as
   assert.match(app, /path="marketing"/)
   assert.equal(source('src/pages/LandingPage.tsx').includes('/admin/marketing'), false)
   assert.equal(source('src/components/Nav.tsx').includes('/admin/marketing'), false)
+  assert.equal(source('src/App.tsx').includes('tr3Preview'), false)
+  assert.equal(source('src/main.tsx').includes('tr3Preview'), false)
+  assert.equal(source('index.html').includes('tr3Preview'), false)
+  for (const file of ['src/shell/tr3Preview.tsx', 'scripts/capture-tr3.mjs']) {
+    const emails = source(file).match(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g) || []
+    for (const email of emails) assert.match(email, /@example\.com$/, email)
+  }
   assert.match(source('.env.example'), /POSTHOG_PERSONAL_API_KEY=/)
   assert.equal(source('.env.example').includes('phx_'), false)
   assert.match(source('.github/workflows/pages.yml'), /VITE_ANALYTICS_ENABLED: 'false'/)
@@ -305,7 +318,8 @@ test('marketing UI copy has no em dash, en dash, or the word Basic', () => {
     'src/pages/admin/MarketingPage.tsx',
     'src/pages/admin/MarketingHomeCard.tsx',
     'src/lib/marketing.ts',
-    'handoff/tr3-marketing-reconciliation-2026-09-30.md',
+    'src/shell/tr3Preview.tsx',
+    'scripts/capture-tr3.mjs',
   ]
   for (const file of files) {
     const text = source(file)
