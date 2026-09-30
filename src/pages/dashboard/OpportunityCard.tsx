@@ -4,6 +4,8 @@ import { SAMPLE_NOTE } from '../../lib/sampleAction'
 import {
   RE_LOCKED_NOTE,
   RE_LOCKED_PLACEHOLDERS,
+  reAssetClassLabel,
+  reCapitalRoleLabel,
   type ReOpportunityCard,
   type ReOpportunityInventory,
   type ReOpportunityOpen,
@@ -41,13 +43,13 @@ export function OpportunityCard({
         <RePlace city={card.city} hint={card.one_liner} />
         <span aria-hidden="true"> · </span>
         <span className="sr-only">, </span>
-        {card.asset_class}
+        {reAssetClassLabel(card.asset_class)}
       </p>
       <p className="mt-1 text-[0.95rem] text-ink/70">
         {card.ticket_band}
         <span aria-hidden="true"> · </span>
         <span className="sr-only">, </span>
-        {card.capital_role}
+        {reCapitalRoleLabel(card.capital_role)}
       </p>
       <ReadinessStrip card={card} />
       {card.unlocked ? (

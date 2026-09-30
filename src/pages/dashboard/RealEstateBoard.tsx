@@ -1,5 +1,12 @@
 import { useEffect, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react'
-import { RE_ASSET_CLASSES, RE_CAPITAL_ROLES, type ReOpportunityCard, type RePartnerCard } from '../../lib/reRedaction'
+import {
+  RE_ASSET_CLASSES,
+  RE_CAPITAL_ROLES,
+  reAssetClassLabel,
+  reCapitalRoleLabel,
+  type ReOpportunityCard,
+  type RePartnerCard,
+} from '../../lib/reRedaction'
 import { RE_REGIONS } from '../../lib/reRegions'
 import {
   EMPTY_RE_FILTERS,
@@ -253,6 +260,7 @@ function FilterGroups({
         label="Asset class"
         value={filters.assetClass}
         options={RE_ASSET_CLASSES}
+        labelFor={reAssetClassLabel}
         onPick={(assetClass) => onChange({ ...filters, assetClass })}
       />
       <FilterRow
@@ -265,6 +273,7 @@ function FilterGroups({
         label="Capital role"
         value={filters.capitalRole}
         options={RE_CAPITAL_ROLES}
+        labelFor={reCapitalRoleLabel}
         onPick={(capitalRole) => onChange({ ...filters, capitalRole })}
       />
     </div>
@@ -275,11 +284,13 @@ function FilterRow<T extends string>({
   label,
   value,
   options,
+  labelFor = (option: T) => option,
   onPick,
 }: {
   label: string
   value: T | null
   options: readonly T[]
+  labelFor?: (option: T) => string
   onPick: (next: T | null) => void
 }) {
   return (
@@ -291,7 +302,7 @@ function FilterRow<T extends string>({
         </Chip>
         {options.map((option) => (
           <Chip key={option} pressed={value === option} onClick={() => onPick(value === option ? null : option)}>
-            {option}
+            {labelFor(option)}
           </Chip>
         ))}
       </div>

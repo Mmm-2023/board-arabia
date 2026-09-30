@@ -19,6 +19,25 @@ export const RE_ASSET_CLASSES = [
   'healthcare RE',
 ] as const
 
+export type ReAssetClass = (typeof RE_ASSET_CLASSES)[number]
+
+/** Display only. Stored values stay in RE_ASSET_CLASSES. */
+export const RE_ASSET_CLASS_LABEL: Record<ReAssetClass, string> = {
+  residential: 'Residential',
+  hospitality: 'Hospitality',
+  office: 'Office',
+  retail: 'Retail',
+  'industrial/logistics': 'Industrial and logistics',
+  'mixed-use': 'Mixed use',
+  'land bank': 'Land bank',
+  'student housing': 'Student housing',
+  'healthcare RE': 'Healthcare real estate',
+}
+
+export function reAssetClassLabel(value: string) {
+  return RE_ASSET_CLASS_LABEL[value as ReAssetClass] ?? value
+}
+
 export const RE_CITIES = [
   'Riyadh',
   'Jeddah',
@@ -39,6 +58,23 @@ export const RE_CAPITAL_ROLES = [
   'offtake',
   'operator',
 ] as const
+
+export type ReCapitalRole = (typeof RE_CAPITAL_ROLES)[number]
+
+/** Display only. Stored values stay in RE_CAPITAL_ROLES. */
+export const RE_CAPITAL_ROLE_LABEL: Record<ReCapitalRole, string> = {
+  equity: 'Equity',
+  mezzanine: 'Mezzanine',
+  'sukuk/REIT': 'Sukuk or REIT',
+  'JV partner': 'JV partner',
+  'land contribution': 'Land contribution',
+  offtake: 'Offtake',
+  operator: 'Operator',
+}
+
+export function reCapitalRoleLabel(value: string) {
+  return RE_CAPITAL_ROLE_LABEL[value as ReCapitalRole] ?? value
+}
 
 export const RE_TICKET_BANDS = [
   'Under $10m',
