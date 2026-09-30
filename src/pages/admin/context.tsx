@@ -15,6 +15,7 @@ import { isKeep, settleAdminLoad, type AdminLoadPanel } from './load'
 import {
   admitMember,
   decideApplication,
+  fetchAdminMembers,
   fetchFoundingCapacity,
   fetchPlatformStats,
   inviteMaster,
@@ -174,10 +175,7 @@ function useAdminState(): AdminRoom {
         fetchFoundingCapacity(),
         fetchPlatformStats(),
         supabase.from('applications').select('*').order('created_at', { ascending: false }),
-        supabase
-          .from('members')
-          .select('user_id, email, seat, status, invites_remaining, invites_granted')
-          .order('invited_at', { ascending: false }),
+        fetchAdminMembers(),
         supabase
           .from('member_invites')
           .select('id, application_id, channel, status, inviter_member_id')

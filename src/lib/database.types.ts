@@ -154,6 +154,7 @@ export type Database = {
           invites_remaining: number
           is_demo: boolean
           tier: 'founding' | 'member'
+          tiers: string[]
           founding_number: number | null
           created_at: string
           updated_at: string
@@ -171,6 +172,7 @@ export type Database = {
           invites_remaining?: number
           is_demo?: boolean
           tier?: 'founding' | 'member'
+          tiers?: string[]
           founding_number?: number | null
           created_at?: string
           updated_at?: string
@@ -188,6 +190,7 @@ export type Database = {
           invites_remaining?: number
           is_demo?: boolean
           tier?: 'founding' | 'member'
+          tiers?: string[]
           founding_number?: number | null
           created_at?: string
           updated_at?: string
@@ -855,6 +858,13 @@ export type Database = {
           role: string
           created_at: string
         }[]
+      }
+      set_member_tiers: {
+        Args: {
+          p_user_id: string
+          p_tiers: string[]
+        }
+        Returns: Json
       }
       staff_set_avatar_style: {
         Args: {

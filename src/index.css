@@ -283,6 +283,11 @@
   outline-offset: 2px;
 }
 
+.tier-chip:focus-visible {
+  outline: 2px solid var(--ba-indigo-deep);
+  outline-offset: 2px;
+}
+
 .section-tabs-fade {
   background: linear-gradient(to left, var(--ba-porcelain), transparent);
 }

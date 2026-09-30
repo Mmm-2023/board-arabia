@@ -1,6 +1,7 @@
+import { membershipTiersOf } from '../../lib/membershipTiers'
 import { seatLabel } from '../../lib/member'
 import { ADMIN_PANEL_NOTICE } from '../../shell/viewCopy'
-import { sponsorSeatHolders } from '../../lib/sponsorSeat'
+import { holdsSponsorSeat } from '../../lib/sponsorSeat'
 import type {
   Application,
   ApplicationStatus,
@@ -30,20 +31,27 @@ export function peopleInTier(
       .map((row) => ({ email: row.email, detail: new Date(row.created_at).toLocaleString() }))
   }
   if (tier === 'Sponsor') {
-    return sponsorSeatHolders(members).map((member) => ({
-      email: member.email,
-      detail: `${seatLabel(member.seat)} · ${member.status}`,
-    }))
-  }
-  if (tier === 'Founding Member') {
     return members
-      .filter((member) => member.seat === 'ksa' || member.seat === 'intl')
+      .filter((member) => holdsSponsorSeat(member))
       .map((member) => ({
         email: member.email,
         detail: `${seatLabel(member.seat)} · ${member.status}`,
       }))
   }
-  return []
+  if (tier === 'Founding Member') {
+    return members
+      .filter((member) => membershipTiersOf(member).includes('founding'))
+      .map((member) => ({
+        email: member.email,
+        detail: `${seatLabel(member.seat)} · ${member.status}`,
+      }))
+  }
+  return members
+    .filter((member) => membershipTiersOf(member).includes('member'))
+    .map((member) => ({
+      email: member.email,
+      detail: `${seatLabel(member.seat)} · ${member.status}`,
+    }))
 }
 
 export function peerMeta(rows: MemberInviteAdminRow[], app: Application) {

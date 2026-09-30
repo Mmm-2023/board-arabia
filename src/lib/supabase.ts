@@ -439,6 +439,45 @@ export type MemberAdminRow = {
   status: 'invited' | 'active' | 'suspended'
   invites_remaining: number
   invites_granted: number
+  tier?: 'founding' | 'member' | null
+  tiers?: string[] | null
+  founding_number?: number | null
+}
+
+const MEMBER_ADMIN_COLUMNS =
+  'user_id, email, seat, status, invites_remaining, invites_granted, tier, founding_number, tiers'
+const MEMBER_ADMIN_COLUMNS_LEGACY =
+  'user_id, email, seat, status, invites_remaining, invites_granted, tier, founding_number'
+
+/** Reads tiers when the column exists. Falls back until that migration is applied. */
+export async function fetchAdminMembers(): Promise<{
+  data: MemberAdminRow[] | null
+  error: { message: string } | null
+}> {
+  const full = await supabase
+    .from('members')
+    .select(MEMBER_ADMIN_COLUMNS)
+    .order('invited_at', { ascending: false })
+  if (!full.error) return { data: full.data as MemberAdminRow[] | null, error: null }
+  if (!/tiers/i.test(full.error.message)) return { data: null, error: full.error }
+  const legacy = await supabase
+    .from('members')
+    .select(MEMBER_ADMIN_COLUMNS_LEGACY)
+    .order('invited_at', { ascending: false })
+  if (legacy.error) return { data: null, error: legacy.error }
+  return { data: (legacy.data ?? []) as MemberAdminRow[], error: null }
+}
+
+export async function staffSetMemberTiers(
+  userId: string,
+  tiers: string[],
+): Promise<{ error?: string }> {
+  const { error } = await supabase.rpc('set_member_tiers', {
+    p_user_id: userId,
+    p_tiers: tiers,
+  })
+  if (error) return { error: error.message }
+  return {}
 }
 
 export async function inviteSponsor(input: {

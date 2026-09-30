@@ -5,19 +5,21 @@ import { DefaultPicturePicker } from '../../components/DefaultPicturePicker'
 import { SignedAvatar } from '../../components/SignedAvatar'
 import { normalizeAvatarStyle, type AvatarStyle } from '../../lib/avatarStyle'
 import { draftFromProfile } from '../../lib/capacity'
-import { adminMemberLine, type FoundingSeat } from '../../lib/member'
+import { peopleCardLine } from '../../lib/membershipTiers'
+import type { FoundingSeat } from '../../lib/member'
 import { firmByUserId, sponsorCapView } from '../../lib/sponsorSeat'
-import { inviteSponsor, staffSetAvatarStyle, type DryRunInvite, type MemberAdminRow } from '../../lib/supabase'
+import { inviteSponsor, staffSetAvatarStyle, staffSetMemberTiers, type DryRunInvite, type MemberAdminRow } from '../../lib/supabase'
 import { useNoIndex } from '../../lib/usePageTitle'
 import { ConfirmDialog } from '../../shell/ConfirmDialog'
 import { CardSkeleton, EmptyState } from '../../shell/ViewState'
 import { STAFF_VIEWS } from '../../shell/viewCopy'
+import { MembershipTiersControl, type TierShot } from './MembershipTiersControl'
 import { PEOPLE_TIERS, PanelNotice, peopleInTier } from './bits'
 import { useAdmin } from './context'
 import { SponsorInvitePanel } from './SponsorInvitePanel'
 import { SponsorSeatPanel } from './SponsorSeatPanel'
 
-export function PeoplePage() {
+export function PeoplePage({ tierShots }: { tierShots?: Record<string, TierShot> } = {}) {
   const room = useAdmin()
   const [inviteEmail, setInviteEmail] = useState('')
   const [inviteSeat, setInviteSeat] = useState<FoundingSeat>('ksa')
@@ -210,12 +212,12 @@ export function PeoplePage() {
               <li
                 key={member.user_id}
                 id={`member-${member.user_id}`}
-                className={`scroll-mt-24 border px-5 py-4 ${
+                className={`scroll-mt-24 max-w-full border py-4 ps-5 pe-16 ${
                   focusId === `member-${member.user_id}` ? 'border-brass/70' : 'border-pearl/10'
                 }`}
               >
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div className="flex min-w-0 items-center gap-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex min-w-0 flex-1 items-center gap-3">
                     <SignedAvatar
                       path={room.profileByUser[member.user_id]?.avatar_path ?? null}
                       avatarStyle={styleFor(member.user_id)}
@@ -223,9 +225,9 @@ export function PeoplePage() {
                       alt=""
                     />
                     <div className="min-w-0">
-                    <p className="text-[0.95rem] text-stone/85">{member.email}</p>
-                    <p className="mt-1 text-[0.8rem] text-pearl/45">
-                      {adminMemberLine(member.seat, member.status)}
+                    <p className="truncate text-[0.95rem] text-stone/85">{member.email}</p>
+                    <p className="mt-1 text-[0.8rem] break-words text-pearl/45">
+                      {peopleCardLine(member)}
                       {member.seat !== 'sponsor' && (
                         <>
                           {' · '}
@@ -240,7 +242,7 @@ export function PeoplePage() {
                       type="button"
                       disabled={room.updatingId === member.user_id}
                       onClick={() => void room.onMemberStatus(member, 'restore')}
-                      className="inline-flex min-h-11 items-center border border-pearl/20 px-3 text-[0.68rem] font-semibold tracking-[0.06em] text-pearl/70 uppercase disabled:opacity-40"
+                      className="inline-flex min-h-11 shrink-0 items-center border border-pearl/30 px-3 text-[0.75rem] font-semibold text-pearl/80 disabled:opacity-40"
                     >
                       Restore
                     </button>
@@ -249,12 +251,21 @@ export function PeoplePage() {
                       type="button"
                       disabled={room.updatingId === member.user_id}
                       onClick={() => setSuspending(member)}
-                      className="inline-flex min-h-11 items-center border border-pearl/20 px-3 text-[0.68rem] font-semibold tracking-[0.06em] text-pearl/70 uppercase disabled:opacity-40"
+                      className="inline-flex min-h-11 shrink-0 items-center border border-pearl/30 px-3 text-[0.75rem] font-semibold text-pearl/80 disabled:opacity-40"
                     >
                       Suspend
                     </button>
                   )}
                 </div>
+                <MembershipTiersControl
+                  member={member}
+                  shot={tierShots?.[member.user_id]}
+                  onSave={async (tiers) => {
+                    const result = await staffSetMemberTiers(member.user_id, tiers)
+                    if (!result.error) room.refresh()
+                    return result
+                  }}
+                />
                 <div className="mt-4">
                   <DefaultPicturePicker
                     tone="staff"
