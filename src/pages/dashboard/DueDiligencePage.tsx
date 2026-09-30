@@ -297,29 +297,6 @@ export function DueDiligenceDeskView({
       <h1 className="font-display text-[1.75rem] leading-tight font-bold tracking-[-0.03em] text-balance md:text-[2.2rem]">
         AI Due Diligence
       </h1>
-      <p className="mt-3 max-w-xl text-[1.05rem] leading-relaxed text-ink">{DD_COPY.introPrimary}</p>
-      <p className="mt-3 max-w-xl text-[1rem] leading-relaxed text-ink/70 sm:hidden">{DD_COPY.introShort}</p>
-      <p className="mt-3 hidden max-w-xl text-[1rem] leading-relaxed text-ink/70 sm:block">
-        {DD_COPY.introSupporting}
-      </p>
-      <p className="mt-3 max-w-xl text-[0.95rem] leading-relaxed text-ink/80">{DUE_DILIGENCE_DISCLAIMER}</p>
-
-      <details open className="mt-6 max-w-xl border border-[var(--ba-line)] bg-white px-4 py-2">
-        <summary className="flex min-h-11 cursor-pointer list-none items-center text-[1rem] font-semibold text-ink [&::-webkit-details-marker]:hidden">
-          {DD_COPY.doesHeading}
-        </summary>
-        <ul className="mt-2 list-disc space-y-1 pl-5 text-[0.95rem] leading-relaxed text-ink/80">
-          {DD_COPY.willDo.map((item) => (
-            <li key={item}>{item}</li>
-          ))}
-        </ul>
-        <h2 className="mt-4 text-[1rem] font-semibold text-ink">{DD_COPY.willNotHeading}</h2>
-        <ul className="mt-2 list-disc space-y-1 pb-2 pl-5 text-[0.95rem] leading-relaxed text-ink/80">
-          {DD_COPY.willNot.map((item) => (
-            <li key={item}>{item}</li>
-          ))}
-        </ul>
-      </details>
 
       {phase === 'loading' || phase === 'denied' || phase === 'load-error' ? (
         <div className="mt-8">
@@ -344,7 +321,7 @@ export function DueDiligenceDeskView({
 
       {showForm ? (
         <>
-          <form onSubmit={onSubmit} className="mt-8 max-w-xl">
+          <form onSubmit={onSubmit} className="mt-4 max-w-xl">
             <label className="block text-[0.95rem] text-ink" htmlFor="dd-file-button">
               {DD_COPY.deckLabel}
             </label>
@@ -369,6 +346,24 @@ export function DueDiligenceDeskView({
             </button>
             {fileName ? <p className="mt-2 truncate text-[0.92rem] text-[var(--ba-muted)]">{fileName}</p> : null}
             <p className="mt-2 text-[0.92rem] leading-relaxed text-[var(--ba-muted)]">{DD_COPY.deckHint}</p>
+            <p className="mt-3 text-[0.95rem] leading-relaxed text-ink/80">{DUE_DILIGENCE_DISCLAIMER}</p>
+            <details className="mt-4 border border-[var(--ba-line)] bg-white px-4 py-2">
+              <summary className="flex min-h-11 cursor-pointer items-center text-[1rem] font-semibold text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ba-indigo)]">
+                {DD_COPY.scopeHeading}
+              </summary>
+              <h2 className="mt-2 text-[1rem] font-semibold text-ink">{DD_COPY.doesHeading}</h2>
+              <ul className="mt-2 list-disc space-y-1 pl-5 text-[0.95rem] leading-relaxed text-ink/80">
+                {DD_COPY.willDo.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
+              <h2 className="mt-4 text-[1rem] font-semibold text-ink">{DD_COPY.willNotHeading}</h2>
+              <ul className="mt-2 list-disc space-y-1 pb-2 pl-5 text-[0.95rem] leading-relaxed text-ink/80">
+                {DD_COPY.willNot.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
+            </details>
 
             <button
               type="submit"

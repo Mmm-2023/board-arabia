@@ -273,6 +273,8 @@ const appShells = [
   'admin/settings',
   'admin/email',
   'admin/majlis',
+  'admin/mandates',
+  'admin/rooms',
   'ops',
   'dashboard',
   'dashboard/profile',

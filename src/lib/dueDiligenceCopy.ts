@@ -13,6 +13,7 @@ export const DD_COPY = {
     'Open-web research only. Not formal due diligence. Not legal advice. You decide what to do with the report.',
   doesHeading: 'What this check does',
   willNotHeading: 'What this check will not do',
+  scopeHeading: 'What this check does and will not do',
   willDo: [
     'Pull claims and facts from your deck',
     'Compare them with publicly available sources',
