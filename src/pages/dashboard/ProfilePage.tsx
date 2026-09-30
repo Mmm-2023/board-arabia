@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { useLocation, useSearchParams } from 'react-router-dom'
 import { DefaultPicturePicker } from '../../components/DefaultPicturePicker'
 import { SponsorBadge } from '../../components/SponsorBadge'
-import { normalizeAvatarStyle, type AvatarStyle } from '../../lib/avatarStyle'
+import { DEFAULT_PICTURE_NOTE, normalizeAvatarStyle, type AvatarStyle } from '../../lib/avatarStyle'
 import { formatPrivateUsd, readNumeric } from '../../lib/capacity'
 import { schemaMissing } from '../../lib/demoRows'
 import {
@@ -367,6 +367,7 @@ export function ProfilePage({ preview }: { preview?: { src: string | null } }) {
           disabled={savingStyle || !profile}
           onSave={(patch) => void onAvatarStyle(patch)}
         />
+        <p className="mt-2 max-w-sm text-[0.95rem] leading-relaxed text-ink/60">{DEFAULT_PICTURE_NOTE}</p>
         {styleError ? (
           <p className="mt-3 text-[0.95rem] text-[var(--ba-error)]" role="alert">
             {styleError}{' '}

@@ -4,6 +4,7 @@ export const AVATAR_STYLES = ['male', 'female'] as const
 export type AvatarStyle = (typeof AVATAR_STYLES)[number]
 
 export const DEFAULT_PICTURE_LABEL = 'Default picture when no photo'
+export const DEFAULT_PICTURE_NOTE = 'An uploaded photo is shown instead of this picture.'
 
 export const AVATAR_STYLE_LABEL: Record<AvatarStyle, string> = {
   male: 'Man',

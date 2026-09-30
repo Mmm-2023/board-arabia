@@ -105,6 +105,8 @@ test('profile and people save the style, and letter initials are gone', () => {
   const people = source('src/pages/admin/PeoplePage.tsx')
   const avatar = source('src/components/Avatar.tsx')
   assert.match(profile, /DefaultPicturePicker/)
+  assert.match(profile, /DEFAULT_PICTURE_NOTE/)
+  assert.match(source('src/lib/avatarStyle.ts'), /An uploaded photo is shown instead of this picture\./)
   assert.match(profile, /\.update\(patch\)/)
   assert.match(profile, /Could not save the default picture\./)
   assert.match(people, /staffSetAvatarStyle/)
