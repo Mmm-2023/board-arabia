@@ -8,6 +8,7 @@ import {
   type ReOpportunityInventory,
   type ReOpportunityOpen,
 } from '../../lib/reRedaction'
+import { RePlace } from '../../components/RePlace'
 import { ReadinessStrip } from './ReadinessStrip'
 
 export function OpportunityCard({
@@ -37,7 +38,7 @@ export function OpportunityCard({
       </div>
       <h2 className="mt-3 font-display text-[1.45rem] font-semibold tracking-[-0.03em] text-balance">{card.one_liner}</h2>
       <p className="mt-2 text-[0.95rem] text-ink/70">
-        {card.city}
+        <RePlace city={card.city} hint={card.one_liner} />
         <span aria-hidden="true"> · </span>
         <span className="sr-only">, </span>
         {card.asset_class}

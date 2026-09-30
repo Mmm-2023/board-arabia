@@ -1,5 +1,6 @@
 import { useEffect, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react'
-import { RE_ASSET_CLASSES, RE_CAPITAL_ROLES, RE_CITIES, type ReOpportunityCard, type RePartnerCard } from '../../lib/reRedaction'
+import { RE_ASSET_CLASSES, RE_CAPITAL_ROLES, type ReOpportunityCard, type RePartnerCard } from '../../lib/reRedaction'
+import { RE_REGIONS } from '../../lib/reRegions'
 import {
   EMPTY_RE_FILTERS,
   filterReOpportunities,
@@ -255,9 +256,9 @@ function FilterGroups({
         onPick={(assetClass) => onChange({ ...filters, assetClass })}
       />
       <FilterRow
-        label="City"
+        label="Region"
         value={filters.city}
-        options={RE_CITIES}
+        options={RE_REGIONS}
         onPick={(city) => onChange({ ...filters, city })}
       />
       <FilterRow

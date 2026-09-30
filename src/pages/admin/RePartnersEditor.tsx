@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from 'react'
 import { ExampleMark } from '../../components/ExampleMark'
+import { RePlace } from '../../components/RePlace'
 import { SponsorBadge } from '../../components/SponsorBadge'
 import {
   draftFromPartner,
@@ -8,7 +9,8 @@ import {
   RE_PARTNER_STAFF,
   type RePartnerDraft,
 } from '../../lib/rePartnerView'
-import { RE_CITIES, RE_PARTNER_KINDS, type RePartnerCard } from '../../lib/reRedaction'
+import { RE_PARTNER_KINDS, type RePartnerCard } from '../../lib/reRedaction'
+import { RE_REGIONS, type ReRegion } from '../../lib/reRegions'
 import { ErrorBanner, toneClasses } from '../../shell/ViewState'
 
 export type RePartnersEditorStatus = 'loading' | 'error' | 'denied' | 'unavailable' | 'ready'
@@ -71,7 +73,7 @@ export function RePartnersEditor({
               </div>
               <p className="mt-2 font-display text-[1.2rem] font-semibold text-balance">{card.name}</p>
               <p className={`mt-1 text-[0.92rem] ${styles.muted}`}>
-                {card.city}
+                <RePlace city={card.city} hint={card.blurb} />
                 <span aria-hidden="true"> · </span>
                 <span className="sr-only">, </span>
                 {card.blurb}
@@ -197,17 +199,17 @@ function PartnerForm({
           ))}
         </select>
       </Field>
-      <Field label="City" id={cityId}>
+      <Field label="Region" id={cityId}>
         <select
           id={cityId}
           value={draft.city}
           required
           disabled={busy}
-          onChange={(event) => setDraft({ ...draft, city: event.target.value as RePartnerDraft['city'] })}
+          onChange={(event) => setDraft({ ...draft, city: event.target.value as ReRegion | '' })}
           className="min-h-11 w-full border border-white/30 bg-pearl ps-3 pe-3 text-[0.95rem] text-ink"
         >
           <option value="">Choose</option>
-          {RE_CITIES.map((city) => (
+          {RE_REGIONS.map((city) => (
             <option key={city} value={city}>
               {city}
             </option>

@@ -10,6 +10,7 @@ import {
   type ReReadinessDraft,
   type ReReadinessKey,
 } from '../../lib/reOpportunityView'
+import { RePlace } from '../../components/RePlace'
 import { RE_READINESS_STATUS, isReReadinessStatus, type ReOpportunityCard, type ReOpportunityInventory } from '../../lib/reRedaction'
 import { ErrorBanner, toneClasses } from '../../shell/ViewState'
 
@@ -75,7 +76,7 @@ export function ReReadinessEditor({
               </div>
               <p className="mt-2 font-display text-[1.2rem] font-semibold text-balance">{card.one_liner}</p>
               <p className={`mt-1 text-[0.92rem] ${styles.muted}`}>
-                {card.city}
+                <RePlace city={card.city} hint={card.one_liner} />
                 <span aria-hidden="true"> · </span>
                 <span className="sr-only">, </span>
                 {card.asset_class}
