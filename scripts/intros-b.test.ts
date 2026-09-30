@@ -22,7 +22,7 @@ import { presentIntroSuggestion, presentIntroSuggestions } from '../src/lib/intr
 import { presentIntroRow } from '../src/lib/memberIntros.ts'
 
 const migration = readFileSync(
-  new URL('../supabase/migrations/20261117120000_intros_b_suggestions_nudges.sql', import.meta.url),
+  new URL('../supabase/migrations/20261119120000_intros_b_suggestions_nudges.sql', import.meta.url),
   'utf8',
 )
 const edge = readFileSync(new URL('../supabase/functions/suggest-intros/index.ts', import.meta.url), 'utf8')
