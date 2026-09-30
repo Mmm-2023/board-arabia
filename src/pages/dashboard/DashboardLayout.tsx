@@ -17,6 +17,7 @@ import { useNoIndex } from '../../lib/usePageTitle'
 import { DashboardStatusContext, MemberContext, type MemberRoom } from './context'
 import { AccountRoomContext, type AccountRoom } from './account/context'
 import { AccountSurface } from './account/AccountRoutes'
+import { Avatar } from '../../components/Avatar'
 import { OwnAvatar } from './OwnAvatar'
 import { rememberVerifyEmail } from '../../lib/verifyEmail'
 
@@ -305,6 +306,7 @@ export function DashboardLayout() {
             onSignOut={() => void onSignOut()}
             accountLabel={gate.room.email}
             accountName={gate.room.fullName.trim() || 'Account'}
+            renderAccountMark={(size) => <Avatar src={null} size={size} alt="" />}
           >
             <AccountSurface />
           </AppShell>

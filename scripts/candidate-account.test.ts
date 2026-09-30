@@ -54,7 +54,7 @@ test('open account copy avoids the internal tier name and dashes', () => {
 })
 
 test('candidate migration keeps accounts out of members and stores attribution', () => {
-  const sql = read('supabase/migrations/20261029120000_two_tier_candidates.sql')
+  const sql = read('supabase/migrations/20261104120000_two_tier_candidates.sql')
   assert.match(sql, /create table if not exists public\.candidates/)
   assert.match(sql, /create table if not exists public\.candidate_events/)
   assert.match(sql, /create table if not exists public\.candidate_notes/)

@@ -1,8 +1,7 @@
 import { Link } from 'react-router-dom'
 import { ExampleMark } from '../../../components/ExampleMark'
-import { FORMING_LABEL, seatsArePublic, type DisplayTotals } from '../../../lib/platformFloors'
-import { formatPublicUsd } from '../../../lib/capacity'
-import { seatLine } from '../../../lib/platformStats'
+import { landingTotalsItems } from '../../../lib/landingTotals'
+import type { DisplayTotals } from '../../../lib/platformFloors'
 import {
   ACCOUNT_REAL_ESTATE,
   DIRECTORY_ACCOUNT_COPY,
@@ -36,13 +35,21 @@ export function LockPanel({ body }: { body: string }) {
   )
 }
 
-function GreyRows({ count, label }: { count: number; label: string }) {
+function LockMark() {
   return (
-    <ul className="mt-4 space-y-3" aria-label={label}>
-      {Array.from({ length: count }, (_, index) => (
-        <li key={index} className="h-16 border border-[var(--ba-line)] bg-[var(--ba-lavender-mist)]" aria-hidden="true" />
-      ))}
-    </ul>
+    <svg aria-hidden="true" viewBox="0 0 16 16" className="h-4 w-4 shrink-0">
+      <rect x="3.2" y="7" width="9.6" height="6.2" rx="1" fill="currentColor" />
+      <path d="M5.2 7V5.2a2.8 2.8 0 0 1 5.6 0V7" fill="none" stroke="currentColor" strokeWidth="1.4" />
+    </svg>
+  )
+}
+
+function LockedLine({ children }: { children: string }) {
+  return (
+    <p className="mt-4 flex min-h-11 items-center gap-3 text-[1rem] leading-relaxed text-ink/70">
+      <LockMark />
+      <span>{children}</span>
+    </p>
   )
 }
 
@@ -118,60 +125,49 @@ export function AccountHomeView({
 
       <section className="mt-10" aria-label="Your pulse">
         <h2 className="font-display text-[1.35rem] font-semibold tracking-[-0.02em]">Your pulse</h2>
-        <p className="mt-2 text-[0.95rem] text-ink/55">Activity stays locked until full membership.</p>
-        <GreyRows count={2} label="Locked activity placeholders" />
+        <LockedLine>Activity stays locked until full membership.</LockedLine>
       </section>
 
-      <section className="mt-10" aria-label="Public platform totals">
-        <h2 className="font-display text-[1.35rem] font-semibold tracking-[-0.02em]">Public platform totals</h2>
-        {totalsState === 'loading' ? <GreyRows count={1} label="Loading public totals" /> : null}
-        {totalsState === 'error' ? (
-          <div className="mt-4">
-            <p className="text-[1rem] text-ink/70">Public totals could not be loaded.</p>
-            <button type="button" className={`${primary} mt-3`} onClick={onRetryTotals}>
-              Retry
-            </button>
-          </div>
-        ) : null}
-        {totalsState === 'ready' ? <TotalsBlock totals={totals} /> : null}
-      </section>
+      <TotalsSection totals={totals} totalsState={totalsState} onRetry={onRetryTotals} />
     </div>
   )
 }
 
-function TotalsBlock({ totals }: { totals: DisplayTotals | null }) {
-  const seats =
-    totals && seatsArePublic(totals.admitted) && totals.ksa != null && totals.intl != null
-      ? seatLine({
-          investment: null,
-          foAum: null,
-          turnover: null,
-          admitted: totals.admitted,
-          ksa: totals.ksa,
-          intl: totals.intl,
-          contributorsInvestment: 0,
-          contributorsFo: 0,
-          contributorsTurnover: 0,
-          updatedAt: null,
-        })
-      : null
+function TotalsSection({
+  totals,
+  totalsState,
+  onRetry,
+}: {
+  totals: DisplayTotals | null
+  totalsState: 'loading' | 'ready' | 'error'
+  onRetry: () => void
+}) {
+  if (totalsState === 'loading') return null
+  if (totalsState === 'error') {
+    return (
+      <section className="mt-10" aria-label="Public platform totals">
+        <h2 className="font-display text-[1.35rem] font-semibold tracking-[-0.02em]">Public platform totals</h2>
+        <p className="mt-3 text-[1rem] text-ink/70">Public totals could not be loaded.</p>
+        <button type="button" className={`${primary} mt-3`} onClick={onRetry}>
+          Retry
+        </button>
+      </section>
+    )
+  }
+  const items = landingTotalsItems(totals)
+  if (items.length === 0) return null
   return (
-    <ul className="mt-4 grid gap-4 sm:grid-cols-2">
-      <TotalItem label="Platform investment capability" value={totals?.investment != null ? formatPublicUsd(totals.investment) : FORMING_LABEL} />
-      <TotalItem label="Family office AUM represented" value={totals?.foAum != null ? formatPublicUsd(totals.foAum) : FORMING_LABEL} />
-      <TotalItem label="Business turnover capacity" value={totals?.turnover != null ? formatPublicUsd(totals.turnover) : FORMING_LABEL} />
-      <TotalItem label="Founding seats admitted" value={seats ? seats.label : FORMING_LABEL} detail={seats?.split} />
-    </ul>
-  )
-}
-
-function TotalItem({ label, value, detail }: { label: string; value: string; detail?: string }) {
-  return (
-    <li className={card}>
-      <p className="text-[0.72rem] font-semibold tracking-[0.12em] text-ink/45 uppercase">{label}</p>
-      <p className="mt-3 font-display text-[1.6rem] font-semibold tracking-[-0.03em]">{value}</p>
-      {detail ? <p className="mt-2 text-[0.92rem] text-ink/55">{detail}</p> : null}
-    </li>
+    <section className="mt-10" aria-label="Public platform totals">
+      <h2 className="font-display text-[1.35rem] font-semibold tracking-[-0.02em]">Public platform totals</h2>
+      <ul className="mt-4 grid gap-4 sm:grid-cols-2">
+        {items.map((item) => (
+          <li key={item.label} className={card}>
+            <p className="text-[0.72rem] font-semibold tracking-[0.12em] text-ink/45 uppercase">{item.label}</p>
+            <p className="mt-3 font-display text-[1.6rem] font-semibold tracking-[-0.03em]">{item.value}</p>
+          </li>
+        ))}
+      </ul>
+    </section>
   )
 }
 
@@ -216,8 +212,7 @@ export function AccountRealEstate() {
         <p className="mt-3 text-[1rem] leading-relaxed text-ink/80">{ACCOUNT_REAL_ESTATE.line}</p>
       </article>
       <h2 className="mt-8 font-display text-[1.2rem] font-semibold">Partners</h2>
-      <p className="mt-2 text-[0.95rem] text-ink/55">Partner names are not loaded.</p>
-      <GreyRows count={3} label="Partner placeholders" />
+      <LockedLine>Partner names stay locked.</LockedLine>
       <LockPanel body={LOCK_COPY.deals} />
     </div>
   )
@@ -230,7 +225,7 @@ export function AccountRooms() {
       <p className="mt-3 max-w-xl text-[1rem] leading-relaxed text-ink/75">
         Full members open a room, invite peers, and keep the papers in one place.
       </p>
-      <GreyRows count={3} label="Room placeholders" />
+      <LockedLine>Rooms stay locked.</LockedLine>
       <LockPanel body={LOCK_COPY.rooms} />
     </div>
   )
@@ -251,7 +246,7 @@ export function AccountDirectory() {
                 <path d="M6 19c1.2-3 3.2-4.5 6-4.5S16.8 16 18 19" />
               </svg>
             </span>
-            <span className="h-3 flex-1 bg-[var(--ba-lavender-mist)]" />
+            <span className="sr-only">Locked</span>
           </li>
         ))}
       </ul>
@@ -264,7 +259,7 @@ export function AccountIntros() {
   return (
     <div data-screen="account-locked" data-hub="intros">
       <p className="max-w-xl text-[1rem] leading-relaxed text-ink/75">{LOCK_COPY.intros}</p>
-      <GreyRows count={3} label="Introduction placeholders" />
+      <LockedLine>Introductions stay locked.</LockedLine>
       <LockPanel body={LOCK_COPY.people} />
     </div>
   )
@@ -284,7 +279,7 @@ export function AccountMajlis() {
     <div data-screen="account-locked" data-hub="majlis">
       <h2 className="font-display text-[1.7rem] font-semibold tracking-[-0.03em]">{MAJLIS_ACCOUNT_COPY.title}</h2>
       <p className="mt-3 max-w-xl text-[1rem] leading-relaxed text-ink/75">{MAJLIS_ACCOUNT_COPY.body}</p>
-      <GreyRows count={3} label="Upcoming placeholders" />
+      <LockedLine>Upcoming gatherings stay locked.</LockedLine>
       <LockPanel body={LOCK_COPY.majlis} />
     </div>
   )
