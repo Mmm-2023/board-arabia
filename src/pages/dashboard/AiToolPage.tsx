@@ -11,12 +11,15 @@ import {
 } from '../../../supabase/functions/_shared/ai_tools.ts'
 import type { StubOutput } from '../../../supabase/functions/ai-tool-job/tools/types.ts'
 import { AiToolForm, AiToolJobStatus, AiToolReport, AiToolShell } from '../../components/ai/AiToolDesk'
+import { MarketBriefForm, MarketUnavailable } from '../../components/ai/MarketBriefForm'
+import { isMarketSector, marketFileName, type MarketSector } from '../../../supabase/functions/ai-tool-job/tools/market_brief.ts'
 import { AI_UI } from '../../lib/aiToolUi'
 import {
   acceptAiToolFile,
   listAiToolJobs,
   postAiTool,
   readAiToolFrame,
+  readMarketSearchStatus,
   recordAiToolConsent,
   uploadAiToolFile,
   type AiToolNote,
@@ -30,6 +33,7 @@ import { ErrorBanner, FormSkeleton, PermissionState } from '../../shell/ViewStat
 import { useMember } from './context'
 
 type Load = 'loading' | 'ready' | 'error' | 'denied'
+type SearchState = 'loading' | 'ready' | 'missing' | 'error'
 
 export function AiToolPage() {
   const { toolSlug, jobId } = useParams()
@@ -49,12 +53,16 @@ export function AiToolPage() {
   const [jobStatus, setJobStatus] = useState('')
   const [jobStep, setJobStep] = useState('')
   const [pendingDelete, setPendingDelete] = useState<string | null>(null)
+  const [sector, setSector] = useState<MarketSector | ''>('')
+  const [search, setSearch] = useState<SearchState>(tool === 'market_brief' ? 'loading' : 'ready')
   const queryKey = `${tool ?? ''}|${jobId ?? ''}|${attempt}`
   const [seenQuery, setSeenQuery] = useState(queryKey)
   if (seenQuery !== queryKey) {
     setSeenQuery(queryKey)
     setLoad('loading')
     setOutput(null)
+    setSector('')
+    setSearch(tool === 'market_brief' ? 'loading' : 'ready')
   }
   useNoIndex(tool ? 'AI tool | Board Arabia' : 'AI tools | Board Arabia')
 
@@ -62,7 +70,9 @@ export function AiToolPage() {
     if (!tool) return
     let cancelled = false
     void (async () => {
-      const frame = await readAiToolFrame()
+      const framePromise = readAiToolFrame()
+      const searchPromise = tool === 'market_brief' ? readMarketSearchStatus() : Promise.resolve('ready' as const)
+      const [frame, searchStatus] = await Promise.all([framePromise, searchPromise])
       if (cancelled) return
       if (!frame) {
         setLoad('error')
@@ -73,6 +83,15 @@ export function AiToolPage() {
       if (!on) {
         setLoad('denied')
         return
+      }
+      if (tool === 'market_brief') {
+        if (searchStatus === 'ready') setSearch('ready')
+        else if (searchStatus === 'not_configured') setSearch('missing')
+        else setSearch('error')
+        if (searchStatus === null) {
+          setLoad('error')
+          return
+        }
       }
       const listed = await listAiToolJobs(tool)
       if (cancelled) return
@@ -115,6 +134,47 @@ export function AiToolPage() {
   const copy = renderToolCopy(tool, lang, slots)
   const reportDate = output?.generated_on || slots.date
   const reportCopy = renderToolCopy(tool, lang, { ...slots, date: reportDate })
+
+  async function onRunMarket() {
+    if (!tool || tool !== 'market_brief' || !sector || !consented) return
+    setBusy(true)
+    setError('')
+    const id = crypto.randomUUID()
+    const consentedOk = await recordAiToolConsent(tool, id)
+    if (!consentedOk) {
+      setBusy(false)
+      setError('Consent is required before a run.')
+      return
+    }
+    const note = new File([`Sector: ${sector}\n`], marketFileName(sector), { type: 'text/plain' })
+    const path = aiToolStoragePath(userId, id, 'txt')
+    const uploaded = await uploadAiToolFile(path, note)
+    if (!uploaded) {
+      setBusy(false)
+      setError('Could not save that sector. Retry.')
+      return
+    }
+    const started = await postAiTool({
+      action: 'start',
+      tool_key: tool,
+      job_id: id,
+      storage_path: path,
+      file_name: note.name,
+      mime_type: 'text/plain',
+      byte_size: note.size,
+      sector,
+    })
+    setBusy(false)
+    if (!started.ok) {
+      if (started.code === 'search_not_configured') {
+        setSearch('missing')
+        return
+      }
+      setError(started.error)
+      return
+    }
+    navigate(toolPath(tool, id))
+  }
 
   async function onRun() {
     if (!tool || !file || !consented) return
@@ -215,26 +275,47 @@ export function AiToolPage() {
       {load === 'ready' && !output && jobId ? (
         <AiToolJobStatus status={jobStatus || 'queued'} step={jobStep || 'intake'} />
       ) : null}
-      {load === 'ready' && !jobId ? (
+      {load === 'ready' && !jobId && tool === 'market_brief' && search === 'missing' ? (
+        <>
+          <MarketUnavailable lang={lang} />
+          <Notes notes={notes} tool={tool} lang={lang} onDelete={setPendingDelete} />
+        </>
+      ) : null}
+      {load === 'ready' && !jobId && !(tool === 'market_brief' && search === 'missing') ? (
         <>
           {error ? (
             <p className="mb-4 text-[0.98rem] text-[var(--ba-error)]" role="alert">
               {error}
             </p>
           ) : null}
-          <AiToolForm
-            copy={copy}
-            lang={lang}
-            consented={consented}
-            fileName={file?.name || ''}
-            busy={busy}
-            onConsent={setConsented}
-            onFile={(next) => {
-              setError('')
-              setFile(next)
-            }}
-            onRun={() => void onRun()}
-          />
+          {tool === 'market_brief' ? (
+            <MarketBriefForm
+              copy={copy}
+              lang={lang}
+              sector={sector}
+              consented={consented}
+              busy={busy || search !== 'ready'}
+              onSector={(next) => {
+                if (isMarketSector(next)) setSector(next)
+              }}
+              onConsent={setConsented}
+              onRun={() => void onRunMarket()}
+            />
+          ) : (
+            <AiToolForm
+              copy={copy}
+              lang={lang}
+              consented={consented}
+              fileName={file?.name || ''}
+              busy={busy}
+              onConsent={setConsented}
+              onFile={(next) => {
+                setError('')
+                setFile(next)
+              }}
+              onRun={() => void onRun()}
+            />
+          )}
           <Notes notes={notes} tool={tool} lang={lang} onDelete={setPendingDelete} />
         </>
       ) : null}

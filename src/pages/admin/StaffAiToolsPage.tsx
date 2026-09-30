@@ -3,8 +3,10 @@ import { Link, useParams } from 'react-router-dom'
 import { AI_TOOL_FLAG_DEFAULTS, formatReportDate, toolFromSlug } from '../../../supabase/functions/_shared/ai_tools.ts'
 import { AiToolCardList } from '../../components/ai/AiToolCards'
 import { AiToolForm, AiToolShell } from '../../components/ai/AiToolDesk'
+import { MarketBriefForm, MarketSearchNotice } from '../../components/ai/MarketBriefForm'
+import { isMarketSector, type MarketSector } from '../../../supabase/functions/ai-tool-job/tools/market_brief.ts'
 import { useSiteLanguage } from '../../components/SiteLanguage'
-import { readAiToolFrame, type AiToolFlags } from '../../lib/aiToolApi'
+import { readAiToolFrame, readMarketSearchStatus, type AiToolFlags } from '../../lib/aiToolApi'
 import { legalSlotsFromEnv } from '../../lib/aiToolConfig'
 import { renderToolCopy } from '../../lib/aiToolCopy'
 import { AI_UI } from '../../lib/aiToolUi'
@@ -62,6 +64,10 @@ export function StaffAiToolPage() {
   const { lang } = useSiteLanguage()
   const ui = AI_UI[lang]
   const [flags, setFlags] = useState<AiToolFlags>({ ...AI_TOOL_FLAG_DEFAULTS })
+  const [sector, setSector] = useState<MarketSector | ''>('')
+  const [search, setSearch] = useState<'loading' | 'ready' | 'not_configured' | 'error'>(
+    tool === 'market_brief' ? 'loading' : 'ready',
+  )
   useNoIndex('AI tool preview | Board Arabia')
 
   useEffect(() => {
@@ -70,10 +76,18 @@ export function StaffAiToolPage() {
       if (cancelled || !frame) return
       setFlags(frame.flags)
     })
+    if (tool === 'market_brief') {
+      void readMarketSearchStatus().then((status) => {
+        if (cancelled) return
+        if (status === 'ready') setSearch('ready')
+        else if (status === 'not_configured') setSearch('not_configured')
+        else setSearch('error')
+      })
+    }
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [tool])
 
   if (!tool) {
     return <p className="text-pearl/80">{ui.unavailable}</p>
@@ -81,6 +95,7 @@ export function StaffAiToolPage() {
 
   const copy = renderToolCopy(tool, lang, legalSlotsFromEnv(30, formatReportDate(new Date()), lang))
   const on = flags[tool]
+  const market = tool === 'market_brief'
   return (
     <div className={lang === 'ar' ? 'text-pearl' : ''}>
       <AiToolShell lang={lang} title={copy.title} staffPreview={!on}>
@@ -90,16 +105,39 @@ export function StaffAiToolPage() {
           </Link>
         </p>
         <div className="rounded-none bg-pearl p-4 text-ink">
-          <AiToolForm
-            copy={copy}
-            lang={lang}
-            consented={false}
-            fileName=""
-            busy={!on}
-            onConsent={() => undefined}
-            onFile={() => undefined}
-            onRun={() => undefined}
-          />
+          {market && search === 'loading' ? <FormSkeleton tone="member" /> : null}
+          {market && search === 'not_configured' ? <MarketSearchNotice tone="member" /> : null}
+          {market && search === 'error' ? (
+            <p className="text-[0.98rem] text-ink/70" role="status">
+              Could not check search. Retry.
+            </p>
+          ) : null}
+          {market && search === 'ready' ? (
+            <MarketBriefForm
+              copy={copy}
+              lang={lang}
+              sector={sector}
+              consented={false}
+              busy={!on}
+              onSector={(next) => {
+                if (isMarketSector(next)) setSector(next)
+              }}
+              onConsent={() => undefined}
+              onRun={() => undefined}
+            />
+          ) : null}
+          {!market ? (
+            <AiToolForm
+              copy={copy}
+              lang={lang}
+              consented={false}
+              fileName=""
+              busy={!on}
+              onConsent={() => undefined}
+              onFile={() => undefined}
+              onRun={() => undefined}
+            />
+          ) : null}
           {!on ? <p className="mt-4 text-[0.98rem] text-ink/70">{ui.unavailable}</p> : null}
         </div>
       </AiToolShell>

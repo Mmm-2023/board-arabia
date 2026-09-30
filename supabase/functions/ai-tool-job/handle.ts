@@ -13,6 +13,13 @@ import {
   type ConsentRow,
 } from '../_shared/ai_tools.ts'
 import { runToolStub } from './tools/index.ts'
+import {
+  buildMarketBrief,
+  isMarketSector,
+  marketFileName,
+  sectorFromFileName,
+  type MarketSearchHit,
+} from './tools/market_brief.ts'
 import type { StubOutput } from './tools/types.ts'
 
 export const AI_TOOL_MESSAGES = {
@@ -23,6 +30,8 @@ export const AI_TOOL_MESSAGES = {
   delete: 'Could not delete that check. Retry.',
   file: 'Choose a file you are allowed to share.',
   unauthorized: 'Sign in to run this check.',
+  searchOff: 'This brief is not available right now.',
+  searchFailed: 'The brief could not be prepared. Retry.',
 } as const
 
 export type JobRow = {
@@ -77,11 +86,18 @@ export type AiAuth =
   | { ok: true; userId: string }
   | { ok: false; status: number; error: string; code: string }
 
+export type MarketSearchResult =
+  | { ok: true; hits: MarketSearchHit[] }
+  | { ok: false; reason: 'not_configured' | 'failed' }
+
 export type AiToolDeps = {
   resolveUser: () => Promise<AiAuth>
   store: () => AiToolStore | null
   now: () => Date
   newId?: () => string
+  /** True only when BA_DD_SEARCH_API_KEY is set. Default is off, so nothing is invented. */
+  searchConfigured?: () => boolean
+  searchMarket?: (sector: string) => Promise<MarketSearchResult>
 }
 
 function newUuid(deps: AiToolDeps): string {
@@ -95,9 +111,6 @@ export async function handleAiToolJob(req: Request, deps: AiToolDeps): Promise<R
   const auth = await deps.resolveUser()
   if (!auth.ok) return jsonResponse(req, { error: auth.error, code: auth.code }, auth.status)
 
-  const store = deps.store()
-  if (!store) return jsonResponse(req, { error: AI_TOOL_MESSAGES.start, code: 'not_configured' }, 503)
-
   let body: Record<string, unknown>
   try {
     const parsed = await req.json()
@@ -110,6 +123,11 @@ export async function handleAiToolJob(req: Request, deps: AiToolDeps): Promise<R
   }
 
   const action = String(body.action || '')
+  if (action === 'search_status') return searchStatus(req, deps)
+
+  const store = deps.store()
+  if (!store) return jsonResponse(req, { error: AI_TOOL_MESSAGES.start, code: 'not_configured' }, 503)
+
   if (action === 'start') return startJob(req, store, auth.userId, body, deps)
   if (action === 'status') return jobStatus(req, store, auth.userId, body)
   if (action === 'step') return stepJob(req, store, auth.userId, body, deps)
@@ -155,6 +173,18 @@ async function startJob(
   const existing = await store.jobById(jobId)
   if (existing && existing.member_id !== userId) {
     return jsonResponse(req, { error: AI_TOOL_MESSAGES.missing, code: 'not_found' }, 404)
+  }
+  if (tool === 'market_brief' && !existing) {
+    const sector = String(body.sector || '')
+    const named = isMarketSector(sector) && fileName === marketFileName(sector) && mime === 'text/plain'
+    if (!named) {
+      await store.removeFile(storagePath)
+      return jsonResponse(req, { error: AI_TOOL_MESSAGES.file, code: 'bad_request' }, 400)
+    }
+    if (!searchReady(deps)) {
+      await store.removeFile(storagePath)
+      return jsonResponse(req, { error: AI_TOOL_MESSAGES.searchOff, code: 'search_not_configured' }, 503)
+    }
   }
   if (!existing) {
     const inserted = await store.insertJob({
@@ -231,6 +261,7 @@ async function runStep(store: AiToolStore, userId: string, jobId: string, deps: 
   }
   const existing = await store.outputByJob(jobId)
   if (existing && job.status === 'ready') return { ok: true, output: existing.body }
+  if (job.tool_key === 'market_brief') return finishMarket(store, userId, job, deps)
   const provider = aiProviderNote()
   const output = runToolStub(job.tool_key, {
     fileName: job.file_name,
@@ -238,9 +269,71 @@ async function runStep(store: AiToolStore, userId: string, jobId: string, deps: 
     modelId: provider.modelId,
     modelSkipReason: provider.skipReason,
   })
+  return saveReady(store, userId, job, output, deps, job.file_name)
+}
+
+function searchReady(deps: AiToolDeps): boolean {
+  return deps.searchConfigured ? deps.searchConfigured() === true : false
+}
+
+function searchStatus(req: Request, deps: AiToolDeps): Response {
+  return jsonResponse(req, { ok: true, search: searchReady(deps) ? 'ready' : 'not_configured' })
+}
+
+async function finishMarket(store: AiToolStore, userId: string, job: JobRow, deps: AiToolDeps): Promise<StepResult> {
+  const sector = sectorFromFileName(job.file_name)
+  if (!sector) {
+    await store.markJob(job.id, { status: 'failed', step: 'done', error: 'Choose a sector.' })
+    return { ok: false, status: 400, error: AI_TOOL_MESSAGES.file, code: 'bad_request' }
+  }
+  if (!searchReady(deps)) {
+    await store.markJob(job.id, { status: 'failed', step: 'done', error: 'search not configured' })
+    return { ok: false, status: 503, error: AI_TOOL_MESSAGES.searchOff, code: 'search_not_configured' }
+  }
+  let searched: MarketSearchResult
+  try {
+    searched = deps.searchMarket
+      ? await deps.searchMarket(sector)
+      : { ok: false, reason: 'not_configured' }
+  } catch {
+    searched = { ok: false, reason: 'failed' }
+  }
+  if (!searched.ok) {
+    const missing = searched.reason === 'not_configured'
+    await store.markJob(job.id, {
+      status: 'failed',
+      step: 'done',
+      error: missing ? 'search not configured' : 'Search did not return.',
+    })
+    return {
+      ok: false,
+      status: missing ? 503 : 502,
+      error: missing ? AI_TOOL_MESSAGES.searchOff : AI_TOOL_MESSAGES.searchFailed,
+      code: missing ? 'search_not_configured' : 'search_failed',
+    }
+  }
+  const output = buildMarketBrief({
+    sector,
+    hits: searched.hits,
+    generatedOn: formatReportDate(deps.now()),
+  })
+  return saveReady(store, userId, job, output, deps, sector)
+}
+
+async function saveReady(
+  store: AiToolStore,
+  userId: string,
+  job: JobRow,
+  output: StubOutput,
+  deps: AiToolDeps,
+  title: string,
+): Promise<StepResult> {
+  if (!isAiToolKey(job.tool_key)) {
+    return { ok: false, status: 500, error: AI_TOOL_MESSAGES.start, code: 'start_failed' }
+  }
   const saved = await store.saveOutput({
     id: newUuid(deps),
-    job_id: jobId,
+    job_id: job.id,
     member_id: userId,
     tool_key: job.tool_key,
     body: output,
@@ -250,12 +343,12 @@ async function runStep(store: AiToolStore, userId: string, jobId: string, deps: 
     id: newUuid(deps),
     member_id: userId,
     tool_key: job.tool_key,
-    job_id: jobId,
-    title: job.file_name,
-    body: output.summary,
+    job_id: job.id,
+    title,
+    body: output.summary.slice(0, 2000),
   })
   if (!noted) return { ok: false, status: 500, error: AI_TOOL_MESSAGES.start, code: 'start_failed' }
-  const marked = await store.markJob(jobId, { status: 'ready', step: 'done', error: null })
+  const marked = await store.markJob(job.id, { status: 'ready', step: 'done', error: null })
   if (!marked) return { ok: false, status: 500, error: AI_TOOL_MESSAGES.start, code: 'start_failed' }
   return { ok: true, output }
 }

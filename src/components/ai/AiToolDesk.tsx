@@ -260,10 +260,13 @@ export function AiToolReport({
           <ul className="mt-2 space-y-2 text-[0.98rem] leading-relaxed">
             {output.sources.map((source) => (
               <li key={source.url}>
-                <a href={source.url} className="underline">
+                <a href={source.url} className="underline" dir="ltr">
                   {source.title}
                 </a>
-                <span className="text-ink/65"> {AI_UI[lang].dated} {source.dated}.</span>
+                <span className="text-ink/65">
+                  {' '}
+                  {AI_UI[lang].dated} <bdi>{source.dated}</bdi>.
+                </span>
               </li>
             ))}
           </ul>

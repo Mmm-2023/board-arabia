@@ -137,8 +137,9 @@ verify_jwt = true
 [functions.retention-sweep]
 verify_jwt = false
 
-# Member AI tool frame. Start, status, step, and delete. The anon key is not enough.
-# No new secret. Model calls, when a later tool adds them, use the due diligence provider secrets.
+# Member AI tool frame. Start, status, step, delete, and search status. The anon key is not enough.
+# Market brief reads the existing Edge secret BA_DD_SEARCH_API_KEY. No new secret name.
+# A missing key returns search not configured and does not invent sources.
 [functions.ai-tool-job]
 verify_jwt = true
 

@@ -6,7 +6,8 @@ import {
   AI_TOOL_RETENTION_DAYS_DEFAULT,
   type AiToolKey,
 } from '../../../supabase/functions/_shared/ai_tools.ts'
-import { readAiToolFrame, saveAiToolFlag, saveAiToolRetention, type AiToolFlags } from '../../lib/aiToolApi'
+import { MarketSearchNotice } from '../../components/ai/MarketBriefForm'
+import { readAiToolFrame, readMarketSearchStatus, saveAiToolFlag, saveAiToolRetention, type AiToolFlags } from '../../lib/aiToolApi'
 import { toneClasses } from '../../shell/ViewState'
 
 const fieldClass =
@@ -15,7 +16,7 @@ const fieldClass =
 export function AiToolSettingsPanel({
   shot,
 }: {
-  shot?: { retentionDays: number; flags: AiToolFlags }
+  shot?: { retentionDays: number; flags: AiToolFlags; searchConfigured?: boolean }
 } = {}) {
   const styles = toneClasses('staff')
   const [days, setDays] = useState(String(shot?.retentionDays ?? AI_TOOL_RETENTION_DAYS_DEFAULT))
@@ -25,6 +26,9 @@ export function AiToolSettingsPanel({
   const [error, setError] = useState('')
   const [note, setNote] = useState('')
   const [attempt, setAttempt] = useState(0)
+  const [search, setSearch] = useState<'unknown' | 'ready' | 'not_configured' | 'error'>(
+    shot?.searchConfigured === false ? 'not_configured' : shot?.searchConfigured === true ? 'ready' : 'unknown',
+  )
 
   useEffect(() => {
     if (shot) return
@@ -38,6 +42,12 @@ export function AiToolSettingsPanel({
       }
       setDays(String(frame.retentionDays))
       setFlags(frame.flags)
+    })
+    void readMarketSearchStatus().then((status) => {
+      if (cancelled) return
+      if (status === 'ready') setSearch('ready')
+      else if (status === 'not_configured') setSearch('not_configured')
+      else setSearch('error')
     })
     return () => {
       cancelled = true
@@ -125,6 +135,12 @@ export function AiToolSettingsPanel({
           </li>
         ))}
       </ul>
+      {search === 'not_configured' ? <MarketSearchNotice tone="staff" /> : null}
+      {search === 'error' ? (
+        <p className="mt-4 text-[0.95rem] text-pearl/80" role="status">
+          Could not check search. Retry.
+        </p>
+      ) : null}
       {error ? (
         <p className="mt-3 text-[0.95rem] text-red-300" role="alert">
           {error}{' '}

@@ -131,6 +131,15 @@ export async function uploadAiToolFile(path: string, file: File): Promise<boolea
   return !error
 }
 
+export async function readMarketSearchStatus(): Promise<'ready' | 'not_configured' | null> {
+  const result = await postAiTool({ action: 'search_status' })
+  if (!result.ok) return null
+  const search = result.payload.search
+  if (search === 'ready') return 'ready'
+  if (search === 'not_configured') return 'not_configured'
+  return null
+}
+
 export async function postAiTool(
   body: Record<string, unknown>,
 ): Promise<{ ok: true; payload: Record<string, unknown> } | { ok: false; status: number; error: string; code: string }> {

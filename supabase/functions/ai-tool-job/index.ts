@@ -2,6 +2,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1'
 import { isUuid } from '../_shared/ai_tools.ts'
 import { createAiToolStore, type AiToolAdmin } from './db.ts'
 import { handleAiToolJob, type AiAuth } from './handle.ts'
+import { searchMarketSector } from './tools/market_search.ts'
 
 function createAdmin(): AiToolAdmin | null {
   const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
@@ -18,6 +19,18 @@ Deno.serve((req) =>
       return admin ? createAiToolStore(admin) : null
     },
     now: () => new Date(),
+    searchConfigured: () => Boolean(Deno.env.get('BA_DD_SEARCH_API_KEY')?.trim()),
+    searchMarket: async (sector) => {
+      const key = Deno.env.get('BA_DD_SEARCH_API_KEY')?.trim() || ''
+      if (!key) return { ok: false, reason: 'not_configured' }
+      try {
+        const hits = await searchMarketSector(sector, key)
+        if (!hits) return { ok: false, reason: 'failed' }
+        return { ok: true, hits }
+      } catch {
+        return { ok: false, reason: 'failed' }
+      }
+    },
   }),
 )
 
