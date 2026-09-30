@@ -140,7 +140,7 @@ function screen() {
   return toolPage('en')
 }
 
-const entry = view === 'settings' || view === 'staff-search' ? '/admin/settings' : '/dashboard/ai/market-brief'
+const entry = view === 'settings' ? '/admin/settings' : view === 'staff-search' ? '/admin/ai/market-brief' : '/dashboard/ai/market-brief'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
