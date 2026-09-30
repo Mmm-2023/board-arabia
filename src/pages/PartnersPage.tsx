@@ -65,6 +65,7 @@ export function PartnersPage() {
       <section className="border-y border-ink/10 bg-white/40">
         <div className="mx-auto max-w-7xl px-5 py-16 md:px-10 md:py-20">
           <div className="max-w-2xl">
+            <p className="mb-3 text-[0.9375rem] font-semibold text-[var(--ba-indigo)]">Finance first</p>
             <h2 className="font-display text-[clamp(1.8rem,3.5vw,2.8rem)] font-bold tracking-[-0.03em] text-ink">
               Fifteen categories.
             </h2>

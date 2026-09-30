@@ -8,5 +8,30 @@ const base = process.env.VITE_BASE_PATH || '/'
 
 export default defineConfig({
   base,
-  plugins: [react(), tailwindcss()],
+  plugins: [
+    react(),
+    tailwindcss(),
+    {
+      name: 'prioritize-css',
+      transformIndexHtml: {
+        order: 'post',
+        handler(html) {
+          const script = html.match(/<script type="module"[^>]*><\/script>/)?.[0]
+          if (!script) return html
+          const src = script.match(/src="([^"]+)"/)?.[1]
+          if (!src) return html
+          const loader =
+            `<script>window.addEventListener("load",function(){var s=document.createElement("script");s.type="module";s.src="${src}";document.body.appendChild(s)});</script>`
+          return html
+            .replace(script, '')
+            .replace(/<link rel="modulepreload"[^>]*>/g, '')
+            .replace(
+              /<link rel="stylesheet"([^>]*?)href="([^"]+\.css)">/,
+              '<link rel="stylesheet" fetchpriority="high"$1href="$2">',
+            )
+            .replace('</body>', `    ${loader}\n  </body>`)
+        },
+      },
+    },
+  ],
 })

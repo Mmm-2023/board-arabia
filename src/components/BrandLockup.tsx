@@ -18,10 +18,12 @@ export function BrandLockup({
   to = '/',
   tone,
   markOnly = false,
+  subline = true,
 }: {
   to?: string
   tone: Tone
   markOnly?: boolean
+  subline?: boolean
 }) {
   const colors = toneClass[tone]
   return (
@@ -41,11 +43,13 @@ export function BrandLockup({
             <span className="block">Board</span>
             <span className="block">Arabia</span>
           </span>
-          <span
-            className={`mt-0.5 block truncate text-[0.56rem] leading-none font-semibold tracking-[0.12em] uppercase sm:mt-1 sm:text-[0.62rem] sm:tracking-[0.16em] ${colors.line}`}
-          >
-            Founding membership
-          </span>
+          {subline ? (
+            <span
+              className={`mt-0.5 block truncate text-[0.8125rem] leading-none font-semibold sm:mt-1 ${colors.line}`}
+            >
+              Founding membership
+            </span>
+          ) : null}
         </span>
       )}
     </Link>

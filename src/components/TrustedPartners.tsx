@@ -2,6 +2,30 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ExampleMark } from './ExampleMark'
 import { presentPartnerList, schemaMissing, type PartnerCard } from '../lib/demoRows'
+
+const EXAMPLE_PARTNERS: PartnerCard[] = [
+  {
+    id: 'a4000001-0000-4000-8000-000000000001',
+    is_demo: true,
+    name: 'Qaf Ledger',
+    blurb: 'Custody and fund administration for Gulf closings.',
+    monogram: 'QL',
+  },
+  {
+    id: 'a4000001-0000-4000-8000-000000000002',
+    is_demo: true,
+    name: 'Mirsad Advisory',
+    blurb: 'Independent corporate finance advice to boards.',
+    monogram: 'MA',
+  },
+  {
+    id: 'a4000001-0000-4000-8000-000000000003',
+    is_demo: true,
+    name: 'Dar Escrow House',
+    blurb: 'Escrow and settlement for private transactions.',
+    monogram: 'DE',
+  },
+]
 import { supabase } from '../lib/supabase'
 import { DisplayHeading, Eyebrow } from './Type'
 
@@ -51,77 +75,54 @@ export function TrustedPartnersGallery({
   state: LoadState
   onRetry?: () => void
 }) {
-  const partners = state.status === 'ready' ? state.partners : []
+  const loaded = state.status === 'ready' ? state.partners : []
+  const partners = loaded.length > 0 ? loaded : EXAMPLE_PARTNERS
 
   return (
-    <section id="trusted-partners" className="border-t border-ink/10 bg-pearl py-24 md:py-32">
+    <section id="partners" className="border-t border-ink/10 bg-pearl py-5 md:py-10">
       <div className="mx-auto max-w-7xl px-5 md:px-10">
         <Eyebrow>Trusted Partners</Eyebrow>
-        <DisplayHeading className="max-w-3xl">The finance rails around the room.</DisplayHeading>
-        <p className="mt-6 max-w-xl text-[1.05rem] leading-relaxed text-ink/60">
-          Sponsors on the finance rails of a deal. Sample cards, when shown, are marked Example.
+        <DisplayHeading compact className="max-w-3xl">
+          Three seats a year.
+        </DisplayHeading>
+        <p className="ba-quiet mt-3 max-w-xl text-[0.9375rem] leading-relaxed">
+          Three annual seats for firms on the finance rails of a deal, not a wall of logos.
         </p>
 
-        {state.status === 'loading' ? (
-          <ul aria-busy="true" aria-label="Loading partners" className="mt-12 grid gap-4 md:grid-cols-3">
-            {['a', 'b', 'c'].map((id) => (
-              <li key={id} className="h-40 animate-pulse bg-[var(--ba-lavender-mist)] motion-reduce:animate-none" />
-            ))}
-          </ul>
-        ) : null}
+        <ul className="mt-3 grid gap-2 md:mt-5 md:grid-cols-3 md:gap-3" aria-busy={state.status === 'loading' ? true : undefined}>
+          {partners.map((partner) => (
+            <li key={partner.id} className="ba-card px-3 py-3">
+              <div className="flex items-start justify-between gap-3">
+                <div
+                  aria-hidden="true"
+                  className="flex h-10 w-10 items-center justify-center bg-[var(--ba-indigo-deep)] font-display text-[0.95rem] font-semibold text-[var(--ba-porcelain)]"
+                >
+                  {partner.monogram}
+                </div>
+                {partner.is_demo ? <ExampleMark /> : null}
+              </div>
+              <h3 className="mt-3 font-display text-[1.05rem] font-semibold tracking-[-0.03em]">
+                {partner.name}
+              </h3>
+              <p className="ba-quiet mt-1 text-[0.875rem] leading-relaxed">{partner.blurb}</p>
+            </li>
+          ))}
+        </ul>
 
         {state.status === 'error' ? (
-          <div className="mt-10 border border-[var(--ba-line)] bg-white px-5 py-6" role="alert">
-            <p className="text-[1.02rem] leading-relaxed text-ink/70">
-              Could not load partners.
-            </p>
+          <p className="ba-quiet mt-3 text-[0.875rem]" role="alert">
+            Could not load partners.{' '}
             {onRetry ? (
-              <button
-                type="button"
-                onClick={onRetry}
-                className="mt-4 inline-flex min-h-11 items-center border-b border-[var(--ba-copper)] text-[0.78rem] font-semibold tracking-[0.08em] uppercase"
-              >
+              <button type="button" onClick={onRetry} className="ba-textlink inline-flex min-h-11 items-center">
                 Retry
               </button>
             ) : null}
-          </div>
+          </p>
         ) : null}
 
-        {state.status === 'ready' && partners.length === 0 ? (
-          <div className="mt-10 max-w-xl border border-[var(--ba-line)] bg-white px-5 py-6">
-            <p className="text-[1.02rem] leading-relaxed text-ink/70">
-              No partners are listed yet. Live sponsors appear here after they are admitted.
-            </p>
-            <Link
-              to="/partners"
-              className="mt-5 inline-flex min-h-11 items-center text-[0.78rem] font-semibold tracking-[0.08em] text-[var(--ba-indigo)] uppercase"
-            >
-              Partner with us
-            </Link>
-          </div>
-        ) : null}
-
-        {state.status === 'ready' && partners.length > 0 ? (
-          <ul className="mt-12 grid gap-4 md:grid-cols-3">
-            {partners.map((partner) => (
-              <li key={partner.id} className="border border-[var(--ba-line)] bg-white px-5 py-6">
-                <div className="flex items-start justify-between gap-4">
-                  <div
-                    aria-hidden="true"
-                    className="flex h-14 w-14 items-center justify-center border border-[var(--ba-copper)] bg-[var(--ba-indigo-deep)] font-display text-[1rem] font-semibold text-[var(--ba-porcelain)]"
-                  >
-                    {partner.monogram}
-                  </div>
-                  {partner.is_demo ? <ExampleMark /> : null}
-                </div>
-                <h3 className="mt-5 font-display text-[1.35rem] font-semibold tracking-[-0.03em]">
-                  {partner.name}
-                </h3>
-                <p className="mt-2 text-[0.98rem] leading-relaxed text-ink/65">{partner.blurb}</p>
-              </li>
-            ))}
-          </ul>
-        ) : null}
+        <Link to="/partners" className="ba-secondary mt-4 inline-flex min-h-11 items-center justify-center px-5 text-[0.9375rem] font-semibold">
+          Partner with us
+        </Link>
       </div>
     </section>
   )

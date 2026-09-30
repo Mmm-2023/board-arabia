@@ -38,14 +38,17 @@ function memoryStorage() {
   }
 }
 
-test('home page mounts the dashboard preview between the totals and the FAQ', () => {
+test('home page keeps membership after founding and does not mount the lock overlay', () => {
   const landing = source('src/pages/LandingPage.tsx')
-  const stats = landing.indexOf('<StatsStrip />')
-  const preview = landing.indexOf('<DashboardPreview density="landing" />')
-  const faq = landing.indexOf('<FaqList />')
-  assert.ok(stats >= 0)
-  assert.ok(preview > stats)
-  assert.ok(faq > preview)
+  const founding = landing.indexOf('<FoundingSection />')
+  const membership = landing.indexOf('<MembershipSection />')
+  const faq = landing.indexOf('<FaqList')
+  assert.ok(founding >= 0)
+  assert.ok(membership > founding)
+  assert.ok(faq > membership)
+  assert.equal(landing.includes('<DashboardPreview'), false)
+  assert.equal(landing.includes('Sign in'), false)
+  assert.equal(landing.includes('See live deals as a member'), false)
   assert.equal(landing.includes('\u2014'), false)
   assert.equal(landing.includes('\u2013'), false)
   const members = source('src/pages/ForMembersPage.tsx')

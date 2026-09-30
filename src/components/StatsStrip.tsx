@@ -1,19 +1,12 @@
 import { useEffect, useState } from 'react'
-import { formatPublicUsd } from '../lib/capacity'
 import {
   displayPlatformMoney,
-  FORMING_LABEL,
   presentServerTotals,
-  seatsArePublic,
   type DisplayTotals,
 } from '../lib/platformFloors'
-import { seatLine, type PlatformStats } from '../lib/platformStats'
+import { type PlatformStats } from '../lib/platformStats'
 import { fetchPlatformStats, supabase } from '../lib/supabase'
-import { Eyebrow } from './Type'
-
-const EARLY = 'Building the Founding 100'
-const DISCLAIMER =
-  "Figures reflect the network's represented capacity. Individual amounts are never shown."
+import { landingTotalsItems, TOTALS_DISCLAIMER } from '../lib/landingTotals'
 
 function shownFromStats(stats: PlatformStats | null): DisplayTotals {
   const money = displayPlatformMoney(stats)
@@ -25,7 +18,9 @@ function shownFromStats(stats: PlatformStats | null): DisplayTotals {
   }
 }
 
-export function StatsStrip() {
+export { landingTotalsItems, seatDiamondFill, TOTALS_DISCLAIMER } from '../lib/landingTotals'
+
+export function useLandingTotals(): DisplayTotals | null {
   const [shown, setShown] = useState<DisplayTotals | null>(null)
 
   useEffect(() => {
@@ -63,113 +58,24 @@ export function StatsStrip() {
     }
   }, [])
 
-  const seats =
-    shown && seatsArePublic(shown.admitted) && shown.ksa != null && shown.intl != null
-      ? seatLine({
-          investment: null,
-          foAum: null,
-          turnover: null,
-          admitted: shown.admitted,
-          ksa: shown.ksa,
-          intl: shown.intl,
-          contributorsInvestment: 0,
-          contributorsFo: 0,
-          contributorsTurnover: 0,
-          updatedAt: null,
-        })
-      : null
-  const title = shown && (shown.admitted ?? 0) >= 100 ? 'Founding 100' : EARLY
-
-  return (
-    <section
-      id="totals"
-      aria-labelledby="totals-heading"
-      className="border-b border-ink/10 bg-stone"
-    >
-      <div className="mx-auto max-w-7xl px-5 py-14 md:px-10 md:py-16">
-        <Eyebrow>Platform totals</Eyebrow>
-        <p
-          id="totals-heading"
-          className="max-w-3xl font-display text-[clamp(1.8rem,4vw,2.8rem)] font-semibold leading-[1.05] tracking-[-0.03em] text-ink"
-        >
-          {title}
-        </p>
-        <ul className="mt-10 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
-          <MoneyStat
-            label="Platform investment capability"
-            amount={shown?.investment ?? null}
-          />
-          <MoneyStat label="Family office AUM represented" amount={shown?.foAum ?? null} />
-          <MoneyStat label="Business turnover capacity" amount={shown?.turnover ?? null} />
-          <li className="border-t border-ink/15 pt-5">
-            <p className="text-[0.72rem] font-semibold tracking-[0.14em] text-ink/45 uppercase">
-              Founding seats admitted
-            </p>
-            {seats ? (
-              <>
-                <p className="mt-4 font-display text-[clamp(2.2rem,4vw,3.2rem)] font-extrabold leading-none tracking-[-0.04em] text-ink">
-                  <CountUp value={seats.admitted} format={(value) => `${Math.round(value)} / 100`} />
-                </p>
-                <p className="mt-3 text-[0.92rem] leading-relaxed text-ink/55">{seats.split}</p>
-              </>
-            ) : (
-              <p className="mt-4 font-serif text-[1.65rem] italic leading-tight text-ink/45">
-                {FORMING_LABEL}
-              </p>
-            )}
-          </li>
-        </ul>
-        <p className="mt-8 max-w-3xl text-[0.95rem] leading-relaxed text-ink/55">{DISCLAIMER}</p>
-      </div>
-    </section>
-  )
+  return shown
 }
 
-function MoneyStat({ label, amount }: { label: string; amount: number | null }) {
+export function PlatformTotalsLine({ shown }: { shown: DisplayTotals | null }) {
+  const items = landingTotalsItems(shown)
+  if (items.length === 0) return null
   return (
-    <li className="border-t border-ink/15 pt-5">
-      <p className="text-[0.72rem] font-semibold tracking-[0.14em] text-ink/45 uppercase">
-        {label}
-      </p>
-      {amount == null ? (
-        <p className="mt-4 font-serif text-[1.65rem] italic leading-tight text-ink/45">
-          {FORMING_LABEL}
-        </p>
-      ) : (
-        <p className="mt-4 font-display text-[clamp(2.2rem,4vw,3.2rem)] font-extrabold leading-none tracking-[-0.04em] text-ink">
-          <CountUp value={amount} format={formatPublicUsd} />
-        </p>
-      )}
-    </li>
+    <p className="ba-totals-line" aria-label={TOTALS_DISCLAIMER}>
+      {items.map((item, index) => (
+        <span key={item.label} className="ba-totals-item">
+          {index > 0 ? (
+            <span aria-hidden="true" className="ba-totals-dot">
+              ·
+            </span>
+          ) : null}
+          <span>{item.label}</span> <strong>{item.value}</strong>
+        </span>
+      ))}
+    </p>
   )
-}
-
-function CountUp({
-  value,
-  format,
-}: {
-  value: number
-  format: (value: number) => string
-}) {
-  const [shown, setShown] = useState(0)
-
-  useEffect(() => {
-    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    if (reduce || value === 0) {
-      const frame = requestAnimationFrame(() => setShown(value))
-      return () => cancelAnimationFrame(frame)
-    }
-    const start = performance.now()
-    let frame = 0
-    const tick = (now: number) => {
-      const progress = Math.min(1, (now - start) / 800)
-      const eased = 1 - (1 - progress) ** 3
-      setShown(value * eased)
-      if (progress < 1) frame = requestAnimationFrame(tick)
-    }
-    frame = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(frame)
-  }, [value])
-
-  return <span>{format(shown)}</span>
 }

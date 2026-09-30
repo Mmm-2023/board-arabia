@@ -1,7 +1,10 @@
 import { Link } from 'react-router-dom'
 import { CtaBand } from '../components/CtaBand'
 import { DashboardPreview } from '../components/DashboardPreview'
+import { FaqList } from '../components/FaqList'
 import { MarketingLayout } from '../components/MarketingLayout'
+import { MEMBER_TOOLS } from '../content/marketing'
+import { MEMBERS_FAQ } from '../content/seo'
 
 const TOOLS = [
   {
@@ -105,6 +108,14 @@ export function ForMembersPage() {
               </a>
             </li>
           ))}
+          <li>
+            <a
+              href="#due-diligence"
+              className="text-[0.75rem] font-semibold tracking-[0.1em] text-ink/45 uppercase hover:text-ink"
+            >
+              AI Due Diligence
+            </a>
+          </li>
         </ul>
       </header>
 
@@ -121,6 +132,7 @@ export function ForMembersPage() {
               {tool.title}
             </h2>
             <div className="max-w-2xl space-y-4">
+              <ToolLead id={tool.id} />
               {tool.paragraphs.map((paragraph) => (
                 <p key={paragraph} className="text-[1.05rem] leading-relaxed text-ink/70">
                   {paragraph}
@@ -129,6 +141,8 @@ export function ForMembersPage() {
             </div>
           </article>
         ))}
+
+        <DiligenceArticle />
 
         <article className="grid gap-6 border-t border-ink/10 py-12 md:grid-cols-[16rem_1fr] md:gap-16 md:py-16">
           <h2 className="font-display text-[1.7rem] font-semibold tracking-[-0.03em] text-ink">
@@ -149,7 +163,30 @@ export function ForMembersPage() {
         </article>
       </div>
 
+      <FaqList items={MEMBERS_FAQ} heading="Membership questions" />
       <CtaBand />
     </MarketingLayout>
+  )
+}
+
+function ToolLead({ id }: { id: string }) {
+  const line = MEMBER_TOOLS.find((tool) => tool.id === id)?.home
+  if (!line) return null
+  return <p className="text-[1.05rem] leading-relaxed text-ink/70">{line}</p>
+}
+
+function DiligenceArticle() {
+  const tool = MEMBER_TOOLS.find((item) => item.id === 'due-diligence')
+  if (!tool) return null
+  return (
+    <article
+      id={tool.id}
+      className="grid gap-6 border-t border-ink/10 py-12 md:grid-cols-[16rem_1fr] md:gap-16 md:py-16"
+    >
+      <h2 className="font-display text-[1.7rem] font-semibold tracking-[-0.03em] text-ink">
+        {tool.title}
+      </h2>
+      <p className="max-w-2xl text-[1.05rem] leading-relaxed text-ink/70">{tool.home}</p>
+    </article>
   )
 }

@@ -52,7 +52,7 @@ function assertPage(route, html) {
   if (!html.includes('application/ld+json')) errors.push('missing json-ld')
   if (/AggregateRating|"@type":"Review"/.test(html)) errors.push('fake review schema')
   if (/calendar\.app\.google/i.test(html)) errors.push('public calendar url')
-  const faqRoutes = new Set(['/', '/how-it-works'])
+  const faqRoutes = new Set(['/', '/how-it-works', '/for-members'])
   if (faqRoutes.has(route) && !html.includes('FAQPage')) errors.push('missing FAQPage')
   if (!faqRoutes.has(route) && html.includes('FAQPage')) errors.push('unexpected FAQPage')
   if (/ReserveAction|SearchAction/.test(html)) errors.push('unexpected site action')
@@ -74,14 +74,32 @@ function assertPage(route, html) {
     errors.push('home missing answer-first blurb')
   }
   if (html.includes('\u2014')) errors.push('em dash in prerender')
-  if (route === '/' && !html.includes('Figures reflect the network&#x27;s represented capacity. Individual amounts are never shown.')) {
-    errors.push('home missing platform totals disclaimer')
+  if (route === '/' && !html.includes('Fifty and fifty.')) {
+    errors.push('home missing founding split')
   }
-  if (route === '/' && !html.includes('Building the Founding 100')) {
-    errors.push('home missing early-state totals copy')
+  if (route === '/' && !html.includes('See all member tools')) {
+    errors.push('home missing member tools link')
   }
-  if (route === '/' && !html.includes('What do the platform totals mean?')) {
-    errors.push('home missing platform totals FAQ')
+  if (route === '/' && !html.includes('Already a member?')) {
+    errors.push('home missing member log in line')
+  }
+  if (route === '/' && html.includes('Building the Founding 100')) {
+    errors.push('home still shows the totals band title')
+  }
+  if (route === '/' && html.includes('What do the platform totals mean?')) {
+    errors.push('home still shows the totals FAQ')
+  }
+  if (route === '/' && />Forming</.test(html)) {
+    errors.push('home shows a Forming total')
+  }
+  if (route === '/for-members' && !html.includes('What do the platform totals mean?')) {
+    errors.push('members page missing platform totals FAQ')
+  }
+  if (
+    route === '/for-members' &&
+    !html.includes('Figures reflect the network&#x27;s represented capacity. Individual amounts are never shown.')
+  ) {
+    errors.push('members page missing platform totals disclaimer')
   }
   if (route === '/' && /\$\d/.test(html)) {
     errors.push('home prerender contains a dollar figure')

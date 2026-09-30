@@ -195,9 +195,20 @@ export const PARTNER_CATEGORIES: PartnerCategory[] = [
 /** Public sign-in for members. Staff use /login/staff. */
 export const MEMBER_LOGIN = '/login'
 
+export const HELD_FOR_LINE =
+  'Held for: Chairperson · Board members · C-suite executives · Saudi Arabia & the GCC · International'
+
+/** First sentence of an approved step body. The rest stays on /how-it-works. */
+export function firstSentence(text: string): string {
+  const cut = text.search(/[.!?](\s|$)/)
+  if (cut === -1) return text
+  return text.slice(0, cut + 1)
+}
+
 export const NAV_LINKS = [
+  { label: 'How it works', to: '/how-it-works' },
   { label: 'Members', to: '/for-members' },
   { label: 'Capital', to: '/for-capital' },
   { label: 'Partners', to: '/partners' },
-  { label: 'Process', to: '/how-it-works' },
+  { label: 'About', to: '/about' },
 ] as const
