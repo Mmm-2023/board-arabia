@@ -69,6 +69,7 @@ export const ACCOUNT_SHEET_LINKS: readonly SecondaryLink[] = [
   { id: 'profile', label: 'Profile', to: '/dashboard/profile' },
   { id: 'membership', label: 'Membership', to: '/dashboard/membership' },
   { id: 'help', label: 'Help', to: '/dashboard/help' },
+  { id: 'delete', label: 'Delete account', to: '/dashboard/account/delete' },
 ]
 
 export const LOCKED_HUBS = ['deals', 'people', 'majlis', 'ai'] as const

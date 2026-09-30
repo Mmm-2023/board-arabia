@@ -25,6 +25,8 @@ const UI_FILES = [
   'src/pages/VerifyPage.tsx',
   'src/pages/dashboard/account/views.tsx',
   'src/pages/dashboard/account/AccountRoutes.tsx',
+  'src/pages/dashboard/account/DeleteAccountView.tsx',
+  'src/pages/dashboard/account/DeleteAccountScreen.tsx',
   'src/lib/accountPreview.ts',
   'supabase/functions/_shared/candidate_copy.ts',
 ]
@@ -41,7 +43,7 @@ test('open account copy avoids the internal tier name and dashes', () => {
   assert.match(read('src/pages/dashboard/account/views.tsx'), /Request full membership/)
   assert.deepEqual(
     ACCOUNT_SHEET_LINKS.map((item) => item.label),
-    ['Profile', 'Membership', 'Help'],
+    ['Profile', 'Membership', 'Help', 'Delete account'],
   )
   assert.deepEqual(
     MEMBER_ACCOUNT.map((item) => item.label),
@@ -157,6 +159,9 @@ test('register stores attribution and never puts a band or statement on the audi
       events.push({ kind, detail })
     },
     claimInvite: async () => false,
+    domainStatus: async () => 'ok' as const,
+    mailboxOk: async () => true,
+    consumeRegisterLimit: async () => 'ok' as const,
   }
   const outcome = await registerCandidate(
     {
@@ -169,6 +174,7 @@ test('register stores attribution and never puts a band or statement on the audi
       first_touch: { source: 'linkedin', medium: 'social', campaign: 'test-ft', landing_path: '/apply' },
       last_touch: { source: 'linkedin', medium: 'social', campaign: 'test-ft' },
       analytics_id: null,
+      form_started_at: Date.parse('2026-09-30T07:59:00.000Z'),
       statement: 'secret statement',
       scale_band: 'hidden-band',
     },

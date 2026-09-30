@@ -628,6 +628,8 @@ export type Database = {
           state_changed_at: string | null
           consent_at: string | null
           checklist_reminded_at: string | null
+          free_webmail: boolean
+          retention_reminded_at: string | null
           created_at: string
           updated_at: string
         }

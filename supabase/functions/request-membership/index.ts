@@ -1,3 +1,4 @@
+import { bumpKeyedLimit } from '../_shared/rate_limit.ts'
 import { requireUser } from '../_shared/require_user.ts'
 import { adminNotifyEmail, jsonResponse, logEmailEvent, sendEmail, corsHeaders } from '../_shared/mail.ts'
 import { lettersForTransition, type Outbound } from '../_shared/membership_dispatch.ts'
@@ -19,6 +20,9 @@ Deno.serve(async (req) => {
 
   const action = String(body.action || '')
   if (action === 'submit') {
+    const limited = await bumpKeyedLimit(admin, 'membership_rate_limits', `submit:${user.id}`, 60 * 60 * 1000, 10)
+    if (limited === 'limited') return jsonResponse(req, { error: 'Too many attempts. Try again later.' }, 429)
+    if (limited === 'error') return jsonResponse(req, { error: 'Could not submit the request.' }, 503)
     const { data: status, error } = await admin.rpc('submit_candidate_request', {
       p_user_id: user.id,
       p_consent: body.consent === true,
