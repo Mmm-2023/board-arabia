@@ -12,6 +12,7 @@ import {
   type AiToolKey,
   type ConsentRow,
 } from '../_shared/ai_tools.ts'
+import { guardStubOutput } from './tools/legal_guard.ts'
 import { runToolStub } from './tools/index.ts'
 import {
   buildMarketBrief,
@@ -80,6 +81,7 @@ export type AiToolStore = {
   markJob: (jobId: string, patch: { status: string; step: string; error?: string | null }) => Promise<boolean>
   deleteOwned: (jobId: string, userId: string) => Promise<{ storagePath: string } | null>
   removeFile: (path: string) => Promise<boolean>
+  readSource?: (path: string) => Promise<string>
 }
 
 export type AiAuth =
@@ -263,12 +265,14 @@ async function runStep(store: AiToolStore, userId: string, jobId: string, deps: 
   if (existing && job.status === 'ready') return { ok: true, output: existing.body }
   if (job.tool_key === 'market_brief') return finishMarket(store, userId, job, deps)
   const provider = aiProviderNote()
-  const output = runToolStub(job.tool_key, {
+  const output = guardStubOutput(runToolStub(job.tool_key, {
     fileName: job.file_name,
     generatedOn: formatReportDate(deps.now()),
     modelId: provider.modelId,
     modelSkipReason: provider.skipReason,
-  })
+    mimeType: job.mime_type,
+    sourceText: await readJobSource(store, job),
+  }))
   return saveReady(store, userId, job, output, deps, job.file_name)
 }
 
@@ -351,6 +355,13 @@ async function saveReady(
   const marked = await store.markJob(job.id, { status: 'ready', step: 'done', error: null })
   if (!marked) return { ok: false, status: 500, error: AI_TOOL_MESSAGES.start, code: 'start_failed' }
   return { ok: true, output }
+}
+
+async function readJobSource(store: AiToolStore, job: JobRow): Promise<string> {
+  if (job.mime_type !== 'text/plain' && job.mime_type !== 'text/csv') return ''
+  if (!store.readSource) return ''
+  const text = await store.readSource(job.storage_path)
+  return typeof text === 'string' ? text.slice(0, 80_000) : ''
 }
 
 function publicJob(job: JobRow) {

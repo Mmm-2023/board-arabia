@@ -3,6 +3,8 @@ export type StubInput = {
   generatedOn: string
   modelId: string | null
   modelSkipReason: string | null
+  sourceText?: string
+  mimeType?: string
 }
 
 export type StubOutput = {

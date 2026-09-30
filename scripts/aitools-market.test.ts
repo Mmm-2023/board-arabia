@@ -153,8 +153,10 @@ test('market brief Arabic will lines are the bullet file, including shared lines
   assert.equal(english.willNot.includes(SHARED_WILL_NOT[0]), true)
   assert.equal(english.willNot.includes(SHARED_WILL_NOT_AR[0]), false)
   const cfo = renderToolCopy('cfo_check', 'ar', slots)
-  assert.equal(cfo.willNot.includes(SHARED_WILL_NOT[0]), true)
-  assert.equal(cfo.willNot.includes(SHARED_WILL_NOT_AR[0]), false)
+  assert.deepEqual(cfo.willNot.slice(-SHARED_WILL_NOT_AR.length), [...SHARED_WILL_NOT_AR])
+  assert.equal(cfo.willNot.includes(SHARED_WILL_NOT[0]), false)
+  const source = read('src/lib/aiToolCopy.ts')
+  assert.equal(source.split('export const SHARED_WILL_NOT_AR').length - 1, 1)
 })
 
 test('a brief is built only from dated fixture hits', () => {

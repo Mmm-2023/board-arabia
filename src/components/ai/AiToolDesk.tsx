@@ -315,6 +315,8 @@ export function AiToolForm({
   fileName,
   busy,
   lang = 'en',
+  inputsReady,
+  extra,
   onConsent,
   onFile,
   onRun,
@@ -324,11 +326,14 @@ export function AiToolForm({
   fileName: string
   busy: boolean
   lang?: CopyLang
+  inputsReady?: boolean
+  extra?: ReactNode
   onConsent: (value: boolean) => void
   onFile: (file: File | null) => void
   onRun: () => void
 }) {
-  const canRun = consented && fileName.trim().length > 0 && !busy
+  const hasInput = inputsReady ?? fileName.trim().length > 0
+  const canRun = consented && hasInput && !busy
   return (
     <form
       onSubmit={(event) => {
@@ -338,6 +343,7 @@ export function AiToolForm({
     >
       <AiToolBanner text={copy.banner} />
       <AiToolWillList will={copy.will} willNot={copy.willNot} lang={lang} />
+      {extra}
       <AiToolUpload fileName={fileName} disabled={busy} lang={lang} onFile={onFile} />
       <AiToolConsent text={copy.consent} lang={lang} checked={consented} disabled={busy} onChange={onConsent} />
       <button
