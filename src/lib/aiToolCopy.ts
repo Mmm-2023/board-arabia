@@ -1,8 +1,9 @@
 /**
  * On-page legal copy for the four AI tools.
  * English and Arabic banners, will and will-not lines, consent, and footers
- * follow the 2026-09-30 legal draft. Will and will-not bullets are English in
- * that draft, so both languages show those lines as written.
+ * follow the 2026-09-30 legal draft. CFO Arabic will and will-not lines,
+ * including the shared will-not lines, come from the Arabic bullets file.
+ * The other tools still show the English bullets until their own releases.
  * Pricing English uses the product name Pricing sense-check.
  */
 import {
@@ -15,6 +16,14 @@ export const SHARED_WILL_NOT = [
   'Recommend buying, selling or holding anything, or make any offer or solicitation.',
   'Act as a CMA-authorised person or replace a licensed adviser.',
   'Guarantee that its output is accurate, complete or current.',
+] as const
+
+/** Shared Arabic will-not lines. Later tools append these on the Arabic list. */
+export const SHARED_WILL_NOT_AR = [
+  'لا تقدّم استشارة قانونية أو مالية أو استثمارية أو ضريبية أو محاسبية.',
+  'لا توصي بشراء أي شيء أو بيعه أو الاحتفاظ به، ولا تقدّم أي عرض أو دعوة.',
+  'لا تعمل بصفة شخص مرخّص من هيئة السوق المالية، ولا تغني عن مستشار مرخّص.',
+  'لا تضمن دقة نتائجها أو اكتمالها أو حداثتها.',
 ] as const
 
 export const SHARED_FOOTER = {
@@ -34,6 +43,8 @@ type ToolCopy = {
   banner: Record<Lang, string>
   will: readonly string[]
   willNot: readonly string[]
+  willAr?: readonly string[]
+  willNotAr?: readonly string[]
   consentLead: Record<Lang, string>
   footerLead: Record<Lang, string>
 }
@@ -53,6 +64,16 @@ const CFO: ToolCopy = {
   willNot: [
     'Audit, review or certify accounts, or check them against IFRS or SOCPA standards.',
     'Verify that your figures are true.',
+  ],
+  willAr: [
+    'تقرأ الحسابات أو النموذج المالي الذي ترفعه.',
+    'تقدّر مدة التشغيل المتبقية والهوامش بناءً على أرقامك.',
+    'تُبرز نقاط الخطر المحتملة وأوجه عدم الاتساق.',
+    'تقترح أسئلة لتطرحها على مديرك المالي أو مراجع حساباتك.',
+  ],
+  willNotAr: [
+    'لا تدقّق الحسابات أو تراجعها أو تعتمدها، ولا تتحقق من مطابقتها للمعايير الدولية لإعداد التقارير المالية أو معايير الهيئة السعودية للمراجعين والمحاسبين.',
+    'لا تتحقق من صحة أرقامك.',
   ],
   consentLead: {
     en: 'I own or am authorised to share these financials, and I will not upload a listed company\'s non-public information.',
@@ -203,11 +224,13 @@ export function renderToolCopy(tool: AiToolKey, lang: Lang, slots: LegalSlots): 
   const core = fillLegal(SHARED_CONSENT[lang], slots)
   const footerLead = fillLegal(block.footerLead[lang], slots)
   const footerShared = fillLegal(SHARED_FOOTER[lang], slots)
+  const willAr = lang === 'ar' ? block.willAr : undefined
+  const willNotAr = lang === 'ar' ? block.willNotAr : undefined
   return {
     title: block.title[lang],
     banner: fillLegal(block.banner[lang], slots),
-    will: block.will,
-    willNot: [...block.willNot, ...SHARED_WILL_NOT],
+    will: willAr ?? block.will,
+    willNot: willNotAr ? [...willNotAr, ...SHARED_WILL_NOT_AR] : [...block.willNot, ...SHARED_WILL_NOT],
     consent: `${lead} ${core}`,
     footerLead,
     footerShared,

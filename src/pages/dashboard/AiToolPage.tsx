@@ -14,6 +14,7 @@ import { AiToolForm, AiToolJobStatus, AiToolReport, AiToolShell } from '../../co
 import { AI_UI } from '../../lib/aiToolUi'
 import {
   acceptAiToolFile,
+  acceptCfoFile,
   listAiToolJobs,
   postAiTool,
   readAiToolFrame,
@@ -118,7 +119,7 @@ export function AiToolPage() {
 
   async function onRun() {
     if (!tool || !file || !consented) return
-    const problem = acceptAiToolFile(file)
+    const problem = tool === 'cfo_check' ? acceptCfoFile(file) : acceptAiToolFile(file)
     if (problem) {
       setError(problem)
       return
@@ -153,6 +154,7 @@ export function AiToolPage() {
       file_name: file.name,
       mime_type: mime,
       byte_size: file.size,
+      lang,
     })
     setBusy(false)
     if (!started.ok) {
@@ -228,6 +230,8 @@ export function AiToolPage() {
             consented={consented}
             fileName={file?.name || ''}
             busy={busy}
+            accept={tool === 'cfo_check' ? CFO_ACCEPT : undefined}
+            fileHint={tool === 'cfo_check' ? (lang === 'ar' ? CFO_HINT.ar : CFO_HINT.en) : undefined}
             onConsent={setConsented}
             onFile={(next) => {
               setError('')
@@ -292,6 +296,13 @@ function Notes({
     </section>
   )
 }
+
+const CFO_ACCEPT = '.pdf,.csv,.xlsx,application/pdf,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+
+const CFO_HINT = {
+  en: 'PDF, CSV, or XLSX. 15 MB max. The file and the output are deleted after the retention period.',
+  ar: 'ملف PDF أو CSV أو XLSX. الحد 15 ميغابايت. يُحذف الملف والنتيجة بعد مدة الحفظ.',
+} as const
 
 function mimeFor(name: string): string {
   const lower = name.toLowerCase()

@@ -133,11 +133,15 @@ export function AiToolUpload({
   fileName,
   disabled,
   lang = 'en',
+  accept = '.pdf,.txt,.csv,.xlsx,.docx,application/pdf,text/plain,text/csv',
+  fileHint,
   onFile,
 }: {
   fileName: string
   disabled?: boolean
   lang?: CopyLang
+  accept?: string
+  fileHint?: string
   onFile: (file: File | null) => void
 }) {
   const ui = AI_UI[lang]
@@ -152,7 +156,7 @@ export function AiToolUpload({
         id="ai-tool-file"
         type="file"
         className="sr-only"
-        accept=".pdf,.txt,.csv,.xlsx,.docx,application/pdf,text/plain,text/csv"
+        accept={accept}
         disabled={disabled}
         onChange={(event) => {
           onFile(event.target.files?.[0] ?? null)
@@ -168,7 +172,7 @@ export function AiToolUpload({
         {ui.choose}
       </button>
       {fileName ? <p className="mt-2 text-[0.95rem] text-ink">{fileName}</p> : null}
-      <p className="mt-2 text-[0.92rem] leading-relaxed text-ink/65">{ui.fileHint}</p>
+      <p className="mt-2 text-[0.92rem] leading-relaxed text-ink/65">{fileHint || ui.fileHint}</p>
     </div>
   )
 }
@@ -242,6 +246,27 @@ export function AiToolReport({
       <p className="text-[0.72rem] font-semibold tracking-[0.14em] text-[var(--ba-indigo)] uppercase">AI</p>
       <h2 className="mt-2 font-display text-[1.6rem] font-semibold tracking-[-0.02em]">{heading || output.title}</h2>
       <p className="mt-3 text-[1rem] leading-relaxed text-ink">{output.summary}</p>
+      {output.metrics && output.metrics.length > 0 ? (
+        <dl className="mt-6 grid gap-3 sm:grid-cols-2" aria-label={AI_UI[lang].metrics}>
+          {output.metrics.map((item) => (
+            <div key={item.label} className="min-w-0 border border-[var(--ba-line)] bg-[var(--ba-lavender-mist)] px-3 py-3">
+              <dt className="text-[0.72rem] font-semibold tracking-[0.12em] text-[var(--ba-indigo)] uppercase">{item.label}</dt>
+              <dd className="mt-1 font-display text-[1.45rem] font-semibold break-words">{item.value}</dd>
+              {item.note ? <dd className="mt-1 text-[0.92rem] leading-relaxed text-ink/70 break-words">{item.note}</dd> : null}
+            </div>
+          ))}
+        </dl>
+      ) : null}
+      {output.red_flags && output.red_flags.length > 0 ? (
+        <>
+          <h3 className="mt-6 text-[1rem] font-semibold">{AI_UI[lang].redFlags}</h3>
+          <ul className="mt-2 list-disc space-y-2 ps-5 text-[0.98rem] leading-relaxed break-words">
+            {output.red_flags.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
+        </>
+      ) : null}
       <h3 className="mt-6 text-[1rem] font-semibold">{AI_UI[lang].findings}</h3>
       <ul className="mt-2 list-disc space-y-2 ps-5 text-[0.98rem] leading-relaxed">
         {output.findings.map((item) => (
@@ -290,6 +315,8 @@ export function AiToolForm({
   fileName,
   busy,
   lang = 'en',
+  accept,
+  fileHint,
   onConsent,
   onFile,
   onRun,
@@ -299,6 +326,8 @@ export function AiToolForm({
   fileName: string
   busy: boolean
   lang?: CopyLang
+  accept?: string
+  fileHint?: string
   onConsent: (value: boolean) => void
   onFile: (file: File | null) => void
   onRun: () => void
@@ -313,7 +342,7 @@ export function AiToolForm({
     >
       <AiToolBanner text={copy.banner} />
       <AiToolWillList will={copy.will} willNot={copy.willNot} lang={lang} />
-      <AiToolUpload fileName={fileName} disabled={busy} lang={lang} onFile={onFile} />
+      <AiToolUpload fileName={fileName} disabled={busy} lang={lang} accept={accept} fileHint={fileHint} onFile={onFile} />
       <AiToolConsent text={copy.consent} lang={lang} checked={consented} disabled={busy} onChange={onConsent} />
       <button
         type="submit"
@@ -340,7 +369,7 @@ export function AiToolShell({
   children: ReactNode
 }) {
   return (
-    <article className="max-w-3xl pe-16" dir={lang === 'ar' ? 'rtl' : 'ltr'} lang={lang} data-ai-tool="">
+    <article className="max-w-3xl pe-16 break-words" dir={lang === 'ar' ? 'rtl' : 'ltr'} lang={lang} data-ai-tool="">
       <h1 className="font-display text-[2.2rem] font-bold tracking-[-0.03em]">{title}</h1>
       {staffPreview ? (
         <p className="mt-3 inline-flex min-h-11 items-center border border-[var(--ba-copper)] px-3 text-[0.95rem] font-semibold text-[var(--ba-copper-deep)]" data-staff-preview="">

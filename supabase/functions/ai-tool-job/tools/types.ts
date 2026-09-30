@@ -3,6 +3,14 @@ export type StubInput = {
   generatedOn: string
   modelId: string | null
   modelSkipReason: string | null
+  sourceText?: string
+  lang?: 'en' | 'ar'
+}
+
+export type CfoMetric = {
+  label: string
+  value: string
+  note?: string
 }
 
 export type StubOutput = {
@@ -16,4 +24,6 @@ export type StubOutput = {
   generated_on: string
   model_id: string | null
   model_skip_reason: string | null
+  metrics?: CfoMetric[]
+  red_flags?: string[]
 }

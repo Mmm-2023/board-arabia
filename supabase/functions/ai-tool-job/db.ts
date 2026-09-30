@@ -104,6 +104,15 @@ export function createAiToolStore(admin: AiToolAdmin): AiToolStore {
       const { data, error } = await admin.storage.from(AI_TOOL_BUCKET).download(path)
       return !error && data != null
     },
+    async downloadFile(path) {
+      const { data, error } = await admin.storage.from(AI_TOOL_BUCKET).download(path)
+      if (error || data == null) return null
+      if (data instanceof Uint8Array) return data
+      if (data instanceof ArrayBuffer) return new Uint8Array(data)
+      const blob = data as { arrayBuffer?: () => Promise<ArrayBuffer> }
+      if (typeof blob.arrayBuffer !== 'function') return null
+      return new Uint8Array(await blob.arrayBuffer())
+    },
     async insertJob(row) {
       const { error } = await admin.from('ai_tool_jobs').insert({ ...row, error: null })
       if (!error) return 'ok'

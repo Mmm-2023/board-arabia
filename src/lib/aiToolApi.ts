@@ -112,6 +112,15 @@ export function acceptAiToolFile(file: File): string | null {
   return null
 }
 
+export function acceptCfoFile(file: File): string | null {
+  const problem = acceptAiToolFile(file)
+  if (problem) return problem
+  const mime = file.type || mimeFromName(file.name)
+  const ext = extensionForMime(mime)
+  if (ext !== 'pdf' && ext !== 'csv' && ext !== 'xlsx') return 'Use a PDF, CSV, or XLSX file.'
+  return null
+}
+
 function mimeFromName(name: string): string {
   const lower = name.toLowerCase()
   if (lower.endsWith('.pdf')) return 'application/pdf'

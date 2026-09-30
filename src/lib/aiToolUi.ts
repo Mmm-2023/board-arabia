@@ -24,6 +24,8 @@ export const AI_UI: Record<
     priorEmpty: string
     delete: string
     findings: string
+    metrics: string
+    redFlags: string
     questions: string
     sources: string
     dated: string
@@ -66,6 +68,8 @@ export const AI_UI: Record<
     priorEmpty: 'No earlier checks yet. Run one when you are ready.',
     delete: 'Delete',
     findings: 'Findings',
+    metrics: 'From your file',
+    redFlags: 'Red flags',
     questions: 'Questions',
     sources: 'Sources',
     dated: 'Dated',
@@ -107,6 +111,8 @@ export const AI_UI: Record<
     priorEmpty: 'لا توجد فحوصات سابقة بعد.',
     delete: 'حذف',
     findings: 'النتائج',
+    metrics: 'من ملفك',
+    redFlags: 'نقاط الخطر',
     questions: 'أسئلة',
     sources: 'المصادر',
     dated: 'بتاريخ',
