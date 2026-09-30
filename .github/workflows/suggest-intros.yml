@@ -1,0 +1,45 @@
+# Daily introduction suggestions and nudges. No-op until INTROS_SCHEDULE_SECRET
+# is set on this repository and the same value is set as an Edge secret.
+# The function rejects every call when that secret is unset.
+# Suggestions are written once per ISO week. Nudges send once.
+# POST only. Header x-intros-schedule-secret. Add ?dry_run=1 to preview.
+
+name: Suggest intros
+
+on:
+  schedule:
+    - cron: '10 5 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  suggest:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Suggest introductions and send nudges
+        env:
+          INTROS_SCHEDULE_SECRET: ${{ secrets.INTROS_SCHEDULE_SECRET }}
+        run: |
+          if [ -z "$INTROS_SCHEDULE_SECRET" ]; then
+            echo "INTROS_SCHEDULE_SECRET is unset. Suggestion run is a no-op."
+            exit 0
+          fi
+          code=$(curl -sS --max-time 120 -o /tmp/suggest-intros-body.txt -w '%{http_code}' \
+            -X POST \
+            -H "Content-Type: application/json" \
+            -H "x-intros-schedule-secret: ${INTROS_SCHEDULE_SECRET}" \
+            --data '{}' \
+            "https://iirqbizwanyhgkhanntq.supabase.co/functions/v1/suggest-intros")
+          echo "status ${code}"
+          python3 - <<'PY'
+          import pathlib, re
+          text = pathlib.Path("/tmp/suggest-intros-body.txt").read_text(encoding="utf-8", errors="replace")
+          text = re.sub(r"[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}", "[redacted]", text)
+          print(text[:300])
+          PY
+          if [ "$code" -lt 200 ] || [ "$code" -ge 300 ]; then
+            echo "suggestion call failed"
+            exit 1
+          fi

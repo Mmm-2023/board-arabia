@@ -6,10 +6,13 @@ import { dismissAdmitShareCard, loadAdmitShareCard, type AdmitShareCardState } f
 import { SponsorBadge } from '../../components/SponsorBadge'
 import { AVATAR_BUCKET } from '../../lib/avatar'
 import { isProfileReady } from '../../lib/directoryGate'
+import { fetchIntroQuota, fetchMyIntroSuggestions, fetchMyIntros, requestMemberIntro } from '../../lib/demoFetch'
 import { fetchMyDealRooms, respondDealRoom } from '../../lib/dealRoomApi'
 import { pendingInvites, type MemberDealRoom } from '../../lib/dealRoomView'
 import { assembleHome, isFoundingMember, type AttentionItem } from '../../lib/homeSnapshot'
 import { loadHomeSources, type LoadedSources } from '../../lib/homeSnapshotLoad'
+import type { IntroSuggestion } from '../../lib/introSuggestions'
+import { outgoingMemberStatus, type IntroQuota, type IntroRow } from '../../lib/memberIntros'
 import { seatLabel } from '../../lib/member'
 import { supabase } from '../../lib/supabase'
 import { useNoIndex } from '../../lib/usePageTitle'
@@ -18,6 +21,8 @@ import { MEMBER_VIEWS } from '../../shell/viewCopy'
 import { useDashboardStatus, useMember } from './context'
 import { AdmitShareCard } from './AdmitShareCard'
 import { HomeSnapshotView } from './HomeSnapshotView'
+import { IntroSuggestions } from './IntroSuggestions'
+import { suggestionPortrait } from './suggestionPortrait'
 import { PendingInviteCards } from './PendingInviteCards'
 
 const EMPTY_SOURCES: LoadedSources = {
@@ -51,6 +56,14 @@ export function DashboardHome() {
   const [shareDismissing, setShareDismissing] = useState(false)
   const [shareDismissError, setShareDismissError] = useState('')
   const [upgradeOpen, setUpgradeOpen] = useState(false)
+  const [suggestAttempt, setSuggestAttempt] = useState(0)
+  const [suggestions, setSuggestions] = useState<IntroSuggestion[]>([])
+  const [suggestFailed, setSuggestFailed] = useState(false)
+  const [suggestQuota, setSuggestQuota] = useState<IntroQuota | null>(null)
+  const [suggestIntros, setSuggestIntros] = useState<IntroRow[]>([])
+  const [suggestBusy, setSuggestBusy] = useState<string | null>(null)
+  const [suggestErrorId, setSuggestErrorId] = useState<string | null>(null)
+  const [suggestError, setSuggestError] = useState('')
   useNoIndex('Home | Board Arabia')
 
   useEffect(() => {
@@ -111,6 +124,46 @@ export function DashboardHome() {
         return
       }
       setShareCard({ show: false })
+    })
+  }
+
+  useEffect(() => {
+    let cancelled = false
+    void fetchMyIntroSuggestions().then((result) => {
+      if (cancelled) return
+      if (result.status === 'error') {
+        setSuggestFailed(true)
+        setSuggestions([])
+        return
+      }
+      setSuggestFailed(false)
+      setSuggestions(result.status === 'ready' ? result.rows : [])
+    })
+    void fetchIntroQuota().then((result) => {
+      if (!cancelled) setSuggestQuota(result)
+    })
+    void fetchMyIntros().then((result) => {
+      if (!cancelled) setSuggestIntros(result.status === 'ready' ? result.rows : [])
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [suggestAttempt])
+
+  function requestSuggestion(id: string, reason: string, askDesk: boolean) {
+    setSuggestError('')
+    setSuggestErrorId(null)
+    setSuggestBusy(id)
+    void requestMemberIntro(id, reason, askDesk).then(async (message) => {
+      setSuggestBusy(null)
+      if (message) {
+        setSuggestErrorId(id)
+        setSuggestError(message)
+        return
+      }
+      const [nextIntros, nextQuota] = await Promise.all([fetchMyIntros(), fetchIntroQuota()])
+      if (nextIntros.status === 'ready') setSuggestIntros(nextIntros.rows)
+      setSuggestQuota(nextQuota)
     })
   }
 
@@ -272,6 +325,29 @@ export function DashboardHome() {
         }
         figuresAsOf={sources.figuresAsOf}
         userId={userId}
+        suggestionsSlot={
+          suggestFailed ? (
+            <div className="mt-4">
+              <ErrorBanner
+                tone="member"
+                message={MEMBER_VIEWS.home.error}
+                retryLabel={MEMBER_VIEWS.home.retry}
+                onRetry={() => setSuggestAttempt((value) => value + 1)}
+              />
+            </div>
+          ) : suggestions.length > 0 ? (
+            <IntroSuggestions
+              rows={suggestions}
+              quota={suggestQuota}
+              introStatus={(id) => outgoingMemberStatus(suggestIntros, id)}
+              busyId={suggestBusy}
+              errorId={suggestErrorId}
+              error={suggestError}
+              portrait={suggestionPortrait}
+              onRequest={requestSuggestion}
+            />
+          ) : null
+        }
         shareSlot={
           shareCard.show ? (
             <AdmitShareCard

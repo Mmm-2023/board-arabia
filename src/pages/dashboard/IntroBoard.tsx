@@ -12,10 +12,13 @@ import {
   introDirectionLabel,
   introHasPortrait,
   introStatusLabel,
+  MEET_OUTCOMES,
+  meetOutcomeLabel,
   staffRequestLine,
   type IntroContact,
   type IntroKind,
   type IntroRow,
+  type MeetOutcome,
 } from '../../lib/memberIntros'
 import { formatActivityWhen } from '../../lib/homeSnapshot'
 import type { ShellTone } from '../../shell/destinations'
@@ -33,6 +36,7 @@ export function IntroBoard({
   error,
   onRespond,
   onDecide,
+  onMeet,
   portrait,
   contacts = {},
 }: {
@@ -42,6 +46,7 @@ export function IntroBoard({
   error: string
   onRespond?: (id: string, decision: 'accepted' | 'declined') => void
   onDecide?: (id: string, kind: 'mandate' | 'real_estate' | 'partner', decision: 'approved' | 'declined') => void
+  onMeet?: (id: string, outcome: MeetOutcome) => void
   portrait?: (row: IntroRow) => ReactNode
   contacts?: Readonly<Record<string, IntroContact>>
 }) {
@@ -98,6 +103,7 @@ export function IntroBoard({
                 busy={busyId === row.id}
                 onRespond={onRespond}
                 onDecide={onDecide}
+                onMeet={onMeet}
                 onDecline={() => setDecline(row)}
                 portrait={portrait}
                 contact={row.status === 'accepted' && row.kind === 'member' ? contacts[row.id] : undefined}
@@ -135,6 +141,7 @@ function IntroCard({
   busy,
   onRespond,
   onDecide,
+  onMeet,
   onDecline,
   portrait,
   contact,
@@ -144,6 +151,7 @@ function IntroCard({
   busy: boolean
   onRespond?: (id: string, decision: 'accepted' | 'declined') => void
   onDecide?: (id: string, kind: 'mandate' | 'real_estate' | 'partner', decision: 'approved' | 'declined') => void
+  onMeet?: (id: string, outcome: MeetOutcome) => void
   onDecline: () => void
   portrait?: (row: IntroRow) => ReactNode
   contact?: IntroContact
@@ -201,6 +209,32 @@ function IntroCard({
       {row.reason ? <p className={`mt-3 text-[1rem] leading-relaxed ${member ? 'text-ink/80' : 'text-pearl/85'}`}>{row.reason}</p> : null}
       {contact && row.status === 'accepted' && row.kind === 'member' ? (
         <IntroContactBlock contact={contact} mailto={mailto} />
+      ) : null}
+      {member && row.meet_due && row.kind === 'member' && row.status === 'accepted' && !row.is_demo && onMeet ? (
+        <fieldset className="mt-4" data-did-you-meet="">
+          <legend className="text-[1rem] text-ink">Did you meet?</legend>
+          <div className="mt-3 flex flex-wrap gap-3">
+            {MEET_OUTCOMES.map((outcome) => {
+              const pressed = row.meet_outcome === outcome
+              return (
+                <button
+                  key={outcome}
+                  type="button"
+                  aria-pressed={pressed}
+                  disabled={busy}
+                  onClick={() => onMeet(row.id, outcome)}
+                  className={`inline-flex min-h-11 items-center px-4 text-[0.75rem] font-semibold tracking-[0.08em] uppercase disabled:opacity-40 ${
+                    pressed
+                      ? 'ba-primary'
+                      : 'border border-[var(--ba-line)] bg-white text-ink'
+                  }`}
+                >
+                  {meetOutcomeLabel(outcome)}
+                </button>
+              )
+            })}
+          </div>
+        </fieldset>
       ) : null}
       {when ? <p className={`mt-3 text-[0.85rem] ${muted}`}>{when}</p> : null}
       {row.is_demo ? <p className={`mt-3 text-[0.92rem] ${muted}`}>{SAMPLE_NOTE}</p> : null}

@@ -30,6 +30,17 @@ export type IntroRow = {
   avatar_path?: string | null
   ask_desk?: boolean
   desk_status?: 'queued' | 'sent'
+  meet_due?: boolean
+  meet_outcome?: MeetOutcome
+}
+
+export const MEET_OUTCOMES = ['yes', 'not_yet', 'no'] as const
+export type MeetOutcome = (typeof MEET_OUTCOMES)[number]
+
+export function meetOutcomeLabel(outcome: MeetOutcome): string {
+  if (outcome === 'yes') return 'Yes'
+  if (outcome === 'not_yet') return 'Not yet'
+  return 'No'
 }
 
 export type IntroContact = {
@@ -270,6 +281,8 @@ export function presentIntroRow(raw: unknown): IntroRow | null {
     avatar_path: typeof row.avatar_path === 'string' && AVATAR_PATH.test(row.avatar_path) ? row.avatar_path : null,
     ask_desk: row.ask_desk === true,
     desk_status: row.desk_status === 'queued' || row.desk_status === 'sent' ? row.desk_status : undefined,
+    meet_due: row.meet_due === true ? true : undefined,
+    meet_outcome: isMeetOutcome(row.meet_outcome) ? row.meet_outcome : undefined,
   }
 }
 
@@ -299,6 +312,10 @@ function isKind(value: unknown): value is IntroKind {
 
 function isStatus(value: unknown): value is IntroStatus {
   return typeof value === 'string' && (INTRO_STATUSES as readonly string[]).includes(value)
+}
+
+function isMeetOutcome(value: unknown): value is MeetOutcome {
+  return typeof value === 'string' && (MEET_OUTCOMES as readonly string[]).includes(value)
 }
 
 function text(value: unknown, max: number): string {

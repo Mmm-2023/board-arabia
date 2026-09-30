@@ -19,6 +19,7 @@ export function HomeSnapshotView({
   figuresAsOf = null,
   userId = 'member',
   shareSlot = null,
+  suggestionsSlot = null,
 }: {
   model: HomeModel
   onRetry?: () => void
@@ -29,6 +30,7 @@ export function HomeSnapshotView({
   figuresAsOf?: string | null
   userId?: string
   shareSlot?: ReactNode
+  suggestionsSlot?: ReactNode
 }) {
   const livePulse = model.pulse.filter((item) => !item.example)
   const pulseVisible = livePulse.length > 0 || model.majlis != null
@@ -118,9 +120,10 @@ export function HomeSnapshotView({
             >
               {nextAction.label}
             </Link>
-          ) : (
+          ) : suggestionsSlot ? null : (
             <p className={`mt-3 max-w-xl text-[1rem] ${styles.muted}`}>Nothing needs you right now.</p>
           )}
+          {suggestionsSlot}
           {shareSlot ? <div className="mt-4">{shareSlot}</div> : null}
         </section>
       ) : null}

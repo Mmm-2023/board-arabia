@@ -21,6 +21,7 @@ export function DirectoryIntroAction({
   error,
   quota = null,
   startOpen = false,
+  initialReason = '',
   onRequest,
 }: {
   sample: boolean
@@ -30,11 +31,12 @@ export function DirectoryIntroAction({
   error: string
   quota?: IntroQuota | null
   startOpen?: boolean
+  initialReason?: string
   onRequest?: (reason: string, askDesk: boolean) => void
 }) {
   const reasonId = useId()
   const [open, setOpen] = useState(startOpen)
-  const [reason, setReason] = useState('')
+  const [reason, setReason] = useState(initialReason)
   const [askDesk, setAskDesk] = useState(false)
   const [localError, setLocalError] = useState('')
 
