@@ -312,6 +312,63 @@ test('legal placeholders stay in one module until LEGAL-PAGES lands', () => {
   assert.equal(legalFile, false)
 })
 
+test('with no env set, consent links point at the in-app pages', async () => {
+  const vite = await createServer({ server: { middlewareMode: true }, appType: 'custom', logLevel: 'error' })
+  try {
+    const config = await vite.ssrLoadModule('/src/lib/aiToolConfig.ts')
+    const copyMod = await vite.ssrLoadModule('/src/lib/aiToolCopy.ts')
+    const desk = await vite.ssrLoadModule('/src/components/ai/AiToolDesk.tsx')
+    assert.equal(config.PRIVACY_LINK, '/privacy')
+    assert.equal(config.TERMS_LINK, '/terms')
+    const slots = config.legalSlotsFromEnv(30, '30 Sep 2026')
+    const copy = copyMod.renderToolCopy('cfo_check', 'en', slots)
+    const html = renderToStaticMarkup(
+      createElement(
+        MemoryRouter,
+        null,
+        createElement(desk.AiToolForm, {
+          copy,
+          lang: 'en',
+          consented: false,
+          fileName: 'example.pdf',
+          busy: false,
+          onConsent: () => {},
+          onFile: () => {},
+          onRun: () => {},
+        }),
+      ),
+    )
+    assert.match(html, /href="\/privacy"/)
+    assert.match(html, /href="\/terms"/)
+    assert.match(html, />Privacy Notice</)
+    assert.match(html, />Terms</)
+    assert.equal(html.includes('[PRIVACY LINK]'), false)
+    assert.equal(html.includes('[TERMS LINK]'), false)
+    assert.equal(html.includes('https://example.com'), false)
+    const arabic = copyMod.renderToolCopy('cfo_check', 'ar', slots)
+    const arHtml = renderToStaticMarkup(
+      createElement(
+        MemoryRouter,
+        null,
+        createElement(desk.AiToolConsent, {
+          text: arabic.consent,
+          lang: 'ar',
+          checked: false,
+          onChange: () => {},
+        }),
+      ),
+    )
+    assert.match(arHtml, /href="\/privacy"/)
+    assert.match(arHtml, /href="\/terms"/)
+    assert.match(arHtml, /إشعار الخصوصية/)
+    assert.match(arHtml, /الشروط/)
+    assert.equal(arHtml.includes('[PRIVACY LINK]'), false)
+    assert.equal(arHtml.includes('[TERMS LINK]'), false)
+  } finally {
+    await vite.close()
+  }
+})
+
 test('public apply route is unchanged while the two-tier flag is off', () => {
   const app = read('src/App.tsx')
   assert.match(app, /path="\/apply" element=\{<ApplyPage/)

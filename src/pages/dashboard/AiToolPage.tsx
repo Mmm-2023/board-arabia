@@ -200,6 +200,7 @@ export function AiToolPage() {
           {jobStatus ? <AiToolJobStatus status={jobStatus} step={jobStep} /> : null}
           <AiToolReport
             output={output}
+            lang={lang}
             footerLead={reportCopy.footerLead}
             footerShared={reportCopy.footerShared}
             onDelete={() => jobId && setPendingDelete(jobId)}
@@ -218,6 +219,7 @@ export function AiToolPage() {
           ) : null}
           <AiToolForm
             copy={copy}
+            lang={lang}
             consented={consented}
             fileName={file?.name || ''}
             busy={busy}

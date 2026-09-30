@@ -1,6 +1,15 @@
 import { useRef, type ReactNode } from 'react'
+import { Link } from 'react-router-dom'
 import type { StubOutput } from '../../../supabase/functions/ai-tool-job/tools/types.ts'
+import { PRIVACY_LINK, TERMS_LINK } from '../../lib/aiToolConfig'
 import type { RenderedToolCopy } from '../../lib/aiToolCopy'
+
+type CopyLang = 'en' | 'ar'
+
+const LINK_LABELS: Record<CopyLang, { privacy: string; terms: string }> = {
+  en: { privacy: 'Privacy Notice', terms: 'Terms' },
+  ar: { privacy: 'إشعار الخصوصية', terms: 'الشروط' },
+}
 
 const STATUS_LABEL: Record<string, string> = {
   queued: 'Queued',
@@ -17,25 +26,61 @@ const STEP_LABEL: Record<string, string> = {
   done: 'Done',
 }
 
-export function LegalText({ text, className }: { text: string; className?: string }) {
-  const parts = text.split(/(https?:\/\/[^\s]+)/g)
+function LegalAnchor({ href, children }: { href: string; children: string }) {
+  const className = 'underline'
+  if (href.startsWith('/') && !href.startsWith('//')) {
+    return (
+      <Link to={href} className={className}>
+        {children}
+      </Link>
+    )
+  }
   return (
-    <p className={className}>
-      {parts.map((part, index) => {
-        if (!part.startsWith('http')) return <span key={index}>{part}</span>
-        const href = part.replace(/[.,)]+$/, '')
-        const tail = part.slice(href.length)
-        return (
-          <span key={index}>
-            <a href={href} className="underline">
-              {href}
-            </a>
-            {tail}
-          </span>
-        )
-      })}
-    </p>
+    <a href={href} className={className}>
+      {children}
+    </a>
   )
+}
+
+function withoutTrailingLabel(before: string, label: string): string {
+  const trimmed = before.replace(/\s+$/, '')
+  if (!trimmed.endsWith(label)) return before
+  return trimmed.slice(0, -label.length)
+}
+
+export function LegalText({ text, className, lang = 'en' }: { text: string; className?: string; lang?: CopyLang }) {
+  const labels = LINK_LABELS[lang]
+  const targets = [
+    { href: PRIVACY_LINK, label: labels.privacy },
+    { href: TERMS_LINK, label: labels.terms },
+  ].filter((item) => item.href.length > 0)
+  const nodes: ReactNode[] = []
+  let rest = text
+  let guard = 0
+  while (rest.length > 0 && guard < 20) {
+    guard += 1
+    let at = -1
+    let hit = targets[0]
+    for (const item of targets) {
+      const found = rest.indexOf(item.href)
+      if (found >= 0 && (at < 0 || found < at || (found === at && item.href.length > (hit?.href.length ?? 0)))) {
+        at = found
+        hit = item
+      }
+    }
+    if (at < 0 || !hit) {
+      nodes.push(rest)
+      break
+    }
+    nodes.push(withoutTrailingLabel(rest.slice(0, at), hit.label))
+    nodes.push(
+      <LegalAnchor key={`${hit.href}-${guard}`} href={hit.href}>
+        {hit.label}
+      </LegalAnchor>,
+    )
+    rest = rest.slice(at + hit.href.length)
+  }
+  return <p className={className}>{nodes}</p>
 }
 
 export function AiToolBanner({ text }: { text: string }) {
@@ -115,24 +160,30 @@ export function AiToolConsent({
   text,
   checked,
   disabled,
+  lang = 'en',
   onChange,
 }: {
   text: string
   checked: boolean
   disabled?: boolean
+  lang?: CopyLang
   onChange: (value: boolean) => void
 }) {
   return (
-    <label className="mt-6 flex min-h-11 items-start gap-3">
+    <div className="mt-6 flex min-h-11 items-start gap-3">
       <input
+        id="ai-tool-consent"
         type="checkbox"
         className="mt-1 size-6 shrink-0 accent-[var(--ba-indigo)]"
         checked={checked}
         disabled={disabled}
+        aria-labelledby="ai-tool-consent-copy"
         onChange={(event) => onChange(event.target.checked)}
       />
-      <LegalText text={text} className="text-[0.98rem] leading-relaxed text-ink" />
-    </label>
+      <div id="ai-tool-consent-copy">
+        <LegalText text={text} lang={lang} className="text-[0.98rem] leading-relaxed text-ink" />
+      </div>
+    </div>
   )
 }
 
@@ -146,11 +197,11 @@ export function AiToolJobStatus({ status, step }: { status: string; step: string
   )
 }
 
-export function AiToolFooter({ lead, rest }: { lead: string; rest: string }) {
+export function AiToolFooter({ lead, rest, lang = 'en' }: { lead: string; rest: string; lang?: CopyLang }) {
   return (
     <footer className="mt-8 border-t border-[var(--ba-line)] pt-4" data-ai-report-footer="">
-      <LegalText text={lead} className="text-[0.95rem] leading-relaxed text-ink" />
-      <LegalText text={rest} className="mt-3 text-[0.92rem] leading-relaxed text-ink/70" />
+      <LegalText text={lead} lang={lang} className="text-[0.95rem] leading-relaxed text-ink" />
+      <LegalText text={rest} lang={lang} className="mt-3 text-[0.92rem] leading-relaxed text-ink/70" />
     </footer>
   )
 }
@@ -159,11 +210,13 @@ export function AiToolReport({
   output,
   footerLead,
   footerShared,
+  lang = 'en',
   onDelete,
 }: {
   output: StubOutput
   footerLead: string
   footerShared: string
+  lang?: CopyLang
   onDelete?: () => void
 }) {
   return (
@@ -208,7 +261,7 @@ export function AiToolReport({
           Delete
         </button>
       ) : null}
-      <AiToolFooter lead={footerLead} rest={footerShared} />
+      <AiToolFooter lead={footerLead} rest={footerShared} lang={lang} />
     </article>
   )
 }
@@ -218,6 +271,7 @@ export function AiToolForm({
   consented,
   fileName,
   busy,
+  lang = 'en',
   onConsent,
   onFile,
   onRun,
@@ -226,6 +280,7 @@ export function AiToolForm({
   consented: boolean
   fileName: string
   busy: boolean
+  lang?: CopyLang
   onConsent: (value: boolean) => void
   onFile: (file: File | null) => void
   onRun: () => void
@@ -241,7 +296,7 @@ export function AiToolForm({
       <AiToolBanner text={copy.banner} />
       <AiToolWillList will={copy.will} willNot={copy.willNot} />
       <AiToolUpload fileName={fileName} disabled={busy} onFile={onFile} />
-      <AiToolConsent text={copy.consent} checked={consented} disabled={busy} onChange={onConsent} />
+      <AiToolConsent text={copy.consent} lang={lang} checked={consented} disabled={busy} onChange={onConsent} />
       <button
         type="submit"
         className="ba-primary mt-6 inline-flex min-h-11 items-center px-4 text-[1rem] font-semibold disabled:opacity-40"

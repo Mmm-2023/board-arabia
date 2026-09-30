@@ -5,6 +5,7 @@ import { AI_TOOL_FLAG_DEFAULTS, AI_TOOL_NAMES } from '../../supabase/functions/_
 import { cfoCheckOutput } from '../../supabase/functions/ai-tool-job/tools/cfo_check.ts'
 import { AiToolCardList } from '../../src/components/ai/AiToolCards'
 import { AiToolForm, AiToolReport, AiToolShell } from '../../src/components/ai/AiToolDesk'
+import { PRIVACY_LINK, TERMS_LINK } from '../../src/lib/aiToolConfig'
 import { renderToolCopy, type LegalSlots } from '../../src/lib/aiToolCopy'
 import { AiToolSettingsPanel } from '../../src/pages/admin/AiToolSettingsPanel'
 import { AppShell } from '../../src/shell/AppShell'
@@ -15,8 +16,8 @@ const slots: LegalSlots = {
   entity: 'Example Holdings',
   cr: '0000000000',
   provider: 'Example AI',
-  privacy: 'https://example.com/privacy',
-  terms: 'https://example.com/terms',
+  privacy: PRIVACY_LINK,
+  terms: TERMS_LINK,
   retentionDays: 30,
   date: '30 Sep 2026',
 }
@@ -63,6 +64,7 @@ function toolForm(lang: 'en' | 'ar', consented: boolean) {
     <AiToolShell lang={lang} title={copy.title}>
       <AiToolForm
         copy={copy}
+        lang={lang}
         consented={consented}
         fileName="example.pdf"
         busy={false}
@@ -88,7 +90,7 @@ function screen() {
     })
     return memberShell(
       <AiToolShell lang="en" title={copy.title}>
-        <AiToolReport output={output} footerLead={copy.footerLead} footerShared={copy.footerShared} onDelete={() => undefined} />
+        <AiToolReport lang="en" output={output} footerLead={copy.footerLead} footerShared={copy.footerShared} onDelete={() => undefined} />
       </AiToolShell>,
     )
   }

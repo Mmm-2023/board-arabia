@@ -15,22 +15,23 @@ function readEnv(name: string): string {
   return typeof value === 'string' ? value.trim() : ''
 }
 
-function linkOrToken(value: string, token: string): string {
-  if (!value) return token
+function configuredLink(value: string, fallback: string): string {
+  if (!value) return fallback
+  if (value.startsWith('/') && !value.startsWith('//') && !/\s/.test(value)) return value
   try {
     const url = new URL(value)
-    if (url.protocol !== 'https:' && url.protocol !== 'http:') return token
-    return url.toString()
+    if (url.protocol === 'https:' || url.protocol === 'http:') return url.toString()
   } catch {
-    return token
+    return fallback
   }
+  return fallback
 }
 
 export const BA_ENTITY = readEnv('VITE_LEGAL_ENTITY').slice(0, 160) || '[BA ENTITY]'
 export const CR = readEnv('VITE_LEGAL_CR').slice(0, 40) || '[CR]'
 export const AI_PROVIDER = readEnv('VITE_LEGAL_AI_PROVIDER').slice(0, 80) || '[AI PROVIDER]'
-export const PRIVACY_LINK = linkOrToken(readEnv('VITE_LEGAL_PRIVACY_LINK'), '[PRIVACY LINK]')
-export const TERMS_LINK = linkOrToken(readEnv('VITE_LEGAL_TERMS_LINK'), '[TERMS LINK]')
+export const PRIVACY_LINK = configuredLink(readEnv('VITE_LEGAL_PRIVACY_LINK'), '/privacy')
+export const TERMS_LINK = configuredLink(readEnv('VITE_LEGAL_TERMS_LINK'), '/terms')
 
 /** Placeholders stay as written until config supplies a value. Nothing here is a legal name. */
 export function legalSlotsFromEnv(retentionDays: number, date: string): LegalSlots {
