@@ -266,6 +266,7 @@ const appShells = [
   'login/staff',
   'admin',
   'admin/applications',
+  'admin/review',
   'admin/people',
   'admin/people/intros',
   'admin/capacity',

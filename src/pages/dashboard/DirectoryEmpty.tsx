@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { UtmBuilder } from '../../components/UtmBuilder'
 import {
   DIRECTORY_COPY,
   DIRECTORY_GHOST_COUNT,
@@ -145,6 +146,7 @@ function InviteControl({ ctas, prominent }: { ctas: DirectoryCtas; prominent: bo
       <p id="directory-invite-help" className="mt-2 text-[0.85rem] text-ink/50">
         {ctas.invite.helper}
       </p>
+      <UtmBuilder />
     </div>
   )
 }

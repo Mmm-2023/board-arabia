@@ -180,6 +180,36 @@ export async function submitApplication(payload: {
   }
 }
 
+export async function requestMembership(body: Record<string, unknown>): Promise<{ error?: string; state?: string }> {
+  try {
+    const res = await fetch(`${functionsBase}/request-membership`, {
+      method: 'POST',
+      headers: await staffHeaders(),
+      body: JSON.stringify(body),
+    })
+    const payload = (await res.json().catch(() => ({}))) as { error?: string; state?: string }
+    if (!res.ok) return { error: payload.error || 'Could not save the request.' }
+    return { state: payload.state }
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : 'Could not save the request.' }
+  }
+}
+
+export async function reviewMembership(body: Record<string, unknown>): Promise<{ error?: string; state?: string }> {
+  try {
+    const res = await fetch(`${functionsBase}/review-membership`, {
+      method: 'POST',
+      headers: await staffHeaders(),
+      body: JSON.stringify(body),
+    })
+    const payload = (await res.json().catch(() => ({}))) as { error?: string; state?: string }
+    if (!res.ok) return { error: payload.error || 'Could not update the request.' }
+    return { state: payload.state }
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : 'Could not update the request.' }
+  }
+}
+
 export async function registerCandidate(payload: {
   full_name: string
   email: string

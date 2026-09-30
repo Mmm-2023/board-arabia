@@ -5,6 +5,7 @@ import { BrandLockup } from '../components/BrandLockup'
 import { clearPasswordFlag } from '../lib/clearPasswordFlag'
 import { resolveAfterLogin } from '../lib/memberGate'
 import { isStaffReturn, safeReturnPath } from '../lib/returnPath'
+import { track } from '../lib/analytics'
 import { sendPasswordReset, supabase } from '../lib/supabase'
 import { useNoIndex } from '../lib/usePageTitle'
 
@@ -65,6 +66,7 @@ export function LoginPage() {
       return
     }
     await clearPasswordFlag(data.user.id)
+    track('login', { method: 'password', path: '/dashboard' })
     const dest = await resolveAfterLogin(data.user.id, nextPath)
     setSubmitting(false)
     navigate(dest, { replace: true })
@@ -105,6 +107,7 @@ export function LoginPage() {
       setAuthError(error?.message || 'That code was not accepted')
       return
     }
+    track('login', { method: 'code', path: '/dashboard' })
     const dest = await resolveAfterLogin(data.user.id, nextPath)
     setSubmitting(false)
     navigate(dest, { replace: true })

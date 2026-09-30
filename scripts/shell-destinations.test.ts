@@ -41,13 +41,13 @@ test('member primaries stay in the locked order', () => {
 test('staff primaries stay in the locked order', () => {
   assert.deepEqual(
     STAFF_DESTINATIONS.map((item) => item.label),
-    ['Home', 'Applications', 'People', 'Capacity', 'Settings'],
+    ['Home', 'Applications', 'Review', 'People', 'Capacity', 'Settings'],
   )
   assert.deepEqual(
     STAFF_DESTINATIONS.map((item) => item.to),
-    ['/admin', '/admin/applications', '/admin/people', '/admin/capacity', '/admin/settings'],
+    ['/admin', '/admin/applications', '/admin/review', '/admin/people', '/admin/capacity', '/admin/settings'],
   )
-  assert.equal(STAFF_DESTINATIONS.length, 5)
+  assert.equal(STAFF_DESTINATIONS.length, 6)
   assert.equal(STAFF_DESTINATIONS[0]?.end, true)
 })
 
@@ -88,6 +88,11 @@ test('section title follows the active destination', () => {
   )
   assert.equal(memberAccountLinks('sponsor').some((item) => MEMBER_DESTINATIONS.some((tab) => tab.label === item.label)), false)
   assert.equal(shellSectionTitle('/admin/applications', STAFF_DESTINATIONS, STAFF_SECONDARY), 'Applications')
+  assert.equal(shellSectionTitle('/admin/review', STAFF_DESTINATIONS, STAFF_SECONDARY), 'Review')
+  assert.equal(
+    shellSectionTitle('/admin/review/11111111-1111-4111-8111-111111111111', STAFF_DESTINATIONS, STAFF_SECONDARY),
+    'Review',
+  )
   assert.equal(shellSectionTitle('/admin/email', STAFF_DESTINATIONS, STAFF_SECONDARY), 'Email')
   assert.equal(shellSectionTitle('/admin/majlis', STAFF_DESTINATIONS, STAFF_SECONDARY), 'Majlis')
   assert.equal(shellSectionTitle('/admin/rooms', STAFF_DESTINATIONS, STAFF_SECONDARY), 'Rooms')

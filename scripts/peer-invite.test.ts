@@ -22,7 +22,10 @@ const token = 'abcdefghijklmnopqrstuvwxyz0123456789ABCdefg'
 const applyUrl = applyInviteUrl('https://boardarabia.com/', token)
 
 test('apply link is the public consider path with an unguessable token slot', () => {
-  assert.equal(applyUrl, `https://boardarabia.com/apply?invite=${token}`)
+  assert.equal(
+    applyUrl,
+    `https://boardarabia.com/apply?invite=${token}&utm_source=member-invite&utm_medium=referral&utm_campaign=peer-invite`,
+  )
   assert.equal(applyUrl.includes('calendar.app.google'), false)
   assert.equal(clientApplyUrl('https://boardarabia.com', token), applyUrl)
 })

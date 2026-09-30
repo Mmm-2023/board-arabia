@@ -34,6 +34,7 @@ export const MEMBER_DESTINATIONS: readonly Destination[] = [
 export const STAFF_DESTINATIONS: readonly Destination[] = [
   { id: 'home', label: 'Home', to: '/admin', end: true },
   { id: 'applications', label: 'Applications', to: '/admin/applications', end: false },
+  { id: 'review', label: 'Review', to: '/admin/review', end: false },
   { id: 'people', label: 'People', to: '/admin/people', end: false },
   { id: 'capacity', label: 'Capacity', to: '/admin/capacity', end: false },
   { id: 'settings', label: 'Settings', to: '/admin/settings', end: false },

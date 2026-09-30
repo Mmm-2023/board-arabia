@@ -7,6 +7,8 @@ import { MEMBER_SECTIONS } from '../../../shell/destinations'
 import { SectionTabs } from '../../../shell/SectionTabs'
 import { HelpPage } from '../HelpPage'
 import { useAccountRoom } from './context'
+import { MembershipScreen } from './MembershipScreen'
+import { missingRequired, requiredDoneCount } from '../../../../supabase/functions/_shared/membership_steps.ts'
 import {
   AccountAi,
   AccountDealList,
@@ -15,7 +17,6 @@ import {
   AccountIntros,
   AccountInvites,
   AccountMajlis,
-  AccountMembership,
   AccountProfileView,
   AccountRealEstate,
   AccountRooms,
@@ -54,6 +55,7 @@ async function loadTotals(): Promise<{ state: 'ready' | 'error'; totals: Display
 }
 
 export function AccountHome() {
+  const room = useAccountRoom()
   const [attempt, setAttempt] = useState(0)
   const [totals, setTotals] = useState<DisplayTotals | null>(null)
   const [totalsState, setTotalsState] = useState<'loading' | 'ready' | 'error'>('loading')
@@ -84,6 +86,8 @@ export function AccountHome() {
         rememberWelcome()
         setShowWelcome(false)
       }}
+      stepsDone={requiredDoneCount(room.checklist)}
+      nextStep={missingRequired(room.checklist)[0]?.label || 'optional details'}
     />
   )
 }
@@ -162,7 +166,7 @@ export function AccountSurface() {
   if (pathname.startsWith('/dashboard/people')) return <AccountPeople />
   if (pathname === '/dashboard/majlis' || pathname.startsWith('/dashboard/majlis/')) return <AccountMajlis />
   if (pathname.startsWith('/dashboard/ai')) return <AccountAi />
-  if (pathname === '/dashboard/membership' || pathname.startsWith('/dashboard/membership/')) return <AccountMembership />
+  if (pathname === '/dashboard/membership' || pathname.startsWith('/dashboard/membership/')) return <MembershipScreen />
   if (pathname === '/dashboard/profile' || pathname.startsWith('/dashboard/profile/')) return <AccountProfile />
   if (pathname === '/dashboard/help' || pathname.startsWith('/dashboard/help/')) return <HelpPage desk={false} />
   return <Navigate to="/dashboard" replace />

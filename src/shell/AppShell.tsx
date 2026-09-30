@@ -20,6 +20,7 @@ export function AppShell({
   renderAccountMark,
   dealsBadge = 0,
   lockedDestinationIds = [],
+  headerChip = null,
   children,
   initialMoreOpen = false,
   initialAccountOpen = false,
@@ -38,6 +39,7 @@ export function AppShell({
   dealsBadge?: number
   /** Hubs that stay visible and show a lock. Home is never in this list. */
   lockedDestinationIds?: readonly string[]
+  headerChip?: string | null
   children: ReactNode
   initialMoreOpen?: boolean
   initialAccountOpen?: boolean
@@ -352,6 +354,9 @@ export function AppShell({
                     Sign out
                   </button>
                 ) : null}
+                {member && headerChip ? (
+                  <p className="hidden text-[0.75rem] font-semibold text-[var(--ba-indigo)] lg:block">{headerChip}</p>
+                ) : null}
                 {member ? (
                   <button
                     ref={accountButton}
@@ -413,7 +418,7 @@ export function AppShell({
                       {lockedHubs.has(item.id) ? <LockMark /> : null}
                       {item.id === 'deals' ? <CountBadge count={dealsBadge} place="tab" /> : null}
                     </span>
-                    <span className="max-w-full truncate">{item.label}</span>
+                    <span className="shell-tab-label">{item.label}</span>
                   </>
                 )}
               </NavLink>
@@ -583,7 +588,7 @@ function CountBadge({ count, place }: { count: number; place: 'tab' | 'sidebar' 
 
 /** Staff tab bar: one column per primary destination, plus More. */
 function tabGridClass(destinationCount: number) {
-  if (destinationCount + 1 === 7) return 'grid-cols-7'
+  if (destinationCount + 1 === 7) return 'grid-cols-7 shell-staff-tabs'
   return 'grid-cols-6'
 }
 
