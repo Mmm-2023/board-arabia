@@ -46,5 +46,11 @@ export function guardStubOutput(output: StubOutput): StubOutput {
     generated_on: guardAiText(output.generated_on),
     model_id: output.model_id ? guardAiText(output.model_id) : output.model_id,
     model_skip_reason: output.model_skip_reason ? guardAiText(output.model_skip_reason) : output.model_skip_reason,
+    checklist: output.checklist?.map((item) => ({
+      key: item.key,
+      label: guardAiText(item.label),
+      detail: guardAiText(item.detail),
+    })),
+    example: output.example,
   }
 }

@@ -10,7 +10,9 @@ import {
   type AiToolKey,
 } from '../../../supabase/functions/_shared/ai_tools.ts'
 import type { StubOutput } from '../../../supabase/functions/ai-tool-job/tools/types.ts'
-import { AiToolForm, AiToolJobStatus, AiToolReport, AiToolShell } from '../../components/ai/AiToolDesk'
+import { AiToolForm, AiToolJobStatus, AiToolReport, AiToolShell, AiToolWillList } from '../../components/ai/AiToolDesk'
+import { DealReadinessForm, DealReadinessNotice } from '../../components/ai/DealReadinessView'
+import { DealReadinessSkeleton } from '../../components/ai/DealReadinessMemo'
 import { MarketBriefForm } from '../../components/ai/MarketBriefForm'
 import { PricingInputs } from '../../components/ai/PricingInputs'
 import { isMarketSector, marketFileName, type MarketSector } from '../../../supabase/functions/ai-tool-job/tools/market_brief.ts'
@@ -18,6 +20,7 @@ import { AI_UI } from '../../lib/aiToolUi'
 import {
   acceptAiToolFile,
   acceptCfoFile,
+  acceptDealFile,
   listAiToolJobs,
   postAiTool,
   readAiToolFrame,
@@ -163,7 +166,8 @@ export function AiToolPage() {
   async function onRun() {
     const upload = file ?? (tool === 'pricing_sense_check' ? pricingFile(pricing) : null)
     if (!tool || !upload || !consented) return
-    const problem = tool === 'cfo_check' ? acceptCfoFile(upload) : acceptAiToolFile(upload)
+    const problem =
+      tool === 'cfo_check' ? acceptCfoFile(upload) : tool === 'deal_readiness' ? acceptDealFile(upload) : acceptAiToolFile(upload)
     if (problem) {
       setError(problem)
       return
@@ -223,8 +227,23 @@ export function AiToolPage() {
     setAttempt((value) => value + 1)
   }
 
+  const deal = tool === 'deal_readiness'
+
+  async function retryDeal() {
+    if (!jobId) return
+    setBusy(true)
+    setError('')
+    const result = await postAiTool({ action: 'step', job_id: jobId, lang: 'en' })
+    setBusy(false)
+    if (!result.ok) {
+      setError(result.error)
+      return
+    }
+    setAttempt((value) => value + 1)
+  }
+
   return (
-    <AiToolShell title={copy.title}>
+    <AiToolShell title={copy.title} notice={deal ? <DealReadinessNotice text={copy.banner} /> : undefined}>
       <p className="mb-4">
         <Link to="/dashboard/ai" className="inline-flex min-h-11 items-center text-[0.95rem] font-semibold text-[var(--ba-indigo)]">
           {ui.allTools}
@@ -247,6 +266,7 @@ export function AiToolPage() {
       ) : null}
       {load === 'ready' && output ? (
         <div className="space-y-4">
+          {deal ? <AiToolWillList will={copy.will} willNot={copy.willNot} /> : null}
           {jobStatus ? <AiToolJobStatus status={jobStatus} step={jobStep} /> : null}
           <AiToolReport
             output={output}
@@ -257,15 +277,41 @@ export function AiToolPage() {
           />
         </div>
       ) : null}
-      {load === 'ready' && !output && jobId ? (
+      {load === 'ready' && !output && jobId && deal ? (
+        jobStatus === 'failed' ? (
+          <ErrorBanner tone="member" message={error || 'Could not finish the memo. Retry.'} retryLabel={ui.retry} onRetry={() => void retryDeal()} />
+        ) : (
+          <>
+            <AiToolWillList will={copy.will} willNot={copy.willNot} />
+            <AiToolJobStatus status={jobStatus || 'reading'} step={jobStep || 'intake'} />
+            <DealReadinessSkeleton />
+          </>
+        )
+      ) : null}
+      {load === 'ready' && !output && jobId && !deal ? (
         <AiToolJobStatus status={jobStatus || 'queued'} step={jobStep || 'intake'} />
       ) : null}
       {load === 'ready' && !jobId ? (
         <>
           {error ? (
-            <p className="mb-4 text-[0.98rem] text-[var(--ba-error)]" role="alert">
-              {error}
-            </p>
+            deal ? (
+              <div className="mb-4">
+                <ErrorBanner tone="member" message={error} retryLabel={ui.retry} onRetry={() => setError('')} />
+              </div>
+            ) : (
+              <p className="mb-4 text-[0.98rem] text-[var(--ba-error)]" role="alert">
+                {error}
+              </p>
+            )
+          ) : null}
+          {deal && busy ? (
+            <>
+              <AiToolWillList will={copy.will} willNot={copy.willNot} />
+              <p className="mt-4 text-[1rem]" role="status">
+                {ui.running}
+              </p>
+              <DealReadinessSkeleton />
+            </>
           ) : null}
           {tool === 'market_brief' ? (
             <MarketBriefForm
@@ -278,6 +324,20 @@ export function AiToolPage() {
               }}
               onConsent={setConsented}
               onRun={() => void onRunMarket()}
+            />
+          ) : deal && busy ? null : deal ? (
+            <DealReadinessForm
+              copy={copy}
+              retentionDays={retentionDays}
+              consented={consented}
+              fileName={file?.name || ''}
+              busy={busy}
+              onConsent={setConsented}
+              onFile={(next) => {
+                setError('')
+                setFile(next)
+              }}
+              onRun={() => void onRun()}
             />
           ) : (
             <AiToolForm

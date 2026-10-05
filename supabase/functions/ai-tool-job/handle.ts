@@ -14,6 +14,7 @@ import {
 } from '../_shared/ai_tools.ts'
 import { appendCfoModelQuestions, CFO_MODEL_SYSTEM, cfoModelUser } from './tools/cfo_check.ts'
 import { readCfoUpload } from './tools/cfo_read.ts'
+import { readDealUpload } from './tools/deal_read.ts'
 import { guardStubOutput } from './tools/legal_guard.ts'
 import { runToolStub } from './tools/index.ts'
 import {
@@ -35,6 +36,7 @@ export const AI_TOOL_MESSAGES = {
   unauthorized: 'Sign in to run this check.',
   searchOff: 'This brief is not available right now.',
   searchFailed: 'The brief could not be prepared. Retry.',
+  unreadable: 'Could not read that file. Retry.',
 } as const
 
 export type JobRow = {
@@ -160,6 +162,9 @@ async function startJob(
   if (tool === 'cfo_check' && ext !== 'pdf' && ext !== 'csv' && ext !== 'xlsx') {
     return jsonResponse(req, { error: AI_TOOL_MESSAGES.file, code: 'bad_request' }, 400)
   }
+  if (tool === 'deal_readiness' && ext !== 'pdf' && ext !== 'txt' && ext !== 'docx') {
+    return jsonResponse(req, { error: AI_TOOL_MESSAGES.file, code: 'bad_request' }, 400)
+  }
   if (!Number.isInteger(byteSize) || byteSize < 1 || byteSize > 15_728_640) {
     return jsonResponse(req, { error: AI_TOOL_MESSAGES.file, code: 'bad_request' }, 400)
   }
@@ -276,6 +281,7 @@ async function runStep(
   const existing = await store.outputByJob(jobId)
   if (existing && job.status === 'ready') return { ok: true, output: existing.body }
   if (job.tool_key === 'market_brief') return finishMarket(store, userId, job, deps, lang)
+  if (job.tool_key === 'deal_readiness') return finishDeal(store, userId, job, deps)
   const provider = aiProviderNote()
   const sourceText = await readJobSource(store, job)
   let output = runToolStub(job.tool_key, {
@@ -306,6 +312,37 @@ function searchReady(deps: AiToolDeps): boolean {
 
 function searchStatus(req: Request, deps: AiToolDeps): Response {
   return jsonResponse(req, { ok: true, search: searchReady(deps) ? 'ready' : 'not_configured' })
+}
+
+async function finishDeal(
+  store: AiToolStore,
+  userId: string,
+  job: JobRow,
+  deps: AiToolDeps,
+): Promise<StepResult> {
+  const bytes = await store.downloadFile(job.storage_path)
+  if (!bytes || bytes.byteLength < 1) {
+    await store.markJob(job.id, { status: 'failed', step: 'done', error: 'Could not read that file.' })
+    return { ok: false, status: 400, error: AI_TOOL_MESSAGES.unreadable, code: 'unreadable' }
+  }
+  let sourceText = ''
+  try {
+    sourceText = await readDealUpload(job.mime_type, bytes)
+  } catch {
+    sourceText = ''
+  }
+  const output = guardStubOutput(
+    runToolStub('deal_readiness', {
+      fileName: job.file_name,
+      generatedOn: formatReportDate(deps.now()),
+      modelId: null,
+      modelSkipReason: 'document_only',
+      sourceText,
+      lang: 'en',
+      mimeType: job.mime_type,
+    }),
+  )
+  return saveReady(store, userId, job, output, deps, job.file_name)
 }
 
 async function finishMarket(

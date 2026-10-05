@@ -1,20 +1,29 @@
 /**
- * Shared frame for the four member AI tools.
- * Later tool PRs plug into these keys. No new secret names live here.
+ * Shared frame for the member AI tools.
+ * The first four stay off until a later tool PR turns one on.
+ * Deal readiness is turned on for members in 20261125120000_re_ai_readiness.sql.
+ * No new secret names live here.
  */
 
-export const AI_TOOL_KEYS = ['cfo_check', 'market_brief', 'term_sheet_review', 'pricing_sense_check'] as const
+export const AI_TOOL_KEYS = [
+  'cfo_check',
+  'market_brief',
+  'term_sheet_review',
+  'pricing_sense_check',
+  'deal_readiness',
+] as const
 
 export type AiToolKey = (typeof AI_TOOL_KEYS)[number]
 
 export const AI_TOOL_ORDER: readonly AiToolKey[] = AI_TOOL_KEYS
 
-/** All four stay off until a later tool PR turns its own flag on. */
+/** Code fallback is off. The deal readiness migration inserts that flag as on. */
 export const AI_TOOL_FLAG_DEFAULTS: Record<AiToolKey, boolean> = {
   cfo_check: false,
   market_brief: false,
   term_sheet_review: false,
   pricing_sense_check: false,
+  deal_readiness: false,
 }
 
 export const AI_TOOL_RETENTION_DAYS_DEFAULT = 30
@@ -45,6 +54,7 @@ export const AI_TOOL_SLUGS: Record<AiToolKey, string> = {
   market_brief: 'market-brief',
   term_sheet_review: 'term-sheet-review',
   pricing_sense_check: 'pricing-sense-check',
+  deal_readiness: 'deal-readiness',
 }
 
 export const AI_TOOL_NAMES: Record<AiToolKey, string> = {
@@ -52,6 +62,7 @@ export const AI_TOOL_NAMES: Record<AiToolKey, string> = {
   market_brief: 'Market brief',
   term_sheet_review: 'Term sheet reviewer',
   pricing_sense_check: 'Pricing sense-check',
+  deal_readiness: 'Deal readiness memo',
 }
 
 const EXT_BY_MIME: Record<string, string> = {

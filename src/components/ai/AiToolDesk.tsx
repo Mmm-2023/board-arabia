@@ -1,6 +1,7 @@
 import { useRef, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import type { StubOutput } from '../../../supabase/functions/ai-tool-job/tools/types.ts'
+import { DealReadinessChecklist } from './DealReadinessMemo'
 import { PRIVACY_LINK, TERMS_LINK } from '../../lib/aiToolConfig'
 import type { RenderedToolCopy } from '../../lib/aiToolCopy'
 import { AI_UI } from '../../lib/aiToolUi'
@@ -200,7 +201,7 @@ export function AiToolConsent({
       <input
         id="ai-tool-consent"
         type="checkbox"
-        className="mt-1 size-6 shrink-0 accent-[var(--ba-indigo)]"
+        className="mt-1 size-11 shrink-0 accent-[var(--ba-indigo)]"
         checked={checked}
         disabled={disabled}
         aria-labelledby="ai-tool-consent-copy"
@@ -248,7 +249,10 @@ export function AiToolReport({
       <p className="text-[0.72rem] font-semibold tracking-[0.14em] text-[var(--ba-indigo)] uppercase">AI</p>
       <h2 className="mt-2 font-display text-[1.6rem] font-semibold tracking-[-0.02em]">{heading || output.title}</h2>
       <p className="mt-3 text-[1rem] leading-relaxed text-ink">{output.summary}</p>
-      {output.metrics && output.metrics.length > 0 ? (
+      {output.checklist && output.checklist.length > 0 ? (
+        <DealReadinessChecklist items={output.checklist} example={output.example === true} />
+      ) : null}
+      {output.checklist && output.checklist.length > 0 ? null : output.metrics && output.metrics.length > 0 ? (
         <dl className="mt-6 grid gap-3 sm:grid-cols-2" aria-label={AI_UI.metrics}>
           {output.metrics.map((item) => (
             <div key={item.label} className="min-w-0 border border-[var(--ba-line)] bg-[var(--ba-lavender-mist)] px-3 py-3">
@@ -269,12 +273,16 @@ export function AiToolReport({
           </ul>
         </>
       ) : null}
-      <h3 className="mt-6 text-[1rem] font-semibold">{AI_UI.findings}</h3>
-      <ul className="mt-2 list-disc space-y-2 ps-5 text-[0.98rem] leading-relaxed break-words">
-        {output.findings.map((item) => (
-          <li key={item}>{item}</li>
-        ))}
-      </ul>
+      {output.checklist && output.checklist.length > 0 ? null : (
+        <>
+          <h3 className="mt-6 text-[1rem] font-semibold">{AI_UI.findings}</h3>
+          <ul className="mt-2 list-disc space-y-2 ps-5 text-[0.98rem] leading-relaxed break-words">
+            {output.findings.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
+        </>
+      )}
       <h3 className="mt-6 text-[1rem] font-semibold">{AI_UI.questions}</h3>
       <ul className="mt-2 list-disc space-y-2 ps-5 text-[0.98rem] leading-relaxed break-words">
         {output.questions.map((item) => (
@@ -323,6 +331,7 @@ export function AiToolForm({
   fileHint,
   inputsReady,
   extra,
+  hideBanner,
   onConsent,
   onFile,
   onRun,
@@ -335,6 +344,7 @@ export function AiToolForm({
   fileHint?: string
   inputsReady?: boolean
   extra?: ReactNode
+  hideBanner?: boolean
   onConsent: (value: boolean) => void
   onFile: (file: File | null) => void
   onRun: () => void
@@ -348,7 +358,7 @@ export function AiToolForm({
         if (canRun) onRun()
       }}
     >
-      <AiToolBanner text={copy.banner} />
+      {hideBanner ? null : <AiToolBanner text={copy.banner} />}
       <AiToolWillList will={copy.will} willNot={copy.willNot} />
       {extra}
       <AiToolUpload fileName={fileName} disabled={busy} accept={accept} fileHint={fileHint} onFile={onFile} />
@@ -369,15 +379,22 @@ export function AiToolForm({
 export function AiToolShell({
   title,
   staffPreview,
+  notice,
   children,
 }: {
   title: string
   staffPreview?: boolean
+  notice?: ReactNode
   children: ReactNode
 }) {
   return (
     <article className="max-w-3xl pe-16 break-words" dir="ltr" lang="en" data-ai-tool="">
       <h1 className="font-display text-[2.2rem] font-bold tracking-[-0.03em]">{title}</h1>
+      {notice ? (
+        <div className="mt-4" data-ai-advice-notice="">
+          {notice}
+        </div>
+      ) : null}
       {staffPreview ? (
         <p className="mt-3 inline-flex min-h-11 items-center border border-[var(--ba-copper)] px-3 text-[0.95rem] font-semibold text-[var(--ba-copper-deep)]" data-staff-preview="">
           {AI_UI.staffPreview}

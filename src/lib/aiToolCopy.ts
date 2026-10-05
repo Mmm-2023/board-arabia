@@ -89,6 +89,28 @@ const PRICING: ToolCopy = {
     'Pricing sense-check. Comparables and deal data come from public sources and may be incomplete or stale. Not a price opinion or investment recommendation.',
 }
 
+const DEAL: ToolCopy = {
+  title: AI_TOOL_NAMES.deal_readiness,
+  banner:
+    'This is not legal, financial or investment advice. It is an indicative first read of a real estate teaser or information memorandum, limited to title and escrow, foreign ownership, White Land, and gaps the document leaves open.',
+  will: [
+    'Read the teaser or information memorandum you upload.',
+    'Note the title and escrow path only when the document states them.',
+    'Note foreign ownership only when the document states it.',
+    'Flag White Land wording that appears in the document.',
+    'List gaps where the document is silent.',
+  ],
+  willNot: [
+    'Invent a yield, a comparable, or a counterparty name.',
+    'Say whether the title is clear, whether a foreign buyer may own the asset, or whether a White Land fee is due.',
+    'Say what the asset is worth or whether to go ahead.',
+  ],
+  consentLead:
+    'I am allowed to share this teaser or information memorandum, including where it is confidential.',
+  footerLead:
+    'Deal readiness memo. Indicative only. Where the document is silent, this note says Not stated in the document. It does not state a yield, a comparable, or a counterparty name.',
+}
+
 const MARKET: ToolCopy = {
   title: AI_TOOL_NAMES.market_brief,
   banner:
@@ -113,6 +135,7 @@ const TOOLS: Record<AiToolKey, ToolCopy> = {
   market_brief: MARKET,
   term_sheet_review: TERM,
   pricing_sense_check: PRICING,
+  deal_readiness: DEAL,
 }
 
 export const AI_TOOL_CARD_LINES: Record<AiToolKey, string> = {
@@ -120,6 +143,18 @@ export const AI_TOOL_CARD_LINES: Record<AiToolKey, string> = {
   market_brief: 'A sourced brief on entering the Saudi market. Not legal or tax advice.',
   term_sheet_review: 'A read of a term sheet against common market practice. Not legal advice.',
   pricing_sense_check: 'A comparison with public comparables. General and educational only.',
+  deal_readiness: 'A first read of a teaser or information memorandum. Indicative only.',
+}
+
+export const DEAL_ACCEPT =
+  '.pdf,.txt,.docx,application/pdf,text/plain,application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+
+export function dealFileHint(days: number): string {
+  return `PDF, text, or document. 15 MB max. Confidential. Deleted automatically after ${days} days.`
+}
+
+export function dealUploadNote(days: number): string {
+  return `Confidential upload. The file is processed under the Saudi PDPL. Uploads and this memo use the existing AI tools retention and are deleted automatically after ${days} days. The default is 30 days. You can delete them earlier.`
 }
 
 export function toolTitle(tool: AiToolKey): string {
