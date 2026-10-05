@@ -1,12 +1,16 @@
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import {
+  fetchMyReAppetite,
   fetchReOpportunities,
   fetchRePartners,
   requestReOpportunityIntro,
   requestRePartnerIntro,
+  saveMyReAppetite,
 } from '../../lib/demoFetch'
+import type { ReAppetite } from '../../lib/reAppetite'
 import type { ReOpportunityCard, RePartnerCard } from '../../lib/reRedaction'
+import type { ReAppetiteCardStatus } from './ReAppetiteCard'
 import { sampleRow } from '../../lib/sampleAction'
 import { useNoIndex } from '../../lib/usePageTitle'
 import { RealEstateBoard, type RealEstateStatus, type RealEstateTab } from './RealEstateBoard'
@@ -23,6 +27,10 @@ type PartnerState =
   | { status: 'denied' }
   | { status: 'ready'; cards: RePartnerCard[] }
 
+type AppetiteState =
+  | { status: Exclude<ReAppetiteCardStatus, 'ready'> }
+  | { status: 'ready'; value: ReAppetite | null }
+
 export function RealEstatePage() {
   const [list, setList] = useState<OpportunityState>({ status: 'loading' })
   const [partners, setPartners] = useState<PartnerState>({ status: 'loading' })
@@ -36,6 +44,8 @@ export function RealEstatePage() {
   }
   const [attempt, setAttempt] = useState(0)
   const [partnerAttempt, setPartnerAttempt] = useState(0)
+  const [appetiteAttempt, setAppetiteAttempt] = useState(0)
+  const [appetite, setAppetite] = useState<AppetiteState>({ status: 'loading' })
   const [busyId, setBusyId] = useState<string | null>(null)
   const [partnerBusyId, setPartnerBusyId] = useState<string | null>(null)
   const [requestError, setRequestError] = useState(false)
@@ -79,6 +89,28 @@ export function RealEstatePage() {
       cancelled = true
     }
   }, [partnerAttempt])
+
+  useEffect(() => {
+    let cancelled = false
+    void fetchMyReAppetite().then((result) => {
+      if (cancelled) return
+      if (result.status === 'ready') {
+        setAppetite({ status: 'ready', value: result.appetite })
+        return
+      }
+      setAppetite({ status: result.status })
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [appetiteAttempt])
+
+  async function onSaveAppetite(next: ReAppetite) {
+    const result = await saveMyReAppetite(next)
+    if (result.status !== 'ready') return 'error' as const
+    setAppetite({ status: 'ready', value: result.appetite })
+    return 'ok' as const
+  }
 
   async function onRequest(id: string) {
     if (list.status === 'ready' && sampleRow(list.cards, id)) return
@@ -132,6 +164,13 @@ export function RealEstatePage() {
         setPartnerAttempt((value) => value + 1)
       }}
       onRequestPartner={(id) => void onRequestPartner(id)}
+      appetiteStatus={appetite.status}
+      appetite={appetite.status === 'ready' ? appetite.value : null}
+      onRetryAppetite={() => {
+        setAppetite({ status: 'loading' })
+        setAppetiteAttempt((value) => value + 1)
+      }}
+      onSaveAppetite={onSaveAppetite}
     />
   )
 }

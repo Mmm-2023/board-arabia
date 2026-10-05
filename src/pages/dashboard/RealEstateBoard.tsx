@@ -7,6 +7,7 @@ import {
   type ReOpportunityCard,
   type RePartnerCard,
 } from '../../lib/reRedaction'
+import { reAppetiteFits, type ReAppetite } from '../../lib/reAppetite'
 import { RE_REGIONS } from '../../lib/reRegions'
 import {
   EMPTY_RE_FILTERS,
@@ -18,6 +19,7 @@ import {
 import { CardSkeleton, EmptyState, ErrorBanner, FilteredZero, PermissionState } from '../../shell/ViewState'
 import { MEMBER_VIEWS } from '../../shell/viewCopy'
 import { OpportunityCard } from './OpportunityCard'
+import { ReAppetiteCard, type ReAppetiteCardStatus } from './ReAppetiteCard'
 import { RealEstatePartners } from './RealEstatePartners'
 
 export type RealEstateStatus = 'loading' | 'error' | 'denied' | 'ready'
@@ -43,6 +45,10 @@ export function RealEstateBoard({
   partnerRequestError = false,
   onRetryPartners,
   onRequestPartner,
+  appetiteStatus = null,
+  appetite = null,
+  onRetryAppetite,
+  onSaveAppetite,
 }: {
   status: RealEstateStatus
   cards: ReOpportunityCard[]
@@ -58,6 +64,10 @@ export function RealEstateBoard({
   partnerRequestError?: boolean
   onRetryPartners?: () => void
   onRequestPartner?: (id: string) => void
+  appetiteStatus?: ReAppetiteCardStatus | null
+  appetite?: ReAppetite | null
+  onRetryAppetite?: () => void
+  onSaveAppetite?: (appetite: ReAppetite) => Promise<'ok' | 'error'>
 }) {
   const [filters, setFilters] = useState<ReOpportunityFilters>(EMPTY_RE_FILTERS)
   const [filtersOpen, setFiltersOpen] = useState(false)
@@ -79,9 +89,11 @@ export function RealEstateBoard({
     document.getElementById(next.id === 'opportunities' ? 're-tab-opportunities' : 're-tab-partners')?.focus()
   }
   const forming = status === 'ready' && reFeedIsForming(cards)
-  const visible = status === 'ready' ? filterReOpportunities(cards, filters) : []
-  const active = reFiltersActive(filters)
+  const applied = appetite ? filters : { ...filters, fitsAppetite: false }
+  const visible = status === 'ready' ? filterReOpportunities(cards, applied, appetite) : []
+  const active = reFiltersActive(applied)
   const copy = MEMBER_VIEWS.realEstate
+  const showFit = appetite != null
 
   useEffect(() => {
     if (!filtersOpen) return
@@ -150,6 +162,16 @@ export function RealEstateBoard({
         className="mt-6"
         data-re-panel="opportunities"
       >
+        {appetiteStatus ? (
+          <div className="mb-6">
+            <ReAppetiteCard
+              status={appetiteStatus}
+              appetite={appetite}
+              onRetry={onRetryAppetite ?? (() => {})}
+              onSave={onSaveAppetite ?? (async () => 'error')}
+            />
+          </div>
+        ) : null}
         {status === 'loading' ? <CardSkeleton tone="member" label="Loading opportunities" /> : null}
         {status === 'error' ? (
           <ErrorBanner tone="member" message={copy.error} retryLabel={copy.retry} onRetry={onRetry} />
@@ -164,17 +186,34 @@ export function RealEstateBoard({
               </p>
             ) : null}
             <div className={forming ? 'mt-5' : ''}>
-              <button
-                type="button"
-                className="inline-flex min-h-11 items-center border border-[var(--ba-line)] bg-white px-4 text-[0.75rem] font-semibold tracking-[0.08em] text-ink uppercase md:hidden"
-                aria-expanded={filtersOpen}
-                aria-controls="re-filter-sheet"
-                onClick={() => setFiltersOpen(true)}
-              >
-                {active ? 'Filters on' : 'Filters'}
-              </button>
+              <div className="flex flex-wrap gap-2 md:hidden">
+                <button
+                  type="button"
+                  className="inline-flex min-h-11 items-center border border-[var(--ba-line)] bg-white px-4 text-[0.75rem] font-semibold tracking-[0.08em] text-ink uppercase"
+                  aria-expanded={filtersOpen}
+                  aria-controls="re-filter-sheet"
+                  onClick={() => setFiltersOpen(true)}
+                >
+                  {active ? 'Filters on' : 'Filters'}
+                </button>
+                {showFit ? (
+                  <button
+                    type="button"
+                    aria-pressed={filters.fitsAppetite === true}
+                    data-re-fit-filter="true"
+                    className={`inline-flex min-h-11 items-center px-4 text-[0.92rem] ${
+                      filters.fitsAppetite === true
+                        ? 'bg-[var(--ba-indigo)] text-[var(--ba-porcelain)]'
+                        : 'border border-[var(--ba-line)] bg-white text-ink'
+                    }`}
+                    onClick={() => setFilters({ ...filters, fitsAppetite: filters.fitsAppetite !== true })}
+                  >
+                    {copy.appetite.fit}
+                  </button>
+                ) : null}
+              </div>
               <div id="re-filters" className="hidden md:block">
-                <FilterGroups filters={filters} onChange={setFilters} />
+                <FilterGroups filters={filters} showFit={showFit} onChange={setFilters} />
               </div>
             </div>
             {active && visible.length > 0 ? (
@@ -199,7 +238,12 @@ export function RealEstateBoard({
               <ul className="mt-4 grid gap-3">
                 {visible.map((card) => (
                   <li key={card.id}>
-                    <OpportunityCard card={card} busy={busyId === card.id} onRequest={onRequest} />
+                    <OpportunityCard
+                      card={card}
+                      busy={busyId === card.id}
+                      fits={appetite != null && reAppetiteFits(card, appetite)}
+                      onRequest={onRequest}
+                    />
                   </li>
                 ))}
               </ul>
@@ -238,7 +282,7 @@ export function RealEstateBoard({
                 Close
               </button>
             </div>
-            <FilterGroups filters={filters} onChange={setFilters} />
+            <FilterGroups filters={filters} showFit={showFit} onChange={setFilters} />
             <div className="h-4" />
           </div>
         </div>
@@ -249,13 +293,28 @@ export function RealEstateBoard({
 
 function FilterGroups({
   filters,
+  showFit,
   onChange,
 }: {
   filters: ReOpportunityFilters
+  showFit: boolean
   onChange: (next: ReOpportunityFilters) => void
 }) {
   return (
     <div className="space-y-4">
+      {showFit ? (
+        <div role="group" aria-label="Appetite">
+          <p className="text-[0.72rem] font-semibold tracking-[0.12em] text-ink/45 uppercase">Appetite</p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            <Chip
+              pressed={filters.fitsAppetite === true}
+              onClick={() => onChange({ ...filters, fitsAppetite: filters.fitsAppetite !== true })}
+            >
+              {MEMBER_VIEWS.realEstate.appetite.fit}
+            </Chip>
+          </div>
+        </div>
+      ) : null}
       <FilterRow
         label="Asset class"
         value={filters.assetClass}

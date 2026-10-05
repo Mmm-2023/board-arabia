@@ -5,29 +5,38 @@ import {
   type ReOpportunityCard,
   type ReReadinessStatus,
 } from './reRedaction.ts'
+import { reAppetiteFits, type ReAppetite } from './reAppetite.ts'
 import { reRegionFor, type ReRegion } from './reRegions.ts'
 
 export type ReOpportunityFilters = {
   assetClass: (typeof RE_ASSET_CLASSES)[number] | null
   city: ReRegion | null
   capitalRole: (typeof RE_CAPITAL_ROLES)[number] | null
+  /** When true, keep cards that overlap the member appetite on every dimension. */
+  fitsAppetite?: boolean
 }
 
 export const EMPTY_RE_FILTERS: ReOpportunityFilters = {
   assetClass: null,
   city: null,
   capitalRole: null,
+  fitsAppetite: false,
 }
 
 export function reFiltersActive(filters: ReOpportunityFilters) {
-  return filters.assetClass != null || filters.city != null || filters.capitalRole != null
+  return filters.assetClass != null || filters.city != null || filters.capitalRole != null || filters.fitsAppetite === true
 }
 
-export function filterReOpportunities(cards: readonly ReOpportunityCard[], filters: ReOpportunityFilters) {
+export function filterReOpportunities(
+  cards: readonly ReOpportunityCard[],
+  filters: ReOpportunityFilters,
+  appetite: ReAppetite | null = null,
+) {
   return cards.filter((card) => {
     if (filters.assetClass && card.asset_class !== filters.assetClass) return false
     if (filters.city && reRegionFor(card.city, card.one_liner) !== filters.city) return false
     if (filters.capitalRole && card.capital_role !== filters.capitalRole) return false
+    if (filters.fitsAppetite === true && (!appetite || !reAppetiteFits(card, appetite))) return false
     return true
   })
 }

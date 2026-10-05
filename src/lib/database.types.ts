@@ -1027,6 +1027,23 @@ export type Database = {
         Args: Record<string, never>
         Returns: Json
       }
+      get_my_re_appetite: {
+        Args: Record<string, never>
+        Returns: Json
+      }
+      save_my_re_appetite: {
+        Args: {
+          p_ticket_band: string
+          p_cities: string[]
+          p_asset_classes: string[]
+          p_capital_roles: string[]
+        }
+        Returns: Json
+      }
+      staff_list_re_appetites: {
+        Args: Record<string, never>
+        Returns: Json
+      }
       request_re_opportunity_intro: {
         Args: { p_opportunity_id: string }
         Returns: Json

@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { schemaMissing } from '../../lib/demoRows'
+import { reAppetiteLine } from '../../lib/reAppetite'
 import { reAssetClassLabel } from '../../lib/reRedaction'
+import { STAFF_VIEWS } from '../../shell/viewCopy'
 import { parseReIntros, type ReIntroRow } from '../../lib/reIntroQueue'
 import { supabase } from '../../lib/supabase'
 import { ConfirmDialog } from '../../shell/ConfirmDialog'
@@ -74,6 +76,13 @@ export function ReIntroQueue() {
             <p className={`mt-1 ${styles.muted}`}>
               {row.sector}. {row.city}. {reAssetClassLabel(row.asset_class)}. Requested by {row.member_name}.
             </p>
+            {row.appetite === null ? (
+              <p className={`mt-1 ${styles.muted}`}>{STAFF_VIEWS.reAppetite.none}</p>
+            ) : row.appetite ? (
+              <p className={`mt-1 ${styles.muted}`}>
+                {STAFF_VIEWS.reAppetite.prefix}: {reAppetiteLine(row.appetite)}
+              </p>
+            ) : null}
             <div className="mt-3 flex flex-wrap gap-3">
               <button
                 type="button"
