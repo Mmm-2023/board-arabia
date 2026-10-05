@@ -705,13 +705,7 @@ export const TERMS_EN: LegalDocument = {
       "kind": "clause",
       "id": "c-22-1",
       "number": "22.1",
-      "text": "These Terms are published in Arabic and English."
-    },
-    {
-      "kind": "clause",
-      "id": "c-22-2",
-      "number": "22.2",
-      "text": "If the two versions differ, the Arabic version prevails for users in the Kingdom of Saudi Arabia."
+      "text": "These Terms are published in English. The English version is authoritative."
     },
     {
       "kind": "h2",

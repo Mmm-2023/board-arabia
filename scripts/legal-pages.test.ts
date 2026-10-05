@@ -263,6 +263,21 @@ test('terms and privacy pages stay English, including stale Arabic links', async
   }
 })
 
+test('language clauses are English only', () => {
+  const privacy = legalPlainText(resolveLegalDocument(PRIVACY_EN, 'en', false))
+  const terms = legalPlainText(resolveLegalDocument(TERMS_EN, 'en', false))
+  assert.match(privacy, /16\. Language/)
+  assert.match(privacy, /This notice is published in English\. The English version is authoritative\./)
+  assert.match(terms, /22\. Language/)
+  assert.match(terms, /22\.1 These Terms are published in English\. The English version is authoritative\./)
+  assert.equal(terms.includes('22.2'), false)
+  for (const text of [privacy, terms]) {
+    assert.equal(text.includes('published in Arabic'), false, text)
+    assert.equal(text.includes('Arabic and English'), false, text)
+    assert.equal(text.includes('Arabic version prevails'), false, text)
+  }
+})
+
 test('website source has no Arabic script and no rtl locale', () => {
   const files = walk(path.join(root, 'src')).filter((file) => /\.(ts|tsx|css)$/.test(file))
   const hits: string[] = []

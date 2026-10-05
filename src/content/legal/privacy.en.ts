@@ -566,7 +566,7 @@ export const PRIVACY_EN: LegalDocument = {
     },
     {
       "kind": "p",
-      "text": "This notice is published in Arabic and English. If the two versions differ, the Arabic version prevails for users in the Kingdom of Saudi Arabia."
+      "text": "This notice is published in English. The English version is authoritative."
     }
   ]
 }
