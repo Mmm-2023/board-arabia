@@ -12,8 +12,7 @@ export function WhoRunsTheDesk() {
       >
         Who runs the desk
       </h2>
-      <p className="mt-3 text-[1.08rem] leading-relaxed text-ink">Michael Mateer</p>
-      <p className="mt-1 text-[1rem] leading-relaxed text-ink/70">Co-Founder and CEO, nammco</p>
+      <p className="mt-3 text-[1.08rem] leading-relaxed text-ink">Michael Mateer, Co-Founder and CEO</p>
       <p className="mt-3 max-w-xl text-[0.98rem] leading-relaxed text-ink/65">
         A named person reads applications. There is no public booking calendar.
       </p>
