@@ -1,5 +1,5 @@
 import { corsHeaders, jsonResponse } from '../_shared/mail.ts'
-import { deliverAdminAlert, type AdminAlertKind } from '../_shared/notify_admin.ts'
+import { deliverAdminAlert, type AdminAlertInput, type AdminAlertKind } from '../_shared/notify_admin.ts'
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -17,12 +17,17 @@ export type ReIntroOpen =
       context: (opportunityId: string) => Promise<ReIntroContext>
       partnerRpc?: (partnerId: string) => Promise<{ data: unknown; error: { message: string } | null }>
       partnerContext?: (partnerId: string) => Promise<ReIntroContext>
+      roleRpc?: (roleId: string) => Promise<{ data: unknown; error: { message: string } | null }>
+      roleContext?: (roleId: string) => Promise<ReIntroContext>
     }
   | { error: string; status: number }
 
 export async function handleReIntro(
   req: Request,
-  deps: { open: (req: Request) => Promise<ReIntroOpen> },
+  deps: {
+    open: (req: Request) => Promise<ReIntroOpen>
+    alert?: (input: AdminAlertInput) => void
+  },
 ): Promise<Response> {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders(req) })
   if (req.method !== 'POST') return jsonResponse(req, { error: 'Method not allowed' }, 405)
@@ -32,20 +37,46 @@ export async function handleReIntro(
 
   let opportunityId = ''
   let partnerId = ''
+  let roleId = ''
   try {
     const body = await req.json()
     opportunityId = String(body.opportunity_id || '')
     partnerId = String(body.partner_id || '')
+    roleId = String(body.role_id || '')
   } catch {
     return jsonResponse(req, { error: 'Invalid JSON' }, 400)
   }
-  if (opportunityId && partnerId) return jsonResponse(req, { error: 'One intro target' }, 400)
+  const chosen = [opportunityId, partnerId, roleId].filter((id) => id.length > 0)
+  if (chosen.length > 1) return jsonResponse(req, { error: 'One intro target' }, 400)
+  if (roleId) {
+    if (!UUID.test(roleId)) return jsonResponse(req, { error: 'role_id required' }, 400)
+    if (!opened.roleRpc || !opened.roleContext) {
+      return jsonResponse(req, { error: 'role intro is not available' }, 400)
+    }
+    return finishIntro(
+      req,
+      roleId,
+      opened.roleRpc,
+      opened.roleContext,
+      'a real estate board role intro',
+      'Role not found',
+      deps.alert,
+    )
+  }
   if (partnerId) {
     if (!UUID.test(partnerId)) return jsonResponse(req, { error: 'partner_id required' }, 400)
     if (!opened.partnerRpc || !opened.partnerContext) {
       return jsonResponse(req, { error: 'partner intro is not available' }, 400)
     }
-    return finishIntro(req, partnerId, opened.partnerRpc, opened.partnerContext, 'a real estate partner intro', 'Partner not found')
+    return finishIntro(
+      req,
+      partnerId,
+      opened.partnerRpc,
+      opened.partnerContext,
+      'a real estate partner intro',
+      'Partner not found',
+      deps.alert,
+    )
   }
   if (!UUID.test(opportunityId)) return jsonResponse(req, { error: 'opportunity_id required' }, 400)
   return finishIntro(
@@ -55,6 +86,7 @@ export async function handleReIntro(
     opened.context,
     'a real estate opportunity intro',
     'Opportunity not found',
+    deps.alert,
   )
 }
 
@@ -65,6 +97,7 @@ async function finishIntro(
   context: (id: string) => Promise<ReIntroContext>,
   requested: string,
   missing: string,
+  alert?: (input: AdminAlertInput) => void,
 ): Promise<Response> {
   let prior: ReIntroContext | null = null
   try {
@@ -83,13 +116,15 @@ async function finishIntro(
   if (!prior) {
     console.warn('admin_alert warning: real estate intro context unavailable')
   } else if (!prior.alreadyQueued && status === 'pending') {
-    deliverAdminAlert(undefined, {
+    const input: AdminAlertInput = {
       requesterName: prior.requesterName,
       requesterKind: prior.requesterKind,
       requested,
       item: prior.item,
       approvePath: '/admin',
-    })
+    }
+    if (alert) alert(input)
+    else deliverAdminAlert(undefined, input)
   }
 
   return jsonResponse(req, { ok: true, status })

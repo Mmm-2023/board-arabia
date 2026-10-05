@@ -2,13 +2,16 @@ import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import {
   fetchMyReAppetite,
+  fetchReBoardRoles,
   fetchReOpportunities,
   fetchRePartners,
+  requestReBoardRoleIntro,
   requestReOpportunityIntro,
   requestRePartnerIntro,
   saveMyReAppetite,
 } from '../../lib/demoFetch'
 import type { ReAppetite } from '../../lib/reAppetite'
+import type { ReBoardRoleCard } from '../../lib/reBoardRoles'
 import type { ReOpportunityCard, RePartnerCard } from '../../lib/reRedaction'
 import type { ReAppetiteCardStatus } from './ReAppetiteCard'
 import { sampleRow } from '../../lib/sampleAction'
@@ -27,6 +30,12 @@ type PartnerState =
   | { status: 'denied' }
   | { status: 'ready'; cards: RePartnerCard[] }
 
+type RoleState =
+  | { status: 'loading' }
+  | { status: 'error' }
+  | { status: 'denied' }
+  | { status: 'ready'; cards: ReBoardRoleCard[] }
+
 type AppetiteState =
   | { status: Exclude<ReAppetiteCardStatus, 'ready'> }
   | { status: 'ready'; value: ReAppetite | null }
@@ -35,10 +44,12 @@ export function RealEstatePage() {
   const [list, setList] = useState<OpportunityState>({ status: 'loading' })
   const [partners, setPartners] = useState<PartnerState>({ status: 'loading' })
   const [params, setParams] = useSearchParams()
-  const tab: RealEstateTab = params.get('view') === 'partners' ? 'partners' : 'opportunities'
+  const view = params.get('view')
+  const tab: RealEstateTab = view === 'partners' ? 'partners' : view === 'roles' ? 'roles' : 'opportunities'
   function selectTab(next: RealEstateTab) {
     const nextParams = new URLSearchParams(params)
     if (next === 'partners') nextParams.set('view', 'partners')
+    else if (next === 'roles') nextParams.set('view', 'roles')
     else nextParams.delete('view')
     setParams(nextParams, { replace: true })
   }
@@ -50,6 +61,10 @@ export function RealEstatePage() {
   const [partnerBusyId, setPartnerBusyId] = useState<string | null>(null)
   const [requestError, setRequestError] = useState(false)
   const [partnerRequestError, setPartnerRequestError] = useState(false)
+  const [roles, setRoles] = useState<RoleState>({ status: 'loading' })
+  const [roleAttempt, setRoleAttempt] = useState(0)
+  const [roleBusyId, setRoleBusyId] = useState<string | null>(null)
+  const [roleRequestError, setRoleRequestError] = useState(false)
   useNoIndex('Real Estate | Board Arabia')
 
   useEffect(() => {
@@ -92,6 +107,25 @@ export function RealEstatePage() {
 
   useEffect(() => {
     let cancelled = false
+    void fetchReBoardRoles().then((result) => {
+      if (cancelled) return
+      if (result.status === 'error' || result.status === 'missing') {
+        setRoles({ status: 'error' })
+        return
+      }
+      if (result.status === 'denied') {
+        setRoles({ status: 'denied' })
+        return
+      }
+      setRoles({ status: 'ready', cards: result.rows })
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [roleAttempt])
+
+  useEffect(() => {
+    let cancelled = false
     void fetchMyReAppetite().then((result) => {
       if (cancelled) return
       if (result.status === 'ready') {
@@ -124,6 +158,20 @@ export function RealEstatePage() {
     }
     setList({ status: 'loading' })
     setAttempt((value) => value + 1)
+  }
+
+  async function onRequestRole(id: string) {
+    if (roles.status === 'ready' && sampleRow(roles.cards, id)) return
+    setRoleRequestError(false)
+    setRoleBusyId(id)
+    const outcome = await requestReBoardRoleIntro(id)
+    setRoleBusyId(null)
+    if (outcome === 'error') {
+      setRoleRequestError(true)
+      return
+    }
+    setRoles({ status: 'loading' })
+    setRoleAttempt((value) => value + 1)
   }
 
   async function onRequestPartner(id: string) {
@@ -164,6 +212,15 @@ export function RealEstatePage() {
         setPartnerAttempt((value) => value + 1)
       }}
       onRequestPartner={(id) => void onRequestPartner(id)}
+      roles={roles.status === 'ready' ? roles.cards : []}
+      rolesStatus={roles.status === 'ready' ? 'ready' : roles.status}
+      roleBusyId={roleBusyId}
+      roleRequestError={roleRequestError}
+      onRetryRoles={() => {
+        setRoles({ status: 'loading' })
+        setRoleAttempt((value) => value + 1)
+      }}
+      onRequestRole={(id) => void onRequestRole(id)}
       appetiteStatus={appetite.status}
       appetite={appetite.status === 'ready' ? appetite.value : null}
       onRetryAppetite={() => {

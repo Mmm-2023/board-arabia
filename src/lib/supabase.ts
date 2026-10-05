@@ -1078,6 +1078,27 @@ export async function decideMajlis(
   }
 }
 
+export async function requestReBoardRoleIntro(roleId: string): Promise<'ok' | 'error'> {
+  try {
+    const { data } = await supabase.auth.getSession()
+    const token = data.session?.access_token
+    if (!token) return 'error'
+    const res = await fetch(`${functionsBase}/request-re-intro`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        apikey: anonKey,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ role_id: roleId }),
+    })
+    if (!res.ok) return 'error'
+    return 'ok'
+  } catch {
+    return 'error'
+  }
+}
+
 export async function requestRePartnerIntro(partnerId: string): Promise<'ok' | 'error'> {
   try {
     const { data } = await supabase.auth.getSession()
