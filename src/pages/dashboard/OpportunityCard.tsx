@@ -11,15 +11,18 @@ import {
   type ReOpportunityInventory,
   type ReOpportunityOpen,
 } from '../../lib/reRedaction'
+import { MEMBER_VIEWS } from '../../shell/viewCopy'
 import { ReadinessStrip } from './ReadinessStrip'
 
 export function OpportunityCard({
   card,
   busy,
+  fits = false,
   onRequest,
 }: {
   card: ReOpportunityCard
   busy?: boolean
+  fits?: boolean
   onRequest?: (id: string) => void
 }) {
   return (
@@ -49,6 +52,11 @@ export function OpportunityCard({
         parts={[card.ticket_band, reCapitalRoleLabel(card.capital_role)]}
         className="mt-1 text-[0.95rem] text-ink/70"
       />
+      {fits ? (
+        <p data-re-fit="true" className="mt-3 text-[0.92rem] font-semibold text-[var(--ba-indigo)]">
+          {MEMBER_VIEWS.realEstate.appetite.fit}
+        </p>
+      ) : null}
       <ReadinessStrip card={card} />
       {card.unlocked ? (
         <OpenBrief card={card} />

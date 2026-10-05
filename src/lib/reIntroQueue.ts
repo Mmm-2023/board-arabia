@@ -1,3 +1,5 @@
+import { readIntroAppetite, type ReAppetite } from './reAppetite.ts'
+
 export type ReIntroRow = {
   id: string
   sector: string
@@ -5,6 +7,8 @@ export type ReIntroRow = {
   asset_class: string
   counterparty_name: string
   member_name: string
+  /** Missing when this payload has no appetite field. Null means the member has not set one. */
+  appetite?: ReAppetite | null
 }
 
 export function parseReIntros(raw: unknown): ReIntroRow[] {
@@ -19,6 +23,7 @@ export function parseReIntros(raw: unknown): ReIntroRow[] {
     const asset = typeof row.asset_class === 'string' ? row.asset_class.trim() : ''
     const member = typeof row.member_name === 'string' ? row.member_name.trim() : ''
     if (!id || !counterparty) return []
+    const appetite = readIntroAppetite(row.appetite)
     return [
       {
         id,
@@ -27,6 +32,7 @@ export function parseReIntros(raw: unknown): ReIntroRow[] {
         city,
         asset_class: asset,
         member_name: member || 'Member',
+        ...(appetite === undefined ? {} : { appetite }),
       },
     ]
   })

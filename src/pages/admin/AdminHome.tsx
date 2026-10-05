@@ -7,6 +7,7 @@ import { EmptyState, HomeSkeleton, toneClasses } from '../../shell/ViewState'
 import { STAFF_VIEWS } from '../../shell/viewCopy'
 import { PanelNotice } from './bits'
 import { MandateIntroQueue } from './MandateIntroQueue'
+import { ReAppetitePanel } from './ReAppetitePanel'
 import { ReIntroQueue } from './ReIntroQueue'
 import { RePartnerIntroQueue } from './RePartnerIntroQueue'
 import { RePartnersPanel } from './RePartnersPanel'
@@ -27,6 +28,7 @@ export function AdminHome() {
         <MandateIntroQueue />
       </div>
       <ReIntroQueue />
+      <ReAppetitePanel />
       <RePartnerIntroQueue />
       <div className="mt-6 flex flex-wrap gap-x-5">
         <Link

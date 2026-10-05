@@ -9,6 +9,7 @@ import {
 } from './demoRows'
 import { presentHomeActivityList, type HomeActivity } from './homeSnapshot'
 import { presentMandateList, type MandateCardModel } from './mandateRedaction'
+import { parseReAppetite, type ReAppetite } from './reAppetite'
 import {
   presentReOpportunityList,
   presentRePartnerList,
@@ -166,6 +167,41 @@ async function loadRePartners(): Promise<DemoLoad<RePartnerCard[]> | { status: '
 
 export async function requestReOpportunityIntro(opportunityId: string): Promise<'ok' | 'error'> {
   return postReIntro(opportunityId)
+}
+
+export type ReAppetiteLoad =
+  | { status: 'ready'; appetite: ReAppetite | null }
+  | { status: 'error' }
+  | { status: 'denied' }
+  | { status: 'unavailable' }
+
+export async function fetchMyReAppetite(): Promise<ReAppetiteLoad> {
+  const { data, error } = await supabase.rpc('get_my_re_appetite')
+  if (error) {
+    if (schemaMissing(error.message)) return { status: 'unavailable' }
+    const code = 'code' in error ? String(error.code) : ''
+    if (code === '42501' || /not_allowed/i.test(error.message)) return { status: 'denied' }
+    return { status: 'error' }
+  }
+  if (data == null) return { status: 'ready', appetite: null }
+  const appetite = parseReAppetite(data)
+  if (!appetite) return { status: 'error' }
+  return { status: 'ready', appetite }
+}
+
+export async function saveMyReAppetite(
+  appetite: ReAppetite,
+): Promise<{ status: 'ready'; appetite: ReAppetite } | { status: 'error' }> {
+  const { data, error } = await supabase.rpc('save_my_re_appetite', {
+    p_ticket_band: appetite.ticket_band,
+    p_cities: [...appetite.cities],
+    p_asset_classes: [...appetite.asset_classes],
+    p_capital_roles: [...appetite.capital_roles],
+  })
+  if (error) return { status: 'error' }
+  const saved = parseReAppetite(data)
+  if (!saved) return { status: 'error' }
+  return { status: 'ready', appetite: saved }
 }
 
 export async function requestRePartnerIntro(partnerId: string): Promise<'ok' | 'error'> {
