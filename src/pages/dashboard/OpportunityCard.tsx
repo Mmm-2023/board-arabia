@@ -12,6 +12,7 @@ import {
   type ReOpportunityOpen,
 } from '../../lib/reRedaction'
 import { MEMBER_VIEWS } from '../../shell/viewCopy'
+import { ClubInterestAction } from './ClubInterestAction'
 import { ReadinessStrip } from './ReadinessStrip'
 
 export function OpportunityCard({
@@ -19,11 +20,21 @@ export function OpportunityCard({
   busy,
   fits = false,
   onRequest,
+  showInterest = false,
+  interestPending = false,
+  interested = false,
+  interestBusy = false,
+  onInterest,
 }: {
   card: ReOpportunityCard
   busy?: boolean
   fits?: boolean
   onRequest?: (id: string) => void
+  showInterest?: boolean
+  interestPending?: boolean
+  interested?: boolean
+  interestBusy?: boolean
+  onInterest?: (id: string) => void
 }) {
   return (
     <article
@@ -68,6 +79,15 @@ export function OpportunityCard({
           onRequest={onRequest ? () => onRequest(card.id) : undefined}
         />
       )}
+      {showInterest ? (
+        <ClubInterestAction
+          sample={card.is_demo}
+          pending={interestPending}
+          recorded={interested}
+          busy={interestBusy}
+          onExpress={onInterest ? () => onInterest(card.id) : undefined}
+        />
+      ) : null}
     </article>
   )
 }

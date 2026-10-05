@@ -33,6 +33,9 @@ async function openSession(req: Request) {
     partnerContext: (partnerId: string) => loadPartner(admin, user.id, partnerId),
     roleRpc: (roleId: string) => userClient.rpc('request_re_board_role_intro', { p_role_id: roleId }),
     roleContext: (roleId: string) => loadRole(admin, user.id, roleId),
+    interestRpc: (opportunityId: string) =>
+      userClient.rpc('express_re_club_interest', { p_opportunity_id: opportunityId }),
+    interestContext: (opportunityId: string) => loadClubInterest(admin, user.id, opportunityId),
   }
 }
 
@@ -104,6 +107,32 @@ async function loadPartner(
     requesterName: found || (seat === 'sponsor' ? 'Sponsor' : 'Member'),
     requesterKind: seat,
     item: item || 'Real estate partner',
+  }
+}
+
+async function loadClubInterest(
+  admin: ReturnType<typeof createClient>,
+  userId: string,
+  opportunityId: string,
+): Promise<ReIntroContext> {
+  const [prior, profile, member, opportunity] = await Promise.all([
+    admin.from('re_club_interest').select('id').eq('opportunity_id', opportunityId).eq('member_id', userId).maybeSingle(),
+    admin.from('profiles').select('full_name').eq('user_id', userId).maybeSingle(),
+    admin.from('members').select('seat').eq('user_id', userId).maybeSingle(),
+    admin.from('re_opportunities').select('sector, city, asset_class').eq('id', opportunityId).maybeSingle(),
+  ])
+  const seat = member.data?.seat === 'sponsor' ? 'sponsor' : 'member'
+  const found = typeof profile.data?.full_name === 'string' ? profile.data.full_name.trim() : ''
+  const row = opportunity.data
+  const item = [row?.sector, row?.city, row?.asset_class]
+    .map((part) => (typeof part === 'string' ? part.trim() : ''))
+    .filter((part) => part.length > 0)
+    .join(', ')
+  return {
+    alreadyQueued: Boolean(prior.data?.id),
+    requesterName: found || (seat === 'sponsor' ? 'Sponsor' : 'Member'),
+    requesterKind: seat,
+    item: item || 'Real estate opportunity',
   }
 }
 
