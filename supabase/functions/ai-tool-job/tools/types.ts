@@ -27,4 +27,14 @@ export type StubOutput = {
   model_skip_reason: string | null
   metrics?: CfoMetric[]
   red_flags?: string[]
+  checklist?: DealChecklistItem[]
+  example?: boolean
+}
+
+export type DealChecklistKey = 'title_escrow' | 'foreign_ownership' | 'white_land' | 'known_gaps'
+
+export type DealChecklistItem = {
+  key: DealChecklistKey
+  label: string
+  detail: string
 }

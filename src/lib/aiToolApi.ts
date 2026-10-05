@@ -112,6 +112,14 @@ export function acceptAiToolFile(file: File): string | null {
   return null
 }
 
+export function acceptDealFile(file: File): string | null {
+  if (file.size < 1 || file.size > AI_TOOL_MAX_BYTES) return 'That file is too large. The limit is 15 MB.'
+  const mime = file.type || mimeFromName(file.name)
+  const ext = extensionForMime(mime)
+  if (ext !== 'pdf' && ext !== 'txt' && ext !== 'docx') return 'Use a PDF, text file, or document.'
+  return null
+}
+
 export function acceptCfoFile(file: File): string | null {
   const problem = acceptAiToolFile(file)
   if (problem) return problem
