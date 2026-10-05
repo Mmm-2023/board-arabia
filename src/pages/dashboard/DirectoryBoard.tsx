@@ -148,8 +148,11 @@ export function DirectoryBoard({
                         <SponsorBadge />
                       </div>
                     ) : null}
+                    {card.membership_status === 'invited' ? (
+                      <p className="mt-1 text-[0.85rem] font-semibold text-ink">Invited</p>
+                    ) : null}
                     {card.seat === 'sponsor' ? null : (
-                      <p className="mt-1 text-[0.85rem] text-ink/55">{seatLabel(card.seat)}</p>
+                      <p className="mt-1 text-[0.85rem] text-[var(--ba-muted)]">{seatLabel(card.seat)}</p>
                     )}
                     {card.availability ? <AvailabilityMark value={card.availability} /> : null}
                   </div>
@@ -168,6 +171,7 @@ export function DirectoryBoard({
                 </dl>
                 <DirectoryIntroAction
                   sample={card.is_demo}
+                  invited={card.membership_status === 'invited'}
                   self={selfId != null && card.id === selfId}
                   status={introStatus ? introStatus(card.id) : null}
                   busy={busyId === card.id}
@@ -181,7 +185,9 @@ export function DirectoryBoard({
         </ul>
       )}
       <p className="sr-only" aria-live="polite">
-        {visible.length} members
+        {seat.status === 'ready' && !active
+          ? progressLine(seat.admitted)
+          : `${visible.filter((card) => card.membership_status !== 'invited').length} shown`}
       </p>
     </div>
   )

@@ -35,7 +35,7 @@ test('home does not show a dead availability status', () => {
 
 test('spent peer invites collapse the send forms behind one quiet banner', () => {
   const invites = source('src/pages/dashboard/InvitesPanel.tsx')
-  assert.match(invites, /Both peer invites are used\. Unused invites do not refill\./)
+  assert.match(invites, /Both peer invites are used this week\. They return to 2 next week and do not stack above 2\./)
   assert.equal(invites.includes('Both invites are used. A third send is blocked.'), false)
   assert.match(invites, /to="\/dashboard\/help"/)
   assert.match(invites, /to="\/dashboard\/profile"/)

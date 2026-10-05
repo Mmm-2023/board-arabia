@@ -3,7 +3,7 @@ import { useLocation, useSearchParams } from 'react-router-dom'
 import { DefaultPicturePicker } from '../../components/DefaultPicturePicker'
 import { SponsorBadge } from '../../components/SponsorBadge'
 import { DEFAULT_PICTURE_NOTE, normalizeAvatarStyle, type AvatarStyle } from '../../lib/avatarStyle'
-import { formatPrivateUsd, readNumeric } from '../../lib/capacity'
+import { formatPrivateUsd, PLATFORM_TOTALS_NOTE, readNumeric } from '../../lib/capacity'
 import { schemaMissing } from '../../lib/demoRows'
 import {
   finishLinkedInConnect,
@@ -496,18 +496,21 @@ export function ProfilePage({ preview }: { preview?: { src: string | null } }) {
             className={fieldClass}
           />
         </label>
-        <label className="flex items-start gap-3 text-[0.98rem] leading-relaxed text-ink/70">
-          <input
-            type="checkbox"
-            checked={includeInPublic}
-            onChange={(event) => setIncludeInPublic(event.target.checked)}
-            className="mt-1"
-          />
-          <span>
-            Include my capacity in Board Arabia&apos;s public platform totals
-            (never shown individually).
-          </span>
-        </label>
+        <div>
+          <label className="flex min-h-11 cursor-pointer items-center gap-3 text-[0.98rem] leading-relaxed text-ink">
+            <input
+              type="checkbox"
+              checked={includeInPublic}
+              onChange={(event) => setIncludeInPublic(event.target.checked)}
+              className="size-6 shrink-0"
+            />
+            <span>
+              Include my capacity in Board Arabia&apos;s public platform totals
+              (never shown individually).
+            </span>
+          </label>
+          <p className="text-[0.95rem] leading-relaxed text-[var(--ba-muted)]">{PLATFORM_TOTALS_NOTE}</p>
+        </div>
         <CapacityOnFile profile={profile} />
         {profileError && (
           <p className="text-[0.92rem] text-[var(--ba-error)]" role="alert">

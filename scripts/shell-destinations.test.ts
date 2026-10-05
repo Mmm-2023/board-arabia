@@ -7,6 +7,7 @@ import {
   MEMBER_DESTINATIONS,
   memberAccountLinks,
   MEMBER_SECTIONS,
+  phoneDestinations,
   STAFF_DESTINATIONS,
   STAFF_SECONDARY,
   formatUpdated,
@@ -49,6 +50,16 @@ test('staff primaries stay in the locked order', () => {
   )
   assert.equal(STAFF_DESTINATIONS.length, 6)
   assert.equal(STAFF_DESTINATIONS[0]?.end, true)
+  assert.deepEqual(
+    phoneDestinations(STAFF_DESTINATIONS).tabs.map((item) => item.label),
+    ['Home', 'Applications', 'Review', 'People'],
+  )
+  assert.deepEqual(
+    phoneDestinations(STAFF_DESTINATIONS).more.map((item) => item.label),
+    ['Capacity', 'Settings'],
+  )
+  assert.equal(phoneDestinations(MEMBER_DESTINATIONS).tabs.length, 5)
+  assert.equal(phoneDestinations(MEMBER_DESTINATIONS).more.length, 0)
 })
 
 test('account links are not tabs and staff secondary stays put', () => {

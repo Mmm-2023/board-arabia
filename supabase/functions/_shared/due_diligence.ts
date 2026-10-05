@@ -1217,9 +1217,52 @@ function narrativeFor(title: string, label: ClaimVerdict): string {
   return `${title} did not have enough public material to compare.`
 }
 
+export const PUBLIC_CHECKS_NOT_RUN = 'Public checks not run'
+
+export function publicChecksNotRun(input: {
+  publicly_consistent_pct: number | null
+  sources?: unknown
+  degraded_notes?: readonly string[] | null
+  claims?: readonly { verdict?: string }[] | null
+}): boolean {
+  if (
+    input.claims &&
+    input.claims.length > 0 &&
+    input.claims.every((claim) => claim.verdict === 'insufficient_public_data')
+  ) {
+    return true
+  }
+  const notesSaySkipped = input.degraded_notes?.some(
+    (note) => note === DEGRADED_NOTE_SEARCH || note === DEGRADED_NOTE_SEARCH_FAILED,
+  )
+  const sources = Array.isArray(input.sources) ? input.sources : null
+  const noSources = sources == null || sources.length === 0
+  if (notesSaySkipped && noSources && input.publicly_consistent_pct === 0) return true
+  return (
+    input.publicly_consistent_pct === 0 &&
+    Array.isArray(input.sources) &&
+    input.sources.length === 0 &&
+    !input.claims
+  )
+}
+
+export function publicConsistencyLabel(input: {
+  publicly_consistent_pct: number | null
+  sources?: unknown
+  degraded_notes?: readonly string[] | null
+  claims?: readonly { verdict?: string }[] | null
+}): string {
+  if (publicChecksNotRun(input)) return PUBLIC_CHECKS_NOT_RUN
+  if (input.publicly_consistent_pct === null) return 'No percentage'
+  return `${input.publicly_consistent_pct}% publicly consistent`
+}
+
 function overviewText(report: BuiltReport, documents: string): string {
   const sector = report.sector_label === NOT_STATED ? '' : ` Sector in the deck: ${report.sector_label}.`
   const ask = report.ask_label === NOT_STATED ? '' : ` Ask in the deck: ${report.ask_label}.`
+  if (publicChecksNotRun(report)) {
+    return `This assessment reads ${documents} for ${report.company_label}.${sector}${ask} Public checks not run. This is not legal advice. You decide what to do next.`
+  }
   if (report.publicly_consistent_pct === null || report.not_publicly_verifiable_pct === null) {
     return `This assessment reads ${documents} for ${report.company_label}.${sector}${ask} The deck did not state a checkable claim, so there is no percentage. Public sources only. You decide what to do next.`
   }

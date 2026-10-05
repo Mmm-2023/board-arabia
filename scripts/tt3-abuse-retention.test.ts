@@ -274,10 +274,15 @@ test('review chips list all 8 states and the staff bar stays at 7 items', () => 
   assert.match(desk, /h-11/)
   assert.equal(desk.includes('role="listbox"'), false)
   assert.equal(STAFF_DESTINATIONS.length, 6)
+  assert.deepEqual(
+    STAFF_DESTINATIONS.filter((item) => item.mobileTab === false).map((item) => item.label),
+    ['Capacity', 'Settings'],
+  )
   const css = read('src/index.css')
-  assert.match(css, /grid-template-columns: 0\.64fr 1\.55fr 0\.84fr 0\.76fr 1fr 0\.94fr 0\.56fr/)
+  assert.match(css, /grid-template-columns: 0\.72fr 1\.4fr 0\.86fr 0\.8fr 0\.7fr/)
   const shell = read('src/shell/AppShell.tsx')
-  assert.match(shell, /destinationCount \+ 1 === 7/)
+  assert.match(shell, /grid-cols-5 shell-staff-tabs/)
+  assert.equal(shell.includes('destinationCount + 1 === 7'), false)
 })
 
 test('delete account confirms, and members are refused', () => {

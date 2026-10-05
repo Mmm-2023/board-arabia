@@ -148,3 +148,9 @@ verify_jwt = true
 # ?dry_run=1 returns the plan and does not write or send. POST only.
 [functions.suggest-intros]
 verify_jwt = false
+
+# Weekly peer invite refill. Header x-invite-weekly-refill must match INVITE_WEEKLY_REFILL_SECRET.
+# verify_jwt stays off so the anon key is not a credential. An unset secret rejects every call.
+# ?dry_run=1 reports counts and does not write. POST only. Schedule is set after deploy.
+[functions.refill-weekly-invites]
+verify_jwt = false

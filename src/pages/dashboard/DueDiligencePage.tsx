@@ -9,6 +9,7 @@ import {
   MEMBER_MESSAGES,
   parsePublicHttpsUrl,
   presentReport,
+  publicConsistencyLabel,
   safeFileName,
   sniffDeck,
 } from '../../../supabase/functions/_shared/due_diligence.ts'
@@ -540,9 +541,7 @@ export function DueDiligenceDeskView({
                     >
                       <span className="text-[1rem] break-words text-ink">{report.title}</span>
                       <span className="text-[0.92rem] text-[var(--ba-muted)]">
-                        {report.publicly_consistent_pct === null
-                          ? 'No percentage'
-                          : `${report.publicly_consistent_pct}% publicly consistent`}
+                        {publicConsistencyLabel(report)}
                         {' · '}
                         {formatWhen(report.created_at)}
                       </span>

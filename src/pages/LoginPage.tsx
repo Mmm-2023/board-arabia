@@ -27,7 +27,7 @@ export function LoginPage() {
   const [resetNote, setResetNote] = useState('')
   const codeType = otpType(searchParams.get('otp_type'))
 
-  useNoIndex(staffEntry ? 'Staff login | Board Arabia' : 'Member login | Board Arabia')
+  useNoIndex(staffEntry ? 'Staff sign in | Board Arabia' : 'Member sign in | Board Arabia')
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -162,7 +162,7 @@ export function LoginPage() {
             {staffEntry ? 'Staff' : 'Members'}
           </p>
           <h1 className="mt-3 font-display text-[2.35rem] leading-[1.05] font-bold tracking-[-0.03em] md:text-[2.75rem]">
-            Sign in
+            {staffEntry ? 'Staff sign in' : 'Sign in'}
           </h1>
           <p className="mt-4 text-[0.98rem] leading-relaxed text-stone/70">
             {staffEntry
@@ -215,7 +215,7 @@ export function LoginPage() {
               type="button"
               disabled={submitting}
               onClick={() => void onReset()}
-              className="text-[0.9rem] text-pearl/70 underline decoration-pearl/30 underline-offset-4 transition-colors hover:text-pearl disabled:opacity-60"
+              className="inline-flex min-h-11 items-center text-[0.95rem] text-pearl/80 underline decoration-pearl/30 underline-offset-4 transition-colors hover:text-pearl disabled:opacity-60"
             >
               Forgot password?
             </button>
@@ -257,14 +257,14 @@ export function LoginPage() {
             {staffEntry ? (
               <Link
                 to="/login"
-                className="text-pearl/55 underline decoration-pearl/25 underline-offset-4 transition-colors hover:text-pearl"
+                className="inline-flex min-h-11 items-center text-pearl/80 underline decoration-pearl/25 underline-offset-4 transition-colors hover:text-pearl"
               >
                 Member sign in
               </Link>
             ) : (
               <Link
                 to="/login/staff"
-                className="text-pearl/55 underline decoration-pearl/25 underline-offset-4 transition-colors hover:text-pearl"
+                className="inline-flex min-h-11 items-center text-pearl/80 underline decoration-pearl/25 underline-offset-4 transition-colors hover:text-pearl"
               >
                 Staff sign in
               </Link>

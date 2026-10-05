@@ -4,6 +4,8 @@ import {
   DEGRADED_NOTE_SEARCH,
   isDegradedCompact,
   parsePublicHttpsUrl,
+  publicChecksNotRun,
+  PUBLIC_CHECKS_NOT_RUN,
   showsAnalysisReport,
   VERDICT_SHORT,
   type BuiltReport,
@@ -57,6 +59,11 @@ export function DueDiligenceReport({
             <p className="text-[0.82rem] font-semibold text-[var(--ba-copper-deep)]">{REPORT_COPY.degradedLabel}</p>
             <p className="mt-2 text-[1rem] leading-relaxed text-ink">{analysisBanner}</p>
           </div>
+        ) : null}
+        {publicChecksNotRun(report) ? (
+          <p className="mt-3 max-w-3xl text-[1rem] leading-relaxed text-ink" data-dd-public-checks="not-run">
+            {PUBLIC_CHECKS_NOT_RUN}
+          </p>
         ) : null}
         {searchSkipped ? (
           <p className="mt-3 max-w-3xl text-[0.92rem] leading-relaxed text-[var(--ba-muted)]" data-dd-search-note="true">
@@ -133,7 +140,11 @@ export function DueDiligenceReport({
         <h2 id="dd-percent" className="font-display text-[1.35rem] font-semibold">
           {REPORT_COPY.sectionSummary}
         </h2>
-        {report.publicly_consistent_pct === null ? (
+        {publicChecksNotRun(report) ? (
+          <p className="mt-4 text-[1rem] leading-relaxed text-ink" data-dd-public-checks="not-run">
+            {PUBLIC_CHECKS_NOT_RUN}
+          </p>
+        ) : report.publicly_consistent_pct === null ? (
           <p className="mt-4 text-[1rem] leading-relaxed text-ink/70">{MEMBER_VIEWS.dueDiligence.noScore}</p>
         ) : (
           <div className="mt-4 grid gap-3 sm:grid-cols-2">

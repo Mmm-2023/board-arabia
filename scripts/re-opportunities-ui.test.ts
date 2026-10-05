@@ -93,7 +93,13 @@ test('readiness labels cover every status and skip secrets', () => {
     })
     assert.equal(lines.length, 4)
     assert.equal(lines.join(' ').includes('\u2014'), false)
-    assert.equal(lines.every((line) => line.includes(RE_READINESS_STATUS_LABEL[status])), true)
+    assert.equal(
+      lines.every((line) => {
+        if (status === 'ready' && line.startsWith('White Land exposure:')) return line.includes('Clear')
+        return line.includes(RE_READINESS_STATUS_LABEL[status])
+      }),
+      true,
+    )
   }
   const dropped = presentReOpportunity(raw({ foreign_ownership_path: SECRET }))
   assert.ok(dropped)

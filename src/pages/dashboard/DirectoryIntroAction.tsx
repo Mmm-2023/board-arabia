@@ -16,6 +16,7 @@ const fieldClass =
 export function DirectoryIntroAction({
   sample,
   self,
+  invited = false,
   status,
   busy,
   error,
@@ -26,6 +27,7 @@ export function DirectoryIntroAction({
 }: {
   sample: boolean
   self: boolean
+  invited?: boolean
   status: IntroStatus | null
   busy: boolean
   error: string
@@ -52,6 +54,14 @@ export function DirectoryIntroAction({
     return (
       <p className="mt-4 text-[0.92rem] text-ink/60" data-intro-action="self">
         This is your card.
+      </p>
+    )
+  }
+
+  if (invited) {
+    return (
+      <p className="mt-4 text-[0.95rem] font-semibold text-ink" data-intro-action="invited">
+        Invited
       </p>
     )
   }

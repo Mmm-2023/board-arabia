@@ -78,7 +78,8 @@
   --ba-porcelain: #f6f5fb;
   --ba-white: #ffffff;
   --ba-line: #ddd7ec;
-  --ba-muted: #5a5378;
+  /* Dark enough for 4.5:1 on porcelain, white, and lavender mist. */
+  --ba-muted: #4a4468;
   --ba-ink: #1c1343;
   --ba-ink-inverse: #f6f5fb;
   --ba-success: #2f6b45;
@@ -218,16 +219,25 @@
   text-align: center;
 }
 
-/* Six staff destinations plus More. Applications is the long label. */
+/* Four staff phone tabs plus More. Applications is the long label. */
 @media (max-width: 767px) {
   .shell-staff-tabs {
-    grid-template-columns: 0.64fr 1.55fr 0.84fr 0.76fr 1fr 0.94fr 0.56fr;
+    grid-template-columns: 0.72fr 1.4fr 0.86fr 0.8fr 0.7fr;
   }
 
   .shell-staff-tabs .shell-tab-label {
     font-size: 11px;
-    letter-spacing: -0.03em;
+    letter-spacing: -0.02em;
   }
+}
+
+/* Faint ink and eyebrow tints were under 4.5:1 on porcelain. Use the muted token. */
+.text-ink\/40,
+.text-ink\/45,
+.text-ink\/50,
+.text-ink\/55,
+.text-ink-soft\/70 {
+  color: var(--ba-muted);
 }
 
 .mandate-locked-copy,
