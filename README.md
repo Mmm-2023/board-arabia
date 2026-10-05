@@ -263,4 +263,4 @@ App path does **not** call ops access-code RPCs. Decisions are Edge Function + J
 
 ## Anti-jobs
 
-No Stripe, no Lovable, no Arabic UI, no LinkedIn OAuth login, no DNS changes, no public calendar embed/CTA, no nammco branding on the site.
+No Stripe, no Lovable, no Arabic UI, no LinkedIn OAuth login, no DNS changes, no public calendar embed/CTA. Public nammco is only the footer line powered by nammco.

@@ -2,6 +2,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { createServer } from 'vite'
+import { strayPublicNammco } from './public-nammco.mjs'
 import { pages404Html } from './spa-fallback.mjs'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
@@ -44,7 +45,7 @@ function assertPage(route, html) {
   const errors = []
 
   if (!title.includes('Board Arabia')) errors.push('title missing Board Arabia')
-  if (/nammco/i.test(html)) errors.push('nammco in document')
+  if (strayPublicNammco(html)) errors.push('nammco in document')
   if (descriptionTags.length !== 1) errors.push(`description count ${descriptionTags.length}`)
   if (!description || description.length < 80) errors.push('description too short')
   if (!canonical.startsWith('https://boardarabia.com')) errors.push(`canonical ${canonical}`)
@@ -120,7 +121,7 @@ function assertPage(route, html) {
 }
 
 function assertDistClean(distDir) {
-  const banned = [/calendar\.app\.google/i, /nammco/i]
+  const calendar = /calendar\.app\.google/i
   const files = []
   function walk(dir) {
     for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -132,10 +133,12 @@ function assertDistClean(distDir) {
   walk(distDir)
   for (const file of files) {
     const text = fs.readFileSync(file, 'utf8')
-    for (const pattern of banned) {
-      if (pattern.test(text)) {
-        throw new Error(`${path.relative(distDir, file)} contains ${pattern}`)
-      }
+    const relative = path.relative(distDir, file)
+    if (calendar.test(text)) {
+      throw new Error(`${relative} contains ${calendar}`)
+    }
+    if (strayPublicNammco(text)) {
+      throw new Error(`${relative} contains nammco outside the footer credit`)
     }
   }
   const dashboard = fs.readFileSync(path.join(distDir, 'dashboard', 'index.html'), 'utf8')
