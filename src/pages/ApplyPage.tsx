@@ -4,7 +4,7 @@ import { Footer } from '../components/Footer'
 import { Nav } from '../components/Nav'
 import { Seo } from '../components/Seo'
 import { REVIEW_SLA } from '../content/marketing'
-import { parseUsdInput } from '../lib/capacity'
+import { parseUsdInput, PLATFORM_TOTALS_NOTE } from '../lib/capacity'
 import { track } from '../lib/analytics'
 import { lookupMemberInvite, submitApplication } from '../lib/supabase'
 import { readSubmitAttribution } from '../lib/tracking/touch'
@@ -29,7 +29,7 @@ const empty: FormState = {
   turnover: '',
   foAum: '',
   investable: '',
-  includeInPublic: true,
+  includeInPublic: false,
   linkedinUrl: '',
   jobTitles: '',
   companies: '',
@@ -196,7 +196,7 @@ export function ApplyPage() {
             <p className="mt-5 text-[1.05rem] leading-relaxed text-ink/65">
               Thank you. We have your pre-vet details. There is nothing to
               arrange on this site. {REVIEW_SLA} You will hear back with an
-              acceptance and a private next step by email, or with a decline.
+              acceptance and a private invite email, or with a decline.
             </p>
             {emailNote && (
               <p className="mt-4 text-[0.9rem] text-ink/50">{emailNote}</p>
@@ -226,15 +226,18 @@ export function ApplyPage() {
           <h1 className="mt-3 font-display text-[clamp(2.2rem,5vw,3.4rem)] font-bold leading-[1.05] tracking-[-0.035em] text-ink">
             Apply for consideration
           </h1>
-          <p className="mt-5 text-[1.05rem] leading-relaxed text-ink/65">
-            Request consideration for Board Arabia by submitting a pre-vet
-            form. The desk reviews credentials; accepted candidates receive a
-            private conversation invite by email. {REVIEW_SLA} That link is
-            not on this website.
+          <p className="mt-5 text-[1.05rem] leading-relaxed text-ink/80">
+            Request consideration for Board Arabia with this pre-vet form. The
+            desk reviews your credentials. If you are accepted, you receive a
+            private invite email. {REVIEW_SLA} The private invite email is not
+            a page on this website.
           </p>
-          <p className="mt-4 text-[0.95rem] leading-relaxed text-ink/70">
+          <p className="mt-4 text-[0.95rem] leading-relaxed text-ink/80">
+            Invited by a member? Use the link in your private invite email.
+          </p>
+          <p className="mt-4 text-[0.95rem] leading-relaxed text-ink/80">
             We record which link brought you here to understand how people find Board Arabia.{' '}
-            <Link to="/privacy" className="border-b border-brass text-ink">
+            <Link to="/privacy" className="inline-flex min-h-11 items-center border-b border-brass text-ink">
               Privacy
             </Link>
           </p>
@@ -323,20 +326,23 @@ export function ApplyPage() {
               inputMode="decimal"
               hint="Optional. US dollars you can put to work. Used only inside a platform sum, and only after the desk verifies it."
             />
-            <label className="flex items-start gap-3 text-[0.98rem] leading-relaxed text-ink/70">
-              <input
-                id="include_in_public_aggregates"
-                name="include_in_public_aggregates"
-                type="checkbox"
-                checked={form.includeInPublic}
-                onChange={(event) => setField('includeInPublic', event.target.checked)}
-                className="mt-1"
-              />
-              <span>
-                Include my capacity in Board Arabia&apos;s public platform totals
-                (never shown individually).
-              </span>
-            </label>
+            <div>
+              <label className="flex min-h-11 cursor-pointer items-center gap-3 text-[0.98rem] leading-relaxed text-ink">
+                <input
+                  id="include_in_public_aggregates"
+                  name="include_in_public_aggregates"
+                  type="checkbox"
+                  checked={form.includeInPublic}
+                  onChange={(event) => setField('includeInPublic', event.target.checked)}
+                  className="size-6 shrink-0"
+                />
+                <span>
+                  Include my capacity in Board Arabia&apos;s public platform totals
+                  (never shown individually).
+                </span>
+              </label>
+              <p className="text-[0.95rem] leading-relaxed text-[var(--ba-muted)]">{PLATFORM_TOTALS_NOTE}</p>
+            </div>
             <Field
               id="linkedin_url"
               label="LinkedIn URL"

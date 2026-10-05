@@ -68,6 +68,7 @@ export type DirectoryBrief = {
   full_name: string
   headline: string
   seat: 'ksa' | 'intl' | 'sponsor'
+  membership_status?: 'invited' | 'active' | null
 }
 
 export type PartnerBrief = {
@@ -261,7 +262,7 @@ export function buildHeadlines(input: {
   invitesRemaining: number
   mandates: { is_demo: boolean; intro_status: IntroState }[] | null
   rooms: { is_demo: boolean }[] | null
-  directory: { is_demo: boolean }[] | null
+  directory: { is_demo: boolean; membership_status?: 'invited' | 'active' | null }[] | null
 }): Headline[] {
   const headlines: Headline[] = []
   const push = (item: Headline) => {
@@ -298,7 +299,7 @@ export function buildHeadlines(input: {
 
   if (headlines.length < 3 && input.directory) {
     const visible = dedupeIdentified(applyDemoThreshold(input.directory, DEMO_THRESHOLD_DEFAULTS.directory))
-    const live = visible.filter((row) => !row.is_demo).length
+    const live = visible.filter((row) => !row.is_demo && row.membership_status !== 'invited').length
     if (live > 0) {
       push(pulseHeadline('directory', 'Directory', live, false))
     }

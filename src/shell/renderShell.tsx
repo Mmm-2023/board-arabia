@@ -51,6 +51,6 @@ export function renderMemberShell(initialAccountOpen = false, path?: string) {
   return renderShell('member', { label: 'Switch to admin', to: '/admin' }, false, path, initialAccountOpen)
 }
 
-export function renderStaffShell() {
-  return renderShell('staff', { label: 'Switch to member', to: '/dashboard' })
+export function renderStaffShell(initialMoreOpen = false) {
+  return renderShell('staff', { label: 'Switch to member', to: '/dashboard' }, initialMoreOpen)
 }

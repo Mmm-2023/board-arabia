@@ -110,7 +110,9 @@ export function DirectoryPage() {
   }
 
   async function onRequestIntro(id: string, reason: string, askDesk: boolean) {
-    if (sampleRow(list.status === 'ready' ? list.cards : [], id)) return
+    const cards = list.status === 'ready' ? list.cards : []
+    if (sampleRow(cards, id)) return
+    if (cards.some((card) => card.id === id && card.membership_status === 'invited')) return
     setRequestError('')
     setErrorId(null)
     setBusyId(id)

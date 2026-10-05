@@ -5,6 +5,8 @@ export type Destination = {
   label: string
   to: string
   end: boolean
+  /** Phone tab. False keeps the destination in the desktop sidebar and under More. */
+  mobileTab?: boolean
 }
 
 export type SecondaryLink = {
@@ -36,9 +38,17 @@ export const STAFF_DESTINATIONS: readonly Destination[] = [
   { id: 'applications', label: 'Applications', to: '/admin/applications', end: false },
   { id: 'review', label: 'Review', to: '/admin/review', end: false },
   { id: 'people', label: 'People', to: '/admin/people', end: false },
-  { id: 'capacity', label: 'Capacity', to: '/admin/capacity', end: false },
-  { id: 'settings', label: 'Settings', to: '/admin/settings', end: false },
+  { id: 'capacity', label: 'Capacity', to: '/admin/capacity', end: false, mobileTab: false },
+  { id: 'settings', label: 'Settings', to: '/admin/settings', end: false, mobileTab: false },
 ]
+
+/** Phone tabs stay at 3 to 5. Capacity and Settings sit under More. */
+export function phoneDestinations(destinations: readonly Destination[]) {
+  return {
+    tabs: destinations.filter((item) => item.mobileTab !== false),
+    more: destinations.filter((item) => item.mobileTab === false),
+  }
+}
 
 /** Section links under a hub. Hidden in the UI when a hub has one section. */
 export const MEMBER_SECTIONS: Readonly<Record<string, readonly SectionLink[]>> = {

@@ -143,6 +143,9 @@ export function draftFromProfile(
   }
 }
 
+export const PLATFORM_TOTALS_NOTE =
+  'Platform totals are the combined figures Board Arabia may publish. Your own number is never shown.'
+
 export function usdSuggestionNote(turnover: string, foAum: string | null) {
   if (suggestUsd(turnover) != null || suggestUsd(foAum) != null) {
     return 'A USD figure from the written application is prefilled. Confirm it before you admit. Other currencies are left blank.'

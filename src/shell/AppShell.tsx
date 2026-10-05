@@ -2,7 +2,7 @@ import { useEffect, useId, useRef, useState, type ReactNode } from 'react'
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { BrandLockup } from '../components/BrandLockup'
 import type { Destination, SecondaryLink, ShellTone } from './destinations'
-import { dealsBadgeLabel, shellSectionTitle } from './destinations'
+import { dealsBadgeLabel, phoneDestinations, shellSectionTitle } from './destinations'
 import { DestinationIcon } from './icons'
 
 type RoleSwitch = { label: string; to: string }
@@ -65,8 +65,13 @@ export function AppShell({
   const title = shellSectionTitle(location.pathname, destinations, secondary)
   const styles = tone === 'staff' ? staffTheme : memberTheme
   const home = destinations[0]?.to ?? '/'
+  const phone = phoneDestinations(destinations)
+  const tabItems = member ? destinations : phone.tabs
   const secondaryActive = secondary.some(
     (item) => location.pathname === item.to || location.pathname.startsWith(`${item.to}/`),
+  )
+  const moreDestinationActive = phone.more.some(
+    (item) => (item.end ? location.pathname === item.to : location.pathname === item.to || location.pathname.startsWith(`${item.to}/`)),
   )
   const accountRoute =
     location.pathname === '/dashboard/profile' ||
@@ -75,7 +80,7 @@ export function AppShell({
     location.pathname.startsWith('/dashboard/help/') ||
     location.pathname === '/dashboard/sponsorship' ||
     location.pathname.startsWith('/dashboard/sponsorship/')
-  const moreCurrent = moreOpen || secondaryActive
+  const moreCurrent = moreOpen || secondaryActive || moreDestinationActive
   const displayName = accountName.trim() || accountLabel
   const lockedHubs = new Set(lockedDestinationIds)
   function destinationAria(item: Destination) {
@@ -397,8 +402,8 @@ export function AppShell({
         aria-label="Primary"
         className={`shell-tab-bar shell-safe-bottom shell-safe-x fixed inset-x-0 bottom-0 z-40 h-14 border-t md:hidden ${styles.tabBar}`}
       >
-        <ul className={`grid min-h-14 ${member ? 'grid-cols-5' : tabGridClass(destinations.length)}`}>
-          {destinations.map((item) => (
+        <ul className={`grid min-h-14 ${member ? 'grid-cols-5' : 'grid-cols-5 shell-staff-tabs'}`}>
+          {tabItems.map((item) => (
             <li key={item.to} className="min-w-0">
               <NavLink
                 to={item.to}
@@ -483,6 +488,24 @@ export function AppShell({
               </button>
             </div>
             <ul>
+              {phone.more.map((item) => (
+                <li key={item.to}>
+                  <NavLink
+                    to={item.to}
+                    end={item.end}
+                    data-nav="more-destination"
+                    data-destination={item.label}
+                    className={({ isActive }) =>
+                      `flex min-h-11 w-full items-center px-3 py-2 text-[1rem] leading-snug ${
+                        isActive ? styles.navActive : styles.navIdle
+                      }`
+                    }
+                    onClick={() => setMoreOpen(false)}
+                  >
+                    {item.label}
+                  </NavLink>
+                </li>
+              ))}
               {secondary.map((item) => (
                 <li key={item.to}>
                   <NavLink
@@ -591,12 +614,6 @@ function CountBadge({ count, place }: { count: number; place: 'tab' | 'sidebar' 
       {text}
     </span>
   )
-}
-
-/** Staff tab bar: one column per primary destination, plus More. */
-function tabGridClass(destinationCount: number) {
-  if (destinationCount + 1 === 7) return 'grid-cols-7 shell-staff-tabs'
-  return 'grid-cols-6'
 }
 
 function MoreIcon() {

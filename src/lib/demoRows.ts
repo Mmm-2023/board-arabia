@@ -19,6 +19,8 @@ export type DirectoryCard = {
   portrait_asset: string | null
   avatar_path: string | null
   avatar_style: AvatarStyle
+  /** Invited people are not admitted peers. Missing means the row did not say. */
+  membership_status?: 'invited' | 'active' | null
 }
 
 export type RoomCard = {
@@ -78,7 +80,7 @@ export function presentDirectoryCard(raw: unknown): DirectoryCard | null {
     full_name: fullName,
     headline: text(row.headline, 160),
     company: text(row.company, 200),
-    location: text(row.location, 120),
+    location: cityName(text(row.location, 120)),
     sector: sectors[0] ?? '',
     sectors,
     vision_themes: normalizeTags(row.vision_themes, VISION_2030_THEMES),
@@ -88,7 +90,14 @@ export function presentDirectoryCard(raw: unknown): DirectoryCard | null {
     portrait_asset: portrait.startsWith('/demo/portraits/') ? portrait : null,
     avatar_path: /^[0-9a-f-]{36}\/avatar$/i.test(avatar) ? avatar : null,
     avatar_style: normalizeAvatarStyle(row.avatar_style),
+    membership_status: row.membership_status === 'invited' || row.membership_status === 'active'
+      ? row.membership_status
+      : null,
   }
+}
+
+function cityName(value: string): string {
+  return value.trim().toLowerCase() === 'riaydh' ? 'Riyadh' : value
 }
 
 export function presentDirectoryList(raw: unknown): DirectoryCard[] {

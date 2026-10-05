@@ -93,7 +93,9 @@ function statusOf(value: ReReadinessStatus | null): ReReadinessStatus {
 export function readinessChecks(card: ReReadinessInput): ReReadinessCheck[] {
   return RE_READINESS_CHECKS.map((check) => {
     const status = statusOf(card[check.key])
-    return { key: check.key, label: check.label, status, statusLabel: RE_READINESS_STATUS_LABEL[status] }
+    const statusLabel =
+      check.key === 'white_land_exposure' && status === 'ready' ? 'Clear' : RE_READINESS_STATUS_LABEL[status]
+    return { key: check.key, label: check.label, status, statusLabel }
   })
 }
 

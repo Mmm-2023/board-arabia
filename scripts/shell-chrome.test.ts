@@ -15,7 +15,13 @@ test('desktop sidebar and mobile tabs share the locked destinations', async () =
     }
     const memberLabels = ['Home', 'Deals', 'People', 'Majlis', 'AI tools']
     assertMemberChrome(mod.renderMemberShell(), memberLabels)
-    assertChrome(mod.renderStaffShell(), ['Home', 'Applications', 'Review', 'People', 'Capacity', 'Settings'], 'Switch to member')
+    assertStaffChrome(mod.renderStaffShell())
+    const staffMore = mod.renderStaffShell(true)
+    const moreSheet = staffMore.slice(staffMore.indexOf('id="shell-more"'))
+    assert.match(moreSheet, /data-destination="Capacity"/)
+    assert.match(moreSheet, /data-destination="Settings"/)
+    assert.equal(tabBar(mod.renderStaffShell()).includes('data-destination="Capacity"'), false)
+    assert.equal(tabBar(mod.renderStaffShell()).includes('data-destination="Settings"'), false)
     const account = mod.renderMemberShell(true)
     assert.match(account, /id="shell-account"/)
     const sheet = account.slice(account.indexOf('id="shell-account"'))
@@ -36,8 +42,9 @@ test('desktop sidebar and mobile tabs share the locked destinations', async () =
     assert.equal(bar.includes('data-nav="more"'), false)
     assert.match(bar, /grid-cols-5/)
     assert.equal((bar.match(/data-nav="primary"/g) || []).length, 5)
-    assert.match(tabBar(mod.renderStaffShell()), /grid-cols-7/)
+    assert.match(tabBar(mod.renderStaffShell()), /grid-cols-5/)
     assert.match(tabBar(mod.renderStaffShell()), /shell-staff-tabs/)
+    assert.equal((tabBar(mod.renderStaffShell()).match(/data-nav="primary"/g) || []).length, 4)
     assert.equal(header(home).includes('aria-label="More"'), false)
     assert.equal(header(home).includes('Sign out'), false)
     const ai = mod.renderMemberShell(false, '/dashboard/ai/due-diligence')
@@ -68,6 +75,23 @@ function assertMemberChrome(html: string, labels: string[]) {
   assert.equal(html.includes('\u2014'), false)
   assert.equal((html.match(/data-nav="primary"/g) || []).length, labels.length * 2)
   assert.equal(html.includes('data-destination="Network"'), false)
+}
+
+function assertStaffChrome(html: string) {
+  const sidebar = ['Home', 'Applications', 'Review', 'People', 'Capacity', 'Settings']
+  const tabs = ['Home', 'Applications', 'Review', 'People']
+  for (const label of sidebar) {
+    assert.ok(html.includes(`data-destination="${label}"`), label)
+  }
+  for (const label of tabs) {
+    assert.equal(html.split(`data-destination="${label}"`).length - 1, 2, label)
+  }
+  const bar = tabBar(html)
+  assert.equal((bar.match(/data-nav="primary"/g) || []).length, 4)
+  assert.match(bar, /data-nav="more"/)
+  assert.match(html, /Switch to member/)
+  assert.match(html, /Sign out/)
+  assert.equal(html.includes('\u2014'), false)
 }
 
 function assertChrome(html: string, labels: string[], roleSwitch: string) {

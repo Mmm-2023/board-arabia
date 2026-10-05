@@ -49,6 +49,7 @@ export async function loadHomeSources(input: { userId: string; sponsor: boolean 
       full_name: row.full_name,
       headline: row.headline,
       seat: row.seat,
+      membership_status: row.membership_status ?? null,
     })),
   )
   const mandateRows = takeList(mandates, (rows) => rows.map(clearMandate))

@@ -22,6 +22,7 @@ export type HistoryItem = {
   company_label: string
   publicly_consistent_pct: number | null
   not_publicly_verifiable_pct: number | null
+  sources?: unknown
 }
 
 export type DeskLoad =
@@ -68,7 +69,7 @@ export async function loadDueDiligenceDesk(userId: string): Promise<DeskLoad> {
     supabase
       .from('due_diligence_reports')
       .select(
-        'id, job_id, created_at, file_name, company_label, publicly_consistent_pct, not_publicly_verifiable_pct',
+        'id, job_id, created_at, file_name, company_label, publicly_consistent_pct, not_publicly_verifiable_pct, sources',
       )
       .eq('member_id', userId)
       .order('created_at', { ascending: false })

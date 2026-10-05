@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { CapacityFields } from '../../components/CapacityFields'
 import { draftFromApplication, usdSuggestionNote } from '../../lib/capacity'
 import { seatLabel, type FoundingSeat } from '../../lib/member'
+import { formatUkDateTime } from '../../lib/ukDate'
 import type { Application } from '../../lib/supabase'
 import { useNoIndex } from '../../lib/usePageTitle'
 import { ConfirmDialog } from '../../shell/ConfirmDialog'
@@ -81,8 +82,8 @@ export function ApplicationsPage() {
             <li key={app.id} className="border border-pearl/10 bg-pearl/[0.03] px-5 py-5 md:px-6">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <p className="text-[0.7rem] font-semibold tracking-[0.1em] text-pearl/40 uppercase">
-                    {new Date(app.created_at).toLocaleString()}
+                  <p className="text-[0.85rem] font-semibold text-pearl/80">
+                    {formatUkDateTime(app.created_at)}
                   </p>
                   <p className="mt-2 font-display text-[1.15rem] font-semibold tracking-[-0.02em]">
                     {app.full_name || app.job_titles}
@@ -153,15 +154,6 @@ export function ApplicationsPage() {
                         : 'Not asked'}
                   </dd>
                 </div>
-                {app.calendar_slot && (
-                  <div className="md:col-span-2">
-                    <dt className="text-pearl/40">Meeting / invite meta</dt>
-                    <dd className="mt-0.5 text-stone/85">
-                      {app.calendar_slot}
-                      {app.invite_event_id ? ` · event ${app.invite_event_id}` : ''}
-                    </dd>
-                  </div>
-                )}
               </dl>
               {app.founding_seat && (
                 <p className="mt-4 text-[0.9rem] text-stone/70">

@@ -78,19 +78,19 @@ export function InvitesPanel({
           </h1>
         </>
       )}
-      <h2 className="text-[0.72rem] font-semibold tracking-[0.14em] text-ink/40 uppercase">
+      <h2 className="text-[0.72rem] font-semibold tracking-[0.14em] text-[var(--ba-muted)] uppercase">
         Two invites
       </h2>
       <p className="mt-3 text-[1.02rem] leading-relaxed text-ink">{remaining} of 2 remaining</p>
-      <p className="mt-2 max-w-xl text-[1.02rem] leading-relaxed text-ink/70">
-        Unused invites do not refill. People you invite are still reviewed.
+      <p className="mt-2 max-w-xl text-[1.02rem] leading-relaxed text-ink">
+        2 unique invites each week. Unused invites do not stack above 2. People you invite are still reviewed.
       </p>
       {blocked ? (
         <div
           className="mt-4 border border-ink/10 bg-white/60 px-4 py-3 text-[0.95rem] leading-relaxed text-ink/70"
           role="status"
         >
-          <p>Both peer invites are used. Unused invites do not refill.</p>
+          <p>Both peer invites are used this week. They return to 2 next week and do not stack above 2.</p>
           <p className="mt-2 flex flex-wrap gap-x-4">
             <Link to="/dashboard/help" className="inline-flex min-h-11 items-center underline">
               Help
