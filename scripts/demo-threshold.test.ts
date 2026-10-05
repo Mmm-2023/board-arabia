@@ -40,6 +40,7 @@ test('proposed defaults match the single server config', () => {
     partners: 3,
     re_opportunities: 5,
     re_partners: 3,
+    re_board_roles: 3,
   })
   assert.match(migration, /directory_real int not null default 12/)
   assert.match(migration, /mandates_real int not null default 6/)

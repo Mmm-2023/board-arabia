@@ -1095,6 +1095,22 @@ export type Database = {
         Args: { p_partner_id: string }
         Returns: Json
       }
+      list_re_board_roles: {
+        Args: Record<string, never>
+        Returns: Json
+      }
+      request_re_board_role_intro: {
+        Args: { p_role_id: string }
+        Returns: Json
+      }
+      staff_list_re_board_role_intros: {
+        Args: Record<string, never>
+        Returns: Json
+      }
+      staff_decide_re_board_role_intro: {
+        Args: { p_intro_id: string; p_decision: string }
+        Returns: Json
+      }
       staff_list_re_partner_intros: {
         Args: Record<string, never>
         Returns: Json

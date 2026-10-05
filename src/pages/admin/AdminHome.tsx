@@ -8,6 +8,7 @@ import { STAFF_VIEWS } from '../../shell/viewCopy'
 import { PanelNotice } from './bits'
 import { MandateIntroQueue } from './MandateIntroQueue'
 import { ReAppetitePanel } from './ReAppetitePanel'
+import { ReBoardRoleIntroQueue } from './ReBoardRoleIntroQueue'
 import { ReIntroQueue } from './ReIntroQueue'
 import { RePartnerIntroQueue } from './RePartnerIntroQueue'
 import { RePartnersPanel } from './RePartnersPanel'
@@ -30,6 +31,7 @@ export function AdminHome() {
       <ReIntroQueue />
       <ReAppetitePanel />
       <RePartnerIntroQueue />
+      <ReBoardRoleIntroQueue />
       <div className="mt-6 flex flex-wrap gap-x-5">
         <Link
           to="/admin/people/intros"

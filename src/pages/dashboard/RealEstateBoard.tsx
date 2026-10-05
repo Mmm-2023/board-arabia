@@ -20,15 +20,22 @@ import { CardSkeleton, EmptyState, ErrorBanner, FilteredZero, PermissionState } 
 import { MEMBER_VIEWS } from '../../shell/viewCopy'
 import { OpportunityCard } from './OpportunityCard'
 import { ReAppetiteCard, type ReAppetiteCardStatus } from './ReAppetiteCard'
+import type { ReBoardRoleCard } from '../../lib/reBoardRoles'
 import { RealEstatePartners } from './RealEstatePartners'
+import { RealEstateRoles } from './RealEstateRoles'
 
 export type RealEstateStatus = 'loading' | 'error' | 'denied' | 'ready'
-export type RealEstateTab = 'opportunities' | 'partners'
+export type RealEstateTab = 'opportunities' | 'partners' | 'roles'
 
 const TABS = [
   { id: 'opportunities', label: 'Opportunities' },
   { id: 'partners', label: 'Partners' },
+  { id: 'roles', label: 'Board roles' },
 ] as const
+
+function tabDomId(id: RealEstateTab) {
+  return `re-tab-${id}`
+}
 
 export function RealEstateBoard({
   status,
@@ -45,6 +52,12 @@ export function RealEstateBoard({
   partnerRequestError = false,
   onRetryPartners,
   onRequestPartner,
+  roles = [],
+  rolesStatus = 'ready',
+  roleBusyId = null,
+  roleRequestError = false,
+  onRetryRoles,
+  onRequestRole,
   appetiteStatus = null,
   appetite = null,
   onRetryAppetite,
@@ -64,6 +77,12 @@ export function RealEstateBoard({
   partnerRequestError?: boolean
   onRetryPartners?: () => void
   onRequestPartner?: (id: string) => void
+  roles?: ReBoardRoleCard[]
+  rolesStatus?: RealEstateStatus
+  roleBusyId?: string | null
+  roleRequestError?: boolean
+  onRetryRoles?: () => void
+  onRequestRole?: (id: string) => void
   appetiteStatus?: ReAppetiteCardStatus | null
   appetite?: ReAppetite | null
   onRetryAppetite?: () => void
@@ -86,7 +105,7 @@ export function RealEstateBoard({
     const next = TABS[(index + step + TABS.length) % TABS.length]
     if (!next) return
     selectTab(next.id)
-    document.getElementById(next.id === 'opportunities' ? 're-tab-opportunities' : 're-tab-partners')?.focus()
+    document.getElementById(tabDomId(next.id))?.focus()
   }
   const forming = status === 'ready' && reFeedIsForming(cards)
   const applied = appetite ? filters : { ...filters, fitsAppetite: false }
@@ -113,13 +132,13 @@ export function RealEstateBoard({
     <div className="max-w-3xl">
       <h1 className="font-display text-[2.2rem] font-bold tracking-[-0.03em]">Real estate</h1>
       <p className="mt-3 max-w-xl text-[1rem] leading-relaxed text-ink/60">
-        {activeTab === 'partners' ? copy.partnersIntro : copy.intro}
+        {activeTab === 'partners' ? copy.partnersIntro : activeTab === 'roles' ? copy.rolesIntro : copy.intro}
       </p>
       <div role="tablist" aria-label="Real estate" className="mt-6 inline-flex flex-wrap gap-2" onKeyDown={onTabKey}>
         {TABS.map((item) => {
           const selected = activeTab === item.id
-          const tabId = item.id === 'opportunities' ? 're-tab-opportunities' : 're-tab-partners'
-          const panelId = item.id === 'opportunities' ? 're-panel-opportunities' : 're-panel-partners'
+          const tabId = tabDomId(item.id)
+          const panelId = `re-panel-${item.id}`
           return (
             <button
               key={item.id}
@@ -142,6 +161,18 @@ export function RealEstateBoard({
           )
         })}
       </div>
+      {activeTab === 'roles' ? (
+        <div className="mt-6">
+          <RealEstateRoles
+            status={rolesStatus}
+            cards={roles}
+            busyId={roleBusyId}
+            requestError={roleRequestError}
+            onRetry={onRetryRoles ?? onRetry}
+            onRequest={onRequestRole ?? (() => {})}
+          />
+        </div>
+      ) : null}
       {activeTab === 'partners' ? (
         <div className="mt-6">
           <RealEstatePartners

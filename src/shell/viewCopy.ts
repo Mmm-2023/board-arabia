@@ -66,6 +66,17 @@ export const MEMBER_VIEWS = {
     partnersApproved:
       'The desk approved this intro. The desk handles outreach. Contact details stay off this page.',
     partnersDeclined: 'This intro was not approved.',
+    rolesIntro:
+      'Board and non-executive seats on developer and property company boards. Title, sector, capacity, and fit stay visible. The organisation and the seat terms stay locked until you request an intro and the desk approves it for you.',
+    rolesForming: 'Board roles are still forming. These examples stay until real seats can take their place.',
+    rolesEmpty: 'No board roles yet. When the desk publishes a seat, it lands here.',
+    rolesEmptyAction: 'See opportunities',
+    rolesDenied: 'Board roles are for founding members.',
+    rolesLocked: 'The organisation and seat terms stay locked. Request intro to unlock.',
+    rolesRequested: 'Intro requested. The desk must approve it before the organisation and seat terms open.',
+    rolesApproved: 'Intro approved for you.',
+    rolesDeclined: 'This intro was not approved.',
+    rolesInventory: 'Desk record of this seat.',
     appetite: {
       title: 'My RE appetite',
       empty:
@@ -200,6 +211,16 @@ export const STAFF_VIEWS = {
     error: REFRESH_ERROR,
     retry: 'Retry',
     denied: 'The majlis queue is for staff.',
+  },
+  reBoardRoles: {
+    queue: 'Board role intros',
+    queueError: 'Could not load board role intro requests.',
+    saveError: 'Could not save that decision. Retry.',
+    declineTitle: 'Decline this intro?',
+    declineBody: 'The member keeps the public seat brief. The organisation and seat terms stay locked.',
+    approve: 'Approve intro',
+    decline: 'Decline intro',
+    requestedBy: 'Requested by',
   },
   reAppetite: {
     title: 'Member RE appetite',

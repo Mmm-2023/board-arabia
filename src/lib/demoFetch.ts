@@ -10,6 +10,7 @@ import {
 import { presentHomeActivityList, type HomeActivity } from './homeSnapshot'
 import { presentMandateList, type MandateCardModel } from './mandateRedaction'
 import { parseReAppetite, type ReAppetite } from './reAppetite'
+import { presentReBoardRoleList, type ReBoardRoleCard } from './reBoardRoles'
 import {
   presentReOpportunityList,
   presentRePartnerList,
@@ -31,6 +32,7 @@ import {
 import {
   notifyDeskIntro,
   requestMandateIntro as postMandateIntro,
+  requestReBoardRoleIntro as postReRoleIntro,
   requestReOpportunityIntro as postReIntro,
   requestRePartnerIntro as postRePartnerIntro,
   supabase,
@@ -206,4 +208,23 @@ export async function saveMyReAppetite(
 
 export async function requestRePartnerIntro(partnerId: string): Promise<'ok' | 'error'> {
   return postRePartnerIntro(partnerId)
+}
+
+export function fetchReBoardRoles(): Promise<DemoLoad<ReBoardRoleCard[]> | { status: 'denied' }> {
+  return loadReBoardRoles()
+}
+
+async function loadReBoardRoles(): Promise<DemoLoad<ReBoardRoleCard[]> | { status: 'denied' }> {
+  const { data, error } = await supabase.rpc('list_re_board_roles')
+  if (error) {
+    if (schemaMissing(error.message)) return { status: 'missing' }
+    const code = 'code' in error ? String(error.code) : ''
+    if (code === '42501' || /not_allowed/i.test(error.message)) return { status: 'denied' }
+    return { status: 'error' }
+  }
+  return { status: 'ready', rows: presentReBoardRoleList(data) }
+}
+
+export async function requestReBoardRoleIntro(roleId: string): Promise<'ok' | 'error'> {
+  return postReRoleIntro(roleId)
 }
