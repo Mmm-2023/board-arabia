@@ -47,24 +47,24 @@ export const MEMBER_VIEWS = {
   },
   realEstate: {
     intro:
-      'Sector, region, asset class, ticket band, capital role, and readiness stay visible. Counterparty and terms stay locked until you request an intro and an admin approves it for you.',
+      'Sector, region, asset class, ticket band, capital role, and readiness stay visible. Counterparty and terms stay locked until you request an intro and the desk approves it for you.',
     forming:
       'Real estate opportunities are still forming. These examples stay until real briefs can take their place.',
-    empty: 'No opportunities yet. When an admin publishes a brief, it lands here.',
+    empty: 'No opportunities yet. When the desk publishes a brief, it lands here.',
     error: REFRESH_ERROR,
     retry: 'Retry',
     denied: 'Real Estate is for admitted members.',
     filtered: 'No matches. Clear filters.',
     clear: 'Clear filters',
     partnersIntro:
-      'Request intro asks an admin to make the introduction. This page does not open a message thread.',
+      'Request intro asks the desk to make the introduction. This page does not open a message thread.',
     partnersForming:
       'Real estate partners are still forming. These examples stay until vetted firms can take their place.',
-    partnersEmpty: 'No partners yet. When an admin publishes a firm, it lands here.',
+    partnersEmpty: 'No partners yet. When the desk publishes a firm, it lands here.',
     partnersDenied: 'Partners are for admitted members.',
-    partnersRequested: 'Intro requested. An admin reviews it before any outreach.',
+    partnersRequested: 'Intro requested. The desk reviews it before any outreach.',
     partnersApproved:
-      'An admin approved this intro. The desk handles outreach. Contact details stay off this page.',
+      'The desk approved this intro. The desk handles outreach. Contact details stay off this page.',
     partnersDeclined: 'This intro was not approved.',
   },
   network: {
@@ -157,7 +157,7 @@ export const STAFF_VIEWS = {
   },
   capacity: {
     early:
-      'Aggregates appear after verified opted-in admits (min N on public site).',
+      'Totals go public once enough verified members opt in.',
     error: REFRESH_ERROR,
     retry: 'Retry',
     denied: 'Capacity totals are for staff.',
@@ -172,7 +172,7 @@ export const STAFF_VIEWS = {
     denied: 'The majlis queue is for staff.',
   },
   settings: {
-    booking: 'The private booking link is emailed on Accept. It is not shown on this page.',
+    booking: 'The private invite email is sent on Accept. It is not shown on this page.',
     optional: 'Optional desk notes are not stored yet. Nothing here is published on the marketing site.',
     masterLock: 'Promote Admin is limited to the master login.',
     switchAbsent: 'Switch to member appears when this login also holds an active member seat.',

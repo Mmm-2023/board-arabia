@@ -1,6 +1,8 @@
 import { Link } from 'react-router-dom'
 import { CtaBand } from '../components/CtaBand'
 import { MarketingLayout } from '../components/MarketingLayout'
+import { WhoRunsTheDesk } from '../components/WhoRunsTheDesk'
+import { AUDIENCE_LINE } from '../content/marketing'
 
 export function AboutPage() {
   return (
@@ -14,22 +16,21 @@ export function AboutPage() {
         </h1>
         <div className="mt-8 space-y-5 text-[1.08rem] leading-relaxed text-ink/70">
           <p>
-            Board Arabia is a founding membership for chairpersons, NEDs, and
-            board advisors in Saudi Arabia and the GCC, and for international
-            counterparts who work with Saudi capital, family offices, and
-            foreign direct investment.
+            Board Arabia is a founding membership for {AUDIENCE_LINE} in Saudi
+            Arabia and the GCC, and for international counterparts who work
+            with Saudi capital, family offices, and foreign direct investment.
           </p>
           <p>
             The first hundred places are held evenly: fifty Saudi, fifty
-            international. Founding membership is complimentary, pending
-            contribution (presence, judgment, and introductions made with
-            care). Seats are not priced on this site.
+            international. Founding places are complimentary. We ask for time,
+            judgment and introductions in return. Seats are not priced on this
+            site.
           </p>
           <p>
             Admission is by review. There is no fixed response time. Every
-            application is reviewed personally. If you are accepted, a private
-            booking link is emailed to you. If you are not, you receive a
-            decline. The link is never published here.
+            application is reviewed personally. If you are accepted, you get a
+            private invite email. We never publish it here. If you are not
+            accepted, you receive a decline.
           </p>
           <p>
             The tools (a private directory, availability, warm introductions,
@@ -43,6 +44,7 @@ export function AboutPage() {
             </Link>
           </p>
         </div>
+        <WhoRunsTheDesk />
       </article>
       <CtaBand location="section-about" />
     </MarketingLayout>

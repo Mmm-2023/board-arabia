@@ -112,6 +112,18 @@ export function HomeSnapshotView({
       {!model.loading ? (
         <section aria-label="Next actions" className="mt-5">
           <h2 className="text-[0.8125rem] font-semibold text-ink/70">Next actions</h2>
+          {model.profileNudge ? (
+            <div className="mt-3">
+              <p className="max-w-xl text-[1rem] text-ink">{model.profileNudge.line}</p>
+              <Link
+                to={model.profileNudge.to}
+                data-home-cta="profile-match"
+                className={`mt-3 inline-flex min-h-11 items-center px-4 text-[0.8125rem] font-semibold ${styles.primary}`}
+              >
+                Add sector and availability
+              </Link>
+            </div>
+          ) : null}
           {nextAction ? (
             <Link
               to={nextAction.to}
@@ -120,7 +132,7 @@ export function HomeSnapshotView({
             >
               {nextAction.label}
             </Link>
-          ) : suggestionsSlot ? null : (
+          ) : model.profileNudge || model.profileMatchPending || suggestionsSlot ? null : (
             <p className={`mt-3 max-w-xl text-[1rem] ${styles.muted}`}>Nothing needs you right now.</p>
           )}
           {suggestionsSlot}

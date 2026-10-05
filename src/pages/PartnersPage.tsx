@@ -21,7 +21,7 @@ const RULES = [
   {
     n: '04',
     title: 'Still gated',
-    body: 'A partner does not receive the directory and does not message members around admin.',
+    body: 'A partner does not receive the directory and does not message members around the desk.',
   },
 ]
 

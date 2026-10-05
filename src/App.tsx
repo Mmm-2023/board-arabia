@@ -81,6 +81,9 @@ const DealRoomPage = lazy(() => import('./pages/dashboard/DealRoomPage').then((m
 const RoomsPage = lazy(() => import('./pages/dashboard/RoomsPage').then((m) => ({ default: m.RoomsPage })))
 const NetworkPage = lazy(() => import('./pages/dashboard/NetworkPage').then((m) => ({ default: m.NetworkPage })))
 const ProfilePage = lazy(() => import('./pages/dashboard/ProfilePage').then((m) => ({ default: m.ProfilePage })))
+const LeaveBoardArabiaPage = lazy(() =>
+  import('./pages/dashboard/LeaveBoardArabia').then((m) => ({ default: m.LeaveBoardArabiaPage })),
+)
 const SponsorshipPage = lazy(() =>
   import('./pages/dashboard/SponsorshipPage').then((m) => ({ default: m.SponsorshipPage })),
 )
@@ -153,6 +156,7 @@ export default function App() {
           <Route path=":toolSlug" element={<AiToolPage />} />
           <Route path=":toolSlug/:jobId" element={<AiToolPage />} />
         </Route>
+        <Route path="profile/leave" element={<LeaveBoardArabiaPage />} />
         <Route path="profile" element={<ProfilePage />} />
         <Route path="help" element={<HelpPage />} />
         <Route path="sponsorship" element={<SponsorshipPage />} />

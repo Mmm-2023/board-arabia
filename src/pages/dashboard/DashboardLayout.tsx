@@ -363,7 +363,7 @@ export function DashboardLayout() {
               message={
                 gate.status === 'suspended'
                   ? 'This seat cannot open the dashboard. Write to the membership if you believe this is a mistake.'
-                  : 'Directory unlocks after admit. The member dashboard opens only after admin admits you and you sign in with that invitation.'
+                  : 'Directory unlocks after admit. The member dashboard opens only after the desk admits you and you sign in with that invitation.'
               }
             />
           </div>

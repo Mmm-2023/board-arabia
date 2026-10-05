@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { Footer } from '../components/Footer'
 import { Nav } from '../components/Nav'
 import { Seo } from '../components/Seo'
+import { WhoRunsTheDesk } from '../components/WhoRunsTheDesk'
 import { REVIEW_SLA } from '../content/marketing'
 import { parseUsdInput, PLATFORM_TOTALS_NOTE } from '../lib/capacity'
 import { track } from '../lib/analytics'
@@ -241,6 +242,8 @@ export function ApplyPage() {
               Privacy
             </Link>
           </p>
+
+          <WhoRunsTheDesk />
 
           {inviteView.kind === 'checking' && (
             <p className="mt-8 text-[0.95rem] text-ink/55">Checking this invite link.</p>

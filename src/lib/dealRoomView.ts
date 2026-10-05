@@ -194,7 +194,7 @@ export function inviteStatusLabel(status: InviteStatus): string {
 }
 
 export function openedByLabel(openedBy: OpenedBy): string {
-  return openedBy === 'admin' ? 'Opened by admin' : 'Opened by a member'
+  return openedBy === 'admin' ? 'Opened by the desk' : 'Opened by a member'
 }
 
 export function linkedSubject(

@@ -24,7 +24,7 @@ import {
   type HistoryItem,
   type ReadFailure,
 } from '../../lib/dueDiligence'
-import { priorNotes } from '../../lib/priorNotes'
+import { earlierRunsLabel, groupPriorNotes, type PriorNote, type PriorNoteGroup } from '../../lib/priorNotes'
 import { DD_COPY, deskCtaLabel, deskProgressLine, presentDeskError } from '../../lib/dueDiligenceCopy'
 import { deskPhase, nextPollFailures, type DeskPhase } from '../../lib/dueDiligencePhase'
 import { supabase } from '../../lib/supabase'
@@ -533,28 +533,13 @@ export function DueDiligenceDeskView({
                 </p>
               ) : null}
               <ul className="mt-4 space-y-3">
-                {priorNotes(reports).map((report) => (
-                  <li key={report.id} className="flex items-stretch border border-[var(--ba-line)] bg-white">
-                    <Link
-                      to={`/dashboard/ai/due-diligence/${report.id}`}
-                      className="flex min-h-11 min-w-0 flex-1 flex-col justify-center px-4 py-3"
-                    >
-                      <span className="text-[1rem] break-words text-ink">{report.title}</span>
-                      <span className="text-[0.92rem] text-[var(--ba-muted)]">
-                        {publicConsistencyLabel(report)}
-                        {' · '}
-                        {formatWhen(report.created_at)}
-                      </span>
-                    </Link>
-                    <button
-                      type="button"
-                      className="inline-flex min-h-11 shrink-0 items-center border-s border-[var(--ba-line)] px-4 text-[0.95rem] font-semibold text-ink"
-                      disabled={busy}
-                      onClick={() => onDelete?.(report.id)}
-                    >
-                      Delete
-                    </button>
-                  </li>
+                {groupPriorNotes(reports).map((group) => (
+                  <PriorNoteGroupRow
+                    key={group.latest.id}
+                    group={group}
+                    busy={busy}
+                    onDelete={onDelete}
+                  />
                 ))}
               </ul>
             </section>
@@ -644,6 +629,78 @@ function ReportView({ reportId }: { reportId: string }) {
         />
       ) : null}
     </div>
+  )
+}
+
+function PriorNoteGroupRow({
+  group,
+  busy,
+  onDelete,
+}: {
+  group: PriorNoteGroup
+  busy: boolean
+  onDelete?: (id: string) => void
+}) {
+  const [open, setOpen] = useState(false)
+  const count = group.earlier.length
+  return (
+    <li className="border border-[var(--ba-line)] bg-white" data-prior-company={group.key}>
+      <div className="flex items-stretch">
+        <PriorNoteLink report={group.latest} />
+        <DeleteNoteButton busy={busy} onClick={() => onDelete?.(group.latest.id)} />
+      </div>
+      {count > 0 ? (
+        <div className="border-t border-[var(--ba-line)] px-4 py-2">
+          <button
+            type="button"
+            className="inline-flex min-h-11 items-center text-[0.95rem] font-semibold text-[var(--ba-indigo)]"
+            aria-expanded={open}
+            onClick={() => setOpen((value) => !value)}
+          >
+            {earlierRunsLabel(count)}
+          </button>
+          {open ? (
+            <ul className="mb-2 space-y-2">
+              {group.earlier.map((report) => (
+                <li key={report.id} className="flex items-stretch border border-[var(--ba-line)]">
+                  <PriorNoteLink report={report} />
+                  <DeleteNoteButton busy={busy} onClick={() => onDelete?.(report.id)} />
+                </li>
+              ))}
+            </ul>
+          ) : null}
+        </div>
+      ) : null}
+    </li>
+  )
+}
+
+function PriorNoteLink({ report }: { report: PriorNote }) {
+  return (
+    <Link
+      to={`/dashboard/ai/due-diligence/${report.id}`}
+      className="flex min-h-11 min-w-0 flex-1 flex-col justify-center px-4 py-3"
+    >
+      <span className="text-[1rem] break-words text-ink">{report.title}</span>
+      <span className="text-[0.92rem] text-[var(--ba-muted)]">
+        {publicConsistencyLabel(report)}
+        {' · '}
+        {formatWhen(report.created_at)}
+      </span>
+    </Link>
+  )
+}
+
+function DeleteNoteButton({ busy, onClick }: { busy: boolean; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      className="inline-flex min-h-11 shrink-0 items-center border-s border-[var(--ba-line)] px-4 text-[0.95rem] font-semibold text-ink"
+      disabled={busy}
+      onClick={onClick}
+    >
+      Delete
+    </button>
   )
 }
 

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
-import { useLocation, useSearchParams } from 'react-router-dom'
+import { Link, useLocation, useSearchParams } from 'react-router-dom'
 import { DefaultPicturePicker } from '../../components/DefaultPicturePicker'
 import { SponsorBadge } from '../../components/SponsorBadge'
 import { DEFAULT_PICTURE_NOTE, normalizeAvatarStyle, type AvatarStyle } from '../../lib/avatarStyle'
@@ -27,6 +27,7 @@ import { useNoIndex } from '../../lib/usePageTitle'
 import { useMember } from './context'
 import { LinkedInConnect } from './LinkedInConnect'
 import { MemberAvatar } from './MemberAvatar'
+import { LEAVE_BOARD_PATH } from '../../lib/leaveBoard'
 import { ProfileTagFields } from './ProfileTagFields'
 
 const fieldClass =
@@ -196,10 +197,11 @@ export function ProfilePage({ preview }: { preview?: { src: string | null } }) {
   }, [userId, tagAttempt, tagsFromProfile])
 
   useEffect(() => {
-    if (hash !== '#password') return
+    if (hash !== '#password' && hash !== '#profile-tags') return
+    const targetId = hash === '#password' ? 'password' : 'profile-tags'
     let frame = 0
     const jump = () => {
-      const form = document.getElementById('password')
+      const form = document.getElementById(targetId)
       if (!(form instanceof HTMLElement)) return
       const scroller = form.closest('.shell-main')
       if (scroller instanceof HTMLElement) {
@@ -215,7 +217,7 @@ export function ProfilePage({ preview }: { preview?: { src: string | null } }) {
     jump()
     frame = requestAnimationFrame(jump)
     return () => cancelAnimationFrame(frame)
-  }, [hash])
+  }, [hash, tagStatus])
 
   async function onSaveProfile(event: FormEvent) {
     event.preventDefault()
@@ -417,6 +419,7 @@ export function ProfilePage({ preview }: { preview?: { src: string | null } }) {
         <Field label="Headline" value={headline} onChange={setHeadline} />
         <Field label="Company" value={company} onChange={setCompany} autoComplete="organization" />
         <Field label="Location" value={location} onChange={setLocation} autoComplete="address-level2" />
+        <div id="profile-tags" className="scroll-mt-24 space-y-5">
         {tagStatus === 'loading' ? (
           <div aria-busy="true" aria-label="Loading availability and tags" className="space-y-3">
             <div className="h-11 bg-[var(--ba-lavender)] motion-reduce:animate-none animate-pulse" />
@@ -464,6 +467,7 @@ export function ProfilePage({ preview }: { preview?: { src: string | null } }) {
             }}
           />
         ) : null}
+        </div>
         <Field
           label="LinkedIn URL"
           value={linkedin}
@@ -527,7 +531,7 @@ export function ProfilePage({ preview }: { preview?: { src: string | null } }) {
         </button>
         {!profile && (
           <p className="text-[0.92rem] text-ink/50">
-            The profile record is missing. Ask admin to admit this seat again.
+            The profile record is missing. Ask the desk to admit this seat again.
           </p>
         )}
       </form>
@@ -571,6 +575,19 @@ export function ProfilePage({ preview }: { preview?: { src: string | null } }) {
           {savingPassword ? 'Saving…' : 'Set password'}
         </button>
       </form>
+
+      <section className="mt-16 border-t border-ink/10 pt-10" aria-label="Leave Board Arabia">
+        <h2 className="font-display text-[1.35rem] font-semibold tracking-[-0.03em]">Leave Board Arabia</h2>
+        <p className="mt-3 max-w-xl text-[0.98rem] leading-relaxed text-ink/65">
+          Ask the desk to close this membership. You confirm on the next screen. Your seat stays open until the desk closes it.
+        </p>
+        <Link
+          to={LEAVE_BOARD_PATH}
+          className="mt-4 inline-flex min-h-11 items-center text-[0.95rem] font-semibold text-ink underline"
+        >
+          Leave Board Arabia
+        </Link>
+      </section>
     </div>
   )
 }

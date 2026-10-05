@@ -95,7 +95,7 @@ test('readiness labels cover every status and skip secrets', () => {
     assert.equal(lines.join(' ').includes('\u2014'), false)
     assert.equal(
       lines.every((line) => {
-        if (status === 'ready' && line.startsWith('White Land exposure:')) return line.includes('Clear')
+        if (status === 'ready' && line.startsWith('White Land exposure:')) return line.includes('None')
         return line.includes(RE_READINESS_STATUS_LABEL[status])
       }),
       true,

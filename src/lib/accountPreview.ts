@@ -22,7 +22,7 @@ export const ACCOUNT_REAL_ESTATE = {
 
 export const LOCK_COPY = {
   title: 'Open to full members',
-  deals: 'Access to capital. Mandates, real estate and deal rooms reach full members after admin review.',
+  deals: 'Access to capital. Mandates, real estate and deal rooms reach full members after the desk reviews them.',
   people: 'Business relationships. The Directory shows admitted Chairpersons, Board members and C-suite executives only.',
   intros: 'Introductions stay between full members.',
   invites: 'Full members receive two peer invites to put a peer forward for review.',

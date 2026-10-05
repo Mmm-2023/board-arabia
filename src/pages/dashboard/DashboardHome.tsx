@@ -9,11 +9,12 @@ import { isProfileReady } from '../../lib/directoryGate'
 import { fetchIntroQuota, fetchMyIntroSuggestions, fetchMyIntros, requestMemberIntro } from '../../lib/demoFetch'
 import { fetchMyDealRooms, respondDealRoom } from '../../lib/dealRoomApi'
 import { pendingInvites, type MemberDealRoom } from '../../lib/dealRoomView'
-import { assembleHome, isFoundingMember, type AttentionItem } from '../../lib/homeSnapshot'
+import { assembleHome, isFoundingMember, type AttentionItem, type ProfileMatchInput } from '../../lib/homeSnapshot'
 import { loadHomeSources, type LoadedSources } from '../../lib/homeSnapshotLoad'
 import type { IntroSuggestion } from '../../lib/introSuggestions'
 import { outgoingMemberStatus, type IntroQuota, type IntroRow } from '../../lib/memberIntros'
 import { seatLabel } from '../../lib/member'
+import { loadProfileMatch, profileMatchFromRow } from '../../lib/profileMatchLoad'
 import { supabase } from '../../lib/supabase'
 import { useNoIndex } from '../../lib/usePageTitle'
 import { ErrorBanner, HomeSkeleton } from '../../shell/ViewState'
@@ -45,6 +46,11 @@ export function DashboardHome() {
   const { member, profile, userId } = useMember()
   const status = useDashboardStatus()
   const [attempt, setAttempt] = useState(0)
+  const [profileMatch, setProfileMatch] = useState<ProfileMatchInput>({
+    status: 'loading',
+    availabilitySet: false,
+    sectorSet: false,
+  })
   const [bundle, setBundle] = useState<{ attempt: number; nowMs: number; sources: LoadedSources } | null>(null)
   const [photo, setPhoto] = useState<{ path: string; url: string } | null>(null)
   const [invites, setInvites] = useState<MemberDealRoom[]>([])
@@ -91,6 +97,22 @@ export function DashboardHome() {
       cancelled = true
     }
   }, [profile?.avatar_path, attempt])
+
+  useEffect(() => {
+    let cancelled = false
+    const known = profileMatchFromRow(profile)
+    if (known) {
+      setProfileMatch(known)
+      return
+    }
+    setProfileMatch({ status: 'loading', availabilitySet: false, sectorSet: false })
+    void loadProfileMatch(userId).then((next) => {
+      if (!cancelled) setProfileMatch(next)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [profile, userId])
 
   useEffect(() => {
     let cancelled = false
@@ -255,6 +277,7 @@ export function DashboardHome() {
     loading,
     partialError: !loading && sources.partialError,
     updatedLabel: null,
+    profileMatch,
   })
 
   return (

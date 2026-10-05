@@ -210,7 +210,7 @@ test('the strip is clear on locked and approved cards, and staff edit statuses w
     assert.match(lockedHtml, /In progress/)
     assert.match(lockedHtml, /Not yet/)
     assert.match(lockedHtml, /White Land exposure/)
-    assert.match(lockedHtml, />Clear</)
+    assert.match(lockedHtml, />None</)
     assert.match(lockedHtml, /Readiness is an indicative checklist, not legal advice/)
     assert.equal(lockedHtml.includes(SECRET), false)
     assert.equal(lockedHtml.includes(MAIL), false)
