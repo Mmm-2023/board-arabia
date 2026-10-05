@@ -1,5 +1,6 @@
 import { corsHeaders, jsonResponse } from '../_shared/mail.ts'
 import { deliverAdminAlert, type AdminAlertInput, type AdminAlertKind } from '../_shared/notify_admin.ts'
+import { finishClubInterest } from './club.ts'
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -19,6 +20,8 @@ export type ReIntroOpen =
       partnerContext?: (partnerId: string) => Promise<ReIntroContext>
       roleRpc?: (roleId: string) => Promise<{ data: unknown; error: { message: string } | null }>
       roleContext?: (roleId: string) => Promise<ReIntroContext>
+      interestRpc?: (opportunityId: string) => Promise<{ data: unknown; error: { message: string } | null }>
+      interestContext?: (opportunityId: string) => Promise<ReIntroContext>
     }
   | { error: string; status: number }
 
@@ -38,16 +41,31 @@ export async function handleReIntro(
   let opportunityId = ''
   let partnerId = ''
   let roleId = ''
+  let interestOpportunityId = ''
   try {
     const body = await req.json()
     opportunityId = String(body.opportunity_id || '')
     partnerId = String(body.partner_id || '')
     roleId = String(body.role_id || '')
+    interestOpportunityId = String(body.interest_opportunity_id || '')
   } catch {
     return jsonResponse(req, { error: 'Invalid JSON' }, 400)
   }
-  const chosen = [opportunityId, partnerId, roleId].filter((id) => id.length > 0)
+  const chosen = [opportunityId, partnerId, roleId, interestOpportunityId].filter((id) => id.length > 0)
   if (chosen.length > 1) return jsonResponse(req, { error: 'One intro target' }, 400)
+  if (interestOpportunityId) {
+    if (!UUID.test(interestOpportunityId)) return jsonResponse(req, { error: 'interest_opportunity_id required' }, 400)
+    if (!opened.interestRpc || !opened.interestContext) {
+      return jsonResponse(req, { error: 'club interest is not available' }, 400)
+    }
+    return finishClubInterest(
+      req,
+      interestOpportunityId,
+      opened.interestRpc,
+      opened.interestContext,
+      deps.alert,
+    )
+  }
   if (roleId) {
     if (!UUID.test(roleId)) return jsonResponse(req, { error: 'role_id required' }, 400)
     if (!opened.roleRpc || !opened.roleContext) {

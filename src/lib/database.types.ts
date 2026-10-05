@@ -1048,6 +1048,26 @@ export type Database = {
         Args: { p_opportunity_id: string }
         Returns: Json
       }
+      express_re_club_interest: {
+        Args: { p_opportunity_id: string }
+        Returns: Json
+      }
+      my_re_club_interest: {
+        Args: Record<string, never>
+        Returns: Json
+      }
+      staff_list_re_club_interest: {
+        Args: Record<string, never>
+        Returns: Json
+      }
+      staff_open_re_club_room: {
+        Args: { p_opportunity_id: string }
+        Returns: Json
+      }
+      staff_link_re_club_room: {
+        Args: { p_opportunity_id: string; p_room_id: string }
+        Returns: Json
+      }
       staff_list_re_opportunity_intros: {
         Args: Record<string, never>
         Returns: Json

@@ -62,6 +62,14 @@ export function RealEstateBoard({
   appetite = null,
   onRetryAppetite,
   onSaveAppetite,
+  showInterest = false,
+  interestPending = false,
+  interestedIds = [],
+  interestBusyId = null,
+  interestError = false,
+  interestLoadError = false,
+  onRetryInterest,
+  onInterest,
 }: {
   status: RealEstateStatus
   cards: ReOpportunityCard[]
@@ -87,6 +95,14 @@ export function RealEstateBoard({
   appetite?: ReAppetite | null
   onRetryAppetite?: () => void
   onSaveAppetite?: (appetite: ReAppetite) => Promise<'ok' | 'error'>
+  showInterest?: boolean
+  interestPending?: boolean
+  interestedIds?: readonly string[]
+  interestBusyId?: string | null
+  interestError?: boolean
+  interestLoadError?: boolean
+  onRetryInterest?: () => void
+  onInterest?: (id: string) => void
 }) {
   const [filters, setFilters] = useState<ReOpportunityFilters>(EMPTY_RE_FILTERS)
   const [filtersOpen, setFiltersOpen] = useState(false)
@@ -274,6 +290,11 @@ export function RealEstateBoard({
                       busy={busyId === card.id}
                       fits={appetite != null && reAppetiteFits(card, appetite)}
                       onRequest={onRequest}
+                      showInterest={showInterest}
+                      interestPending={interestPending}
+                      interested={interestedIds.includes(card.id)}
+                      interestBusy={interestBusyId === card.id}
+                      onInterest={onInterest}
                     />
                   </li>
                 ))}
@@ -284,6 +305,25 @@ export function RealEstateBoard({
         {requestError ? (
           <p className="mt-4 text-[0.95rem] text-[var(--ba-error)]" role="alert">
             Could not send the request. Retry.
+          </p>
+        ) : null}
+        {interestLoadError ? (
+          <div className="mt-4" role="alert">
+            <p className="text-[0.95rem] text-[var(--ba-error)]">{copy.club.loadError}</p>
+            {onRetryInterest ? (
+              <button
+                type="button"
+                onClick={onRetryInterest}
+                className="mt-2 inline-flex min-h-11 items-center text-[0.75rem] font-semibold tracking-[0.08em] text-[var(--ba-indigo)] uppercase"
+              >
+                {copy.retry}
+              </button>
+            ) : null}
+          </div>
+        ) : null}
+        {interestError ? (
+          <p className="mt-4 text-[0.95rem] text-[var(--ba-error)]" role="alert">
+            {copy.club.error}
           </p>
         ) : null}
       </div>

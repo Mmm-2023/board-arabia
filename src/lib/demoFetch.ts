@@ -10,6 +10,7 @@ import {
 import { presentHomeActivityList, type HomeActivity } from './homeSnapshot'
 import { presentMandateList, type MandateCardModel } from './mandateRedaction'
 import { parseReAppetite, type ReAppetite } from './reAppetite'
+import { parseMyReClubInterest } from './reClubInterest'
 import { presentReBoardRoleList, type ReBoardRoleCard } from './reBoardRoles'
 import {
   presentReOpportunityList,
@@ -34,6 +35,7 @@ import {
   requestMandateIntro as postMandateIntro,
   requestReBoardRoleIntro as postReRoleIntro,
   requestReOpportunityIntro as postReIntro,
+  expressReClubInterest as postReClubInterest,
   requestRePartnerIntro as postRePartnerIntro,
   supabase,
 } from './supabase'
@@ -169,6 +171,27 @@ async function loadRePartners(): Promise<DemoLoad<RePartnerCard[]> | { status: '
 
 export async function requestReOpportunityIntro(opportunityId: string): Promise<'ok' | 'error'> {
   return postReIntro(opportunityId)
+}
+
+export async function expressReClubInterest(opportunityId: string): Promise<'ok' | 'error'> {
+  return postReClubInterest(opportunityId)
+}
+
+export type ReClubInterestLoad =
+  | { status: 'ready'; ids: string[] }
+  | { status: 'error' }
+  | { status: 'denied' }
+  | { status: 'unavailable' }
+
+export async function fetchMyReClubInterest(): Promise<ReClubInterestLoad> {
+  const { data, error } = await supabase.rpc('my_re_club_interest')
+  if (error) {
+    if (schemaMissing(error.message)) return { status: 'unavailable' }
+    const code = 'code' in error ? String(error.code) : ''
+    if (code === '42501' || /not_allowed/i.test(error.message)) return { status: 'denied' }
+    return { status: 'error' }
+  }
+  return { status: 'ready', ids: parseMyReClubInterest(data) }
 }
 
 export type ReAppetiteLoad =

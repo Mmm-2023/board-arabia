@@ -1,7 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import {
+  expressReClubInterest,
   fetchMyReAppetite,
+  fetchMyReClubInterest,
   fetchReBoardRoles,
   fetchReOpportunities,
   fetchRePartners,
@@ -36,6 +38,8 @@ type RoleState =
   | { status: 'denied' }
   | { status: 'ready'; cards: ReBoardRoleCard[] }
 
+type InterestState = 'loading' | 'ready' | 'error' | 'hidden'
+
 type AppetiteState =
   | { status: Exclude<ReAppetiteCardStatus, 'ready'> }
   | { status: 'ready'; value: ReAppetite | null }
@@ -65,6 +69,12 @@ export function RealEstatePage() {
   const [roleAttempt, setRoleAttempt] = useState(0)
   const [roleBusyId, setRoleBusyId] = useState<string | null>(null)
   const [roleRequestError, setRoleRequestError] = useState(false)
+  const [interestState, setInterestState] = useState<InterestState>('loading')
+  const [interestedIds, setInterestedIds] = useState<string[]>([])
+  const [interestAttempt, setInterestAttempt] = useState(0)
+  const [interestBusyId, setInterestBusyId] = useState<string | null>(null)
+  const [interestError, setInterestError] = useState(false)
+  const interestLock = useRef<string | null>(null)
   useNoIndex('Real Estate | Board Arabia')
 
   useEffect(() => {
@@ -126,6 +136,26 @@ export function RealEstatePage() {
 
   useEffect(() => {
     let cancelled = false
+    void fetchMyReClubInterest().then((result) => {
+      if (cancelled) return
+      if (result.status === 'ready') {
+        setInterestedIds(result.ids)
+        setInterestState('ready')
+        return
+      }
+      if (result.status === 'error') {
+        setInterestState('error')
+        return
+      }
+      setInterestState('hidden')
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [interestAttempt])
+
+  useEffect(() => {
+    let cancelled = false
     void fetchMyReAppetite().then((result) => {
       if (cancelled) return
       if (result.status === 'ready') {
@@ -144,6 +174,24 @@ export function RealEstatePage() {
     if (result.status !== 'ready') return 'error' as const
     setAppetite({ status: 'ready', value: result.appetite })
     return 'ok' as const
+  }
+
+  async function onInterest(id: string) {
+    if (interestLock.current) return
+    if (interestedIds.includes(id)) return
+    if (list.status === 'ready' && sampleRow(list.cards, id)) return
+    interestLock.current = id
+    setInterestError(false)
+    setInterestBusyId(id)
+    const outcome = await expressReClubInterest(id)
+    interestLock.current = null
+    setInterestBusyId(null)
+    if (outcome === 'error') {
+      setInterestError(true)
+      return
+    }
+    setInterestedIds((current) => (current.includes(id) ? current : [...current, id]))
+    setInterestState('ready')
   }
 
   async function onRequest(id: string) {
@@ -228,6 +276,18 @@ export function RealEstatePage() {
         setAppetiteAttempt((value) => value + 1)
       }}
       onSaveAppetite={onSaveAppetite}
+      showInterest={interestState !== 'hidden'}
+      interestPending={interestState === 'loading'}
+      interestedIds={interestedIds}
+      interestBusyId={interestBusyId}
+      interestError={interestError}
+      interestLoadError={interestState === 'error'}
+      onRetryInterest={() => {
+        setInterestError(false)
+        setInterestState('loading')
+        setInterestAttempt((value) => value + 1)
+      }}
+      onInterest={interestState === 'hidden' || interestState === 'loading' ? undefined : (id) => void onInterest(id)}
     />
   )
 }
