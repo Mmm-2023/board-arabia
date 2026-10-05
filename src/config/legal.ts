@@ -5,12 +5,10 @@ export const TERMS_LINK = '/terms'
 
 export const LEGAL_PENDING = {
   en: 'To be confirmed',
-  ar: 'قيد التأكيد',
 } as const
 
 export const EFFECTIVE_DATE = {
   en: '30 September 2026',
-  ar: '٣٠ سبتمبر ٢٠٢٦',
 } as const
 
 export type LegalLang = keyof typeof LEGAL_PENDING
@@ -40,11 +38,11 @@ function viteEnv(): Record<string, unknown> {
   return (import.meta.env as Record<string, unknown> | undefined) ?? {}
 }
 
-export function legalField(field: LegalField, lang: LegalLang): string {
+export function legalField(field: LegalField, _lang: LegalLang = 'en'): string {
   const override = envOverride?.[field]
   const raw = override !== undefined ? override : viteEnv()[ENV_NAME[field]]
   const value = typeof raw === 'string' ? raw.trim() : ''
-  return value || LEGAL_PENDING[lang]
+  return value || LEGAL_PENDING.en
 }
 
 /** Mailbox for the partner interest form. Set VITE_LEGAL_PARTNERS_EMAIL in the deploy environment. */

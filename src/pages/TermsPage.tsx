@@ -1,12 +1,11 @@
 import { MarketingLayout } from '../components/MarketingLayout'
-import { LegalTermsOrPrivacy } from '../components/LegalDocumentView'
-import { TERMS_AR } from '../content/legal/terms.ar'
+import { LegalDocumentView } from '../components/LegalDocumentView'
 import { TERMS_EN } from '../content/legal/terms.en'
 
 export function TermsPage() {
   return (
     <MarketingLayout path="/terms">
-      <LegalTermsOrPrivacy en={TERMS_EN} ar={TERMS_AR} pageId="terms" />
+      <LegalDocumentView doc={TERMS_EN} pageId="terms" />
     </MarketingLayout>
   )
 }

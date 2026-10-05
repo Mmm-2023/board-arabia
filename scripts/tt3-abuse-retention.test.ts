@@ -15,7 +15,7 @@ import {
   consentExpired,
   memberAnonymiseDue,
 } from '../supabase/functions/_shared/retention_plan.ts'
-import { PRIVACY_NOTICE_AR, PRIVACY_NOTICE_EN } from '../src/content/privacyNotice.ts'
+import { PRIVACY_NOTICE_EN } from '../src/content/privacyNotice.ts'
 import { STAFF_DESTINATIONS } from '../src/shell/destinations.ts'
 
 function read(rel: string) {
@@ -237,9 +237,7 @@ test('retention job rejects an unset secret, supports dry_run, and runs daily by
 
 test('privacy notice covers the account and tracking without the internal tier name', () => {
   const en = JSON.stringify(PRIVACY_NOTICE_EN)
-  const ar = JSON.stringify(PRIVACY_NOTICE_AR)
   assert.equal(/\bBasic\b/.test(en), false)
-  assert.equal(/\bBasic\b/.test(ar), false)
   assert.equal(en.includes('\u2014'), false)
   assert.equal(en.includes('\u2013'), false)
   assert.match(en, /delete that account yourself/)
@@ -247,7 +245,7 @@ test('privacy notice covers the account and tracking without the internal tier n
   assert.match(en, /90 days/)
   assert.match(en, /7 days/)
   assert.match(en, /Site analytics are not the membership file/)
-  assert.match(ar, /120/)
+  assert.equal(/[\u0600-\u06FF]/.test(en), false)
   assert.equal(PRIVACY_NOTICE_EN.sections.length, 9)
 })
 

@@ -7,7 +7,6 @@ import {
   type HistoryItem,
 } from '../../lib/dueDiligence'
 import { AiToolCardList } from '../../components/ai/AiToolCards'
-import { useSiteLanguage } from '../../components/SiteLanguage'
 import { readAiToolFrame, type AiToolFlags } from '../../lib/aiToolApi'
 import { AI_UI } from '../../lib/aiToolUi'
 import { recentReports, type RecentReportRow } from '../../lib/recentReports'
@@ -23,8 +22,7 @@ const FILE_LEFT = 'The report was removed, but the uploaded deck could not be de
 
 export function AiToolsHome() {
   const { userId } = useMember()
-  const { lang } = useSiteLanguage()
-  const ui = AI_UI[lang]
+  const ui = AI_UI
   const [flags, setFlags] = useState<AiToolFlags | null>(null)
   const [flagsError, setFlagsError] = useState(false)
   const [flagsAttempt, setFlagsAttempt] = useState(0)
@@ -112,7 +110,7 @@ export function AiToolsHome() {
   }
 
   return (
-    <div className="max-w-3xl pe-16" dir={lang === 'ar' ? 'rtl' : 'ltr'} lang={lang}>
+    <div className="max-w-3xl pe-16" dir="ltr" lang="en">
       <h1 className="font-display text-[2.2rem] font-bold tracking-[-0.03em]">{ui.hub}</h1>
       <p className="mt-3 max-w-xl text-[1rem] leading-relaxed text-ink/65">{ui.intro}</p>
       {flagsError ? (
@@ -125,7 +123,7 @@ export function AiToolsHome() {
           />
         </div>
       ) : null}
-      {flags ? <AiToolCardList flags={flags} lang={lang} /> : flagsError ? null : (
+      {flags ? <AiToolCardList flags={flags} /> : flagsError ? null : (
         <div className="mt-6">
           <CardSkeleton tone="member" label={ui.loadingTools} />
         </div>

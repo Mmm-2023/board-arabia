@@ -3,7 +3,6 @@ import { createRoot } from 'react-dom/client'
 import { MemoryRouter } from 'react-router-dom'
 import { Footer } from '../components/Footer'
 import { Nav } from '../components/Nav'
-import { SiteLanguageProvider } from '../components/SiteLanguage'
 import { PrivacyPage } from '../pages/PrivacyPage'
 import { RegisterScreen } from '../pages/apply/RegisterScreen'
 import { MembershipQueueView, type QueueRow } from '../pages/admin/MembershipDesk'
@@ -41,7 +40,7 @@ const closedRow: QueueRow = {
 function frame(path: string, node: ReactNode) {
   return (
     <MemoryRouter initialEntries={[path]}>
-      <SiteLanguageProvider>{node}</SiteLanguageProvider>
+      {node}
     </MemoryRouter>
   )
 }

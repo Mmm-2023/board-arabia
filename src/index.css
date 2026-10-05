@@ -1109,21 +1109,6 @@
   stroke-dasharray: 4 5;
 }
 
-/* Consent banner is always visible. It does not use ba-reveal or ba-motion. */
-.ba-consent[dir='rtl'],
-.ba-privacy[dir='rtl'],
-.ba-privacy[dir='rtl'] h1,
-.ba-privacy[dir='rtl'] h2,
-.ba-privacy[dir='rtl'] .font-display,
-.ba-privacy[dir='rtl'] .font-serif,
-.ba-legal[dir='rtl'],
-.ba-legal[dir='rtl'] h1,
-.ba-legal[dir='rtl'] h2,
-.ba-legal[dir='rtl'] .font-display,
-.ba-legal[dir='rtl'] .font-serif {
-  font-family: "Noto Naskh Arabic", "Noto Kufi Arabic", sans-serif;
-}
-
 .ba-legal {
   color: var(--ba-ink);
   overflow-wrap: anywhere;
@@ -1307,30 +1292,6 @@
   margin-inline: auto;
 }
 
-.ba-consent-langs {
-  display: flex;
-  gap: 0.75rem;
-  margin-bottom: 0.5rem;
-}
-
-.ba-consent-lang {
-  min-height: 44px;
-  padding: 0.25rem 0.25rem;
-  border: 0;
-  background: transparent;
-  color: var(--ba-muted);
-  font: inherit;
-  font-size: 0.875rem;
-  text-decoration: underline;
-  text-underline-offset: 3px;
-  cursor: pointer;
-}
-
-.ba-consent-lang[aria-pressed='true'] {
-  color: var(--ba-ink);
-  font-weight: 650;
-}
-
 .ba-consent-kicker {
   margin: 0;
   font-size: 0.75rem;
@@ -1373,8 +1334,7 @@
 }
 
 .ba-consent-choice:focus-visible,
-.ba-consent-notice:focus-visible,
-.ba-consent-lang:focus-visible {
+.ba-consent-notice:focus-visible {
   outline: 2px solid var(--ba-copper);
   outline-offset: 2px;
 }
@@ -1390,30 +1350,6 @@
   font-weight: 650;
   text-decoration: underline;
   text-underline-offset: 3px;
-}
-
-.ba-notice-switch {
-  display: flex;
-  gap: 0.75rem;
-  margin-bottom: 1rem;
-}
-
-.ba-notice-switch button {
-  min-height: 44px;
-  padding: 0.25rem 0;
-  border: 0;
-  background: transparent;
-  color: var(--ba-muted);
-  font: inherit;
-  font-size: 0.9375rem;
-  text-decoration: underline;
-  text-underline-offset: 3px;
-  cursor: pointer;
-}
-
-.ba-notice-switch button[aria-pressed='true'] {
-  color: var(--ba-ink);
-  font-weight: 650;
 }
 
 @media (max-width: 767px) {

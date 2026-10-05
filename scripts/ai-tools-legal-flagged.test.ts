@@ -22,7 +22,7 @@ import {
 import { guardAiText, guardStubOutput } from '../supabase/functions/ai-tool-job/tools/legal_guard.ts'
 import { pricingSenseCheckOutput } from '../supabase/functions/ai-tool-job/tools/pricing_sense_check.ts'
 import { termSheetReviewOutput } from '../supabase/functions/ai-tool-job/tools/term_sheet_review.ts'
-import { SHARED_WILL_NOT, SHARED_WILL_NOT_AR, renderToolCopy } from '../src/lib/aiToolCopy.ts'
+import { SHARED_WILL_NOT, renderToolCopy } from '../src/lib/aiToolCopy.ts'
 import { PRICING_FIXTURE, TERM_SHEET_FIXTURE } from './fixtures/legal-flagged.ts'
 
 const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..')
@@ -93,28 +93,7 @@ test('retention sweep covers term sheet and pricing uploads', () => {
   assert.match(read('supabase/functions/ai-tool-job/handle.ts'), /guardStubOutput/)
 })
 
-test('arabic will and will-not lines match the bullets file', () => {
-  const term = renderToolCopy('term_sheet_review', 'ar', SLOTS)
-  assert.deepEqual(term.will, [
-    'تلخّص البنود الرئيسية بلغة واضحة.',
-    'تُبرز البنود التي تبدو غير مألوفة مقارنة بالممارسات العامة في السوق.',
-    'تقترح أسئلة لتطرحها على محاميك.',
-  ])
-  assert.equal(term.willNot[0], 'لا تخبرك ما إذا كان عليك التوقيع أو الاستثمار أو التفاوض على أي بند.')
-  assert.equal(term.willNot[1], 'لا تقدّم رأياً قانونياً ولا تتحقق من قابلية النفاذ بموجب أي نظام.')
-  for (const line of SHARED_WILL_NOT_AR) assert.equal(term.willNot.includes(line), true, line)
-
-  const pricing = renderToolCopy('pricing_sense_check', 'ar', SLOTS)
-  assert.deepEqual(pricing.will, [
-    'تقارن الرقم المطلوب بشركات مماثلة معلنة وصفقات إقليمية منشورة.',
-    'تعرض النطاقات والمصادر التي استخدمتها.',
-    'توضّح أبرز أوجه القصور في المقارنة.',
-  ])
-  assert.equal(pricing.willNot[0], 'لا تقدّم رأياً في السعر أو سعراً مستهدفاً أو رأياً بشأن عدالة السعر.')
-  assert.equal(pricing.willNot[1], 'لا تحدّد ما إذا كان السعر مناسباً أو ما إذا كان عليك الاستثمار.')
-  assert.equal(pricing.willNot[2], 'لا تستخدم بيانات صفقات خاصة أو معلومات غير معلنة.')
-  for (const line of SHARED_WILL_NOT_AR) assert.equal(pricing.willNot.includes(line), true, line)
-
+test('will and will-not lines are English only', () => {
   const termEn = renderToolCopy('term_sheet_review', 'en', SLOTS)
   assert.equal(termEn.banner, 'An AI read of a term sheet. It flags terms that look unusual compared with common market practice so you know what to ask. It is not legal or investment advice.')
   assert.equal(termEn.will[0], 'Summarise the key terms in plain words.')
@@ -238,12 +217,11 @@ test('tool copy and prompts do not offer the banned product word', () => {
     assert.equal(text.includes('\u2013'), false, file)
   }
   for (const tool of ['term_sheet_review', 'pricing_sense_check'] as const) {
-    for (const lang of ['en', 'ar'] as const) {
-      const copy = renderToolCopy(tool, lang, SLOTS)
-      const blob = `${copy.title}\n${copy.banner}\n${copy.will.join('\n')}\n${copy.willNot.join('\n')}\n${copy.consent}\n${copy.footer}`
-      assert.equal(new RegExp(`\\b${PRICE_WORD}\\b`, 'i').test(blob), false, `${tool} ${lang}`)
-      assert.equal(blob.includes(AR_SERVICE), false, `${tool} ${lang}`)
-    }
+    const copy = renderToolCopy(tool, 'en', SLOTS)
+    const blob = `${copy.title}\n${copy.banner}\n${copy.will.join('\n')}\n${copy.willNot.join('\n')}\n${copy.consent}\n${copy.footer}`
+    assert.equal(new RegExp(`\\b${PRICE_WORD}\\b`, 'i').test(blob), false, tool)
+    assert.equal(blob.includes(AR_SERVICE), false, tool)
+    assert.equal(/[\u0600-\u06FF]/.test(blob), false, tool)
   }
 })
 

@@ -7,7 +7,6 @@ import {
   type AiToolKey,
 } from '../../../supabase/functions/_shared/ai_tools.ts'
 import { MarketSearchNotice } from '../../components/ai/MarketBriefForm'
-import { useSiteLanguage } from '../../components/SiteLanguage'
 import { readAiToolFrame, readMarketSearchStatus, saveAiToolFlag, saveAiToolRetention, type AiToolFlags } from '../../lib/aiToolApi'
 import { toneClasses } from '../../shell/ViewState'
 
@@ -19,7 +18,6 @@ export function AiToolSettingsPanel({
 }: {
   shot?: { retentionDays: number; flags: AiToolFlags; searchConfigured?: boolean }
 } = {}) {
-  const { lang } = useSiteLanguage()
   const styles = toneClasses('staff')
   const [days, setDays] = useState(String(shot?.retentionDays ?? AI_TOOL_RETENTION_DAYS_DEFAULT))
   const [flags, setFlags] = useState<AiToolFlags>(shot?.flags ?? { ...AI_TOOL_FLAG_DEFAULTS })
@@ -137,7 +135,7 @@ export function AiToolSettingsPanel({
           </li>
         ))}
       </ul>
-      {search === 'not_configured' ? <MarketSearchNotice lang={lang} /> : null}
+      {search === 'not_configured' ? <MarketSearchNotice /> : null}
       {search === 'error' ? (
         <p className="mt-4 text-[0.95rem] text-pearl/80" role="status">
           Could not check search. Retry.

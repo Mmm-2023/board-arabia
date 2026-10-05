@@ -17,7 +17,7 @@ import { engagementSnapshot, noteVisibility, startEngagement } from '../src/lib/
 import { analyticsEnabled, posthogKey, preconsentMode, readAnalyticsConfig } from '../src/lib/tracking/flags.ts'
 import { applyStaffBrowserOptOut } from '../src/lib/tracking/staffOptOut.ts'
 import { memoryTouch, observeVisit, resetTouchMemory } from '../src/lib/tracking/touch.ts'
-import { CONSENT_COPY, PRIVACY_NOTICE_AR, PRIVACY_NOTICE_EN } from '../src/content/privacyNotice.ts'
+import { CONSENT_COPY, PRIVACY_NOTICE_EN } from '../src/content/privacyNotice.ts'
 import {
   setAnalyticsConsentForTests,
   setAnalyticsEnabledForTests,
@@ -386,16 +386,14 @@ test('track matches the PR 85 call site and stays dark without the flag', () => 
   assert.match(source('src/lib/analytics.ts'), /VITE_ANALYTICS_ENABLED/)
 })
 
-test('banner and notice copy is bilingual, equal weight, and has no dashes', () => {
+test('banner and notice copy is English only and has no dashes', () => {
   assert.equal(
-    CONSENT_COPY.en.body,
+    CONSENT_COPY.body,
     'We use analytics to understand how boardarabia.com is used and to improve it. With your permission we set cookies to measure visits, time on page and which campaigns brought you here. Without it we only count anonymous visits. Data is hosted in Frankfurt, Germany.',
   )
-  assert.match(CONSENT_COPY.ar.body, /فرانكفورت/)
-  assert.equal(CONSENT_COPY.en.accept, 'Accept')
-  assert.equal(CONSENT_COPY.en.reject, 'Reject')
-  assert.equal(CONSENT_COPY.ar.accept, 'موافق')
-  assert.equal(CONSENT_COPY.ar.reject, 'رفض')
+  assert.equal(CONSENT_COPY.accept, 'Accept')
+  assert.equal(CONSENT_COPY.reject, 'Reject')
+  assert.equal(/[\u0600-\u06FF]/.test(JSON.stringify(CONSENT_COPY)), false)
   const banner = source('src/components/ConsentBanner.tsx')
   const choiceUses = banner.match(/className="ba-consent-choice"/g) ?? []
   assert.equal(choiceUses.length, 2)
@@ -417,21 +415,16 @@ test('banner and notice copy is bilingual, equal weight, and has no dashes', () 
     assert.equal(file.includes('\u2013'), false)
   }
   assert.equal(PRIVACY_NOTICE_EN.sections.length, 9)
-  assert.equal(PRIVACY_NOTICE_AR.sections.length, 9)
   const en = JSON.stringify(PRIVACY_NOTICE_EN)
-  const ar = JSON.stringify(PRIVACY_NOTICE_AR)
-  for (const text of [en, ar]) {
-    assert.match(text, /\[BOARD ARABIA LEGAL ENTITY\]/)
-    assert.match(text, /\[TO CONFIRM\]/)
-    assert.match(text, /\[TRANSFER SAFEGUARDS TO CONFIRM\]/)
-    assert.match(text, /PostHog/)
-    assert.match(text, /Supabase/)
-    assert.match(text, /120/)
-    assert.match(text, /13/)
-  }
+  assert.match(en, /\[BOARD ARABIA LEGAL ENTITY\]/)
+  assert.match(en, /\[TO CONFIRM\]/)
+  assert.match(en, /\[TRANSFER SAFEGUARDS TO CONFIRM\]/)
+  assert.match(en, /PostHog/)
+  assert.match(en, /Supabase/)
+  assert.match(en, /120/)
+  assert.match(en, /13/)
   assert.match(en, /SDAIA/)
-  assert.match(ar, /سدايا/)
-  assert.match(ar, /فرانكفورت/)
+  assert.equal(/[\u0600-\u06FF]/.test(source('src/content/privacyNotice.ts')), false)
   assert.equal(source('index.html').toLowerCase().includes('posthog'), false)
 })
 

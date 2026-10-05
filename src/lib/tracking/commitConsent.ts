@@ -9,7 +9,7 @@ import {
 } from './consent.ts'
 import { clearAttributionStorage, persistAcceptedTouch, rememberAnalyticsId, resetTouchMemory } from './touch.ts'
 
-export async function commitConsent(choice: ConsentChoice, language: 'en' | 'ar') {
+export async function commitConsent(choice: ConsentChoice, language: 'en') {
   if (typeof document === 'undefined') return
   const now = Date.now()
   const consentId = crypto.randomUUID()
@@ -61,7 +61,7 @@ async function postConsentLog(body: {
   choice: ConsentChoice
   banner_version: string
   notice_version: string
-  language: 'en' | 'ar'
+  language: 'en'
 }) {
   const base = String(import.meta.env?.VITE_SUPABASE_URL || '').replace(/\/$/, '')
   const anon = String(import.meta.env?.VITE_SUPABASE_ANON_KEY || '')

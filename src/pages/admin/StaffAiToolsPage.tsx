@@ -5,7 +5,6 @@ import { AiToolCardList } from '../../components/ai/AiToolCards'
 import { AiToolForm, AiToolShell } from '../../components/ai/AiToolDesk'
 import { MarketBriefForm, MarketSearchNotice } from '../../components/ai/MarketBriefForm'
 import { isMarketSector, type MarketSector } from '../../../supabase/functions/ai-tool-job/tools/market_brief.ts'
-import { useSiteLanguage } from '../../components/SiteLanguage'
 import { readAiToolFrame, readMarketSearchStatus, type AiToolFlags } from '../../lib/aiToolApi'
 import { legalSlotsFromEnv } from '../../lib/aiToolConfig'
 import { renderToolCopy } from '../../lib/aiToolCopy'
@@ -14,8 +13,7 @@ import { useNoIndex } from '../../lib/usePageTitle'
 import { ErrorBanner, FormSkeleton } from '../../shell/ViewState'
 
 export function StaffAiToolsPage() {
-  const { lang } = useSiteLanguage()
-  const ui = AI_UI[lang]
+  const ui = AI_UI
   const [flags, setFlags] = useState<AiToolFlags | null>(null)
   const [error, setError] = useState(false)
   const [attempt, setAttempt] = useState(0)
@@ -39,7 +37,7 @@ export function StaffAiToolsPage() {
   }, [attempt])
 
   return (
-    <div className="max-w-3xl pe-16" dir={lang === 'ar' ? 'rtl' : 'ltr'} lang={lang}>
+    <div className="max-w-3xl pe-16" dir="ltr" lang="en">
       <h1 className="font-display text-[2rem] font-semibold tracking-[-0.03em]">{ui.hub}</h1>
       <p className="mt-3 text-[1rem] leading-relaxed text-pearl/80">{ui.staffPreview}</p>
       {error ? (
@@ -48,7 +46,7 @@ export function StaffAiToolsPage() {
         </div>
       ) : null}
       {flags ? (
-        <AiToolCardList flags={flags} preview lang={lang} />
+        <AiToolCardList flags={flags} preview />
       ) : (
         <div className="mt-6">
           <FormSkeleton tone="staff" />
@@ -61,8 +59,7 @@ export function StaffAiToolsPage() {
 export function StaffAiToolPage() {
   const { toolSlug } = useParams()
   const tool = toolFromSlug(toolSlug)
-  const { lang } = useSiteLanguage()
-  const ui = AI_UI[lang]
+  const ui = AI_UI
   const [flags, setFlags] = useState<AiToolFlags>({ ...AI_TOOL_FLAG_DEFAULTS })
   const [sector, setSector] = useState<MarketSector | ''>('')
   const [search, setSearch] = useState<'loading' | 'ready' | 'not_configured' | 'error'>(
@@ -93,12 +90,12 @@ export function StaffAiToolPage() {
     return <p className="text-pearl/80">{ui.unavailable}</p>
   }
 
-  const copy = renderToolCopy(tool, lang, legalSlotsFromEnv(30, formatReportDate(new Date()), lang))
+  const copy = renderToolCopy(tool, legalSlotsFromEnv(30, formatReportDate(new Date())))
   const on = flags[tool]
   const market = tool === 'market_brief'
   return (
-    <div className={lang === 'ar' ? 'text-pearl' : ''}>
-      <AiToolShell lang={lang} title={copy.title} staffPreview={!on}>
+    <div>
+      <AiToolShell title={copy.title} staffPreview={!on}>
         <p className="mb-4">
           <Link to="/admin/ai" className="inline-flex min-h-11 items-center text-[0.95rem] font-semibold text-[var(--ba-lavender)]">
             {ui.allTools}
@@ -106,7 +103,7 @@ export function StaffAiToolPage() {
         </p>
         <div className="w-full bg-pearl p-4 text-ink">
           {market && search === 'loading' ? <FormSkeleton tone="member" /> : null}
-          {market && search === 'not_configured' ? <MarketSearchNotice lang={lang} surface="tool" /> : null}
+          {market && search === 'not_configured' ? <MarketSearchNotice surface="tool" /> : null}
           {market && search === 'error' ? (
             <p className="text-[0.98rem] text-ink/70" role="status">
               Could not check search. Retry.
@@ -115,7 +112,6 @@ export function StaffAiToolPage() {
           {market && search === 'ready' ? (
             <MarketBriefForm
               copy={copy}
-              lang={lang}
               sector={sector}
               consented={false}
               busy={!on}
@@ -129,7 +125,6 @@ export function StaffAiToolPage() {
           {!market ? (
             <AiToolForm
               copy={copy}
-              lang={lang}
               consented={false}
               fileName=""
               busy={!on}
