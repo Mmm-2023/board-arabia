@@ -7,7 +7,6 @@ import { AiToolReport, AiToolShell } from '../../src/components/ai/AiToolDesk'
 import { MarketBriefForm } from '../../src/components/ai/MarketBriefForm'
 import { PRIVACY_LINK, TERMS_LINK } from '../../src/lib/aiToolConfig'
 import { renderToolCopy, type LegalSlots } from '../../src/lib/aiToolCopy'
-import { AI_UI } from '../../src/lib/aiToolUi'
 import { AiToolSettingsPanel } from '../../src/pages/admin/AiToolSettingsPanel'
 import { AppShell } from '../../src/shell/AppShell'
 import { MEMBER_ACCOUNT, MEMBER_DESTINATIONS, STAFF_DESTINATIONS, STAFF_SECONDARY } from '../../src/shell/destinations'
@@ -26,16 +25,11 @@ const slots: LegalSlots = {
 
 const view = new URLSearchParams(window.location.search).get('view') || 'tool-en'
 
-function memberNav(lang: 'en' | 'ar') {
-  if (lang !== 'ar') return MEMBER_DESTINATIONS
-  return MEMBER_DESTINATIONS.map((item) => (item.id === 'ai' ? { ...item, label: AI_UI.ar.hub } : item))
-}
-
-function memberShell(node: ReactNode, lang: 'en' | 'ar' = 'en') {
+function memberShell(node: ReactNode) {
   return (
     <AppShell
       tone="member"
-      destinations={memberNav(lang)}
+      destinations={MEMBER_DESTINATIONS}
       secondary={MEMBER_ACCOUNT}
       updatedLabel="Updated 09:00"
       roleSwitch={null}
@@ -65,13 +59,12 @@ function staffShell(node: ReactNode) {
   )
 }
 
-function toolPage(lang: 'en' | 'ar') {
-  const copy = renderToolCopy('market_brief', lang, slots)
+function toolPage() {
+  const copy = renderToolCopy('market_brief', 'en', slots)
   return memberShell(
-    <AiToolShell lang={lang} title={copy.title}>
+    <AiToolShell title={copy.title}>
       <MarketBriefForm
         copy={copy}
-        lang={lang}
         sector="Health"
         consented={false}
         busy={false}
@@ -80,22 +73,20 @@ function toolPage(lang: 'en' | 'ar') {
         onRun={() => undefined}
       />
     </AiToolShell>,
-    lang,
   )
 }
 
-function report(lang: 'en' | 'ar') {
+function report() {
   const output = buildMarketBrief({
     sector: 'Health',
     hits: MARKET_SEARCH_FIXTURE,
     generatedOn: '30 Sep 2026',
-    lang,
+    lang: 'en',
   })
-  const copy = renderToolCopy('market_brief', lang, { ...slots, date: output.generated_on })
+  const copy = renderToolCopy('market_brief', 'en', { ...slots, date: output.generated_on })
   return memberShell(
-    <AiToolShell lang={lang} title={copy.title}>
+    <AiToolShell title={copy.title}>
       <AiToolReport
-        lang={lang}
         heading={copy.title}
         output={output}
         footerLead={copy.footerLead}
@@ -103,7 +94,6 @@ function report(lang: 'en' | 'ar') {
         onDelete={() => undefined}
       />
     </AiToolShell>,
-    lang,
   )
 }
 
@@ -130,12 +120,12 @@ function staffSearch() {
 }
 
 function screen() {
-  if (view === 'tool-ar') return toolPage('ar')
-  if (view === 'report-en') return report('en')
-  if (view === 'report-ar') return report('ar')
+  if (view === 'tool-ar') return toolPage()
+  if (view === 'report-en') return report()
+  if (view === 'report-ar') return report()
   if (view === 'settings') return settings()
   if (view === 'staff-search') return staffSearch()
-  return toolPage('en')
+  return toolPage()
 }
 
 const entry = view === 'settings' || view === 'staff-search' ? '/admin/settings' : '/dashboard/ai/market-brief'

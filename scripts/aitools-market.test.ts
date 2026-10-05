@@ -21,7 +21,7 @@ import {
   type MarketSearchHit,
 } from '../supabase/functions/ai-tool-job/tools/market_brief.ts'
 import { hitsFromSearchBody, searchMarketSector, sourceDateFromPageAge } from '../supabase/functions/ai-tool-job/tools/market_search.ts'
-import { SHARED_WILL_NOT, SHARED_WILL_NOT_AR, renderToolCopy } from '../src/lib/aiToolCopy.ts'
+import { SHARED_WILL_NOT, renderToolCopy } from '../src/lib/aiToolCopy.ts'
 import { MARKET_SEARCH_FIXTURE } from './fixtures/market-brief-search.ts'
 
 const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..')
@@ -133,30 +133,19 @@ test('market brief flag stays off', () => {
   assert.equal(isMarketSector('Not a sector'), false)
 })
 
-test('market brief Arabic will lines are the bullet file, including shared lines', () => {
-  const copy = renderToolCopy('market_brief', 'ar', slots)
-  assert.deepEqual(copy.will, [
-    'تستعرض التراخيص الشائعة، ومسائل الملكية الأجنبية والشريك المحلي، والتوطين (نطاقات)، والحوافز المتاحة لقطاعك.',
-    'ترفق روابط المصادر العامة التي استخدمتها.',
-    'تسرد أسئلة لتطرحها على محامٍ سعودي ووزارة الاستثمار.',
-  ])
-  assert.deepEqual(copy.willNot.slice(0, 2), [
-    'لا تؤكد ما ينطبق على حالتك تحديداً.',
-    'لا تغني عن محامٍ سعودي مرخّص أو مستشار ضريبي أو الجهة الحكومية المختصة.',
-  ])
-  assert.deepEqual(copy.willNot.slice(2), [...SHARED_WILL_NOT_AR])
+test('market brief will lines are English only, including shared lines', () => {
   const english = renderToolCopy('market_brief', 'en', slots)
   assert.equal(
     english.will[0],
     'Outline common licences, foreign ownership and local partner points, Saudization (Nitaqat) and incentives for your sector.',
   )
   assert.equal(english.willNot.includes(SHARED_WILL_NOT[0]), true)
-  assert.equal(english.willNot.includes(SHARED_WILL_NOT_AR[0]), false)
-  const cfo = renderToolCopy('cfo_check', 'ar', slots)
-  assert.deepEqual(cfo.willNot.slice(-SHARED_WILL_NOT_AR.length), [...SHARED_WILL_NOT_AR])
-  assert.equal(cfo.willNot.includes(SHARED_WILL_NOT[0]), false)
+  assert.equal(/[\u0600-\u06FF]/.test(JSON.stringify(english)), false)
+  const cfo = renderToolCopy('cfo_check', 'en', slots)
+  assert.equal(cfo.willNot.includes(SHARED_WILL_NOT[0]), true)
   const source = read('src/lib/aiToolCopy.ts')
-  assert.equal(source.split('export const SHARED_WILL_NOT_AR').length - 1, 1)
+  assert.equal(source.includes('SHARED_WILL_NOT_AR'), false)
+  assert.equal(/[\u0600-\u06FF]/.test(source), false)
 })
 
 test('a brief is built only from dated fixture hits', () => {
@@ -388,7 +377,6 @@ test('market form, unavailable state, and staff search notice', async () => {
     const copyMod = await vite.ssrLoadModule('/src/lib/aiToolCopy.ts')
     const brief = await vite.ssrLoadModule('/supabase/functions/ai-tool-job/tools/market_brief.ts')
     const copy = copyMod.renderToolCopy('market_brief', 'en', slots)
-    const arabic = copyMod.renderToolCopy('market_brief', 'ar', slots)
     const locked = renderToStaticMarkup(
       createElement(
         MemoryRouter,
@@ -425,13 +413,12 @@ test('market form, unavailable state, and staff search notice', async () => {
       ),
     )
     assert.match(open, /data-ai-run="on"/)
-    const arabicHtml = renderToStaticMarkup(
+    const englishForm = renderToStaticMarkup(
       createElement(
         MemoryRouter,
         null,
         createElement(formMod.MarketBriefForm, {
-          copy: arabic,
-          lang: 'ar',
+          copy,
           sector: '',
           consented: false,
           busy: false,
@@ -441,20 +428,21 @@ test('market form, unavailable state, and staff search notice', async () => {
         }),
       ),
     )
-    assert.match(arabicHtml, /تستعرض التراخيص الشائعة/)
-    assert.match(arabicHtml, /لا تضمن دقة نتائجها أو اكتمالها أو حداثتها/)
-    assert.equal(arabicHtml.includes('search not configured'), false)
-    const unavailable = renderToStaticMarkup(createElement(formMod.MarketUnavailable, { lang: 'en' }))
+    assert.match(englishForm, /Outline common licences/)
+    assert.match(englishForm, /Guarantee that its output is accurate, complete or current/)
+    assert.equal(/[\u0600-\u06FF]/.test(englishForm), false)
+    assert.equal(englishForm.includes('dir="rtl"'), false)
+    assert.equal(englishForm.includes('search not configured'), false)
+    const unavailable = renderToStaticMarkup(createElement(formMod.MarketUnavailable))
     assert.match(unavailable, /This brief is not available right now/)
     assert.match(unavailable, /Nothing was generated/)
     assert.equal(unavailable.includes('search not configured'), false)
     assert.equal(unavailable.includes('example.com'), false)
-  const notice = renderToStaticMarkup(createElement(formMod.MarketSearchNotice, { lang: 'en' }))
+  const notice = renderToStaticMarkup(createElement(formMod.MarketSearchNotice))
   assert.match(notice, /Search is not set up yet\. Market brief needs the search key before it can run\./)
   assert.match(notice, /class="[^"]*w-full/)
-  const noticeAr = renderToStaticMarkup(createElement(formMod.MarketSearchNotice, { lang: 'ar' }))
-  assert.match(noticeAr, /البحث غير مُعد بعد\. يحتاج موجز السوق إلى مفتاح البحث قبل أن يعمل\./)
-  assert.equal(arabicHtml.includes('Search is not set up yet'), false)
+  assert.equal(/[\u0600-\u06FF]/.test(notice), false)
+  assert.equal(englishForm.includes('Search is not set up yet'), false)
   assert.equal(unavailable.includes('Search is not set up yet'), false)
     const output = brief.buildMarketBrief({
       sector: 'Health',
@@ -487,7 +475,7 @@ test('market form, unavailable state, and staff search notice', async () => {
     assert.match(panel, /Off for members/)
     assert.match(panel, /Search is not set up yet/)
     assert.match(panel, /w-full/)
-    assert.equal(/\bvaluation\b/i.test(locked + arabicHtml + report + panel), false)
+    assert.equal(/\bvaluation\b/i.test(locked + englishForm + report + panel), false)
   } finally {
     await vite.close()
   }
@@ -513,10 +501,10 @@ test('an Arabic run writes Arabic findings, questions, and the disclaimer', asyn
   assert.equal(output.sources[0]?.title, MARKET_SEARCH_FIXTURE[0]?.title)
   assert.equal(output.sources[0]?.dated, '١٥ يناير ٢٠٢٦')
   assert.equal(output.generated_on, '٣٠ سبتمبر ٢٠٢٦')
-  const footer = renderToolCopy('market_brief', 'ar', { ...slots, date: output.generated_on })
-  assert.match(footer.footerLead, /موجز دخول السوق السعودي\. مبني على مصادر عامة حتى تاريخ ٣٠ سبتمبر ٢٠٢٦/)
-  assert.match(footer.footer, /أُعدّ هذا التقرير بالذكاء الاصطناعي/)
-  assert.equal(/[A-Za-z]{2,}(?:\s+[A-Za-z]{2,})+/.test(footer.footerLead), false)
+  const footer = renderToolCopy('market_brief', 'en', { ...slots, date: '30 Sep 2026' })
+  assert.match(footer.footerLead, /Saudi market entry brief\. Based on public sources as at 30 Sep 2026/)
+  assert.match(footer.footer, /Generated by AI/)
+  assert.equal(/[\u0600-\u06FF]/.test(footer.footer), false)
 
   const { store, consents } = memoryStore(true)
   consents.set(JOB, consent('market_brief'))

@@ -36,7 +36,7 @@ const emptyPricing = {
 
 const view = new URLSearchParams(window.location.search).get('view') || 'term-en'
 
-function memberShell(node: ReactNode, lang: 'en' | 'ar' = 'en') {
+function memberShell(node: ReactNode) {
   return (
     <AppShell
       tone="member"
@@ -70,25 +70,22 @@ function staffShell(node: ReactNode) {
   )
 }
 
-function toolPage(tool: 'term_sheet_review' | 'pricing_sense_check', lang: 'en' | 'ar') {
-  const copy = renderToolCopy(tool, lang, slots)
+function toolPage(tool: 'term_sheet_review' | 'pricing_sense_check') {
+  const copy = renderToolCopy(tool, 'en', slots)
   return memberShell(
-    <AiToolShell lang={lang} title={copy.title}>
+    <AiToolShell title={copy.title}>
       <AiToolForm
         copy={copy}
-        lang={lang}
         consented={false}
         fileName={tool === 'term_sheet_review' ? 'example-term-sheet.txt' : ''}
         busy={false}
         inputsReady={tool === 'pricing_sense_check' ? false : undefined}
         extra={
           tool === 'pricing_sense_check' ? (
-            <PricingInputs draft={emptyPricing} lang={lang} onChange={() => undefined} />
+            <PricingInputs draft={emptyPricing} onChange={() => undefined} />
           ) : (
             <p className="mt-6 text-[0.95rem] leading-relaxed text-ink/70">
-              {lang === 'ar'
-                ? 'ملف نصي أوضح. ضع كل بند في سطر، مثل: Liquidation preference: 1x non-participating.'
-                : 'A text file works best. Put one term on each line, for example: Liquidation preference: 1x non-participating.'}
+              A text file works best. Put one term on each line, for example: Liquidation preference: 1x non-participating.
             </p>
           )
         }
@@ -97,12 +94,11 @@ function toolPage(tool: 'term_sheet_review' | 'pricing_sense_check', lang: 'en' 
         onRun={() => undefined}
       />
     </AiToolShell>,
-    lang,
   )
 }
 
-function report(tool: 'term_sheet_review' | 'pricing_sense_check', lang: 'en' | 'ar') {
-  const copy = renderToolCopy(tool, lang, slots)
+function report(tool: 'term_sheet_review' | 'pricing_sense_check') {
+  const copy = renderToolCopy(tool, 'en', slots)
   const output =
     tool === 'term_sheet_review'
       ? termSheetReviewOutput({
@@ -122,9 +118,8 @@ function report(tool: 'term_sheet_review' | 'pricing_sense_check', lang: 'en' | 
           mimeType: 'text/plain',
         })
   return memberShell(
-    <AiToolShell lang={lang} title={copy.title}>
+    <AiToolShell title={copy.title}>
       <AiToolReport
-        lang={lang}
         heading={copy.title}
         output={output}
         footerLead={copy.footerLead}
@@ -132,16 +127,15 @@ function report(tool: 'term_sheet_review' | 'pricing_sense_check', lang: 'en' | 
         onDelete={() => undefined}
       />
     </AiToolShell>,
-    lang,
   )
 }
 
 function screen() {
-  if (view === 'term-ar') return toolPage('term_sheet_review', 'ar')
-  if (view === 'term-report') return report('term_sheet_review', 'en')
-  if (view === 'pricing-en') return toolPage('pricing_sense_check', 'en')
-  if (view === 'pricing-ar') return toolPage('pricing_sense_check', 'ar')
-  if (view === 'pricing-report') return report('pricing_sense_check', 'en')
+  if (view === 'term-ar') return toolPage('term_sheet_review')
+  if (view === 'term-report') return report('term_sheet_review')
+  if (view === 'pricing-en') return toolPage('pricing_sense_check')
+  if (view === 'pricing-ar') return toolPage('pricing_sense_check')
+  if (view === 'pricing-report') return report('pricing_sense_check')
   if (view === 'settings') {
     return staffShell(
       <div className="max-w-3xl pe-16">
@@ -150,7 +144,7 @@ function screen() {
       </div>,
     )
   }
-  return toolPage('term_sheet_review', 'en')
+  return toolPage('term_sheet_review')
 }
 
 createRoot(document.getElementById('root')!).render(

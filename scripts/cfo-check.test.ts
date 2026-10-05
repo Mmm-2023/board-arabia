@@ -8,7 +8,7 @@ import { appendCfoModelQuestions, cfoCheckOutput } from '../supabase/functions/a
 import { buildExamplePdf, buildExampleXlsx, exampleCsv } from '../supabase/functions/ai-tool-job/tools/cfo_example.ts'
 import { readCfoFigures } from '../supabase/functions/ai-tool-job/tools/cfo_figures.ts'
 import { readCfoUpload } from '../supabase/functions/ai-tool-job/tools/cfo_read.ts'
-import { SHARED_WILL_NOT_AR, renderToolCopy } from '../src/lib/aiToolCopy.ts'
+import { renderToolCopy } from '../src/lib/aiToolCopy.ts'
 
 const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..')
 const USER = '11111111-1111-4111-8111-111111111111'
@@ -91,7 +91,7 @@ test('example.com csv, xlsx, and pdf fixtures compute the same figures', async (
   assert.equal(rebuilt.runwayMonths, 12)
 })
 
-test('arabic will and shared will-not lines are the bullets file verbatim', () => {
+test('cfo will and shared will-not lines are English only', () => {
   const slots = {
     entity: 'To be confirmed',
     cr: 'To be confirmed',
@@ -101,24 +101,20 @@ test('arabic will and shared will-not lines are the bullets file verbatim', () =
     retentionDays: 30,
     date: '30 Sep 2026',
   }
-  const arabic = renderToolCopy('cfo_check', 'ar', slots)
-  assert.deepEqual(arabic.will, [
-    'تقرأ الحسابات أو النموذج المالي الذي ترفعه.',
-    'تقدّر مدة التشغيل المتبقية والهوامش بناءً على أرقامك.',
-    'تُبرز نقاط الخطر المحتملة وأوجه عدم الاتساق.',
-    'تقترح أسئلة لتطرحها على مديرك المالي أو مراجع حساباتك.',
-  ])
-  assert.deepEqual(arabic.willNot.slice(0, 2), [
-    'لا تدقّق الحسابات أو تراجعها أو تعتمدها، ولا تتحقق من مطابقتها للمعايير الدولية لإعداد التقارير المالية أو معايير الهيئة السعودية للمراجعين والمحاسبين.',
-    'لا تتحقق من صحة أرقامك.',
-  ])
-  assert.deepEqual(arabic.willNot.slice(2), [...SHARED_WILL_NOT_AR])
   const english = renderToolCopy('cfo_check', 'en', slots)
+  assert.deepEqual(english.will, [
+    'Read the accounts or model you upload.',
+    'Estimate runway and margins from your figures.',
+    'Flag possible red flags and inconsistencies.',
+    'Suggest questions to ask your CFO or auditor.',
+  ])
   assert.equal(english.willNot.includes('Audit, review or certify accounts, or check them against IFRS or SOCPA standards.'), true)
   assert.equal(english.willNot.includes('Give legal, financial, investment, tax or accounting advice.'), true)
+  assert.equal(/[\u0600-\u06FF]/.test(JSON.stringify(english)), false)
   const page = read('src/pages/dashboard/AiToolPage.tsx')
   assert.match(page, /PDF, CSV, or XLSX/)
   assert.match(page, /acceptCfoFile/)
+  assert.equal(/[\u0600-\u06FF]/.test(page), false)
 })
 
 test('cfo job reads the upload and refuses a document file', async () => {

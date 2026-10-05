@@ -33,9 +33,7 @@ const chrome = spawn(
 
 const shots = [
   ['tool-en', 'aitools-cfo-tool-en', 'not accounting, audit or financial advice'],
-  ['tool-ar', 'aitools-cfo-tool-ar', 'ليست استشارة محاسبية'],
   ['report-en', 'aitools-cfo-report-en', 'not socpa accounting or audit'],
-  ['report-ar', 'aitools-cfo-report-ar', '1,700,000'],
   ['settings', 'aitools-cfo-settings', 'off for members'],
 ]
 

@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { readdirSync, readFileSync, statSync } from 'node:fs'
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import path from 'node:path'
 import { describe, test } from 'node:test'
 import { createElement } from 'react'
@@ -18,10 +18,9 @@ import {
   readAiUploads30DayRetention,
   setLegalEnvForTests,
 } from '../src/config/legal.ts'
-import { PRIVACY_AR } from '../src/content/legal/privacy.ar.ts'
+import { englishPath } from '../src/lib/englishPath.ts'
 import { PRIVACY_EN } from '../src/content/legal/privacy.en.ts'
 import { legalPlainText, resolveLegalDocument } from '../src/content/legal/resolve.ts'
-import { TERMS_AR } from '../src/content/legal/terms.ar.ts'
 import { TERMS_EN } from '../src/content/legal/terms.en.ts'
 const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..')
 
@@ -36,9 +35,7 @@ const ALLOWED_BRACKETS = new Set([
 
 const DOCS = [
   ['terms', 'en', TERMS_EN],
-  ['terms', 'ar', TERMS_AR],
   ['privacy', 'en', PRIVACY_EN],
-  ['privacy', 'ar', PRIVACY_AR],
 ] as const
 
 function read(rel: string) {
@@ -71,12 +68,7 @@ const DRAFTING_MARKERS = [
   'to confirm',
   'Not legal sign-off',
   'draft replacement',
-  'محامٍ سعودي',
-  'محام سعودي',
-  'نص بديل مقترح',
   'DRAFT',
-  'مسودة)',
-  '(مسودة',
 ]
 
 /** Privacy 11.2 asks the person to confirm their identity. That is not a drafting note. */
@@ -88,17 +80,9 @@ function draftingMarkerHits(text: string) {
   })
 }
 
-function pageHtml(
-  Provider: (props: { children?: ReturnType<typeof createElement> }) => ReturnType<typeof createElement>,
-  View: () => ReturnType<typeof createElement>,
-  route: string,
-) {
+function pageHtml(View: () => ReturnType<typeof createElement>, route: string) {
   return renderToStaticMarkup(
-    createElement(
-      MemoryRouter,
-      { initialEntries: [route] },
-      createElement(Provider, null, createElement(View)),
-    ),
+    createElement(MemoryRouter, { initialEntries: [route] }, createElement(View)),
   )
 }
 
@@ -116,16 +100,17 @@ test('legal config defaults, links, and the 30 day flag', () => {
   assert.equal(PRIVACY_LINK, '/privacy')
   assert.equal(TERMS_LINK, '/terms')
   assert.equal(EFFECTIVE_DATE.en, '30 September 2026')
-  assert.equal(EFFECTIVE_DATE.ar, '٣٠ سبتمبر ٢٠٢٦')
+  assert.equal('ar' in EFFECTIVE_DATE, false)
+  assert.equal('ar' in LEGAL_PENDING, false)
   setLegalEnvForTests(null)
   assert.equal(legalField('baEntity', 'en'), LEGAL_PENDING.en)
-  assert.equal(legalField('dpoContact', 'ar'), LEGAL_PENDING.ar)
+  assert.equal(legalField('dpoContact', 'en'), LEGAL_PENDING.en)
   assert.equal(PARTNERS_EMAIL('en'), 'To be confirmed')
-  assert.equal(SERVICE_EMAIL('ar'), 'قيد التأكيد')
+  assert.equal(SERVICE_EMAIL('en'), 'To be confirmed')
   setLegalEnvForTests({ partnersEmail: 'partners@example.com', serviceEmail: 'service@example.com' })
   try {
     assert.equal(PARTNERS_EMAIL('en'), 'partners@example.com')
-    assert.equal(SERVICE_EMAIL('ar'), 'service@example.com')
+    assert.equal(SERVICE_EMAIL('en'), 'service@example.com')
   } finally {
     setLegalEnvForTests(null)
   }
@@ -158,7 +143,6 @@ test('rendered legal copy has no drafting brackets and both retention states', (
       assert.deepEqual(draftingLeft(text), [], `${name} ${lang} ${retention30} text`)
       assert.deepEqual(draftingMarkerHits(text), [], `${name} ${lang} ${retention30}`)
       assert.equal(text.includes('Drafting note'), false, `${name} ${lang}`)
-      assert.equal(text.includes('ملاحظة صياغة'), false)
       assert.equal(text.includes('[EFFECTIVE DATE]'), false)
       assert.equal(text.includes(EFFECTIVE_DATE[lang]), true, `${name} ${lang}`)
       assert.equal(text.includes(LEGAL_PENDING[lang]), true, `${name} ${lang}`)
@@ -173,25 +157,15 @@ test('rendered legal copy has no drafting brackets and both retention states', (
 
   const termsEnOff = legalPlainText(resolveLegalDocument(TERMS_EN, 'en', false))
   const termsEnOn = legalPlainText(resolveLegalDocument(TERMS_EN, 'en', true))
-  const termsArOff = legalPlainText(resolveLegalDocument(TERMS_AR, 'ar', false))
-  const termsArOn = legalPlainText(resolveLegalDocument(TERMS_AR, 'ar', true))
   assert.match(termsEnOff, /Uploads are kept while your account is active\. You can delete them at any time\./)
   assert.equal(termsEnOff.includes('kept for 30 days'), false)
   assert.match(termsEnOn, /Uploads are kept for 30 days and then deleted automatically\. You can delete them earlier at any time\./)
-  assert.match(termsArOff, /تُحفظ الملفات المرفوعة طوال نشاط حسابك\. ويمكنك حذفها في أي وقت\./)
-  assert.equal(termsArOff.includes('30 يوماً ثم تُحذف'), false)
-  assert.match(termsArOn, /وتُحفظ الملفات المرفوعة لمدة 30 يوماً ثم تُحذف تلقائياً\. ويمكنك حذفها قبل ذلك في أي وقت\./)
   assert.match(termsEnOff, /A credit is used as stated in the package\./)
   assert.equal(termsEnOff.includes('intro request is sent'), false)
-  assert.match(termsArOff, /ويُستخدم الرصيد كما هو مبيّن في الباقة\./)
-  assert.equal(termsArOff.includes('إرسال طلب التعارف'), false)
 
   const privacyEnOff = legalPlainText(resolveLegalDocument(PRIVACY_EN, 'en', false))
   const privacyEnOn = legalPlainText(resolveLegalDocument(PRIVACY_EN, 'en', true))
-  const privacyArOff = legalPlainText(resolveLegalDocument(PRIVACY_AR, 'ar', false))
-  const privacyArOn = legalPlainText(resolveLegalDocument(PRIVACY_AR, 'ar', true))
   assert.match(privacyEnOff, /opens a draft in your own mail app/)
-  assert.match(privacyArOff, /يفتح نموذج الشريك مسودة في تطبيق البريد/)
   assert.match(privacyEnOff, /We may ask you to confirm your identity/)
   assert.match(privacyEnOff, /Kept while your account is active; you can delete them at any time/)
   assert.match(privacyEnOff, /Retained while your account is active; you can delete at any time/)
@@ -199,10 +173,6 @@ test('rendered legal copy has no drafting brackets and both retention states', (
   assert.equal(privacyEnOff.includes('Deleted after 30 days'), false)
   assert.match(privacyEnOn, /Deleted after 30 days\. You can delete them earlier at any time/)
   assert.match(privacyEnOn, /Retained while your account is active; you can delete at any time/)
-  assert.match(privacyArOff, /تُحفظ طوال نشاط حسابك، ويمكنك حذفها في أي وقت\./)
-  assert.equal(privacyArOff.includes('تُحذف بعد 30 يوماً'), false)
-  assert.match(privacyArOn, /تُحذف بعد 30 يوماً، ويمكنك حذفها قبل ذلك في أي وقت/)
-  assert.match(privacyArOn, /تُحفظ طوال نشاط حسابك، ويمكنك حذفها في أي وقت\./)
 
   setLegalEnvForTests({
     partnersEmail: 'partners@example.com',
@@ -221,7 +191,7 @@ test('rendered legal copy has no drafting brackets and both retention states', (
   }
 })
 
-test('terms and privacy pages keep routes, anchors, toggle, and RTL', async () => {
+test('terms and privacy pages stay English, including stale Arabic links', async () => {
   const vite = await createServer({
     server: { middlewareMode: true, hmr: false },
     appType: 'custom',
@@ -229,27 +199,28 @@ test('terms and privacy pages keep routes, anchors, toggle, and RTL', async () =
   })
   try {
     const legal = await vite.ssrLoadModule('/src/config/legal.ts')
-    const language = await vite.ssrLoadModule('/src/components/SiteLanguage.tsx')
     const termsMod = await vite.ssrLoadModule('/src/pages/TermsPage.tsx')
     const privacyMod = await vite.ssrLoadModule('/src/pages/PrivacyPage.tsx')
-    const Provider = language.SiteLanguageProvider
     legal.setAiUploads30DayRetentionForTests(null)
-    const privacyDefault = pageHtml(Provider, privacyMod.PrivacyPage, '/privacy')
-    const termsDefault = pageHtml(Provider, termsMod.TermsPage, '/terms')
+    const privacyDefault = pageHtml(privacyMod.PrivacyPage, '/privacy')
+    const termsDefault = pageHtml(termsMod.TermsPage, '/terms')
     assert.match(privacyDefault, /data-ai-retention="30-day"/)
     assert.match(privacyDefault, /Deleted after 30 days/)
     assert.match(termsDefault, /data-ai-retention="30-day"/)
     assert.match(termsDefault, /kept for 30 days/)
     legal.setAiUploads30DayRetentionForTests(false)
-    const terms = pageHtml(Provider, termsMod.TermsPage, '/terms')
-    const termsAr = pageHtml(Provider, termsMod.TermsPage, '/terms?lang=ar')
-    const privacy = pageHtml(Provider, privacyMod.PrivacyPage, '/privacy')
-    const privacyAr = pageHtml(Provider, privacyMod.PrivacyPage, '/privacy?lang=ar')
+    const terms = pageHtml(termsMod.TermsPage, '/terms')
+    const termsAr = pageHtml(termsMod.TermsPage, '/terms?lang=ar')
+    const privacy = pageHtml(privacyMod.PrivacyPage, '/privacy')
+    const privacyAr = pageHtml(privacyMod.PrivacyPage, '/privacy?lang=ar')
     for (const html of [terms, termsAr, privacy, privacyAr]) {
       assert.match(html, /data-legal-doc="true"/)
-      assert.match(html, /ba-notice-switch/)
-      assert.match(html, /English/)
-      assert.match(html, /العربية/)
+      assert.match(html, /lang="en"/)
+      assert.match(html, /dir="ltr"/)
+      assert.equal(html.includes('ba-notice-switch'), false)
+      assert.equal(html.includes('dir="rtl"'), false)
+      assert.equal(html.includes('lang="ar"'), false)
+      assert.equal(/[\u0600-\u06FF]/.test(html), false)
       assert.equal(legalArticle(html).includes('Drafting note'), false)
       assert.deepEqual(draftingLeft(legalArticle(html)), [])
       assert.deepEqual(draftingMarkerHits(legalArticle(html)), [], html.slice(0, 80))
@@ -257,22 +228,24 @@ test('terms and privacy pages keep routes, anchors, toggle, and RTL', async () =
     assert.match(terms, /id="terms"/)
     assert.match(terms, /id="terms-title"/)
     assert.match(terms, /id="c-1-1"/)
-    assert.match(terms, /dir="ltr"/)
     assert.match(termsAr, /id="terms"/)
-    assert.match(termsAr, /dir="rtl"/)
-    assert.match(termsAr, /lang="ar"/)
+    assert.match(termsAr, /Board Arabia Terms of Membership/)
     assert.match(privacy, /id="privacy"/)
     assert.match(privacy, /id="retention"/)
     assert.match(privacy, /id="privacy-title"/)
     assert.match(privacy, /data-ai-retention="account"/)
-    assert.match(privacyAr, /dir="rtl"/)
     assert.match(privacyAr, /id="retention"/)
+    assert.match(privacyAr, /Board Arabia Privacy Notice/)
     assert.match(terms, /data-ai-retention="account"/)
     assert.equal(terms.includes('href="/register"'), false)
     assert.equal(privacy.includes('href="/register"'), false)
+    assert.deepEqual(englishPath('/terms', '?lang=ar'), { pathname: '/terms', search: '' })
+    assert.deepEqual(englishPath('/ar/privacy', '?lang=ar'), { pathname: '/privacy', search: '' })
+    assert.deepEqual(englishPath('/ar', ''), { pathname: '/', search: '' })
+    assert.equal(englishPath('/privacy', ''), null)
     legal.setAiUploads30DayRetentionForTests(true)
-    const termsOn = pageHtml(Provider, termsMod.TermsPage, '/terms')
-    const privacyOn = pageHtml(Provider, privacyMod.PrivacyPage, '/privacy')
+    const termsOn = pageHtml(termsMod.TermsPage, '/terms')
+    const privacyOn = pageHtml(privacyMod.PrivacyPage, '/privacy')
     assert.match(termsOn, /data-ai-retention="30-day"/)
     assert.match(termsOn, /kept for 30 days/)
     assert.match(privacyOn, /Deleted after 30 days/)
@@ -290,15 +263,28 @@ test('terms and privacy pages keep routes, anchors, toggle, and RTL', async () =
   }
 })
 
+test('website source has no Arabic script and no rtl locale', () => {
+  const files = walk(path.join(root, 'src')).filter((file) => /\.(ts|tsx|css)$/.test(file))
+  const hits: string[] = []
+  for (const file of files) {
+    const source = readFileSync(file, 'utf8')
+    if (/[\u0600-\u06FF]/.test(source) || source.includes('dir="rtl"') || source.includes("dir='rtl'") || source.includes('lang="ar"')) {
+      hits.push(path.relative(root, file))
+    }
+  }
+  assert.deepEqual(hits, [])
+  assert.equal(existsSync(path.join(root, 'src/components/SiteLanguage.tsx')), false)
+  assert.equal(existsSync(path.join(root, 'src/content/legal/privacy.ar.ts')), false)
+  assert.equal(existsSync(path.join(root, 'src/content/legal/terms.ar.ts')), false)
+})
+
 test('legal sources have no mailbox literal and no em or en dash', () => {
   const files = [
     'src/config/legal.ts',
     'src/content/legal/types.ts',
     'src/content/legal/resolve.ts',
     'src/content/legal/terms.en.ts',
-    'src/content/legal/terms.ar.ts',
     'src/content/legal/privacy.en.ts',
-    'src/content/legal/privacy.ar.ts',
     'src/components/LegalDocumentView.tsx',
     'src/pages/TermsPage.tsx',
     'src/pages/PrivacyPage.tsx',

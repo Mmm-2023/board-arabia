@@ -45,6 +45,7 @@ export function Seo({ path }: { path: MarketingPath }) {
     const url = canonicalUrl(page.path)
     document.title = title
     document.documentElement.lang = 'en'
+    document.documentElement.dir = 'ltr'
     upsertMeta('name', 'description', page.description)
     upsertMeta('name', 'robots', 'index, follow')
     upsertLink('canonical', url)

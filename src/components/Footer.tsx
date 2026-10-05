@@ -1,6 +1,5 @@
 import { Link } from 'react-router-dom'
 import { BrandLockup } from './BrandLockup'
-import { useSiteLanguage } from './SiteLanguage'
 import { MEMBER_LOGIN } from '../content/marketing'
 import { CONSENT_COPY } from '../content/privacyNotice'
 import { publicConsiderationCta } from '../lib/twoTierRegister'
@@ -23,7 +22,6 @@ function footerLinks() {
 }
 
 export function Footer() {
-  const { lang } = useSiteLanguage()
   const links = footerLinks()
   return (
     <footer className="border-t border-ink/10 bg-pearl">
@@ -62,7 +60,7 @@ export function Footer() {
                   className="ba-footer-link"
                   onClick={() => window.dispatchEvent(new Event('ba-open-consent'))}
                 >
-                  {CONSENT_COPY[lang].settings}
+                  {CONSENT_COPY.settings}
                 </button>
               </li>
             ) : null}

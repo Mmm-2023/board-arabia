@@ -6,7 +6,6 @@ import { fetchMyDealRooms } from '../../lib/dealRoomApi'
 import { stillMustSetPassword } from '../../lib/passwordSet'
 import { dealsNavCount } from '../../lib/dealRoomView'
 import { AppShell } from '../../shell/AppShell'
-import { useSiteLanguage } from '../../components/SiteLanguage'
 import { ACCOUNT_SHEET_LINKS, LOCKED_HUBS, MEMBER_ACCOUNT, MEMBER_DESTINATIONS, memberAccountLinks, staleBanner } from '../../shell/destinations'
 import { HomeSkeleton, PermissionState } from '../../shell/ViewState'
 import { REFRESH_ERROR } from '../../shell/viewCopy'
@@ -81,13 +80,7 @@ export function DashboardLayout() {
   const readyRef = useRef<MemberRoom | null>(null)
   const signingOut = useRef(false)
   const location = useLocation()
-  const { lang } = useSiteLanguage()
-  const memberNav =
-    lang === 'ar'
-      ? MEMBER_DESTINATIONS.map((item) =>
-          item.id === 'ai' ? { ...item, label: 'أدوات الذكاء الاصطناعي' } : item,
-        )
-      : MEMBER_DESTINATIONS
+  const memberNav = MEMBER_DESTINATIONS
   useNoIndex('Member dashboard | Board Arabia')
 
   const load = useCallback(async () => {

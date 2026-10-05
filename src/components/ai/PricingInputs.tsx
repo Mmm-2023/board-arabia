@@ -1,52 +1,33 @@
 import type { ReactNode } from 'react'
 import { digitsOnly, type PricingDraft } from '../../../supabase/functions/ai-tool-job/tools/pricing_format.ts'
-import type { UiLang } from '../../lib/aiToolUi'
 
 const fieldClass = 'mt-2 w-full min-h-11 border border-[var(--ba-line)] bg-white px-3 text-[1rem] text-ink'
 
 const COPY = {
-  en: {
-    legend: 'Pricing inputs',
-    hint: 'The check compares the asking figure with the public notes you supply. It does not say whether a figure is suitable.',
-    company: 'Company',
-    sector: 'Sector',
-    stage: 'Stage',
-    region: 'Region',
-    asking: 'Asking figure (SAR)',
-    revenue: 'Revenue, last twelve months (SAR)',
-    notes: 'Public notes',
-    notesHint: 'One note per line: title | https://... | date | price SAR low to high | multiple low to high',
-    optional: 'optional',
-    required: 'required',
-  },
-  ar: {
-    legend: 'مدخلات السعر',
-    hint: 'يقارن الفحص الرقم المطلوب بالملاحظات العامة التي ترفقها. ولا يقول ما إذا كان الرقم مناسباً.',
-    company: 'الشركة',
-    sector: 'القطاع',
-    stage: 'المرحلة',
-    region: 'المنطقة',
-    asking: 'الرقم المطلوب (ريال)',
-    revenue: 'الإيراد لآخر اثني عشر شهراً (ريال)',
-    notes: 'ملاحظات عامة',
-    notesHint: 'ملاحظة في كل سطر: العنوان | https://... | التاريخ | السعر من إلى | المضاعف من إلى',
-    optional: 'اختياري',
-    required: 'مطلوب',
-  },
+  legend: 'Pricing inputs',
+  hint: 'The check compares the asking figure with the public notes you supply. It does not say whether a figure is suitable.',
+  company: 'Company',
+  sector: 'Sector',
+  stage: 'Stage',
+  region: 'Region',
+  asking: 'Asking figure (SAR)',
+  revenue: 'Revenue, last twelve months (SAR)',
+  notes: 'Public notes',
+  notesHint: 'One note per line: title | https://... | date | price SAR low to high | multiple low to high',
+  optional: 'optional',
+  required: 'required',
 } as const
 
 export function PricingInputs({
   draft,
-  lang,
   disabled,
   onChange,
 }: {
   draft: PricingDraft
-  lang: UiLang
   disabled?: boolean
   onChange: (next: PricingDraft) => void
 }) {
-  const copy = COPY[lang]
+  const copy = COPY
   function set(key: keyof PricingDraft, value: string) {
     onChange({ ...draft, [key]: value })
   }

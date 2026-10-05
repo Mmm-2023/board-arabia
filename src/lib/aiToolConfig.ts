@@ -1,7 +1,6 @@
 /**
  * AI tool legal slots. One source: src/config/legal.ts.
- * Entity, commercial registration, and provider default to
- * "To be confirmed" in English and "قيد التأكيد" in Arabic.
+ * Entity, commercial registration, and provider default to "To be confirmed".
  * Privacy and terms stay the labelled in-app routes.
  */
 import { legalField, PRIVACY_LINK, TERMS_LINK, type LegalLang } from '../config/legal'
@@ -13,12 +12,12 @@ export { PRIVACY_LINK, TERMS_LINK }
 export function legalSlotsFromEnv(
   retentionDays: number,
   date: string,
-  lang: LegalLang = 'en',
+  _lang: LegalLang = 'en',
 ): LegalSlots {
   return {
-    entity: legalField('baEntity', lang),
-    cr: legalField('cr', lang),
-    provider: legalField('aiProvider', lang),
+    entity: legalField('baEntity', 'en'),
+    cr: legalField('cr', 'en'),
+    provider: legalField('aiProvider', 'en'),
     privacy: PRIVACY_LINK,
     terms: TERMS_LINK,
     retentionDays: retentionDaysOrDefault(retentionDays),

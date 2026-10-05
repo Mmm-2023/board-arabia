@@ -1,8 +1,7 @@
 import type { ReactNode } from 'react'
-import { aiUploads30DayRetention, type LegalLang } from '../config/legal'
+import { aiUploads30DayRetention } from '../config/legal'
 import { resolveLegalDocument } from '../content/legal/resolve'
 import type { LegalDocument } from '../content/legal/types'
-import { useSiteLanguage, type SiteLang } from './SiteLanguage'
 
 function MixedText({ text }: { text: string }) {
   const latinRun =
@@ -58,16 +57,12 @@ function LetterList({ text }: { text: string }) {
 
 export function LegalDocumentView({
   doc,
-  lang,
   pageId,
-  onLang,
 }: {
   doc: LegalDocument
-  lang: LegalLang
   pageId: 'terms' | 'privacy'
-  onLang: (lang: SiteLang) => void
 }) {
-  const resolved = resolveLegalDocument(doc, lang)
+  const resolved = resolveLegalDocument(doc, 'en')
   const retention30 = aiUploads30DayRetention()
   let inPreamble = true
   const blocks: ReactNode[] = []
@@ -140,48 +135,13 @@ export function LegalDocumentView({
     <article
       id={pageId}
       className="ba-legal ba-privacy mx-auto w-full max-w-3xl py-12 pl-5 pr-16 md:py-20 md:pl-10"
-      lang={lang}
-      dir={lang === 'ar' ? 'rtl' : 'ltr'}
+      lang="en"
+      dir="ltr"
       data-legal-doc="true"
       data-ai-retention={retention30 ? '30-day' : 'account'}
       aria-labelledby={pageId === 'terms' ? 'terms-title' : 'privacy-title'}
     >
-      <div className="ba-notice-switch" dir="ltr">
-        <LangButton current={lang} lang="en" label="English" onPick={onLang} />
-        <LangButton current={lang} lang="ar" label="العربية" onPick={onLang} />
-      </div>
       {blocks}
     </article>
   )
-}
-
-function LangButton({
-  current,
-  lang,
-  label,
-  onPick,
-}: {
-  current: LegalLang
-  lang: SiteLang
-  label: string
-  onPick: (lang: SiteLang) => void
-}) {
-  return (
-    <button type="button" aria-pressed={current === lang} onClick={() => onPick(lang)}>
-      {label}
-    </button>
-  )
-}
-
-export function LegalTermsOrPrivacy({
-  en,
-  ar,
-  pageId,
-}: {
-  en: LegalDocument
-  ar: LegalDocument
-  pageId: 'terms' | 'privacy'
-}) {
-  const { lang, setLang } = useSiteLanguage()
-  return <LegalDocumentView doc={lang === 'ar' ? ar : en} lang={lang} pageId={pageId} onLang={setLang} />
 }

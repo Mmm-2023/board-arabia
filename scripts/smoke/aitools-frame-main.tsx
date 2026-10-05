@@ -25,18 +25,11 @@ const slots: LegalSlots = {
 
 const view = new URLSearchParams(window.location.search).get('view') || 'cards'
 
-function memberNav(lang: 'en' | 'ar') {
-  if (lang !== 'ar') return MEMBER_DESTINATIONS
-  return MEMBER_DESTINATIONS.map((item) =>
-    item.id === 'ai' ? { ...item, label: AI_UI.ar.hub } : item,
-  )
-}
-
-function memberShell(node: ReactNode, lang: 'en' | 'ar' = 'en') {
+function memberShell(node: ReactNode) {
   return (
     <AppShell
       tone="member"
-      destinations={memberNav(lang)}
+      destinations={MEMBER_DESTINATIONS}
       secondary={MEMBER_ACCOUNT}
       updatedLabel="Updated 09:00"
       roleSwitch={null}
@@ -73,13 +66,12 @@ function flagsWith(on: AiToolKey[]): Record<AiToolKey, boolean> {
   } as Record<AiToolKey, boolean>
 }
 
-function toolForm(lang: 'en' | 'ar', consented: boolean) {
-  const copy = renderToolCopy('cfo_check', lang, slots)
+function toolForm(consented: boolean) {
+  const copy = renderToolCopy('cfo_check', 'en', slots)
   return memberShell(
-    <AiToolShell lang={lang} title={copy.title}>
+    <AiToolShell title={copy.title}>
       <AiToolForm
         copy={copy}
-        lang={lang}
         consented={consented}
         fileName="example.pdf"
         busy={false}
@@ -88,12 +80,11 @@ function toolForm(lang: 'en' | 'ar', consented: boolean) {
         onRun={() => undefined}
       />
     </AiToolShell>,
-    lang,
   )
 }
 
-function report(lang: 'en' | 'ar') {
-  const copy = renderToolCopy('cfo_check', lang, slots)
+function report() {
+  const copy = renderToolCopy('cfo_check', 'en', slots)
   const output = cfoCheckOutput({
     fileName: 'example.pdf',
     generatedOn: '30 Sep 2026',
@@ -101,19 +92,18 @@ function report(lang: 'en' | 'ar') {
     modelSkipReason: 'provider_not_configured',
   })
   return memberShell(
-    <AiToolShell lang={lang} title={copy.title}>
-      <AiToolReport lang={lang} heading={copy.title} output={output} footerLead={copy.footerLead} footerShared={copy.footerShared} onDelete={() => undefined} />
+    <AiToolShell title={copy.title}>
+      <AiToolReport heading={copy.title} output={output} footerLead={copy.footerLead} footerShared={copy.footerShared} onDelete={() => undefined} />
     </AiToolShell>,
-    lang,
   )
 }
 
 function screen() {
-  if (view === 'unticked') return toolForm('en', false)
-  if (view === 'ticked') return toolForm('en', true)
-  if (view === 'arabic-tool') return toolForm('ar', false)
-  if (view === 'report') return report('en')
-  if (view === 'arabic-report') return report('ar')
+  if (view === 'unticked') return toolForm(false)
+  if (view === 'ticked') return toolForm(true)
+  if (view === 'arabic-tool') return toolForm(false)
+  if (view === 'report') return report()
+  if (view === 'arabic-report') return report()
   if (view === 'settings') {
     return staffShell(
       <div className="max-w-3xl pe-16">
@@ -125,8 +115,8 @@ function screen() {
   if (view === 'cards-staff') {
     return staffShell(
       <div className="max-w-3xl pe-16">
-        <h1 className="font-display text-[2rem] font-semibold tracking-[-0.03em] text-pearl">{AI_UI.en.hub}</h1>
-        <p className="mt-3 text-[1rem] text-pearl/80">{AI_UI.en.staffPreview}</p>
+        <h1 className="font-display text-[2rem] font-semibold tracking-[-0.03em] text-pearl">{AI_UI.hub}</h1>
+        <p className="mt-3 text-[1rem] text-pearl/80">{AI_UI.staffPreview}</p>
         <AiToolCardList flags={{ ...AI_TOOL_FLAG_DEFAULTS }} preview />
       </div>,
     )
@@ -134,16 +124,16 @@ function screen() {
   if (view === 'cards-member-empty') {
     return memberShell(
       <div className="max-w-3xl pe-16">
-        <h1 className="font-display text-[2.2rem] font-bold tracking-[-0.03em]">{AI_UI.en.hub}</h1>
-        <p className="mt-3 max-w-xl text-[1rem] leading-relaxed text-ink/65">{AI_UI.en.intro}</p>
+        <h1 className="font-display text-[2.2rem] font-bold tracking-[-0.03em]">{AI_UI.hub}</h1>
+        <p className="mt-3 max-w-xl text-[1rem] leading-relaxed text-ink/65">{AI_UI.intro}</p>
         <AiToolCardList flags={{ ...AI_TOOL_FLAG_DEFAULTS }} />
       </div>,
     )
   }
   return memberShell(
     <div className="max-w-3xl pe-16" data-flag-fixture="cfo_check">
-      <h1 className="font-display text-[2.2rem] font-bold tracking-[-0.03em]">{AI_UI.en.hub}</h1>
-      <p className="mt-3 max-w-xl text-[1rem] leading-relaxed text-ink/65">{AI_UI.en.intro}</p>
+      <h1 className="font-display text-[2.2rem] font-bold tracking-[-0.03em]">{AI_UI.hub}</h1>
+      <p className="mt-3 max-w-xl text-[1rem] leading-relaxed text-ink/65">{AI_UI.intro}</p>
       <AiToolCardList flags={flagsWith(['cfo_check'])} />
     </div>,
   )

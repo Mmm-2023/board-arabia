@@ -23,22 +23,15 @@ const slots: LegalSlots = {
 }
 
 const CFO_ACCEPT = '.pdf,.csv,.xlsx,application/pdf,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-const CFO_HINT = {
-  en: 'PDF, CSV, or XLSX. 15 MB max. The file and the output are deleted after the retention period.',
-  ar: 'ملف PDF أو CSV أو XLSX. الحد 15 ميغابايت. يُحذف الملف والنتيجة بعد مدة الحفظ.',
-}
+const CFO_HINT = 'PDF, CSV, or XLSX. 15 MB max. The file and the output are deleted after the retention period.'
 
 const view = new URLSearchParams(window.location.search).get('view') || 'tool-en'
 
-function memberShell(node: ReactNode, lang: 'en' | 'ar') {
-  const destinations =
-    lang === 'ar'
-      ? MEMBER_DESTINATIONS.map((item) => (item.id === 'ai' ? { ...item, label: 'أدوات الذكاء الاصطناعي' } : item))
-      : MEMBER_DESTINATIONS
+function memberShell(node: ReactNode) {
   return (
     <AppShell
       tone="member"
-      destinations={destinations}
+      destinations={MEMBER_DESTINATIONS}
       secondary={MEMBER_ACCOUNT}
       updatedLabel="Updated 09:00"
       roleSwitch={null}
@@ -68,41 +61,38 @@ function staffShell(node: ReactNode) {
   )
 }
 
-function toolForm(lang: 'en' | 'ar') {
-  const copy = renderToolCopy('cfo_check', lang, slots)
+function toolForm() {
+  const copy = renderToolCopy('cfo_check', 'en', slots)
   return memberShell(
-    <AiToolShell lang={lang} title={copy.title}>
+    <AiToolShell title={copy.title}>
       <AiToolForm
         copy={copy}
-        lang={lang}
         consented={false}
         fileName=""
         busy={false}
         accept={CFO_ACCEPT}
-        fileHint={CFO_HINT[lang]}
+        fileHint={CFO_HINT}
         onConsent={() => undefined}
         onFile={() => undefined}
         onRun={() => undefined}
       />
     </AiToolShell>,
-    lang,
   )
 }
 
-function report(lang: 'en' | 'ar') {
-  const copy = renderToolCopy('cfo_check', lang, slots)
+function report() {
+  const copy = renderToolCopy('cfo_check', 'en', slots)
   const output = cfoCheckOutput({
     fileName: 'example-holdings.csv',
     generatedOn: '30 Sep 2026',
     modelId: null,
     modelSkipReason: 'provider_not_configured',
     sourceText: csvText,
-    lang,
+    lang: 'en',
   })
   return memberShell(
-    <AiToolShell lang={lang} title={copy.title}>
+    <AiToolShell title={copy.title}>
       <AiToolReport
-        lang={lang}
         heading={copy.title}
         output={output}
         footerLead={copy.footerLead}
@@ -110,14 +100,13 @@ function report(lang: 'en' | 'ar') {
         onDelete={() => undefined}
       />
     </AiToolShell>,
-    lang,
   )
 }
 
 function screen() {
-  if (view === 'tool-ar') return toolForm('ar')
-  if (view === 'report-en') return report('en')
-  if (view === 'report-ar') return report('ar')
+  if (view === 'tool-ar') return toolForm()
+  if (view === 'report-en') return report()
+  if (view === 'report-ar') return report()
   if (view === 'settings') {
     return staffShell(
       <div className="max-w-3xl pe-16">
@@ -126,7 +115,7 @@ function screen() {
       </div>,
     )
   }
-  return toolForm('en')
+  return toolForm()
 }
 
 const entry = view === 'settings' ? '/admin/settings' : '/dashboard/ai/cfo-check'
