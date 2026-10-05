@@ -1,5 +1,8 @@
 export const PARTNER_EMAIL = 'partners@boardarabia.com'
 
+/** One audience line. Landing and About use this wording. */
+export const AUDIENCE_LINE = 'Chairpersons, Board members, and C-suite executives'
+
 /** No day-count is published. Say this instead of inventing an SLA. */
 export const REVIEW_SLA =
   'There is no fixed response time. Every application is reviewed personally.'
@@ -25,7 +28,7 @@ export const MEMBER_TOOLS: MemberTool[] = [
     id: 'inbox',
     n: '02',
     title: 'Mandate inbox',
-    home: 'Access to capital: mandates reach you after admin review. Not cold outreach.',
+    home: 'Access to capital: mandates reach you after the desk reviews them. Not cold outreach.',
     href: '/for-members#inbox',
   },
   {
@@ -39,7 +42,7 @@ export const MEMBER_TOOLS: MemberTool[] = [
     id: 'rooms',
     n: '04',
     title: 'Deal rooms',
-    home: 'A private room for a live mandate. Opened by admin, closed when the work ends.',
+    home: 'A private room for a live mandate. Opened by the desk, closed when the work ends.',
     href: '/for-members#rooms',
   },
   {
@@ -110,10 +113,10 @@ export const PROCESS_STEPS: ProcessStep[] = [
   },
   {
     n: '04',
-    title: 'Private booking email',
-    home: 'Accepted candidates receive a booking link by email. It is not published here.',
+    title: 'Private invite email',
+    home: 'If accepted, you get a private invite email. We never publish it here.',
     detail:
-      'Only an accepted candidate receives the link, and only by email. It does not appear on this website, in the navigation, or in any public page. Visitors cannot arrange a conversation from here.',
+      'Only an accepted candidate receives the private invite email. It does not appear on this website, in the navigation, or in any public page. Visitors cannot arrange a conversation from here.',
   },
   {
     n: '05',

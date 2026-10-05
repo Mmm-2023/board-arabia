@@ -183,7 +183,7 @@ test('sample cards keep the action visible and inert', async () => {
     assert.match(homeHtml, />2</)
     assert.equal(homeHtml.includes('Intros pending'), false)
     assert.equal(homeHtml.includes('Sample requests.'), false)
-    assert.match(homeHtml, /Platform totals are forming/)
+    assert.match(homeHtml, /Totals appear once enough members opt in/)
     assert.match(homeHtml, /Intro requested/)
     assert.match(homeHtml, />Example</)
     assert.equal(homeHtml.includes('\u2014'), false)

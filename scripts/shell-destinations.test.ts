@@ -138,7 +138,7 @@ test('state copy matches the brief and has no em dash', () => {
   assert.equal(STAFF_VIEWS.applications.filtered, 'No applications in this filter.')
   assert.equal(STAFF_VIEWS.people.empty, 'No members yet. Admit from Applications.')
   assert.match(STAFF_VIEWS.people.denied, /cannot open full member records/)
-  assert.match(STAFF_VIEWS.capacity.early, /Aggregates appear after verified opted-in admits/)
+  assert.match(STAFF_VIEWS.capacity.early, /Totals go public once enough verified members opt in/)
   assert.match(STAFF_VIEWS.settings.booking, /not shown on this page/)
   const blob = JSON.stringify({ MEMBER_VIEWS, STAFF_VIEWS })
   assert.equal(blob.includes('\u2014'), false)

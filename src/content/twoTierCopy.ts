@@ -19,10 +19,10 @@ export const ACCOUNT_OPENS_LINE = 'An account opens to look around. Membership f
 export const CLOSING_CTA_BODY = 'Register for consideration. Membership is decided by the desk.'
 
 export const LEGACY_CLOSING_BODY =
-  'Submit the pre-vet. If you are accepted, the next step arrives by private email.'
+  'Submit the pre-vet. If you are accepted, you get a private invite email.'
 
 export const LEGACY_CTA_BODY =
-  'A pre-vet form. The desk reviews credentials. If you are accepted, the next step arrives by private email.'
+  'A pre-vet form. The desk reviews credentials. If you are accepted, you get a private invite email.'
 
 /** Lines that promise the account flow. Hidden on public pages while the flag is off. */
 export const ACCOUNT_FLOW_PROMISES = [

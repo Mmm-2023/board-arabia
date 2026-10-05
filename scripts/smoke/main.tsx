@@ -293,7 +293,7 @@ function MandatesSmoke({ filtersOpen }: { filtersOpen: boolean }) {
         <p className="text-[0.72rem] font-semibold tracking-[0.14em] text-brass uppercase">Mandates</p>
         <h1 className="mt-3 font-display text-[2.2rem] font-bold tracking-[-0.03em]">Mandates</h1>
         <p className="mt-3 max-w-xl text-[1rem] leading-relaxed text-ink/60">
-          Sector, deal type, size band, geography, and stage stay visible. Company, exact price, contacts, and the confidential note stay locked until you request an intro and an admin approves it for you.
+          Sector, deal type, size band, geography, and stage stay visible. Company, exact price, contacts, and the confidential note stay locked until you request an intro and the desk approves it for you.
         </p>
         <div className="mt-8">
           <MandatesBoard mandates={mandates} initialFiltersOpen={filtersOpen} onRequest={() => {}} />

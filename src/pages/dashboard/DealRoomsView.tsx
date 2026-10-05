@@ -54,8 +54,8 @@ export function DealRoomsView({
         <div className="mt-4">{yours}</div>
       </section>
 
-      <section aria-label="Opened by admin" className="mt-10">
-        <h2 className="font-display text-[1.45rem] font-semibold tracking-[-0.03em]">Opened by admin</h2>
+      <section aria-label="Opened by the desk" className="mt-10">
+        <h2 className="font-display text-[1.45rem] font-semibold tracking-[-0.03em]">Opened by the desk</h2>
         <div className="mt-4">{openedByAdmin}</div>
       </section>
     </div>

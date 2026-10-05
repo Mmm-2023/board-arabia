@@ -18,7 +18,7 @@ export const PLATFORM_FLOOR_DEFAULTS = {
 export const SEAT_PUBLISH_MIN = 15
 
 export const FORMING_LABEL = 'Forming'
-export const FORMING_TOTALS = 'Platform totals are forming.'
+export const FORMING_TOTALS = 'Totals appear once enough members opt in.'
 
 export type PlatformFloorDefaults = typeof PLATFORM_FLOOR_DEFAULTS
 

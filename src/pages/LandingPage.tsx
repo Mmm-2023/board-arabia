@@ -12,7 +12,7 @@ import { ConnectionGraphic, DiamondGrid, HeroEnter, HELD_FOR_LINE, IconCapital, 
 import { ProductFrame } from '../components/landing/ProductFrame'
 import { StepDiagram } from '../components/landing/StepDiagram'
 import { StickyApply } from '../components/landing/StickyApply'
-import { MEMBER_TOOLS } from '../content/marketing'
+import { AUDIENCE_LINE, MEMBER_TOOLS } from '../content/marketing'
 import { FAQ } from '../content/seo'
 import { closingCtaBody } from '../content/twoTierCopy'
 import { publicConsiderationCta } from '../lib/twoTierRegister'
@@ -24,12 +24,12 @@ import { trackApplyClick } from '../lib/tracking/browser'
 const WHY = [
   {
     title: 'Access to capital',
-    body: 'Mandates from family offices, FDI, funds, and strategic investors arrive through an admin-gated inbox. Members are not left open to cold outreach on the open web.',
+    body: 'Mandates from family offices, FDI, funds, and strategic investors arrive through an inbox the desk reviews. Members are not left open to cold outreach on the open web.',
     icon: IconCapital,
   },
   {
     title: 'Business relationships',
-    body: 'Saudi and international Chairpersons, Board members, and C-suite executives admitted on one standard: credentials first, then a decision. Fifty founding seats for Saudi Arabia and the GCC. Fifty for international counterparts.',
+    body: `Saudi and international ${AUDIENCE_LINE} admitted on one standard: credentials first, then a decision. Fifty founding seats for Saudi Arabia and the GCC. Fifty for international counterparts.`,
     icon: IconRelationships,
   },
   {
@@ -105,16 +105,12 @@ function Hero() {
               Founding membership · Saudi Arabia & international
             </p>
           </HeroEnter>
-          <h1 className="font-display text-[clamp(2.35rem,6vw,4.25rem)] font-extrabold leading-[0.92] tracking-[-0.03em] text-[#F6F5FB]">
-            Board
-            <br />
-            Arabia
+          <h1 className="max-w-3xl font-display text-[clamp(2.05rem,4.6vw,3.5rem)] font-extrabold leading-[1.08] tracking-[-0.03em] text-balance text-[#F6F5FB]">
+            Where Saudi boardrooms meet international capital
           </h1>
           <p className="mt-3 max-w-xl text-[1rem] leading-relaxed text-[#F6F5FB] md:text-[1.05rem]">
-            Connect Saudi boardrooms with international Chairpersons, Board
-            members, and C-suite executives. Access to capital. Business
-            relationships. Opening doors. Credentials before any conversation.
-            No public booking calendar.
+            {AUDIENCE_LINE}. Credentials before any conversation. No public
+            booking calendar.
           </p>
           <HeroEnter index={1}>
             <HeroConsideration />
@@ -183,9 +179,9 @@ function FoundingSection() {
             <DisplayHeading compact>Fifty and fifty.</DisplayHeading>
             <p className="ba-quiet mt-3 max-w-xl text-[0.9375rem] leading-relaxed">
               One hundred founding places, split evenly: fifty in Saudi Arabia,
-              fifty international. Complimentary founding terms pending
-              contribution, as set by the desk. Places are not priced on this
-              site.
+              fifty international. Founding places are complimentary. We ask
+              for time, judgment and introductions in return. Places are not
+              priced on this site.
             </p>
           </Reveal>
           <div className="grid grid-cols-2 gap-4">
@@ -259,10 +255,11 @@ function MembershipSection() {
             Tools that support capital, relationships, and open doors.
           </DisplayHeading>
           <p className="ba-quiet mt-3 max-w-3xl text-[0.9375rem] leading-relaxed">
-            After admission you work in a private directory, an admin-gated
-            mandate path, warm introductions, deal rooms, a quarterly Majlis,
+            After admission you work in a private directory, a mandate path the
+            desk reviews, warm introductions, deal rooms, a quarterly Majlis,
             and tools that support diligence and sector fit. Each tile opens on
-            the member page. Capital reads the mandate path separately.
+            the member page. Investors can see how mandates work on the For
+            capital page.
           </p>
         </Reveal>
         <div className="mt-3">
@@ -300,7 +297,7 @@ function ProcessSection() {
           <StepDiagram />
         </div>
         <p className="mt-4 max-w-3xl text-[0.9375rem] leading-relaxed text-[#E8E4F7]">
-          Reviewed. Gated. Off the open web. Outreach, warm introductions, and mandates pass admin before they reach a member.
+          Reviewed. Gated. Off the open web. Outreach, warm introductions, and mandates pass the desk before they reach a member.
         </p>
         <Link to="/how-it-works" className="ba-textlink mt-2 inline-flex min-h-11 items-center text-[0.9375rem] text-[#F6F5FB]">
           Full sequence

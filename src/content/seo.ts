@@ -53,14 +53,14 @@ export const MARKETING_PAGES: Record<MarketingPath, MarketingPage> = {
     path: '/for-members',
     title: 'Member tools: directory, mandates, majlis | Board Arabia',
     description:
-      'Board Arabia members use a private directory, admin-gated mandates and intros, availability controls, founding badge, quarterly majlis, invite vouchers, Vision 2030 tags, and deal rooms.',
+      'Board Arabia members use a private directory, mandates and intros the desk reviews, availability controls, founding badge, quarterly majlis, invite vouchers, Vision 2030 tags, and deal rooms.',
     faq: true,
   },
   '/for-capital': {
     path: '/for-capital',
     title: 'For capital: FDI, family offices, PE & VC | Board Arabia',
     description:
-      'Family offices, FDI, PE, and VC engage Board Arabia members through admin-gated mandates. No open scrape of the directory. Apply for consideration remains the public gate.',
+      'Family offices, FDI, PE, and VC engage Board Arabia members through mandates the desk reviews. No open scrape of the directory. Apply for consideration remains the public gate.',
   },
   '/partners': {
     path: '/partners',
@@ -119,7 +119,7 @@ const APPLY_FAQ: FaqItem = {
 const CALENDAR_FAQ: FaqItem = {
   question: 'Is there a public calendar or open booking link?',
   answer:
-    'No. Visitors never see an open calendar. A private booking link is emailed only after acceptance.',
+    'No. Visitors never see an open calendar. A private invite email is sent only after acceptance.',
   to: '/how-it-works',
   toLabel: 'How admission works',
 }
@@ -127,7 +127,7 @@ const CALENDAR_FAQ: FaqItem = {
 const FOUNDING_FAQ: FaqItem = {
   question: 'What is the Founding 100?',
   answer:
-    'A capped founding cohort: 50 Saudi and 50 international seats, with complimentary founding terms pending contribution as set by the desk.',
+    'A capped founding cohort: 50 Saudi and 50 international seats. Founding places are complimentary. We ask for time, judgment and introductions in return.',
 }
 
 const NAMES_FAQ: FaqItem = {
@@ -152,7 +152,7 @@ export const FAQ: FaqItem[] = [
   {
     question: 'How do family offices or FDI engage?',
     answer:
-      'Capital (FDI, family offices, PE, VC) engages through admin-gated mandates. There is no open outbound to members.',
+      'Capital (FDI, family offices, PE, VC) engages through mandates the desk reviews. There is no open outbound to members.',
     to: '/for-capital',
     toLabel: 'For capital',
   },
@@ -164,7 +164,7 @@ export const MEMBERS_FAQ: FaqItem[] = [
   {
     question: 'What do members get?',
     answer:
-      'Access to capital through an admin-gated mandate inbox; business relationships through a private directory, Majlis, and warm intros; opening doors through deal rooms and peer vouchers; plus founding badge, sector and Vision 2030 tags, and AI Due Diligence for public-source governance support.',
+      'Access to capital through a mandate inbox the desk reviews; business relationships through a private directory, Majlis, and warm intros; opening doors through deal rooms and peer vouchers; plus founding badge, sector and Vision 2030 tags, and AI Due Diligence for public-source governance support.',
   },
   NAMES_FAQ,
   {

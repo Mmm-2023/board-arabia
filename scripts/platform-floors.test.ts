@@ -194,7 +194,7 @@ test('the public totals line hides when every figure is withheld', () => {
   assert.match(source, /presentServerTotals/)
   assert.match(source, /seatsArePublic/)
   assert.equal(FORMING_LABEL, 'Forming')
-  assert.equal(FORMING_TOTALS, 'Platform totals are forming.')
+  assert.equal(FORMING_TOTALS, 'Totals appear once enough members opt in.')
   assert.equal(source.includes(FORMING_LABEL), false)
   assert.match(source, /Founding seats admitted/)
   assert.doesNotMatch(source, /\b(floor|example|demo|illustrative|preview)\b/i)

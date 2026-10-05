@@ -166,7 +166,7 @@ export function LoginPage() {
           </h1>
           <p className="mt-4 text-[0.98rem] leading-relaxed text-stone/70">
             {staffEntry
-              ? 'Email and password for the desk. After sign-in you open the admin desk.'
+              ? 'Email and password for the desk. After sign-in you open the desk.'
               : 'Use the one-time link in your admission email, or the password you set after you arrived.'}
           </p>
 

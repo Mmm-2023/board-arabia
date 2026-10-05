@@ -9,7 +9,7 @@ import { MEMBER_VIEWS } from '../../shell/viewCopy'
 import { DealRoomsView, YourRooms } from './DealRoomsView'
 import { RoomsBoard } from './RoomsBoard'
 
-const ROOMS_EMPTY = 'A deal room opens for a live mandate, and only by admin. None are open.'
+const ROOMS_EMPTY = 'A deal room opens for a live mandate, and only by the desk. None are open.'
 
 type AdminState =
   | { status: 'loading' }

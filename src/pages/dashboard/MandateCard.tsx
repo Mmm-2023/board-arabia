@@ -92,7 +92,7 @@ function LockedBrief({
 }) {
   const note =
     status === 'pending'
-      ? 'Intro requested. An admin must approve it before the brief opens.'
+      ? 'Intro requested. The desk must approve it before the brief opens.'
       : status === 'declined'
         ? 'This intro was not approved.'
         : sample

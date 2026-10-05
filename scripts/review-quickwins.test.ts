@@ -102,14 +102,14 @@ test('directory invited peers are labelled and Riaydh displays as Riyadh', () =>
   assert.equal(active?.location, 'Riyadh')
 })
 
-test('white land ready reads Clear and staff dates use a UK stamp', () => {
+test('white land ready reads None and staff dates use a UK stamp', () => {
   const lines = readinessLines({
     foreign_ownership_path: 'ready',
     escrow_off_plan: 'not_yet',
     title_clarity: 'in_progress',
     white_land_exposure: 'ready',
   })
-  assert.ok(lines.includes('White Land exposure: Clear'))
+  assert.ok(lines.includes('White Land exposure: None'))
   assert.equal(lines.some((line) => line.startsWith('White Land exposure: Ready')), false)
   assert.equal(formatUkDateTime('2026-09-22T11:34:00.000Z'), '22 Sept 2026, 14:34')
   assert.equal(formatUkDateTime('not-a-date'), '')
