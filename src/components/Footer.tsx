@@ -70,6 +70,9 @@ export function Footer() {
           </p>
         </nav>
       </div>
+      <p className="mx-auto max-w-7xl px-5 pb-4 text-[0.75rem] font-normal leading-snug text-[var(--ba-muted)] md:px-10 md:pb-6">
+        powered by nammco
+      </p>
     </footer>
   )
 }

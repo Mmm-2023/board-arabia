@@ -64,10 +64,11 @@ jobs:
           fi
           grep -q 'noindex' dist/dashboard/index.html
           grep -q 'Board Arabia' dist/for-members/index.html
-          if grep -R -E -i -q 'calendar\.app\.google|nammco' dist; then
+          if grep -R -E -i -q 'calendar\.app\.google' dist; then
             echo 'banned string in Pages artifact'
             exit 1
           fi
+          node scripts/check-pages-artifact.mjs dist
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
