@@ -2,6 +2,11 @@ import { type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { Avatar } from '../../components/Avatar'
 import { suggestionDetail, WEEKLY_INTRO_SUGGESTION_LINE, type IntroSuggestion } from '../../lib/introSuggestions'
+import {
+  ADD_SECTORS_AND_THEMES,
+  NO_SUGGESTIONS_THIS_WEEK,
+  SUGGESTION_PROFILE_HREF,
+} from '../../lib/suggestionProfile'
 import type { IntroQuota, IntroStatus } from '../../lib/memberIntros'
 import { EmptyState } from '../../shell/ViewState'
 import { DirectoryIntroAction } from './DirectoryIntroAction'
@@ -14,6 +19,7 @@ export function IntroSuggestions({
   errorId,
   error,
   showEmpty = false,
+  emptyMode = 'complete',
   portrait,
   onRequest,
 }: {
@@ -24,6 +30,7 @@ export function IntroSuggestions({
   errorId: string | null
   error: string
   showEmpty?: boolean
+  emptyMode?: 'complete' | 'needs_tags'
   portrait?: (row: IntroSuggestion) => ReactNode
   onRequest: (id: string, reason: string, askDesk: boolean) => void
 }) {
@@ -34,8 +41,19 @@ export function IntroSuggestions({
       <h2 className="text-[0.72rem] font-semibold tracking-[0.14em] text-ink/40 uppercase">Suggested introductions</h2>
       <p className="mt-2 text-[0.95rem] leading-relaxed text-ink/55">{WEEKLY_INTRO_SUGGESTION_LINE}</p>
       {rows.length === 0 ? (
-        <div className="mt-3">
-          <EmptyState tone="member" message="No suggested introductions this week." />
+        <div className="mt-3" data-suggestion-empty={emptyMode === 'needs_tags' ? 'needs-tags' : 'complete'}>
+          {emptyMode === 'needs_tags' ? (
+            <>
+              <EmptyState tone="member" message={ADD_SECTORS_AND_THEMES} />
+              <p className="mt-3">
+                <Link to={SUGGESTION_PROFILE_HREF} className="inline-flex min-h-11 items-center text-ink underline">
+                  Profile
+                </Link>
+              </p>
+            </>
+          ) : (
+            <EmptyState tone="member" message={NO_SUGGESTIONS_THIS_WEEK} />
+          )}
         </div>
       ) : (
         <ul className="mt-3 space-y-3">
