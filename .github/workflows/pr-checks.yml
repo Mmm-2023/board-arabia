@@ -1,0 +1,38 @@
+name: PR checks
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-checks-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  pr-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Start Postgres
+        run: |
+          sudo systemctl start postgresql.service
+          sudo -u postgres createuser --superuser "$USER"
+      - name: Build
+        env:
+          GITHUB_PAGES: 'true'
+          VITE_BASE_PATH: /
+        run: node scripts/build-for-csp-crawl.mjs
+      - name: Test
+        run: |
+          cp .env.example .env
+          node --experimental-strip-types --test scripts/*.test.ts
+      - name: Confirm Pages artifact
+        run: bash -eo pipefail scripts/pages-artifact-gate.sh
