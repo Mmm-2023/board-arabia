@@ -16,13 +16,13 @@ export const NO_INSTANT_ACCOUNT_LINE =
 
 export const ACCOUNT_OPENS_LINE = 'An account opens to look around. Membership follows review.'
 
-export const CLOSING_CTA_BODY = 'Register for consideration. Membership is decided by the desk.'
+export const CLOSING_CTA_BODY = 'Register for consideration. Membership is decided by our admin team.'
 
 export const LEGACY_CLOSING_BODY =
   'Submit the pre-vet. If you are accepted, you get a private invite email.'
 
 export const LEGACY_CTA_BODY =
-  'A pre-vet form. The desk reviews credentials. If you are accepted, you get a private invite email.'
+  'A pre-vet form. Our admin team reviews credentials. If you are accepted, you get a private invite email.'
 
 /** Lines that promise the account flow. Hidden on public pages while the flag is off. */
 export const ACCOUNT_FLOW_PROMISES = [
@@ -34,7 +34,7 @@ export const ACCOUNT_FLOW_PROMISES = [
 ] as const
 
 export const ACCOUNT_FLOW_APPLY_ANSWER =
-  'Register for consideration. An account opens so you can see how the membership works. The desk reviews every request personally.'
+  'Register for consideration. An account opens so you can see how the membership works. Our admin team reviews every request personally.'
 
 export const TWO_TIER_PROCESS_STEPS: ProcessStep[] = [
   {
@@ -57,10 +57,10 @@ export const TWO_TIER_PROCESS_STEPS: ProcessStep[] = [
   },
   {
     n: '04',
-    title: 'Desk review',
-    home: 'The desk reviews every request personally; founding places may include a short conversation.',
+    title: 'Admin review',
+    home: 'Our admin team reviews every request personally; founding places may include a short conversation.',
     detail:
-      'The desk reviews every request personally; founding places may include a short conversation.',
+      'Our admin team reviews every request personally; founding places may include a short conversation.',
   },
   {
     n: '05',

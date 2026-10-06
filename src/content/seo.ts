@@ -54,14 +54,14 @@ export const MARKETING_PAGES: Record<MarketingPath, MarketingPage> = {
     path: '/for-members',
     title: 'Member tools: directory, mandates, majlis | Board Arabia',
     description:
-      'Board Arabia members use a private directory, mandates and intros the desk reviews, availability controls, founding badge, quarterly majlis, invite vouchers, Vision 2030 tags, and deal rooms.',
+      'Board Arabia members use a private directory, mandates and intros our admin team reviews, availability controls, founding badge, quarterly majlis, invite vouchers, Vision 2030 tags, and deal rooms.',
     faq: true,
   },
   '/for-capital': {
     path: '/for-capital',
     title: 'For capital: FDI, family offices, PE & VC | Board Arabia',
     description:
-      'Family offices, FDI, PE, and VC engage Board Arabia members through mandates the desk reviews. No open scrape of the directory. Apply for consideration remains the public gate.',
+      'Family offices, FDI, PE, and VC engage Board Arabia members through mandates our admin team reviews. No open scrape of the directory. Apply for consideration remains the public gate.',
   },
   '/partners': {
     path: '/partners',
@@ -153,7 +153,7 @@ export const FAQ: FaqItem[] = [
   {
     question: 'How do family offices or FDI engage?',
     answer:
-      'Capital (FDI, family offices, PE, VC) engages through mandates the desk reviews. There is no open outbound to members.',
+      'Capital (FDI, family offices, PE, VC) engages through mandates our admin team reviews. There is no open outbound to members.',
     to: '/for-capital',
     toLabel: 'For capital',
   },
@@ -165,7 +165,7 @@ export const MEMBERS_FAQ: FaqItem[] = [
   {
     question: 'What do members get?',
     answer:
-      'Access to capital through a mandate inbox the desk reviews; business relationships through a private directory, Majlis, and warm intros; opening doors through deal rooms and peer vouchers; plus founding badge, sector and Vision 2030 tags, and AI Due Diligence for public-source governance support.',
+      'Access to capital through a mandate inbox our admin team reviews; business relationships through a private directory, Majlis, and warm intros; opening doors through deal rooms and peer vouchers; plus founding badge, sector and Vision 2030 tags, and AI Due Diligence for public-source governance support.',
   },
   NAMES_FAQ,
   {

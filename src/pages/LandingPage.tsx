@@ -24,7 +24,7 @@ import { trackApplyClick } from '../lib/tracking/browser'
 const WHY = [
   {
     title: 'Access to capital',
-    body: 'Mandates from family offices, FDI, funds, and strategic investors arrive through an inbox the desk reviews. Members are not left open to cold outreach on the open web.',
+    body: 'Mandates from family offices, FDI, funds, and strategic investors arrive through an inbox our admin team reviews. Members are not left open to cold outreach on the open web.',
     icon: IconCapital,
   },
   {
@@ -255,8 +255,8 @@ function MembershipSection() {
             Tools that support capital, relationships, and open doors.
           </DisplayHeading>
           <p className="ba-quiet mt-3 max-w-3xl text-[0.9375rem] leading-relaxed">
-            After admission you work in a private directory, a mandate path the
-            desk reviews, warm introductions, deal rooms, a quarterly Majlis,
+            After admission you work in a private directory, a mandate path our
+            admin team reviews, warm introductions, deal rooms, a quarterly Majlis,
             and tools that support diligence and sector fit. Each tile opens on
             the member page. Investors can see how mandates work on the For
             capital page.
@@ -297,7 +297,7 @@ function ProcessSection() {
           <StepDiagram />
         </div>
         <p className="mt-4 max-w-3xl text-[0.9375rem] leading-relaxed text-[#E8E4F7]">
-          Reviewed. Gated. Off the open web. Outreach, warm introductions, and mandates pass the desk before they reach a member.
+          Reviewed. Gated. Off the open web. Outreach, warm introductions, and mandates pass our admin team before they reach a member.
         </p>
         <Link to="/how-it-works" className="ba-textlink mt-2 inline-flex min-h-11 items-center text-[0.9375rem] text-[#F6F5FB]">
           Full sequence

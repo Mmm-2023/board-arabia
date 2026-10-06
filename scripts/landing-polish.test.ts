@@ -8,6 +8,23 @@ import { MemoryRouter } from 'react-router-dom'
 import { createServer } from 'vite'
 import { FAQ, HOME_SHARE_TITLE, MARKETING_PAGES, OG_DESCRIPTION, pageGraph, publicFaqItems } from '../src/content/seo.ts'
 
+const PUBLIC_COPY_SOURCES = [
+  'src/pages/LandingPage.tsx',
+  'src/pages/ForMembersPage.tsx',
+  'src/pages/ForCapitalPage.tsx',
+  'src/pages/PartnersPage.tsx',
+  'src/pages/AboutPage.tsx',
+  'src/pages/HowItWorksPage.tsx',
+  'src/pages/ApplyPage.tsx',
+  'src/content/seo.ts',
+  'src/content/marketing.ts',
+  'src/content/twoTierCopy.ts',
+  'src/components/CtaBand.tsx',
+  'src/components/Footer.tsx',
+  'src/components/Nav.tsx',
+  'index.html',
+]
+
 const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..')
 
 function read(rel: string) {
@@ -121,4 +138,47 @@ test('hero CTA still points at /apply', async () => {
   assert.match(icon, /M16 14 L25 17\.2 V28\.6 L16 31 Z/)
   assert.equal(source.includes('\u2014'), false)
   assert.equal(source.includes('\u2013'), false)
+})
+
+test('public marketing body does not say the desk outside Who runs the desk', async () => {
+  for (const file of PUBLIC_COPY_SOURCES) {
+    assert.equal(/the desk/i.test(read(file)), false, file)
+    assert.equal(read(file).includes('\u2014'), false, file)
+    assert.equal(read(file).includes('\u2013'), false, file)
+  }
+  const who = read('src/components/WhoRunsTheDesk.tsx')
+  assert.match(who, /Who runs the desk/)
+  assert.equal(who.replace(/Who runs the desk/g, '').toLowerCase().includes('the desk'), false)
+  for (const page of Object.values(MARKETING_PAGES)) {
+    const graph = JSON.stringify(pageGraph(page))
+    assert.equal(/the desk/i.test(graph), false, page.path)
+  }
+  const vite = await createServer({
+    server: { middlewareMode: true },
+    appType: 'custom',
+    logLevel: 'error',
+  })
+  try {
+    const pages = [
+      ['/src/pages/LandingPage.tsx', 'LandingPage', '/'],
+      ['/src/pages/ForMembersPage.tsx', 'ForMembersPage', '/for-members'],
+      ['/src/pages/ForCapitalPage.tsx', 'ForCapitalPage', '/for-capital'],
+      ['/src/pages/PartnersPage.tsx', 'PartnersPage', '/partners'],
+      ['/src/pages/AboutPage.tsx', 'AboutPage', '/about'],
+      ['/src/pages/HowItWorksPage.tsx', 'HowItWorksPage', '/how-it-works'],
+      ['/src/pages/ApplyPage.tsx', 'ApplyPage', '/apply'],
+    ] as const
+    for (const [path, name, route] of pages) {
+      const mod = await vite.ssrLoadModule(path)
+      const html = renderToStaticMarkup(
+        createElement(MemoryRouter, { initialEntries: [route] }, createElement(mod[name])),
+      )
+      const body = html.replace(/Who runs the desk/g, '')
+      assert.equal(/the desk/i.test(body), false, route)
+      if (route === '/apply') assert.match(html, /Our admin team reviews your credentials/)
+      if (route === '/') assert.match(html, /inbox our admin team reviews/)
+    }
+  } finally {
+    await vite.close()
+  }
 })

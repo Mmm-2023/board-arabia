@@ -28,7 +28,7 @@ export const MEMBER_TOOLS: MemberTool[] = [
     id: 'inbox',
     n: '02',
     title: 'Mandate inbox',
-    home: 'Access to capital: mandates reach you after the desk reviews them. Not cold outreach.',
+    home: 'Access to capital: mandates reach you after our admin team reviews them. Not cold outreach.',
     href: '/for-members#inbox',
   },
   {
@@ -42,7 +42,7 @@ export const MEMBER_TOOLS: MemberTool[] = [
     id: 'rooms',
     n: '04',
     title: 'Deal rooms',
-    home: 'A private room for a live mandate. Opened by the desk, closed when the work ends.',
+    home: 'A private room for a live mandate. Opened by our admin team, closed when the work ends.',
     href: '/for-members#rooms',
   },
   {
