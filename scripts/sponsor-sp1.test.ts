@@ -69,7 +69,7 @@ test('intro credits are monthly and room and majlis slots are included', async (
   assert.match(html, /1 of 7 used this month/)
   assert.equal(html.includes('4 of 1'), false)
   assert.equal(html.includes('3 of 0'), false)
-  assert.match(viewSource, /\{NO_PACKAGE\} The desk attaches one from Settings\./)
+  assert.match(viewSource, /\{NO_PACKAGE\} Admin attaches one from Settings\./)
 })
 
 test('welcome uses the package allowances or an empty admin line', async () => {
