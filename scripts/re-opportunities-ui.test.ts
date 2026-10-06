@@ -18,6 +18,7 @@ import {
   reCapitalRoleLabel,
 } from '../src/lib/reRedaction.ts'
 import { filterReOpportunities, readinessLines, reFeedIsForming, RE_READINESS_NOTE, RE_READINESS_STATUS_LABEL } from '../src/lib/reOpportunityView.ts'
+import { appShells } from './shell-manifest.mjs'
 import { MEMBER_VIEWS } from '../src/shell/viewCopy.ts'
 
 const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..')
@@ -147,7 +148,6 @@ test('the opportunities page lists through the RPC and requests through the Edge
   const admin = source('src/pages/admin/AdminHome.tsx')
   const queue = source('src/pages/admin/ReIntroQueue.tsx')
   const app = source('src/App.tsx')
-  const prerender = source('scripts/prerender.mjs')
   assert.match(page, /fetchReOpportunities/)
   assert.match(page, /requestReOpportunityIntro/)
   assert.equal(page.includes('TODO(alert)'), false)
@@ -167,7 +167,7 @@ test('the opportunities page lists through the RPC and requests through the Edge
   assert.match(queue, /staff_list_re_opportunity_intros/)
   assert.match(queue, /staff_decide_re_opportunity_intro/)
   assert.match(app, /path="real-estate"/)
-  assert.match(prerender, /dashboard\/real-estate/)
+  assert.equal(appShells().some((item) => item.path === '/dashboard/real-estate'), true)
   for (const file of [page, fetch, board, admin, queue]) {
     assert.equal(file.includes('\u2014'), false, file)
   }

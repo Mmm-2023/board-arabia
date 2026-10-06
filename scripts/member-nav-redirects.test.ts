@@ -3,6 +3,7 @@ import test from 'node:test'
 import { readFileSync } from 'node:fs'
 import { figuresAsOfLabel, formatInviteSent } from '../src/lib/riyadhStamp.ts'
 import { redirectLocation, resolveRedirect } from '../src/shell/redirects.ts'
+import { appShells } from './shell-manifest.mjs'
 
 test('invite times use Riyadh parts and a fixed month list', () => {
   assert.equal(formatInviteSent('2026-09-25T13:33:18.000Z', 'pending'), 'Pending, sent 25 Sep 2026, 16:33')
@@ -82,7 +83,7 @@ test('the app wires replace redirects and the rooms/new shell', () => {
   assert.match(app, /path="intros" element=\{<RedirectKeep/)
   assert.match(app, /path="rooms\/:roomId" element=\{<RedirectKeep/)
   assert.match(app, /path="\*" element=\{<RedirectKeep/)
-  const prerender = readFileSync(new URL('../scripts/prerender.mjs', import.meta.url), 'utf8')
-  assert.match(prerender, /dashboard\/rooms\/new/)
-  assert.match(prerender, /dashboard\/deals\/rooms\/new/)
+  const shells = appShells().map((item) => item.path)
+  assert.equal(shells.includes('/dashboard/rooms/new'), true)
+  assert.equal(shells.includes('/dashboard/deals/rooms/new'), true)
 })
