@@ -282,9 +282,11 @@ test('run stays disabled until consent is ticked', async () => {
       createElement(desk.AiToolForm, {
         copy,
         consented: true,
+        acknowledged: true,
         fileName: 'example.pdf',
         busy: false,
         onConsent: () => {},
+        onAcknowledge: () => {},
         onFile: () => {},
         onRun: () => {},
       }),

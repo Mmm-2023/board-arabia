@@ -43,3 +43,7 @@ export const AI_UI = {
   listError: 'Could not load the tool list. Retry.',
   loadingTools: 'Loading tools',
 } as const
+
+/** Per-run acknowledgement. Not stored. The longer tool consent stays separate. */
+export const AI_OUTPUT_ACK =
+  'I understand this is AI output, not legal, financial or investment advice.'

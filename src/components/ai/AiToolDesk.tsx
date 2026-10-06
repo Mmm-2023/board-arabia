@@ -6,7 +6,7 @@ import { footerWithOperator } from '../../lib/aiReportOperator'
 import { PRIVACY_LINK, TERMS_LINK } from '../../lib/aiToolConfig'
 import type { RenderedToolCopy } from '../../lib/aiToolCopy'
 import { useAiReportOperator } from '../../lib/useAiReportOperator'
-import { AI_UI } from '../../lib/aiToolUi'
+import { AI_OUTPUT_ACK, AI_UI } from '../../lib/aiToolUi'
 import { AiUploadTrust } from './UploadHandling'
 
 const LINK_LABELS = { privacy: 'Privacy Notice', terms: 'Terms' }
@@ -189,6 +189,33 @@ export function AiToolUpload({
   )
 }
 
+export function AiOutputAcknowledgement({
+  checked,
+  disabled,
+  onChange,
+}: {
+  checked: boolean
+  disabled?: boolean
+  onChange: (value: boolean) => void
+}) {
+  return (
+    <div className="mt-6 flex min-h-11 items-start gap-3">
+      <input
+        id="ai-output-ack"
+        type="checkbox"
+        className="mt-1 size-11 shrink-0 accent-[var(--ba-indigo)]"
+        checked={checked}
+        disabled={disabled}
+        data-ai-ack={checked ? 'on' : 'off'}
+        onChange={(event) => onChange(event.target.checked)}
+      />
+      <label htmlFor="ai-output-ack" className="text-[0.98rem] leading-relaxed text-ink">
+        {AI_OUTPUT_ACK}
+      </label>
+    </div>
+  )
+}
+
 export function AiToolConsent({
   text,
   checked,
@@ -330,6 +357,7 @@ export function AiToolReport({
 export function AiToolForm({
   copy,
   consented,
+  acknowledged = false,
   fileName,
   busy,
   accept,
@@ -338,11 +366,13 @@ export function AiToolForm({
   extra,
   hideBanner,
   onConsent,
+  onAcknowledge,
   onFile,
   onRun,
 }: {
   copy: RenderedToolCopy
   consented: boolean
+  acknowledged?: boolean
   fileName: string
   busy: boolean
   accept?: string
@@ -351,11 +381,12 @@ export function AiToolForm({
   extra?: ReactNode
   hideBanner?: boolean
   onConsent: (value: boolean) => void
+  onAcknowledge?: (value: boolean) => void
   onFile: (file: File | null) => void
   onRun: () => void
 }) {
   const hasInput = inputsReady ?? fileName.trim().length > 0
-  const canRun = consented && hasInput && !busy
+  const canRun = consented && acknowledged && hasInput && !busy
   return (
     <form
       onSubmit={(event) => {
@@ -368,6 +399,7 @@ export function AiToolForm({
       {extra}
       <AiToolUpload fileName={fileName} disabled={busy} accept={accept} fileHint={fileHint} onFile={onFile} />
       <AiToolConsent text={copy.consent} checked={consented} disabled={busy} onChange={onConsent} />
+      <AiOutputAcknowledgement checked={acknowledged} disabled={busy} onChange={onAcknowledge ?? (() => undefined)} />
       <button
         type="submit"
         className="ba-primary mt-6 inline-flex min-h-11 items-center px-4 text-[1rem] font-semibold disabled:opacity-40"
