@@ -297,6 +297,14 @@ async function shots(page, name, selector) {
   await shot(page, name, 390, selector)
 }
 
+async function viewportShot(page, name, width, height) {
+  if (!shotDir) return
+  fs.mkdirSync(shotDir, { recursive: true })
+  await page.setViewportSize({ width, height })
+  await page.evaluate(() => document.fonts.ready)
+  await page.screenshot({ path: path.join(shotDir, `${name}-${width}.png`), fullPage: false })
+}
+
 async function waitForHydration(page) {
   await page.waitForFunction(() => {
     const node = document.querySelector('#root input, #root button, #root a')
@@ -422,16 +430,22 @@ async function main() {
     await shots(publicPage.page, 'security-full')
     await collect(publicPage.page, 'flow:security')
 
-    await publicPage.page.goto(`${origin}/apply`, { waitUntil: 'load' })
-    await publicPage.page.locator('h1').waitFor()
+    await publicPage.page.goto(`${origin}/`, { waitUntil: 'load' })
     await waitForHydration(publicPage.page)
-    const applyCta = publicPage.page.getByRole('link', { name: 'Apply for consideration' }).first()
-    if ((await applyCta.getAttribute('href')) !== '/apply') {
-      fail('a public Apply for consideration link does not go to /apply')
+    const heroApply = publicPage.page.locator('#hero-apply')
+    if ((await heroApply.getAttribute('href')) !== '/apply') {
+      fail('landing Apply for consideration does not go to /apply')
     }
+    await heroApply.click()
+    await publicPage.page.waitForURL(/\/apply$/)
+    await waitForHydration(publicPage.page)
+    console.log(`Clicked Apply for consideration. Landed on ${publicPage.page.url()}`)
+    await publicPage.page.locator('h1').waitFor()
+    await viewportShot(publicPage.page, 'apply-cta-destination', 1280, 800)
+    await viewportShot(publicPage.page, 'apply-cta-destination', 390, 844)
+    await publicPage.page.setViewportSize({ width: 1280, height: 800 })
     await publicPage.page.locator('[data-trust-strip="apply"]').waitFor()
     await shots(publicPage.page, 'apply-strip', '[data-trust-strip="apply"]')
-    await shots(publicPage.page, 'apply-cta-destination', 'h1')
     await publicPage.page.locator('#full_name').fill('Example Applicant')
     await publicPage.page.locator('#email').fill('applicant@example.com')
     await publicPage.page.locator('#turnover').fill('Example group revenue')

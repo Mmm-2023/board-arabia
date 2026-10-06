@@ -90,6 +90,8 @@ test('trust copy passes the do-not-say list and names no company', () => {
   assertDoNotSay('trust copy', copy)
   assert.equal(/nammco/i.test(copy), false)
   assert.equal(/\bthe desk\b/i.test(copy), false)
+  assert.match(copy, /Sign-up asks you to confirm your email and is protected against automated abuse/)
+  assert.equal(copy.includes('application forms'), false)
   assert.match(copy, /Two-step sign-in with an authenticator app is required for admin/)
   assert.match(copy, /unless you choose to share it with admin/)
   assert.match(copy, /a specialist AI provider/)

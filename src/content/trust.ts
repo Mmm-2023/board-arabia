@@ -36,7 +36,7 @@ export const FILES_AND_AI = [
 export const DD_RETENTION_LINE = 'Due diligence uploads are deleted automatically after 30 days.'
 
 export const SIGNING_IN = [
-  'Sign-in is protected by email verification, and sign-up and application forms are protected against automated abuse.',
+  'Sign-up asks you to confirm your email and is protected against automated abuse.',
   'Admin access is limited to named staff and checked on our servers, not only in the browser.',
   'Two-step sign-in with an authenticator app is required for admin and available to every member.',
 ] as const
