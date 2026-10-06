@@ -211,13 +211,14 @@ test('AI Due Diligence stays disabled until the AI acknowledgement is ticked', (
   assert.match(read('src/pages/dashboard/AiToolPage.tsx'), /setAcknowledged\(false\)/)
 })
 
-test('help says invites refill to 2 each Monday and unused invites do not stack', () => {
+test('help says invites refill to 2 each week and unused invites do not stack', () => {
   const help = read('src/pages/dashboard/HelpPage.tsx')
   const start = help.indexOf('How do peer invites work?')
   const end = help.indexOf("to: '/dashboard/people/invites'")
   assert.ok(start > 0 && end > start)
   const answer = help.slice(start, end)
-  assert.match(answer, /Your invites refill to 2 each Monday\. Unused invites do not stack\./)
+  assert.match(answer, /Your invites refill to 2 each week\. Unused invites do not stack\./)
+  assert.equal(/\b(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/i.test(answer), false)
   assert.match(answer, /our admin team/)
   assert.equal(answer.includes('Unused invites do not refill.'), false)
   assert.equal(answer.includes('the desk'), false)
