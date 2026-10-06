@@ -11,6 +11,7 @@ import {
 } from '../../../supabase/functions/_shared/ai_tools.ts'
 import type { StubOutput } from '../../../supabase/functions/ai-tool-job/tools/types.ts'
 import { AiToolForm, AiToolJobStatus, AiToolReport, AiToolShell, AiToolWillList } from '../../components/ai/AiToolDesk'
+import { AdminShareBar } from '../../components/mfa/TwoStepScreens'
 import { DealReadinessForm, DealReadinessNotice } from '../../components/ai/DealReadinessView'
 import { DealReadinessSkeleton } from '../../components/ai/DealReadinessMemo'
 import { MarketBriefForm } from '../../components/ai/MarketBriefForm'
@@ -32,6 +33,7 @@ import { digitsOnly, pricingSourceFromDraft, type PricingDraft } from '../../../
 import { legalSlotsFromEnv } from '../../lib/aiToolConfig'
 import { renderToolCopy } from '../../lib/aiToolCopy'
 import { useNoIndex } from '../../lib/usePageTitle'
+import { supabase } from '../../lib/supabase'
 import { ConfirmDialog } from '../../shell/ConfirmDialog'
 import { ErrorBanner, FormSkeleton, PermissionState } from '../../shell/ViewState'
 import { useMember } from './context'
@@ -268,6 +270,7 @@ export function AiToolPage() {
         <div className="space-y-4">
           {deal ? <AiToolWillList will={copy.will} willNot={copy.willNot} /> : null}
           {jobStatus ? <AiToolJobStatus status={jobStatus} step={jobStep} /> : null}
+          {jobId ? <AiResultShare jobId={jobId} /> : null}
           <AiToolReport
             output={output}
             heading={reportCopy.title}
@@ -433,6 +436,35 @@ const EMPTY_PRICING: PricingDraft = {
   asking: '',
   revenue: '',
   notes: '',
+}
+
+function AiResultShare({ jobId }: { jobId: string }) {
+  const [shared, setShared] = useState<boolean | null>(null)
+  const [busy, setBusy] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+    void supabase.rpc('own_admin_share_state', { p_kind: 'ai_tool_job', p_id: jobId }).then(({ data, error }) => {
+      if (cancelled || error || !data || typeof data !== 'object') return
+      const row = data as { shared?: unknown }
+      if (typeof row.shared === 'boolean') setShared(row.shared)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [jobId])
+
+  if (shared == null) return null
+
+  async function toggle() {
+    setBusy(true)
+    const next = !shared
+    const { error } = await supabase.rpc('set_ai_tool_result_admin_share', { p_job_id: jobId, p_share: next })
+    setBusy(false)
+    if (!error) setShared(next)
+  }
+
+  return <AdminShareBar shared={shared} busy={busy} onToggle={() => void toggle()} />
 }
 
 function pricingFile(draft: PricingDraft): File | null {

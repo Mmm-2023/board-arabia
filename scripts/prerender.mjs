@@ -306,6 +306,7 @@ const appShells = [
   'ops',
   'dashboard',
   'dashboard/profile',
+  'dashboard/two-step',
   'dashboard/directory',
   'dashboard/mandates',
   'dashboard/real-estate',

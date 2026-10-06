@@ -77,6 +77,7 @@ export const MEMBER_ACCOUNT: readonly SecondaryLink[] = [
 /** Open account sheet. Membership is a row, not a sixth tab. */
 export const ACCOUNT_SHEET_LINKS: readonly SecondaryLink[] = [
   { id: 'profile', label: 'Profile', to: '/dashboard/profile' },
+  { id: 'two-step', label: 'Two-step sign-in', to: '/dashboard/two-step' },
   { id: 'membership', label: 'Membership', to: '/dashboard/membership' },
   { id: 'help', label: 'Help', to: '/dashboard/help' },
   { id: 'delete', label: 'Delete account', to: '/dashboard/account/delete' },

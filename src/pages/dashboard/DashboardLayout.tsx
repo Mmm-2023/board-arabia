@@ -1,5 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Navigate, Outlet, useLocation } from 'react-router-dom'
+import { Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { MfaHold } from '../../components/mfa/MfaHold'
+import { MemberMfaPrompt } from '../../components/mfa/TwoStepScreens'
+import { dismissMfaPrompt, readAssurance } from '../../lib/mfa'
+import { routeHold, showMemberPrompt, type MfaHold as Hold } from '../../lib/mfaFlow'
 import { isStaffRole, showRoleSwitch } from '../../../supabase/functions/_shared/staff_auth.ts'
 import { clearPasswordFlag } from '../../lib/clearPasswordFlag'
 import { fetchMyDealRooms } from '../../lib/dealRoomApi'
@@ -80,8 +84,36 @@ export function DashboardLayout() {
   const readyRef = useRef<MemberRoom | null>(null)
   const signingOut = useRef(false)
   const location = useLocation()
+  const navigate = useNavigate()
+  const [hold, setHold] = useState<Hold | 'loading'>('loading')
+  const [passCount, setPassCount] = useState(0)
+  const [showPrompt, setShowPrompt] = useState(false)
   const memberNav = MEMBER_DESTINATIONS
   useNoIndex('Member dashboard | Board Arabia')
+
+  useEffect(() => {
+    if (gate.status === 'loading' || gate.status === 'signed_out') return
+    let cancelled = false
+    void readAssurance().then((assurance) => {
+      if (cancelled) return
+      setHold(
+        routeHold({
+          area: 'member',
+          currentLevel: assurance.currentLevel,
+          verifiedFactor: assurance.verifiedFactor,
+        }),
+      )
+      setShowPrompt(
+        showMemberPrompt({
+          verifiedFactor: assurance.verifiedFactor,
+          dismissed: assurance.promptDismissed,
+        }),
+      )
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [gate.status, passCount])
 
   const load = useCallback(async () => {
     const seq = ++loadSeq.current
@@ -315,6 +347,14 @@ export function DashboardLayout() {
     )
   }
 
+  if ((gate.status === 'ready' || gate.status === 'account') && hold === 'challenge') {
+    return (
+      <div className="min-h-dvh bg-pearl px-5 py-16 text-ink">
+        <MfaHold mode="challenge" tone="light" onPassed={() => setPassCount((value) => value + 1)} />
+      </div>
+    )
+  }
+
   if (gate.status === 'account') {
     return (
       <DashboardStatusContext.Provider value={status}>
@@ -394,8 +434,17 @@ export function DashboardLayout() {
           onSignOut={() => void onSignOut()}
           accountLabel={gate.room.email}
           accountName={gate.room.profile?.full_name?.trim() || 'Member'}
-          renderAccountMark={(size) => <OwnAvatar decorative size={size} />}
+            renderAccountMark={(size) => <OwnAvatar decorative size={size} />}
         >
+          {showPrompt ? (
+            <MemberMfaPrompt
+              onTurnOn={() => navigate('/dashboard/two-step')}
+              onDismiss={() => {
+                setShowPrompt(false)
+                void dismissMfaPrompt(gate.room.userId)
+              }}
+            />
+          ) : null}
           <Outlet />
         </AppShell>
       </MemberContext.Provider>

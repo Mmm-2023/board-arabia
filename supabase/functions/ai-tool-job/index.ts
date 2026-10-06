@@ -42,16 +42,17 @@ function resolveAiToolUser(authorization: string | null): AiAuth {
   if (!payload || !userId || payload.role !== 'authenticated' || !expOk) {
     return { ok: false, status: 401, error: 'Sign in to run this check.', code: 'unauthorized' }
   }
-  return { ok: true, userId }
+  const aal = typeof payload.aal === 'string' ? payload.aal : null
+  return { ok: true, userId, aal }
 }
 
-function decodePayload(token: string): { sub?: unknown; exp?: unknown; role?: unknown } | null {
+function decodePayload(token: string): { sub?: unknown; exp?: unknown; role?: unknown; aal?: unknown } | null {
   const parts = token.split('.')
   if (parts.length !== 3 || parts.some((part) => part.length === 0)) return null
   try {
     const padded = parts[1].replace(/-/g, '+').replace(/_/g, '/')
     const json = atob(padded + '='.repeat((4 - (padded.length % 4)) % 4))
-    const payload = JSON.parse(json) as { sub?: unknown; exp?: unknown; role?: unknown }
+    const payload = JSON.parse(json) as { sub?: unknown; exp?: unknown; role?: unknown; aal?: unknown }
     return payload && typeof payload === 'object' ? payload : null
   } catch {
     return null

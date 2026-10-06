@@ -15,16 +15,47 @@ export function isLiveMember(status: unknown): boolean {
   return status === 'invited' || status === 'active'
 }
 
-/** 401 when there is no verified user. 403 when that user is not staff. */
+/** 401 when there is no verified user. 403 when that user is not staff.
+ * A staff or master row at aal1 is 403 mfa_required. Password alone is not staff access.
+ */
 export function staffApiDecision(input: {
   userId: string | null
   role: unknown
+  aal?: string | null
 }):
   | { allow: true; role: StaffRole }
-  | { allow: false; status: 401 | 403; error: 'Unauthorized' | 'Not staff' } {
+  | { allow: false; status: 401 | 403; error: 'Unauthorized' | 'Not staff' | 'mfa_required'; code?: 'mfa_required' } {
   if (!input.userId) return { allow: false, status: 401, error: 'Unauthorized' }
   if (!isStaffRole(input.role)) return { allow: false, status: 403, error: 'Not staff' }
+  if (input.aal !== 'aal2') {
+    return { allow: false, status: 403, error: 'mfa_required', code: 'mfa_required' }
+  }
   return { allow: true, role: input.role }
+}
+
+/** Staff at aal1 must not be treated as a member-only caller. The UI shows the challenge or enrol screen. */
+export function dealRoomStaffFlag(input: {
+  role: unknown
+  aal: string | null
+}): 'staff' | 'member' | 'mfa_required' {
+  if (!isStaffRole(input.role)) return 'member'
+  if (input.aal !== 'aal2') return 'mfa_required'
+  return 'staff'
+}
+
+/** A foreign AI or due diligence row. Owners always pass. Staff need aal2 and an explicit share. */
+export function foreignRowRead(input: {
+  ownerId: string
+  callerId: string
+  callerIsStaff: boolean
+  aal: string | null
+  shared: boolean
+}): 'owner' | 'shared' | 'mfa_required' | 'hidden' {
+  if (input.ownerId === input.callerId) return 'owner'
+  if (!input.callerIsStaff) return 'hidden'
+  if (input.aal !== 'aal2') return 'mfa_required'
+  if (!input.shared) return 'hidden'
+  return 'shared'
 }
 
 /** Signed-out users go to login. Everyone else who is not staff goes to the member dashboard. */

@@ -1,13 +1,15 @@
 import { createClient, type SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1'
 import { participantState, type DealRoomContext, type DealTarget, type MemberSeat, type MemberStatus, type ParticipantState } from './deal_room.ts'
 import type { DealGate } from './deal_room_http.ts'
+import { aalFromVerifiedToken } from './session_aal.ts'
+import { dealRoomStaffFlag } from './staff_auth.ts'
 
 type MemberRow = { status?: string | null; seat?: string | null } | null
 type StaffRow = { role?: string | null } | null
 type RoomRow = { status?: string | null; opened_by?: string | null } | null
 type ParticipantRow = { role?: string | null; invite_status?: string | null } | null
 
-export async function openDealGate(req: Request): Promise<DealGate | { error: string; status: number }> {
+export async function openDealGate(req: Request): Promise<DealGate | { error: string; status: number; code?: string }> {
   const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
   const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
   const anonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? ''
@@ -26,17 +28,27 @@ export async function openDealGate(req: Request): Promise<DealGate | { error: st
   } = await userClient.auth.getUser(token)
   if (userError || !user) return { error: 'Unauthorized', status: 401 }
 
+  const aal = aalFromVerifiedToken(token)
   const admin = createClient(supabaseUrl, serviceKey)
   const [memberResult, staffResult] = await Promise.all([
     admin.from('members').select('status, seat').eq('user_id', user.id).maybeSingle(),
     admin.from('staff_users').select('role').eq('user_id', user.id).maybeSingle(),
   ])
 
+  const staffFlag = dealRoomStaffFlag({
+    role: staffResult.error ? null : (staffResult.data as StaffRow)?.role,
+    aal,
+  })
+  if (staffFlag === 'mfa_required') {
+    return { error: 'mfa_required', status: 403, code: 'mfa_required' }
+  }
+
   const caller = {
     userId: user.id,
     memberStatus: memberStatus(memberResult.data as MemberRow),
     seat: memberSeat(memberResult.data as MemberRow),
-    staff: isStaff(staffResult.data as StaffRow),
+    staff: staffFlag === 'staff',
+    aal,
   }
 
   return {
@@ -56,10 +68,6 @@ function memberStatus(row: MemberRow): MemberStatus {
 function memberSeat(row: MemberRow): MemberSeat | null {
   if (row?.seat === 'ksa' || row?.seat === 'intl' || row?.seat === 'sponsor') return row.seat
   return null
-}
-
-function isStaff(row: StaffRow): boolean {
-  return row?.role === 'staff' || row?.role === 'master'
 }
 
 async function loadRoom(admin: SupabaseClient, roomId: string): Promise<DealRoomContext | null> {
