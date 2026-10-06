@@ -297,34 +297,33 @@ export function StaffDesk({ children, closing }: { children?: ReactNode; closing
         </ul>
       </section>
 
-      <section aria-label="Recent email" className="mt-10">
-        <h2 className={`text-[0.72rem] font-semibold tracking-[0.14em] uppercase ${styles.quiet}`}>
-          Recent email
-        </h2>
-        {room.panelFailed.email ? (
-          <div className={`${styles.panel} mt-3 px-4 py-4`}>
-            <PanelNotice />
-          </div>
-        ) : null}
-        {recent.length === 0 && !room.panelFailed.email ? (
-          <p className={`mt-3 ${styles.muted}`}>No email events yet.</p>
-        ) : null}
-        {recent.length > 0 ? (
-          <ul className="mt-3 space-y-3">
-            {recent.map((event) => (
-              <li key={event.id} className={`${styles.panel} px-4 py-3`}>
-                <p className="text-[0.95rem]">{event.subject}</p>
-                <p className={`mt-1 text-[0.85rem] ${styles.muted}`}>
-                  {event.kind} · {event.status}
-                </p>
-              </li>
-            ))}
-          </ul>
-        ) : null}
-        <Link to="/admin/email" className="mt-3 inline-flex min-h-11 items-center text-[0.75rem] font-semibold tracking-[0.08em] text-brass-bright uppercase">
-          Email
-        </Link>
-      </section>
+      {recent.length > 0 || room.panelFailed.email ? (
+        <section aria-label="Recent email" className="mt-10">
+          <h2 className={`text-[0.72rem] font-semibold tracking-[0.14em] uppercase ${styles.quiet}`}>
+            Recent email
+          </h2>
+          {room.panelFailed.email ? (
+            <div className={`${styles.panel} mt-3 px-4 py-4`}>
+              <PanelNotice />
+            </div>
+          ) : null}
+          {recent.length > 0 ? (
+            <ul className="mt-3 space-y-3">
+              {recent.map((event) => (
+                <li key={event.id} className={`${styles.panel} px-4 py-3`}>
+                  <p className="text-[0.95rem]">{event.subject}</p>
+                  <p className={`mt-1 text-[0.85rem] ${styles.muted}`}>
+                    {event.kind} · {event.status}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+          <Link to="/admin/email" className="mt-3 inline-flex min-h-11 items-center text-[0.75rem] font-semibold tracking-[0.08em] text-brass-bright uppercase">
+            Email
+          </Link>
+        </section>
+      ) : null}
       {closing}
     </div>
   )

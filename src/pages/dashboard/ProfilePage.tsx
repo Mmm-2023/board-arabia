@@ -527,7 +527,7 @@ export function ProfilePage({ preview }: { preview?: { src: string | null } }) {
         </button>
         {!profile && (
           <p className="text-[0.92rem] text-ink/50">
-            The profile record is missing. Ask the desk to admit this seat again.
+            The profile record is missing. Ask our admin team to admit this seat again.
           </p>
         )}
       </form>
@@ -575,7 +575,7 @@ export function ProfilePage({ preview }: { preview?: { src: string | null } }) {
       <section className="mt-16 border-t border-ink/10 pt-10" aria-label="Leave Board Arabia">
         <h2 className="font-display text-[1.35rem] font-semibold tracking-[-0.03em]">Leave Board Arabia</h2>
         <p className="mt-3 max-w-xl text-[0.98rem] leading-relaxed text-ink/65">
-          Ask the desk to close this membership. You confirm on the next screen. Your seat stays open until the desk closes it.
+          Ask our admin team to close this membership. You confirm on the next screen. Your seat stays open until our admin team closes it.
         </p>
         <Link
           to={LEAVE_BOARD_PATH}
@@ -675,7 +675,7 @@ function CapacityOnFile({ profile }: { profile: ProfileRow | null }) {
   if (lines.length === 0) return null
   return (
     <div className="border border-ink/10 bg-white/40 px-4 py-4 text-[0.92rem] leading-relaxed text-ink/60">
-      <p>Held by the desk. Not published as an individual amount.</p>
+      <p>Held by our admin team. Not published as an individual amount.</p>
       <ul className="mt-2 space-y-1">
         {lines.map((item) => (
           <li key={item}>{item}</li>

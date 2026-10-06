@@ -42,7 +42,7 @@ export const PRIVACY_NOTICE_EN: PrivacyNotice = {
       heading: 'What we collect',
       paragraphs: [
         'Application and member data: name, email, LinkedIn, title, company, turnover or AUM band, optional phone, commercial registration number, sector tags, statement, first-touch campaign values, and referrer host.',
-        'If you open an account for consideration, we keep that account: your name, work email, role, region, and the credentials you save for the desk. We also keep which link brought you here. You can delete that account yourself from Account after you confirm. Deleting it removes those credentials and the sign-in. It does not remove a full member record.',
+        'If you open an account for consideration, we keep that account: your name, work email, role, region, and the credentials you save for our admin team. We also keep which link brought you here. You can delete that account yourself from Account after you confirm. Deleting it removes those credentials and the sign-in. It does not remove a full member record.',
         'Site analytics: pages, engaged time, scroll depth, coarse location taken from an IP address that is not stored, campaign source, and named events.',
         'Site analytics are not the membership file. Cookies for analytics run only after you choose Accept. Before that, visits are counted without an identifier that could tie one visit to the next.',
         'If you leave the public-totals box checked, a verified capacity figure can be added into a platform sum after you are admitted. The public site shows that sum only. It does not show your name, your company, or your amount.',

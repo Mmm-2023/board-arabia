@@ -345,7 +345,7 @@ test('screens show create, invite, accept, manage, and staff close', async () =>
     }),
   )
     assert.equal((staff.match(/Close room/g) || []).length, 1)
-    assert.match(staff, /Opened by the desk/)
+    assert.match(staff, /Opened by our admin team/)
     assert.match(staff, /Opened by a member/)
     assert.match(staff, /Industrial services room/)
   } finally {
@@ -375,7 +375,7 @@ test('the client uses Edge functions and read RPCs, not raw room tables', () => 
   assert.match(api, /list_my_deal_rooms/)
   assert.match(api, /search_deal_room_directory/)
   assert.match(source('src/pages/dashboard/RoomsPage.tsx'), /fetchRooms\(/)
-  assert.match(source('src/pages/dashboard/RoomsBoard.tsx'), /Deal rooms opened by the desk\./)
+  assert.match(source('src/pages/dashboard/RoomsBoard.tsx'), /Deal rooms opened by our admin team\./)
   assert.match(source('src/pages/dashboard/RoomsBoard.tsx'), /Cards marked Example are samples\./)
   const board = source('src/pages/dashboard/RoomsBoard.tsx')
   assert.match(board, /room\.member_count/)

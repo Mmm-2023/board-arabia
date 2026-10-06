@@ -1,48 +1,65 @@
-import { promptStorageKey, promptWasDismissed, rememberPromptDismissed } from './mfaFlow'
+import { promptStorageKey, readPromptDismissal, stampPromptDismissal } from './mfaFlow'
 import { supabase } from './supabase'
 
 export type Assurance = {
   userId: string | null
   currentLevel: string | null
   verifiedFactor: boolean
-  promptDismissed: boolean
+  dismissedAt: number | null
 }
 
 export async function readAssurance(): Promise<Assurance> {
   const { data: sessionData } = await supabase.auth.getSession()
   const session = sessionData.session
   if (!session) {
-    return { userId: null, currentLevel: null, verifiedFactor: false, promptDismissed: false }
+    return { userId: null, currentLevel: null, verifiedFactor: false, dismissedAt: null }
   }
   const [level, factors] = await Promise.all([
     supabase.auth.mfa.getAuthenticatorAssuranceLevel(),
     supabase.auth.mfa.listFactors(),
   ])
   const verified = (factors.data?.totp ?? []).some((factor) => factor.status === 'verified')
-  const metadata = session.user.user_metadata?.ba_mfa_prompt_dismissed === true
+  const metadata = session.user.user_metadata?.ba_mfa_prompt_dismissed
   let stored: string | null = null
   try {
     stored = localStorage.getItem(promptStorageKey())
   } catch {
     stored = null
   }
+  const now = Date.now()
+  const decision = readPromptDismissal({
+    userId: session.user.id,
+    raw: stored,
+    metadata,
+    now,
+  })
+  if (decision.migrate) {
+    try {
+      localStorage.setItem(promptStorageKey(), decision.nextRaw)
+    } catch {
+      // The account timestamp below still starts the 14 days.
+    }
+    if (decision.at != null && metadata !== decision.at) {
+      void supabase.auth.updateUser({ data: { ba_mfa_prompt_dismissed: decision.at } })
+    }
+  }
   return {
     userId: session.user.id,
     currentLevel: level.data?.currentLevel ?? null,
     verifiedFactor: verified,
-    promptDismissed: promptWasDismissed(session.user.id, stored, metadata),
+    dismissedAt: decision.at,
   }
 }
 
 export async function dismissMfaPrompt(userId: string): Promise<void> {
-  let raw: string | null = null
+  const now = Date.now()
   try {
-    raw = localStorage.getItem(promptStorageKey())
-    localStorage.setItem(promptStorageKey(), rememberPromptDismissed(userId, raw))
+    const raw = localStorage.getItem(promptStorageKey())
+    localStorage.setItem(promptStorageKey(), stampPromptDismissal(userId, raw, now))
   } catch {
-    // The account flag below still remembers the choice.
+    // The account timestamp below still remembers the choice.
   }
-  await supabase.auth.updateUser({ data: { ba_mfa_prompt_dismissed: true } })
+  await supabase.auth.updateUser({ data: { ba_mfa_prompt_dismissed: now } })
 }
 
 export async function enrollTotp(): Promise<

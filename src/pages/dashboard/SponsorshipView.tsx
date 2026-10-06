@@ -36,7 +36,7 @@ export function SponsorshipView({ desk, portrait = null }: { desk: SponsorDesk; 
           <>
             <p className="mt-3 font-display text-[1.5rem] font-semibold tracking-[-0.03em]">{face.heading}</p>
             {desk.package ? null : (
-              <p className="mt-3 text-[1rem] text-ink/70">{NO_PACKAGE} The desk attaches one from Settings.</p>
+              <p className="mt-3 text-[1rem] text-ink/70">{NO_PACKAGE} Our admin team attaches one from Settings.</p>
             )}
           </>
         )}

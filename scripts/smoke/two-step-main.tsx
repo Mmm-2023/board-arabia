@@ -1,4 +1,5 @@
 import { createRoot } from 'react-dom/client'
+import { BrowserRouter } from 'react-router-dom'
 import {
   AdminShareBar,
   Frame,
@@ -52,6 +53,7 @@ if (view === 'challenge') {
         busy={false}
         onCode={() => undefined}
         onSubmit={(event) => event.preventDefault()}
+        onSignOut={() => undefined}
       />
     </Frame>,
   )
@@ -59,7 +61,9 @@ if (view === 'challenge') {
 if (view === 'prompt') {
   createRoot(root).render(
     <div className="min-h-dvh bg-pearl px-5 py-8 text-ink">
-      <MemberMfaPrompt onTurnOn={() => undefined} onDismiss={() => undefined} />
+      <BrowserRouter>
+        <MemberMfaPrompt onDismiss={() => undefined} />
+      </BrowserRouter>
     </div>,
   )
 }

@@ -19,7 +19,7 @@ export function DeleteAccountView({
       <p className="text-[0.72rem] font-semibold tracking-[0.14em] text-[var(--ba-indigo)] uppercase">Account</p>
       <h1 className="mt-3 font-display text-[2rem] font-semibold tracking-[-0.03em]">Delete account</h1>
       <p className="mt-4 max-w-xl text-[1.05rem] leading-relaxed text-ink/75">
-        This removes your account, the credentials you saved for the desk, and your sign-in. It cannot be undone. A full
+        This removes your account, the credentials you saved for our admin team, and your sign-in. It cannot be undone. A full
         member record is not removed from this page.
       </p>
       <label className="mt-6 flex min-h-11 items-start gap-3 text-[1rem] leading-relaxed">

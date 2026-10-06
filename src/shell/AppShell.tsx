@@ -480,7 +480,7 @@ export function AppShell({
             role="dialog"
             aria-modal="true"
             aria-label="More"
-            className={`shell-tab-bar shell-safe-bottom absolute inset-x-0 bottom-0 max-h-[min(32rem,85dvh)] overflow-y-auto border-t px-4 pt-4 ${styles.border} ${styles.page}`}
+            className={`shell-more-sheet shell-tab-bar absolute inset-x-0 bottom-0 border-t px-4 pt-4 ${styles.border} ${styles.page}`}
           >
             <div className="flex items-start justify-between gap-3 px-3 pb-2">
               <div className="min-w-0">

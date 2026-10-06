@@ -94,7 +94,7 @@ export function MembershipChecklistView({
       <div className="account-main max-w-xl lg:pe-8" data-screen="membership-review">
         <p className="text-[0.72rem] font-semibold tracking-[0.14em] text-[var(--ba-indigo)] uppercase">Membership</p>
         <h1 className="mt-3 font-display text-[2rem] font-semibold tracking-[-0.03em]">Review and submit</h1>
-        <p className="mt-3 text-[1rem] leading-relaxed text-ink/70">You cannot edit after you submit, unless the desk asks.</p>
+        <p className="mt-3 text-[1rem] leading-relaxed text-ink/70">You cannot edit after you submit, unless our admin team asks.</p>
         <ul className="mt-6 space-y-3">
           {REQUIRED_STEP_IDS.map((step) => (
             <li key={step} className={`${card} px-4 py-3`}>
@@ -114,7 +114,7 @@ export function MembershipChecklistView({
             onChange={(event) => onConsent(event.target.checked)}
           />
           <span>
-            I agree that the desk may review these details to decide on my membership. If I am approved, admitted
+            I agree that our admin team may review these details to decide on my membership. If I am approved, admitted
             members can see my name, headline, company and city in the Directory.{' '}
             <Link to="/privacy" className="underline">Privacy</Link> and <Link to="/terms" className="underline">Terms</Link>.
           </span>
@@ -145,7 +145,7 @@ export function MembershipChecklistView({
 
       {model.state === 'needs_info' ? (
         <section className={`${card} mt-5 px-5 py-5`}>
-          <h2 className="font-display text-[1.3rem] font-semibold">The desk has one question</h2>
+          <h2 className="font-display text-[1.3rem] font-semibold">Our admin team has one question</h2>
           <p className="mt-3 text-[1rem] leading-relaxed">{model.needsQuestion}</p>
           <label className="mt-4 block">
             <span className="text-[0.72rem] font-semibold tracking-[0.08em] text-ink/45 uppercase">Your reply</span>
@@ -173,7 +173,7 @@ export function MembershipChecklistView({
             onOpen={onOpen}
           />
           <Section
-            title="Adds context for the desk"
+            title="Adds context for our admin team"
             steps={OPTIONAL_STEP_IDS}
             model={model}
             locked={locked && model.state !== 'needs_info'}

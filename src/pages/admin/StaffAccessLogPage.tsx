@@ -1,6 +1,8 @@
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { supabase } from '../../lib/supabase'
 import { useNoIndex } from '../../lib/usePageTitle'
+import { StaffOwnNameCard } from './StaffOwnNameCard'
+import { useOwnStaffName } from './useOwnStaffName'
 
 type LogRow = {
   id: string
@@ -41,11 +43,13 @@ export function StaffAccessLogView({
   filtered,
   error,
   onFilter,
+  nameSlot = null,
 }: {
   rows: { objectLabel: string; action: string; at: string; actor: string }[]
   filtered: boolean
   error: string
   onFilter: (memberId: string) => void
+  nameSlot?: ReactNode
 }) {
   const [memberId, setMemberId] = useState('')
   return (
@@ -54,6 +58,7 @@ export function StaffAccessLogView({
       <p className="mt-2 max-w-xl text-[0.95rem] text-stone/70">
         Staff reads of one member. Filter by member. This list does not show contact details.
       </p>
+      {nameSlot}
       <form
         className="mt-5 flex flex-wrap items-end gap-3"
         onSubmit={(event) => {
@@ -105,6 +110,7 @@ export function StaffAccessLogPage() {
   const [rows, setRows] = useState<{ objectLabel: string; action: string; at: string; actor: string }[]>([])
   const [filtered, setFiltered] = useState(false)
   const [error, setError] = useState('')
+  const ownName = useOwnStaffName()
   useNoIndex('Access log | Board Arabia')
 
   async function onFilter(memberId: string) {
@@ -138,5 +144,21 @@ export function StaffAccessLogPage() {
     setFiltered(true)
   }
 
-  return <StaffAccessLogView rows={rows} filtered={filtered} error={error} onFilter={(id) => void onFilter(id)} />
+  return (
+    <StaffAccessLogView
+      rows={rows}
+      filtered={filtered}
+      error={error}
+      onFilter={(id) => void onFilter(id)}
+      nameSlot={
+        <StaffOwnNameCard
+          savedName={ownName.name}
+          ready={ownName.ready}
+          busy={ownName.busy}
+          error={ownName.error}
+          onSave={(value) => void ownName.save(value)}
+        />
+      }
+    />
+  )
 }

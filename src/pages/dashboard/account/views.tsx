@@ -88,7 +88,7 @@ export function AccountHomeView({
             <ul className="mt-4 space-y-3 text-[1rem] leading-relaxed text-ink/80">
               <li>Look around: every section is here, with member-only content locked.</li>
               <li>Complete your credentials: seven short steps, saved as you go.</li>
-              <li>Request full membership: the desk reviews every request personally.</li>
+              <li>Request full membership: our admin team reviews every request personally.</li>
             </ul>
             <div className="mt-6 flex flex-wrap gap-3">
               <Link to="/dashboard/membership" className={primary} onClick={onDismissWelcome}>
@@ -414,7 +414,7 @@ export function AccountProfileView({
     >
       <h1 className="font-display text-[2rem] font-semibold tracking-[-0.03em]">Profile</h1>
       <p className="text-[1rem] leading-relaxed text-ink/70">
-        Only you and the desk can see this until you are a full member.
+        Only you and our admin team can see this until you are a full member.
       </p>
       <label className="block">
         <span className="text-[0.72rem] font-semibold tracking-[0.08em] text-ink/45 uppercase">Full name</span>

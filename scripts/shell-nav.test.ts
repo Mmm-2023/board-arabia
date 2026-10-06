@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import test from 'node:test'
+import { CHROME_SKIP, resolveChromePath } from './chrome-path.ts'
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { MemoryRouter } from 'react-router-dom'
@@ -157,7 +158,12 @@ function sessionToken() {
   return `${header}.${payload}.sig`
 }
 
-test('routes drop the trailing slash and unknown paths render page not found', async () => {
+test('routes drop the trailing slash and unknown paths render page not found', async (t) => {
+  const chrome = resolveChromePath()
+  if (!chrome) {
+    t.skip(CHROME_SKIP)
+    return
+  }
   process.env.VITE_SUPABASE_URL = 'https://example.supabase.co'
   process.env.VITE_SUPABASE_ANON_KEY = 'example-anon-key'
   process.env.VITE_ANALYTICS_ENABLED = 'false'
@@ -171,7 +177,7 @@ test('routes drop the trailing slash and unknown paths render page not found', a
   const port = address && typeof address === 'object' ? address.port : 0
   const origin = `http://127.0.0.1:${port}`
   const browser = await chromium.launch({
-    executablePath: '/usr/local/bin/google-chrome',
+    executablePath: chrome,
     args: ['--no-sandbox', '--disable-dev-shm-usage'],
   })
   const mode = { staff: false }

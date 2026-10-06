@@ -5,8 +5,8 @@ import type { RoomCard } from '../../lib/demoRows'
 export function RoomsBoard({ rooms, embedded = false }: { rooms: RoomCard[]; embedded?: boolean }) {
   const hasExamples = rooms.some((room) => room.is_demo)
   const intro = hasExamples
-    ? 'Deal rooms opened by the desk. Cards marked Example are samples.'
-    : 'Deal rooms opened by the desk.'
+    ? 'Deal rooms opened by our admin team. Cards marked Example are samples.'
+    : 'Deal rooms opened by our admin team.'
   const cards = (
     <ul className={embedded ? 'mt-4 grid gap-3' : 'mt-8 grid gap-3'}>
       {rooms.map((room) => (
