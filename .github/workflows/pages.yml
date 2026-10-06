@@ -33,6 +33,8 @@ jobs:
           VITE_POSTHOG_KEY: ${{ secrets.VITE_POSTHOG_KEY }}
           VITE_POSTHOG_HOST: ${{ vars.VITE_POSTHOG_HOST }}
           VITE_TWO_TIER_REGISTER_ENABLED: 'false'
+          VITE_LEGAL_BA_ENTITY: 'NAMMCO Holding Co.'
+          VITE_LEGAL_CR: '7043252647'
           VITE_TURNSTILE_SITE_KEY: ${{ secrets.VITE_TURNSTILE_SITE_KEY }}
           VITE_SUPABASE_URL: https://iirqbizwanyhgkhanntq.supabase.co
           VITE_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlpcnFiaXp3YW55aGdraGFubnRxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAwNzMzMjEsImV4cCI6MjEwNTY0OTMyMX0.VSxdt1GVSka1Il7oozc6K_9pIKy8zFYegomBvWgOQDY

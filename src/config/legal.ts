@@ -28,19 +28,48 @@ export type LegalField = keyof typeof ENV_NAME
 
 let envOverride: Partial<Record<LegalField, string>> | null = null
 
-/** Tests inject placeholder values. Production reads Vite env in this file only. */
+/**
+ * Tests inject placeholder values.
+ * Address, contacts, and the AI provider are read here.
+ * The controller name and CR are read in legalPageIdentity.ts so the
+ * production strings stay on the legal pages chunk.
+ */
 export function setLegalEnvForTests(value: Partial<Record<LegalField, string>> | null) {
   envOverride = value
 }
 
-function viteEnv(): Record<string, unknown> {
-  if (typeof import.meta === 'undefined') return {}
-  return (import.meta.env as Record<string, unknown> | undefined) ?? {}
+function viteValue(read: () => unknown): unknown {
+  try {
+    return read()
+  } catch {
+    return undefined
+  }
+}
+
+function configuredEnv(name: (typeof ENV_NAME)[LegalField] | 'VITE_LEGAL_AI_UPLOADS_30_DAY_RETENTION'): unknown {
+  switch (name) {
+    case 'VITE_LEGAL_ADDRESS':
+      return viteValue(() => import.meta.env.VITE_LEGAL_ADDRESS)
+    case 'VITE_LEGAL_CONTACT_EMAIL':
+      return viteValue(() => import.meta.env.VITE_LEGAL_CONTACT_EMAIL)
+    case 'VITE_LEGAL_DPO_CONTACT':
+      return viteValue(() => import.meta.env.VITE_LEGAL_DPO_CONTACT)
+    case 'VITE_LEGAL_AI_PROVIDER':
+      return viteValue(() => import.meta.env.VITE_LEGAL_AI_PROVIDER)
+    case 'VITE_LEGAL_PARTNERS_EMAIL':
+      return viteValue(() => import.meta.env.VITE_LEGAL_PARTNERS_EMAIL)
+    case 'VITE_LEGAL_SERVICE_EMAIL':
+      return viteValue(() => import.meta.env.VITE_LEGAL_SERVICE_EMAIL)
+    case 'VITE_LEGAL_AI_UPLOADS_30_DAY_RETENTION':
+      return viteValue(() => import.meta.env.VITE_LEGAL_AI_UPLOADS_30_DAY_RETENTION)
+    default:
+      return undefined
+  }
 }
 
 export function legalField(field: LegalField, _lang: LegalLang = 'en'): string {
   const override = envOverride?.[field]
-  const raw = override !== undefined ? override : viteEnv()[ENV_NAME[field]]
+  const raw = override !== undefined ? override : configuredEnv(ENV_NAME[field])
   const value = typeof raw === 'string' ? raw.trim() : ''
   return value || LEGAL_PENDING.en
 }
@@ -64,7 +93,7 @@ export function readAiUploads30DayRetention(raw: unknown): boolean {
 }
 
 export const AI_UPLOADS_30_DAY_RETENTION = readAiUploads30DayRetention(
-  viteEnv().VITE_LEGAL_AI_UPLOADS_30_DAY_RETENTION,
+  configuredEnv('VITE_LEGAL_AI_UPLOADS_30_DAY_RETENTION'),
 )
 
 let retentionOverride: boolean | null = null

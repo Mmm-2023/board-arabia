@@ -1,6 +1,8 @@
+import { publishedLegalIdentity } from '../../config/legalPageIdentity.ts'
 import {
   aiUploads30DayRetention,
   EFFECTIVE_DATE,
+  LEGAL_PENDING,
   legalField,
   type LegalField,
   type LegalLang,
@@ -31,6 +33,14 @@ const TOKEN_FIELD: Record<string, LegalField | 'date'> = {
 
 const FEE_BRACKET = /fee|fees|credit/i
 
+function legalDocumentValue(field: LegalField): string {
+  const value = legalField(field, 'en')
+  if ((field === 'baEntity' || field === 'cr') && value === LEGAL_PENDING.en) {
+    return publishedLegalIdentity()[field]
+  }
+  return value
+}
+
 function fillText(text: string, retention30: boolean): string {
   let next = text
   if (!retention30) {
@@ -38,7 +48,7 @@ function fillText(text: string, retention30: boolean): string {
     next = next.split(AI_ROW_30_DAY).join(AI_ROW_WHILE_ACTIVE)
   }
   for (const [token, field] of Object.entries(TOKEN_FIELD)) {
-    const value = field === 'date' ? EFFECTIVE_DATE.en : legalField(field, 'en')
+    const value = field === 'date' ? EFFECTIVE_DATE.en : legalDocumentValue(field)
     next = next.split(token).join(value)
   }
   next = next.replace(/\[[^[\]]+\]/g, (token) => (FEE_BRACKET.test(token) ? FEE_SENTENCE : token))

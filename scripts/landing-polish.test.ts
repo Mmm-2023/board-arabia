@@ -178,7 +178,29 @@ test('public marketing body does not say the desk outside Who runs the desk', as
       if (route === '/apply') assert.match(html, /Our admin team reviews your credentials/)
       if (route === '/') assert.match(html, /inbox our admin team reviews/)
     }
+    const legalPages = [
+      ['/src/pages/PrivacyPage.tsx', 'PrivacyPage', '/privacy'],
+      ['/src/pages/TermsPage.tsx', 'TermsPage', '/terms'],
+    ] as const
+    for (const [path, name, route] of legalPages) {
+      const mod = await vite.ssrLoadModule(path)
+      const html = renderToStaticMarkup(
+        createElement(MemoryRouter, { initialEntries: [route] }, createElement(mod[name])),
+      )
+      const body = html.replace(/Who runs the desk/g, '')
+      assert.equal(/the desk/i.test(body), false, route)
+      assert.equal(html.includes('Ask the desk'), false, route)
+    }
   } finally {
     await vite.close()
+  }
+  const label = read('src/pages/dashboard/DirectoryIntroAction.tsx')
+  assert.match(label, /Ask admin to introduce us/)
+  assert.equal(label.includes('Ask the desk'), false)
+  for (const file of ['src/content/legal/privacy.en.ts', 'src/content/legal/terms.en.ts']) {
+    assert.equal(/the desk/i.test(read(file)), false, file)
+    assert.equal(read(file).includes('Ask the desk'), false, file)
+    assert.equal(read(file).includes('\u2014'), false, file)
+    assert.equal(read(file).includes('\u2013'), false, file)
   }
 })

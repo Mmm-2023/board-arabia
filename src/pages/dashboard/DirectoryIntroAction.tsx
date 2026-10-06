@@ -123,7 +123,7 @@ export function DirectoryIntroAction({
               disabled={busy || limitHit}
               onChange={(event) => setAskDesk(event.target.checked)}
             />
-            Ask the desk to introduce us
+            Ask admin to introduce us
           </label>
           <p className="mt-1 text-[0.92rem] leading-relaxed text-ink/55">
             If they accept, the desk sends the introduction.

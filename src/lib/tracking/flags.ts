@@ -33,6 +33,22 @@ export function readAnalyticsConfig(env: Record<string, unknown> | undefined) {
   }
 }
 
-export const ANALYTICS_CONFIG = readAnalyticsConfig(
-  typeof import.meta !== 'undefined' ? (import.meta.env as Record<string, unknown> | undefined) : undefined,
-)
+function viteValue(read: () => unknown): unknown {
+  try {
+    return read()
+  } catch {
+    return undefined
+  }
+}
+
+function analyticsEnv(): Record<string, unknown> | undefined {
+  if (typeof import.meta === 'undefined') return undefined
+  return {
+    VITE_ANALYTICS_ENABLED: viteValue(() => import.meta.env.VITE_ANALYTICS_ENABLED),
+    VITE_ANALYTICS_PRECONSENT_MODE: viteValue(() => import.meta.env.VITE_ANALYTICS_PRECONSENT_MODE),
+    VITE_POSTHOG_KEY: viteValue(() => import.meta.env.VITE_POSTHOG_KEY),
+    VITE_POSTHOG_HOST: viteValue(() => import.meta.env.VITE_POSTHOG_HOST),
+  }
+}
+
+export const ANALYTICS_CONFIG = readAnalyticsConfig(analyticsEnv())
