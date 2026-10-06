@@ -32,6 +32,7 @@ export type AiToolAdmin = {
       remove: (paths: string[]) => Promise<{ error: Err }>
     }
   }
+  rpc?: (name: string, args: Record<string, unknown>) => Promise<{ error: Err }>
 }
 
 function asJob(row: Record<string, unknown> | null): JobRow | null {
@@ -152,6 +153,14 @@ export function createAiToolStore(admin: AiToolAdmin): AiToolStore {
     async removeFile(path) {
       const { error } = await admin.storage.from(AI_TOOL_BUCKET).remove([path])
       return !error
+    },
+    async noteSharedRead(input) {
+      if (!admin.rpc) return
+      await admin.rpc('record_staff_shared_read', {
+        p_staff: input.staffId,
+        p_table: input.table,
+        p_row_id: input.rowId,
+      })
     },
     async readSource(path) {
       const { data, error } = await admin.storage.from(AI_TOOL_BUCKET).download(path)

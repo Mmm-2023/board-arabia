@@ -89,6 +89,8 @@ export type AiToolStore = {
   deleteOwned: (jobId: string, userId: string) => Promise<{ storagePath: string } | null>
   removeFile: (path: string) => Promise<boolean>
   readSource?: (path: string) => Promise<string>
+  /** Logs a staff read of a member-shared AI row. Optional so older test stores still run. */
+  noteSharedRead?: (input: { staffId: string; table: string; rowId: string }) => Promise<void>
 }
 
 export type AiAuth =
@@ -241,6 +243,12 @@ async function jobStatus(req: Request, store: AiToolStore, auth: { userId: strin
     return jsonResponse(req, { error: AI_TOOL_MESSAGES.missing, code: 'not_found' }, 404)
   }
   const output = await store.outputByJob(jobId)
+  if (read === 'shared' && store.noteSharedRead) {
+    await store.noteSharedRead({ staffId: auth.userId, table: 'ai_tool_jobs', rowId: job.id })
+    if (output?.id) {
+      await store.noteSharedRead({ staffId: auth.userId, table: 'ai_tool_outputs', rowId: output.id })
+    }
+  }
   return jsonResponse(req, { ok: true, job: publicJob(job), output: output?.body ?? null })
 }
 

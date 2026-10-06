@@ -140,7 +140,7 @@ test('desk accept queues an audited intro sent mark and the alert carries no mai
   ])
   assert.equal(rows.length, 1)
   assert.equal(cleanDeskIntroNote('  Sent.  ').ok, true)
-  assert.equal(deskIntroLine({ kind: 'member', status: 'pending', direction: 'incoming', ask_desk: true }, 'member'), 'They asked the desk to introduce you.')
+  assert.equal(deskIntroLine({ kind: 'member', status: 'pending', direction: 'incoming', ask_desk: true }, 'member'), 'They asked admin to introduce you.')
   assert.equal(deskIntroLine({ kind: 'member', status: 'declined', direction: 'incoming', ask_desk: true }, 'member'), null)
 })
 
@@ -249,8 +249,8 @@ test('contact cards hide phone when unset and stay off pending rows', async () =
     assert.match(html, /Calendar/)
     assert.equal(html.includes('hidden@example.com'), false)
     assert.equal(html.includes('+966500000000'), false)
-    assert.match(html, /They asked the desk to introduce you/)
-    assert.match(html, /The desk will introduce you/)
+    assert.match(html, /They asked admin to introduce you/)
+    assert.match(html, /Admin will introduce you/)
     assert.equal(html.includes('\u2014'), false)
     assert.equal(html.includes('\u2013'), false)
   } finally {

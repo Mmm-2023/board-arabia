@@ -43,7 +43,7 @@ test('open account copy avoids the internal tier name and dashes', () => {
   assert.match(read('src/pages/dashboard/account/views.tsx'), /Request full membership/)
   assert.deepEqual(
     ACCOUNT_SHEET_LINKS.map((item) => item.label),
-    ['Profile', 'Two-step sign-in', 'Membership', 'Help', 'Delete account'],
+    ['Profile', 'Your privacy', 'Two-step sign-in', 'Membership', 'Help', 'Delete account'],
   )
   assert.deepEqual(
     MEMBER_ACCOUNT.map((item) => item.label),

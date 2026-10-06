@@ -151,7 +151,7 @@ test('leave sends a desk note and does not add a member tab', () => {
   assert.equal(cleaned.ok, true)
   assert.equal(LEAVE_BOARD_PATH, '/dashboard/profile/leave')
   assert.match(read('src/pages/dashboard/ProfilePage.tsx'), /Leave Board Arabia/)
-  assert.match(read('src/pages/dashboard/LeaveBoardArabia.tsx'), /Send request to the desk/)
+  assert.match(read('src/pages/dashboard/LeaveBoardArabia.tsx'), /Send request to admin/)
   assert.match(read('src/pages/dashboard/LeaveBoardArabia.tsx'), /sendDeskNote/)
   assert.equal(read('src/pages/dashboard/LeaveBoardArabia.tsx').includes('deleteCandidateAccount'), false)
   assert.match(read('src/pages/dashboard/account/DeleteAccountScreen.tsx'), /deleteCandidateAccount/)

@@ -4,6 +4,12 @@
  */
 import { MEMBER_MESSAGES } from '../../supabase/functions/_shared/due_diligence.ts'
 
+/** Flag name: dd_retention_copy on public.ai_tool_settings. Default false. */
+export function deckHintText(retentionCopy: boolean): string {
+  if (!retentionCopy) return DD_COPY.deckHint
+  return `${DD_COPY.deckHint} Deleted automatically after 30 days.`
+}
+
 export const DD_COPY = {
   browserTitle: 'AI Due Diligence \u00b7 Board Arabia',
   introPrimary: 'Check a pitch deck against publicly available information.',
@@ -31,7 +37,7 @@ export const DD_COPY = {
   deckLabel: 'Pitch deck',
   deckButton: 'Choose PDF or PPTX',
   deckHint:
-    'PDF or PPTX, up to 15 MB. Text-based files work best. Scanned image-only decks may not be readable.',
+    'PDF or PPTX, up to 15 MB. Text-based files work best. Scanned image-only decks may not be readable. Do not upload inside information.',
   ctaPrimary: 'Check this deck',
   ctaDisabled: 'Choose a deck first',
   ctaRunning: 'Starting\u2026',

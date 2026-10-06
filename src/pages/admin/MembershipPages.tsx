@@ -123,18 +123,43 @@ export function MembershipDetailPage() {
   useEffect(() => {
     let cancelled = false
     void Promise.all([
-      supabase.from('candidates').select('*').eq('user_id', candidateId).maybeSingle(),
-      supabase.from('candidate_notes').select('id, body, created_at').eq('candidate_user_id', candidateId).order('created_at'),
-      supabase.from('candidate_events').select('id, kind, detail, created_at').eq('candidate_user_id', candidateId).order('created_at'),
+      supabase.rpc('staff_read_membership_request', { p_user_id: candidateId }),
       supabase.rpc('founding_capacity'),
-    ]).then(([candidate, notes, events, capacity]) => {
+    ]).then(([loaded, capacity]) => {
       if (cancelled) return
-      const row = candidate.data
-      if (!row) {
+      const payload = loaded.data as {
+        candidate?: {
+          user_id: string
+          full_name: string
+          email: string
+          role: string
+          region: string
+          company_name?: string | null
+          job_title?: string | null
+          company_website?: string | null
+          linkedin_url?: string | null
+          statement?: string | null
+          cr_number?: string | null
+          referral_name?: string | null
+          phone?: string | null
+          request_state: string
+          free_webmail?: boolean | null
+          linkedin_checked?: boolean | null
+          cr_checked?: boolean | null
+          ft_source?: string | null
+          ft_medium?: string | null
+        }
+        notes?: { id: string; body: string; created_at: string }[]
+        events?: { id: string; kind: string; detail: unknown; created_at: string }[]
+      } | null
+      const row = payload?.candidate
+      if (loaded.error || !row) {
         setDetail(null)
         setError('Could not load this request.')
         return
       }
+      const notes = { data: payload?.notes || [] }
+      const events = { data: payload?.events || [] }
       const cap = capacity.data as { ksa?: number; intl?: number; ksa_cap?: number; intl_cap?: number } | null
       const ksaLeft = cap ? Math.max(0, (cap.ksa_cap || 50) - (cap.ksa || 0)) : null
       const intlLeft = cap ? Math.max(0, (cap.intl_cap || 50) - (cap.intl || 0)) : null

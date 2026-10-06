@@ -233,10 +233,10 @@ export function deskIntroLine(
     if (row.status === 'accepted') return 'Desk intro queued'
     return 'Desk intro if accepted'
   }
-  if (row.desk_status === 'sent') return 'Intro sent by the desk.'
-  if (row.status === 'accepted') return 'The desk will introduce you.'
-  if (row.direction === 'outgoing') return 'You asked the desk to introduce you.'
-  return 'They asked the desk to introduce you.'
+  if (row.desk_status === 'sent') return 'Intro sent by admin.'
+  if (row.status === 'accepted') return 'Admin will introduce you.'
+  if (row.direction === 'outgoing') return 'You asked admin to introduce you.'
+  return 'They asked admin to introduce you.'
 }
 
 export function presentIntroRow(raw: unknown): IntroRow | null {

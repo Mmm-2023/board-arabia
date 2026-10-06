@@ -117,6 +117,10 @@ verify_jwt = true
 [functions.review-membership]
 verify_jwt = true
 
+# Staff resend for an application. Callers send a staff user JWT. requireStaff checks aal2.
+[functions.notify-application]
+verify_jwt = true
+
 # Staff marketing aggregates. The read key is the secret POSTHOG_PERSONAL_API_KEY.
 # Absent key, or ANALYTICS_ENABLED not exactly true, returns not_live. No key in the repo.
 [functions.marketing-stats]
