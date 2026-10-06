@@ -34,6 +34,7 @@ import { CardSkeleton, EmptyState, ErrorBanner, PermissionState } from '../../sh
 import { MEMBER_VIEWS } from '../../shell/viewCopy'
 import { useMember } from './context'
 import { AiReportOperatorLine } from '../../components/ai/AiReportOperatorLine'
+import { AdminShareBar } from '../../components/mfa/TwoStepScreens'
 import { DueDiligenceReport } from './DueDiligenceReport'
 
 const fieldClass =
@@ -623,14 +624,72 @@ function ReportView({ reportId }: { reportId: string }) {
       </div>
 
       {ready && presented ? (
+        <>
+        <ReportAdminShare reportId={reportId} />
         <DueDiligenceReport
           presented={presented}
           preparedAt={createdAt}
           report={ready.report}
           reportId={reportId}
         />
+        </>
       ) : null}
     </div>
+  )
+}
+
+function ReportAdminShare({ reportId }: { reportId: string }) {
+  const [state, setState] = useState<{ shared: boolean; deckShared: boolean; deckId: string } | null>(null)
+  const [busy, setBusy] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+    void supabase.rpc('own_admin_share_state', { p_kind: 'due_diligence_report', p_id: reportId }).then(({ data, error }) => {
+      if (cancelled || error || !data || typeof data !== 'object') return
+      const row = data as { shared?: unknown; deck_shared?: unknown; deck_id?: unknown }
+      if (typeof row.shared !== 'boolean' || typeof row.deck_id !== 'string') return
+      setState({ shared: row.shared, deckShared: row.deck_shared === true, deckId: row.deck_id })
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [reportId])
+
+  if (!state) return null
+
+  async function toggleReport() {
+    if (!state) return
+    setBusy(true)
+    const next = !state.shared
+    const { error } = await supabase.rpc('set_due_diligence_report_admin_share', {
+      p_report_id: reportId,
+      p_share: next,
+    })
+    setBusy(false)
+    if (!error) setState({ ...state, shared: next })
+  }
+
+  async function toggleDeck() {
+    if (!state) return
+    setBusy(true)
+    const next = !state.deckShared
+    const { error } = await supabase.rpc('set_due_diligence_deck_admin_share', {
+      p_deck_id: state.deckId,
+      p_share: next,
+    })
+    setBusy(false)
+    if (!error) setState({ ...state, deckShared: next })
+  }
+
+  return (
+    <AdminShareBar
+      shared={state.shared}
+      deckShared={state.deckShared}
+      busy={busy}
+      showDeck
+      onToggle={() => void toggleReport()}
+      onToggleDeck={() => void toggleDeck()}
+    />
   )
 }
 

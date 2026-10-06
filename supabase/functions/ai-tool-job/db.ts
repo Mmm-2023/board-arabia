@@ -49,6 +49,7 @@ function asJob(row: Record<string, unknown> | null): JobRow | null {
     error: row.error == null ? null : String(row.error),
     created_at: String(row.created_at),
     updated_at: String(row.updated_at),
+    shared_with_admin_at: row.shared_with_admin_at == null ? null : String(row.shared_with_admin_at),
   }
 }
 
@@ -78,13 +79,18 @@ export function createAiToolStore(admin: AiToolAdmin): AiToolStore {
       return data as unknown as ConsentRow
     },
     async jobById(jobId) {
-      const { data, error } = await admin
+      const columns = 'id, member_id, tool_key, status, step, storage_path, file_name, mime_type, byte_size, error, created_at, updated_at'
+      const full = await admin
         .from('ai_tool_jobs')
-        .select('id, member_id, tool_key, status, step, storage_path, file_name, mime_type, byte_size, error, created_at, updated_at')
+        .select(`${columns}, shared_with_admin_at`)
         .eq('id', jobId)
         .maybeSingle()
-      if (error) return null
-      return asJob(data)
+      const missingShare = full.error && /shared_with_admin_at|does not exist|schema cache/i.test(full.error.message || '')
+      const loaded = missingShare
+        ? await admin.from('ai_tool_jobs').select(columns).eq('id', jobId).maybeSingle()
+        : full
+      if (loaded.error) return null
+      return asJob(loaded.data)
     },
     async outputByJob(jobId) {
       const { data, error } = await admin

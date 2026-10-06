@@ -1,3 +1,5 @@
+import { staffApiDecision } from '../_shared/staff_auth.ts'
+
 /** Staff role writes for invite-master.
  * The caller role is the staff_users value read with the service role for the
  * verified JWT user. It is never taken from the request body. requestedRole is
@@ -18,6 +20,23 @@ export type StaffRoleStore = {
 export type StaffRoleResult =
   | { ok: false; status: 400 | 403 | 500; error: string }
   | { ok: true; role: StaffRoleName; changed: boolean }
+
+/** requireStaff (aal2) runs first. A master at aal1 never reaches a write.
+ * A staff row at aal2 is still refused here.
+ */
+export function gateInviteMaster(input: {
+  userId: string | null
+  role: unknown
+  aal: string | null
+}):
+  | { allow: true; role: 'master' }
+  | { allow: false; status: 401 | 403; error: string; code?: 'mfa_required' } {
+  const staff = staffApiDecision({ userId: input.userId, role: input.role, aal: input.aal })
+  if (!staff.allow) return staff
+  const master = assertMasterCaller(staff.role)
+  if (!master.ok) return { allow: false, status: master.status, error: master.error }
+  return { allow: true, role: 'master' }
+}
 
 export function assertMasterCaller(
   callerRole: unknown,

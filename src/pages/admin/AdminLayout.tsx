@@ -1,5 +1,8 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Navigate, Outlet, useLocation } from 'react-router-dom'
+import { MfaHold } from '../../components/mfa/MfaHold'
+import { readAssurance } from '../../lib/mfa'
+import { routeHold, type MfaHold as Hold } from '../../lib/mfaFlow'
 import { noteStaffSession } from '../../lib/tracking/browser'
 import { applyStaffBrowserOptOut } from '../../lib/tracking/staffOptOut'
 import { clientAdminGate } from '../../../supabase/functions/_shared/staff_auth.ts'
@@ -37,6 +40,42 @@ function AdminFrame() {
 
   if (clientAdminGate(true, room.staffRole) !== 'allow') {
     return <Navigate to="/dashboard" replace />
+  }
+
+  return <StaffMfaGate room={room} />
+}
+
+function StaffMfaGate({ room }: { room: ReturnType<typeof useAdmin> }) {
+  const [hold, setHold] = useState<Hold | 'loading'>('loading')
+  const [passCount, setPassCount] = useState(0)
+
+  useEffect(() => {
+    let cancelled = false
+    void readAssurance().then((assurance) => {
+      if (cancelled) return
+      setHold(
+        routeHold({
+          area: 'staff',
+          currentLevel: assurance.currentLevel,
+          verifiedFactor: assurance.verifiedFactor,
+        }),
+      )
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [passCount, room.session])
+
+  if (hold === 'loading') {
+    return (
+      <div className="shell-safe-top shell-safe-x flex min-h-dvh items-center justify-center bg-ink text-pearl">
+        <p className="text-pearl/60">Loading…</p>
+      </div>
+    )
+  }
+
+  if (hold !== 'clear') {
+    return <MfaHold mode={hold} tone="dark" onPassed={() => setPassCount((value) => value + 1)} />
   }
 
   return <StaffFrame room={room} />

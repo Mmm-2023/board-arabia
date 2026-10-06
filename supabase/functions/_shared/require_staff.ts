@@ -1,4 +1,5 @@
 import { createClient, type SupabaseClient, type User } from 'https://esm.sh/@supabase/supabase-js@2.49.1'
+import { aalFromVerifiedToken } from './session_aal.ts'
 import { staffApiDecision, type StaffRole } from './staff_auth.ts'
 
 export type StaffSession = {
@@ -12,7 +13,7 @@ export type StaffSession = {
  */
 export async function requireStaff(
   req: Request,
-  respond: (body: { error: string }, status: number) => Response,
+  respond: (body: { error: string; code?: string }, status: number) => Response,
 ): Promise<StaffSession | Response> {
   const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
   const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
@@ -32,6 +33,7 @@ export async function requireStaff(
   } = await userClient.auth.getUser(token)
   if (userError || !user) return respond({ error: 'Unauthorized' }, 401)
 
+  const aal = aalFromVerifiedToken(token)
   const admin = createClient(supabaseUrl, serviceKey)
   const { data: staff, error: staffError } = await admin
     .from('staff_users')
@@ -42,8 +44,14 @@ export async function requireStaff(
   const decision = staffApiDecision({
     userId: user.id,
     role: staffError ? null : staff?.role,
+    aal,
   })
-  if (!decision.allow) return respond({ error: decision.error }, decision.status)
+  if (!decision.allow) {
+    return respond(
+      decision.code ? { error: decision.error, code: decision.code } : { error: decision.error },
+      decision.status,
+    )
+  }
 
   return { user, role: decision.role, admin }
 }

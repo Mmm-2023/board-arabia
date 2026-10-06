@@ -160,6 +160,7 @@ export default function App() {
         </Route>
         <Route path="profile/leave" element={<LeaveBoardArabiaPage />} />
         <Route path="profile" element={<ProfilePage />} />
+        <Route path="two-step" element={<TwoStepPage />} />
         <Route path="help" element={<HelpPage />} />
         <Route path="sponsorship" element={<SponsorshipPage />} />
         <Route path="directory" element={<RedirectKeep />} />
@@ -187,6 +188,7 @@ export default function App() {
 }
 
 const AiToolPage = lazy(() => import('./pages/dashboard/AiToolPage').then((m) => ({ default: m.AiToolPage })))
+const TwoStepPage = lazy(() => import('./pages/dashboard/TwoStepPage').then((m) => ({ default: m.TwoStepPage })))
 const StaffAiToolsPage = lazy(() =>
   import('./pages/admin/StaffAiToolsPage').then((m) => ({ default: m.StaffAiToolsPage })),
 )

@@ -23,6 +23,8 @@ export type DealCaller = {
   memberStatus: MemberStatus
   seat: MemberSeat | null
   staff: boolean
+  /** Present when the Edge session read aal from the verified token. */
+  aal?: string | null
 }
 
 export type DealGate = {
@@ -33,8 +35,10 @@ export type DealGate = {
   call: (name: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: { message: string } | null }>
 }
 
+export type DealOpenFailure = { error: string; status: number; code?: string }
+
 export type DealRoomDeps = {
-  open: (req: Request) => Promise<DealGate | { error: string; status: number }>
+  open: (req: Request) => Promise<DealGate | DealOpenFailure>
   deliverInvite: (job: { to: string; roomName: string; purpose: string; ownerName: string }) => void
 }
 
@@ -71,7 +75,10 @@ export async function handleDealRoom(req: Request, endpoint: DealEndpoint, deps:
   if (req.method !== 'POST') return jsonResponse(req, { error: 'Method not allowed' }, 405)
 
   const opened = await deps.open(req)
-  if ('error' in opened) return jsonResponse(req, { error: opened.error }, opened.status)
+  if ('error' in opened) {
+    const code = 'code' in opened ? opened.code : undefined
+    return jsonResponse(req, code ? { error: opened.error, code } : { error: opened.error }, opened.status)
+  }
 
   const early = endpointGate(endpoint, opened.caller)
   if (!early.allow) return jsonResponse(req, reasonBody(early.reason), early.status)
@@ -187,7 +194,10 @@ async function staffRoom(req: Request, gate: DealGate, body: unknown): Promise<R
   if (parsed.action === 'list') {
     const decision = decideDealRoom({ actor: actorOf(gate, 'none'), action: 'list_all' })
     if (!decision.allow) return jsonResponse(req, reasonBody(decision.reason), decision.status)
-    const result = await gate.call('list_all_deal_rooms', { p_actor: gate.caller.userId })
+    const result = await gate.call('list_all_deal_rooms', {
+      p_actor: gate.caller.userId,
+      p_aal: gate.caller.aal || '',
+    })
     return rpcResponse(req, result)
   }
   const room = await gate.loadRoom(parsed.roomId)
@@ -199,6 +209,7 @@ async function staffRoom(req: Request, gate: DealGate, body: unknown): Promise<R
   if (!decision.allow) return jsonResponse(req, reasonBody(decision.reason), decision.status)
   const result = await gate.call('close_any_deal_room', {
     p_actor: gate.caller.userId,
+    p_aal: gate.caller.aal || '',
     p_room_id: parsed.roomId,
   })
   return rpcResponse(req, result)

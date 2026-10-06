@@ -1,8 +1,11 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import type { Session } from '@supabase/supabase-js'
-import { Link, Navigate, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, Navigate, useLocation, useSearchParams } from 'react-router-dom'
 import { BrandLockup } from '../components/BrandLockup'
+import { MfaHold } from '../components/mfa/MfaHold'
 import { clearPasswordFlag } from '../lib/clearPasswordFlag'
+import { readAssurance } from '../lib/mfa'
+import { routeHold, type MfaHold as Hold } from '../lib/mfaFlow'
 import { resolveAfterLogin } from '../lib/memberGate'
 import { isStaffReturn, safeReturnPath } from '../lib/returnPath'
 import { track } from '../lib/analytics'
@@ -10,7 +13,6 @@ import { sendPasswordReset, supabase } from '../lib/supabase'
 import { useNoIndex } from '../lib/usePageTitle'
 
 export function LoginPage() {
-  const navigate = useNavigate()
   const location = useLocation()
   const [searchParams] = useSearchParams()
   const onStaffPath = location.pathname === '/login/staff'
@@ -24,6 +26,8 @@ export function LoginPage() {
   const [authError, setAuthError] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [destination, setDestination] = useState<string | null>(null)
+  const [hold, setHold] = useState<Hold | 'loading'>('loading')
+  const [passCount, setPassCount] = useState(0)
   const [resetNote, setResetNote] = useState('')
   const codeType = otpType(searchParams.get('otp_type'))
 
@@ -44,13 +48,29 @@ export function LoginPage() {
   useEffect(() => {
     if (!session) return
     let cancelled = false
-    void resolveAfterLogin(session.user.id, nextPath).then((path) => {
-      if (!cancelled) setDestination(path)
+    setHold('loading')
+    setDestination(null)
+    void readAssurance().then(async (assurance) => {
+      if (cancelled) return
+      const step = routeHold({
+        area: staffEntry ? 'staff' : 'member',
+        currentLevel: assurance.currentLevel,
+        verifiedFactor: assurance.verifiedFactor,
+      })
+      if (step !== 'clear') {
+        setHold(step)
+        return
+      }
+      const path = await resolveAfterLogin(session.user.id, nextPath)
+      if (!cancelled) {
+        setHold('clear')
+        setDestination(path)
+      }
     })
     return () => {
       cancelled = true
     }
-  }, [session, nextPath])
+  }, [session, nextPath, staffEntry, passCount])
 
   async function onSignIn(e: FormEvent) {
     e.preventDefault()
@@ -66,10 +86,8 @@ export function LoginPage() {
       return
     }
     await clearPasswordFlag(data.user.id)
-    track('login', { method: 'password', path: '/dashboard' })
-    const dest = await resolveAfterLogin(data.user.id, nextPath)
+    track('login', { method: 'password', path: staffEntry ? '/admin' : '/dashboard' })
     setSubmitting(false)
-    navigate(dest, { replace: true })
   }
 
   async function onReset() {
@@ -108,9 +126,7 @@ export function LoginPage() {
       return
     }
     track('login', { method: 'code', path: '/dashboard' })
-    const dest = await resolveAfterLogin(data.user.id, nextPath)
     setSubmitting(false)
-    navigate(dest, { replace: true })
   }
 
   if (session === undefined) {
@@ -122,7 +138,16 @@ export function LoginPage() {
   }
 
   if (session) {
-    if (!destination) {
+    if (hold === 'challenge' || hold === 'enrol') {
+      return (
+        <MfaHold
+          mode={hold}
+          tone="dark"
+          onPassed={() => setPassCount((value) => value + 1)}
+        />
+      )
+    }
+    if (hold !== 'clear' || !destination) {
       return (
         <div className="flex min-h-dvh items-center justify-center bg-ink text-pearl">
           <p className="text-stone/70">Loading…</p>
@@ -248,7 +273,10 @@ export function LoginPage() {
             </form>
           )}
 
-          <p className="mt-8 text-[0.85rem] leading-relaxed text-pearl/45">
+          <p className="mt-8 text-[0.85rem] leading-relaxed text-pearl/55">
+            Signed-in area. Never share your one-time code.
+          </p>
+          <p className="mt-4 text-[0.85rem] leading-relaxed text-pearl/45">
             {staffEntry
               ? 'Forgot password? sends a link to choose a new password on this site. This page does not create accounts.'
               : 'Admission is by invitation. This page does not create accounts. Forgot password? sends a link to choose a new password.'}

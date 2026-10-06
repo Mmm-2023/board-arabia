@@ -1228,6 +1228,26 @@ export type Database = {
         Args: { p_job_id: string }
         Returns: Json
       }
+      set_due_diligence_report_admin_share: {
+        Args: { p_report_id: string; p_share: boolean }
+        Returns: Json
+      }
+      set_due_diligence_deck_admin_share: {
+        Args: { p_deck_id: string; p_share: boolean }
+        Returns: Json
+      }
+      set_ai_tool_result_admin_share: {
+        Args: { p_job_id: string; p_share: boolean }
+        Returns: Json
+      }
+      own_admin_share_state: {
+        Args: { p_kind: string; p_id: string }
+        Returns: Json
+      }
+      staff_private_work_counts: {
+        Args: Record<string, never>
+        Returns: Json
+      }
     }
     Enums: Record<string, never>
     CompositeTypes: Record<string, never>

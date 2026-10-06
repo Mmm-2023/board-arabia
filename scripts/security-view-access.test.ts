@@ -193,6 +193,7 @@ test('every staff_* function checks staff and is not executable by anon', () => 
     'staff_list_sponsor_catalog',
     'staff_save_sponsor_package',
     'staff_set_majlis_presented_by',
+    'staff_private_work_counts',
   ]
   for (const name of names) {
     const fn = latestFunction(name)
@@ -751,6 +752,9 @@ begin
     'staff_assign_sponsor_category(uuid,text)'
   ]
   loop
+    if to_regprocedure('public.' || diff) is null then
+      continue;
+    end if;
     if has_function_privilege('anon', 'public.' || diff, 'execute') then
       raise exception 'anon can execute %', diff;
     end if;

@@ -25,6 +25,7 @@ import {
   type MarketSearchHit,
 } from './tools/market_brief.ts'
 import type { StubOutput } from './tools/types.ts'
+import { foreignRowRead } from '../_shared/staff_auth.ts'
 
 export const AI_TOOL_MESSAGES = {
   consent: 'Consent is required before a run.',
@@ -52,6 +53,7 @@ export type JobRow = {
   error: string | null
   created_at: string
   updated_at: string
+  shared_with_admin_at?: string | null
 }
 
 export type OutputRow = {
@@ -90,7 +92,7 @@ export type AiToolStore = {
 }
 
 export type AiAuth =
-  | { ok: true; userId: string }
+  | { ok: true; userId: string; aal?: string | null }
   | { ok: false; status: number; error: string; code: string }
 
 export type MarketSearchResult =
@@ -136,7 +138,7 @@ export async function handleAiToolJob(req: Request, deps: AiToolDeps): Promise<R
   if (!store) return jsonResponse(req, { error: AI_TOOL_MESSAGES.start, code: 'not_configured' }, 503)
 
   if (action === 'start') return startJob(req, store, auth.userId, body, deps)
-  if (action === 'status') return jobStatus(req, store, auth.userId, body)
+  if (action === 'status') return jobStatus(req, store, auth, body)
   if (action === 'step') return stepJob(req, store, auth.userId, body, deps)
   if (action === 'delete') return deleteJob(req, store, auth.userId, body)
   return jsonResponse(req, { error: AI_TOOL_MESSAGES.start, code: 'bad_request' }, 400)
@@ -219,13 +221,23 @@ async function startJob(
   return jsonResponse(req, { ok: true, job_id: jobId, status: 'ready', output: stepped.output })
 }
 
-async function jobStatus(req: Request, store: AiToolStore, userId: string, body: Record<string, unknown>): Promise<Response> {
+async function jobStatus(req: Request, store: AiToolStore, auth: { userId: string; aal?: string | null }, body: Record<string, unknown>): Promise<Response> {
   const jobId = String(body.job_id || '')
   if (!isUuid(jobId)) return jsonResponse(req, { error: AI_TOOL_MESSAGES.missing, code: 'not_found' }, 404)
   const job = await store.jobById(jobId)
   if (!job) return jsonResponse(req, { error: AI_TOOL_MESSAGES.missing, code: 'not_found' }, 404)
-  const staff = await store.isStaff(userId)
-  if (job.member_id !== userId && !staff) {
+  const staff = await store.isStaff(auth.userId)
+  const read = foreignRowRead({
+    ownerId: job.member_id,
+    callerId: auth.userId,
+    callerIsStaff: staff,
+    aal: auth.aal ?? null,
+    shared: Boolean(job.shared_with_admin_at),
+  })
+  if (read === 'mfa_required') {
+    return jsonResponse(req, { error: 'mfa_required', code: 'mfa_required' }, 403)
+  }
+  if (read === 'hidden') {
     return jsonResponse(req, { error: AI_TOOL_MESSAGES.missing, code: 'not_found' }, 404)
   }
   const output = await store.outputByJob(jobId)
