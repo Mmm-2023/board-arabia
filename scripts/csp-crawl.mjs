@@ -128,10 +128,17 @@ function memberUser(factors) {
   return user
 }
 
+const CORS = {
+  'access-control-allow-origin': '*',
+  'access-control-allow-headers': '*',
+  'access-control-allow-methods': 'GET,POST,PATCH,PUT,DELETE,OPTIONS',
+}
+
 function fulfillJson(route, body, status = 200) {
   return route.fulfill({
     status,
     contentType: 'application/json',
+    headers: CORS,
     body: JSON.stringify(body),
   })
 }
@@ -139,6 +146,9 @@ function fulfillJson(route, body, status = 200) {
 async function mockSupabase(route, state) {
   const url = route.request().url()
   if (state.trace) console.error(`supabase ${route.request().method()} ${url}`)
+  if (route.request().method() === 'OPTIONS') {
+    return route.fulfill({ status: 204, headers: CORS })
+  }
   const accept = route.request().headers().accept || ''
   const single = accept.includes('application/vnd.pgrst.object+json')
   const user = memberUser(state.factors)
@@ -287,6 +297,14 @@ async function shots(page, name, selector) {
   await shot(page, name, 390, selector)
 }
 
+async function waitForHydration(page) {
+  await page.waitForFunction(() => {
+    const node = document.querySelector('#root input, #root button, #root a')
+    if (!node) return false
+    return Object.keys(node).some((key) => key.startsWith('__react'))
+  })
+}
+
 async function main() {
   if (!fs.existsSync(path.join(dist, 'index.html'))) fail('dist is missing. Run scripts/build-for-csp-crawl.mjs first.')
   assertTestKey()
@@ -406,6 +424,7 @@ async function main() {
 
     await publicPage.page.goto(`${origin}/apply`, { waitUntil: 'load' })
     await publicPage.page.locator('h1').waitFor()
+    await waitForHydration(publicPage.page)
     const applyCta = publicPage.page.getByRole('link', { name: 'Apply for consideration' }).first()
     if ((await applyCta.getAttribute('href')) !== '/apply') {
       fail('a public Apply for consideration link does not go to /apply')
@@ -420,7 +439,15 @@ async function main() {
     await publicPage.page.locator('#job_titles').fill('Chair')
     await publicPage.page.locator('#companies').fill('Example Co')
     await publicPage.page.getByRole('button', { name: 'Submit for consideration' }).click()
-    await publicPage.page.getByRole('heading', { name: 'Consideration requested' }).waitFor()
+    try {
+      await publicPage.page.getByRole('heading', { name: 'Consideration requested' }).waitFor()
+    } catch (error) {
+      const alert = await publicPage.page.locator('[role="alert"]').allTextContents()
+      const name = await publicPage.page.locator('#full_name').inputValue().catch(() => '')
+      console.error(`apply alert: ${alert.join(' | ')}`)
+      console.error(`apply name field: ${name}`)
+      throw error
+    }
     if (!state.submitted) fail('Apply submit did not reach the application endpoint')
     await collect(publicPage.page, 'flow:apply-submit')
 
