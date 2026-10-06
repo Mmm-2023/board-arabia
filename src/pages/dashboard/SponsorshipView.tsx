@@ -2,9 +2,11 @@ import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { formatMajlisWhen } from '../../../supabase/functions/_shared/majlis.ts'
 import {
+  includedLine,
+  introMonthLine,
+  introMonthNote,
   introStatusLine,
   NO_PACKAGE,
-  slotLine,
   sponsorPackageFace,
   type SponsorDesk,
 } from '../../lib/sponsorDesk'
@@ -19,7 +21,7 @@ export function SponsorshipView({ desk, portrait = null }: { desk: SponsorDesk; 
       <p className="text-[0.72rem] font-semibold tracking-[0.14em] text-brass uppercase">Sponsorship</p>
       <h1 className="mt-3 font-display text-[2.2rem] font-bold tracking-[-0.03em]">Sponsorship</h1>
       <p className="mt-3 max-w-xl text-[1rem] leading-relaxed text-ink/65">
-        What this seat includes, and what has been used.
+        What this seat includes. Intro credits are counted for the current month.
       </p>
         </div>
       </div>
@@ -47,19 +49,19 @@ export function SponsorshipView({ desk, portrait = null }: { desk: SponsorDesk; 
       <ul className="mt-4 grid gap-3 sm:grid-cols-2">
         <Metric
           label="Majlis slots"
-          value={slotLine(desk.majlis.used, desk.majlis.entitled)}
-          note="Gatherings that list you as Presented by."
+          value={includedLine(desk.majlis.entitled)}
+          note="Included with the package."
         />
         <Metric label="Approved intros" value={introStatusLine(desk.intros.approved, desk.intros.pending, desk.intros.declined)} />
         <Metric
           label="Intro credits"
-          value={desk.credits ? slotLine(desk.credits.intro_used, desk.credits.intro_entitled) : NO_PACKAGE}
-          note="An approved intro uses one credit."
+          value={introMonthLine(desk.credits)}
+          note={introMonthNote(desk.credits) ?? undefined}
         />
         <Metric
           label="Room credits"
-          value={desk.credits ? slotLine(desk.credits.room_used, desk.credits.room_entitled) : NO_PACKAGE}
-          note="Rooms you opened."
+          value={desk.credits ? includedLine(desk.credits.room_entitled) : NO_PACKAGE}
+          note="Included with the package."
         />
       </ul>
 

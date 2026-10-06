@@ -43,7 +43,14 @@ const desk: SponsorDesk = {
     ],
   },
   intros: { approved: 1, pending: 1, declined: 0 },
-  credits: { intro_entitled: 2, intro_used: 1, room_entitled: 0, room_used: 0 },
+  credits: {
+    intro_entitled: 2,
+    intro_used: 1,
+    intro_base: 5,
+    intro_allowance: 7,
+    room_entitled: 0,
+    room_used: 0,
+  },
 }
 
 const directory: DirectoryCard[] = [

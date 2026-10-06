@@ -12,6 +12,13 @@ import { pendingInvites, type MemberDealRoom } from '../../lib/dealRoomView'
 import { assembleHome, isFoundingMember, type AttentionItem, type ProfileMatchInput } from '../../lib/homeSnapshot'
 import { loadHomeSources, type LoadedSources } from '../../lib/homeSnapshotLoad'
 import type { IntroSuggestion } from '../../lib/introSuggestions'
+import {
+  isProfilePromptDismissed,
+  profilePromptShowing,
+  profilePromptStorageKey,
+  suggestionTagsReady,
+} from '../../lib/suggestionProfile'
+import { useOwnSuggestionProfile } from '../../lib/suggestionProfileLoad'
 import { outgoingMemberStatus, type IntroQuota, type IntroRow } from '../../lib/memberIntros'
 import { seatLabel } from '../../lib/member'
 import { loadProfileMatch, profileMatchFromRow } from '../../lib/profileMatchLoad'
@@ -23,8 +30,19 @@ import { useDashboardStatus, useMember } from './context'
 import { AdmitShareCard } from './AdmitShareCard'
 import { HomeSnapshotView } from './HomeSnapshotView'
 import { IntroSuggestions } from './IntroSuggestions'
+import { ProfileCompletenessPrompt } from './ProfileCompletenessPrompt'
 import { suggestionPortrait } from './suggestionPortrait'
 import { PendingInviteCards } from './PendingInviteCards'
+import { SponsorWelcomeGate } from './SponsorWelcomeGate'
+
+function readPromptDismissed(userId: string) {
+  if (typeof window === 'undefined') return false
+  try {
+    return isProfilePromptDismissed(window.localStorage.getItem(profilePromptStorageKey(userId)))
+  } catch {
+    return false
+  }
+}
 
 const EMPTY_SOURCES: LoadedSources = {
   mandates: null,
@@ -43,7 +61,19 @@ const EMPTY_SOURCES: LoadedSources = {
 }
 
 export function DashboardHome() {
-  const { member, profile, userId } = useMember()
+  const { member, profile, staffRole, userId } = useMember()
+  const suggestionProfile = useOwnSuggestionProfile(userId)
+  const [promptUser, setPromptUser] = useState(userId)
+  const [promptDismissed, setPromptDismissed] = useState(() => readPromptDismissed(userId))
+  if (promptUser !== userId) {
+    setPromptUser(userId)
+    setPromptDismissed(readPromptDismissed(userId))
+  }
+  const promptShowing = profilePromptShowing({
+    staff: staffRole != null,
+    dismissed: promptDismissed,
+    profile: suggestionProfile,
+  })
   const status = useDashboardStatus()
   const [attempt, setAttempt] = useState(0)
   const [profileMatch, setProfileMatch] = useState<ProfileMatchInput>({
@@ -64,7 +94,7 @@ export function DashboardHome() {
   const [upgradeOpen, setUpgradeOpen] = useState(false)
   const [suggestAttempt, setSuggestAttempt] = useState(0)
   const [suggestions, setSuggestions] = useState<IntroSuggestion[]>([])
-  const [suggestFailed, setSuggestFailed] = useState(false)
+  const [suggestStatus, setSuggestStatus] = useState<'loading' | 'ready' | 'error'>('loading')
   const [suggestQuota, setSuggestQuota] = useState<IntroQuota | null>(null)
   const [suggestIntros, setSuggestIntros] = useState<IntroRow[]>([])
   const [suggestBusy, setSuggestBusy] = useState<string | null>(null)
@@ -154,11 +184,11 @@ export function DashboardHome() {
     void fetchMyIntroSuggestions().then((result) => {
       if (cancelled) return
       if (result.status === 'error') {
-        setSuggestFailed(true)
+        setSuggestStatus('error')
         setSuggestions([])
         return
       }
-      setSuggestFailed(false)
+      setSuggestStatus('ready')
       setSuggestions(result.status === 'ready' ? result.rows : [])
     })
     void fetchIntroQuota().then((result) => {
@@ -306,6 +336,7 @@ export function DashboardHome() {
           />
         </div>
       ) : null}
+      {member.seat === 'sponsor' ? <SponsorWelcomeGate /> : null}
       {member.seat === 'sponsor' ? (
         <section className="mb-8 max-w-3xl border border-[var(--ba-line)] bg-white px-5 py-4">
           <h2 className="font-display text-[1.25rem] font-semibold tracking-[-0.02em]">Your sponsorship</h2>
@@ -348,17 +379,30 @@ export function DashboardHome() {
         }
         figuresAsOf={sources.figuresAsOf}
         userId={userId}
+        hasSuggestions={suggestions.length > 0}
+        promptShowing={promptShowing}
+        profilePrompt={
+          <ProfileCompletenessPrompt
+            userId={userId}
+            staff={staffRole != null}
+            profile={suggestionProfile}
+            onDismiss={() => setPromptDismissed(true)}
+          />
+        }
         suggestionsSlot={
-          suggestFailed ? (
+          suggestStatus === 'error' ? (
             <div className="mt-4">
               <ErrorBanner
                 tone="member"
                 message={MEMBER_VIEWS.home.error}
                 retryLabel={MEMBER_VIEWS.home.retry}
-                onRetry={() => setSuggestAttempt((value) => value + 1)}
+                onRetry={() => {
+                  setSuggestStatus('loading')
+                  setSuggestAttempt((value) => value + 1)
+                }}
               />
             </div>
-          ) : suggestions.length > 0 ? (
+          ) : suggestStatus === 'ready' && suggestionProfile.status !== 'loading' ? (
             <IntroSuggestions
               rows={suggestions}
               quota={suggestQuota}
@@ -366,6 +410,8 @@ export function DashboardHome() {
               busyId={suggestBusy}
               errorId={suggestErrorId}
               error={suggestError}
+              showEmpty
+              emptyMode={suggestionTagsReady(suggestionProfile) ? 'complete' : 'needs_tags'}
               portrait={suggestionPortrait}
               onRequest={requestSuggestion}
             />

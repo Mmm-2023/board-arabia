@@ -204,6 +204,7 @@ test('every staff_* function checks staff and is not executable by anon', () => 
     'staff_link_re_club_room',
     'staff_assign_sponsor_package',
     'staff_list_sponsor_catalog',
+    'staff_sponsor_handovers',
     'staff_save_sponsor_package',
     'staff_set_majlis_presented_by',
     'staff_private_work_counts',

@@ -35,6 +35,8 @@ export type SponsorDesk = {
   credits: {
     intro_entitled: number
     intro_used: number
+    intro_base: number | null
+    intro_allowance: number | null
     room_entitled: number
     room_used: number
   } | null
@@ -108,6 +110,22 @@ export function presentedByLine(label: string | null | undefined): string | null
 export function slotLine(used: number, entitled: number | null): string {
   if (entitled == null) return NO_PACKAGE
   return `${used} of ${entitled} used`
+}
+
+/** Room credits and majlis slots are included until a used count is enforced. */
+export function includedLine(entitled: number | null): string {
+  if (entitled == null) return NO_PACKAGE
+  return `${entitled} included`
+}
+
+export function introMonthLine(credits: SponsorDesk['credits']): string {
+  if (!credits || credits.intro_allowance == null) return NO_PACKAGE
+  return `${credits.intro_used} of ${credits.intro_allowance} used this month`
+}
+
+export function introMonthNote(credits: SponsorDesk['credits']): string | null {
+  if (!credits || credits.intro_base == null || credits.intro_allowance == null) return null
+  return `Package credits add ${credits.intro_entitled} to the monthly allowance of ${credits.intro_base}. This count is the current Riyadh month.`
 }
 
 export function introStatusLine(approved: number, pending: number, declined: number): string {
@@ -261,9 +279,13 @@ function presentCredits(raw: unknown, pack: SponsorPackage | null): SponsorDesk[
   const introUsed = count(row.intro_used)
   const roomUsed = count(row.room_used)
   if (introUsed == null || roomUsed == null) return null
+  const introBase = row.intro_base == null ? null : count(row.intro_base)
+  if (row.intro_base != null && introBase == null) return null
   return {
     intro_entitled: pack.intro_credits,
     intro_used: introUsed,
+    intro_base: introBase,
+    intro_allowance: introBase == null ? null : introBase + pack.intro_credits,
     room_entitled: pack.room_credits,
     room_used: roomUsed,
   }

@@ -21,7 +21,11 @@ function weeklyStub(): string {
   return text.slice(body, end)
 }
 
-test('staff display name migration sorts after the directory hide migration', () => {
+for (const title of [
+  'staff display name migration sorts after the directory hide migration',
+  'staff display name migration sorts after the migrations it follows',
+]) {
+  test(title, () => {
   const sql = readFileSync(path.join(migrationsDir, migrationName), 'utf8')
   const names = readdirSync(migrationsDir).filter((name) => name.endsWith('.sql')).sort()
   assert.ok(names.includes(migrationName))
@@ -45,7 +49,8 @@ test('staff display name migration sorts after the directory hide migration', ()
   assert.equal(sql.includes('\u2013'), false)
   assert.equal(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/.test(sql), false)
   assert.equal(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i.test(sql), false)
-})
+  })
+}
 
 test('staff display name rules run on postgres with prior migrations', { timeout: 180_000 }, () => {
   const names = readdirSync(migrationsDir).filter((name) => name.endsWith('.sql')).sort()

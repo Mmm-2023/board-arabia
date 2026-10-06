@@ -3,10 +3,13 @@ import { SignedAvatar } from '../../components/SignedAvatar'
 import { suggestionPortrait } from './suggestionPortrait'
 import { fetchIntroContacts, fetchIntroQuota, fetchMyIntroSuggestions, fetchMyIntros, recordIntroMeet, requestMemberIntro, respondMemberIntro } from '../../lib/demoFetch'
 import type { IntroSuggestion } from '../../lib/introSuggestions'
+import { suggestionTagsReady } from '../../lib/suggestionProfile'
+import { useOwnSuggestionProfile } from '../../lib/suggestionProfileLoad'
 import { introQuotaHint, outgoingMemberStatus, type IntroContact, type IntroQuota, type IntroRow, type MeetOutcome } from '../../lib/memberIntros'
 import { useNoIndex } from '../../lib/usePageTitle'
 import { CardSkeleton, ErrorBanner } from '../../shell/ViewState'
 import { MEMBER_VIEWS } from '../../shell/viewCopy'
+import { useMember } from './context'
 import { IntroBoard } from './IntroBoard'
 import { IntroSuggestions } from './IntroSuggestions'
 
@@ -16,6 +19,8 @@ type ListState =
   | { status: 'ready'; rows: IntroRow[] }
 
 export function IntrosPage() {
+  const { userId } = useMember()
+  const suggestionProfile = useOwnSuggestionProfile(userId)
   const [list, setList] = useState<ListState>({ status: 'loading' })
   const [attempt, setAttempt] = useState(0)
   const [busyId, setBusyId] = useState<string | null>(null)
@@ -138,7 +143,8 @@ export function IntrosPage() {
           busyId={requestBusy}
           errorId={requestErrorId}
           error={requestError}
-          showEmpty={list.status === 'ready'}
+          showEmpty={list.status === 'ready' && suggestionProfile.status !== 'loading'}
+          emptyMode={suggestionTagsReady(suggestionProfile) ? 'complete' : 'needs_tags'}
           portrait={suggestionPortrait}
           onRequest={(id, reason, askDesk) => void onRequestSuggestion(id, reason, askDesk)}
         />

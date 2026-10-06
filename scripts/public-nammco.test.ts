@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { createHash } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import test from 'node:test'
 import { createElement } from 'react'
@@ -16,6 +17,20 @@ import {
 function read(rel: string) {
   return readFileSync(new URL(`../${rel}`, import.meta.url), 'utf8')
 }
+
+test('public-nammco exports match the legal allowlist', () => {
+  const fileUrl = new URL('./public-nammco.mjs', import.meta.url)
+  const bytes = readFileSync(fileUrl)
+  const hash = createHash('sha256').update(bytes).digest('hex')
+  assert.equal(hash, 'b238d15f9eec077b11b3d308796274545e5f055d74ccfbcbbab6ba393f3f9245')
+  assert.equal(FOOTER_NAMMCO_CREDIT, 'powered by nammco')
+  assert.equal(LEGAL_ENTITY_LINE, 'NAMMCO Holding Co.')
+  assert.equal(LEGAL_ENTITY_CR, '7043252647')
+  const source = bytes.toString('utf8')
+  const listed = source.match(/const LEGAL_HTML = new Set\((\[[^\]]*\])\)/)
+  assert.ok(listed)
+  assert.deepEqual(JSON.parse(listed[1].replaceAll("'", '"')), ['privacy/index.html', 'terms/index.html'])
+})
 
 test('the exact footer credit is allowed and every other public nammco fails', () => {
   assert.equal(FOOTER_NAMMCO_CREDIT, 'powered by nammco')
