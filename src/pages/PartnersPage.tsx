@@ -21,7 +21,7 @@ const RULES = [
   {
     n: '04',
     title: 'Still gated',
-    body: 'A partner does not receive the directory and does not message members around our admin team.',
+    body: "A partner does not receive the directory. A sponsor sees a member's directory card only when that member chooses to show it. No partner or sponsor messages members around our admin team.",
   },
 ]
 

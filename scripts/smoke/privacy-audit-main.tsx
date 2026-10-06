@@ -72,11 +72,13 @@ function privacy(hidden: boolean, downloadState: 'idle' | 'ready') {
     <div className="min-h-dvh bg-pearl px-5 py-8 text-ink">
       <PrivacyPanelView
         hidden={hidden}
+        showSponsors={false}
         twoStepOn={hidden}
         analyticsOn={false}
         privacyContact={null}
         downloadState={downloadState}
         onHidden={() => undefined}
+        onShowSponsors={() => undefined}
         onDownload={() => undefined}
       />
     </div>

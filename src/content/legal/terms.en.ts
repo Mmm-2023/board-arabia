@@ -158,7 +158,7 @@ export const TERMS_EN: LegalDocument = {
       "kind": "clause",
       "id": "c-5-1",
       "number": "5.1",
-      "text": "Member directory. Signed in members and sponsors can see member profiles. Profiles show the details described in the Privacy Notice. Email and phone details are not shown in the directory."
+      "text": "Member directory. Signed in members can see member profiles. A sponsor sees a member's card only if that member chooses to show it. Profiles show the details described in the Privacy Notice. Email and phone details are not shown in the directory."
     },
     {
       "kind": "clause",

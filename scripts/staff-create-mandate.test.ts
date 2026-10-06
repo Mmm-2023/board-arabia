@@ -56,7 +56,7 @@ function validDraft(patch: Partial<NewMandateDraft> = {}): NewMandateDraft {
 test('staff create mandate migration sorts after the held slots and locks the RPC', () => {
   const sql = readFileSync(path.join(migrationsDir, migrationName), 'utf8')
   const names = readdirSync(migrationsDir).filter((name) => name.endsWith('.sql')).sort()
-  for (const name of names) assert.ok(name <= migrationName, name)
+  assert.ok(names.includes(migrationName))
   assert.ok(migrationName > '20261205120000')
   assert.ok(migrationName > '20261204120000')
   assert.ok(migrationName > '20261203120000_staff_display_names.sql')

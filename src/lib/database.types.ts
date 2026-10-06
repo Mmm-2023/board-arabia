@@ -1317,6 +1317,10 @@ export type Database = {
         Args: { p_hidden: boolean }
         Returns: Json
       }
+      set_show_card_to_sponsors: {
+        Args: { p_show: boolean }
+        Returns: Json
+      }
       own_directory_visibility: {
         Args: Record<string, never>
         Returns: Json

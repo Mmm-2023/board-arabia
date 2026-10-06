@@ -8,6 +8,7 @@ import { useNoIndex } from '../../lib/usePageTitle'
 
 export function PrivacyPanelPage() {
   const [hidden, setHidden] = useState(false)
+  const [showSponsors, setShowSponsors] = useState(false)
   const [twoStepOn, setTwoStepOn] = useState(false)
   const [downloadState, setDownloadState] = useState<'idle' | 'ready' | 'limited' | 'error'>('idle')
   const [busy, setBusy] = useState(false)
@@ -17,8 +18,9 @@ export function PrivacyPanelPage() {
     let cancelled = false
     void supabase.rpc('own_directory_visibility').then(({ data }) => {
       if (cancelled || !data || typeof data !== 'object' || Array.isArray(data)) return
-      const row = data as { directory_hidden?: boolean }
+      const row = data as { directory_hidden?: boolean; show_card_to_sponsors?: boolean }
       if (row.directory_hidden === true) setHidden(true)
+      if (row.show_card_to_sponsors === true) setShowSponsors(true)
     })
     void listTotpFactors().then((factors) => {
       if (!cancelled) setTwoStepOn(factors.some((factor) => factor.status === 'verified'))
@@ -33,6 +35,13 @@ export function PrivacyPanelPage() {
     setHidden(next)
     const { error } = await supabase.rpc('set_directory_hidden', { p_hidden: next })
     if (error) setHidden(previous)
+  }
+
+  async function onShowSponsors(next: boolean) {
+    const previous = showSponsors
+    setShowSponsors(next)
+    const { error } = await supabase.rpc('set_show_card_to_sponsors', { p_show: next })
+    if (error) setShowSponsors(previous)
   }
 
   async function onDownload() {
@@ -60,12 +69,14 @@ export function PrivacyPanelPage() {
   return (
     <PrivacyPanelView
       hidden={hidden}
+      showSponsors={showSponsors}
       twoStepOn={twoStepOn}
       analyticsOn={ANALYTICS_CONFIG.enabled}
       privacyContact={privacyContact}
       downloadState={downloadState}
       busy={busy}
       onHidden={(next) => void onHidden(next)}
+      onShowSponsors={(next) => void onShowSponsors(next)}
       onDownload={() => void onDownload()}
     />
   )
