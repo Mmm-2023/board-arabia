@@ -149,10 +149,12 @@ export const AI_TOOL_CARD_LINES: Record<AiToolKey, string> = {
 export const DEAL_ACCEPT =
   '.pdf,.txt,.docx,application/pdf,text/plain,application/vnd.openxmlformats-officedocument.wordprocessingml.document'
 
+/** Deal-readiness file line. Not the due diligence deck hint. */
 export function dealFileHint(days: number): string {
-  return `PDF, text, or document. 15 MB max. Confidential. Deleted automatically after ${days} days.`
+  return `PDF, text, or document. 15 MB max. Confidential. Only your account can open this file. You can delete it at any time. Deleted automatically after ${days} days.`
 }
 
+/** Deal-readiness retention note. It does not repeat the due diligence deck hint. */
 export function dealUploadNote(days: number): string {
   return `Confidential upload. The file is processed under the Saudi PDPL. Uploads and this memo use the existing AI tools retention and are deleted automatically after ${days} days. The default is 30 days. You can delete them earlier.`
 }

@@ -7,6 +7,7 @@ import { PRIVACY_LINK, TERMS_LINK } from '../../lib/aiToolConfig'
 import type { RenderedToolCopy } from '../../lib/aiToolCopy'
 import { useAiReportOperator } from '../../lib/useAiReportOperator'
 import { AI_UI } from '../../lib/aiToolUi'
+import { AiUploadTrust } from './UploadHandling'
 
 const LINK_LABELS = { privacy: 'Privacy Notice', terms: 'Terms' }
 
@@ -183,6 +184,7 @@ export function AiToolUpload({
       </button>
       {fileName ? <p className="mt-2 text-[0.95rem] text-ink">{fileName}</p> : null}
       <p className="mt-2 text-[0.92rem] leading-relaxed text-ink/65">{fileHint || ui.fileHint}</p>
+      <AiUploadTrust fileHint={fileHint || ui.fileHint} />
     </div>
   )
 }

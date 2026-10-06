@@ -17,6 +17,7 @@ function footerLinks() {
     { label: 'Partners', to: '/partners', consideration: false },
     { label: cta.label, to: cta.to, consideration: true },
     { label: 'Privacy', to: '/privacy', consideration: false },
+    { label: 'Trust and privacy', to: '/security', consideration: false },
     { label: 'Terms', to: '/terms', consideration: false },
   ]
 }

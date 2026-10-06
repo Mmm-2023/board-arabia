@@ -14,6 +14,7 @@ import { LandingPage } from './pages/LandingPage'
 import { LoginPage } from './pages/LoginPage'
 import { PartnersPage } from './pages/PartnersPage'
 import { PrivacyPage } from './pages/PrivacyPage'
+import { SecurityPage } from './pages/SecurityPage'
 import { TermsPage } from './pages/TermsPage'
 import { RedirectKeep } from './shell/RedirectKeep'
 
@@ -87,7 +88,6 @@ const PrivacyPanelPage = lazy(() => import('./pages/dashboard/PrivacyPanelPage')
 const SponsorshipPage = lazy(() =>
   import('./pages/dashboard/SponsorshipPage').then((m) => ({ default: m.SponsorshipPage })),
 )
-
 export default function App() {
   return (
     <><EnglishOnlyQuery />
@@ -96,6 +96,7 @@ export default function App() {
     <Routes>
       <Route path="/" element={<LandingPage />} />
       <Route path="/apply" element={<ApplyPage />} />
+      <Route path="/security" element={<SecurityPage />} />
       <Route path="/apply/verify" element={<Navigate to="/register/verify" replace />} />
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/register/verify" element={<VerifyPage />} />

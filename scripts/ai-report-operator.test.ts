@@ -45,6 +45,7 @@ const PUBLIC_ROUTES = [
   'src/components/WhoRunsTheDesk.tsx',
   'src/pages/TermsPage.tsx',
   'src/pages/PrivacyPage.tsx',
+  'src/pages/SecurityPage.tsx',
 ]
 
 function walk(dir: string, out: string[] = []): string[] {
