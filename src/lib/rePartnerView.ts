@@ -15,12 +15,12 @@ export const RE_PARTNER_KIND_LABEL = {
 
 export const RE_PARTNER_STAFF = {
   title: 'Real estate partners',
-  lead: 'Add, edit, hide, or reorder vetted firms. They stay in the Real estate sponsor category. Example firms stay locked. Members do not see desk contacts.',
+  lead: 'Add, edit, hide, or reorder vetted firms. They stay in the Real estate sponsor category. Example firms stay locked. Members do not see admin contacts.',
   demo: 'Example firms stay as seeded.',
   saved: 'Partner saved.',
   error: 'Could not save. Retry.',
   empty: 'No partners yet. Add a firm when one is vetted.',
-  denied: 'This desk is for staff.',
+  denied: 'This page is for admin.',
   unavailable: 'Partner editing is not available yet.',
   loadError: "Couldn't refresh. Showing last update …",
   retry: 'Retry',
@@ -37,7 +37,7 @@ export const RE_PARTNER_STAFF = {
   approve: 'Approve intro',
   decline: 'Decline intro',
   declineTitle: 'Decline this intro?',
-  declineBody: 'The member keeps the firm name and city. Desk contacts stay off the member page.',
+  declineBody: 'The member keeps the firm name and city. Admin contacts stay off the member page.',
   decideError: 'Could not save that decision. Retry.',
 } as const
 

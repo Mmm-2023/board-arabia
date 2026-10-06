@@ -226,7 +226,7 @@ function PartnerForm({
           className="min-h-11 w-full border border-white/30 bg-pearl ps-3 pe-3 text-[0.95rem] text-ink"
         />
       </Field>
-      <Field label="Desk contact name" id={contactId}>
+      <Field label="Admin contact name" id={contactId}>
         <input
           id={contactId}
           value={draft.contact_name}
@@ -237,7 +237,7 @@ function PartnerForm({
           className="min-h-11 w-full border border-white/30 bg-pearl ps-3 pe-3 text-[0.95rem] text-ink"
         />
       </Field>
-      <Field label="Desk email" id={emailId}>
+      <Field label="Admin email" id={emailId}>
         <input
           id={emailId}
           value={draft.contact_email}
@@ -249,7 +249,7 @@ function PartnerForm({
           className="min-h-11 w-full border border-white/30 bg-pearl ps-3 pe-3 text-[0.95rem] text-ink"
         />
       </Field>
-      <Field label="Desk phone" id={phoneId}>
+      <Field label="Admin phone" id={phoneId}>
         <input
           id={phoneId}
           value={draft.contact_phone}

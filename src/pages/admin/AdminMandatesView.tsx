@@ -28,7 +28,7 @@ export function AdminMandatesView({
 }) {
   return (
     <div className="max-w-3xl" data-screen="admin-mandates">
-      <p className="text-[0.72rem] font-semibold tracking-[0.14em] text-[var(--ba-lavender)] uppercase">Desk</p>
+      <p className="text-[0.72rem] font-semibold tracking-[0.14em] text-[var(--ba-lavender)] uppercase">Admin</p>
       <h1 className="mt-3 font-display text-[2.1rem] font-bold tracking-[-0.03em]">Mandates</h1>
       <p className="mt-3 max-w-xl text-[1rem] leading-relaxed text-pearl/70">{copy.intro}</p>
       <NewMandateForm

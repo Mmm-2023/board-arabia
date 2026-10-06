@@ -230,8 +230,8 @@ export function deskIntroLine(
   if (row.kind !== 'member' || !row.ask_desk || row.status === 'declined') return null
   if (audience === 'staff') {
     if (row.desk_status === 'sent') return 'Intro sent'
-    if (row.status === 'accepted') return 'Desk intro queued'
-    return 'Desk intro if accepted'
+    if (row.status === 'accepted') return 'Admin intro queued'
+    return 'Admin intro if accepted'
   }
   if (row.desk_status === 'sent') return 'Intro sent by admin.'
   if (row.status === 'accepted') return 'Admin will introduce you.'

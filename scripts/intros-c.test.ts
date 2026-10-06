@@ -117,7 +117,7 @@ test('deal started is staff only and writes who and when', () => {
   assert.equal(introDealAllowed({ kind: 'member', status: 'accepted', is_demo: true }), false)
   assert.equal(introDealAllowed({ kind: 'mandate', status: 'accepted', is_demo: false }), false)
   assert.equal(introDealError('sample_blocked'), 'Sample requests stay as they are.')
-  assert.equal(introDealError('not_allowed'), 'This desk is for staff.')
+  assert.equal(introDealError('not_allowed'), 'This page is for admin.')
   assert.match(formatDealStartedWhen('2026-09-21T09:00:00.000Z'), /21 Sept? 2026/)
 })
 
@@ -225,7 +225,7 @@ test('staff funnel shows real numbers and the deal tag stays off member cards', 
     const deniedHtml = renderToStaticMarkup(
       createElement(funnel.IntroFunnelView, { ...shared, counts: null, denied: true }),
     )
-    assert.match(deniedHtml, /This desk is for staff/)
+    assert.match(deniedHtml, /This page is for admin/)
 
     const row = {
       id: ACCEPTED,

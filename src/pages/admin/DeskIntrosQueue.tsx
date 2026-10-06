@@ -92,16 +92,16 @@ export function DeskIntrosQueueView({
 }) {
   const styles = toneClasses('staff')
   return (
-    <section id="desk-intros" aria-label="Desk intros" className="scroll-mt-24">
-      <h2 className={`text-[0.72rem] font-semibold tracking-[0.14em] uppercase ${styles.quiet}`}>Desk intros</h2>
+    <section id="desk-intros" aria-label="Admin intros" className="scroll-mt-24">
+      <h2 className={`text-[0.72rem] font-semibold tracking-[0.14em] uppercase ${styles.quiet}`}>Admin intros</h2>
       <p className={`mt-2 max-w-2xl text-[0.95rem] ${styles.muted}`}>
         Accepted requests that asked our admin team to introduce both people. Mark Intro sent when the introduction has gone out.
       </p>
-      {rows == null ? <p className={`mt-4 ${styles.muted}`}>Loading desk intros.</p> : null}
+      {rows == null ? <p className={`mt-4 ${styles.muted}`}>Loading admin intros.</p> : null}
       {loadError ? (
         <div className="mt-4">
           <p className={styles.alert} role="alert">
-            Could not load desk introductions.
+            Could not load admin introductions.
           </p>
           <button
             type="button"
@@ -113,7 +113,7 @@ export function DeskIntrosQueueView({
         </div>
       ) : null}
       {rows && rows.length === 0 && !loadError ? (
-        <p className={`mt-4 ${styles.muted}`}>No desk introductions are waiting.</p>
+        <p className={`mt-4 ${styles.muted}`}>No admin introductions are waiting.</p>
       ) : null}
       {rows && rows.length > 0 ? (
         <ul className="mt-4 space-y-3">
