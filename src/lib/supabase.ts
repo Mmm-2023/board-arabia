@@ -838,7 +838,7 @@ export type MajlisRosterRow = {
   waitlist_position: number | null
   registered_at: string
   cancelled_at: string | null
-  email: string
+  email?: string | null
   full_name: string | null
   avatar_style?: StoredAvatarStyle | null
   avatar_path?: string | null
@@ -934,25 +934,48 @@ export async function fetchSponsorMajlis(): Promise<
   }
 }
 
-export async function fetchMajlisRoster(eventId: string): Promise<
-  { error: string } | { rows: MajlisRosterRow[] }
-> {
-  const withStyle = await supabase
-    .from('majlis_roster')
-    .select(
-      'id, event_id, member_id, status, waitlist_position, registered_at, cancelled_at, email, full_name, avatar_style, avatar_path',
-    )
-    .eq('event_id', eventId)
-    .order('registered_at', { ascending: true })
-  if (!withStyle.error) return { rows: (withStyle.data ?? []) as MajlisRosterRow[] }
+export async function fetchMajlisRoster(
+  eventId: string,
+  options?: { includeEmail?: boolean },
+): Promise<{ error: string } | { rows: MajlisRosterRow[] }> {
+  if (options?.includeEmail === true) return fetchMajlisRosterColumns(eventId, true)
+  return fetchMajlisRosterColumns(eventId, false)
+}
+
+async function fetchMajlisRosterColumns(
+  eventId: string,
+  includeEmail: boolean,
+): Promise<{ error: string } | { rows: MajlisRosterRow[] }> {
+  const withStyle = includeEmail
+    ? await supabase
+        .from('majlis_roster')
+        .select(
+          'id, event_id, member_id, status, waitlist_position, registered_at, cancelled_at, email, full_name, avatar_style, avatar_path',
+        )
+        .eq('event_id', eventId)
+        .order('registered_at', { ascending: true })
+    : await supabase
+        .from('majlis_roster')
+        .select(
+          'id, event_id, member_id, status, waitlist_position, registered_at, cancelled_at, full_name, avatar_style, avatar_path',
+        )
+        .eq('event_id', eventId)
+        .order('registered_at', { ascending: true })
+  if (!withStyle.error) return { rows: (withStyle.data ?? []) as unknown as MajlisRosterRow[] }
   if (!shapeMissing(withStyle.error.message)) return { error: withStyle.error.message }
-  const { data, error } = await supabase
-    .from('majlis_roster')
-    .select('id, event_id, member_id, status, waitlist_position, registered_at, cancelled_at, email, full_name')
-    .eq('event_id', eventId)
-    .order('registered_at', { ascending: true })
-  if (error) return { error: error.message }
-  return { rows: (data ?? []) as MajlisRosterRow[] }
+  const plain = includeEmail
+    ? await supabase
+        .from('majlis_roster')
+        .select('id, event_id, member_id, status, waitlist_position, registered_at, cancelled_at, email, full_name')
+        .eq('event_id', eventId)
+        .order('registered_at', { ascending: true })
+    : await supabase
+        .from('majlis_roster')
+        .select('id, event_id, member_id, status, waitlist_position, registered_at, cancelled_at, full_name')
+        .eq('event_id', eventId)
+        .order('registered_at', { ascending: true })
+  if (plain.error) return { error: plain.error.message }
+  return { rows: (plain.data ?? []) as unknown as MajlisRosterRow[] }
 }
 
 export async function applyForMajlis(input: {

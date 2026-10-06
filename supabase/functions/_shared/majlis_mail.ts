@@ -197,6 +197,12 @@ export function guestCancelledLetter(site: string, event: MajlisMailEvent): Majl
   ])
 }
 
+/** Name only. A host notification must not carry another member's email. */
+export function hostGuestLabel(fullName: string | null | undefined): string {
+  const name = (fullName || '').trim()
+  return name || 'A member'
+}
+
 export function hostRsvpLetter(
   site: string,
   event: MajlisMailEvent,

@@ -19,6 +19,7 @@ import {
   guestPromotedLetter,
   guestRegisteredLetter,
   guestWaitlistLetter,
+  hostGuestLabel,
   hostRsvpLetter,
   includeVenueAddress,
   reminderLetter,
@@ -114,6 +115,16 @@ test('capacity sends a full majlis to the waitlist and cancel can promote', () =
     waitlistCount: 1,
   })
   assert.equal(promote.ok && promote.status, 'registered')
+})
+
+test('host notification uses a name and does not add an email', () => {
+  assert.equal(hostGuestLabel('Example Member'), 'Example Member')
+  assert.equal(hostGuestLabel('  '), 'A member')
+  assert.equal(hostGuestLabel(null), 'A member')
+  const letter = hostRsvpLetter(site, event, hostGuestLabel('Example Member'), 'registered', 2, 1)
+  assert.equal(letter.text.includes('@'), false)
+  assert.equal(letter.html.includes('@'), false)
+  assert.match(letter.text, /Example Member registered/)
 })
 
 test('confirmation mail has ICS, Google Calendar, Riyadh time, and no guest list', () => {
