@@ -181,7 +181,7 @@ test('your rooms empty state shows for zero rooms and hides when they have one',
     assert.match(listed, /data-rooms-empty="true"/)
     assert.match(listed, /href="\/dashboard\/deals\/rooms\/new"/)
     assert.equal((listed.match(/href="\/dashboard\/deals\/rooms\/new"/g) || []).length, 1)
-    assert.match(listed, /aria-label="Opened by the desk"/)
+    assert.match(listed, /aria-label="Opened by our admin team"/)
     assert.match(listed, />Example</)
     assert.match(listed, /Industrial services room/)
     assert.match(listed, /Cards marked Example are samples\./)

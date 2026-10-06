@@ -177,6 +177,8 @@ test('every staff_* function checks staff and is not executable by anon', () => 
     'staff_list_desk_intros',
     'staff_mark_desk_intro_sent',
     'staff_get_intro_monthly_limit',
+    'staff_get_own_display_name',
+    'staff_set_own_display_name',
     'staff_set_intro_monthly_limit',
     'staff_intro_funnel',
     'staff_list_intro_deals',

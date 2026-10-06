@@ -14,13 +14,17 @@ import { ConfirmDialog } from '../../shell/ConfirmDialog'
 import { CardSkeleton, EmptyState } from '../../shell/ViewState'
 import { STAFF_VIEWS } from '../../shell/viewCopy'
 import { MembershipTiersControl, type TierShot } from './MembershipTiersControl'
+import { ownStaffRowLabel } from '../../lib/staffDisplayName'
 import { PEOPLE_TIERS, PanelNotice, peopleInTier } from './bits'
+import { StaffOwnNameCard } from './StaffOwnNameCard'
+import { useOwnStaffName } from './useOwnStaffName'
 import { useAdmin } from './context'
 import { SponsorInvitePanel } from './SponsorInvitePanel'
 import { SponsorSeatPanel } from './SponsorSeatPanel'
 
 export function PeoplePage({ tierShots }: { tierShots?: Record<string, TierShot> } = {}) {
   const room = useAdmin()
+  const ownName = useOwnStaffName()
   const [inviteEmail, setInviteEmail] = useState('')
   const [inviteSeat, setInviteSeat] = useState<FoundingSeat>('ksa')
   const [inviteAdmit, setInviteAdmit] = useState(true)
@@ -322,6 +326,13 @@ export function PeoplePage({ tierShots }: { tierShots?: Record<string, TierShot>
 
       <section className="mt-12">
         <h2 className="font-display text-[1.5rem] font-semibold tracking-[-0.02em]">Tiers</h2>
+        <StaffOwnNameCard
+          savedName={ownName.name}
+          ready={ownName.ready}
+          busy={ownName.busy}
+          error={ownName.error}
+          onSave={(value) => void ownName.save(value)}
+        />
         {room.panelFailed.staff ? (
           <div className="mt-4 border border-pearl/10 px-5 py-4">
             <PanelNotice />
@@ -344,6 +355,9 @@ export function PeoplePage({ tierShots }: { tierShots?: Record<string, TierShot>
                   {rows.map((row) => {
                     const member = room.members.find((item) => item.email.toLowerCase() === row.email.toLowerCase())
                     const profile = member ? room.profileByUser[member.user_id] : null
+                    const self = row.email.toLowerCase() === room.email.toLowerCase()
+                    const role = tier === 'Master' ? 'Master' : tier === 'Admin' ? 'Admin' : null
+                    const label = role ? ownStaffRowLabel(row.email, role, self, ownName.name) : row.email
                     return (
                     <li
                       key={`${tier}-${row.email}`}
@@ -357,7 +371,7 @@ export function PeoplePage({ tierShots }: { tierShots?: Record<string, TierShot>
                           alt=""
                         />
                         <div className="min-w-0">
-                        <p className="text-[0.95rem] break-words text-stone/85">{row.email}</p>
+                        <p className="text-[0.95rem] break-words text-stone/85">{label}</p>
                         <p className="mt-1 text-[0.8rem] text-pearl/45">{row.detail}</p>
                         </div>
                       </div>

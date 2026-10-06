@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { Navigate, Outlet, useLocation } from 'react-router-dom'
 import { MfaHold } from '../../components/mfa/MfaHold'
-import { MemberMfaPrompt } from '../../components/mfa/TwoStepScreens'
+import { MemberHomePrompt } from '../../components/mfa/TwoStepScreens'
 import { dismissMfaPrompt, readAssurance } from '../../lib/mfa'
-import { routeHold, showMemberPrompt, type MfaHold as Hold } from '../../lib/mfaFlow'
+import { routeHold, type MfaHold as Hold } from '../../lib/mfaFlow'
 import { isStaffRole, showRoleSwitch } from '../../../supabase/functions/_shared/staff_auth.ts'
 import { clearPasswordFlag } from '../../lib/clearPasswordFlag'
 import { fetchMyDealRooms } from '../../lib/dealRoomApi'
@@ -84,10 +84,9 @@ export function DashboardLayout() {
   const readyRef = useRef<MemberRoom | null>(null)
   const signingOut = useRef(false)
   const location = useLocation()
-  const navigate = useNavigate()
   const [hold, setHold] = useState<Hold | 'loading'>('loading')
   const [passCount, setPassCount] = useState(0)
-  const [showPrompt, setShowPrompt] = useState(false)
+  const [prompt, setPrompt] = useState<{ verifiedFactor: boolean; dismissedAt: number | null; now: number } | null>(null)
   const memberNav = MEMBER_DESTINATIONS
   useNoIndex('Member dashboard | Board Arabia')
 
@@ -103,12 +102,11 @@ export function DashboardLayout() {
           verifiedFactor: assurance.verifiedFactor,
         }),
       )
-      setShowPrompt(
-        showMemberPrompt({
-          verifiedFactor: assurance.verifiedFactor,
-          dismissed: assurance.promptDismissed,
-        }),
-      )
+      setPrompt({
+        verifiedFactor: assurance.verifiedFactor,
+        dismissedAt: assurance.dismissedAt,
+        now: Date.now(),
+      })
     })
     return () => {
       cancelled = true
@@ -350,7 +348,7 @@ export function DashboardLayout() {
   if ((gate.status === 'ready' || gate.status === 'account') && hold === 'challenge') {
     return (
       <div className="min-h-dvh bg-pearl px-5 py-16 text-ink">
-        <MfaHold mode="challenge" tone="light" onPassed={() => setPassCount((value) => value + 1)} />
+        <MfaHold mode="challenge" tone="light" signOutTo="/login" onPassed={() => setPassCount((value) => value + 1)} />
       </div>
     )
   }
@@ -396,7 +394,7 @@ export function DashboardLayout() {
               message={
                 gate.status === 'suspended'
                   ? 'This seat cannot open the dashboard. Write to the membership if you believe this is a mistake.'
-                  : 'Directory unlocks after admit. The member dashboard opens only after the desk admits you and you sign in with that invitation.'
+                  : 'Directory unlocks after admit. The member dashboard opens only after our admin team admits you and you sign in with that invitation.'
               }
             />
           </div>
@@ -436,11 +434,15 @@ export function DashboardLayout() {
           accountName={gate.room.profile?.full_name?.trim() || 'Member'}
             renderAccountMark={(size) => <OwnAvatar decorative size={size} />}
         >
-          {showPrompt ? (
-            <MemberMfaPrompt
-              onTurnOn={() => navigate('/dashboard/two-step')}
+          {prompt ? (
+            <MemberHomePrompt
+              pathname={location.pathname}
+              verifiedFactor={prompt.verifiedFactor}
+              dismissedAt={prompt.dismissedAt}
+              now={prompt.now}
               onDismiss={() => {
-                setShowPrompt(false)
+                const now = Date.now()
+                setPrompt({ verifiedFactor: prompt.verifiedFactor, dismissedAt: now, now })
                 void dismissMfaPrompt(gate.room.userId)
               }}
             />

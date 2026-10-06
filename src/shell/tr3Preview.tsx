@@ -61,7 +61,7 @@ const detail: DeskDetail = {
   title: 'Chief Executive',
   website: 'https://example.com',
   linkedin: 'https://www.linkedin.com/in/example-chair',
-  statement: 'A short statement for the desk.',
+  statement: 'A short statement for our admin team.',
   crNumber: '',
   referral: '',
   phone: '',

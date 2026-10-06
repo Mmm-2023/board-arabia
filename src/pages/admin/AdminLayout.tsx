@@ -75,7 +75,7 @@ function StaffMfaGate({ room }: { room: ReturnType<typeof useAdmin> }) {
   }
 
   if (hold !== 'clear') {
-    return <MfaHold mode={hold} tone="dark" onPassed={() => setPassCount((value) => value + 1)} />
+    return <MfaHold mode={hold} tone="dark" signOutTo="/login/staff" onPassed={() => setPassCount((value) => value + 1)} />
   }
 
   return <StaffFrame room={room} />

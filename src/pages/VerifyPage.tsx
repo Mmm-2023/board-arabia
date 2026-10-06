@@ -93,7 +93,7 @@ export function VerifyPage({ security = 'live' as 'live' | 'preview' }) {
     rememberVerifyEmail(current)
     setNote(
       result.dryRun
-        ? 'Outbound mail is not connected yet. Ask the desk, then try again.'
+        ? 'Outbound mail is not connected yet. Ask our admin team, then try again.'
         : 'If an account is open for this email, a new code is on its way.',
     )
     setResendWait(60)

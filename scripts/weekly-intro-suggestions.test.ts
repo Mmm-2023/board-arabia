@@ -280,7 +280,7 @@ test('suggestion reasons never contain @', () => {
 
 test('list_my_intro_suggestions migration hides directory members and keeps grants', () => {
   const names = readdirSync(path.join(root, 'supabase/migrations')).filter((name) => name.endsWith('.sql')).sort()
-  assert.equal(names.at(-1), migrationName)
+  assert.ok(names.includes(migrationName))
   assert.ok(names.indexOf(migrationName) > names.indexOf('20261130120000_definer_audit.sql'))
   const migration = read(`supabase/migrations/${migrationName}`)
   const original = read('supabase/migrations/20261119120000_intros_b_suggestions_nudges.sql')

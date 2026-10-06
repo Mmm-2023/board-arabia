@@ -1,9 +1,16 @@
 import type { FormEvent, ReactNode } from 'react'
+import { Link } from 'react-router-dom'
+import { BrandLockup } from '../BrandLockup'
+import { homeMemberPrompt } from '../../lib/mfaFlow'
 
-const darkInput =
-  'w-full border border-pearl/20 bg-pearl/5 px-4 py-3.5 text-[1rem] text-pearl outline-none placeholder:text-pearl/35 focus:border-brass'
-const lightInput =
-  'w-full border border-ink/15 bg-white px-4 py-3.5 text-[1rem] text-ink outline-none placeholder:text-ink/35 focus:border-brass'
+export const signInFieldClass =
+  'w-full border border-pearl/20 bg-pearl/5 px-4 py-3.5 text-[1rem] text-pearl placeholder:text-pearl/35 focus-visible:border-brass focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ba-lavender-mist)]'
+
+export const signInFieldClassLight =
+  'w-full border border-ink/15 bg-white px-4 py-3.5 text-[1rem] text-ink placeholder:text-ink/35 focus-visible:border-brass focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ba-copper-deep)]'
+
+const darkInput = signInFieldClass
+const lightInput = signInFieldClassLight
 
 export function TwoStepEnrolScreen({
   tone,
@@ -119,6 +126,7 @@ export function TwoStepChallengeScreen({
   busy,
   onCode,
   onSubmit,
+  onSignOut,
 }: {
   tone: 'dark' | 'light'
   code: string
@@ -126,11 +134,13 @@ export function TwoStepChallengeScreen({
   busy: boolean
   onCode: (value: string) => void
   onSubmit: (event: FormEvent) => void
+  onSignOut: () => void
 }) {
   const light = tone === 'light'
   return (
     <section className={light ? 'max-w-md text-ink' : 'mx-auto w-full max-w-md text-pearl'} aria-labelledby="mfa-challenge-title">
-      <p className={`text-[0.72rem] font-semibold tracking-[0.14em] uppercase ${light ? 'text-brass' : 'text-brass-bright'}`}>
+      <BrandLockup to="/" tone={light ? 'on-light' : 'on-dark'} />
+      <p className={`mt-8 text-[0.72rem] font-semibold tracking-[0.14em] uppercase ${light ? 'text-brass' : 'text-brass-bright'}`}>
         Two-step sign-in
       </p>
       <h1 id="mfa-challenge-title" className="mt-3 font-display text-[2.1rem] leading-[1.05] font-bold tracking-[-0.03em]">
@@ -160,25 +170,55 @@ export function TwoStepChallengeScreen({
           {busy ? 'Checking…' : 'Continue'}
         </button>
       </form>
+      <button
+        type="button"
+        onClick={onSignOut}
+        className={`mt-6 inline-flex min-h-11 items-center text-[0.95rem] font-semibold underline underline-offset-4 ${light ? 'text-ink/70 decoration-ink/30' : 'text-pearl/80 decoration-pearl/30'}`}
+      >
+        Sign out
+      </button>
     </section>
   )
 }
 
-export function MemberMfaPrompt({ onTurnOn, onDismiss }: { onTurnOn: () => void; onDismiss: () => void }) {
+export function MemberMfaPrompt({ onDismiss }: { onDismiss: () => void }) {
   return (
-    <div className="mb-6 border border-[var(--ba-line)] bg-white px-4 py-4" role="status">
-      <h2 className="font-display text-[1.35rem] font-semibold">Turn on two-step sign-in</h2>
-      <p className="mt-2 text-[1rem] leading-relaxed text-ink/75">Add an authenticator app for extra protection.</p>
-      <div className="mt-4 flex flex-wrap gap-3">
-        <button type="button" onClick={onTurnOn} className="ba-primary inline-flex min-h-11 items-center px-4 text-[0.75rem] font-semibold tracking-[0.08em] uppercase">
-          Turn on two-step sign-in
-        </button>
-        <button type="button" onClick={onDismiss} className="inline-flex min-h-11 items-center px-2 text-[0.95rem] font-semibold text-ink/70">
+    <div
+      className="mb-3 flex flex-wrap items-center gap-x-4 text-[0.92rem] leading-snug text-ink"
+      role="status"
+      data-mfa-prompt=""
+    >
+      <p>Protect your seat: turn on two-step sign-in.</p>
+      <span className="inline-flex items-center gap-x-4">
+        <Link
+          to="/dashboard/two-step"
+          className="inline-flex min-h-11 items-center font-semibold underline decoration-ink/30 underline-offset-4"
+        >
+          Turn on
+        </Link>
+        <button type="button" onClick={onDismiss} className="inline-flex min-h-11 items-center font-semibold text-ink/70">
           Not now
         </button>
-      </div>
+      </span>
     </div>
   )
+}
+
+export function MemberHomePrompt({
+  pathname,
+  verifiedFactor,
+  dismissedAt,
+  now,
+  onDismiss,
+}: {
+  pathname: string
+  verifiedFactor: boolean
+  dismissedAt: number | null
+  now: number
+  onDismiss: () => void
+}) {
+  if (!homeMemberPrompt({ pathname, verifiedFactor, dismissedAt, now })) return null
+  return <MemberMfaPrompt onDismiss={onDismiss} />
 }
 
 export function AdminShareBar({

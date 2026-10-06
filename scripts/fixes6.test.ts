@@ -9,6 +9,7 @@ import { createServer } from 'vite'
 import { joinCardMeta } from '../src/lib/cardMeta.ts'
 import { ownDeckPath } from '../src/lib/ownDeckPath.ts'
 import { isTwoTierRegisterEnabled, publicConsiderationCta, setTwoTierRegisterForTests } from '../src/lib/twoTierRegister.ts'
+import { appShells } from './shell-manifest.mjs'
 
 const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..')
 const migrationsDir = path.join(root, 'supabase/migrations')
@@ -221,9 +222,9 @@ test('sample mandate intros stay blocked for members and inert on staff home', a
 })
 
 test('admin mandates and rooms are static Pages shells', () => {
-  const prerender = read('scripts/prerender.mjs')
-  assert.match(prerender, /'admin\/mandates'/)
-  assert.match(prerender, /'admin\/rooms'/)
+  const shells = appShells().map((item) => item.path)
+  assert.equal(shells.includes('/admin/mandates'), true)
+  assert.equal(shells.includes('/admin/rooms'), true)
 })
 
 test('the shell sidebar sticks and fills the viewport', () => {

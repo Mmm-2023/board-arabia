@@ -3,6 +3,7 @@ import type { Session } from '@supabase/supabase-js'
 import { Link, Navigate, useLocation, useSearchParams } from 'react-router-dom'
 import { BrandLockup } from '../components/BrandLockup'
 import { MfaHold } from '../components/mfa/MfaHold'
+import { signInFieldClass } from '../components/mfa/TwoStepScreens'
 import { clearPasswordFlag } from '../lib/clearPasswordFlag'
 import { readAssurance } from '../lib/mfa'
 import { routeHold, type MfaHold as Hold } from '../lib/mfaFlow'
@@ -143,6 +144,7 @@ export function LoginPage() {
         <MfaHold
           mode={hold}
           tone="dark"
+          signOutTo={staffEntry ? '/login/staff' : '/login'}
           onPassed={() => setPassCount((value) => value + 1)}
         />
       )
@@ -174,7 +176,7 @@ export function LoginPage() {
           <BrandLockup to="/" tone="on-dark" />
           <Link
             to="/"
-            className="text-[0.72rem] font-semibold tracking-[0.06em] text-pearl/55 uppercase transition-colors hover:text-pearl"
+            className="inline-flex min-h-11 items-center text-[0.72rem] font-semibold tracking-[0.06em] text-pearl/55 uppercase transition-colors hover:text-pearl"
           >
             Back to site
           </Link>
@@ -191,7 +193,7 @@ export function LoginPage() {
           </h1>
           <p className="mt-4 text-[0.98rem] leading-relaxed text-stone/70">
             {staffEntry
-              ? 'Email and password for the desk. After sign-in you open the desk.'
+              ? 'Email and password for staff. After sign-in you open admin.'
               : 'Use the one-time link in your admission email, or the password you set after you arrived.'}
           </p>
 
@@ -207,7 +209,7 @@ export function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@boardarabia.com"
-                className="w-full border border-pearl/20 bg-pearl/5 px-4 py-3.5 text-[1rem] text-pearl outline-none placeholder:text-pearl/35 focus:border-brass"
+                className={signInFieldClass}
               />
             </label>
             <label className="block">
@@ -221,7 +223,7 @@ export function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Password"
-                className="w-full border border-pearl/20 bg-pearl/5 px-4 py-3.5 text-[1rem] text-pearl outline-none placeholder:text-pearl/35 focus:border-brass"
+                className={signInFieldClass}
               />
             </label>
             {authError && (
@@ -260,7 +262,7 @@ export function LoginPage() {
                   value={code}
                   onChange={(e) => setCode(e.target.value)}
                   placeholder="Code from the invitation"
-                  className="w-full border border-pearl/20 bg-pearl/5 px-4 py-3.5 text-[1rem] text-pearl outline-none placeholder:text-pearl/35 focus:border-brass"
+                  className={signInFieldClass}
                 />
               </label>
               <button

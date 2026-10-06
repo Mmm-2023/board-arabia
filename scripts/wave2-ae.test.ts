@@ -112,8 +112,8 @@ test('section 5 copy, one audience line, and the desk name', () => {
   assert.match(read('src/pages/HowItWorksPage.tsx'), /admin sends you a private\s+invite/)
   assert.equal(read('src/pages/HowItWorksPage.tsx').includes('private booking'), false)
   assert.equal(STAFF_VIEWS.capacity.early, 'Totals go public once enough verified members opt in.')
-  assert.match(MEMBER_VIEWS.realEstate.intro, /the desk approves it/)
-  assert.match(read('src/pages/dashboard/MandatesPage.tsx'), /the desk approves it/)
+  assert.match(MEMBER_VIEWS.realEstate.intro, /our admin team approves it/)
+  assert.match(read('src/pages/dashboard/MandatesPage.tsx'), /our admin team approves it/)
   assert.ok(readinessLines({
     foreign_ownership_path: 'ready',
     escrow_off_plan: 'ready',
