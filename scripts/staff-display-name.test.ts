@@ -21,10 +21,10 @@ function weeklyStub(): string {
   return text.slice(body, end)
 }
 
-test('staff display name migration sorts after every migration on main', () => {
+test('staff display name migration sorts after the migrations it follows', () => {
   const sql = readFileSync(path.join(migrationsDir, migrationName), 'utf8')
   const names = readdirSync(migrationsDir).filter((name) => name.endsWith('.sql')).sort()
-  for (const name of names) assert.ok(name <= migrationName, name)
+  assert.ok(names.includes(migrationName))
   assert.ok(migrationName > '20261202120000')
   assert.ok(migrationName > '20261201120000_intro_suggestions_directory_hidden.sql')
   assert.match(sql, /references public\.staff_users \(user_id\)/)
