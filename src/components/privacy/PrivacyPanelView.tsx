@@ -9,21 +9,25 @@ const choice =
 
 export function PrivacyPanelView({
   hidden,
+  showSponsors,
   twoStepOn,
   analyticsOn,
   privacyContact,
   downloadState,
   busy,
   onHidden,
+  onShowSponsors,
   onDownload,
 }: {
   hidden: boolean
+  showSponsors: boolean
   twoStepOn: boolean
   analyticsOn: boolean
   privacyContact: string | null
   downloadState: 'idle' | 'ready' | 'limited' | 'error'
   busy?: boolean
   onHidden: (hidden: boolean) => void
+  onShowSponsors: (show: boolean) => void
   onDownload: () => void
 }) {
   return (
@@ -57,6 +61,35 @@ export function PrivacyPanelView({
         <p className="mt-3 max-w-xl text-[0.95rem] leading-relaxed text-ink/65">
           Your email, phone and turnover band are never shown in the directory.
         </p>
+
+        <div className="mt-8 border-t border-ink/10 pt-8" data-sponsor-card={showSponsors ? 'on' : 'off'}>
+          <h3 className="font-display text-[1.15rem] font-semibold tracking-[-0.02em]">Show my card to sponsors</h3>
+          <p className={body}>
+            {showSponsors ? 'Sponsors can see your directory card.' : 'Sponsors cannot see your directory card.'}
+          </p>
+          <div className="mt-4 flex flex-wrap gap-2" role="group" aria-label="Show my card to sponsors">
+            <button
+              type="button"
+              className={`${choice} ${showSponsors ? 'border-ink/20 text-ink/70' : 'ba-primary border-transparent'}`}
+              aria-pressed={!showSponsors}
+              onClick={() => onShowSponsors(false)}
+            >
+              Off
+            </button>
+            <button
+              type="button"
+              className={`${choice} ${showSponsors ? 'ba-primary border-transparent' : 'border-ink/20 text-ink/70'}`}
+              aria-pressed={showSponsors}
+              onClick={() => onShowSponsors(true)}
+            >
+              On
+            </button>
+          </div>
+          <p className="mt-3 max-w-xl text-[0.95rem] leading-relaxed text-ink/65">
+            Off unless you turn it on. A sponsor sees your directory card only when this is on and you are visible to
+            members.
+          </p>
+        </div>
       </section>
 
       <section className={section} aria-labelledby="privacy-two-step">

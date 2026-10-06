@@ -257,7 +257,7 @@ export const PRIVACY_EN: LegalDocument = {
       "kind": "clause",
       "id": "c-5-1",
       "number": "5.1",
-      "text": "Other members and sponsors. Signed-in members and sponsors can see directory profiles. Contact details are shared only with the two parties, and only after an intro is accepted. Members you add to a deal room can see what is shared there. Members can see mandate details once unlocked."
+      "text": "Other members and sponsors. Signed-in members can see directory profiles. A sponsor sees a member's card only if that member chooses to show it. Contact details are shared only with the two parties, and only after an intro is accepted. Members you add to a deal room can see what is shared there. Members can see mandate details once unlocked."
     },
     {
       "kind": "clause",
