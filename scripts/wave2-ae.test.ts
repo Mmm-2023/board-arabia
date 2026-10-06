@@ -137,7 +137,7 @@ test('landing H1 is the promise and Who runs the desk names Michael without a ne
   assert.match(who, /Who runs the desk/)
   assert.match(who, /Michael Mateer, Co-Founder and CEO/)
   assert.equal(/nammco/i.test(who), false)
-  assert.match(read('scripts/prerender.mjs'), /strayPublicNammco\(html\)/)
+  assert.match(read('scripts/prerender.mjs'), /strayPublicNammco\(html, artifactPath\(route\)\)/)
   assert.match(read('scripts/public-nammco.mjs'), /\/nammco\/i\.test\(html\)/)
   assert.equal(/linkedin\.com/i.test(who), false)
   assert.equal(/https?:/i.test(who), false)

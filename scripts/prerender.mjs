@@ -31,6 +31,11 @@ function routeFile(route) {
   return path.join(dist, route.slice(1), 'index.html')
 }
 
+function artifactPath(route) {
+  if (route === '/') return 'index.html'
+  return `${route.slice(1)}/index.html`
+}
+
 function tagAttr(html, pattern) {
   const tag = html.match(pattern)?.[0] || ''
   return tag.match(/content="([^"]*)"/)?.[1] || tag.match(/href="([^"]*)"/)?.[1] || ''
@@ -45,7 +50,7 @@ function assertPage(route, html) {
   const errors = []
 
   if (!title.includes('Board Arabia')) errors.push('title missing Board Arabia')
-  if (strayPublicNammco(html)) errors.push('nammco in document')
+  if (strayPublicNammco(html, artifactPath(route))) errors.push('nammco in document')
   if (descriptionTags.length !== 1) errors.push(`description count ${descriptionTags.length}`)
   if (!description || description.length < 80) errors.push('description too short')
   if (!canonical.startsWith('https://boardarabia.com')) errors.push(`canonical ${canonical}`)
@@ -151,8 +156,8 @@ function assertDistClean(distDir) {
     if (calendar.test(text)) {
       throw new Error(`${relative} contains ${calendar}`)
     }
-    if (strayPublicNammco(text)) {
-      throw new Error(`${relative} contains nammco outside the footer credit`)
+    if (strayPublicNammco(text, relative)) {
+      throw new Error(`${relative} contains nammco outside the footer credit or the legal entity line`)
     }
   }
   const dashboard = fs.readFileSync(path.join(distDir, 'dashboard', 'index.html'), 'utf8')

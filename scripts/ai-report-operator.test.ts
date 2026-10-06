@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 import test from 'node:test'
 import { footerWithOperator, operatorCredit } from '../src/lib/aiReportOperator.ts'
+import { allowsLegalEntityLine } from './public-nammco.mjs'
 import { renderToolCopy } from '../src/lib/aiToolCopy.ts'
 
 const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..')
@@ -184,7 +185,7 @@ test('the operator placeholder is gone from src and edge, and the seed is only i
   assert.match(apply, /path="\/apply"/)
 })
 
-test('the built site does not contain the operator name, the CR, or an encoding of either', () => {
+test('the built site keeps the operator name and CR on the legal pages only', () => {
   const dist = path.join(root, 'dist')
   if (!existsSync(dist)) {
     execFileSync('npx', ['vite', 'build'], { cwd: root, stdio: 'inherit' })
@@ -206,7 +207,11 @@ test('the built site does not contain the operator name, the CR, or an encoding 
     if (text.includes(OPERATOR_CR)) reasons.push('cr')
     if (codes.some((code) => text.includes(code))) reasons.push('char-codes')
     if (encoded.some((value) => text.includes(value))) reasons.push('base64')
-    if (reasons.length) hits.push(`${rel(file)}: ${reasons.join(', ')}`)
+    if (!reasons.length) continue
+    const relative = rel(file)
+    const identityOnly = reasons.every((reason) => reason === 'name' || reason === 'cr')
+    if (identityOnly && allowsLegalEntityLine(relative)) continue
+    hits.push(`${relative}: ${reasons.join(', ')}`)
   }
   assert.deepEqual(hits, [])
 })

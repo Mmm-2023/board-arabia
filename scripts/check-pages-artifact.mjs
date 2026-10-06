@@ -1,6 +1,7 @@
 /**
  * Pages artifact gate. Calendar hosts stay fully banned.
- * nammco is banned except the exact footer credit.
+ * nammco is banned except the exact footer credit, and the exact
+ * registration line on privacy, terms, and the legal-pages chunk.
  */
 import fs from 'node:fs'
 import path from 'node:path'
@@ -17,7 +18,8 @@ function walk(dir) {
       continue
     }
     const text = fs.readFileSync(full).toString('latin1')
-    if (strayPublicNammco(text)) hits.push(path.relative(root, full))
+    const relative = path.relative(root, full)
+    if (strayPublicNammco(text, relative)) hits.push(relative)
   }
 }
 

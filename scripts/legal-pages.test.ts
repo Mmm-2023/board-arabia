@@ -22,6 +22,7 @@ import { englishPath } from '../src/lib/englishPath.ts'
 import { PRIVACY_EN } from '../src/content/legal/privacy.en.ts'
 import { legalPlainText, resolveLegalDocument } from '../src/content/legal/resolve.ts'
 import { TERMS_EN } from '../src/content/legal/terms.en.ts'
+import { FOOTER_NAMMCO_CREDIT, LEGAL_ENTITY_CR, LEGAL_ENTITY_LINE, strayPublicNammco } from './public-nammco.mjs'
 const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..')
 
 const ALLOWED_BRACKETS = new Set([
@@ -118,7 +119,15 @@ test('legal config defaults, links, and the 30 day flag', () => {
     .filter((file) => file.endsWith('.ts') || file.endsWith('.tsx'))
     .filter((file) => readFileSync(file, 'utf8').includes('VITE_LEGAL_'))
     .map((file) => path.relative(root, file))
-  assert.deepEqual(hits, ['src/config/legal.ts'])
+  assert.deepEqual(hits.sort(), ['src/config/legal.ts', 'src/config/legalPageIdentity.ts'].sort())
+  const identity = read('src/config/legalPageIdentity.ts')
+  assert.match(identity, /VITE_LEGAL_BA_ENTITY/)
+  assert.match(identity, /VITE_LEGAL_CR/)
+  assert.equal(identity.includes('VITE_LEGAL_ADDRESS'), false)
+  assert.equal(identity.includes('VITE_LEGAL_CONTACT_EMAIL'), false)
+  assert.equal(identity.includes('VITE_LEGAL_DPO_CONTACT'), false)
+  assert.equal(identity.includes('VITE_LEGAL_AI_PROVIDER'), false)
+  assert.equal(/NAMMCO|7043252647/i.test(identity), false)
   const example = read('.env.example')
   for (const name of [
     'VITE_LEGAL_BA_ENTITY',
@@ -296,6 +305,7 @@ test('website source has no Arabic script and no rtl locale', () => {
 test('legal sources have no mailbox literal and no em or en dash', () => {
   const files = [
     'src/config/legal.ts',
+    'src/config/legalPageIdentity.ts',
     'src/content/legal/types.ts',
     'src/content/legal/resolve.ts',
     'src/content/legal/terms.en.ts',
@@ -317,6 +327,94 @@ test('legal sources have no mailbox literal and no em or en dash', () => {
     assert.equal(source.includes('\u2014'), false, file)
     assert.equal(source.includes('\u2013'), false, file)
     assert.equal(source.includes('Drafting note'), false, file)
+  }
+})
+
+test('an unset address reads as registered address, and a set address stays of', () => {
+  setLegalEnvForTests(null)
+  const pendingPrivacy = legalPlainText(resolveLegalDocument(PRIVACY_EN, 'en', false))
+  const pendingTerms = legalPlainText(resolveLegalDocument(TERMS_EN, 'en', false))
+  assert.match(pendingPrivacy, /registered address: To be confirmed \("we", "us"\)/)
+  assert.match(pendingTerms, /registered address: To be confirmed \("Board Arabia", "we", "us"\)/)
+  assert.equal(pendingPrivacy.includes('of To be confirmed'), false)
+  assert.equal(pendingTerms.includes('of To be confirmed'), false)
+  setLegalEnvForTests({ address: '12 Example Road' })
+  try {
+    const filledPrivacy = legalPlainText(resolveLegalDocument(PRIVACY_EN, 'en', false))
+    const filledTerms = legalPlainText(resolveLegalDocument(TERMS_EN, 'en', false))
+    assert.match(filledPrivacy, /of 12 Example Road \("we", "us"\)/)
+    assert.match(filledTerms, /of 12 Example Road \("Board Arabia", "we", "us"\)/)
+    assert.equal(filledPrivacy.includes('registered address:'), false)
+    assert.equal(filledTerms.includes('registered address:'), false)
+  } finally {
+    setLegalEnvForTests(null)
+  }
+})
+
+test('privacy and terms render the entity line and marketing routes keep only the footer credit', async () => {
+  const previousEntity = process.env.VITE_LEGAL_BA_ENTITY
+  const previousCr = process.env.VITE_LEGAL_CR
+  delete process.env.VITE_LEGAL_ADDRESS
+  delete process.env.VITE_LEGAL_CONTACT_EMAIL
+  delete process.env.VITE_LEGAL_DPO_CONTACT
+  delete process.env.VITE_LEGAL_AI_PROVIDER
+  process.env.VITE_LEGAL_BA_ENTITY = LEGAL_ENTITY_LINE
+  process.env.VITE_LEGAL_CR = LEGAL_ENTITY_CR
+  process.env.VITE_SUPABASE_URL ||= 'https://example.supabase.co'
+  process.env.VITE_SUPABASE_ANON_KEY ||= 'example-anon-key'
+  const vite = await createServer({
+    server: { middlewareMode: true, hmr: false },
+    appType: 'custom',
+    logLevel: 'error',
+  })
+  try {
+    const pages = [
+      ['/src/pages/PrivacyPage.tsx', 'PrivacyPage', '/privacy', 'privacy/index.html'],
+      ['/src/pages/TermsPage.tsx', 'TermsPage', '/terms', 'terms/index.html'],
+      ['/src/pages/LandingPage.tsx', 'LandingPage', '/', 'index.html'],
+      ['/src/pages/ApplyPage.tsx', 'ApplyPage', '/apply', 'apply/index.html'],
+      ['/src/pages/ForMembersPage.tsx', 'ForMembersPage', '/for-members', 'for-members/index.html'],
+      ['/src/pages/ForCapitalPage.tsx', 'ForCapitalPage', '/for-capital', 'for-capital/index.html'],
+      ['/src/pages/PartnersPage.tsx', 'PartnersPage', '/partners', 'partners/index.html'],
+      ['/src/pages/HowItWorksPage.tsx', 'HowItWorksPage', '/how-it-works', 'how-it-works/index.html'],
+      ['/src/pages/AboutPage.tsx', 'AboutPage', '/about', 'about/index.html'],
+    ] as const
+    for (const [file, name, route, artifact] of pages) {
+      const mod = await vite.ssrLoadModule(file)
+      const html = pageHtml(mod[name], route)
+      assert.match(html, new RegExp(`>${FOOTER_NAMMCO_CREDIT}<`))
+      assert.equal(strayPublicNammco(html, artifact), false, route)
+      if (route === '/privacy' || route === '/terms') {
+        assert.match(html, /NAMMCO Holding Co\./)
+        assert.match(html, /7043252647/)
+        assert.match(html, /To be confirmed/)
+        assert.equal(html.includes('Ask the desk'), false)
+        assert.equal(/the desk/i.test(html), false)
+      } else {
+        assert.equal(html.includes(LEGAL_ENTITY_LINE), false, route)
+        assert.equal(html.includes(LEGAL_ENTITY_CR), false, route)
+      }
+    }
+    const privacy = pageHtml((await vite.ssrLoadModule('/src/pages/PrivacyPage.tsx')).PrivacyPage, '/privacy')
+    const terms = pageHtml((await vite.ssrLoadModule('/src/pages/TermsPage.tsx')).TermsPage, '/terms')
+    assert.match(privacy, /Privacy contact:[\s\S]{0,80}To be confirmed/)
+    assert.match(privacy, /Data protection officer:[\s\S]{0,80}To be confirmed/)
+    assert.match(privacy, /To be confirmed[\s\S]{0,80}for AI tools/)
+    assert.match(terms, /contact us at[\s\S]{0,80}To be confirmed/)
+    assert.match(terms, /AI provider[\s\S]{0,80}To be confirmed/)
+    assert.match(privacy, /registered address:[\s\S]{0,40}To be confirmed/)
+    assert.match(terms, /registered address:[\s\S]{0,40}To be confirmed/)
+    assert.equal(privacy.includes('of To be confirmed'), false)
+    assert.equal(terms.includes('of To be confirmed'), false)
+    assert.match(privacy, /Introductions and admin/)
+    assert.match(privacy, /Ask admin/)
+    assert.match(terms, /Ask admin/)
+  } finally {
+    if (previousEntity === undefined) delete process.env.VITE_LEGAL_BA_ENTITY
+    else process.env.VITE_LEGAL_BA_ENTITY = previousEntity
+    if (previousCr === undefined) delete process.env.VITE_LEGAL_CR
+    else process.env.VITE_LEGAL_CR = previousCr
+    await vite.close()
   }
 })
 })

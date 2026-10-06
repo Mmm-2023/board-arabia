@@ -33,7 +33,7 @@ const chrome = spawn(
 )
 
 const shots = [
-  ['request', 'intros-a-request', 'Ask the desk'],
+  ['request', 'intros-a-request', 'Ask admin'],
   ['accepted', 'intros-a-accepted', 'Book a call'],
   ['desk', 'intros-a-desk', 'Intro sent'],
   ['settings', 'intros-a-settings', 'Introduction allowance'],

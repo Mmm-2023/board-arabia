@@ -88,7 +88,7 @@ export const PRIVACY_EN: LegalDocument = {
       "kind": "clause",
       "id": "c-3-4",
       "number": "3.4",
-      "text": "Introductions and the desk. Intro requests you send and receive, whether they are accepted or declined, and messages to and from \"Ask the desk\"."
+      "text": "Introductions and admin. Intro requests you send and receive, whether they are accepted or declined, and messages to and from \"Ask admin\"."
     },
     {
       "kind": "clause",

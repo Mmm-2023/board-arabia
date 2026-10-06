@@ -182,7 +182,7 @@ test('contact cards hide phone when unset and stay off pending rows', async () =
         onRequest: () => {},
       }),
     )
-    assert.match(form, /Ask the desk to introduce us/)
+    assert.match(form, /Ask admin to introduce us/)
     assert.match(form, /3 of 5 left/)
     assert.equal(form.includes('\u2014'), false)
     assert.equal(form.includes('\u2013'), false)

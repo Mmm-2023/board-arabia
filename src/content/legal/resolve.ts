@@ -1,6 +1,8 @@
+import { publishedLegalIdentity } from '../../config/legalPageIdentity.ts'
 import {
   aiUploads30DayRetention,
   EFFECTIVE_DATE,
+  LEGAL_PENDING,
   legalField,
   type LegalField,
   type LegalLang,
@@ -31,14 +33,30 @@ const TOKEN_FIELD: Record<string, LegalField | 'date'> = {
 
 const FEE_BRACKET = /fee|fees|credit/i
 
+function legalDocumentValue(field: LegalField): string {
+  const value = legalField(field, 'en')
+  if ((field === 'baEntity' || field === 'cr') && value === LEGAL_PENDING.en) {
+    return publishedLegalIdentity()[field]
+  }
+  return value
+}
+
+/** "of [ADDRESS]" reads as a broken sentence while the address is still the fallback. */
+function addressClause(): string {
+  const address = legalDocumentValue('address')
+  if (address === LEGAL_PENDING.en) return `registered address: ${address}`
+  return `of ${address}`
+}
+
 function fillText(text: string, retention30: boolean): string {
   let next = text
   if (!retention30) {
     next = next.split(AI_TERMS_30_DAY).join(AI_TERMS_WHILE_ACTIVE)
     next = next.split(AI_ROW_30_DAY).join(AI_ROW_WHILE_ACTIVE)
   }
+  next = next.split('of [ADDRESS]').join(addressClause())
   for (const [token, field] of Object.entries(TOKEN_FIELD)) {
-    const value = field === 'date' ? EFFECTIVE_DATE.en : legalField(field, 'en')
+    const value = field === 'date' ? EFFECTIVE_DATE.en : legalDocumentValue(field)
     next = next.split(token).join(value)
   }
   next = next.replace(/\[[^[\]]+\]/g, (token) => (FEE_BRACKET.test(token) ? FEE_SENTENCE : token))

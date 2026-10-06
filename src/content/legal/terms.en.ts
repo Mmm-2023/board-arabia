@@ -170,7 +170,7 @@ export const TERMS_EN: LegalDocument = {
       "kind": "clause",
       "id": "c-5-3",
       "number": "5.3",
-      "text": "Ask the desk. You can ask our staff for help with the Platform or with an introduction. The desk may suggest members you could meet. The desk does not negotiate, advise on or take part in any deal."
+      "text": "Ask admin. You can ask our staff for help with the Platform or with an introduction. Admin may suggest members you could meet. Admin does not negotiate, advise on or take part in any deal."
     },
     {
       "kind": "clause",
