@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useLocation, useSearchParams } from 'react-router-dom'
 import { MajlisCardTitle } from '../../components/MajlisCardTitle'
 import { SignedAvatar } from '../../components/SignedAvatar'
 import {
@@ -10,23 +10,28 @@ import {
   googleCalendarUrl,
   isMajlisRegion,
   memberMajlisFeed,
+  memberMajlisPast,
   parseFocusTags,
   riyadhWallToUtc,
   rsvpTier,
   validateMajlisApplication,
 } from '../../../supabase/functions/_shared/majlis.ts'
 import { downloadCsv } from '../../lib/csv'
-import { hostRosterCsv } from '../../lib/majlisRoster'
+import { dayKey, monthCells, monthLabel, riyadhDay, shiftMonth } from '../../lib/majlisCalendar'
+import { groupMajlisRoster, hostRosterCsv } from '../../lib/majlisRoster'
 import {
   applyForMajlis,
   downloadMajlisIcs,
   fetchMajlisEvents,
   fetchMajlisRoster,
+  fetchOwnMajlisRsvps,
   fetchSponsorMajlis,
   rsvpMajlis,
   type MajlisEventRow,
+  type MajlisRsvpAction,
   type MajlisRosterRow,
   type MajlisSponsorEvent,
+  type OwnMajlisRsvp,
 } from '../../lib/supabase'
 import { useNoIndex } from '../../lib/usePageTitle'
 import { CardSkeleton, EmptyState, ErrorBanner, FilteredZero } from '../../shell/ViewState'
@@ -41,18 +46,19 @@ const primaryBtn =
   'inline-flex min-h-11 items-center px-4 text-[0.75rem] font-semibold tracking-[0.08em] uppercase ba-primary disabled:opacity-40'
 const quietBtn =
   'inline-flex min-h-11 items-center border border-[var(--ba-line)] bg-white px-4 text-[0.75rem] font-semibold tracking-[0.08em] text-ink uppercase disabled:opacity-40'
-const jumpClass =
-  'inline-flex min-h-11 items-center justify-center border border-[var(--ba-line)] bg-white px-3 text-[0.92rem] text-ink'
-
 export function MajlisPage({ preview }: { preview?: MajlisPreview } = {}) {
   const { member, userId } = useMember()
   const sponsor = member.seat === 'sponsor'
+  const { pathname } = useLocation()
+  const past = pathname.replace(/\/+$/, '').endsWith('/majlis/past')
   const [params, setParams] = useSearchParams()
   const region = isMajlisRegion(params.get('region') || '') ? params.get('region') : ''
   const focus = params.get('focus') || ''
   const highlight = params.get('event') || ''
   const [nowMs] = useState(() => Date.now())
   const [hostOpen, setHostOpen] = useState(false)
+  const [view, setView] = useState<'list' | 'calendar'>('list')
+  const [ownByEvent, setOwnByEvent] = useState<Record<string, OwnMajlisRsvp> | null>(null)
   const [events, setEvents] = useState<MajlisEventRow[] | null>(preview?.events ?? null)
   const [sponsorEvents, setSponsorEvents] = useState<MajlisSponsorEvent[] | null>(null)
   const [unavailable, setUnavailable] = useState(false)
@@ -94,6 +100,24 @@ export function MajlisPage({ preview }: { preview?: MajlisPreview } = {}) {
   }, [attempt, preview, sponsor])
 
   useEffect(() => {
+    if (preview || sponsor) return
+    let cancelled = false
+    void fetchOwnMajlisRsvps().then((result) => {
+      if (cancelled) return
+      if ('error' in result) {
+        setOwnByEvent(null)
+        return
+      }
+      const next: Record<string, OwnMajlisRsvp> = {}
+      for (const row of result.rows) next[row.event_id] = row
+      setOwnByEvent(next)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [attempt, preview, sponsor])
+
+  useEffect(() => {
     if (!highlight) return
     document.getElementById(`majlis-${highlight}`)?.scrollIntoView({ block: 'center' })
   }, [highlight, events, sponsorEvents])
@@ -127,7 +151,20 @@ export function MajlisPage({ preview }: { preview?: MajlisPreview } = {}) {
     return rows
   }, [events, sponsor, sponsorEvents])
 
-  const feed = useMemo(() => memberMajlisFeed(published, nowMs), [published, nowMs])
+  const feed = useMemo(
+    () => (past ? memberMajlisPast(published, nowMs) : memberMajlisFeed(published, nowMs)),
+    [past, published, nowMs],
+  )
+
+  function shown(event: MajlisEventRow): MajlisEventRow {
+    if (!ownByEvent) return event
+    const own = ownByEvent[event.id]
+    return {
+      ...event,
+      my_rsvp_status: own?.status ?? null,
+      my_waitlist_position: own?.waitlist_position ?? null,
+    }
+  }
 
   const tags = useMemo(() => {
     const seen = new Set<string>()
@@ -161,31 +198,33 @@ export function MajlisPage({ preview }: { preview?: MajlisPreview } = {}) {
         .sort((a, b) => b.created_at.localeCompare(a.created_at))
 
   return (
-    <div className="max-w-5xl">
+    <div className="min-w-0 max-w-5xl" data-majlis-section={past ? 'past' : 'upcoming'}>
       <h1 className="font-display text-[2rem] font-semibold tracking-[-0.03em]">Majlis</h1>
-      <p className="mt-2 max-w-3xl text-[0.98rem] leading-relaxed text-[var(--ba-muted)]">
+      <p className="mt-2 max-w-full break-words text-[0.98rem] leading-relaxed text-[var(--ba-muted)]">
         {sponsor
           ? 'Regional activity for sponsors. Guest names and contact details stay with the host.'
-          : 'Upcoming gatherings are listed first. Host a majlis when you want to hold one.'}
+          : past
+            ? 'Past gatherings stay on record. Venue addresses and guest lists are not shown.'
+            : 'Upcoming gatherings are listed first. Host a majlis when you want to hold one.'}
       </p>
-
-      {!sponsor && (
-        <nav aria-label="On this page" className="mt-5 grid gap-2 sm:flex sm:flex-wrap">
-          <PageJump href="#majlis-feed">Upcoming</PageJump>
-          <button type="button" className={jumpClass} aria-expanded={hostOpen} aria-controls="majlis-apply" onClick={openHostForm}>
-            Host a majlis
-          </button>
-          <PageJump href="#majlis-mine">Your applications</PageJump>
-        </nav>
-      )}
 
       <section id="majlis-feed" className="mt-8 scroll-mt-24" aria-labelledby="majlis-feed-title">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <h2 id="majlis-feed-title" className="font-display text-[1.35rem] font-semibold">
-            Upcoming
+            {past ? 'Past' : 'Upcoming'}
           </h2>
+          {!past && (
+            <div className="flex gap-2" role="group" aria-label="Upcoming view">
+              <button type="button" className={view === 'list' ? primaryBtn : quietBtn} aria-pressed={view === 'list'} onClick={() => setView('list')}>
+                List
+              </button>
+              <button type="button" className={view === 'calendar' ? primaryBtn : quietBtn} aria-pressed={view === 'calendar'} onClick={() => setView('calendar')}>
+                Calendar
+              </button>
+            </div>
+          )}
           {!loading && !error && feed.length > 0 && (
-            <p className="text-[0.92rem] text-[var(--ba-muted)]">{upcomingLabel(feed.length)}</p>
+            <p className="text-[0.92rem] text-[var(--ba-muted)]">{past ? pastLabel(feed.length) : upcomingLabel(feed.length)}</p>
           )}
         </div>
         {loading ? (
@@ -210,12 +249,12 @@ export function MajlisPage({ preview }: { preview?: MajlisPreview } = {}) {
           <p className="mt-4 text-[0.98rem] text-[var(--ba-muted)]">Published gatherings are not available yet.</p>
         ) : feed.length === 0 ? (
           <div className="mt-4">
-            <EmptyState tone="member" message="No upcoming majlis." />
+            <EmptyState tone="member" message={past ? 'No past majlis.' : 'No upcoming majlis.'} />
           </div>
         ) : (
           <>
-            <p className="mt-2 text-[0.95rem] text-[var(--ba-muted)]">Filter by region or focus.</p>
-            <div className="mt-4 flex flex-wrap gap-2" role="group" aria-label="Region filters">
+            <p className="mt-2 max-w-full break-words text-[0.95rem] text-[var(--ba-muted)]">Filter by region or focus.</p>
+            <div className="mt-4 flex max-w-full flex-wrap gap-2" role="group" aria-label="Region filters">
               <Chip pressed={!region} onClick={() => setFilter({ region: null })}>
                 All regions
               </Chip>
@@ -230,7 +269,7 @@ export function MajlisPage({ preview }: { preview?: MajlisPreview } = {}) {
               ))}
             </div>
             {tags.length > 0 && (
-              <div className="mt-4 flex flex-wrap gap-2" role="group" aria-label="Focus filters">
+              <div className="mt-4 flex max-w-full flex-wrap gap-2" role="group" aria-label="Focus filters">
                 <Chip pressed={!focus} onClick={() => setFilter({ focus: null })}>
                   All focus
                 </Chip>
@@ -255,47 +294,36 @@ export function MajlisPage({ preview }: { preview?: MajlisPreview } = {}) {
                 />
               </div>
             ) : (
-              <ul className="mt-4 space-y-3">
-                {filtered.map((event) => (
-                  <li key={event.id} id={`majlis-${event.id}`}>
-                    {sponsor || !('host_member_id' in event) ? (
-                      <SponsorCard
-                        event={event as MajlisSponsorEvent}
-                        nowMs={nowMs}
-                        onFocus={(tag) => setFilter({ focus: tag })}
-                        onRegion={(name) => setFilter({ region: name })}
-                      />
-                    ) : (
-                      <MemberCard
-                        event={event as MajlisEventRow}
-                        userId={userId}
-                        nowMs={nowMs}
-                        tier={rsvpTier(member.seat)}
-                        highlighted={highlight === event.id}
-                        roster={preview?.roster?.filter((row) => row.event_id === event.id)}
-                        onFocus={(tag) => setFilter({ focus: tag })}
-                        onRegion={(name) => setFilter({ region: name })}
-                        onChanged={() => {
-                          setEvents(null)
-                          setAttempt((value) => value + 1)
-                        }}
-                      />
-                    )}
-                  </li>
-                ))}
-              </ul>
+              <EventList
+                events={filtered}
+                past={past}
+                calendar={view === 'calendar' && !past}
+                sponsor={sponsor}
+                userId={userId}
+                nowMs={nowMs}
+                highlight={highlight}
+                roster={preview?.roster}
+                seat={member.seat}
+                onFocus={(tag) => setFilter({ focus: tag })}
+                onRegion={(name) => setFilter({ region: name })}
+                onChanged={() => {
+                  setEvents(null)
+                  setAttempt((value) => value + 1)
+                }}
+                shown={shown}
+              />
             )}
           </>
         )}
       </section>
 
-      {!sponsor && (
+      {!sponsor && !past && (
         <section id="majlis-host" className="mt-10 scroll-mt-24" aria-labelledby="majlis-host-title">
           <h2 id="majlis-host-title" className="font-display text-[1.35rem] font-semibold">
             Host a majlis
           </h2>
           <p className="mt-2 max-w-3xl text-[0.95rem] leading-relaxed text-[var(--ba-muted)]">
-            Staff review the application before it is published.
+            Our admin team reviews the application before it is published.
           </p>
           {!hostOpen && (
             <button
@@ -319,7 +347,7 @@ export function MajlisPage({ preview }: { preview?: MajlisPreview } = {}) {
         </section>
       )}
 
-      {!sponsor && (
+      {!sponsor && !past && (
         <section id="majlis-mine" className="mt-10 scroll-mt-24" aria-labelledby="majlis-mine-title">
           <h2 id="majlis-mine-title" className="font-display text-[1.35rem] font-semibold">
             Your applications
@@ -352,12 +380,8 @@ function upcomingLabel(count: number): string {
   return count === 1 ? '1 upcoming' : `${count} upcoming`
 }
 
-function PageJump({ href, children }: { href: string; children: string }) {
-  return (
-    <a href={href} className={jumpClass}>
-      {children}
-    </a>
-  )
+function pastLabel(count: number): string {
+  return count === 1 ? '1 past' : `${count} past`
 }
 
 function applicationSummary(rows: MajlisEventRow[]): string {
@@ -384,7 +408,7 @@ function Chip({
       type="button"
       aria-pressed={pressed}
       onClick={onClick}
-      className={`inline-flex min-h-11 items-center px-3 text-[0.92rem] ${
+      className={`inline-flex min-h-11 max-w-full items-center whitespace-normal px-3 text-left text-[0.92rem] ${
         pressed ? 'bg-[var(--ba-indigo)] text-[var(--ba-porcelain)]' : 'border border-[var(--ba-line)] bg-white text-ink'
       }`}
     >
@@ -406,14 +430,219 @@ function seatLine(registered: number, capacity: number, waiting: number): string
   return waiting > 0 ? `${seats}. ${waiting} waiting` : seats
 }
 
+function EventList({
+  events,
+  past,
+  calendar,
+  sponsor,
+  userId,
+  nowMs,
+  highlight,
+  roster,
+  seat,
+  onFocus,
+  onRegion,
+  onChanged,
+  shown,
+}: {
+  events: Array<MajlisEventRow | MajlisSponsorEvent>
+  past: boolean
+  calendar: boolean
+  sponsor: boolean
+  userId: string
+  nowMs: number
+  highlight: string
+  roster?: MajlisRosterRow[]
+  seat: string
+  onFocus: (tag: string) => void
+  onRegion: (region: string) => void
+  onChanged: () => void
+  shown: (event: MajlisEventRow) => MajlisEventRow
+}) {
+  const [cursor, setCursor] = useState(() => {
+    const first = events[0] ? riyadhDay(events[0].starts_at) : null
+    const today = riyadhDay(new Date(nowMs).toISOString())
+    return first ?? today ?? { year: 2026, month: 1, day: 1 }
+  })
+  const monthEvents = events.filter((event) => {
+    const day = riyadhDay(event.starts_at)
+    return day?.year === cursor.year && day.month === cursor.month
+  })
+  const listed = calendar ? monthEvents : events
+
+  function card(event: MajlisEventRow | MajlisSponsorEvent) {
+    if (sponsor || !('host_member_id' in event)) {
+      return (
+        <SponsorCard
+          event={event as MajlisSponsorEvent}
+          nowMs={nowMs}
+          past={past}
+          onFocus={onFocus}
+          onRegion={onRegion}
+        />
+      )
+    }
+    const row = shown(event as MajlisEventRow)
+    if (past) {
+      return <PastCard event={row} onFocus={onFocus} onRegion={onRegion} />
+    }
+    return (
+      <MemberCard
+        event={row}
+        userId={userId}
+        nowMs={nowMs}
+        tier={rsvpTier(seat)}
+        highlighted={highlight === row.id}
+        roster={roster?.filter((item) => item.event_id === row.id)}
+        onFocus={onFocus}
+        onRegion={onRegion}
+        onChanged={onChanged}
+      />
+    )
+  }
+
+  return (
+    <>
+      {calendar && (
+        <MonthGrid
+          year={cursor.year}
+          month={cursor.month}
+          events={monthEvents}
+          onPrev={() => setCursor((current) => ({ ...current, ...shiftMonth(current.year, current.month, -1) }))}
+          onNext={() => setCursor((current) => ({ ...current, ...shiftMonth(current.year, current.month, 1) }))}
+        />
+      )}
+      <ul className={`mt-4 space-y-3 ${calendar ? 'md:hidden' : ''}`} data-majlis-agenda={calendar ? '' : undefined}>
+        {listed.map((event) => {
+          const day = riyadhDay(event.starts_at)
+          return (
+            <li key={event.id} id={calendar ? undefined : `majlis-${event.id}`}>
+              {calendar && day && (
+                <p className="mb-2 text-[0.92rem] text-[var(--ba-muted)]">{dayKey(day)}</p>
+              )}
+              {card(event)}
+            </li>
+          )
+        })}
+      </ul>
+      {calendar && (
+        <ul className="mt-4 hidden space-y-3 md:block">
+          {listed.map((event) => (
+            <li key={event.id} id={`majlis-${event.id}`}>
+              {card(event)}
+            </li>
+          ))}
+        </ul>
+      )}
+    </>
+  )
+}
+
+function MonthGrid({
+  year,
+  month,
+  events,
+  onPrev,
+  onNext,
+}: {
+  year: number
+  month: number
+  events: Array<{ id: string; title: string; starts_at: string }>
+  onPrev: () => void
+  onNext: () => void
+}) {
+  const cells = monthCells(year, month)
+  const byDay = new Map<number, Array<{ id: string; title: string }>>()
+  for (const event of events) {
+    const day = riyadhDay(event.starts_at)
+    if (!day || day.month !== month || day.year !== year) continue
+    const list = byDay.get(day.day) ?? []
+    list.push({ id: event.id, title: event.title })
+    byDay.set(day.day, list)
+  }
+  return (
+    <div className="mt-4 hidden max-w-full md:block" data-majlis-calendar="">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h3 className="font-display text-[1.15rem] font-semibold">{monthLabel(year, month)}</h3>
+        <div className="flex gap-2">
+          <button type="button" className={quietBtn} onClick={onPrev}>Previous month</button>
+          <button type="button" className={quietBtn} onClick={onNext}>Next month</button>
+        </div>
+      </div>
+      <div className="mt-3 grid grid-cols-7 gap-1 text-[0.82rem]">
+        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((label) => (
+          <div key={label} className="px-1 text-[var(--ba-muted)]">{label}</div>
+        ))}
+        {cells.map((day, index) => {
+          const items = day ? byDay.get(day) ?? [] : []
+          return (
+            <div key={`${year}-${month}-${index}`} className="min-h-16 border border-[var(--ba-line)] bg-white p-1">
+              <p>{day ?? ''}</p>
+              {items.map((item) => (
+                <a key={item.id} href={`#majlis-${item.id}`} className="mt-1 block truncate text-[var(--ba-indigo)] underline">
+                  {item.title}
+                </a>
+              ))}
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+function PastCard({
+  event,
+  onFocus,
+  onRegion,
+}: {
+  event: MajlisEventRow
+  onFocus: (tag: string) => void
+  onRegion: (region: string) => void
+}) {
+  return (
+    <article className="border border-[var(--ba-line)] bg-white px-4 py-4" data-majlis-past="">
+      <div className="flex items-start gap-3">
+        <SignedAvatar path={event.host_avatar_path ?? null} avatarStyle={event.host_avatar_style} size={40} alt="" />
+        <div className="min-w-0 flex-1">
+          <h3 className="font-display text-[1.15rem] font-semibold">{event.title}</h3>
+          <p className="mt-1 text-[0.95rem]">{hostLine(event)}</p>
+        </div>
+      </div>
+      <dl className="mt-3 grid gap-2 text-[0.95rem] sm:grid-cols-2">
+        <div>
+          <dt className="text-[var(--ba-muted)]">Region</dt>
+          <dd>
+            <button type="button" className="min-h-11 text-left underline decoration-[var(--ba-line)]" onClick={() => onRegion(event.region)}>
+              {event.region}
+            </button>
+          </dd>
+        </div>
+        <div>
+          <dt className="text-[var(--ba-muted)]">When</dt>
+          <dd>{formatMajlisWhen(event.starts_at, event.ends_at)}</dd>
+        </div>
+      </dl>
+      <TagRow tags={event.focus_tags} onFocus={onFocus} />
+    </article>
+  )
+}
+
+function hostLine(event: MajlisEventRow): string {
+  if (!event.host_member_id) return 'hosted by our admin team'
+  return event.host_full_name || 'Host'
+}
+
 function SponsorCard({
   event,
   nowMs,
+  past = false,
   onFocus,
   onRegion,
 }: {
   event: MajlisSponsorEvent
   nowMs: number
+  past?: boolean
   onFocus: (tag: string) => void
   onRegion: (region: string) => void
 }) {
@@ -429,9 +658,11 @@ function SponsorCard({
       <Meta
         region={event.region}
         when={formatMajlisWhen(event.starts_at, event.ends_at)}
-        seats={seatLine(event.registered_count, event.capacity, event.waitlist_count)}
+        seats={past ? '' : seatLine(event.registered_count, event.capacity, event.waitlist_count)}
         venueName={event.venue_name}
         address={null}
+        showVenue={!past}
+        showSeats={!past}
         onRegion={onRegion}
       />
       {priority && <p className="mt-3 text-[0.92rem] text-[var(--ba-indigo)]">{priority}</p>}
@@ -473,6 +704,7 @@ function MemberCard({
         <SignedAvatar path={event.host_avatar_path ?? null} avatarStyle={event.host_avatar_style} size={40} alt="" />
         <div className="min-w-0 flex-1">
           <CardHead title={event.title} featured={event.featured} sponsorLabel={event.sponsor_label} description={event.description} />
+          {!host && <p className="mt-1 text-[0.95rem]">{hostLine(event)}</p>}
         </div>
       </div>
       <Meta
@@ -493,6 +725,7 @@ function MemberCard({
       {host ? (
         <div className="mt-4">
           <p className="text-[0.95rem]">You are hosting this majlis.</p>
+          {event.maybe_count != null && <p className="mt-1 text-[0.95rem]">Maybe {event.maybe_count}</p>}
           <HostRoster eventId={event.id} title={event.title} seeded={roster} />
         </div>
       ) : (
@@ -519,7 +752,7 @@ function ApplicationCard({ event, userId }: { event: MajlisEventRow; userId: str
       />
       <p className="mt-3 text-[0.92rem]">{event.focus_tags.join(', ')}</p>
       {event.status === 'rejected' && event.rejection_feedback && (
-        <p className="mt-3 text-[0.95rem]">Staff feedback: {event.rejection_feedback}</p>
+        <p className="mt-3 text-[0.95rem]">Admin feedback: {event.rejection_feedback}</p>
       )}
       {event.status === 'cancelled' && event.cancel_reason && (
         <p className="mt-3 text-[0.95rem]">Cancellation: {event.cancel_reason}</p>
@@ -552,6 +785,8 @@ function Meta({
   venueName,
   address,
   addressHint,
+  showVenue = true,
+  showSeats = true,
   onRegion,
 }: {
   region: string
@@ -560,6 +795,8 @@ function Meta({
   venueName: string
   address: string | null
   addressHint?: string | null
+  showVenue?: boolean
+  showSeats?: boolean
   onRegion?: (region: string) => void
 }) {
   return (
@@ -580,10 +817,13 @@ function Meta({
         <dt className="text-[var(--ba-muted)]">When</dt>
         <dd>{when}</dd>
       </div>
-      <div>
-        <dt className="text-[var(--ba-muted)]">Seats</dt>
-        <dd>{seats}</dd>
-      </div>
+      {showSeats && (
+        <div>
+          <dt className="text-[var(--ba-muted)]">Seats</dt>
+          <dd>{seats}</dd>
+        </div>
+      )}
+      {showVenue && (
       <div>
         <dt className="text-[var(--ba-muted)]">Venue</dt>
         <dd>
@@ -592,6 +832,7 @@ function Meta({
           {addressHint && <span className="mt-1 block text-[0.88rem] text-[var(--ba-muted)]">{addressHint}</span>}
         </dd>
       </div>
+      )}
     </dl>
   )
 }
@@ -622,10 +863,16 @@ function RsvpControls({
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState('')
   const open = Boolean(event.rsvp_opens_at)
-  const full = event.registered_count >= event.capacity && event.my_rsvp_status !== 'registered'
+  const status = event.my_rsvp_status
+  const yesOn = status === 'registered' || status === 'waitlist'
+  const full = event.registered_count >= event.capacity && status !== 'registered'
   const location = event.venue_address ? `${event.venue_name}, ${event.venue_address}` : event.venue_name
+  const choice = status === 'registered' ? 'yes' : status === 'waitlist' ? 'waitlist' : status === 'maybe' ? 'maybe' : status === 'declined' ? 'no' : 'none'
 
-  async function act(action: 'register' | 'cancel') {
+  async function act(action: MajlisRsvpAction) {
+    if (action === 'register' && yesOn) return
+    if (action === 'maybe' && status === 'maybe') return
+    if (action === 'decline' && status === 'declined') return
     setBusy(true)
     setMessage('')
     const result = await rsvpMajlis(event.id, action)
@@ -640,51 +887,54 @@ function RsvpControls({
   if (!open) {
     return <p className="mt-4 text-[0.92rem] text-[var(--ba-muted)]">Registration is not open yet.</p>
   }
-  if (blocked && event.my_rsvp_status !== 'registered' && event.my_rsvp_status !== 'waitlist') {
-    return (
-      <p className="mt-4 text-[0.95rem]">Founding members have priority for the first 48 hours.</p>
-    )
-  }
-  if (event.my_rsvp_status === 'registered') {
-    const calendar = googleCalendarUrl({
-      title: event.title,
-      startsAtUtc: event.starts_at,
-      endsAtUtc: event.ends_at,
-      details: `${event.title}. Region: ${event.region}. ${formatMajlisWhen(event.starts_at, event.ends_at)}`,
-      location,
-    })
-    return (
-      <div className="mt-4 flex flex-wrap gap-2">
-        <a className={primaryBtn} href={calendar} target="_blank" rel="noreferrer">
-          Google Calendar
-        </a>
-        <button type="button" className={quietBtn} disabled={busy} onClick={() => void downloadMajlisIcs(event.id).then((result) => setMessage(result.error || ''))}>
-          Download ICS
-        </button>
-        <button type="button" className={quietBtn} disabled={busy} onClick={() => void act('cancel')}>
-          Cancel registration
-        </button>
-        {message && <p className="w-full text-[0.95rem] text-[var(--ba-error)]" role="alert">{message}</p>}
-      </div>
-    )
-  }
-  if (event.my_rsvp_status === 'waitlist') {
-    return (
-      <div className="mt-4">
-        <p className="text-[0.95rem]">Waitlist position {event.my_waitlist_position ?? ''}.</p>
-        <button type="button" className={`${quietBtn} mt-3`} disabled={busy} onClick={() => void act('cancel')}>
-          Leave waitlist
-        </button>
-        {message && <p className="mt-2 text-[0.95rem] text-[var(--ba-error)]" role="alert">{message}</p>}
-      </div>
-    )
-  }
+
+  const calendar = status === 'registered'
+    ? googleCalendarUrl({
+        title: event.title,
+        startsAtUtc: event.starts_at,
+        endsAtUtc: event.ends_at,
+        details: `${event.title}. Region: ${event.region}. ${formatMajlisWhen(event.starts_at, event.ends_at)}`,
+        location,
+      })
+    : ''
+
   return (
-    <div className="mt-4">
-      <button type="button" className={primaryBtn} disabled={busy} onClick={() => void act('register')}>
-        {busy ? 'Saving' : full ? 'Join waitlist' : 'Register'}
-      </button>
-      {message && <p className="mt-2 text-[0.95rem] text-[var(--ba-error)]" role="alert">{message}</p>}
+    <div className="mt-4" data-rsvp-choice={choice}>
+      <div className="flex flex-wrap gap-2" role="group" aria-label="RSVP">
+        <button
+          type="button"
+          className={yesOn ? primaryBtn : quietBtn}
+          aria-pressed={yesOn}
+          disabled={busy || (blocked && !yesOn)}
+          onClick={() => void act('register')}
+        >
+          Yes
+        </button>
+        <button type="button" className={status === 'maybe' ? primaryBtn : quietBtn} aria-pressed={status === 'maybe'} disabled={busy} onClick={() => void act('maybe')}>
+          Maybe
+        </button>
+        <button type="button" className={status === 'declined' ? primaryBtn : quietBtn} aria-pressed={status === 'declined'} disabled={busy} onClick={() => void act('decline')}>
+          No
+        </button>
+      </div>
+      {blocked && !yesOn && (
+        <p className="mt-3 text-[0.95rem]">Founding members have priority for the first 48 hours.</p>
+      )}
+      {full && !yesOn && <p className="mt-3 text-[0.95rem]">This majlis is full. Yes joins the waitlist.</p>}
+      {status === 'waitlist' && (
+        <p className="mt-3 text-[0.95rem]">Waitlist position {event.my_waitlist_position ?? ''}.</p>
+      )}
+      {status === 'registered' && (
+        <div className="mt-3 flex flex-wrap gap-2">
+          <a className={primaryBtn} href={calendar} target="_blank" rel="noreferrer">
+            Google Calendar
+          </a>
+          <button type="button" className={quietBtn} disabled={busy} onClick={() => void downloadMajlisIcs(event.id).then((result) => setMessage(result.error || ''))}>
+            Add to calendar (.ics)
+          </button>
+        </div>
+      )}
+      {message && <p className="mt-2 w-full text-[0.95rem] text-[var(--ba-error)]" role="alert">{message}</p>}
     </div>
   )
 }
@@ -737,14 +987,19 @@ function HostRoster({ eventId, title, seeded }: { eventId: string; title: string
             Download CSV
           </button>
           <ul className="mt-3 space-y-2" aria-label="Roster">
-            {rows.map((row) => (
-              <li key={row.id} className="flex items-center gap-3 text-[0.95rem]">
-                <SignedAvatar path={row.avatar_path ?? null} avatarStyle={row.avatar_style} size={36} alt="" />
-                <span>
-                  <span className="font-semibold">{row.full_name || 'Member'}</span>
-                  {` · ${row.status}`}
-                  {row.status === 'waitlist' && row.waitlist_position ? ` ${row.waitlist_position}` : ''}
-                </span>
+            {groupMajlisRoster(rows).map((group) => (
+              <li key={group.status}>
+                <p className="text-[0.82rem] font-semibold tracking-[0.06em] uppercase">{group.label} ({group.rows.length})</p>
+                {group.rows.map((row) => (
+                  <p key={row.id} className="mt-2 flex items-center gap-3 text-[0.95rem]">
+                    <SignedAvatar path={row.avatar_path ?? null} avatarStyle={row.avatar_style} size={36} alt="" />
+                    <span>
+                      <span className="font-semibold">{row.full_name || 'Member'}</span>
+                      {` · ${row.status}`}
+                      {row.status === 'waitlist' && row.waitlist_position ? ` ${row.waitlist_position}` : ''}
+                    </span>
+                  </p>
+                ))}
               </li>
             ))}
           </ul>
@@ -900,13 +1155,13 @@ function ApplyForm({ onCreated }: { onCreated: () => void }) {
         Apply to host
       </h2>
       <p className="mt-2 text-[0.95rem] leading-relaxed text-[var(--ba-muted)]">
-        Three short steps. Times are Asia/Riyadh. The application stays pending until staff accept it.
+        Three short steps. Times are Asia/Riyadh. The application stays pending until admin accepts it.
       </p>
       {sent ? (
         <div className="mt-4 border border-[var(--ba-line)] bg-white px-4 py-4" role="status">
           <p className="font-display text-[1.15rem] font-semibold">Application submitted.</p>
           <p className="mt-2 text-[0.98rem] leading-relaxed">
-            Status: pending approval. Staff will accept or reject it. Follow it under Your applications.
+            Status: pending approval. Admin will accept or reject it. Follow it under Your applications.
           </p>
           <div className="mt-4 grid gap-2 sm:flex sm:flex-wrap">
             <a href="#majlis-mine" className={`${primaryBtn} w-full justify-center sm:w-auto`}>

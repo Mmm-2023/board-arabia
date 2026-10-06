@@ -4,6 +4,7 @@ import type { DryRunInvite } from '../../src/lib/supabase'
 import type { SponsorDesk } from '../../src/lib/sponsorDesk'
 import { SponsorInvitePanel } from '../../src/pages/admin/SponsorInvitePanel'
 import { SponsorWelcome } from '../../src/pages/dashboard/SponsorWelcome'
+import { DISMISS_SAVE_ERROR, SponsorWelcomeDismissFrame } from '../../src/pages/dashboard/SponsorWelcomeGate'
 import { SponsorshipView } from '../../src/pages/dashboard/SponsorshipView'
 import '../../src/index.css'
 
@@ -51,6 +52,14 @@ createRoot(root).render(
           allowances={{ majlis_slots: 1, intro_credits: 2, room_credits: 0, monthly_base: 5 }}
           onDismiss={() => {}}
         />
+      ) : null}
+      {screen === 'welcome-error' ? (
+        <SponsorWelcomeDismissFrame saving={false} error={DISMISS_SAVE_ERROR}>
+          <SponsorWelcome
+            allowances={{ majlis_slots: 1, intro_credits: 2, room_credits: 0, monthly_base: 5 }}
+            onDismiss={() => {}}
+          />
+        </SponsorWelcomeDismissFrame>
       ) : null}
       {screen === 'credits' ? <SponsorshipView desk={desk} /> : null}
       {screen === 'handover' ? (

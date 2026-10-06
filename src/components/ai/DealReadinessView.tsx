@@ -10,18 +10,22 @@ export function DealReadinessForm({
   copy,
   retentionDays,
   consented,
+  acknowledged = false,
   fileName,
   busy,
   onConsent,
+  onAcknowledge,
   onFile,
   onRun,
 }: {
   copy: RenderedToolCopy
   retentionDays: number
   consented: boolean
+  acknowledged?: boolean
   fileName: string
   busy: boolean
   onConsent: (value: boolean) => void
+  onAcknowledge?: (value: boolean) => void
   onFile: (file: File | null) => void
   onRun: () => void
 }) {
@@ -30,6 +34,7 @@ export function DealReadinessForm({
       hideBanner
       copy={copy}
       consented={consented}
+      acknowledged={acknowledged}
       fileName={fileName}
       busy={busy}
       accept={DEAL_ACCEPT}
@@ -51,6 +56,7 @@ export function DealReadinessForm({
         </>
       }
       onConsent={onConsent}
+      onAcknowledge={onAcknowledge}
       onFile={onFile}
       onRun={onRun}
     />

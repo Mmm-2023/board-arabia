@@ -13,7 +13,7 @@ import { requireUser } from '../_shared/require_user.ts'
 const UUID = /^[0-9a-f-]{36}$/i
 
 type PlaceResult = {
-  status: 'registered' | 'waitlist' | 'cancelled'
+  status: 'registered' | 'waitlist' | 'cancelled' | 'maybe' | 'declined'
   waitlist_position: number | null
   changed: boolean
   previous_status: string | null
@@ -39,8 +39,8 @@ Deno.serve(async (req) => {
   } catch {
     return jsonResponse(req, { error: 'Invalid JSON' }, 400)
   }
-  if (!UUID.test(eventId) || (action !== 'register' && action !== 'cancel')) {
-    return jsonResponse(req, { error: 'event_id and action (register|cancel) required' }, 400)
+  if (!UUID.test(eventId) || !['register', 'maybe', 'decline', 'cancel'].includes(action)) {
+    return jsonResponse(req, { error: 'event_id and action (register|maybe|decline|cancel) required' }, 400)
   }
 
   const { error: limitError } = await admin.rpc('majlis_consume_rsvp_slot', { p_member: user.id })
@@ -102,7 +102,7 @@ async function notifyChange(
   const event = await loadEvent(admin, eventId)
   if (!event) return
   const guest = await loadPerson(admin, memberId)
-  const host = await loadPerson(admin, event.host_member_id)
+  const host = event.host_member_id ? await loadPerson(admin, event.host_member_id) : null
   const counts = {
     registered: Number(placed.registered_count ?? 0),
     waitlist: Number(placed.waitlist_count ?? 0),
@@ -141,30 +141,42 @@ async function notifyChange(
     if (host?.email) {
       await mailHostRsvp(admin, host.email, mailEvent, personLabel(guest), 'cancelled', counts.registered, counts.waitlist)
     }
-    if (placed.promoted_member_id) {
-      const promoted = await loadPerson(admin, placed.promoted_member_id)
-      if (promoted?.email) {
-        const sent = await mailGuestPromoted(admin, promoted.email, mailEvent, placed.promoted_member_id)
-        if (sent.status === 'sent' || sent.status === 'dry_run') {
-          await markCalendarSent(admin, eventId, placed.promoted_member_id)
-        }
-      }
-      if (host?.email) {
-        await mailHostRsvp(
-          admin,
-          host.email,
-          mailEvent,
-          personLabel(promoted),
-          'promoted',
-          counts.registered,
-          counts.waitlist,
-        )
-      }
-    }
+    await mailPromoted(admin, eventId, host, mailEvent, placed, counts)
+  } else if (placed.status === 'maybe' || placed.status === 'declined') {
+    await mailPromoted(admin, eventId, host, mailEvent, placed, counts)
   }
 }
 
-type EventRow = MajlisMailEvent & { host_member_id: string }
+async function mailPromoted(
+  admin: Parameters<typeof mailGuestRegistered>[0],
+  eventId: string,
+  host: { email: string; full_name: string | null } | null,
+  mailEvent: MajlisMailEvent,
+  placed: PlaceResult,
+  counts: { registered: number; waitlist: number },
+) {
+  if (!placed.promoted_member_id) return
+  const promoted = await loadPerson(admin, placed.promoted_member_id)
+  if (promoted?.email) {
+    const sent = await mailGuestPromoted(admin, promoted.email, mailEvent, placed.promoted_member_id)
+    if (sent.status === 'sent' || sent.status === 'dry_run') {
+      await markCalendarSent(admin, eventId, placed.promoted_member_id)
+    }
+  }
+  if (host?.email) {
+    await mailHostRsvp(
+      admin,
+      host.email,
+      mailEvent,
+      personLabel(promoted),
+      'promoted',
+      counts.registered,
+      counts.waitlist,
+    )
+  }
+}
+
+type EventRow = MajlisMailEvent & { host_member_id: string | null }
 
 async function loadEvent(
   admin: Parameters<typeof mailGuestRegistered>[0],

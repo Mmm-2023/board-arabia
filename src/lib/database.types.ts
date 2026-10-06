@@ -748,12 +748,38 @@ export type Database = {
         }
         Relationships: []
       }
+      majlis_rsvps: {
+        Row: {
+          id: string
+          event_id: string
+          member_id: string
+          status: 'registered' | 'waitlist' | 'cancelled' | 'maybe' | 'declined'
+          waitlist_position: number | null
+          registered_at: string
+          cancelled_at: string | null
+        }
+        Insert: {
+          id?: string
+          event_id: string
+          member_id: string
+          status: 'registered' | 'waitlist' | 'cancelled' | 'maybe' | 'declined'
+          waitlist_position?: number | null
+          registered_at?: string
+          cancelled_at?: string | null
+        }
+        Update: {
+          status?: 'registered' | 'waitlist' | 'cancelled' | 'maybe' | 'declined'
+          waitlist_position?: number | null
+          cancelled_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       majlis_events_member: {
         Row: {
           id: string
-          host_member_id: string
+          host_member_id: string | null
           title: string
           description: string
           region: string
@@ -780,10 +806,12 @@ export type Database = {
           cancel_reason: string | null
           registered_count: number
           waitlist_count: number
-          my_rsvp_status: 'registered' | 'waitlist' | 'cancelled' | null
+          my_rsvp_status: 'registered' | 'waitlist' | 'cancelled' | 'maybe' | 'declined' | null
           my_waitlist_position: number | null
           host_avatar_style: StoredAvatarStyle | null
           host_avatar_path: string | null
+          host_full_name: string | null
+          maybe_count: number | null
         }
         Relationships: []
       }
@@ -1026,6 +1054,27 @@ export type Database = {
       }
       staff_list_mandates: {
         Args: Record<string, never>
+        Returns: Json
+      }
+      staff_create_mandate: {
+        Args: {
+          p_sector: string
+          p_deal_type: string
+          p_ticket_band: string
+          p_geography: string
+          p_stage: string
+          p_one_liner: string
+          p_company_name: string
+          p_exact_amount: string
+          p_terms: string
+          p_contact_name: string
+          p_contact_email: string
+          p_contact_phone: string
+          p_deck_url: string | null
+          p_narrative: string
+          p_sector_tags: string[]
+          p_vision_themes: string[]
+        }
         Returns: Json
       }
       staff_list_mandate_matches: {

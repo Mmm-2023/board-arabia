@@ -174,8 +174,8 @@ export function regionGeotag(region: string): { lat: number; lng: number } | nul
 }
 
 export type RsvpTier = 'founding' | 'member' | 'sponsor' | 'other'
-export type RsvpAction = 'register' | 'cancel' | 'promote'
-export type RsvpSeatStatus = 'registered' | 'waitlist' | 'cancelled'
+export type RsvpAction = 'register' | 'cancel' | 'promote' | 'maybe' | 'decline'
+export type RsvpSeatStatus = 'registered' | 'waitlist' | 'cancelled' | 'maybe' | 'declined'
 
 /** ksa and intl are the founding seats. Any other non-sponsor seat is a general member. */
 export function rsvpTier(seat: unknown): RsvpTier {
@@ -233,6 +233,21 @@ export function rsvpDecision(input: {
       status: 'cancelled',
       waitlistPosition: null,
       changed: true,
+      promoteWaitlist: input.current === 'registered' && input.waitlistCount > 0,
+    }
+  }
+
+  if (input.action === 'maybe' || input.action === 'decline') {
+    if (input.isHost) return { ok: false, code: 'host_cannot_rsvp' }
+    if (input.tier === 'sponsor') return { ok: false, code: 'sponsor_cannot_rsvp' }
+    if (input.tier === 'other') return { ok: false, code: 'not_member' }
+    if (!(input.opensMs <= input.nowMs)) return { ok: false, code: 'not_open' }
+    const status = input.action === 'decline' ? 'declined' : 'maybe'
+    return {
+      ok: true,
+      status,
+      waitlistPosition: null,
+      changed: input.current !== status,
       promoteWaitlist: input.current === 'registered' && input.waitlistCount > 0,
     }
   }
@@ -435,6 +450,18 @@ export function memberMajlisFeed<T extends MajlisFeedFields>(events: readonly T[
       return true
     })
     .sort((a, b) => a.starts_at.localeCompare(b.starts_at) || Number(Boolean(b.featured)) - Number(Boolean(a.featured)))
+}
+
+/** Published gatherings that have ended, latest first. Test rows stay stored. */
+export function memberMajlisPast<T extends MajlisFeedFields>(events: readonly T[], nowMs: number): T[] {
+  return events
+    .filter((event) => {
+      if (event.status != null && event.status !== 'published') return false
+      if (isUpcomingMajlis(event.ends_at, nowMs)) return false
+      if (isTestMajlis(event)) return false
+      return true
+    })
+    .sort((a, b) => b.starts_at.localeCompare(a.starts_at))
 }
 
 export function countPublishedByRegion(

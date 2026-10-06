@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
-import { fetchStaffMandates } from '../../lib/mandateMatchApi'
+import { createStaffMandate, fetchStaffMandates } from '../../lib/mandateMatchApi'
 import type { StaffMandateBrief } from '../../lib/mandateMatch'
+import { emptyNewMandate, type NewMandateDraft, type NewMandateField } from '../../lib/newMandate'
 import { useNoIndex } from '../../lib/usePageTitle'
-import { CardSkeleton, EmptyState, ErrorBanner, PermissionState } from '../../shell/ViewState'
+import { CardSkeleton, ErrorBanner, PermissionState } from '../../shell/ViewState'
 import { STAFF_VIEWS } from '../../shell/viewCopy'
-import { MandateDeskCard } from './MandateShortlist'
+import { AdminMandatesView } from './AdminMandatesView'
 
 const copy = STAFF_VIEWS.mandates
 
@@ -18,6 +19,11 @@ type ListState =
 export function AdminMandatesPage() {
   const [list, setList] = useState<ListState>({ status: 'loading' })
   const [attempt, setAttempt] = useState(0)
+  const [draft, setDraft] = useState<NewMandateDraft>(emptyNewMandate)
+  const [field, setField] = useState<NewMandateField | ''>('')
+  const [message, setMessage] = useState('')
+  const [notice, setNotice] = useState('')
+  const [busy, setBusy] = useState(false)
   useNoIndex('Mandates | Board Arabia')
 
   useEffect(() => {
@@ -66,22 +72,46 @@ export function AdminMandatesPage() {
     )
   }
 
+  async function onSubmit() {
+    setNotice('')
+    setBusy(true)
+    const result = await createStaffMandate(draft)
+    setBusy(false)
+    if (result.status === 'invalid') {
+      setField(result.field)
+      setMessage(result.message)
+      return
+    }
+    if (result.status === 'denied') {
+      setList({ status: 'denied' })
+      return
+    }
+    if (result.status !== 'ready') {
+      setField('')
+      setMessage('Could not save the mandate. Try again.')
+      return
+    }
+    setDraft(emptyNewMandate())
+    setField('')
+    setMessage('')
+    setNotice('Mandate saved. It is not an Example.')
+    setAttempt((value) => value + 1)
+  }
+
   return (
-    <div className="max-w-3xl">
-      <p className="text-[0.72rem] font-semibold tracking-[0.14em] text-[var(--ba-lavender)] uppercase">Desk</p>
-      <h1 className="mt-3 font-display text-[2.1rem] font-bold tracking-[-0.03em]">Mandates</h1>
-      <p className="mt-3 max-w-xl text-[1rem] leading-relaxed text-pearl/70">{copy.intro}</p>
-      {list.mandates.length === 0 ? (
-        <div className="mt-8">
-          <EmptyState tone="staff" message={copy.empty} />
-        </div>
-      ) : (
-        <ul className="mt-8 space-y-3">
-          {list.mandates.map((mandate) => (
-            <MandateDeskCard key={mandate.id} mandate={mandate} />
-          ))}
-        </ul>
-      )}
-    </div>
+    <AdminMandatesView
+      mandates={list.mandates}
+      draft={draft}
+      field={field}
+      message={message}
+      notice={notice}
+      busy={busy}
+      onDraft={(next) => {
+        setDraft(next)
+        setMessage('')
+        setField('')
+      }}
+      onSubmit={() => void onSubmit()}
+    />
   )
 }

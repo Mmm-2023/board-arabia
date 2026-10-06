@@ -83,6 +83,10 @@ export const MEMBER_SECTIONS: Readonly<Record<string, readonly SectionLink[]>> =
     { id: 'tools', label: 'Tools', to: '/dashboard/ai', end: true },
     { id: 'due-diligence', label: 'Due diligence', to: '/dashboard/ai/due-diligence', end: false },
   ],
+  majlis: [
+    { id: 'upcoming', label: 'Upcoming', to: '/dashboard/majlis', end: true },
+    { id: 'past', label: 'Past', to: '/dashboard/majlis/past', end: true },
+  ],
 }
 
 /** Account links. Not tabs. Sponsorship is added only for a sponsor seat. */

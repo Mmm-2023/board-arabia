@@ -49,6 +49,7 @@ export function AiToolPage() {
   const [retentionDays, setRetentionDays] = useState(30)
   const [attempt, setAttempt] = useState(0)
   const [consented, setConsented] = useState(false)
+  const [acknowledged, setAcknowledged] = useState(false)
   const [file, setFile] = useState<File | null>(null)
   const [pricing, setPricing] = useState<PricingDraft>(EMPTY_PRICING)
   const [busy, setBusy] = useState(false)
@@ -66,6 +67,7 @@ export function AiToolPage() {
     setLoad('loading')
     setOutput(null)
     setSector('')
+    setAcknowledged(false)
   }
   useNoIndex(tool ? 'AI tool | Board Arabia' : 'AI tools | Board Arabia')
 
@@ -128,7 +130,7 @@ export function AiToolPage() {
   const reportCopy = renderToolCopy(tool, { ...slots, date: reportDate })
 
   async function onRunMarket() {
-    if (!tool || tool !== 'market_brief' || !sector || !consented) return
+    if (!tool || tool !== 'market_brief' || !sector || !consented || !acknowledged) return
     setBusy(true)
     setError('')
     const id = crypto.randomUUID()
@@ -167,7 +169,7 @@ export function AiToolPage() {
 
   async function onRun() {
     const upload = file ?? (tool === 'pricing_sense_check' ? pricingFile(pricing) : null)
-    if (!tool || !upload || !consented) return
+    if (!tool || !upload || !consented || !acknowledged) return
     const problem =
       tool === 'cfo_check' ? acceptCfoFile(upload) : tool === 'deal_readiness' ? acceptDealFile(upload) : acceptAiToolFile(upload)
     if (problem) {
@@ -321,11 +323,13 @@ export function AiToolPage() {
               copy={copy}
               sector={sector}
               consented={consented}
+              acknowledged={acknowledged}
               busy={busy}
               onSector={(next) => {
                 if (isMarketSector(next)) setSector(next)
               }}
               onConsent={setConsented}
+              onAcknowledge={setAcknowledged}
               onRun={() => void onRunMarket()}
             />
           ) : deal && busy ? null : deal ? (
@@ -333,9 +337,11 @@ export function AiToolPage() {
               copy={copy}
               retentionDays={retentionDays}
               consented={consented}
+              acknowledged={acknowledged}
               fileName={file?.name || ''}
               busy={busy}
               onConsent={setConsented}
+              onAcknowledge={setAcknowledged}
               onFile={(next) => {
                 setError('')
                 setFile(next)
@@ -346,6 +352,7 @@ export function AiToolPage() {
             <AiToolForm
               copy={copy}
               consented={consented}
+              acknowledged={acknowledged}
               fileName={file?.name || ''}
               busy={busy}
               accept={tool === 'cfo_check' ? CFO_ACCEPT : undefined}
@@ -361,6 +368,7 @@ export function AiToolPage() {
                 ) : null
               }
               onConsent={setConsented}
+              onAcknowledge={setAcknowledged}
               onFile={(next) => {
                 setError('')
                 setFile(next)

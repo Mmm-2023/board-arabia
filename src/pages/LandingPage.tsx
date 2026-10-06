@@ -7,15 +7,16 @@ import { Nav } from '../components/Nav'
 import { Reveal } from '../components/Reveal'
 import { Seo } from '../components/Seo'
 import { DisplayHeading, Eyebrow } from '../components/Type'
-import { TrustedPartnersSection } from '../components/TrustedPartners'
 import { ConnectionGraphic, DiamondGrid, HeroEnter, HELD_FOR_LINE, IconCapital, IconDoors, IconRelationships } from '../components/landing/graphics'
 import { ProductFrame } from '../components/landing/ProductFrame'
 import { StepDiagram } from '../components/landing/StepDiagram'
 import { StickyApply } from '../components/landing/StickyApply'
-import { AUDIENCE_LINE, MEMBER_TOOLS } from '../content/marketing'
+import { LANDING_FEATURES, LANDING_GROUPS } from '../content/landingFeatures'
+import { AUDIENCE_LINE } from '../content/marketing'
 import { FAQ } from '../content/seo'
 import { LANDING_STRIP_LEAD, LANDING_STRIP_LINK } from '../content/trust'
 import { closingCtaBody } from '../content/twoTierCopy'
+import { DestinationIcon } from '../shell/icons'
 import { publicConsiderationCta } from '../lib/twoTierRegister'
 import { LANDING_PREVIEW_EXAMPLES, presentLandingDealList, type LandingDeal } from '../lib/landingPreview'
 import { supabase } from '../lib/supabase'
@@ -25,7 +26,7 @@ import { trackApplyClick } from '../lib/tracking/browser'
 const WHY = [
   {
     title: 'Access to capital',
-    body: 'Mandates from family offices, FDI, funds, and strategic investors arrive through an inbox our admin team reviews. Members are not left open to cold outreach on the open web.',
+    body: 'Mandates are capital briefs that admin reviews before members see them. Members are not left open to cold outreach on the open web.',
     icon: IconCapital,
   },
   {
@@ -52,7 +53,6 @@ export function LandingPage() {
         <FoundingSection />
         <MembershipSection />
         <ProcessSection />
-        <TrustedPartnersSection />
         <FaqList items={FAQ} compact />
         <p
           className="mx-auto max-w-3xl px-5 pt-8 text-center text-[0.875rem] leading-relaxed text-[var(--ba-muted)] md:px-10"
@@ -150,8 +150,8 @@ function WhySection() {
             Board Arabia is a reviewed founding membership. It links Saudi
             Arabia’s boardrooms with international counterparts for
             Chairpersons, Board members, and C-suite executives. Growth and
-            governance sit inside that frame. It is not a directory you can
-            search, and it is not a calendar you can book.
+            governance sit inside that frame. It is not a public directory,
+            and it is not a calendar you can book.
           </p>
         </Reveal>
         <ol className="mt-3 grid gap-2 md:mt-5 md:grid-cols-3 md:gap-3">
@@ -262,25 +262,50 @@ function MembershipSection() {
         <Reveal>
           <Eyebrow>Inside the membership</Eyebrow>
           <DisplayHeading compact className="max-w-3xl">
-            Tools that support capital, relationships, and open doors.
+            Features and tools
           </DisplayHeading>
           <p className="ba-quiet mt-3 max-w-3xl text-[0.9375rem] leading-relaxed">
-            After admission you work in a private directory, a mandate path our
-            admin team reviews, warm introductions, deal rooms, a quarterly Majlis,
-            and tools that support diligence and sector fit. Each tile opens on
-            the member page. Investors can see how mandates work on the For
-            capital page.
+            What admitted members use today. Everything below opens after you are admitted and signed in.
+          </p>
+          <p className="ba-quiet mt-2 max-w-3xl text-[0.8125rem] leading-snug">
+            While the founding cohort forms, some lists show cards marked Example.
           </p>
         </Reveal>
         <div className="mt-3">
           <ProductFrame deals={deals} />
         </div>
-        <ul className="ba-tool-list mt-3">
-          {MEMBER_TOOLS.map((tool) => (
-            <li key={tool.id}>{tool.title}</li>
-          ))}
-        </ul>
-        <p className="mt-2 flex flex-wrap gap-x-6">
+        {LANDING_GROUPS.map((group, index) => (
+          <Reveal key={group.id} delay={0.06 * index}>
+            <h3 className="mt-4 font-display text-[1.15rem] font-semibold tracking-[-0.02em] text-ink md:mt-6">
+              {group.title}
+            </h3>
+            {group.scope ? (
+              <p className="ba-quiet mt-1 max-w-3xl text-[0.8125rem] leading-snug">{group.scope}</p>
+            ) : null}
+            <ul
+              className="mt-2 grid gap-2 md:grid-cols-2 md:gap-3 lg:grid-cols-3"
+              data-feature-group={group.id}
+            >
+              {LANDING_FEATURES.filter((feature) => feature.group === group.id).map((feature) => (
+                <li key={feature.id}>
+                  <article className="ba-card h-full px-3 py-3" data-feature={feature.id}>
+                    <FeatureIcon id={feature.icon} />
+                    <h4 className="mt-2 font-display text-[1.05rem] font-semibold tracking-[-0.02em] text-ink">
+                      {feature.title}
+                    </h4>
+                    <p className="ba-quiet mt-1 text-[0.8125rem] leading-snug">{feature.body}</p>
+                  </article>
+                </li>
+              ))}
+            </ul>
+          </Reveal>
+        ))}
+        <p className="mt-2">
+          <Link to="/security" className="ba-textlink inline-flex min-h-11 items-center text-[0.9375rem]">
+            {LANDING_STRIP_LINK}
+          </Link>
+        </p>
+        <p className="mt-1 flex flex-wrap gap-x-6">
           <Link to="/for-members" className="ba-textlink inline-flex min-h-11 items-center text-[0.9375rem]">
             See all member tools
           </Link>
@@ -290,6 +315,17 @@ function MembershipSection() {
         </p>
       </div>
     </section>
+  )
+}
+
+function FeatureIcon({ id }: { id: string }) {
+  return (
+    <span
+      aria-hidden="true"
+      className="inline-flex h-11 w-11 items-center justify-center rounded-[10px] border border-[#E8E4F7] bg-white text-[#1C1343]"
+    >
+      <DestinationIcon id={id} className="h-[22px] w-[22px] shrink-0" />
+    </span>
   )
 }
 
@@ -307,7 +343,7 @@ function ProcessSection() {
           <StepDiagram />
         </div>
         <p className="mt-4 max-w-3xl text-[0.9375rem] leading-relaxed text-[#E8E4F7]">
-          Reviewed. Gated. Off the open web. Outreach, warm introductions, and mandates pass our admin team before they reach a member.
+          Reviewed. Gated. Off the open web. Applications, mandate intros and real estate intros pass admin review. A member introduction needs the other member to accept.
         </p>
         <Link to="/how-it-works" className="ba-textlink mt-2 inline-flex min-h-11 items-center text-[0.9375rem] text-[#F6F5FB]">
           Full sequence

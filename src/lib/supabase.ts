@@ -792,11 +792,12 @@ export async function fetchPlatformStats(): Promise<PlatformStats | null> {
 }
 
 export type MajlisStatus = 'pending_approval' | 'published' | 'rejected' | 'cancelled' | 'hidden'
-export type MajlisRsvpStatus = 'registered' | 'waitlist' | 'cancelled'
+export type MajlisRsvpStatus = 'registered' | 'waitlist' | 'cancelled' | 'maybe' | 'declined'
+export type MajlisRsvpAction = 'register' | 'maybe' | 'decline' | 'cancel'
 
 export type MajlisEventRow = {
   id: string
-  host_member_id: string
+  host_member_id: string | null
   title: string
   description: string
   region: string
@@ -827,6 +828,8 @@ export type MajlisEventRow = {
   my_waitlist_position: number | null
   host_avatar_style?: StoredAvatarStyle | null
   host_avatar_path?: string | null
+  host_full_name?: string | null
+  maybe_count?: number | null
 }
 
 export type MajlisSponsorEvent = {
@@ -849,6 +852,13 @@ export type MajlisSponsorEvent = {
   sponsor_label: string | null
   registered_count: number
   waitlist_count: number
+}
+
+export type OwnMajlisRsvp = {
+  id: string
+  event_id: string
+  status: MajlisRsvpStatus
+  waitlist_position: number | null
 }
 
 export type MajlisRosterRow = {
@@ -899,14 +909,25 @@ function normalizeEvent(row: MajlisEventRow): MajlisEventRow {
     waitlist_count: num(row.waitlist_count) ?? 0,
     my_rsvp_status: row.my_rsvp_status ?? null,
     my_waitlist_position: num(row.my_waitlist_position),
+    host_full_name: row.host_full_name ?? null,
+    maybe_count: row.maybe_count == null ? null : num(row.maybe_count),
   }
 }
 
 const MAJLIS_HOST = 'host_avatar_style, host_avatar_path'
+const MAJLIS_FACE = 'host_full_name, maybe_count'
 
 export async function fetchMajlisEvents(): Promise<
   { error: string } | { events: MajlisEventRow[] }
 > {
+  const faced = await supabase
+    .from('majlis_events_member')
+    .select(`${MAJLIS_COLUMNS}, ${MAJLIS_HOST}, ${MAJLIS_FACE}`)
+    .order('starts_at', { ascending: true })
+  if (!faced.error) {
+    return { events: ((faced.data ?? []) as MajlisEventRow[]).map(normalizeEvent) }
+  }
+  if (!shapeMissing(faced.error.message)) return { error: faced.error.message }
   const withHost = await supabase
     .from('majlis_events_member')
     .select(`${MAJLIS_COLUMNS}, ${MAJLIS_HOST}`)
@@ -1038,9 +1059,17 @@ export async function applyForMajlis(input: {
   }
 }
 
+export async function fetchOwnMajlisRsvps(): Promise<{ error: string } | { rows: OwnMajlisRsvp[] }> {
+  const { data, error } = await supabase
+    .from('majlis_rsvps')
+    .select('id, event_id, status, waitlist_position')
+  if (error) return { error: error.message }
+  return { rows: (data ?? []) as OwnMajlisRsvp[] }
+}
+
 export async function rsvpMajlis(
   eventId: string,
-  action: 'register' | 'cancel',
+  action: MajlisRsvpAction,
 ): Promise<{ error?: string; status?: MajlisRsvpStatus; waitlist_position?: number | null }> {
   try {
     const res = await fetch(`${functionsBase}/majlis-rsvp`, {

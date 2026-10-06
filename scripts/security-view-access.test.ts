@@ -94,6 +94,19 @@ test('majlis read models keep the previous rows and columns without a definer vi
       assert.match(text, /set search_path = ''/)
       continue
     }
+    if (file === '20261202120000_majlis_rsvp_calendar.sql') {
+      assert.equal(recreatesMajlis, true)
+      assert.match(text, /security_barrier = true, security_invoker = true/)
+      assert.equal(/grant select on table public\.majlis_\w+ to anon/i.test(text), false)
+      assert.match(text, /create view public\.majlis_events_member\b/)
+      assert.equal(/create view public\.majlis_roster\b/i.test(text), false)
+      assert.match(text, /security definer/)
+      assert.match(text, /set search_path = ''/)
+      assert.match(text, /maybe_count/)
+      const memberChunk = text.split('function private.majlis_events_member_rows')[1]?.split('$fn$;')[0] ?? ''
+      assert.equal(/\bemail\b/i.test(memberChunk), false)
+      continue
+    }
     assert.equal(recreatesMajlis, false, file)
   }
 
@@ -185,6 +198,7 @@ test('every staff_* function checks staff and is not executable by anon', () => 
     'staff_set_intro_deal',
     'staff_list_mandate_intros',
     'staff_list_mandates',
+    'staff_create_mandate',
     'staff_list_mandate_matches',
     'staff_decide_mandate_intro',
     'staff_list_re_appetites',

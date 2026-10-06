@@ -28,7 +28,7 @@ export const SHELL_SHARE = {
 /**
  * Paths that already had a shell, plus the fixed routes that were missing.
  * Sign-in and auth recovery use the member line. They are not the founding apply utility.
- * /dashboard/majlis/past is added only when App.tsx declares that route.
+ * /dashboard/majlis/past uses the same member share line.
  */
 const FIXED_SHELLS = [
   ['/login', 'member'],
@@ -69,6 +69,7 @@ const FIXED_SHELLS = [
   ['/dashboard/ai', 'member'],
   ['/dashboard/ai/due-diligence', 'member'],
   ['/dashboard/majlis', 'member'],
+  ['/dashboard/majlis/past', 'member'],
   ['/dashboard/due-diligence', 'member'],
   ['/dashboard/events', 'member'],
   ['/auth/confirm', 'member'],
@@ -137,14 +138,9 @@ function shellEntry(routePath, kind) {
 
 export function appShells(options = {}) {
   const slugs = options.slugs ?? readAiToolSlugs(options.aiToolsSource)
-  const appSource =
-    options.appSource ?? fs.readFileSync(path.join(root, 'src/App.tsx'), 'utf8')
   const rows = FIXED_SHELLS.map(([routePath, kind]) => shellEntry(routePath, kind))
   for (const slug of slugs) {
     rows.push(shellEntry(`/dashboard/ai/${slug}`, 'member'))
-  }
-  if (majlisPastDeclared(appSource)) {
-    rows.push(shellEntry('/dashboard/majlis/past', 'member'))
   }
 
   const seen = new Set()

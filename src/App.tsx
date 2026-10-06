@@ -69,6 +69,7 @@ const DueDiligencePage = lazy(() =>
 )
 const HelpPage = lazy(() => import('./pages/dashboard/HelpPage').then((m) => ({ default: m.HelpPage })))
 const IntrosPage = lazy(() => import('./pages/dashboard/IntrosPage').then((m) => ({ default: m.IntrosPage })))
+const MajlisLayout = lazy(() => import('./pages/dashboard/MajlisLayout').then((m) => ({ default: m.MajlisLayout })))
 const MajlisPage = lazy(() => import('./pages/dashboard/MajlisPage').then((m) => ({ default: m.MajlisPage })))
 const MandatesPage = lazy(() => import('./pages/dashboard/MandatesPage').then((m) => ({ default: m.MandatesPage })))
 const PeopleLayout = lazy(() => import('./pages/dashboard/PeopleLayout').then((m) => ({ default: m.PeopleLayout })))
@@ -161,7 +162,11 @@ export default function App() {
           <Route path="invites" element={<NetworkPage />} />
           <Route path="*" element={<RedirectKeep />} />
         </Route>
-        <Route path="majlis" element={<MajlisPage />} />
+        <Route path="majlis" element={<MajlisLayout />}>
+          <Route index element={<MajlisPage />} />
+          <Route path="past" element={<MajlisPage />} />
+          <Route path="*" element={<RedirectKeep />} />
+        </Route>
         <Route path="ai" element={<AiToolsLayout />}>
           <Route index element={<AiToolsHome />} />
           <Route path="due-diligence" element={<DueDiligencePage />} />

@@ -40,7 +40,7 @@ const ANSWERS = [
   {
     question: 'How do peer invites work?',
     answer:
-      'You have two peer invites. Unused invites do not refill. People you invite are still reviewed. Their name stays on your sent list, for you and our admin team.',
+      'You have two peer invites. Your invites refill to 2 each week. Unused invites do not stack. People you invite are still reviewed. Their name stays on your sent list, for you and our admin team.',
     to: '/dashboard/people/invites',
     toLabel: 'Invites',
   },

@@ -85,7 +85,7 @@ export async function loadHomeSources(input: { userId: string; sponsor: boolean 
       endsAt: event.ends_at,
       status: event.status,
       host: 'host_member_id' in event && event.host_member_id === input.userId,
-      rsvp: 'my_rsvp_status' in event ? event.my_rsvp_status : null,
+      rsvp: homeRsvp('my_rsvp_status' in event ? event.my_rsvp_status : null),
     }))
   }
 
@@ -116,6 +116,11 @@ export async function loadHomeSources(input: { userId: string; sponsor: boolean 
     partialError: partialError || stats == null,
     figuresAsOf: figuresAsOfLabel(stats?.updatedAt),
   }
+}
+
+function homeRsvp(status: string | null): HomeGathering['rsvp'] {
+  if (status === 'registered' || status === 'waitlist' || status === 'cancelled') return status
+  return null
 }
 
 function takeList<T, R>(
