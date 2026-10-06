@@ -45,8 +45,8 @@ export function HowItWorksPage() {
           ) : (
             <>
               Board Arabia admission is credentials-first. Submit a pre-vet form
-              and await personal review. If accepted, you get a private invite
-              email before joining the member dashboard. {REVIEW_SLA}
+              and await personal review. If accepted, admin sends you a private
+              invite before joining the member dashboard. {REVIEW_SLA}
             </>
           )}
         </p>

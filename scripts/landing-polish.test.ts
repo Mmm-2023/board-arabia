@@ -18,6 +18,7 @@ const PUBLIC_COPY_SOURCES = [
   'src/pages/ApplyPage.tsx',
   'src/content/seo.ts',
   'src/content/marketing.ts',
+  'src/content/landingFeatures.ts',
   'src/content/twoTierCopy.ts',
   'src/components/CtaBand.tsx',
   'src/components/Footer.tsx',
@@ -176,7 +177,7 @@ test('public marketing body does not say the desk outside Who runs the desk', as
       const body = html.replace(/Who runs the desk/g, '')
       assert.equal(/the desk/i.test(body), false, route)
       if (route === '/apply') assert.match(html, /Our admin team reviews your credentials/)
-      if (route === '/') assert.match(html, /inbox our admin team reviews/)
+      if (route === '/') assert.match(html, /Mandates are capital briefs that admin reviews before members see them/)
     }
     const legalPages = [
       ['/src/pages/PrivacyPage.tsx', 'PrivacyPage', '/privacy'],
