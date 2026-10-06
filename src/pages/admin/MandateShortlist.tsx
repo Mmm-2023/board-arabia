@@ -156,7 +156,7 @@ export function MandateDeskCard({ mandate }: { mandate: StaffMandateBrief }) {
   const tagged = mandateHasTags(mandate)
   const fit = !tagged ? 'No tags' : mandate.matchCount === 1 ? '1 match' : `${mandate.matchCount} matches`
   return (
-    <li>
+    <li data-example={mandate.isDemo ? 'true' : 'false'}>
       <Link
         to={`/admin/mandates/${mandate.id}`}
         className={`${styles.panel} block px-4 py-4 hover:border-white/30`}

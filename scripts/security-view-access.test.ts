@@ -198,6 +198,7 @@ test('every staff_* function checks staff and is not executable by anon', () => 
     'staff_set_intro_deal',
     'staff_list_mandate_intros',
     'staff_list_mandates',
+    'staff_create_mandate',
     'staff_list_mandate_matches',
     'staff_decide_mandate_intro',
     'staff_list_re_appetites',
