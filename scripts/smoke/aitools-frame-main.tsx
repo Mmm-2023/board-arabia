@@ -7,6 +7,7 @@ import { AiToolCardList } from '../../src/components/ai/AiToolCards'
 import { AiToolForm, AiToolReport, AiToolShell } from '../../src/components/ai/AiToolDesk'
 import { PRIVACY_LINK, TERMS_LINK } from '../../src/lib/aiToolConfig'
 import { renderToolCopy, type LegalSlots } from '../../src/lib/aiToolCopy'
+import { aiReportOperatorFields } from '../../src/lib/aiReportOperator'
 import { AI_UI } from '../../src/lib/aiToolUi'
 import { AiToolSettingsPanel } from '../../src/pages/admin/AiToolSettingsPanel'
 import { AppShell } from '../../src/shell/AppShell'
@@ -14,8 +15,7 @@ import { MEMBER_ACCOUNT, MEMBER_DESTINATIONS, STAFF_DESTINATIONS, STAFF_SECONDAR
 import './home.css'
 
 const slots: LegalSlots = {
-  entity: 'Example Holdings',
-  cr: '0000000000',
+  ...aiReportOperatorFields(),
   provider: 'Example AI',
   privacy: PRIVACY_LINK,
   terms: TERMS_LINK,
