@@ -19,6 +19,7 @@ export function buildMasterInvite(opts: {
   confirmUrl: string | null
   staffLoginUrl: string
   memberLoginUrl: string
+  staffRole?: 'staff' | 'master'
   issued: LinkIssued | PasswordIssued
 }): { subject: string; text: string; html: string } {
   const subject = opts.seatLabel
@@ -35,17 +36,11 @@ function inviteText(opts: {
   confirmUrl: string | null
   staffLoginUrl: string
   memberLoginUrl: string
+  staffRole?: 'staff' | 'master'
   issued: LinkIssued | PasswordIssued
 }) {
   const lines = [`Hello ${opts.greeting},`, '']
-  if (opts.seatLabel) {
-    lines.push(
-      `You are invited to Board Arabia as master staff, and as a founding member (${opts.seatLabel} seat).`,
-      '',
-    )
-  } else {
-    lines.push('You are invited to Board Arabia as master staff.', '')
-  }
+  lines.push(invitedAs(opts.staffRole, opts.seatLabel), '')
   if (opts.issued.mode === 'magic_link' && opts.confirmUrl) {
     lines.push(
       'Open this one-time link to sign in. It expires and works once:',
@@ -77,16 +72,11 @@ function inviteHtml(opts: {
   confirmUrl: string | null
   staffLoginUrl: string
   memberLoginUrl: string
+  staffRole?: 'staff' | 'master'
   issued: LinkIssued | PasswordIssued
 }) {
   const parts = [`<p>Hello ${escapeHtml(opts.greeting)},</p>`]
-  if (opts.seatLabel) {
-    parts.push(
-      `<p>You are invited to Board Arabia as master staff, and as a founding member (${escapeHtml(opts.seatLabel)} seat).</p>`,
-    )
-  } else {
-    parts.push('<p>You are invited to Board Arabia as master staff.</p>')
-  }
+  parts.push(`<p>${escapeHtml(invitedAs(opts.staffRole, opts.seatLabel))}</p>`)
   if (opts.issued.mode === 'magic_link' && opts.confirmUrl) {
     parts.push(
       '<p>Open this one-time link to sign in. It expires and works once:</p>',
@@ -111,6 +101,12 @@ function inviteHtml(opts: {
     '<p>This invitation is personal. The member dashboard is not public.</p>',
   )
   return parts.join('\n')
+}
+
+function invitedAs(staffRole: 'staff' | 'master' | undefined, seatLabel: string | null) {
+  const who = staffRole === 'staff' ? 'an admin' : 'master staff'
+  if (!seatLabel) return `You are invited to Board Arabia as ${who}.`
+  return `You are invited to Board Arabia as ${who}, and as a founding member (${seatLabel} seat).`
 }
 
 function escapeHtml(value: string) {

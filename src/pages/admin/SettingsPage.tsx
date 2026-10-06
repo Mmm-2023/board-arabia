@@ -91,29 +91,6 @@ export function SettingsPage() {
           <p className={`mt-3 ${styles.muted}`}>{STAFF_VIEWS.settings.switchAbsent}</p>
         )}
       </section>
-
-      <section className={`${styles.panel} mt-4 px-5 py-5`}>
-        <h2 className={`text-[0.72rem] font-semibold tracking-[0.12em] uppercase ${styles.quiet}`}>
-          Promote admin
-        </h2>
-        {room.masterKnown === false ? (
-          <p className={`mt-3 ${styles.muted}`}>{STAFF_VIEWS.settings.masterLock}</p>
-        ) : (
-          <>
-            <p className={`mt-3 ${styles.muted}`}>
-              Master login can promote the primary staff seat. Other people are invited from People.
-            </p>
-            <button
-              type="button"
-              disabled={room.updatingId === 'invite-michael'}
-              onClick={() => void room.runInvite('invite-michael', { seat: 'ksa', admitMember: true })}
-              className="ba-primary mt-4 inline-flex min-h-11 items-center px-4 text-[0.72rem] font-semibold tracking-[0.08em] uppercase disabled:opacity-40"
-            >
-              Invite / promote Michael
-            </button>
-          </>
-        )}
-      </section>
       <UtmBuilder tone="staff" />
     </div>
   )

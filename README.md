@@ -77,7 +77,7 @@ Legacy `/book` and `/verify` redirect to `/apply`.
 3. **Accept** → Edge Function `decide-application` emails the candidate the private booking link only (no date picker, no Calendar API).
 4. **Reject** → polite decline email to applicant.
 5. **Admit** (after Accept) → Edge Function `admit-member` creates the member login and emails a one-time sign-in link (or a temporary password if a link cannot be issued). Choose Saudi Arabia (`ksa`) or International (`intl`). This does not send the booking link again.
-6. **Invite / promote Michael** → Edge Function `invite-master` (staff JWT). Creates or invites the auth user, upserts `staff_users.role = master`, and by default admits a Saudi Arabia founding seat (a minimal accepted application is created server-side when none exists). The same screen has **Direct invite** for another email, seat, and optional founding admission.
+6. **Add admin** → Edge Function `invite-master` (master JWT only). People shows the form to a master. A new person joins as staff, shown as Admin. Creating or promoting a master needs an explicit `role` of `master` from that master. Re-inviting someone without that role does not change their existing role. The form can also admit a founding seat (a minimal accepted application is created server-side when none exists). Other staff do not see the form, and the function rejects them.
 7. **Suspend / Restore** → Edge Function `set-member-status`. This screen does not demote staff. The master mailbox and the last master cannot be demoted or deleted.
 8. **Sign out** on admin clears the session.
 
@@ -95,9 +95,9 @@ Legacy `/book` and `/verify` redirect to `/apply`.
 
 The public site must **never** show the booking URL. It is emailed only on Accept from `decide-application`.
 
-## Michael: master staff and member access
+## Master staff and member access
 
-`ADMIN_NOTIFY_EMAIL` (example `staff@example.com`) is the intended master. There may be no auth user yet. An existing staff account signs in at https://boardarabia.com/login/staff, opens `/admin`, and uses **Invite / promote Michael**. That promotes the `ADMIN_NOTIFY_EMAIL` mailbox to master staff and admits the Saudi Arabia founding seat. The Edge Function uses that secret when the request omits an email, and fails closed when the secret is unset.
+`ADMIN_NOTIFY_EMAIL` is the intended master. There may be no auth user yet. A master signs in at https://boardarabia.com/login/staff, opens People, and uses **Add admin**. A new person joins as admin. Promoting someone to master needs an explicit role of master on that request. Omitting the role does not change an existing role. The same request can admit a founding seat. The Edge Function uses that secret when the request omits an email, and fails closed when the secret is unset.
 
 Another staff account may remain staff. Do not delete that row from this screen. Do not add a member-only test inbox to `staff_users`. That inbox stays a member.
 
@@ -191,10 +191,10 @@ Payload columns are not granted to the staff client. The admin list never select
 ### Dry-run invite (Workspace credentials not set)
 
 1. Staff signs in at https://boardarabia.com/login/staff and opens `/admin`.
-2. Use **Invite / promote Michael**, **Direct invite**, or **Admit**.
+2. Use **Add admin** on People (master only), or **Admit**.
 3. The dry-run box on that page shows the one-time link, one-time code, or temporary password. That material is returned only in the staff HTTP response. It is not written into `email_events`.
 4. Open the link once, or sign in with the code at the login URL in the box. Staff destination is https://boardarabia.com/login/staff. Member destination is https://boardarabia.com/login.
-5. Hand the link to Michael through a channel you trust. Do not paste it into a shared chat if you can avoid it.
+5. Hand the link to that person through a channel you trust. Do not paste it into a shared chat if you can avoid it.
 6. After a password is set, use the staff and member URLs above. When Gmail secrets are present, the same actions email from `GMAIL_FROM` with Reply-To set to that mailbox, and the admin response does not include the secret.
 
 Local proof of the Accept path, without a live mailbox: `node --experimental-strip-types --test scripts/gmail-mail.test.ts scripts/peer-invite.test.ts`. The first checks From and Reply-To follow `GMAIL_FROM` (the tests use `ops@example.com`), that the message does not use Resend, and that a configured client posts to `https://gmail.googleapis.com/gmail/v1/users/me/messages/send`. The second checks the peer invite letter and the WhatsApp link. A real send still needs the Gmail secrets plus `GMAIL_FROM`, `ADMIN_NOTIFY_EMAIL`, and `PRIVATE_BOOKING_LINK` on the Edge Function.
