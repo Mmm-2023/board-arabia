@@ -28,7 +28,7 @@ const termsAfter =
 const partnersBefore =
   'A partner does not receive the directory and does not message members around our admin team.'
 const partnersAfter =
-  "A partner sees a member's directory card only when that member chooses to show it, and does not message members around our admin team."
+  "A partner does not receive the directory. A sponsor sees a member's directory card only when that member chooses to show it. No partner or sponsor messages members around our admin team."
 
 function clause(doc: { blocks: { id?: string; text?: string }[] }, id: string) {
   const block = doc.blocks.find((item) => item.id === id)
@@ -90,7 +90,7 @@ test('legal copy says a sponsor sees a card only when the member chooses', () =>
   )
   assert.match(clause(PRIVACY_EN, 'c-1-1'), /\[BA ENTITY\], commercial registration number \[CR\]/)
   const partnersSource = readFileSync(path.join(root, 'src/pages/PartnersPage.tsx'), 'utf8')
-  assert.match(partnersSource, /A partner sees a member's directory card only when that member chooses to show it, and does not message members around our admin team\./)
+  assert.equal(partnersSource.includes(partnersAfter), true)
   assert.equal(partnersSource.includes(partnersBefore), false)
   assert.equal(partnersSource.includes('\u2014'), false)
   assert.equal(/nammco/i.test(`${privacyAfter}\n${termsAfter}\n${partnersAfter}`), false)
