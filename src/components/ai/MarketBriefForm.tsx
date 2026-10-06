@@ -1,5 +1,5 @@
 import { MARKET_SECTORS, type MarketSector } from '../../../supabase/functions/ai-tool-job/tools/market_brief.ts'
-import { AiToolBanner, AiToolConsent, AiToolWillList } from './AiToolDesk'
+import { AiOutputAcknowledgement, AiToolBanner, AiToolConsent, AiToolWillList } from './AiToolDesk'
 import type { RenderedToolCopy } from '../../lib/aiToolCopy'
 
 export const MARKET_UI = {
@@ -40,20 +40,24 @@ export function MarketBriefForm({
   copy,
   sector,
   consented,
+  acknowledged = false,
   busy,
   onSector,
   onConsent,
+  onAcknowledge,
   onRun,
 }: {
   copy: RenderedToolCopy
   sector: MarketSector | ''
   consented: boolean
+  acknowledged?: boolean
   busy: boolean
   onSector: (sector: MarketSector) => void
   onConsent: (value: boolean) => void
+  onAcknowledge?: (value: boolean) => void
   onRun: () => void
 }) {
-  const canRun = Boolean(sector) && consented && !busy
+  const canRun = Boolean(sector) && consented && acknowledged && !busy
   return (
     <form
       data-market-brief=""
@@ -98,6 +102,7 @@ export function MarketBriefForm({
       </fieldset>
       <p className="mt-3 text-[0.92rem] leading-relaxed text-ink/65">{MARKET_UI.kept}</p>
       <AiToolConsent text={copy.consent} checked={consented} disabled={busy} onChange={onConsent} />
+      <AiOutputAcknowledgement checked={acknowledged} disabled={busy} onChange={onAcknowledge ?? (() => undefined)} />
       <button
         type="submit"
         className="ba-primary mt-6 inline-flex min-h-11 items-center px-4 text-[1rem] font-semibold disabled:opacity-40"

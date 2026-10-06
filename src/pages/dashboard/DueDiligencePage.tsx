@@ -33,6 +33,7 @@ import { ConfirmDialog } from '../../shell/ConfirmDialog'
 import { CardSkeleton, EmptyState, ErrorBanner, PermissionState } from '../../shell/ViewState'
 import { MEMBER_VIEWS } from '../../shell/viewCopy'
 import { useMember } from './context'
+import { AiOutputAcknowledgement } from '../../components/ai/AiToolDesk'
 import { AiReportOperatorLine } from '../../components/ai/AiReportOperatorLine'
 import { UploadHandling } from '../../components/ai/UploadHandling'
 import { AdminShareBar } from '../../components/mfa/TwoStepScreens'
@@ -63,6 +64,7 @@ function Desk() {
   const [reports, setReports] = useState<HistoryItem[]>([])
   const [attempt, setAttempt] = useState(0)
   const [file, setFile] = useState<File | null>(null)
+  const [acknowledged, setAcknowledged] = useState(false)
   const [companyUrl, setCompanyUrl] = useState('')
   const [formError, setFormError] = useState('')
   const [busy, setBusy] = useState(false)
@@ -154,8 +156,8 @@ function Desk() {
   async function runCheck() {
     setFormError('')
     setJobError('')
-    if (!file) {
-      setFormError(DD_COPY.ctaDisabled)
+    if (!acknowledged || !file) {
+      setFormError(file ? '' : DD_COPY.ctaDisabled)
       return
     }
     const ext = deckExtension(file.name)
@@ -300,6 +302,8 @@ function Desk() {
       progressLabel={deskProgressLine(stage)}
       actionError={presentDeskError(formError || jobError)}
       retentionCopy={retentionCopy}
+      acknowledged={acknowledged}
+      onAcknowledge={setAcknowledged}
       reports={reports}
       deleteNote={deleteNote}
       deleteAlert={deleteAlert}
@@ -360,6 +364,8 @@ export function DueDiligenceDeskView({
   onReload,
   retryLabel = DD_COPY.errorRetry,
   retentionCopy = false,
+  acknowledged = false,
+  onAcknowledge,
 }: {
   phase: DeskPhase
   loadState: 'loading' | 'ready' | ReadFailure
@@ -383,10 +389,13 @@ export function DueDiligenceDeskView({
   onReload: () => void
   retryLabel?: string
   retentionCopy?: boolean
+  acknowledged?: boolean
+  onAcknowledge?: (value: boolean) => void
 }) {
   const fileRef = useRef<HTMLInputElement>(null)
   const fileChosen = Boolean(fileName)
   const showForm = loadState === 'ready'
+  const canCheck = fileChosen && acknowledged && !busy && !activeJob
 
   return (
     <div className="max-w-3xl">
@@ -465,10 +474,16 @@ export function DueDiligenceDeskView({
               </ul>
             </details>
 
+            <AiOutputAcknowledgement
+              checked={acknowledged}
+              disabled={busy || activeJob}
+              onChange={onAcknowledge ?? (() => undefined)}
+            />
             <button
               type="submit"
               className={`${fileChosen ? ctaClass : fileButtonQuietClass} mt-4`}
-              disabled={busy || activeJob || !fileChosen}
+              disabled={!canCheck}
+              data-dd-run={canCheck ? 'on' : 'off'}
               aria-describedby={phase === 'job-error' ? 'dd-action-error' : undefined}
             >
               {deskCtaLabel({ busy, fileChosen })}

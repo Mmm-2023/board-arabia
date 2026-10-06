@@ -138,7 +138,7 @@ export const MEMBER_VIEWS = {
     mapUnavailable: 'The regional map is not available yet.',
   },
   rooms: {
-    empty: 'A deal room is a private space to share documents and talk terms with the people on a deal.',
+    empty: 'Open a private room for a deal, link a mandate or an opportunity, and invite chosen members.',
     emptyCta: 'Create room',
     openRoom: 'Open a room',
     error: REFRESH_ERROR,
