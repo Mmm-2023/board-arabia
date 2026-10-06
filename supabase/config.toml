@@ -158,3 +158,35 @@ verify_jwt = false
 # ?dry_run=1 reports counts and does not write. POST only. Schedule is set after deploy.
 [functions.refill-weekly-invites]
 verify_jwt = false
+
+# Public apply. verify_jwt stays off so the anon key is not a credential.
+# The function caps field length, requires POST, and allows 5 hits per hour
+# for the same email and client IP. It does not check Turnstile.
+[functions.submit-application]
+verify_jwt = false
+
+# Password reset letter. verify_jwt stays off so the anon key is not a credential.
+# The function requires POST, checks the email shape, and allows 5 letters
+# per inbox per hour. Unknown inboxes get the same reply. It does not check Turnstile.
+[functions.request-password-reset]
+verify_jwt = false
+
+# Staff admit. requireStaff checks the caller JWT.
+[functions.admit-member]
+verify_jwt = true
+
+# Staff accept or reject. requireStaff checks the caller JWT.
+[functions.decide-application]
+verify_jwt = true
+
+# Master invite. requireStaff, then the caller must be a master.
+[functions.invite-master]
+verify_jwt = true
+
+# Member peer invite. The caller JWT must belong to an invited or active member.
+[functions.send-member-invite]
+verify_jwt = true
+
+# Staff suspend or restore. requireStaff checks the caller JWT.
+[functions.set-member-status]
+verify_jwt = true
