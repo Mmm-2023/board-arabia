@@ -103,7 +103,7 @@ export function InvitesPanel({
       ) : (
         <>
       <p className="mt-8 max-w-xl text-[0.95rem] leading-relaxed text-ink/60">
-        Add their name so you can tell the invites apart. Only you and the desk see it.
+        Add their name so you can tell the invites apart. Only you and our admin team see it.
       </p>
       <form onSubmit={onEmail} className="mt-8 max-w-xl space-y-5">
         <h2 className="text-[0.72rem] font-semibold tracking-[0.14em] text-ink/40 uppercase">

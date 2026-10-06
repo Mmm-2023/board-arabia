@@ -12,21 +12,21 @@ const ANSWERS = [
   {
     question: 'How do introductions work?',
     answer:
-      'Request a warm introduction from a Directory card and give a short reason. The other member accepts or declines on Intros. Email and phone stay private. A mandate or real estate Request intro still asks the desk to unlock a brief, and those requests sit in the same Intros list.',
+      'Request a warm introduction from a Directory card and give a short reason. The other member accepts or declines on Intros. Email and phone stay private. A mandate or real estate Request intro still asks our admin team to unlock a brief, and those requests sit in the same Intros list.',
     to: '/dashboard/people/intros',
     toLabel: 'Intros',
   },
   {
     question: 'Who can see a deal room?',
     answer:
-      'A deal room is for you and the people you invite. Open one from Deals, then Deal rooms. The desk can see it too.',
+      'A deal room is for you and the people you invite. Open one from Deals, then Deal rooms. Our admin team can see it too.',
     to: '/dashboard/deals/rooms',
     toLabel: 'Deal rooms',
   },
   {
     question: 'How does Majlis work?',
     answer:
-      'Upcoming gatherings are listed first. You can answer an invitation there, or ask to host. The desk approves a host request before members see it.',
+      'Upcoming gatherings are listed first. You can answer an invitation there, or ask to host. Our admin team approves a host request before members see it.',
     to: '/dashboard/majlis',
     toLabel: 'Majlis',
   },
@@ -40,7 +40,7 @@ const ANSWERS = [
   {
     question: 'How do peer invites work?',
     answer:
-      'You have two peer invites. Unused invites do not refill. People you invite are still reviewed. Their name stays on your sent list, for you and the desk.',
+      'You have two peer invites. Unused invites do not refill. People you invite are still reviewed. Their name stays on your sent list, for you and our admin team.',
     to: '/dashboard/people/invites',
     toLabel: 'Invites',
   },
@@ -82,7 +82,7 @@ export function HelpPage({ desk = true }: { desk?: boolean } = {}) {
       <p className="mt-4 text-[1.02rem] leading-relaxed text-ink/65">
         Short answers for the membership. If you still need a person,{' '}
         <a href="#desk" className="underline">
-          write to the desk
+          write to our admin team
         </a>
         .
       </p>
@@ -108,10 +108,10 @@ export function HelpPage({ desk = true }: { desk?: boolean } = {}) {
       </p>
 
       {desk ? (
-        <section id="desk" className="mt-10 scroll-mt-24" aria-label="Write to the desk">
-          <h2 className="font-display text-[1.45rem] font-semibold tracking-[-0.02em]">Write to the desk</h2>
+        <section id="desk" className="mt-10 scroll-mt-24" aria-label="Write to our admin team">
+          <h2 className="font-display text-[1.45rem] font-semibold tracking-[-0.02em]">Write to our admin team</h2>
           <p className="mt-2 text-[1rem] leading-relaxed text-ink/65">
-            Send a note from this seat. The desk reads it. Do not put a password in the note.
+            Send a note from this seat. Our admin team reads it. Do not put a password in the note.
           </p>
           <form onSubmit={(event) => void onSubmit(event)} className="mt-5 max-w-xl space-y-5">
             <label className="block" htmlFor="desk_topic">
@@ -144,7 +144,7 @@ export function HelpPage({ desk = true }: { desk?: boolean } = {}) {
               disabled={busy}
               className="ba-primary inline-flex min-h-11 items-center px-5 py-3 text-[0.75rem] font-semibold tracking-[0.08em] uppercase disabled:opacity-40"
             >
-              {busy ? 'Sending…' : 'Send to the desk'}
+              {busy ? 'Sending…' : 'Send to our admin team'}
             </button>
           </form>
           {error ? (
@@ -154,13 +154,13 @@ export function HelpPage({ desk = true }: { desk?: boolean } = {}) {
           ) : null}
           {sent ? (
             <p className="mt-4 text-[0.95rem] text-ink/70" role="status">
-              The desk has your note.
+              Our admin team has your note.
             </p>
           ) : null}
         </section>
       ) : (
         <p className="mt-10 text-[1rem] leading-relaxed text-ink/65">
-          Writing to the desk opens with full membership.
+          Writing to our admin team opens with full membership.
         </p>
       )}
     </div>

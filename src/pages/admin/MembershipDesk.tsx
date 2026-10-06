@@ -74,7 +74,7 @@ export function MembershipQueueView({
     <div data-screen="membership-queue">
       <h1 className="font-display text-[2rem] font-semibold tracking-[-0.03em]">Membership requests</h1>
       <p className="mt-2 max-w-2xl text-[0.95rem] text-pearl/65">
-        The desk decides. Review call is the only action that emails a private link, and that link is never shown here.
+        Our admin team decides. Review call is the only action that emails a private link, and that link is never shown here.
       </p>
       <StateChips state={state} counts={counts} onState={onState} />
       <div className="mt-4 flex flex-wrap gap-2">
@@ -335,7 +335,7 @@ export function MembershipDetailView({
             <Row label="Website" value={detail.website || 'Not listed'} />
             <Row label="Domain" value={detail.domainMatch ? 'Domain matches' : 'No domain match'} />
             {detail.personalEmail ? (
-              <Row label="Email domain" value="Personal email domain. The desk can still review this request." />
+              <Row label="Email domain" value="Personal email domain. Our admin team can still review this request." />
             ) : null}
             <Row label="LinkedIn" value={detail.linkedin || 'Not listed'} />
             <Row label="Statement" value={detail.statement || 'Not listed'} />

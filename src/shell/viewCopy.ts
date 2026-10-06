@@ -47,41 +47,41 @@ export const MEMBER_VIEWS = {
   },
   realEstate: {
     intro:
-      'Sector, region, asset class, ticket band, capital role, and readiness stay visible. Counterparty and terms stay locked until you request an intro and the desk approves it for you.',
+      'Sector, region, asset class, ticket band, capital role, and readiness stay visible. Counterparty and terms stay locked until you request an intro and our admin team approves it for you.',
     forming:
       'Real estate opportunities are still forming. These examples stay until real briefs can take their place.',
-    empty: 'No opportunities yet. When the desk publishes a brief, it lands here.',
+    empty: 'No opportunities yet. When our admin team publishes a brief, it lands here.',
     error: REFRESH_ERROR,
     retry: 'Retry',
     denied: 'Real Estate is for admitted members.',
     filtered: 'No matches. Clear filters.',
     clear: 'Clear filters',
     partnersIntro:
-      'Request intro asks the desk to make the introduction. This page does not open a message thread.',
+      'Request intro asks our admin team to make the introduction. This page does not open a message thread.',
     partnersForming:
       'Real estate partners are still forming. These examples stay until vetted firms can take their place.',
-    partnersEmpty: 'No partners yet. When the desk publishes a firm, it lands here.',
+    partnersEmpty: 'No partners yet. When our admin team publishes a firm, it lands here.',
     partnersDenied: 'Partners are for admitted members.',
-    partnersRequested: 'Intro requested. The desk reviews it before any outreach.',
+    partnersRequested: 'Intro requested. Our admin team reviews it before any outreach.',
     partnersApproved:
-      'The desk approved this intro. The desk handles outreach. Contact details stay off this page.',
+      'Our admin team approved this intro. Our admin team handles outreach. Contact details stay off this page.',
     partnersDeclined: 'This intro was not approved.',
     rolesIntro:
-      'Board and non-executive seats on developer and property company boards. Title, sector, capacity, and fit stay visible. The organisation and the seat terms stay locked until you request an intro and the desk approves it for you.',
+      'Board and non-executive seats on developer and property company boards. Title, sector, capacity, and fit stay visible. The organisation and the seat terms stay locked until you request an intro and our admin team approves it for you.',
     rolesForming: 'Board roles are still forming. These examples stay until real seats can take their place.',
-    rolesEmpty: 'No board roles yet. When the desk publishes a seat, it lands here.',
+    rolesEmpty: 'No board roles yet. When our admin team publishes a seat, it lands here.',
     rolesEmptyAction: 'See opportunities',
     rolesDenied: 'Board roles are for founding members.',
     rolesLocked: 'The organisation and seat terms stay locked. Request intro to unlock.',
-    rolesRequested: 'Intro requested. The desk must approve it before the organisation and seat terms open.',
+    rolesRequested: 'Intro requested. Our admin team must approve it before the organisation and seat terms open.',
     rolesApproved: 'Intro approved for you.',
     rolesDeclined: 'This intro was not approved.',
     rolesInventory: 'Desk record of this seat.',
     appetite: {
       title: 'My RE appetite',
       empty:
-        'No appetite yet. Set the ticket, places, asset classes, and capital role you want. The desk uses this when matching intros.',
-      lead: 'The desk uses this when matching intros.',
+        'No appetite yet. Set the ticket, places, asset classes, and capital role you want. Our admin team uses this when matching intros.',
+      lead: 'Our admin team uses this when matching intros.',
       formNote: 'These tags match the opportunity list. Saving does not reserve a deal.',
       set: 'Set appetite',
       edit: 'Edit appetite',
@@ -109,7 +109,7 @@ export const MEMBER_VIEWS = {
     },
     club: {
       cta: 'Express interest to co-invest',
-      recorded: 'Interest recorded. The desk may open a deal room. This does not message other members.',
+      recorded: 'Interest recorded. Our admin team may open a deal room. This does not message other members.',
       error: 'Could not record interest. Retry.',
       loadError: 'Could not load your interest. Retry.',
       loading: 'Loading interest',
@@ -187,9 +187,9 @@ export const STAFF_VIEWS = {
     denied: 'This list is for staff.',
   },
   mandates: {
-    empty: 'No mandates on the desk yet.',
+    empty: 'No mandates yet.',
     intro:
-      'Open a mandate to see members whose sector tags, Vision 2030 themes, and availability fit. The desk sees this list. Members are not emailed or notified.',
+      'Open a mandate to see members whose sector tags, Vision 2030 themes, and availability fit. Our admin team sees this list. Members are not emailed or notified.',
     deskNote: 'Staff only. Copying a shortlist does not email or notify anyone.',
     noTags: 'This mandate has no sector or Vision 2030 tags, so there is no one to match.',
     noMatches:
@@ -197,7 +197,7 @@ export const STAFF_VIEWS = {
     scoreNote:
       'Score adds 3 for each shared sector, 2 for each shared Vision 2030 theme, 2 when availability is Open, and 1 when it is Selective.',
     copyFailed: 'Could not copy. Select the shortlist below and copy it yourself.',
-    notFound: 'That mandate is not on the desk.',
+    notFound: 'That mandate is not here.',
     missing: 'The shortlist is not available on this database yet.',
     error: REFRESH_ERROR,
     retry: 'Retry',

@@ -567,7 +567,7 @@ export async function notifyDeskIntro(introId: string): Promise<void> {
       body: JSON.stringify({ intro_id: introId }),
     })
   } catch {
-    // Accept already saved. Staff still see the desk queue.
+    // Accept already saved. Staff still see the admin queue.
   }
 }
 
@@ -584,11 +584,11 @@ export async function sendDeskNote(input: { topic: string; message: string }): P
     if (!res.ok) {
       const message = typeof body.error === 'string' ? body.error : ''
       const safe = message.length > 0 && message.length < 180 && !message.includes('@')
-      return { error: safe ? message : 'Could not reach the desk. Try again.' }
+      return { error: safe ? message : 'Could not reach our admin team. Try again.' }
     }
     return {}
   } catch (err) {
-    return { error: err instanceof Error ? 'Could not reach the desk. Try again.' : 'Could not reach the desk. Try again.' }
+    return { error: err instanceof Error ? 'Could not reach our admin team. Try again.' : 'Could not reach our admin team. Try again.' }
   }
 }
 
@@ -651,6 +651,27 @@ export type StaffDirectoryRow = {
   email: string
   role: string
   created_at: string
+}
+
+export async function staffGetOwnDisplayName(): Promise<string> {
+  const { cleanStaffDisplayName } = await import('./staffDisplayName')
+  const { data, error } = await supabase.rpc('staff_get_own_display_name')
+  if (error || typeof data !== 'string') return ''
+  const cleaned = cleanStaffDisplayName(data)
+  return cleaned.ok ? cleaned.name : ''
+}
+
+export async function staffSetOwnDisplayName(
+  value: string,
+): Promise<{ ok: true; name: string } | { ok: false; error: string }> {
+  const { cleanStaffDisplayName } = await import('./staffDisplayName')
+  const cleaned = cleanStaffDisplayName(value)
+  if (!cleaned.ok) return cleaned
+  const { data, error } = await supabase.rpc('staff_set_own_display_name', { p_name: cleaned.name })
+  if (error || typeof data !== 'string') return { ok: false, error: 'Could not save that name.' }
+  const saved = cleanStaffDisplayName(data)
+  if (!saved.ok) return { ok: false, error: 'Could not save that name.' }
+  return saved
 }
 
 export async function inviteMaster(input?: {

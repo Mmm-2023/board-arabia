@@ -1,16 +1,23 @@
 import { useEffect, useState, type FormEvent } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { endAuthSession } from '../../lib/endSession'
 import { enrollTotp, listTotpFactors, removeTotpFactor, verifyTotp } from '../../lib/mfa'
+import { signOutToLogin } from '../../lib/mfaFlow'
+import { supabase } from '../../lib/supabase'
 import { Frame, TwoStepChallengeScreen, TwoStepEnrolScreen } from './TwoStepScreens'
 
 export function MfaHold({
   mode,
   tone,
+  signOutTo,
   onPassed,
 }: {
   mode: 'challenge' | 'enrol'
   tone: 'dark' | 'light'
+  signOutTo: '/login' | '/login/staff'
   onPassed: () => void
 }) {
+  const navigate = useNavigate()
   const [code, setCode] = useState('')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
@@ -77,9 +84,25 @@ export function MfaHold({
     if (!result.ok) setError(result.error)
   }
 
+  async function onSignOut() {
+    await signOutToLogin({
+      endSession: () => endAuthSession(supabase),
+      go: (path) => navigate(path, { replace: true }),
+      path: signOutTo,
+    })
+  }
+
   const screen =
     mode === 'challenge' ? (
-      <TwoStepChallengeScreen tone={tone} code={code} error={error} busy={busy} onCode={setCode} onSubmit={(event) => void onVerify(event)} />
+      <TwoStepChallengeScreen
+        tone={tone}
+        code={code}
+        error={error}
+        busy={busy}
+        onCode={setCode}
+        onSubmit={(event) => void onVerify(event)}
+        onSignOut={() => void onSignOut()}
+      />
     ) : (
       <TwoStepEnrolScreen
         tone={tone}

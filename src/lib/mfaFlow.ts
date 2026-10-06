@@ -19,6 +19,94 @@ export function showMemberPrompt(input: {
   return !input.verifiedFactor && !input.dismissed
 }
 
+/** The line stays away for 14 days after Not now. */
+export const PROMPT_RETURN_MS = 14 * 24 * 60 * 60 * 1000
+
+export function isMemberHomePath(pathname: string): boolean {
+  return pathname === '/dashboard' || pathname === '/dashboard/'
+}
+
+export function promptDue(verifiedFactor: boolean, dismissedAt: number | null, now: number): boolean {
+  if (verifiedFactor) return false
+  if (dismissedAt == null) return true
+  return now - dismissedAt >= PROMPT_RETURN_MS
+}
+
+export function homeMemberPrompt(input: {
+  pathname: string
+  verifiedFactor: boolean
+  dismissedAt: number | null
+  now: number
+}): boolean {
+  return isMemberHomePath(input.pathname) && promptDue(input.verifiedFactor, input.dismissedAt, input.now)
+}
+
+type PromptStore = { ids: string[]; at: Record<string, number> }
+
+function parsePromptStore(raw: string | null): PromptStore {
+  const ids: string[] = []
+  const at: Record<string, number> = {}
+  if (!raw) return { ids, at }
+  try {
+    const parsed = JSON.parse(raw) as { ids?: unknown; at?: unknown }
+    if (Array.isArray(parsed.ids)) {
+      for (const id of parsed.ids) {
+        if (typeof id === 'string' && id.length > 0 && id.length < 80) ids.push(id)
+      }
+    }
+    if (parsed.at && typeof parsed.at === 'object' && !Array.isArray(parsed.at)) {
+      for (const [key, value] of Object.entries(parsed.at as Record<string, unknown>)) {
+        if (key.length > 0 && key.length < 80 && typeof value === 'number' && Number.isFinite(value) && value > 0) {
+          at[key] = value
+        }
+      }
+    }
+  } catch {
+    return { ids: [], at: {} }
+  }
+  return { ids, at }
+}
+
+export function stampPromptDismissal(userId: string, raw: string | null, at: number): string {
+  const parsed = parsePromptStore(raw)
+  if (userId) parsed.at[userId] = at
+  const keys = Object.keys(parsed.at).slice(-20)
+  const kept: Record<string, number> = {}
+  for (const key of keys) kept[key] = parsed.at[key]
+  return JSON.stringify({ at: kept })
+}
+
+/** Old boolean true, or an id list with no time, counts as dismissed at `now` on first read. */
+export function readPromptDismissal(input: {
+  userId: string
+  raw: string | null
+  metadata: unknown
+  now: number
+}): { at: number | null; migrate: boolean; nextRaw: string } {
+  const parsed = parsePromptStore(input.raw)
+  const stamped = input.userId ? parsed.at[input.userId] : undefined
+  const metaAt = typeof input.metadata === 'number' && Number.isFinite(input.metadata) && input.metadata > 0 ? input.metadata : null
+  if (stamped != null || metaAt != null) {
+    const at = stamped != null && metaAt != null ? Math.min(stamped, metaAt) : (stamped ?? metaAt ?? input.now)
+    const nextRaw = input.userId ? stampPromptDismissal(input.userId, input.raw, at) : (input.raw ?? '')
+    return { at, migrate: stamped !== at || metaAt !== at, nextRaw }
+  }
+  const legacy = input.metadata === true || (input.userId !== '' && parsed.ids.includes(input.userId))
+  if (legacy && input.userId) {
+    return { at: input.now, migrate: true, nextRaw: stampPromptDismissal(input.userId, input.raw, input.now) }
+  }
+  return { at: null, migrate: false, nextRaw: input.raw ?? '' }
+}
+
+export async function signOutToLogin(input: {
+  endSession: () => Promise<void>
+  go: (path: string) => void
+  path: '/login' | '/login/staff'
+}): Promise<void> {
+  await input.endSession()
+  input.go(input.path)
+}
+
 const PROMPT_KEY = 'ba-mfa-prompt-dismissed'
 
 export function promptWasDismissed(userId: string, raw: string | null, metadataFlag: boolean): boolean {

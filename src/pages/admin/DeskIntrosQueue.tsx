@@ -95,7 +95,7 @@ export function DeskIntrosQueueView({
     <section id="desk-intros" aria-label="Desk intros" className="scroll-mt-24">
       <h2 className={`text-[0.72rem] font-semibold tracking-[0.14em] uppercase ${styles.quiet}`}>Desk intros</h2>
       <p className={`mt-2 max-w-2xl text-[0.95rem] ${styles.muted}`}>
-        Accepted requests that asked the desk to introduce both people. Mark Intro sent when the introduction has gone out.
+        Accepted requests that asked our admin team to introduce both people. Mark Intro sent when the introduction has gone out.
       </p>
       {rows == null ? <p className={`mt-4 ${styles.muted}`}>Loading desk intros.</p> : null}
       {loadError ? (

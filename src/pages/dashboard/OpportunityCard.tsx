@@ -131,7 +131,7 @@ function LockedBrief({
 }) {
   const note =
     status === 'pending'
-      ? 'Intro requested. The desk must approve it before the counterparty and terms open.'
+      ? 'Intro requested. Our admin team must approve it before the counterparty and terms open.'
       : status === 'declined'
         ? 'This intro was not approved.'
         : sample

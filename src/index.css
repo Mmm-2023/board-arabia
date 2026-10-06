@@ -211,6 +211,12 @@
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
+.shell-more-sheet {
+  max-height: 100dvh;
+  overflow-y: auto;
+  padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+}
+
 .shell-tab-label {
   display: block;
   max-width: 100%;

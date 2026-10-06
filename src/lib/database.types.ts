@@ -1284,6 +1284,14 @@ export type Database = {
         Args: { p_table: string; p_row_id: string }
         Returns: Json
       }
+      staff_get_own_display_name: {
+        Args: Record<string, never>
+        Returns: string
+      }
+      staff_set_own_display_name: {
+        Args: { p_name: string }
+        Returns: string
+      }
       staff_list_access_log: {
         Args: { p_member_id: string }
         Returns: Json
