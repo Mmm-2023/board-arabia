@@ -1,17 +1,22 @@
-name: Deploy GitHub Pages
+# Proves the Pages upload includes .nojekyll. No deploy job.
+# pages.yml does not run on pull_request. This workflow does not call deploy-pages
+# and does not request id-token, so it cannot publish GitHub Pages.
+
+name: Pages artifact proof
 
 on:
-  push:
-    branches: [main, cursor/landing-ia-10bf, cursor/admin-login-a54a]
+  pull_request:
+    paths:
+      - .github/workflows/pages.yml
+      - .github/workflows/pages-artifact-proof.yml
   workflow_dispatch:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
+  actions: write
 
 concurrency:
-  group: pages
+  group: pages-artifact-proof-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -28,17 +33,7 @@ jobs:
         env:
           GITHUB_PAGES: 'true'
           VITE_BASE_PATH: /
-          VITE_ANALYTICS_ENABLED: 'false'
-          VITE_ANALYTICS_PRECONSENT_MODE: anonymous_counts
-          VITE_POSTHOG_KEY: ${{ secrets.VITE_POSTHOG_KEY }}
-          VITE_POSTHOG_HOST: ${{ vars.VITE_POSTHOG_HOST }}
-          VITE_TWO_TIER_REGISTER_ENABLED: 'false'
-          VITE_LEGAL_BA_ENTITY: 'NAMMCO Holding Co.'
-          VITE_LEGAL_CR: '7043252647'
-          VITE_TURNSTILE_SITE_KEY: ${{ secrets.VITE_TURNSTILE_SITE_KEY }}
-          VITE_SUPABASE_URL: https://iirqbizwanyhgkhanntq.supabase.co
-          VITE_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlpcnFiaXp3YW55aGdraGFubnRxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAwNzMzMjEsImV4cCI6MjEwNTY0OTMyMX0.VSxdt1GVSka1Il7oozc6K_9pIKy8zFYegomBvWgOQDY
-        run: npm run build
+        run: node scripts/build-for-csp-crawl.mjs
       - name: Confirm Pages artifact
         run: |
           test -f dist/.nojekyll
@@ -73,17 +68,10 @@ jobs:
             exit 1
           fi
           node scripts/check-pages-artifact.mjs dist
+          echo 'dist dotfiles:'
+          find dist -name '.*' -print | sort
+          test "$(find dist -name '.*' -print | sort)" = 'dist/.nojekyll'
       - uses: actions/upload-pages-artifact@v5
         with:
           path: dist
           include-hidden-files: true
-
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - id: deployment
-        uses: actions/deploy-pages@v5
