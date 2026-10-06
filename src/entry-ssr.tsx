@@ -11,6 +11,7 @@ import {
   OG_IMAGE_TYPE,
   OG_IMAGE_WIDTH,
   OG_TITLE,
+  HOME_SHARE_TITLE,
   pageGraph,
   publicMarketingTitle,
   type MarketingPath,
@@ -43,7 +44,7 @@ export function render(url: string) {
     imageWidth: OG_IMAGE_WIDTH,
     imageHeight: OG_IMAGE_HEIGHT,
     imageType: OG_IMAGE_TYPE,
-    ogTitle: OG_TITLE,
+    ogTitle: path === '/' ? HOME_SHARE_TITLE : OG_TITLE,
     ogDescription: OG_DESCRIPTION,
   }
 }

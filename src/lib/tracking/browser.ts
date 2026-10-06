@@ -49,8 +49,16 @@ function readContext(): CaptureContext {
     userAgent: navigator.userAgent,
     noTrack: readCookie(document.cookie, NO_TRACK_COOKIE) === '1',
     staffSession: staffKnown === true,
+    doNotTrack: doNotTrackEnabled(),
     consent: consentState(),
   }
+}
+
+function doNotTrackEnabled(): boolean {
+  const nav = navigator as Navigator & { msDoNotTrack?: string }
+  const win = window as Window & { doNotTrack?: string }
+  const value = nav.doNotTrack || win.doNotTrack || nav.msDoNotTrack
+  return value === '1' || value === 'yes'
 }
 
 function consentState(): CaptureContext['consent'] {

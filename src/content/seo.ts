@@ -5,8 +5,10 @@ export const SITE_ORIGIN = 'https://boardarabia.com'
 
 export const OG_TITLE = 'Board Arabia'
 
+export const HOME_SHARE_TITLE = 'Board Arabia | Where Saudi boardrooms meet international capital'
+
 export const OG_DESCRIPTION =
-  'A selective founding membership for Chairpersons, Board members, and C-suite executives connecting Saudi Arabia’s boardrooms with international counterparts. Access to capital, business relationships, and opening doors in trusted rooms.'
+  'A selective founding membership for Chairpersons, Board members, and C-suite executives connecting Saudi Arabia’s boardrooms with international capital. Access to capital, business relationships, and opening doors in trusted rooms.'
 
 export const OG_IMAGE = `${SITE_ORIGIN}/og-board-arabia.png`
 
@@ -44,9 +46,8 @@ export type MarketingPage = {
 export const MARKETING_PAGES: Record<MarketingPath, MarketingPage> = {
   '/': {
     path: '/',
-    title: 'Board Arabia | Saudi boardrooms meet international counterparts',
-    description:
-      'A selective founding membership for Chairpersons, Board members, and C-suite executives connecting Saudi Arabia’s boardrooms with international counterparts. Access to capital, business relationships, and opening doors in trusted rooms.',
+    title: HOME_SHARE_TITLE,
+    description: OG_DESCRIPTION,
     faq: true,
   },
   '/for-members': {
@@ -140,7 +141,7 @@ export const FAQ: FaqItem[] = [
   {
     question: 'What is Board Arabia?',
     answer:
-      'Board Arabia is a selective founding membership that connects Saudi Arabia’s boardrooms with international counterparts for Chairpersons, Board members, and C-suite executives. Access to capital, business relationships, and opening doors happen in reviewed rooms. Growth and governance stay in the frame. It is not an open directory.',
+      'Board Arabia is a selective founding membership that connects Saudi Arabia’s boardrooms with international counterparts for Chairpersons, Board members, and C-suite executives. Access to capital, business relationships, and opening doors happen in reviewed rooms. Growth and governance stay in the frame. It is not an open directory. It is a board network for Saudi and international rooms, kept off the open web.',
   },
   {
     question: 'Who is it for?',
@@ -231,6 +232,8 @@ export function pageGraph(page: MarketingPage) {
       '@id': `${SITE_ORIGIN}/#organization`,
       name: 'Board Arabia',
       url: `${SITE_ORIGIN}/`,
+      logo: `${SITE_ORIGIN}/favicon.svg`,
+      image: OG_IMAGE,
       description:
         'A selective founding membership for Chairpersons, Board members, and C-suite executives connecting Saudi Arabia’s boardrooms with international counterparts.',
       email: 'partners@boardarabia.com',

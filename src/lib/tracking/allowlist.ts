@@ -42,6 +42,31 @@ export const ALLOWED_PROPERTIES = [
 
 export type AllowedProperty = (typeof ALLOWED_PROPERTIES)[number]
 
+/** Anonymous pre-consent events may carry only these keys. */
+export const PRECONSENT_PROPERTIES = [
+  'path',
+  'referrer_host',
+  'utm_source',
+  'utm_medium',
+  'utm_campaign',
+  'utm_content',
+  'utm_term',
+  'device_type',
+  'cta_location',
+  'cta_label',
+  'location',
+] as const
+
+export function preconsentProperties(
+  input: Record<string, string | number | boolean>,
+): Record<string, string | number | boolean> {
+  const clean: Record<string, string | number | boolean> = {}
+  for (const key of PRECONSENT_PROPERTIES) {
+    if (key in input) clean[key] = input[key]
+  }
+  return clean
+}
+
 export const BANNED_PROPERTIES = [
   'turnover',
   'fo_aum',

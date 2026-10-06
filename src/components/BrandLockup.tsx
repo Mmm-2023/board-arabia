@@ -30,7 +30,7 @@ export function BrandLockup({
     <Link to={to} aria-label="Board Arabia" className="flex min-h-11 min-w-0 items-center gap-2.5">
       <img
         src={`${import.meta.env.BASE_URL}favicon.svg`}
-        alt=""
+        alt={markOnly ? 'Board Arabia' : ''}
         width={32}
         height={32}
         className="h-8 w-8 shrink-0 self-start"

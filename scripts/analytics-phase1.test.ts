@@ -9,7 +9,7 @@ import {
   type ConsentInsert,
 } from '../supabase/functions/consent-log/handle.ts'
 import { BANNER_VERSION, NOTICE_VERSION } from '../supabase/functions/_shared/consent_versions.ts'
-import { ALLOWED_PROPERTIES, BANNED_PROPERTIES, sanitizeProperties } from '../src/lib/tracking/allowlist.ts'
+import { ALLOWED_PROPERTIES, BANNED_PROPERTIES, PRECONSENT_PROPERTIES, sanitizeProperties } from '../src/lib/tracking/allowlist.ts'
 import { buildAnonymousPayload, runCapture } from '../src/lib/tracking/capture.ts'
 import { consentRecord, readConsent, shouldAsk } from '../src/lib/tracking/consent.ts'
 import { planCapture, posthogScriptUrl } from '../src/lib/tracking/decide.ts'
@@ -384,6 +384,115 @@ test('track matches the PR 85 call site and stays dark without the flag', () => 
   setAnalyticsConsentForTests(null)
   setAnalyticsSinkForTests(null)
   assert.match(source('src/lib/analytics.ts'), /VITE_ANALYTICS_ENABLED/)
+})
+
+test('cta_apply_click sends only allowlisted properties and nothing when env is unset', async () => {
+  const allowed = new Set<string>(PRECONSENT_PROPERTIES)
+  const protocol = new Set(['$process_person_profile', 'distinct_id'])
+  let fetched = 0
+  let scripted = 0
+  const off = await runCapture(
+    'cta_apply_click',
+    {
+      cta_location: 'hero',
+      cta_label: 'Apply for consideration',
+      email: 'person@example.com',
+      full_name: 'Person',
+      phone: '+966500000000',
+    },
+    offConfig,
+    ctx(),
+    {
+      randomId: () => 'should-not-run',
+      nowIso: () => new Date(0).toISOString(),
+      fetch: async () => {
+        fetched += 1
+      },
+      loadScript: () => {
+        scripted += 1
+      },
+      readAnalyticsId: () => 'stable',
+      captureIdentified: () => {
+        scripted += 1
+      },
+    },
+  )
+  assert.equal(off.kind, 'skip')
+  assert.equal(fetched, 0)
+  assert.equal(scripted, 0)
+
+  const missingKey = readAnalyticsConfig({ VITE_ANALYTICS_ENABLED: 'true', VITE_POSTHOG_HOST: 'https://eu.i.posthog.com' })
+  assert.equal(missingKey.posthogKey, null)
+  assert.equal(planCapture(missingKey, ctx(), 'cta_apply_click').kind, 'skip')
+  assert.equal(planCapture(liveConfig, ctx({ doNotTrack: true }), 'cta_apply_click').kind, 'skip')
+
+  const bodies: string[] = []
+  let captureUrl = ''
+  await runCapture(
+    'cta_apply_click',
+    {
+      path: '/',
+      referrer_host: 'www.linkedin.com',
+      utm_source: 'linkedin',
+      utm_medium: 'social',
+      utm_campaign: '2026-10-founding-100',
+      device_type: 'desktop',
+      cta_location: 'hero',
+      cta_label: 'Apply for consideration',
+      email: 'person@example.com',
+      full_name: 'Person',
+      phone: '+966500000000',
+      company: 'Secret Co',
+      title: 'Home',
+      page_type: 'home',
+      consent_state: 'anonymous',
+      first_touch_source: 'linkedin',
+      statement: 'private note',
+    },
+    liveConfig,
+    ctx(),
+    {
+      randomId: () => 'event-id-1',
+      nowIso: () => '2026-10-06T00:00:00.000Z',
+      fetch: async (url: string, body: string) => {
+        captureUrl = url
+        bodies.push(body)
+      },
+      loadScript: () => {
+        scripted += 1
+      },
+      readAnalyticsId: () => 'stable',
+      captureIdentified: () => {
+        scripted += 1
+      },
+    },
+  )
+  assert.equal(scripted, 0)
+  assert.equal(captureUrl, 'https://eu.i.posthog.com/i/v0/e/')
+  const payload = JSON.parse(bodies[0] ?? '{}') as { distinct_id: string; properties: Record<string, unknown> }
+  assert.equal(payload.distinct_id, 'event-id-1')
+  assert.equal(payload.properties.$process_person_profile, false)
+  for (const key of Object.keys(payload.properties)) {
+    assert.equal(allowed.has(key) || protocol.has(key), true, key)
+  }
+  assert.equal(payload.properties.cta_location, 'hero')
+  assert.equal(payload.properties.path, '/')
+  assert.equal(payload.properties.utm_source, 'linkedin')
+  assert.equal('email' in payload.properties, false)
+  assert.equal('title' in payload.properties, false)
+  assert.equal('page_type' in payload.properties, false)
+  assert.equal('first_touch_source' in payload.properties, false)
+  assert.equal('consent_state' in payload.properties, false)
+  const serialized = JSON.stringify(payload)
+  assert.equal(serialized.includes('example.com'), false)
+  assert.equal(serialized.includes('Person'), false)
+  assert.equal(serialized.includes('Secret'), false)
+  assert.equal(serialized.includes('+966'), false)
+  const yml = source('.github/workflows/pages.yml')
+  assert.match(yml, /VITE_POSTHOG_KEY: \$\{\{ secrets\.VITE_POSTHOG_KEY \}\}/)
+  assert.match(yml, /VITE_POSTHOG_HOST: \$\{\{ vars\.VITE_POSTHOG_HOST \}\}/)
+  assert.match(yml, /VITE_ANALYTICS_ENABLED: 'false'/)
+  assert.equal(yml.includes('phc_'), false)
 })
 
 test('banner and notice copy is English only and has no dashes', () => {

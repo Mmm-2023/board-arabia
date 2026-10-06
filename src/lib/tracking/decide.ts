@@ -12,6 +12,7 @@ export type CaptureContext = {
   userAgent: string
   noTrack: boolean
   staffSession: boolean
+  doNotTrack?: boolean
   consent: 'unknown' | 'accept' | 'reject'
 }
 
@@ -27,6 +28,7 @@ export function planCapture(config: AnalyticsConfig, ctx: CaptureContext, eventN
   if (isBlockedPath(ctx.path)) return { kind: 'skip', reason: 'path' }
   if (ctx.noTrack || ctx.staffSession) return { kind: 'skip', reason: 'staff' }
   if (ctx.webdriver || isHeadless(ctx.userAgent)) return { kind: 'skip', reason: 'bot' }
+  if (ctx.doNotTrack) return { kind: 'skip', reason: 'dnt' }
   if (hasQaFlag(ctx.search)) return { kind: 'skip', reason: 'qa' }
   if (!PUBLIC_HOSTS.has(ctx.hostname.toLowerCase())) return { kind: 'skip', reason: 'host' }
   if (!config.posthogKey) return { kind: 'skip', reason: 'key' }

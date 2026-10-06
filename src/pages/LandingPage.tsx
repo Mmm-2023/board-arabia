@@ -179,8 +179,8 @@ function FoundingSection() {
             <DisplayHeading compact>Fifty and fifty.</DisplayHeading>
             <p className="ba-quiet mt-3 max-w-xl text-[0.9375rem] leading-relaxed">
               One hundred founding places, split evenly: fifty in Saudi Arabia,
-              fifty international. Founding places are complimentary. We ask
-              for time, judgment and introductions in return. Places are not
+              fifty international. Complimentary founding membership, given in
+              exchange for time, judgment and introductions. Places are not
               priced on this site.
             </p>
           </Reveal>
