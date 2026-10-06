@@ -167,6 +167,7 @@ export function shellSectionTitle(
 ) {
   const path = pathname.length > 1 && pathname.endsWith('/') ? pathname.replace(/\/+$/, '') : pathname
   if (path === '/dashboard/sponsorship') return 'Sponsorship'
+  if (path === '/dashboard/sponsors' || path.startsWith('/dashboard/sponsors/')) return 'Sponsors'
   for (const item of ACCOUNT_TITLES) {
     if (path === item.prefix || path.startsWith(`${item.prefix}/`)) return item.title
   }

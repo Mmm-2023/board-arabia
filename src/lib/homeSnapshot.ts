@@ -11,6 +11,7 @@ import { formatPublicUsd } from './capacity.ts'
 import { DEMO_THRESHOLD_DEFAULTS, demoRowsVisible } from './demoThreshold.ts'
 import { displayPlatformMoney } from './platformFloors.ts'
 import { seatLine, type PlatformStats } from './platformStats.ts'
+import { visibleMemberPartners } from './trustedPartners.ts'
 
 export type MembershipBadge = 'Founding' | 'Member'
 export type HomeCtaId = 'profile' | 'intro' | 'majlis' | 'mandate' | 'invite'
@@ -76,6 +77,8 @@ export type PartnerBrief = {
   is_demo: boolean
   name: string
   monogram: string
+  blurb?: string
+  logo_path?: string | null
 }
 
 export type HomeActivity = {
@@ -124,7 +127,7 @@ export type HomeModel = {
     regions: { region: string; count: number; to: string }[]
     regionsKnown: boolean
     money: { label: string; value: string }[]
-    partners: { id: string; name: string; monogram: string; example: boolean }[]
+    partners: { id: string; name: string; monogram: string; blurb: string; logo_path: string | null; example: boolean }[]
   }
   teasers: {
     directory: { id: string; name: string; headline: string; seat: string; example: boolean }[]
@@ -523,9 +526,7 @@ export function assembleHome(input: AssembleInput): HomeModel {
   const roomRows = input.rooms
     ? uniqueById(applyDemoThreshold(input.rooms, DEMO_THRESHOLD_DEFAULTS.rooms))
     : []
-  const partnerRows = input.partners
-    ? uniqueById(applyDemoThreshold(input.partners, DEMO_THRESHOLD_DEFAULTS.partners))
-    : []
+  const partnerRows = input.partners ? uniqueById(visibleMemberPartners(input.partners)) : []
 
   return {
     identity: {
@@ -560,6 +561,8 @@ export function assembleHome(input: AssembleInput): HomeModel {
         id: partner.id,
         name: partner.name,
         monogram: partner.monogram,
+        blurb: partner.blurb ?? '',
+        logo_path: partner.logo_path ?? null,
         example: partner.is_demo,
       })),
     },

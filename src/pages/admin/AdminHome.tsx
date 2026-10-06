@@ -19,6 +19,7 @@ import { sponsorSeatHolders } from '../../lib/sponsorSeat'
 import { useAdmin } from './context'
 import { PrivateWorkCountsPanel } from '../../components/mfa/PrivateWorkCountsPanel'
 import { MarketingHomeCard } from './MarketingHomeCard'
+import { PartnerInterestAlert, SponsorIntroQueue } from './PartnerInterestPanel'
 
 export function AdminHome({
   readinessPreview,
@@ -44,6 +45,8 @@ export function AdminHome({
         </details>
       }
     >
+      <PartnerInterestAlert />
+      <SponsorIntroQueue />
       <div id="mandate-intro-queue" className="scroll-mt-24">
         <MandateIntroQueue />
       </div>

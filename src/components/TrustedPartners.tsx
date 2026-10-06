@@ -1,32 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ExampleMark } from './ExampleMark'
 import { presentPartnerList, schemaMissing, type PartnerCard } from '../lib/demoRows'
-
-const EXAMPLE_PARTNERS: PartnerCard[] = [
-  {
-    id: 'a4000001-0000-4000-8000-000000000001',
-    is_demo: true,
-    name: 'Qaf Ledger',
-    blurb: 'Custody and fund administration for Gulf closings.',
-    monogram: 'QL',
-  },
-  {
-    id: 'a4000001-0000-4000-8000-000000000002',
-    is_demo: true,
-    name: 'Mirsad Advisory',
-    blurb: 'Independent corporate finance advice to boards.',
-    monogram: 'MA',
-  },
-  {
-    id: 'a4000001-0000-4000-8000-000000000003',
-    is_demo: true,
-    name: 'Dar Escrow House',
-    blurb: 'Escrow and settlement for private transactions.',
-    monogram: 'DE',
-  },
-]
+import { partnerLogoPublicUrl } from '../lib/partnerLogo'
+import { publicGalleryPartners, visibleMemberPartners } from '../lib/trustedPartners'
+import { usePartnerCategories } from '../lib/usePartnerCategories'
 import { supabase } from '../lib/supabase'
+import { SampleMark } from './SampleMark'
 import { DisplayHeading, Eyebrow } from './Type'
 
 type LoadState =
@@ -57,9 +36,13 @@ export function TrustedPartnersSection() {
     }
   }, [attempt])
 
+  if (state.status === 'loading') return null
+  if (state.status === 'error') return null
+
   return (
     <TrustedPartnersGallery
-      state={state}
+      partners={state.partners}
+      surface="public"
       onRetry={() => {
         setState({ status: 'loading' })
         setAttempt((value) => value + 1)
@@ -69,17 +52,27 @@ export function TrustedPartnersSection() {
 }
 
 export function TrustedPartnersGallery({
-  state,
-  onRetry,
+  partners,
+  surface,
 }: {
-  state: LoadState
+  partners: PartnerCard[]
+  surface: 'public' | 'member'
   onRetry?: () => void
 }) {
-  const loaded = state.status === 'ready' ? state.partners : []
-  const partners = loaded.length > 0 ? loaded : EXAMPLE_PARTNERS
+  const categories = usePartnerCategories()
+  const visible = surface === 'public' ? publicGalleryPartners(partners) : visibleMemberPartners(partners)
+  const real = visible.some((partner) => !partner.is_demo)
+  const [category, setCategory] = useState('')
+  const names = useMemo(() => new Map(categories.map((item) => [item.slug, item.name])), [categories])
+  const shown = category ? visible.filter((partner) => partner.category_slug === category) : visible
+  const filterSlugs = categories
+    .map((item) => item.slug)
+    .filter((slug) => visible.some((partner) => partner.category_slug === slug))
+
+  if (surface === 'public' && visible.length === 0) return null
 
   return (
-    <section id="partners" className="border-t border-ink/10 bg-pearl py-5 md:py-10">
+    <section id="partners" className="border-t border-ink/10 bg-pearl py-5 md:py-10" data-trusted-partners={surface}>
       <div className="mx-auto max-w-7xl px-5 md:px-10">
         <Eyebrow>Trusted Partners</Eyebrow>
         <DisplayHeading compact className="max-w-3xl">
@@ -89,41 +82,81 @@ export function TrustedPartnersGallery({
           Three annual seats for firms on the finance rails of a deal, not a wall of logos.
         </p>
 
-        <ul className="mt-3 grid gap-2 md:mt-5 md:grid-cols-3 md:gap-3" aria-busy={state.status === 'loading' ? true : undefined}>
-          {partners.map((partner) => (
-            <li key={partner.id} className="ba-card px-3 py-3">
+        {filterSlugs.length > 1 ? (
+          <div className="mt-4 max-w-xs">
+            <label htmlFor="trusted-partner-category" className="block text-[0.72rem] font-semibold tracking-[0.08em] text-ink/50 uppercase">
+              Category
+            </label>
+            <select
+              id="trusted-partner-category"
+              value={category}
+              onChange={(event) => setCategory(event.target.value)}
+              className="mt-2 w-full min-h-11 border border-ink/15 bg-white px-3 text-[1rem] text-ink"
+            >
+              <option value="">All</option>
+              {filterSlugs.map((slug) => (
+                <option key={slug} value={slug}>
+                  {names.get(slug) ?? slug}
+                </option>
+              ))}
+            </select>
+          </div>
+        ) : null}
+
+        <ul className="mt-3 grid gap-2 md:mt-5 md:grid-cols-3 md:gap-3">
+          {shown.map((partner) => (
+            <li key={partner.id} className="ba-card px-3 py-3" data-partner-name={partner.name}>
               <div className="flex items-start justify-between gap-3">
-                <div
-                  aria-hidden="true"
-                  className="flex h-10 w-10 items-center justify-center bg-[var(--ba-indigo-deep)] font-display text-[0.95rem] font-semibold text-[var(--ba-porcelain)]"
-                >
-                  {partner.monogram}
-                </div>
-                {partner.is_demo ? <ExampleMark /> : null}
+                <PartnerLogo name={partner.name} monogram={partner.monogram} logoPath={partner.logo_path} />
+                {surface === 'member' && partner.is_demo && !real ? <SampleMark /> : null}
               </div>
-              <h3 className="mt-3 font-display text-[1.05rem] font-semibold tracking-[-0.03em]">
-                {partner.name}
-              </h3>
+              <h3 className="mt-3 font-display text-[1.05rem] font-semibold tracking-[-0.03em]">{partner.name}</h3>
               <p className="ba-quiet mt-1 text-[0.875rem] leading-relaxed">{partner.blurb}</p>
             </li>
           ))}
         </ul>
 
-        {state.status === 'error' ? (
-          <p className="ba-quiet mt-3 text-[0.875rem]" role="alert">
-            Could not load partners.{' '}
-            {onRetry ? (
-              <button type="button" onClick={onRetry} className="ba-textlink inline-flex min-h-11 items-center">
-                Retry
-              </button>
-            ) : null}
-          </p>
-        ) : null}
-
-        <Link to="/partners" className="ba-secondary mt-4 inline-flex min-h-11 items-center justify-center px-5 text-[0.9375rem] font-semibold">
+        <Link
+          to="/partners"
+          data-partner-cta="/partners"
+          className="ba-secondary mt-4 inline-flex min-h-11 items-center justify-center px-5 text-[0.9375rem] font-semibold"
+        >
           Partner with us
         </Link>
       </div>
     </section>
+  )
+}
+
+export function PartnerLogo({
+  name,
+  monogram,
+  logoPath,
+}: {
+  name: string
+  monogram: string
+  logoPath: string | null
+}) {
+  const [failed, setFailed] = useState(false)
+  const src = !failed ? partnerLogoPublicUrl(logoPath, String(import.meta.env.VITE_SUPABASE_URL || '')) : null
+  if (!src) {
+    return (
+      <div
+        aria-hidden="true"
+        className="flex h-12 w-12 shrink-0 items-center justify-center bg-[var(--ba-indigo-deep)] font-display text-[0.95rem] font-semibold text-[var(--ba-porcelain)]"
+      >
+        {monogram}
+      </div>
+    )
+  }
+  return (
+    <img
+      src={src}
+      alt={name}
+      width={48}
+      height={48}
+      className="h-12 w-12 shrink-0 border border-ink/15 bg-white object-contain"
+      onError={() => setFailed(true)}
+    />
   )
 }

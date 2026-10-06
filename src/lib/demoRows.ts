@@ -1,6 +1,7 @@
 /** Safe projections for directory, rooms, and trusted partners. */
 
 import { normalizeAvatarStyle, type AvatarStyle } from './avatarStyle.ts'
+import { isPartnerLogoPath } from './partnerLogo.ts'
 import { isAvailability, normalizeTags, SECTOR_TAGS, VISION_2030_THEMES, type Availability } from './profileTags.ts'
 
 export type DirectoryCard = {
@@ -40,6 +41,8 @@ export type PartnerCard = {
   name: string
   blurb: string
   monogram: string
+  logo_path: string | null
+  category_slug: string | null
 }
 
 export function schemaMissing(message: string): boolean {
@@ -140,7 +143,17 @@ export function presentPartnerCard(raw: unknown): PartnerCard | null {
   const blurb = text(row.blurb, 200)
   const monogram = text(row.monogram, 3).toUpperCase()
   if (!id || !name || !blurb || !monogram) return null
-  return { id, is_demo: row.is_demo === true, name, blurb, monogram }
+  const logo = text(row.logo_path, 80)
+  const category = text(row.category_slug, 80)
+  return {
+    id,
+    is_demo: row.is_demo === true,
+    name,
+    blurb,
+    monogram,
+    logo_path: isPartnerLogoPath(logo) ? logo : null,
+    category_slug: /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(category) ? category : null,
+  }
 }
 
 export function presentPartnerList(raw: unknown): PartnerCard[] {

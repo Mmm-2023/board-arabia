@@ -2,10 +2,13 @@ import { useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { Avatar } from '../../components/Avatar'
 import { ExampleMark } from '../../components/ExampleMark'
+import { PartnerLogo } from '../../components/TrustedPartners'
+import { SampleMark } from '../../components/SampleMark'
 import { formatActivityWhen, type HomeModel } from '../../lib/homeSnapshot'
 import { FORMING_TOTALS } from '../../lib/platformFloors'
 import { ErrorBanner, HomeSkeleton, toneClasses } from '../../shell/ViewState'
 import { MEMBER_VIEWS } from '../../shell/viewCopy'
+import { SPONSOR_LABEL } from '../../lib/sponsorLabel'
 
 const styles = toneClasses('member')
 
@@ -309,18 +312,22 @@ export function HomeSnapshotView({
                 </h3>
                 <ul className="mt-3 flex flex-col gap-3">
                   {model.platform.partners.map((partner) => (
-                    <li key={partner.id} className={`${styles.panel} flex items-center gap-3 px-4 py-3`}>
-                      <span
-                        aria-hidden="true"
-                        className="flex h-11 w-11 shrink-0 items-center justify-center border border-[var(--ba-copper)] bg-[var(--ba-indigo-deep)] font-display text-[0.85rem] text-[var(--ba-porcelain)]"
-                      >
-                        {partner.monogram}
+                    <li key={partner.id} className={`${styles.panel} flex items-center gap-3 px-4 py-3`} data-partner-name={partner.name}>
+                      <PartnerLogo name={partner.name} monogram={partner.monogram} logoPath={partner.logo_path} />
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-[1rem] text-ink">{partner.name}</span>
+                        {partner.blurb ? <span className="mt-1 block text-[0.92rem] text-ink/70">{partner.blurb}</span> : null}
                       </span>
-                      <span className="min-w-0 flex-1 text-[1rem] text-ink">{partner.name}</span>
-                      {partner.example ? <ExampleMark /> : null}
+                      {partner.example ? <SampleMark /> : null}
                     </li>
                   ))}
                 </ul>
+                <Link
+                  to="/dashboard/sponsors"
+                  className="mt-3 inline-flex min-h-11 items-center font-semibold text-[var(--ba-indigo)] underline"
+                >
+                  {SPONSOR_LABEL} showcase
+                </Link>
               </div>
             ) : null}
             {figuresAsOf ? <p className="mt-4 text-[0.8125rem] text-ink/60">{figuresAsOf}</p> : null}

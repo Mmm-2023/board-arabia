@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { MarketingLayout } from '../components/MarketingLayout'
-import { PARTNER_CATEGORIES, PARTNER_EMAIL } from '../content/marketing'
+import { usePartnerCategories } from '../lib/usePartnerCategories'
+import { supabase } from '../lib/supabase'
 
 const RULES = [
   {
@@ -75,24 +76,7 @@ export function PartnersPage() {
               not print who holds a seat.
             </p>
           </div>
-          <ol className="mt-12 grid gap-x-12 sm:grid-cols-2">
-            {PARTNER_CATEGORIES.map((category, index) => (
-              <li
-                key={category.name}
-                className="grid grid-cols-[2.5rem_1fr] gap-3 border-t border-ink/10 py-4"
-              >
-                <span className="font-display text-[0.78rem] font-semibold tracking-[0.12em] text-brass">
-                  {String(index + 1).padStart(2, '0')}
-                </span>
-                <div>
-                  <h3 className="font-display text-[1.12rem] font-semibold tracking-[-0.02em] text-ink">
-                    {category.name}
-                  </h3>
-                  <p className="mt-1 text-[0.95rem] text-ink/55">{category.gloss}</p>
-                </div>
-              </li>
-            ))}
-          </ol>
+          <CategoryList />
         </div>
       </section>
 
@@ -101,66 +85,80 @@ export function PartnersPage() {
   )
 }
 
+function CategoryList() {
+  const categories = usePartnerCategories()
+  return (
+    <ol className="mt-12 grid gap-x-12 sm:grid-cols-2">
+      {categories.map((category, index) => (
+        <li key={category.slug} className="grid grid-cols-[2.5rem_1fr] gap-3 border-t border-ink/10 py-4">
+          <span className="font-display text-[0.78rem] font-semibold tracking-[0.12em] text-brass">
+            {String(index + 1).padStart(2, '0')}
+          </span>
+          <div>
+            <h3 className="font-display text-[1.12rem] font-semibold tracking-[-0.02em] text-ink">{category.name}</h3>
+            <p className="mt-1 text-[0.95rem] text-ink/55">{category.gloss}</p>
+          </div>
+        </li>
+      ))}
+    </ol>
+  )
+}
+
 function InterestForm() {
+  const categories = usePartnerCategories()
   const [name, setName] = useState('')
   const [firm, setFirm] = useState('')
   const [category, setCategory] = useState('')
   const [note, setNote] = useState('')
   const [error, setError] = useState('')
-  const [opened, setOpened] = useState(false)
+  const [saved, setSaved] = useState(false)
+  const [busy, setBusy] = useState(false)
 
-  function onSubmit(event: FormEvent) {
+  async function onSubmit(event: FormEvent) {
     event.preventDefault()
-    setOpened(false)
+    setSaved(false)
     if (!name.trim() || !firm.trim() || !category) {
       setError('Name, firm, and category are required.')
       return
     }
+    if (name.includes('@') || firm.includes('@') || note.includes('@')) {
+      setError('Leave out email addresses. Our admin team does not need one here.')
+      return
+    }
     setError('')
-    const subject = `Partner interest: ${firm.trim().replace(/[\r\n]/g, ' ')}`
-    const body = [
-      `Name: ${name.trim()}`,
-      `Firm: ${firm.trim()}`,
-      `Category: ${category}`,
-      '',
-      note.trim() || '(no note)',
-    ].join('\n')
-    window.location.href = `mailto:${PARTNER_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
-    setOpened(true)
+    setBusy(true)
+    const { error: rpcError } = await supabase.rpc('submit_partner_interest', {
+      p_name: name.trim(),
+      p_firm: firm.trim(),
+      p_category: category,
+      p_note: note.trim(),
+    })
+    setBusy(false)
+    if (rpcError) {
+      setError(rpcError.message.includes('already_sent') ? 'We already have a note for this firm.' : 'Could not save that note. Try again.')
+      return
+    }
+    setSaved(true)
   }
 
   return (
     <section id="interest" className="bg-stone py-20 md:py-28">
       <div className="mx-auto grid max-w-7xl gap-12 px-5 md:px-10 lg:grid-cols-[0.9fr_1.1fr] lg:gap-20">
         <div>
-          <p className="mb-4 font-serif text-[1.2rem] italic text-ink-soft/70">
-            Interest
-          </p>
+          <p className="mb-4 font-serif text-[1.2rem] italic text-ink-soft/70">Interest</p>
           <h2 className="font-display text-[clamp(2rem,4vw,3.2rem)] font-bold leading-[1.05] tracking-[-0.035em] text-balance text-ink">
             Partner with us.
           </h2>
           <p className="mt-5 text-[1.05rem] leading-relaxed text-ink/65">
-            Tell us the firm and the lane. This opens a draft in your mail
-            app. We do not store the note on this site, and sending it does
-            not reserve a seat.
-          </p>
-          <p className="mt-5 text-[0.98rem] text-ink/55">
-            Or write directly to{' '}
-            <a className="border-b border-brass text-ink" href={`mailto:${PARTNER_EMAIL}`}>
-              {PARTNER_EMAIL}
-            </a>
-            .
+            Tell us the firm and the lane. We keep this note for our admin team. Sending it does not reserve a seat.
           </p>
         </div>
 
-        <form onSubmit={onSubmit} className="space-y-5" noValidate>
+        <form onSubmit={(event) => void onSubmit(event)} className="space-y-5" noValidate>
           <Field id="partner_name" label="Your name" value={name} onChange={setName} />
           <Field id="partner_firm" label="Firm" value={firm} onChange={setFirm} />
           <div>
-            <label
-              htmlFor="partner_category"
-              className="block text-[0.72rem] font-semibold tracking-[0.08em] text-ink/50 uppercase"
-            >
+            <label htmlFor="partner_category" className="block text-[0.72rem] font-semibold tracking-[0.08em] text-ink/50 uppercase">
               Category
             </label>
             <select
@@ -171,21 +169,18 @@ function InterestForm() {
                 setCategory(event.target.value)
                 setError('')
               }}
-              className="mt-2 w-full border border-ink/15 bg-white/80 px-4 py-3.5 text-[1rem] text-ink outline-none focus:border-brass"
+              className="mt-2 w-full min-h-11 border border-ink/15 bg-white/80 px-4 py-3.5 text-[1rem] text-ink outline-none focus:border-brass"
             >
               <option value="">Select a finance category</option>
-              {PARTNER_CATEGORIES.map((item) => (
-                <option key={item.name} value={item.name}>
+              {categories.map((item) => (
+                <option key={item.slug} value={item.slug}>
                   {item.name}
                 </option>
               ))}
             </select>
           </div>
           <div>
-            <label
-              htmlFor="partner_note"
-              className="block text-[0.72rem] font-semibold tracking-[0.08em] text-ink/50 uppercase"
-            >
+            <label htmlFor="partner_note" className="block text-[0.72rem] font-semibold tracking-[0.08em] text-ink/50 uppercase">
               Note
             </label>
             <textarea
@@ -198,23 +193,21 @@ function InterestForm() {
               className="mt-2 w-full resize-y border border-ink/15 bg-white/80 px-4 py-3.5 text-[1rem] text-ink outline-none placeholder:text-ink/30 focus:border-brass"
             />
           </div>
-          {error && (
+          {error ? (
             <p className="text-[0.9rem] text-[var(--ba-error)]" role="alert">
               {error}
             </p>
-          )}
+          ) : null}
           <button
             type="submit"
-            className="ba-primary inline-flex items-center justify-center px-7 py-3.5 text-[0.78rem] font-semibold tracking-[0.08em] uppercase transition-colors"
+            disabled={busy}
+            className="ba-primary inline-flex min-h-11 items-center justify-center px-7 py-3.5 text-[0.78rem] font-semibold tracking-[0.08em] uppercase transition-colors disabled:opacity-40"
           >
             Partner with us
           </button>
-          {opened && (
-            <p className="text-[0.92rem] leading-relaxed text-ink/60">
-              A mail draft should be open. If it is not, write to {PARTNER_EMAIL}.
-              Nothing was saved on this website.
-            </p>
-          )}
+          {saved ? (
+            <p className="text-[0.92rem] leading-relaxed text-ink/60">Saved for our admin team. This does not reserve a seat.</p>
+          ) : null}
         </form>
       </div>
     </section>

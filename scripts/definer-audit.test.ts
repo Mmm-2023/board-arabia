@@ -177,8 +177,10 @@ begin
   if anon_found is distinct from array[
     'public.landing_platform_totals()',
     'public.list_landing_preview_deals()',
+    'public.list_partner_categories()',
     'public.list_trusted_partners()',
-    'public.lookup_member_invite(p_token text)'
+    'public.lookup_member_invite(p_token text)',
+    'public.submit_partner_interest(p_name text, p_firm text, p_category text, p_note text)'
   ]::text[] then
     raise exception 'anon allowlist changed: %', anon_found;
   end if;
