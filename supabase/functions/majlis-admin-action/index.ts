@@ -1,5 +1,5 @@
 import { isMajlisRegion, parseFocusTags, regionGeotag, riyadhWallToUtc } from '../_shared/majlis.ts'
-import type { MajlisMailEvent } from '../_shared/majlis_mail.ts'
+import { hostGuestLabel, type MajlisMailEvent } from '../_shared/majlis_mail.ts'
 import { mailEventCancelled, mailEventUpdated, mailGuestPromoted, mailHostRsvp, markCalendarSent } from '../_shared/majlis_notify.ts'
 import { jsonResponse } from '../_shared/mail.ts'
 import { requireStaff } from '../_shared/require_staff.ts'
@@ -123,8 +123,7 @@ Deno.serve(async (req) => {
         if (sent.status === 'sent' || sent.status === 'dry_run') await markCalendarSent(admin, eventId, memberId)
       }
       if (host?.email) {
-        const name = (profile?.full_name || '').trim()
-        const label = name && member?.email ? `${name} (${member.email})` : member?.email || 'A member'
+        const label = hostGuestLabel(profile?.full_name)
         await mailHostRsvp(
           admin,
           host.email,

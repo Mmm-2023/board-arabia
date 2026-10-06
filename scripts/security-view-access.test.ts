@@ -84,6 +84,16 @@ test('majlis read models keep the previous rows and columns without a definer vi
       assert.match(text, /coalesce\(p\.avatar_style, 'male'\)/)
       continue
     }
+    if (file === '20261128180000_majlis_roster_host_no_email.sql') {
+      assert.equal(recreatesMajlis, true)
+      assert.match(text, /security_barrier = true, security_invoker = true/)
+      assert.equal(/grant select on table public\.majlis_\w+ to anon/i.test(text), false)
+      assert.match(text, /create view public\.majlis_roster\b/)
+      assert.equal(/create view public\.majlis_events_/i.test(text), false)
+      assert.match(text, /security definer/)
+      assert.match(text, /set search_path = ''/)
+      continue
+    }
     assert.equal(recreatesMajlis, false, file)
   }
 

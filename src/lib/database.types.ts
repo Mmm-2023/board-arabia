@@ -850,7 +850,7 @@ export type Database = {
           waitlist_position: number | null
           registered_at: string
           cancelled_at: string | null
-          email: string
+          email: string | null
           full_name: string | null
           avatar_style: StoredAvatarStyle | null
           avatar_path: string | null

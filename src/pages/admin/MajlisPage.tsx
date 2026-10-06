@@ -36,8 +36,12 @@ const primaryBtn =
 const STATUSES: Array<MajlisStatus | 'all'> = ['all', 'pending_approval', 'published', 'rejected', 'hidden', 'cancelled']
 const EMPTY_EVENTS: MajlisEventRow[] = []
 
-export function AdminMajlisPage() {
-  const [events, setEvents] = useState<MajlisEventRow[] | null>(null)
+export function AdminMajlisPage({
+  preview,
+}: {
+  preview?: { events: MajlisEventRow[]; roster?: MajlisRosterRow[] }
+} = {}) {
+  const [events, setEvents] = useState<MajlisEventRow[] | null>(preview?.events ?? null)
   const [hosts, setHosts] = useState<Record<string, string>>({})
   const [error, setError] = useState('')
   const [attempt, setAttempt] = useState(0)
@@ -46,15 +50,16 @@ export function AdminMajlisPage() {
   const [focus, setFocus] = useState('')
   const [when, setWhen] = useState<'all' | 'upcoming' | 'past'>('all')
   const [sponsor, setSponsor] = useState<'all' | 'with' | 'without'>('all')
-  const [openId, setOpenId] = useState<string | null>(null)
+  const [openId, setOpenId] = useState<string | null>(preview?.events[0]?.id ?? null)
   const [sponsors, setSponsors] = useState<SponsorRosterRow[]>([])
   const [presentedBy, setPresentedBy] = useState<Record<string, string>>({})
-  const [catalogState, setCatalogState] = useState<'loading' | 'ready' | 'error'>('loading')
+  const [catalogState, setCatalogState] = useState<'loading' | 'ready' | 'error'>(preview ? 'ready' : 'loading')
   const [catalogError, setCatalogError] = useState('')
   const [nowMs] = useState(() => Date.now())
   useNoIndex('Majlis queue | Board Arabia')
 
   useEffect(() => {
+    if (preview) return
     let cancelled = false
     void fetchMajlisEvents().then(async (result) => {
       if (cancelled) return
@@ -96,7 +101,7 @@ export function AdminMajlisPage() {
     return () => {
       cancelled = true
     }
-  }, [attempt])
+  }, [attempt, preview])
 
   const all = events ?? EMPTY_EVENTS
   const pending = all
@@ -327,6 +332,7 @@ export function AdminMajlisPage() {
                     presentedMemberId={presentedBy[event.id] ?? ''}
                     catalogState={catalogState}
                     catalogError={catalogError}
+                    seededRoster={preview?.roster?.filter((row) => row.event_id === event.id)}
                   />
                 )}
               </li>
@@ -484,6 +490,7 @@ function Ops({
   presentedMemberId,
   catalogState,
   catalogError,
+  seededRoster,
 }: {
   event: MajlisEventRow
   onDone: () => void
@@ -491,6 +498,7 @@ function Ops({
   presentedMemberId: string
   catalogState: 'loading' | 'ready' | 'error'
   catalogError: string
+  seededRoster?: MajlisRosterRow[]
 }) {
   const [message, setMessage] = useState('')
   const [busy, setBusy] = useState(false)
@@ -503,12 +511,13 @@ function Ops({
   const [venueAddress, setVenueAddress] = useState(event.venue_address || '')
   const [region, setRegion] = useState(event.region)
   const [tags, setTags] = useState(event.focus_tags.join(', '))
-  const [roster, setRoster] = useState<MajlisRosterRow[] | null>(null)
+  const [roster, setRoster] = useState<MajlisRosterRow[] | null>(seededRoster ?? null)
   const [rosterError, setRosterError] = useState('')
 
   useEffect(() => {
+    if (seededRoster) return
     let cancelled = false
-    void fetchMajlisRoster(event.id).then((result) => {
+    void fetchMajlisRoster(event.id, { includeEmail: true }).then((result) => {
       if (cancelled) return
       if ('error' in result) {
         setRosterError(result.error)
@@ -521,7 +530,7 @@ function Ops({
     return () => {
       cancelled = true
     }
-  }, [event.id])
+  }, [event.id, seededRoster])
 
   async function run(body: Record<string, unknown>) {
     setBusy(true)
@@ -701,7 +710,7 @@ function Ops({
                 'majlis-roster.csv',
                 toCsv(
                   ['Name', 'Email', 'Status', 'Waitlist position', 'Registered at'],
-                  (roster ?? []).map((row) => [row.full_name || '', row.email, row.status, row.waitlist_position, row.registered_at]),
+                  (roster ?? []).map((row) => [row.full_name || '', row.email ?? null, row.status, row.waitlist_position, row.registered_at]),
                 ),
               )
             }}
@@ -713,14 +722,14 @@ function Ops({
         {rosterError && <p className="mt-2 text-[0.95rem] text-red-300" role="alert">{rosterError}</p>}
         {roster && roster.length === 0 && !rosterError && <p className="mt-2 text-[0.95rem] text-pearl/55">No guests yet.</p>}
         {roster && roster.length > 0 && (
-          <ul className="mt-3 space-y-2">
+          <ul className="mt-3 space-y-2" aria-label="RSVPs">
             {roster.map((row) => (
               <li key={row.id} className="flex flex-wrap items-center justify-between gap-2 text-[0.95rem]">
                 <span className="flex min-w-0 items-center gap-3">
                   <SignedAvatar path={row.avatar_path ?? null} avatarStyle={row.avatar_style} size={36} alt="" />
                   <span>
-                    {row.full_name || row.email}
-                    {row.full_name ? ` (${row.email})` : ''}
+                    {row.full_name || row.email || 'Member'}
+                    {row.full_name && row.email ? ` (${row.email})` : ''}
                     {` · ${row.status}`}
                     {row.status === 'waitlist' && row.waitlist_position ? ` ${row.waitlist_position}` : ''}
                   </span>

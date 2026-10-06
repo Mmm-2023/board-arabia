@@ -7,7 +7,7 @@ import {
   mailHostRsvp,
   markCalendarSent,
 } from '../_shared/majlis_notify.ts'
-import type { MajlisMailEvent } from '../_shared/majlis_mail.ts'
+import { hostGuestLabel, type MajlisMailEvent } from '../_shared/majlis_mail.ts'
 import { requireUser } from '../_shared/require_user.ts'
 
 const UUID = /^[0-9a-f-]{36}$/i
@@ -190,9 +190,7 @@ async function loadPerson(
 }
 
 function personLabel(person: { email: string; full_name: string | null } | null): string {
-  if (!person) return 'A member'
-  const name = (person.full_name || '').trim()
-  return name ? `${name} (${person.email})` : person.email
+  return hostGuestLabel(person?.full_name)
 }
 
 function toMailEvent(event: EventRow): MajlisMailEvent {

@@ -15,7 +15,8 @@ import {
   rsvpTier,
   validateMajlisApplication,
 } from '../../../supabase/functions/_shared/majlis.ts'
-import { downloadCsv, toCsv } from '../../lib/csv'
+import { downloadCsv } from '../../lib/csv'
+import { hostRosterCsv } from '../../lib/majlisRoster'
 import {
   applyForMajlis,
   downloadMajlisIcs,
@@ -32,7 +33,7 @@ import { CardSkeleton, EmptyState, ErrorBanner, FilteredZero } from '../../shell
 import { MEMBER_VIEWS } from '../../shell/viewCopy'
 import { useMember } from './context'
 
-type MajlisPreview = { events: MajlisEventRow[] }
+type MajlisPreview = { events: MajlisEventRow[]; roster?: MajlisRosterRow[] }
 
 const fieldClass =
   'mt-1 w-full min-h-11 border border-[var(--ba-line)] bg-white px-3 text-[1rem] text-ink'
@@ -271,6 +272,7 @@ export function MajlisPage({ preview }: { preview?: MajlisPreview } = {}) {
                         nowMs={nowMs}
                         tier={rsvpTier(member.seat)}
                         highlighted={highlight === event.id}
+                        roster={preview?.roster?.filter((row) => row.event_id === event.id)}
                         onFocus={(tag) => setFilter({ focus: tag })}
                         onRegion={(name) => setFilter({ region: name })}
                         onChanged={() => {
@@ -444,6 +446,7 @@ function MemberCard({
   nowMs,
   tier,
   highlighted,
+  roster,
   onFocus,
   onRegion,
   onChanged,
@@ -453,6 +456,7 @@ function MemberCard({
   nowMs: number
   tier: ReturnType<typeof rsvpTier>
   highlighted: boolean
+  roster?: MajlisRosterRow[]
   onFocus: (tag: string) => void
   onRegion: (region: string) => void
   onChanged: () => void
@@ -489,7 +493,7 @@ function MemberCard({
       {host ? (
         <div className="mt-4">
           <p className="text-[0.95rem]">You are hosting this majlis.</p>
-          <HostRoster eventId={event.id} title={event.title} />
+          <HostRoster eventId={event.id} title={event.title} seeded={roster} />
         </div>
       ) : (
         <RsvpControls event={event} blocked={blocked} onChanged={onChanged} />
@@ -685,13 +689,14 @@ function RsvpControls({
   )
 }
 
-function HostRoster({ eventId, title }: { eventId: string; title: string }) {
-  const [open, setOpen] = useState(false)
-  const [rows, setRows] = useState<MajlisRosterRow[] | null>(null)
+function HostRoster({ eventId, title, seeded }: { eventId: string; title: string; seeded?: MajlisRosterRow[] }) {
+  const seededMode = seeded !== undefined
+  const [open, setOpen] = useState(seededMode)
+  const [rows, setRows] = useState<MajlisRosterRow[] | null>(seededMode ? seeded : null)
   const [error, setError] = useState('')
 
   useEffect(() => {
-    if (!open) return
+    if (!open || seededMode) return
     let cancelled = false
     void fetchMajlisRoster(eventId).then((result) => {
       if (cancelled) return
@@ -706,23 +711,10 @@ function HostRoster({ eventId, title }: { eventId: string; title: string }) {
     return () => {
       cancelled = true
     }
-  }, [eventId, open])
+  }, [eventId, open, seededMode])
 
   function exportCsv() {
-    const active = rows ?? []
-    downloadCsv(
-      'majlis-roster.csv',
-      toCsv(
-        ['Name', 'Email', 'Status', 'Waitlist position', 'Registered at'],
-        active.map((row) => [
-          row.full_name || '',
-          row.email,
-          row.status,
-          row.waitlist_position,
-          row.registered_at,
-        ]),
-      ),
-    )
+    downloadCsv('majlis-roster.csv', hostRosterCsv(rows ?? []))
   }
 
   return (
@@ -744,13 +736,12 @@ function HostRoster({ eventId, title }: { eventId: string; title: string }) {
           <button type="button" className={`${quietBtn} mt-3`} onClick={exportCsv}>
             Download CSV
           </button>
-          <ul className="mt-3 space-y-2">
+          <ul className="mt-3 space-y-2" aria-label="Roster">
             {rows.map((row) => (
               <li key={row.id} className="flex items-center gap-3 text-[0.95rem]">
                 <SignedAvatar path={row.avatar_path ?? null} avatarStyle={row.avatar_style} size={36} alt="" />
                 <span>
-                  <span className="font-semibold">{row.full_name || row.email}</span>
-                  {row.full_name ? ` (${row.email})` : ''}
+                  <span className="font-semibold">{row.full_name || 'Member'}</span>
                   {` · ${row.status}`}
                   {row.status === 'waitlist' && row.waitlist_position ? ` ${row.waitlist_position}` : ''}
                 </span>
