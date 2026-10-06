@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url'
 import { createServer } from 'vite'
 import { strayPublicNammco } from './public-nammco.mjs'
 import { pages404Html } from './spa-fallback.mjs'
+import { appShells, shellArtifactPath, shellDocument, shellProblems, stripShareTags } from './shell-manifest.mjs'
 import { stampDistCsp } from './stamp-csp.mjs'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
@@ -187,6 +188,21 @@ function assertDistClean(distDir) {
   }
 }
 
+function assertAppShells(distDir, shells) {
+  const sitemap = fs.readFileSync(path.join(distDir, 'sitemap.xml'), 'utf8')
+  const locs = new Set([...sitemap.matchAll(/<loc>([^<]*)<\/loc>/g)].map((match) => match[1]))
+  for (const entry of shells) {
+    const relative = shellArtifactPath(entry)
+    const file = path.join(distDir, relative)
+    if (!fs.existsSync(file)) throw new Error(`missing shell ${relative}`)
+    const html = fs.readFileSync(file, 'utf8')
+    const errors = shellProblems(html, entry, relative, { requireCsp: true })
+    const loc = `https://boardarabia.com${entry.path}`
+    if (locs.has(loc) || locs.has(`${loc}/`)) errors.push('sitemap')
+    if (errors.length) throw new Error(`${entry.path}: ${errors.join('; ')}`)
+  }
+}
+
 function writeSitemap() {
   const today = new Date().toISOString().slice(0, 10)
   const urls = routes
@@ -197,10 +213,6 @@ function writeSitemap() {
     .join('\n')
   const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n`
   fs.writeFileSync(path.join(dist, 'sitemap.xml'), xml)
-}
-
-function stripShareTags(html) {
-  return html.replace(/\n?\s*<meta\s+(?:property="og:[^"]+"|name="twitter:[^"]+")[^>]*>/g, '')
 }
 
 function documentFor(shell, rendered) {
@@ -291,54 +303,12 @@ const pagesBase = (process.env.VITE_BASE_PATH || '/').replace(/\/?$/, '/')
 fs.writeFileSync(path.join(dist, '404.html'), pages404Html(shellHtml, pagesBase))
 fs.writeFileSync(path.join(dist, '.nojekyll'), '')
 
-const appShells = [
-  'login',
-  'login/staff',
-  'admin',
-  'admin/applications',
-  'admin/review',
-  'admin/people',
-  'admin/people/intros',
-  'admin/capacity',
-  'admin/settings',
-  'admin/email',
-  'admin/majlis',
-  'admin/mandates',
-  'admin/rooms',
-  'ops',
-  'dashboard',
-  'dashboard/profile',
-  'dashboard/two-step',
-  'dashboard/directory',
-  'dashboard/mandates',
-  'dashboard/real-estate',
-  'dashboard/network',
-  'dashboard/help',
-  'dashboard/invites',
-  'dashboard/intros',
-  'dashboard/rooms',
-  'dashboard/rooms/new',
-  'dashboard/deals',
-  'dashboard/deals/mandates',
-  'dashboard/deals/real-estate',
-  'dashboard/deals/rooms',
-  'dashboard/deals/rooms/new',
-  'dashboard/people',
-  'dashboard/people/directory',
-  'dashboard/people/intros',
-  'dashboard/people/invites',
-  'dashboard/ai',
-  'dashboard/ai/due-diligence',
-  'dashboard/majlis',
-  'dashboard/due-diligence',
-  'dashboard/events',
-  'auth/confirm',
-  'auth/reset',
-]
-for (const staff of appShells) {
-  const dir = path.join(dist, staff)
-  fs.mkdirSync(dir, { recursive: true })
-  fs.writeFileSync(path.join(dir, 'index.html'), shellHtml)
+const shells = appShells()
+for (const entry of shells) {
+  const relative = shellArtifactPath(entry)
+  const file = path.join(dist, relative)
+  fs.mkdirSync(path.dirname(file), { recursive: true })
+  fs.writeFileSync(file, shellDocument(shellHtml, entry))
 }
 
 if (pagesBase !== '/') {
@@ -366,5 +336,6 @@ const csp = stampDistCsp(dist)
 console.log(`stamped CSP on ${csp.files} HTML files (${csp.hashes} inline script hashes)`)
 
 assertDistClean(dist)
+assertAppShells(dist, shells)
 
-console.log(`wrote ${routes.length} routes + sitemap.xml`)
+console.log(`wrote ${routes.length} routes + ${shells.length} app shells + sitemap.xml`)
