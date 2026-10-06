@@ -127,5 +127,6 @@ test('github pages deep links bounce through the app shell', () => {
   assert.match(read('index.html'), /ba-spa-redirect/)
   assert.equal(read('index.html').includes('location.replace'), false)
   assert.match(read('scripts/prerender.mjs'), /pages404Html\(shellHtml, pagesBase\)/)
-  assert.match(read('.github/workflows/pages.yml'), /data-ba-spa-fallback/)
+  assert.match(read('scripts/pages-artifact-gate.sh'), /data-ba-spa-fallback/)
+  assert.match(read('.github/workflows/pages.yml'), /pages-artifact-gate\.sh/)
 })
