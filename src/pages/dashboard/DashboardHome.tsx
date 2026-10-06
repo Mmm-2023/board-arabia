@@ -12,7 +12,12 @@ import { pendingInvites, type MemberDealRoom } from '../../lib/dealRoomView'
 import { assembleHome, isFoundingMember, type AttentionItem, type ProfileMatchInput } from '../../lib/homeSnapshot'
 import { loadHomeSources, type LoadedSources } from '../../lib/homeSnapshotLoad'
 import type { IntroSuggestion } from '../../lib/introSuggestions'
-import { suggestionTagsReady } from '../../lib/suggestionProfile'
+import {
+  isProfilePromptDismissed,
+  profilePromptShowing,
+  profilePromptStorageKey,
+  suggestionTagsReady,
+} from '../../lib/suggestionProfile'
 import { useOwnSuggestionProfile } from '../../lib/suggestionProfileLoad'
 import { outgoingMemberStatus, type IntroQuota, type IntroRow } from '../../lib/memberIntros'
 import { seatLabel } from '../../lib/member'
@@ -28,6 +33,15 @@ import { IntroSuggestions } from './IntroSuggestions'
 import { ProfileCompletenessPrompt } from './ProfileCompletenessPrompt'
 import { suggestionPortrait } from './suggestionPortrait'
 import { PendingInviteCards } from './PendingInviteCards'
+
+function readPromptDismissed(userId: string) {
+  if (typeof window === 'undefined') return false
+  try {
+    return isProfilePromptDismissed(window.localStorage.getItem(profilePromptStorageKey(userId)))
+  } catch {
+    return false
+  }
+}
 
 const EMPTY_SOURCES: LoadedSources = {
   mandates: null,
@@ -48,6 +62,17 @@ const EMPTY_SOURCES: LoadedSources = {
 export function DashboardHome() {
   const { member, profile, staffRole, userId } = useMember()
   const suggestionProfile = useOwnSuggestionProfile(userId)
+  const [promptUser, setPromptUser] = useState(userId)
+  const [promptDismissed, setPromptDismissed] = useState(() => readPromptDismissed(userId))
+  if (promptUser !== userId) {
+    setPromptUser(userId)
+    setPromptDismissed(readPromptDismissed(userId))
+  }
+  const promptShowing = profilePromptShowing({
+    staff: staffRole != null,
+    dismissed: promptDismissed,
+    profile: suggestionProfile,
+  })
   const status = useDashboardStatus()
   const [attempt, setAttempt] = useState(0)
   const [profileMatch, setProfileMatch] = useState<ProfileMatchInput>({
@@ -352,8 +377,15 @@ export function DashboardHome() {
         }
         figuresAsOf={sources.figuresAsOf}
         userId={userId}
+        hasSuggestions={suggestions.length > 0}
+        promptShowing={promptShowing}
         profilePrompt={
-          <ProfileCompletenessPrompt userId={userId} staff={staffRole != null} profile={suggestionProfile} />
+          <ProfileCompletenessPrompt
+            userId={userId}
+            staff={staffRole != null}
+            profile={suggestionProfile}
+            onDismiss={() => setPromptDismissed(true)}
+          />
         }
         suggestionsSlot={
           suggestStatus === 'error' ? (

@@ -21,6 +21,8 @@ export function HomeSnapshotView({
   shareSlot = null,
   suggestionsSlot = null,
   profilePrompt = null,
+  hasSuggestions = false,
+  promptShowing = false,
 }: {
   model: HomeModel
   onRetry?: () => void
@@ -33,6 +35,8 @@ export function HomeSnapshotView({
   shareSlot?: ReactNode
   suggestionsSlot?: ReactNode
   profilePrompt?: ReactNode
+  hasSuggestions?: boolean
+  promptShowing?: boolean
 }) {
   const livePulse = model.pulse.filter((item) => !item.example)
   const pulseVisible = livePulse.length > 0 || model.majlis != null
@@ -134,7 +138,7 @@ export function HomeSnapshotView({
             >
               {nextAction.label}
             </Link>
-          ) : model.profileNudge || model.profileMatchPending || suggestionsSlot ? null : (
+          ) : model.profileNudge || model.profileMatchPending || hasSuggestions || promptShowing ? null : (
             <p className={`mt-3 max-w-xl text-[1rem] ${styles.muted}`}>Nothing needs you right now.</p>
           )}
           {profilePrompt}

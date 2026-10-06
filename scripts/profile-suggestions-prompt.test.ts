@@ -9,12 +9,14 @@ import { MemoryRouter } from 'react-router-dom'
 import { chromium, type Page } from 'playwright-core'
 import { createServer } from 'vite'
 import { CHROME_SKIP, resolveChromePath } from './chrome-path.ts'
+import { assembleHome, type AssembleInput } from '../src/lib/homeSnapshot.ts'
 import { stampPromptDismissal } from '../src/lib/mfaFlow.ts'
 import {
   ADD_SECTORS_AND_THEMES,
   isProfilePromptDismissed,
   NO_SUGGESTIONS_THIS_WEEK,
   PROFILE_PROMPT_LINE,
+  profilePromptShowing,
   profilePromptStorageKey,
   suggestionProfileFromFields,
   suggestionProfileNeedsPrompt,
@@ -84,7 +86,11 @@ test('suggestion fields come from the member profile and dismissal is per member
   assert.match(loader, /\.eq\('user_id', userId\)/)
   assert.equal(loader.includes('security definer'), false)
   assert.match(read('src/pages/dashboard/DashboardHome.tsx'), /staff=\{staffRole != null\}/)
-  assert.match(read('src/pages/dashboard/ProfileCompletenessPrompt.tsx'), /if \(staff\) return null/)
+  assert.match(read('src/pages/dashboard/ProfileCompletenessPrompt.tsx'), /profilePromptShowing\(\{ staff, dismissed, profile \}\)/)
+  assert.equal(profilePromptShowing({ staff: true, dismissed: false, profile: emptyProfile }), false)
+  assert.equal(profilePromptShowing({ staff: false, dismissed: true, profile: emptyProfile }), false)
+  assert.equal(profilePromptShowing({ staff: false, dismissed: false, profile: completeProfile }), false)
+  assert.equal(profilePromptShowing({ staff: false, dismissed: false, profile: emptyProfile }), true)
   assert.match(read('src/pages/dashboard/IntrosPage.tsx'), /emptyMode=\{suggestionTagsReady/)
 
   const owned = [
@@ -162,6 +168,73 @@ test('the prompt is member-only and the empty states use the two lines', async (
       }),
     )
     assert.equal(done.includes('data-profile-prompt'), false)
+  } finally {
+    await vite.close()
+  }
+})
+
+function quietHome() {
+  const input: AssembleInput = {
+    nowMs: Date.parse('2026-10-05T09:00:00.000Z'),
+    seat: 'ksa',
+    name: 'Example Member',
+    photoUrl: null,
+    profileReady: true,
+    mustSetPassword: false,
+    invitesRemaining: 0,
+    personalCapacityIncluded: false,
+    attention: [],
+    mandates: [],
+    rooms: [],
+    directory: [],
+    partners: [],
+    gatherings: [],
+    admitted: 2,
+    ksa: 1,
+    intl: 1,
+    money: [],
+    activity: [],
+    activityStatus: 'empty',
+    loading: false,
+    partialError: false,
+    updatedLabel: null,
+    profileMatch: { status: 'ready', availabilitySet: true, sectorSet: true },
+  }
+  return assembleHome(input)
+}
+
+test('nothing needs you stays beside an empty suggestions week', async () => {
+  const vite = await createServer({ server: { middlewareMode: true }, appType: 'custom', logLevel: 'error' })
+  try {
+    const home = await vite.ssrLoadModule('/src/pages/dashboard/HomeSnapshotView.tsx')
+    const model = quietHome()
+    const weekly = createElement('p', null, NO_SUGGESTIONS_THIS_WEEK)
+    const view = (props: { hasSuggestions: boolean; promptShowing: boolean; suggestionsSlot: ReactNode; profilePrompt?: ReactNode }) =>
+      render(createElement(home.HomeSnapshotView, { model, ...props }))
+
+    const withRow = view({
+      hasSuggestions: true,
+      promptShowing: false,
+      suggestionsSlot: createElement('p', null, 'Example suggestion'),
+    })
+    assert.equal(withRow.includes('Nothing needs you right now'), false)
+
+    const withPrompt = view({
+      hasSuggestions: false,
+      promptShowing: true,
+      suggestionsSlot: weekly,
+      profilePrompt: createElement('p', null, PROFILE_PROMPT_LINE),
+    })
+    assert.equal(withPrompt.includes('Nothing needs you right now'), false)
+    assert.match(withPrompt, /Intro suggestions depend on them/)
+
+    const quiet = view({
+      hasSuggestions: false,
+      promptShowing: false,
+      suggestionsSlot: weekly,
+    })
+    assert.match(quiet, /Nothing needs you right now/)
+    assert.match(quiet, /No suggested introductions this week\./)
   } finally {
     await vite.close()
   }

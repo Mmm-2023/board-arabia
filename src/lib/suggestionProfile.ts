@@ -38,6 +38,16 @@ export function suggestionProfileNeedsPrompt(
   return !profile.sectorSet || !profile.themeSet || !profile.locationSet
 }
 
+/** True only while the Home prompt is on screen. */
+export function profilePromptShowing(input: {
+  staff: boolean
+  dismissed: boolean
+  profile: Pick<SuggestionProfile, 'status' | 'sectorSet' | 'themeSet' | 'locationSet'>
+}) {
+  if (input.staff || input.dismissed || input.profile.status === 'loading') return false
+  return suggestionProfileNeedsPrompt(input.profile)
+}
+
 export function suggestionProfileFromFields(
   row: { location?: string | null; sector_tags?: unknown; vision_themes?: unknown } | null | undefined,
 ): Pick<SuggestionProfile, 'sectorSet' | 'themeSet' | 'locationSet'> {

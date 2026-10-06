@@ -4,8 +4,8 @@ import {
   isProfilePromptDismissed,
   PROFILE_PROMPT_LINE,
   profilePromptStorageKey,
+  profilePromptShowing,
   SUGGESTION_PROFILE_HREF,
-  suggestionProfileNeedsPrompt,
   type SuggestionProfile,
 } from '../../lib/suggestionProfile'
 
@@ -30,10 +30,12 @@ export function ProfileCompletenessPrompt({
   userId,
   staff,
   profile,
+  onDismiss,
 }: {
   userId: string
   staff: boolean
   profile: SuggestionProfile
+  onDismiss?: () => void
 }) {
   const [seenUser, setSeenUser] = useState(userId)
   const [dismissed, setDismissed] = useState(() => readDismissed(userId))
@@ -42,10 +44,7 @@ export function ProfileCompletenessPrompt({
     setDismissed(readDismissed(userId))
   }
 
-  if (staff) return null
-  if (profile.status === 'loading') return null
-  if (!suggestionProfileNeedsPrompt(profile)) return null
-  if (dismissed) return null
+  if (!profilePromptShowing({ staff, dismissed, profile })) return null
 
   return (
     <section aria-label="Profile for introductions" className="mt-4 border border-[var(--ba-line)] bg-white px-4 py-4" data-profile-prompt="">
@@ -60,6 +59,7 @@ export function ProfileCompletenessPrompt({
           onClick={() => {
             writeDismissed(userId)
             setDismissed(true)
+            onDismiss?.()
           }}
         >
           Dismiss
