@@ -14,19 +14,36 @@ import { ReIntroQueue } from './ReIntroQueue'
 import { RePartnerIntroQueue } from './RePartnerIntroQueue'
 import { RePartnersPanel } from './RePartnersPanel'
 import { ReReadinessPanel } from './ReReadinessPanel'
+import type { ReOpportunityCard, RePartnerCard } from '../../lib/reRedaction'
 import { sponsorSeatHolders } from '../../lib/sponsorSeat'
 import { useAdmin } from './context'
 import { PrivateWorkCountsPanel } from '../../components/mfa/PrivateWorkCountsPanel'
 import { MarketingHomeCard } from './MarketingHomeCard'
 
-export function AdminHome() {
+export function AdminHome({
+  readinessPreview,
+  partnerPreview,
+}: {
+  readinessPreview?: readonly ReOpportunityCard[]
+  partnerPreview?: readonly RePartnerCard[]
+} = {}) {
   const room = useAdmin()
   useNoIndex('Home | Board Arabia')
 
   if (room.loading && !room.hasLoaded) return <HomeSkeleton tone="staff" />
 
   return (
-    <StaffDesk>
+    <StaffDesk
+      closing={
+        <details className="mt-10 border border-white/15 px-4 py-3" data-real-estate-tools="">
+          <summary className="cursor-pointer">
+            <span className="inline-flex min-h-11 items-center text-[1rem] font-semibold">Real estate tools</span>
+          </summary>
+          <ReReadinessPanel previewCards={readinessPreview} />
+          <RePartnersPanel previewCards={partnerPreview} />
+        </details>
+      }
+    >
       <div id="mandate-intro-queue" className="scroll-mt-24">
         <MandateIntroQueue />
       </div>
@@ -52,7 +69,7 @@ export function AdminHome() {
           to="/admin/people/intros#desk-intros"
           className="inline-flex min-h-11 items-center text-[0.75rem] font-semibold tracking-[0.08em] text-brass-bright uppercase"
         >
-          Desk intros
+          Admin intros
         </Link>
         <Link
           to="/admin/access"
@@ -61,13 +78,11 @@ export function AdminHome() {
           Access log
         </Link>
       </div>
-      <ReReadinessPanel />
-      <RePartnersPanel />
     </StaffDesk>
   )
 }
 
-export function StaffDesk({ children }: { children?: ReactNode }) {
+export function StaffDesk({ children, closing }: { children?: ReactNode; closing?: ReactNode }) {
   const room = useAdmin()
   const styles = toneClasses('staff')
   const pending = room.apps.filter((row) => row.status === 'pending')
@@ -310,6 +325,7 @@ export function StaffDesk({ children }: { children?: ReactNode }) {
           Email
         </Link>
       </section>
+      {closing}
     </div>
   )
 }

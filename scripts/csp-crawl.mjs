@@ -430,6 +430,10 @@ async function main() {
     await shots(publicPage.page, 'security-full')
     await collect(publicPage.page, 'flow:security')
 
+    await publicPage.page.goto(`${origin}/no-such-page`, { waitUntil: 'load' })
+    await publicPage.page.getByRole('heading', { name: 'Page not found' }).waitFor()
+    await collect(publicPage.page, 'flow:not-found')
+
     await publicPage.page.goto(`${origin}/`, { waitUntil: 'load' })
     await waitForHydration(publicPage.page)
     const heroApply = publicPage.page.locator('#hero-apply')

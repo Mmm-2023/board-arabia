@@ -1,6 +1,6 @@
 /**
  * Old member paths to their new homes. Search and hash are kept by RedirectKeep.
- * Live paths return null so the catch-all does not bounce a real page.
+ * A path with no mapping returns null so the shell can show page not found.
  */
 
 const STATIC: Record<string, string> = {
@@ -16,28 +16,12 @@ const STATIC: Record<string, string> = {
   '/dashboard/events': '/dashboard/majlis',
 }
 
-const LIVE_PREFIXES = [
-  '/dashboard/deals',
-  '/dashboard/people',
-  '/dashboard/majlis',
-  '/dashboard/ai',
-  '/dashboard/profile',
-  '/dashboard/help',
-  '/dashboard/sponsorship',
-]
-
 export function normalizePath(pathname: string) {
   if (pathname.length > 1 && pathname.endsWith('/')) return pathname.replace(/\/+$/, '')
   return pathname
 }
 
-export function isLiveMemberPath(pathname: string) {
-  const path = normalizePath(pathname)
-  if (path === '/dashboard') return true
-  return LIVE_PREFIXES.some((prefix) => path === prefix || path.startsWith(`${prefix}/`))
-}
-
-/** Pathname only. Caller copies search and hash. */
+/** Pathname only. Caller copies search and hash. Unknown paths return null. */
 export function resolveRedirect(pathname: string): string | null {
   const path = normalizePath(pathname)
   if (!path.startsWith('/dashboard')) return null
@@ -47,7 +31,6 @@ export function resolveRedirect(pathname: string): string | null {
   if (room && room[1] !== 'new') return `/dashboard/deals/rooms/${room[1]}`
   const report = /^\/dashboard\/due-diligence\/([^/]+)$/.exec(path)
   if (report) return `/dashboard/ai/due-diligence/${report[1]}`
-  if (path !== '/dashboard' && !isLiveMemberPath(path)) return '/dashboard'
   return null
 }
 

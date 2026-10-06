@@ -251,7 +251,7 @@ test('privacy notice covers the account and tracking without the internal tier n
   assert.equal(PRIVACY_NOTICE_EN.sections.length, 9)
 })
 
-test('review chips list all 8 states and the staff bar stays at 7 items', () => {
+test('review chips list all 8 states and the staff phone tabs stay at five controls', () => {
   const desk = read('src/pages/admin/MembershipDesk.tsx')
   for (const label of [
     'Submitted',
@@ -273,13 +273,13 @@ test('review chips list all 8 states and the staff bar stays at 7 items', () => 
   assert.match(desk, /overflow-x-auto/)
   assert.match(desk, /h-11/)
   assert.equal(desk.includes('role="listbox"'), false)
-  assert.equal(STAFF_DESTINATIONS.length, 6)
+  assert.equal(STAFF_DESTINATIONS.length, 5)
   assert.deepEqual(
     STAFF_DESTINATIONS.filter((item) => item.mobileTab === false).map((item) => item.label),
-    ['Capacity', 'Settings'],
+    ['Review'],
   )
   const css = read('src/index.css')
-  assert.match(css, /grid-template-columns: 0\.72fr 1\.4fr 0\.86fr 0\.8fr 0\.7fr/)
+  assert.match(css, /grid-template-columns: 0\.72fr 1\.45fr 0\.82fr 0\.78fr 0\.68fr/)
   const shell = read('src/shell/AppShell.tsx')
   assert.match(shell, /grid-cols-5 shell-staff-tabs/)
   assert.equal(shell.includes('destinationCount + 1 === 7'), false)

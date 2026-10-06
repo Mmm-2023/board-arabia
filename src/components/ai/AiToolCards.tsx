@@ -37,7 +37,7 @@ export function AiToolCardList({
               data-ai-off={off ? 'yes' : 'no'}
             >
               <span className="min-w-0 flex-1">
-                <span className="font-display text-[1.35rem] font-semibold tracking-[-0.02em]">{toolTitle(tool)}</span>
+                <span className="font-display text-[1.35rem] font-semibold tracking-[-0.02em] text-ink">{toolTitle(tool)}</span>
                 {preview && off ? (
                   <span className="mt-2 block text-[0.95rem] font-semibold text-[var(--ba-copper-deep)]">{ui.staffPreview}</span>
                 ) : null}

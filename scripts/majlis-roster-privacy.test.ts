@@ -40,7 +40,8 @@ test('host roster migration hides email and stays independent of Security 4', ()
   assert.equal(/grant execute on function private\.majlis_roster_rows\(\) to anon/i.test(sql), false)
   assert.equal(/grant select on table public\.majlis_roster to anon/i.test(sql), false)
   const files = readFileSync(path.join(root, 'src/App.tsx'), 'utf8').split('\n')
-  assert.match(files[97], /path="\/apply" element=\{<ApplyPage/)
+  const applyLine = files.find((line) => line.includes('path="/apply"'))
+  assert.match(applyLine || '', /path="\/apply" element=\{<ApplyPage/)
 })
 
 test('host notification label does not include another member email', () => {

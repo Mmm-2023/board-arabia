@@ -60,7 +60,7 @@ export const ISO_FOOTNOTE =
   'Board Arabia does not hold an ISO 27001 or SOC 2 certification of its own. Our hosting provider is independently audited.'
 
 export const LANDING_STRIP_LEAD =
-  'Private by design. Members only, stored in Frankfurt, encrypted throughout.'
+  'Private by design. Members only, stored in Frankfurt, encrypted in transit and at rest.'
 
 export const LANDING_STRIP_LINK = 'How we protect your data'
 

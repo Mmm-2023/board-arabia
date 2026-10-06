@@ -1,3 +1,5 @@
+import { isTwoTierRegisterEnabled } from '../lib/twoTierRegister.ts'
+
 export type ShellTone = 'member' | 'staff'
 
 export type Destination = {
@@ -33,16 +35,31 @@ export const MEMBER_DESTINATIONS: readonly Destination[] = [
 ]
 
 /** Locked staff primaries. Sidebar and bottom tabs use this order. */
-export const STAFF_DESTINATIONS: readonly Destination[] = [
-  { id: 'home', label: 'Home', to: '/admin', end: true },
-  { id: 'applications', label: 'Applications', to: '/admin/applications', end: false },
-  { id: 'review', label: 'Review', to: '/admin/review', end: false },
-  { id: 'people', label: 'People', to: '/admin/people', end: false },
-  { id: 'capacity', label: 'Capacity', to: '/admin/capacity', end: false, mobileTab: false },
-  { id: 'settings', label: 'Settings', to: '/admin/settings', end: false, mobileTab: false },
-]
+function staffPrimary(twoTier: boolean): readonly Destination[] {
+  return [
+    { id: 'home', label: 'Home', to: '/admin', end: true },
+    { id: 'applications', label: 'Applications', to: '/admin/applications', end: false },
+    {
+      id: 'review',
+      label: 'Review',
+      to: '/admin/review',
+      end: false,
+      ...(twoTier ? {} : { mobileTab: false as const }),
+    },
+    { id: 'people', label: 'People', to: '/admin/people', end: false },
+    { id: 'majlis', label: 'Majlis', to: '/admin/majlis', end: false },
+  ]
+}
 
-/** Phone tabs stay at 3 to 5. Capacity and Settings sit under More. */
+/** Phone tabs omit Review until the two-tier register flag is on. */
+export function staffDestinations(twoTier = isTwoTierRegisterEnabled()): readonly Destination[] {
+  return staffPrimary(twoTier)
+}
+
+/** Flag off. Review stays in the sidebar and under More. */
+export const STAFF_DESTINATIONS: readonly Destination[] = staffPrimary(false)
+
+/** Phone destination tabs stay within 3 to 5. More is the extra control. */
 export function phoneDestinations(destinations: readonly Destination[]) {
   return {
     tabs: destinations.filter((item) => item.mobileTab !== false),
@@ -95,11 +112,14 @@ export function memberAccountLinks(seat: string | null | undefined): readonly Se
 export const MEMBER_SECONDARY = MEMBER_ACCOUNT
 
 export const STAFF_SECONDARY: readonly SecondaryLink[] = [
-  { id: 'marketing', label: 'Marketing', to: '/admin/marketing' },
-  { id: 'majlis', label: 'Majlis', to: '/admin/majlis' },
   { id: 'mandates', label: 'Mandates', to: '/admin/mandates' },
   { id: 'rooms', label: 'Rooms', to: '/admin/rooms' },
+  { id: 'ai', label: 'AI tools', to: '/admin/ai' },
+  { id: 'access', label: 'Access log', to: '/admin/access' },
+  { id: 'marketing', label: 'Marketing', to: '/admin/marketing' },
   { id: 'email', label: 'Email', to: '/admin/email' },
+  { id: 'capacity', label: 'Capacity', to: '/admin/capacity' },
+  { id: 'settings', label: 'Settings', to: '/admin/settings' },
 ]
 
 /** Staff hub sections. Review queue state chips are not in this list. */
@@ -130,6 +150,12 @@ export function sectionsForHub(hubId: string): readonly SectionLink[] {
   return MEMBER_SECTIONS[hubId] ?? []
 }
 
+const ACCOUNT_TITLES = [
+  { prefix: '/dashboard/two-step', title: 'Two-step sign-in' },
+  { prefix: '/dashboard/privacy', title: 'Your privacy' },
+  { prefix: '/dashboard/profile/leave', title: 'Profile' },
+] as const
+
 export function shellSectionTitle(
   pathname: string,
   destinations: readonly Destination[],
@@ -137,17 +163,19 @@ export function shellSectionTitle(
 ) {
   const path = pathname.length > 1 && pathname.endsWith('/') ? pathname.replace(/\/+$/, '') : pathname
   if (path === '/dashboard/sponsorship') return 'Sponsorship'
-  const account = secondary.find(
-    (item) => pathname === item.to || pathname.startsWith(`${item.to}/`),
-  )
+  for (const item of ACCOUNT_TITLES) {
+    if (path === item.prefix || path.startsWith(`${item.prefix}/`)) return item.title
+  }
+  if (path === '/admin/ai' || path.startsWith('/admin/ai/')) return 'AI tools'
+  const account = secondary.find((item) => path === item.to || path.startsWith(`${item.to}/`))
   if (account && (account.id === 'profile' || account.id === 'help' || account.to.startsWith('/dashboard/'))) {
     const hub = destinations.find((item) =>
-      item.end ? pathname === item.to : pathname === item.to || pathname.startsWith(`${item.to}/`),
+      item.end ? path === item.to : path === item.to || path.startsWith(`${item.to}/`),
     )
     if (!hub) return account.label
   }
   const primary = destinations.find((item) =>
-    item.end ? pathname === item.to : pathname === item.to || pathname.startsWith(`${item.to}/`),
+    item.end ? path === item.to : path === item.to || path.startsWith(`${item.to}/`),
   )
   if (primary) return primary.label
   return account?.label ?? destinations[0]?.label ?? 'Home'

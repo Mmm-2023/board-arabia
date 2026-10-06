@@ -1,9 +1,11 @@
 import { Navigate, useLocation } from 'react-router-dom'
 import { redirectLocation } from './redirects'
+import { ShellNotFound } from './ShellNotFound'
 
-/** React Router Navigate does not fill :params. This keeps params, search, and hash. */
+/** Legacy member paths keep params, search, and hash. Anything else is page not found. */
 export function RedirectKeep() {
   const location = useLocation()
   const next = redirectLocation(location)
-  return <Navigate to={next ?? { pathname: '/dashboard', search: location.search, hash: location.hash }} replace />
+  if (!next) return <ShellNotFound homeTo="/dashboard" />
+  return <Navigate to={next} replace />
 }

@@ -67,6 +67,7 @@ export function AppShell({
   const home = destinations[0]?.to ?? '/'
   const phone = phoneDestinations(destinations)
   const tabItems = member ? destinations : phone.tabs
+  const staffReviewTabs = !member && tabItems.some((item) => item.id === 'review')
   const secondaryActive = secondary.some(
     (item) => location.pathname === item.to || location.pathname.startsWith(`${item.to}/`),
   )
@@ -149,7 +150,7 @@ export function AppShell({
     event.preventDefault()
     navigate(item.to)
     requestAnimationFrame(() => {
-      document.querySelector('.shell-main')?.scrollTo({ top: 0 })
+      window.scrollTo({ top: 0, behavior: 'auto' })
     })
   }
 
@@ -402,7 +403,15 @@ export function AppShell({
         aria-label="Primary"
         className={`shell-tab-bar shell-safe-bottom shell-safe-x fixed inset-x-0 bottom-0 z-40 h-14 border-t md:hidden ${styles.tabBar}`}
       >
-        <ul className={`grid min-h-14 ${member ? 'grid-cols-5' : 'grid-cols-5 shell-staff-tabs'}`}>
+        <ul
+          className={`grid min-h-14 ${
+            member
+              ? 'grid-cols-5'
+              : staffReviewTabs
+                ? 'grid-cols-6 shell-staff-tabs shell-staff-tabs-review'
+                : 'grid-cols-5 shell-staff-tabs'
+          }`}
+        >
           {tabItems.map((item) => (
             <li key={item.to} className="min-w-0">
               <NavLink

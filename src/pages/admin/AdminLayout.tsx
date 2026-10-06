@@ -7,7 +7,7 @@ import { noteStaffSession } from '../../lib/tracking/browser'
 import { applyStaffBrowserOptOut } from '../../lib/tracking/staffOptOut'
 import { clientAdminGate } from '../../../supabase/functions/_shared/staff_auth.ts'
 import { AppShell } from '../../shell/AppShell'
-import { STAFF_DESTINATIONS, STAFF_SECONDARY, formatUpdated } from '../../shell/destinations'
+import { STAFF_SECONDARY, formatUpdated, staffDestinations } from '../../shell/destinations'
 import { currentReturnPath, loginHref } from '../../lib/returnPath'
 import { useNoIndex } from '../../lib/usePageTitle'
 import { AdminProvider, useAdmin } from './context'
@@ -95,7 +95,7 @@ function StaffFrame({ room }: { room: ReturnType<typeof useAdmin> }) {
   return (
     <AppShell
       tone="staff"
-      destinations={STAFF_DESTINATIONS}
+      destinations={staffDestinations()}
       secondary={STAFF_SECONDARY}
       updatedLabel={formatUpdated(room.refreshedAt)}
       roleSwitch={

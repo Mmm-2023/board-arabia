@@ -31,7 +31,7 @@ test('old member routes resolve to the new homes and keep params', () => {
     '/dashboard/ai/due-diligence/22222222-2222-4222-8222-222222222222',
   )
   assert.equal(resolveRedirect('/dashboard/events'), '/dashboard/majlis')
-  assert.equal(resolveRedirect('/dashboard/no-such-page'), '/dashboard')
+  assert.equal(resolveRedirect('/dashboard/no-such-page'), null)
   assert.equal(resolveRedirect('/dashboard'), null)
   assert.equal(resolveRedirect('/dashboard/profile'), null)
   assert.equal(resolveRedirect('/dashboard/help'), null)
