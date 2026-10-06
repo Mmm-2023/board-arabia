@@ -68,14 +68,14 @@ const TOOLS = [
     title: 'Sector and Vision 2030 tags',
     paragraphs: [
       'Tags say where you sit: a sector, a Vision 2030 theme, the kind of board work you actually do.',
-      'They help the desk match a mandate to members who are available. They are not a public biography.',
+      'They help our admin team match a mandate to members who are available. They are not a public biography.',
     ],
   },
   {
     id: 'rooms',
     title: 'Deal rooms',
     paragraphs: [
-      'A deal room opens for a live mandate, and only by the desk. It closes when the work ends.',
+      'A deal room opens for a live mandate, and only by our admin team. It closes when the work ends.',
       'It is not a public data room, and it is not listed on this website.',
     ],
   },
@@ -94,7 +94,7 @@ export function ForMembersPage() {
         <p className="mt-6 max-w-2xl text-[1.08rem] leading-relaxed text-ink/65">
           Founding members of Board Arabia access tools designed for
           board-level discretion: a private peer directory, structured mandate
-          inbox, warm intros the desk oversees, and quarterly majlis. This
+          inbox, warm intros our admin team oversees, and quarterly majlis. This
           is not an open marketplace.
         </p>
         <ul className="mt-8 flex flex-wrap gap-x-6 gap-y-2">
@@ -151,7 +151,7 @@ export function ForMembersPage() {
           <div className="max-w-2xl space-y-4 text-[1.05rem] leading-relaxed text-ink/70">
             <p>
               The mandate inbox and deal rooms above are how capital reaches
-              you. The desk reviews both. You see a mandate when you are
+              you. Our admin team reviews both. You see a mandate when you are
               available and when it fits.
             </p>
             <p>

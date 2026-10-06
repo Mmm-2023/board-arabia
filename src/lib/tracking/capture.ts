@@ -1,4 +1,4 @@
-import { sanitizeProperties } from './allowlist.ts'
+import { preconsentProperties, sanitizeProperties } from './allowlist.ts'
 import {
   planCapture,
   posthogCaptureUrl,
@@ -50,7 +50,7 @@ export async function runCapture(
 ): Promise<CapturePlan> {
   const plan = planCapture(config, ctx, event)
   if (plan.kind === 'skip') return plan
-  const clean = sanitizeProperties(properties)
+  const clean = plan.kind === 'anonymous' ? preconsentProperties(sanitizeProperties(properties)) : sanitizeProperties(properties)
   if (plan.kind === 'anonymous') {
     const distinctId = deps.randomId()
     const body = buildAnonymousPayload({

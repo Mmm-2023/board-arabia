@@ -30,6 +30,8 @@ jobs:
           VITE_BASE_PATH: /
           VITE_ANALYTICS_ENABLED: 'false'
           VITE_ANALYTICS_PRECONSENT_MODE: anonymous_counts
+          VITE_POSTHOG_KEY: ${{ secrets.VITE_POSTHOG_KEY }}
+          VITE_POSTHOG_HOST: ${{ vars.VITE_POSTHOG_HOST }}
           VITE_TWO_TIER_REGISTER_ENABLED: 'false'
           VITE_TURNSTILE_SITE_KEY: ${{ secrets.VITE_TURNSTILE_SITE_KEY }}
           VITE_SUPABASE_URL: https://iirqbizwanyhgkhanntq.supabase.co

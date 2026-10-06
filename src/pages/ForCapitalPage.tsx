@@ -54,12 +54,12 @@ export function ForCapitalPage() {
           For capital
         </p>
         <h1 className="max-w-3xl font-display text-[clamp(2.5rem,5.5vw,4.4rem)] font-bold leading-[1.02] tracking-[-0.04em] text-balance text-ink">
-          Capital engages through the desk
+          Capital engages through our admin team
         </h1>
         <p className="mt-6 max-w-2xl text-[1.08rem] leading-relaxed text-ink/65">
           Board Arabia is not an open deal board. FDI, family offices, private
           equity, and venture capital reach members via structured mandates
-          the desk reviews, so outreach stays credentialled and discreet.
+          our admin team reviews, so outreach stays credentialled and discreet.
         </p>
       </header>
 
@@ -124,13 +124,13 @@ export function ForCapitalPage() {
           </div>
           <div className="space-y-4 text-[1.05rem] leading-relaxed text-ink/70">
             <p>
-              A deal room holds one mandate that has already passed the desk:
+              A deal room holds one mandate that has already passed our admin team:
               the people who need to see it, and no one else. It is not a
               standing data room for the whole membership.
             </p>
             <p>
               Warm introductions that lead into a process follow the same
-              rule. The desk releases the introduction. The room does not
+              rule. Our admin team releases the introduction. The room does not
               message around that gate.
             </p>
             <p>
@@ -151,7 +151,7 @@ export function ForCapitalPage() {
             {[
               'An export of the member directory.',
               'A scraped contact list.',
-              'A direct message that bypasses the desk.',
+              'A direct message that bypasses our admin team.',
               'A public calendar for a conversation.',
             ].map((item) => (
               <li

@@ -74,9 +74,9 @@ export function IconDoors() {
   return (
     <svg className="ba-icon" width="44" height="44" viewBox="0 0 44 44" aria-hidden="true">
       <rect x="0.5" y="0.5" width="43" height="43" rx="10" fill="#FFFFFF" stroke="#E8E4F7" />
-      <path d="M15 32 V13 H28 V32" fill="none" stroke="#1C1343" strokeWidth="1.6" />
-      <path d="M22 13 L31 16.5 V32" fill="#E8E4F7" stroke="#4B3F9A" strokeWidth="1.6" />
-      <circle cx="27" cy="23" r="1.5" fill="#B8896A" />
+      <path d="M14 12 H30 V32 H14 Z" fill="none" stroke="#1C1343" strokeWidth="1.6" strokeLinejoin="round" />
+      <path d="M16 14 L25 17.2 V28.6 L16 31 Z" fill="none" stroke="#4B3F9A" strokeWidth="1.6" strokeLinejoin="round" strokeLinecap="round" />
+      <circle cx="22.2" cy="22.8" r="1.25" fill="#B8896A" />
     </svg>
   )
 }

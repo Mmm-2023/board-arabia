@@ -5,8 +5,10 @@ export const SITE_ORIGIN = 'https://boardarabia.com'
 
 export const OG_TITLE = 'Board Arabia'
 
+export const HOME_SHARE_TITLE = 'Board Arabia | Where Saudi boardrooms meet international capital'
+
 export const OG_DESCRIPTION =
-  'A selective founding membership for Chairpersons, Board members, and C-suite executives connecting Saudi Arabia’s boardrooms with international counterparts. Access to capital, business relationships, and opening doors in trusted rooms.'
+  'A selective founding membership for Chairpersons, Board members, and C-suite executives connecting Saudi Arabia’s boardrooms with international capital. Access to capital, business relationships, and opening doors in trusted rooms.'
 
 export const OG_IMAGE = `${SITE_ORIGIN}/og-board-arabia.png`
 
@@ -44,23 +46,22 @@ export type MarketingPage = {
 export const MARKETING_PAGES: Record<MarketingPath, MarketingPage> = {
   '/': {
     path: '/',
-    title: 'Board Arabia | Saudi boardrooms meet international counterparts',
-    description:
-      'A selective founding membership for Chairpersons, Board members, and C-suite executives connecting Saudi Arabia’s boardrooms with international counterparts. Access to capital, business relationships, and opening doors in trusted rooms.',
+    title: HOME_SHARE_TITLE,
+    description: OG_DESCRIPTION,
     faq: true,
   },
   '/for-members': {
     path: '/for-members',
     title: 'Member tools: directory, mandates, majlis | Board Arabia',
     description:
-      'Board Arabia members use a private directory, mandates and intros the desk reviews, availability controls, founding badge, quarterly majlis, invite vouchers, Vision 2030 tags, and deal rooms.',
+      'Board Arabia members use a private directory, mandates and intros our admin team reviews, availability controls, founding badge, quarterly majlis, invite vouchers, Vision 2030 tags, and deal rooms.',
     faq: true,
   },
   '/for-capital': {
     path: '/for-capital',
     title: 'For capital: FDI, family offices, PE & VC | Board Arabia',
     description:
-      'Family offices, FDI, PE, and VC engage Board Arabia members through mandates the desk reviews. No open scrape of the directory. Apply for consideration remains the public gate.',
+      'Family offices, FDI, PE, and VC engage Board Arabia members through mandates our admin team reviews. No open scrape of the directory. Apply for consideration remains the public gate.',
   },
   '/partners': {
     path: '/partners',
@@ -140,7 +141,7 @@ export const FAQ: FaqItem[] = [
   {
     question: 'What is Board Arabia?',
     answer:
-      'Board Arabia is a selective founding membership that connects Saudi Arabia’s boardrooms with international counterparts for Chairpersons, Board members, and C-suite executives. Access to capital, business relationships, and opening doors happen in reviewed rooms. Growth and governance stay in the frame. It is not an open directory.',
+      'Board Arabia is a selective founding membership that connects Saudi Arabia’s boardrooms with international counterparts for Chairpersons, Board members, and C-suite executives. Access to capital, business relationships, and opening doors happen in reviewed rooms. Growth and governance stay in the frame. It is not an open directory. It is a board network for Saudi and international rooms, kept off the open web.',
   },
   {
     question: 'Who is it for?',
@@ -152,7 +153,7 @@ export const FAQ: FaqItem[] = [
   {
     question: 'How do family offices or FDI engage?',
     answer:
-      'Capital (FDI, family offices, PE, VC) engages through mandates the desk reviews. There is no open outbound to members.',
+      'Capital (FDI, family offices, PE, VC) engages through mandates our admin team reviews. There is no open outbound to members.',
     to: '/for-capital',
     toLabel: 'For capital',
   },
@@ -164,7 +165,7 @@ export const MEMBERS_FAQ: FaqItem[] = [
   {
     question: 'What do members get?',
     answer:
-      'Access to capital through a mandate inbox the desk reviews; business relationships through a private directory, Majlis, and warm intros; opening doors through deal rooms and peer vouchers; plus founding badge, sector and Vision 2030 tags, and AI Due Diligence for public-source governance support.',
+      'Access to capital through a mandate inbox our admin team reviews; business relationships through a private directory, Majlis, and warm intros; opening doors through deal rooms and peer vouchers; plus founding badge, sector and Vision 2030 tags, and AI Due Diligence for public-source governance support.',
   },
   NAMES_FAQ,
   {
@@ -231,6 +232,8 @@ export function pageGraph(page: MarketingPage) {
       '@id': `${SITE_ORIGIN}/#organization`,
       name: 'Board Arabia',
       url: `${SITE_ORIGIN}/`,
+      logo: `${SITE_ORIGIN}/favicon.svg`,
+      image: OG_IMAGE,
       description:
         'A selective founding membership for Chairpersons, Board members, and C-suite executives connecting Saudi Arabia’s boardrooms with international counterparts.',
       email: 'partners@boardarabia.com',

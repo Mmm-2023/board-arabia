@@ -228,8 +228,8 @@ export function ApplyPage() {
             Apply for consideration
           </h1>
           <p className="mt-5 text-[1.05rem] leading-relaxed text-ink/80">
-            Request consideration for Board Arabia with this pre-vet form. The
-            desk reviews your credentials. If you are accepted, you receive a
+            Request consideration for Board Arabia with this pre-vet form. Our
+            admin team reviews your credentials. If you are accepted, you receive a
             private invite email. {REVIEW_SLA} The private invite email is not
             a page on this website.
           </p>
@@ -327,7 +327,7 @@ export function ApplyPage() {
               onChange={(v) => setField('investable', v)}
               placeholder="e.g. 1000000"
               inputMode="decimal"
-              hint="Optional. US dollars you can put to work. Used only inside a platform sum, and only after the desk verifies it."
+              hint="Optional. US dollars you can put to work. Used only inside a platform sum, and only after our admin team verifies it."
             />
             <div>
               <label className="flex min-h-11 cursor-pointer items-center gap-3 text-[0.98rem] leading-relaxed text-ink">

@@ -107,7 +107,7 @@ test('section 5 copy, one audience line, and the desk name', () => {
   assert.equal(AUDIENCE_LINE, 'Chairpersons, Board members, and C-suite executives')
   assert.match(read('src/lib/homeSnapshot.ts'), /Add your capacity in Profile to count in the totals\./)
   assert.match(read('src/pages/LandingPage.tsx'), /Investors can see how mandates work on the For/)
-  assert.match(read('src/pages/LandingPage.tsx'), /Founding places are complimentary\. We ask/)
+  assert.match(read('src/pages/LandingPage.tsx'), /Complimentary founding membership, given in\s+exchange for time, judgment and introductions\./)
   assert.match(read('src/pages/AboutPage.tsx'), /you get a\s+private invite email/)
   assert.match(read('src/pages/HowItWorksPage.tsx'), /private invite\s+email/)
   assert.equal(read('src/pages/HowItWorksPage.tsx').includes('private booking'), false)

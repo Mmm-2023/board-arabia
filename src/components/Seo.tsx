@@ -9,6 +9,7 @@ import {
   OG_IMAGE_TYPE,
   OG_IMAGE_WIDTH,
   OG_TITLE,
+  HOME_SHARE_TITLE,
   pageGraph,
   publicMarketingTitle,
   type MarketingPath,
@@ -52,7 +53,8 @@ export function Seo({ path }: { path: MarketingPath }) {
     upsertMeta('property', 'og:type', 'website')
     upsertMeta('property', 'og:site_name', 'Board Arabia')
     upsertMeta('property', 'og:locale', 'en_US')
-    upsertMeta('property', 'og:title', OG_TITLE)
+    const shareTitle = page.path === '/' ? HOME_SHARE_TITLE : OG_TITLE
+    upsertMeta('property', 'og:title', shareTitle)
     upsertMeta('property', 'og:description', OG_DESCRIPTION)
     upsertMeta('property', 'og:url', url)
     upsertMeta('property', 'og:image', OG_IMAGE)
@@ -61,7 +63,7 @@ export function Seo({ path }: { path: MarketingPath }) {
     upsertMeta('property', 'og:image:type', OG_IMAGE_TYPE)
     upsertMeta('property', 'og:image:alt', OG_IMAGE_ALT)
     upsertMeta('name', 'twitter:card', 'summary_large_image')
-    upsertMeta('name', 'twitter:title', OG_TITLE)
+    upsertMeta('name', 'twitter:title', shareTitle)
     upsertMeta('name', 'twitter:description', OG_DESCRIPTION)
     upsertMeta('name', 'twitter:image', OG_IMAGE)
     upsertMeta('name', 'twitter:image:alt', OG_IMAGE_ALT)

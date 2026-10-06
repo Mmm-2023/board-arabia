@@ -112,7 +112,21 @@ function assertPage(route, html) {
   if (!html.includes('property="og:image:width" content="1200"')) errors.push('og width')
   if (!html.includes('property="og:image:height" content="630"')) errors.push('og height')
   if (!html.includes('property="og:image:type" content="image/png"')) errors.push('og type')
-  if (!html.includes('property="og:title" content="Board Arabia"')) errors.push('og title')
+  const homeShare = 'Board Arabia | Where Saudi boardrooms meet international capital'
+  if (route === '/') {
+    if (!html.includes(`<title>${homeShare}</title>`)) errors.push('home title')
+    if (!html.includes(`property="og:title" content="${homeShare}"`)) errors.push('og title')
+    if (!html.includes(`name="twitter:title" content="${homeShare}"`)) errors.push('twitter title')
+  } else if (!html.includes('property="og:title" content="Board Arabia"')) {
+    errors.push('og title')
+  }
+  const ogDescription = tagAttr(html, /<meta[^>]*property="og:description"[^>]*>/i)
+  const twitterDescription = tagAttr(html, /<meta[^>]*name="twitter:description"[^>]*>/i)
+  if (/counterparts/i.test(description) || /counterparts/i.test(ogDescription) || /counterparts/i.test(twitterDescription)) {
+    errors.push('counterparts in share description')
+  }
+  if (route === '/' && !html.includes('"logo":"https://boardarabia.com/favicon.svg"')) errors.push('organization logo')
+  if (route === '/' && !html.includes('"image":"https://boardarabia.com/og-board-arabia.png"')) errors.push('organization image')
   if (!html.includes('name="theme-color" content="#1C1343"')) errors.push('theme-color')
   if ((html.match(/property="og:image"/g) || []).length !== 1) errors.push('og:image count')
 
@@ -157,6 +171,12 @@ function assertDistClean(distDir) {
   }
   if (!fs.existsSync(path.join(distDir, 'auth', 'confirm', 'index.html'))) {
     throw new Error('missing auth confirm shell')
+  }
+  if (!fs.existsSync(path.join(distDir, 'favicon.svg'))) {
+    throw new Error('missing favicon.svg mark')
+  }
+  if (!fs.existsSync(path.join(distDir, 'og-board-arabia.png'))) {
+    throw new Error('missing og-board-arabia.png')
   }
 }
 
