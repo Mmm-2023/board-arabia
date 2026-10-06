@@ -32,6 +32,8 @@ test('old member routes resolve to the new homes and keep params', () => {
     '/dashboard/ai/due-diligence/22222222-2222-4222-8222-222222222222',
   )
   assert.equal(resolveRedirect('/dashboard/events'), '/dashboard/majlis')
+  assert.equal(resolveRedirect('/dashboard/majlis'), null)
+  assert.equal(resolveRedirect('/dashboard/majlis/past'), null)
   assert.equal(resolveRedirect('/dashboard/no-such-page'), null)
   assert.equal(resolveRedirect('/dashboard'), null)
   assert.equal(resolveRedirect('/dashboard/profile'), null)
@@ -83,7 +85,9 @@ test('the app wires replace redirects and the rooms/new shell', () => {
   assert.match(app, /path="intros" element=\{<RedirectKeep/)
   assert.match(app, /path="rooms\/:roomId" element=\{<RedirectKeep/)
   assert.match(app, /path="\*" element=\{<RedirectKeep/)
+  assert.match(app, /path="past" element=\{<MajlisPage/)
   const shells = appShells().map((item) => item.path)
   assert.equal(shells.includes('/dashboard/rooms/new'), true)
   assert.equal(shells.includes('/dashboard/deals/rooms/new'), true)
+  assert.equal(shells.includes('/dashboard/majlis/past'), true)
 })

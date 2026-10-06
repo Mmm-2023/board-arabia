@@ -1,4 +1,4 @@
-import { isMajlisRegion, parseFocusTags, regionGeotag, riyadhWallToUtc } from '../_shared/majlis.ts'
+import { isMajlisRegion, parseFocusTags, regionGeotag, riyadhWallToUtc, validateMajlisApplication } from '../_shared/majlis.ts'
 import { hostGuestLabel, type MajlisMailEvent } from '../_shared/majlis_mail.ts'
 import { mailEventCancelled, mailEventUpdated, mailGuestPromoted, mailHostRsvp, markCalendarSent } from '../_shared/majlis_notify.ts'
 import { jsonResponse } from '../_shared/mail.ts'
@@ -7,7 +7,7 @@ import { requireStaff } from '../_shared/require_staff.ts'
 const UUID = /^[0-9a-f-]{36}$/i
 
 type EventRow = MajlisMailEvent & {
-  host_member_id: string
+  host_member_id: string | null
   status: string
   description: string
   focus_tags: string[]
@@ -31,8 +31,9 @@ Deno.serve(async (req) => {
   } catch {
     return jsonResponse(req, { error: 'Invalid JSON' }, 400)
   }
-  const eventId = String(body.event_id || '')
   const action = String(body.action || '')
+  if (action === 'create') return createMajlis(req, admin, user.id, body)
+  const eventId = String(body.event_id || '')
   if (!UUID.test(eventId)) return jsonResponse(req, { error: 'event_id required' }, 400)
 
   const { data: row, error: readError } = await admin
@@ -117,16 +118,18 @@ Deno.serve(async (req) => {
     if (placed.changed) {
       const { data: member } = await admin.from('members').select('email').eq('user_id', memberId).maybeSingle()
       const { data: profile } = await admin.from('profiles').select('full_name').eq('user_id', memberId).maybeSingle()
-      const { data: host } = await admin.from('members').select('email').eq('user_id', event.host_member_id).maybeSingle()
+      const host = event.host_member_id
+        ? await admin.from('members').select('email').eq('user_id', event.host_member_id).maybeSingle()
+        : { data: null }
       if (member?.email) {
         const sent = await mailGuestPromoted(admin, member.email, event, memberId)
         if (sent.status === 'sent' || sent.status === 'dry_run') await markCalendarSent(admin, eventId, memberId)
       }
-      if (host?.email) {
+      if (host.data?.email) {
         const label = hostGuestLabel(profile?.full_name)
         await mailHostRsvp(
           admin,
-          host.email,
+          host.data.email,
           event,
           label,
           'promoted',
@@ -157,6 +160,74 @@ Deno.serve(async (req) => {
 
   return jsonResponse(req, { error: 'Unknown action.' }, 400)
 })
+
+async function createMajlis(
+  req: Request,
+  admin: Parameters<typeof mailEventCancelled>[0],
+  staffId: string,
+  body: Record<string, unknown>,
+) {
+  const publishAs = String(body.status || 'hidden')
+  if (publishAs !== 'published' && publishAs !== 'hidden') {
+    return jsonResponse(req, { error: 'Choose published or hidden.' }, 400)
+  }
+  const tags = Array.isArray(body.focus_tags)
+    ? body.focus_tags.map((tag) => String(tag))
+    : parseFocusTags(String(body.focus_tags ?? ''))
+  const startUtc = riyadhWallToUtc(String(body.starts_at ?? ''))
+  const endUtc = riyadhWallToUtc(String(body.ends_at ?? ''))
+  if (!startUtc || !endUtc) {
+    return jsonResponse(req, { error: 'Enter a start and end time in Asia/Riyadh.' }, 400)
+  }
+  const capacity = Number(body.capacity)
+  const parsed = validateMajlisApplication({
+    title: String(body.title ?? ''),
+    description: String(body.description ?? ''),
+    region: String(body.region ?? ''),
+    focusTags: tags,
+    startsAtUtc: startUtc,
+    endsAtUtc: endUtc,
+    capacity: Number.isInteger(capacity) ? capacity : Number.NaN,
+    venueName: String(body.venue_name ?? ''),
+    venueAddress: String(body.venue_address ?? ''),
+  })
+  if (!parsed.ok) return jsonResponse(req, { error: parsed.error }, 400)
+  const geo = regionGeotag(parsed.value.region)
+  if (!geo) return jsonResponse(req, { error: 'This region has no geotag.' }, 400)
+
+  const now = new Date()
+  const opens = now.toISOString()
+  const priority = new Date(now.getTime() + 48 * 60 * 60 * 1000).toISOString()
+  const { data: created, error } = await admin
+    .from('majlis_events')
+    .insert({
+      host_member_id: null,
+      created_by_staff: staffId,
+      title: parsed.value.title,
+      description: parsed.value.description,
+      region: parsed.value.region,
+      focus_tags: parsed.value.focusTags,
+      starts_at: parsed.value.startsAtUtc,
+      ends_at: parsed.value.endsAtUtc,
+      timezone: 'Asia/Riyadh',
+      capacity: parsed.value.capacity,
+      venue_name: parsed.value.venueName,
+      venue_address: parsed.value.venueAddress,
+      venue_visibility: 'members_on_rsvp',
+      status: publishAs,
+      approved_by: staffId,
+      approved_at: opens,
+      rsvp_opens_at: opens,
+      founding_priority_ends_at: priority,
+      map_lat: geo.lat,
+      map_lng: geo.lng,
+    })
+    .select('id, status')
+    .single()
+  if (error || !created) return jsonResponse(req, { error: 'Could not create the majlis.' }, 500)
+  await audit(admin, created.id, staffId, 'create', publishAs)
+  return jsonResponse(req, { ok: true, id: created.id, status: created.status })
+}
 
 function buildUpdate(event: EventRow, body: Record<string, unknown>):
   | { error: string }

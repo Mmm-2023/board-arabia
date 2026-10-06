@@ -11,6 +11,7 @@ import {
 import { SignedAvatar } from '../../components/SignedAvatar'
 import { KsaRegionMap } from '../../components/majlis/KsaRegionMap'
 import { downloadCsv, toCsv } from '../../lib/csv'
+import { groupMajlisRoster } from '../../lib/majlisRoster'
 import type { SponsorRosterRow } from '../../lib/sponsorDesk'
 import {
   decideMajlis,
@@ -68,7 +69,7 @@ export function AdminMajlisPage({
         setEvents([])
         return
       }
-      const ids = [...new Set(result.events.map((event) => event.host_member_id))]
+      const ids = [...new Set(result.events.map((event) => event.host_member_id).filter((id): id is string => Boolean(id)))]
       if (ids.length > 0) {
         const hostRes = await supabase.from('members').select('user_id, email').in('user_id', ids)
         if (!hostRes.error) {
@@ -130,9 +131,9 @@ export function AdminMajlisPage({
     if (sponsor === 'with' && !event.sponsor_label) return false
     if (sponsor === 'without' && event.sponsor_label) return false
     if (when !== 'all') {
-      const upcoming = new Date(event.starts_at).getTime() >= nowMs
-      if (when === 'upcoming' && !upcoming) return false
-      if (when === 'past' && upcoming) return false
+      const ended = new Date(event.ends_at).getTime() <= nowMs
+      if (when === 'upcoming' && ended) return false
+      if (when === 'past' && !ended) return false
     }
     return true
   })
@@ -210,7 +211,7 @@ export function AdminMajlisPage({
           <ul className="mt-4 space-y-4">
             {pending.map((event) => (
               <li key={event.id}>
-                <PendingCard event={event} host={hosts[event.host_member_id] || 'Member'} onDone={reload} />
+                <PendingCard event={event} host={hostLabel(event, hosts)} onDone={reload} />
               </li>
             ))}
           </ul>
@@ -229,6 +230,8 @@ export function AdminMajlisPage({
           <KsaRegionMap counts={counts} selected={null} comingSoon />
         </div>
       </section>
+
+      <CreateMajlis onCreated={reload} />
 
       <section className="mt-10" aria-labelledby="admin-majlis-all">
         <div className="flex flex-wrap items-end justify-between gap-3">
@@ -310,7 +313,8 @@ export function AdminMajlisPage({
                 </div>
                 <p className="mt-2 text-[0.95rem] text-stone/75">{event.description}</p>
                 <dl className="mt-4 grid gap-3 text-[0.92rem] md:grid-cols-2">
-                  <Field label="Host" value={hosts[event.host_member_id] || 'Member'} />
+                  <Field label="Host" value={hostLabel(event, hosts)} />
+                  {event.maybe_count != null && <Field label="Maybe" value={String(event.maybe_count)} />}
                   <Field label="Region" value={event.region} />
                   <Field label="When" value={formatMajlisWhen(event.starts_at, event.ends_at)} />
                   <Field label="Seats" value={`${event.registered_count} of ${event.capacity} filled, ${event.waitlist_count} waiting`} />
@@ -722,29 +726,157 @@ function Ops({
         {rosterError && <p className="mt-2 text-[0.95rem] text-red-300" role="alert">{rosterError}</p>}
         {roster && roster.length === 0 && !rosterError && <p className="mt-2 text-[0.95rem] text-pearl/55">No guests yet.</p>}
         {roster && roster.length > 0 && (
-          <ul className="mt-3 space-y-2" aria-label="RSVPs">
-            {roster.map((row) => (
-              <li key={row.id} className="flex flex-wrap items-center justify-between gap-2 text-[0.95rem]">
-                <span className="flex min-w-0 items-center gap-3">
-                  <SignedAvatar path={row.avatar_path ?? null} avatarStyle={row.avatar_style} size={36} alt="" />
-                  <span>
-                    {row.full_name || row.email || 'Member'}
-                    {row.full_name && row.email ? ` (${row.email})` : ''}
-                    {` · ${row.status}`}
-                    {row.status === 'waitlist' && row.waitlist_position ? ` ${row.waitlist_position}` : ''}
-                  </span>
-                </span>
-                {row.status === 'waitlist' && (
-                  <button type="button" className={quietBtn} disabled={busy} onClick={() => void run({ action: 'promote', member_id: row.member_id })}>
-                    Promote
-                  </button>
-                )}
+          <ul className="mt-3 space-y-3" aria-label="RSVPs">
+            {groupMajlisRoster(roster).map((group) => (
+              <li key={group.status}>
+                <p className="text-[0.82rem] font-semibold tracking-[0.06em] uppercase">
+                  {group.label} ({group.rows.length})
+                </p>
+                {group.rows.map((row) => (
+                  <div key={row.id} className="mt-2 flex flex-wrap items-center justify-between gap-2 text-[0.95rem]">
+                    <span className="flex min-w-0 items-center gap-3">
+                      <SignedAvatar path={row.avatar_path ?? null} avatarStyle={row.avatar_style} size={36} alt="" />
+                      <span>
+                        {row.full_name || row.email || 'Member'}
+                        {row.full_name && row.email ? ` (${row.email})` : ''}
+                        {` · ${row.status}`}
+                        {row.status === 'waitlist' && row.waitlist_position ? ` ${row.waitlist_position}` : ''}
+                      </span>
+                    </span>
+                    {row.status === 'waitlist' && (
+                      <button type="button" className={quietBtn} disabled={busy} onClick={() => void run({ action: 'promote', member_id: row.member_id })}>
+                        Promote
+                      </button>
+                    )}
+                  </div>
+                ))}
               </li>
             ))}
           </ul>
         )}
       </div>
     </div>
+  )
+}
+
+function hostLabel(event: MajlisEventRow, hosts: Record<string, string>): string {
+  if (!event.host_member_id) return 'hosted by our admin team'
+  return hosts[event.host_member_id] || 'Member'
+}
+
+function CreateMajlis({ onCreated }: { onCreated: () => void }) {
+  const [title, setTitle] = useState('')
+  const [description, setDescription] = useState('')
+  const [region, setRegion] = useState('Riyadh')
+  const [tags, setTags] = useState('Governance')
+  const [starts, setStarts] = useState('')
+  const [ends, setEnds] = useState('')
+  const [capacity, setCapacity] = useState('12')
+  const [venueName, setVenueName] = useState('')
+  const [venueAddress, setVenueAddress] = useState('')
+  const [publishAs, setPublishAs] = useState<'published' | 'hidden'>('hidden')
+  const [busy, setBusy] = useState(false)
+  const [message, setMessage] = useState('')
+
+  return (
+    <section className="mt-10" aria-labelledby="admin-majlis-create">
+      <h2 id="admin-majlis-create" className="font-display text-[1.35rem] font-semibold">
+        Create a majlis
+      </h2>
+      <p className="mt-2 max-w-3xl text-[0.95rem] leading-relaxed text-pearl/70">
+        Members see this as hosted by our admin team. Hidden keeps it off the member list until you restore it.
+      </p>
+      <form
+        className="mt-4 grid gap-3 md:grid-cols-2"
+        onSubmit={(submit) => {
+          submit.preventDefault()
+          setBusy(true)
+          setMessage('')
+          void majlisAdminAction({
+            action: 'create',
+            title,
+            description,
+            region,
+            focus_tags: parseFocusTags(tags),
+            starts_at: starts,
+            ends_at: ends,
+            capacity: Number(capacity),
+            venue_name: venueName,
+            venue_address: venueAddress,
+            status: publishAs,
+          }).then((result) => {
+            setBusy(false)
+            if (result.error) {
+              setMessage(result.error)
+              return
+            }
+            setTitle('')
+            setDescription('')
+            setTags('Governance')
+            setStarts('')
+            setEnds('')
+            setVenueName('')
+            setVenueAddress('')
+            setMessage('Saved.')
+            onCreated()
+          })
+        }}
+      >
+        <label className="block text-[0.92rem] md:col-span-2">
+          Title
+          <input className="mt-1 min-h-11 w-full border border-white/20 bg-transparent px-3" value={title} onChange={(input) => setTitle(input.target.value)} />
+        </label>
+        <label className="block text-[0.92rem] md:col-span-2">
+          Description
+          <textarea className="mt-1 min-h-20 w-full border border-white/20 bg-transparent px-3 py-2" value={description} onChange={(input) => setDescription(input.target.value)} />
+        </label>
+        <label className="block text-[0.92rem]">
+          Region
+          <select className="mt-1 min-h-11 w-full border border-white/20 bg-transparent px-3" value={region} onChange={(input) => setRegion(input.target.value)}>
+            {MAJLIS_REGIONS.map((name) => (
+              <option key={name} value={name}>{name}</option>
+            ))}
+          </select>
+        </label>
+        <label className="block text-[0.92rem]">
+          Focus tags
+          <input className="mt-1 min-h-11 w-full border border-white/20 bg-transparent px-3" value={tags} onChange={(input) => setTags(input.target.value)} />
+        </label>
+        <label className="block text-[0.92rem]">
+          Starts (Asia/Riyadh)
+          <input className="mt-1 min-h-11 w-full border border-white/20 bg-transparent px-3" type="datetime-local" value={starts} onChange={(input) => setStarts(input.target.value)} />
+        </label>
+        <label className="block text-[0.92rem]">
+          Ends (Asia/Riyadh)
+          <input className="mt-1 min-h-11 w-full border border-white/20 bg-transparent px-3" type="datetime-local" value={ends} onChange={(input) => setEnds(input.target.value)} />
+        </label>
+        <label className="block text-[0.92rem]">
+          Capacity
+          <input className="mt-1 min-h-11 w-full border border-white/20 bg-transparent px-3" inputMode="numeric" value={capacity} onChange={(input) => setCapacity(input.target.value)} />
+        </label>
+        <label className="block text-[0.92rem]">
+          Show as
+          <select className="mt-1 min-h-11 w-full border border-white/20 bg-transparent px-3" value={publishAs} onChange={(input) => setPublishAs(input.target.value === 'published' ? 'published' : 'hidden')}>
+            <option value="hidden">Hidden</option>
+            <option value="published">Published</option>
+          </select>
+        </label>
+        <label className="block text-[0.92rem]">
+          Venue name
+          <input className="mt-1 min-h-11 w-full border border-white/20 bg-transparent px-3" value={venueName} onChange={(input) => setVenueName(input.target.value)} />
+        </label>
+        <label className="block text-[0.92rem]">
+          Venue address
+          <input className="mt-1 min-h-11 w-full border border-white/20 bg-transparent px-3" value={venueAddress} onChange={(input) => setVenueAddress(input.target.value)} />
+        </label>
+        <div className="md:col-span-2">
+          <button type="submit" className={primaryBtn} disabled={busy}>
+            {busy ? 'Saving' : 'Create majlis'}
+          </button>
+          {message && <p className="mt-2 text-[0.95rem]" role="status">{message}</p>}
+        </div>
+      </form>
+    </section>
   )
 }
 
