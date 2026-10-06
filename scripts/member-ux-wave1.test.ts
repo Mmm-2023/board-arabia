@@ -22,7 +22,8 @@ test('password attention card uses the set-password label and keeps the profile 
   const profile = source('src/pages/dashboard/ProfilePage.tsx')
   assert.match(profile, /id="password"/)
   assert.match(profile, /hash !== '#password'/)
-  assert.match(profile, /closest\('\.shell-main'\)/)
+  assert.match(profile, /window\.scrollTo\(\{ top: Math\.max\(0, top\), behavior: 'auto' \}\)/)
+  assert.equal(profile.includes("closest('.shell-main')"), false)
   assert.match(profile, /input\.focus/)
 })
 

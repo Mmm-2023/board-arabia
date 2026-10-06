@@ -18,10 +18,14 @@ test('desktop sidebar and mobile tabs share the locked destinations', async () =
     assertStaffChrome(mod.renderStaffShell())
     const staffMore = mod.renderStaffShell(true)
     const moreSheet = staffMore.slice(staffMore.indexOf('id="shell-more"'))
-    assert.match(moreSheet, /data-destination="Capacity"/)
-    assert.match(moreSheet, /data-destination="Settings"/)
-    assert.equal(tabBar(mod.renderStaffShell()).includes('data-destination="Capacity"'), false)
-    assert.equal(tabBar(mod.renderStaffShell()).includes('data-destination="Settings"'), false)
+    for (const label of ['Review', 'Mandates', 'Rooms', 'AI tools', 'Access log', 'Marketing', 'Email', 'Capacity', 'Settings']) {
+      assert.match(moreSheet, new RegExp(label.replace(' ', '\\s')))
+    }
+    assert.match(moreSheet, /data-destination="Review"/)
+    const staffBar = tabBar(mod.renderStaffShell())
+    assert.equal(staffBar.includes('data-destination="Review"'), false)
+    assert.equal(staffBar.includes('data-destination="Capacity"'), false)
+    assert.equal(staffBar.includes('>Capacity<'), false)
     const account = mod.renderMemberShell(true)
     assert.match(account, /id="shell-account"/)
     const sheet = account.slice(account.indexOf('id="shell-account"'))
@@ -45,6 +49,7 @@ test('desktop sidebar and mobile tabs share the locked destinations', async () =
     assert.match(tabBar(mod.renderStaffShell()), /grid-cols-5/)
     assert.match(tabBar(mod.renderStaffShell()), /shell-staff-tabs/)
     assert.equal((tabBar(mod.renderStaffShell()).match(/data-nav="primary"/g) || []).length, 4)
+    assert.match(tabBar(mod.renderStaffShell()), /data-destination="Majlis"/)
     assert.equal(header(home).includes('aria-label="More"'), false)
     assert.equal(header(home).includes('Sign out'), false)
     const ai = mod.renderMemberShell(false, '/dashboard/ai/due-diligence')
@@ -78,16 +83,18 @@ function assertMemberChrome(html: string, labels: string[]) {
 }
 
 function assertStaffChrome(html: string) {
-  const sidebar = ['Home', 'Applications', 'Review', 'People', 'Capacity', 'Settings']
-  const tabs = ['Home', 'Applications', 'Review', 'People']
+  const sidebar = ['Home', 'Applications', 'Review', 'People', 'Majlis']
+  const tabs = ['Home', 'Applications', 'People', 'Majlis']
   for (const label of sidebar) {
     assert.ok(html.includes(`data-destination="${label}"`), label)
   }
   for (const label of tabs) {
     assert.equal(html.split(`data-destination="${label}"`).length - 1, 2, label)
   }
+  assert.equal(html.split('data-destination="Review"').length - 1, 1)
   const bar = tabBar(html)
   assert.equal((bar.match(/data-nav="primary"/g) || []).length, 4)
+  assert.equal(bar.includes('data-destination="Review"'), false)
   assert.match(bar, /data-nav="more"/)
   assert.match(html, /Switch to member/)
   assert.match(html, /Sign out/)

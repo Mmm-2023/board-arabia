@@ -42,21 +42,21 @@ test('member primaries stay in the locked order', () => {
 test('staff primaries stay in the locked order', () => {
   assert.deepEqual(
     STAFF_DESTINATIONS.map((item) => item.label),
-    ['Home', 'Applications', 'Review', 'People', 'Capacity', 'Settings'],
+    ['Home', 'Applications', 'Review', 'People', 'Majlis'],
   )
   assert.deepEqual(
     STAFF_DESTINATIONS.map((item) => item.to),
-    ['/admin', '/admin/applications', '/admin/review', '/admin/people', '/admin/capacity', '/admin/settings'],
+    ['/admin', '/admin/applications', '/admin/review', '/admin/people', '/admin/majlis'],
   )
-  assert.equal(STAFF_DESTINATIONS.length, 6)
+  assert.equal(STAFF_DESTINATIONS.length, 5)
   assert.equal(STAFF_DESTINATIONS[0]?.end, true)
   assert.deepEqual(
     phoneDestinations(STAFF_DESTINATIONS).tabs.map((item) => item.label),
-    ['Home', 'Applications', 'Review', 'People'],
+    ['Home', 'Applications', 'People', 'Majlis'],
   )
   assert.deepEqual(
     phoneDestinations(STAFF_DESTINATIONS).more.map((item) => item.label),
-    ['Capacity', 'Settings'],
+    ['Review'],
   )
   assert.equal(phoneDestinations(MEMBER_DESTINATIONS).tabs.length, 5)
   assert.equal(phoneDestinations(MEMBER_DESTINATIONS).more.length, 0)
@@ -73,7 +73,20 @@ test('account links are not tabs and staff secondary stays put', () => {
   )
   assert.deepEqual(
     STAFF_SECONDARY.map((item) => item.label),
-    ['Marketing', 'Majlis', 'Mandates', 'Rooms', 'Email'],
+    ['Mandates', 'Rooms', 'AI tools', 'Access log', 'Marketing', 'Email', 'Capacity', 'Settings'],
+  )
+  assert.deepEqual(
+    STAFF_SECONDARY.map((item) => item.to),
+    [
+      '/admin/mandates',
+      '/admin/rooms',
+      '/admin/ai',
+      '/admin/access',
+      '/admin/marketing',
+      '/admin/email',
+      '/admin/capacity',
+      '/admin/settings',
+    ],
   )
 })
 
@@ -87,6 +100,9 @@ test('section title follows the active destination', () => {
     'AI tools',
   )
   assert.equal(shellSectionTitle('/dashboard/profile', MEMBER_DESTINATIONS, MEMBER_ACCOUNT), 'Profile')
+  assert.equal(shellSectionTitle('/dashboard/profile/leave', MEMBER_DESTINATIONS, MEMBER_ACCOUNT), 'Profile')
+  assert.equal(shellSectionTitle('/dashboard/privacy', MEMBER_DESTINATIONS, MEMBER_ACCOUNT), 'Your privacy')
+  assert.equal(shellSectionTitle('/dashboard/two-step', MEMBER_DESTINATIONS, MEMBER_ACCOUNT), 'Two-step sign-in')
   assert.equal(shellSectionTitle('/dashboard/help', MEMBER_DESTINATIONS, MEMBER_ACCOUNT), 'Help')
   assert.equal(shellSectionTitle('/dashboard/sponsorship', MEMBER_DESTINATIONS, MEMBER_ACCOUNT), 'Sponsorship')
   assert.deepEqual(
@@ -104,6 +120,9 @@ test('section title follows the active destination', () => {
     shellSectionTitle('/admin/review/11111111-1111-4111-8111-111111111111', STAFF_DESTINATIONS, STAFF_SECONDARY),
     'Review',
   )
+  assert.equal(shellSectionTitle('/admin/ai', STAFF_DESTINATIONS, STAFF_SECONDARY), 'AI tools')
+  assert.equal(shellSectionTitle('/admin/ai/cfo-check', STAFF_DESTINATIONS, STAFF_SECONDARY), 'AI tools')
+  assert.equal(shellSectionTitle('/admin/access', STAFF_DESTINATIONS, STAFF_SECONDARY), 'Access log')
   assert.equal(shellSectionTitle('/admin/marketing', STAFF_DESTINATIONS, STAFF_SECONDARY), 'Marketing')
   assert.equal(shellSectionTitle('/admin/email', STAFF_DESTINATIONS, STAFF_SECONDARY), 'Email')
   assert.equal(shellSectionTitle('/admin/majlis', STAFF_DESTINATIONS, STAFF_SECONDARY), 'Majlis')
@@ -165,10 +184,9 @@ test('product shell files have no em dash', () => {
   assert.match(css, /safe-area-inset-bottom/)
   assert.match(css, /--ba-tab-bar-height/)
   assert.match(css, /padding-bottom:\s*calc\(var\(--ba-tab-bar-height,\s*56px\)\s*\+\s*env\(safe-area-inset-bottom,\s*0px\)\s*\+\s*1rem\)/)
-  assert.match(
-    css,
-    /margin-bottom:\s*calc\(var\(--ba-tab-bar-height,\s*4\.75rem\)\s*\+\s*env\(safe-area-inset-bottom,\s*0px\)\)/,
-  )
+  const mobile = css.slice(css.indexOf('@media (max-width: 767px)'))
+  assert.match(mobile, /\.shell-main[\s\S]*overflow:\s*visible/)
+  assert.equal(/\.shell-main\s*\{[^}]*overflow-y:\s*auto/.test(mobile), false)
   assert.match(css, /@media \(max-width:\s*767px\)/)
   assert.match(css, /\.shell-tab-bar\s*\{[^}]*padding-bottom:\s*env\(safe-area-inset-bottom,\s*0px\)/)
   assert.match(css, /safe-area-inset-left/)

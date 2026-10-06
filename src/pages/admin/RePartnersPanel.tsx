@@ -18,14 +18,17 @@ type LoadState =
   | { status: 'unavailable' }
   | { status: 'ready'; cards: RePartnerCard[] }
 
-export function RePartnersPanel() {
-  const [load, setLoad] = useState<LoadState>({ status: 'loading' })
+export function RePartnersPanel({ previewCards }: { previewCards?: readonly RePartnerCard[] } = {}) {
+  const [load, setLoad] = useState<LoadState>(
+    previewCards ? { status: 'ready', cards: [...previewCards] } : { status: 'loading' },
+  )
   const [attempt, setAttempt] = useState(0)
   const [busyId, setBusyId] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
   const [alert, setAlert] = useState<string | null>(null)
 
   useEffect(() => {
+    if (previewCards) return
     let cancelled = false
     void fetchRePartners().then((result) => {
       if (cancelled) return
@@ -42,7 +45,7 @@ export function RePartnersPanel() {
     return () => {
       cancelled = true
     }
-  }, [attempt])
+  }, [attempt, previewCards])
 
   async function save(draft: RePartnerDraft, busy: string) {
     const args = partnerSaveArgs(draft)

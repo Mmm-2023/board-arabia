@@ -16,14 +16,17 @@ type LoadState =
   | { status: 'unavailable' }
   | { status: 'ready'; cards: ReOpportunityCard[] }
 
-export function ReReadinessPanel() {
-  const [load, setLoad] = useState<LoadState>({ status: 'loading' })
+export function ReReadinessPanel({ previewCards }: { previewCards?: readonly ReOpportunityCard[] } = {}) {
+  const [load, setLoad] = useState<LoadState>(
+    previewCards ? { status: 'ready', cards: [...previewCards] } : { status: 'loading' },
+  )
   const [attempt, setAttempt] = useState(0)
   const [busyId, setBusyId] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
   const [alert, setAlert] = useState<string | null>(null)
 
   useEffect(() => {
+    if (previewCards) return
     let cancelled = false
     void fetchReOpportunities().then((result) => {
       if (cancelled) return
@@ -40,7 +43,7 @@ export function ReReadinessPanel() {
     return () => {
       cancelled = true
     }
-  }, [attempt])
+  }, [attempt, previewCards])
 
   async function onSave(card: ReOpportunityInventory, draft: ReReadinessDraft) {
     const args = readinessSaveArgs(card.id, draft)

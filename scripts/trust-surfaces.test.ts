@@ -124,6 +124,10 @@ test('/security prerender output omits the DD 30-day line and keeps the allowed 
 
     const landing = render('/').body
     assert.match(landing, /data-trust-strip="landing"/)
+    assert.match(landing, /encrypted in transit and at rest/)
+    assert.equal(landing.includes('throughout'), false)
+    assert.equal(read('src/pages/LandingPage.tsx').includes('throughout'), false)
+    assert.equal(read('src/content/trust.ts').includes('throughout'), false)
     assert.match(landing, new RegExp(`href="/security"[^>]*>${LANDING_STRIP_LINK}`))
     const closing = landing.indexOf('id="closing"')
     const strip = landing.indexOf('data-trust-strip="landing"')
@@ -148,7 +152,8 @@ test('/security prerender output omits the DD 30-day line and keeps the allowed 
 
 test('routes, footer, sitemap source, and the legacy apply route stay put', () => {
   const app = read('src/App.tsx').split('\n')
-  assert.match(app[97], /path="\/apply" element=\{<ApplyPage/)
+  const applyLine = app.find((line) => line.includes('path="/apply"'))
+  assert.match(applyLine || '', /path="\/apply" element=\{<ApplyPage/)
   assert.match(read('src/App.tsx'), /path="\/security" element=\{<SecurityPage/)
   assert.match(read('src/components/Footer.tsx'), /label: 'Trust and privacy', to: '\/security'/)
   assert.match(read('src/content/seo.ts'), /'\/security'/)

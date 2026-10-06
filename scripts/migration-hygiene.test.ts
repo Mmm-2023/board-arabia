@@ -123,7 +123,8 @@ test('retention and intro workflows keep dispatch and have no schedule', () => {
 
 test('apply stays on the legacy route', () => {
   const lines = read('src/App.tsx').split('\n')
-  assert.match(lines[97] ?? '', /path="\/apply" element=\{<ApplyPage/)
+  const applyLine = lines.find((line) => line.includes('path="/apply"'))
+  assert.match(applyLine ?? '', /path="\/apply" element=\{<ApplyPage/)
 })
 
 test('new hygiene files carry no address, user id, dash, or nammco', () => {

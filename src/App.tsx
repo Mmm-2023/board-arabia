@@ -12,11 +12,14 @@ import { ForMembersPage } from './pages/ForMembersPage'
 import { HowItWorksPage } from './pages/HowItWorksPage'
 import { LandingPage } from './pages/LandingPage'
 import { LoginPage } from './pages/LoginPage'
+import { NotFoundPage } from './pages/NotFoundPage'
 import { PartnersPage } from './pages/PartnersPage'
 import { PrivacyPage } from './pages/PrivacyPage'
 import { SecurityPage } from './pages/SecurityPage'
 import { TermsPage } from './pages/TermsPage'
 import { RedirectKeep } from './shell/RedirectKeep'
+import { ShellNotFound } from './shell/ShellNotFound'
+import { TrailingSlash } from './shell/TrailingSlash'
 
 const AdminLayout = lazy(() => import('./pages/admin/AdminLayout').then((m) => ({ default: m.AdminLayout })))
 const AdminMandateMatchPage = lazy(() =>
@@ -94,6 +97,7 @@ export default function App() {
     <AnalyticsRoot />
     <Suspense fallback={<p role="status">Loading</p>}>
     <Routes>
+      <Route element={<TrailingSlash />}>
       <Route path="/" element={<LandingPage />} />
       <Route path="/apply" element={<ApplyPage />} />
       <Route path="/security" element={<SecurityPage />} />
@@ -122,6 +126,7 @@ export default function App() {
           <Route index element={<PeoplePage />} />
           <Route path="intros" element={<AdminIntrosPage />} />
           <Route path="member/:memberId" element={<StaffMemberRecordPage />} />
+          <Route path="*" element={<ShellNotFound homeTo="/admin" />} />
         </Route>
         <Route path="access" element={<StaffAccessLogPage />} />
         <Route path="capacity" element={<CapacityPage />} />
@@ -134,6 +139,7 @@ export default function App() {
         <Route path="mandates" element={<AdminMandatesPage />} />
         <Route path="mandates/:mandateId" element={<AdminMandateMatchPage />} />
         <Route path="rooms" element={<StaffRoomsPage />} />
+        <Route path="*" element={<ShellNotFound homeTo="/admin" />} />
       </Route>
       <Route path="/ops/*" element={<Navigate to="/admin" replace />} />
       <Route path="/ops" element={<Navigate to="/admin" replace />} />
@@ -146,12 +152,14 @@ export default function App() {
           <Route path="rooms" element={<RoomsPage />} />
           <Route path="rooms/new" element={<CreateRoomPage />} />
           <Route path="rooms/:roomId" element={<DealRoomPage />} />
+          <Route path="*" element={<RedirectKeep />} />
         </Route>
         <Route path="people" element={<PeopleLayout />}>
           <Route index element={<PeopleIndexRedirect />} />
           <Route path="directory" element={<DirectoryPage />} />
           <Route path="intros" element={<IntrosPage />} />
           <Route path="invites" element={<NetworkPage />} />
+          <Route path="*" element={<RedirectKeep />} />
         </Route>
         <Route path="majlis" element={<MajlisPage />} />
         <Route path="ai" element={<AiToolsLayout />}>
@@ -160,6 +168,7 @@ export default function App() {
           <Route path="due-diligence/:reportId" element={<DueDiligencePage />} />
           <Route path=":toolSlug" element={<AiToolPage />} />
           <Route path=":toolSlug/:jobId" element={<AiToolPage />} />
+          <Route path="*" element={<RedirectKeep />} />
         </Route>
         <Route path="profile/leave" element={<LeaveBoardArabiaPage />} />
         <Route path="profile" element={<ProfilePage />} />
@@ -184,7 +193,8 @@ export default function App() {
       {/* Legacy book/verify routes redirect. Public calendar CTA removed. */}
       <Route path="/book" element={<Navigate to="/apply" replace />} />
       <Route path="/verify" element={<Navigate to="/apply" replace />} />
-      <Route path="*" element={<Navigate to="/" replace />} />
+      <Route path="*" element={<NotFoundPage />} />
+      </Route>
     </Routes>
     </Suspense>
     </>

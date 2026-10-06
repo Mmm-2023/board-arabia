@@ -257,9 +257,8 @@ test('first touch chip is source and medium, and hides when empty', async () => 
 })
 
 test('home card and marketing nav stay secondary, with no public route edit', async () => {
-  assert.equal(STAFF_DESTINATIONS.length, 6)
-  assert.equal(STAFF_SECONDARY[0]?.label, 'Marketing')
-  assert.equal(STAFF_SECONDARY[0]?.to, '/admin/marketing')
+  assert.equal(STAFF_DESTINATIONS.length, 5)
+  assert.equal(STAFF_SECONDARY.find((item) => item.label === 'Marketing')?.to, '/admin/marketing')
   assert.equal(STAFF_DESTINATIONS.some((item) => item.label === 'Marketing'), false)
   const cardSource = source('src/pages/admin/MarketingHomeCard.tsx')
   assert.match(cardSource, /Marketing, last 7 days/)

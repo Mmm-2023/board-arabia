@@ -203,14 +203,10 @@ export function ProfilePage({ preview }: { preview?: { src: string | null } }) {
     const jump = () => {
       const form = document.getElementById(targetId)
       if (!(form instanceof HTMLElement)) return
-      const scroller = form.closest('.shell-main')
-      if (scroller instanceof HTMLElement) {
-        const top =
-          form.getBoundingClientRect().top - scroller.getBoundingClientRect().top + scroller.scrollTop - 12
-        scroller.scrollTop = Math.max(0, top)
-      } else {
-        form.scrollIntoView({ block: 'start' })
-      }
+      const header = document.querySelector('header')
+      const headerHeight = header instanceof HTMLElement ? header.getBoundingClientRect().height : 0
+      const top = form.getBoundingClientRect().top + window.scrollY - headerHeight - 12
+      window.scrollTo({ top: Math.max(0, top), behavior: 'auto' })
       const input = form.querySelector('input')
       if (input instanceof HTMLInputElement) input.focus({ preventScroll: true })
     }

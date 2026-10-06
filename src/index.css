@@ -219,10 +219,14 @@
   text-align: center;
 }
 
-/* Four staff phone tabs plus More. Applications is the long label. */
+/* Staff phone tabs plus More. Applications is the long label. Review adds a sixth column when the two-tier flag is on. */
 @media (max-width: 767px) {
   .shell-staff-tabs {
-    grid-template-columns: 0.72fr 1.4fr 0.86fr 0.8fr 0.7fr;
+    grid-template-columns: 0.72fr 1.45fr 0.82fr 0.78fr 0.68fr;
+  }
+
+  .shell-staff-tabs-review {
+    grid-template-columns: 0.62fr 1.15fr 0.7fr 0.72fr 0.7fr 0.58fr;
   }
 
   .shell-staff-tabs .shell-tab-label {
@@ -306,35 +310,15 @@
   background: linear-gradient(to left, var(--ba-ink), transparent);
 }
 
-/* Mobile: the fixed tab bar stays out of the scrollport. shell-main padding keeps the last control clear of that bar and the safe area. */
+/* Mobile: the document scrolls. The header sticks. The tab bar stays fixed. shell-main padding keeps the last control clear of that bar and the safe area. */
 @media (max-width: 767px) {
-  .shell-root {
-    height: 100dvh;
-    max-height: 100dvh;
-    overflow: hidden;
-  }
-
+  .shell-root,
   .shell-frame,
-  .shell-column {
-    height: 100%;
-    max-height: 100%;
-    min-height: 0;
-  }
-
-  .shell-column {
-    overflow: hidden;
-  }
-
+  .shell-column,
   .shell-main {
-    flex: 1 1 auto;
-    min-height: 0;
-    overflow-y: auto;
-    overscroll-behavior: contain;
-    /* Scrollport ends above the fixed tab bar and its safe area. Padding keeps the last control off that edge. */
-    margin-bottom: calc(var(--ba-tab-bar-height, 4.75rem) + env(safe-area-inset-bottom, 0px));
-    padding-bottom: 1rem;
-    scroll-padding-top: 1rem;
-    scroll-padding-bottom: 1rem;
+    height: auto;
+    max-height: none;
+    overflow: visible;
   }
 }
 
