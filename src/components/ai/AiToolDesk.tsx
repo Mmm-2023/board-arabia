@@ -2,8 +2,10 @@ import { useRef, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import type { StubOutput } from '../../../supabase/functions/ai-tool-job/tools/types.ts'
 import { DealReadinessChecklist } from './DealReadinessMemo'
+import { footerWithOperator } from '../../lib/aiReportOperator'
 import { PRIVACY_LINK, TERMS_LINK } from '../../lib/aiToolConfig'
 import type { RenderedToolCopy } from '../../lib/aiToolCopy'
+import { useAiReportOperator } from '../../lib/useAiReportOperator'
 import { AI_UI } from '../../lib/aiToolUi'
 
 const LINK_LABELS = { privacy: 'Privacy Notice', terms: 'Terms' }
@@ -223,10 +225,11 @@ export function AiToolJobStatus({ status, step }: { status: string; step: string
 }
 
 export function AiToolFooter({ lead, rest }: { lead: string; rest: string }) {
+  const shared = footerWithOperator(rest, useAiReportOperator())
   return (
     <footer className="mt-8 border-t border-[var(--ba-line)] pt-4" data-ai-report-footer="">
       <LegalText text={lead} className="text-[0.95rem] leading-relaxed text-ink" />
-      <LegalText text={rest} className="mt-3 text-[0.92rem] leading-relaxed text-ink/70" />
+      <LegalText text={shared} className="mt-3 text-[0.92rem] leading-relaxed text-ink/70" />
     </footer>
   )
 }

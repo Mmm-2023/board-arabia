@@ -23,7 +23,6 @@ import { guardAiText, guardStubOutput } from '../supabase/functions/ai-tool-job/
 import { pricingSenseCheckOutput } from '../supabase/functions/ai-tool-job/tools/pricing_sense_check.ts'
 import { termSheetReviewOutput } from '../supabase/functions/ai-tool-job/tools/term_sheet_review.ts'
 import { SHARED_WILL_NOT, renderToolCopy } from '../src/lib/aiToolCopy.ts'
-import { aiReportOperatorFields } from '../src/lib/aiReportOperator.ts'
 import { PRICING_FIXTURE, TERM_SHEET_FIXTURE } from './fixtures/legal-flagged.ts'
 
 const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..')
@@ -34,7 +33,8 @@ const PRICE_WORD = ['valu', 'ation'].join('')
 const AR_SERVICE = String.fromCharCode(0x062a, 0x0642, 0x064a, 0x064a, 0x0645)
 
 const SLOTS = {
-  ...aiReportOperatorFields(),
+  entity: 'To be confirmed',
+  cr: 'To be confirmed',
   provider: 'Example AI',
   privacy: '/privacy',
   terms: '/terms',

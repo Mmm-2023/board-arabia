@@ -22,7 +22,6 @@ import {
 } from '../supabase/functions/ai-tool-job/tools/market_brief.ts'
 import { hitsFromSearchBody, searchMarketSector, sourceDateFromPageAge } from '../supabase/functions/ai-tool-job/tools/market_search.ts'
 import { SHARED_WILL_NOT, renderToolCopy } from '../src/lib/aiToolCopy.ts'
-import { aiReportOperatorFields } from '../src/lib/aiReportOperator.ts'
 import { MARKET_SEARCH_FIXTURE } from './fixtures/market-brief-search.ts'
 
 const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..')
@@ -116,7 +115,8 @@ function marketStart() {
 }
 
 const slots = {
-  ...aiReportOperatorFields(),
+  entity: 'To be confirmed',
+  cr: 'To be confirmed',
   provider: 'Example AI',
   privacy: '/privacy',
   terms: '/terms',

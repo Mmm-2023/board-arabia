@@ -1,13 +1,11 @@
 /**
- * AI tool legal slots.
- * The operator name and commercial registration come from the logged-in report constant.
- * The model provider still defaults to "To be confirmed" until that env is set.
+ * AI tool legal slots. One source: src/config/legal.ts.
+ * Entity, commercial registration, and provider default to "To be confirmed".
+ * The AI report operator is not one of these slots. Signed-in pages load it separately.
  * Privacy and terms stay the labelled in-app routes.
- * Public Terms and Privacy keep their own env fields and are not filled from this constant.
  */
 import { legalField, PRIVACY_LINK, TERMS_LINK, type LegalLang } from '../config/legal'
 import { retentionDaysOrDefault } from '../../supabase/functions/_shared/ai_tools.ts'
-import { AI_REPORT_OPERATOR_CR, aiReportOperatorName } from './aiReportOperator.ts'
 import type { LegalSlots } from './aiToolCopy.ts'
 
 export { PRIVACY_LINK, TERMS_LINK }
@@ -18,8 +16,8 @@ export function legalSlotsFromEnv(
   _lang: LegalLang = 'en',
 ): LegalSlots {
   return {
-    entity: aiReportOperatorName(),
-    cr: AI_REPORT_OPERATOR_CR,
+    entity: legalField('baEntity', 'en'),
+    cr: legalField('cr', 'en'),
     provider: legalField('aiProvider', 'en'),
     privacy: PRIVACY_LINK,
     terms: TERMS_LINK,

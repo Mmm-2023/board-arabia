@@ -1,26 +1,49 @@
 /**
- * Logged-in AI report operator. One constant for the name and the commercial registration.
- * The name is assembled at runtime. The Pages artifact gate reads every file in dist,
- * including lazy dashboard chunks, and allows this brand only as the public footer credit.
- * A literal here would fail that gate. Do not copy the name into a second module.
+ * Logged-in AI report operator credit.
+ * The name and commercial registration are not stored here.
+ * A signed-in client loads them from public.ai_report_operator.
+ * If that read fails, the Provided by sentence is omitted.
  */
 
-const OPERATOR_NAME_CODES = [78, 65, 77, 77, 67, 79] as const
-
-export function aiReportOperatorName(): string {
-  let name = ''
-  for (let i = 0; i < OPERATOR_NAME_CODES.length; i += 1) {
-    name += String.fromCharCode(OPERATOR_NAME_CODES[i]!)
-  }
-  return `${name} Holding Co.`
+export type AiReportOperator = {
+  entity: string
+  cr: string
 }
 
-export const AI_REPORT_OPERATOR_CR = '7043252647'
+let modulePreview: AiReportOperator | null | undefined
 
-export function aiReportOperatorCredit(): string {
-  return `Provided by ${aiReportOperatorName()}, CR ${AI_REPORT_OPERATOR_CR}`
+type PreviewWindow = Window & {
+  __baAiReportOperator?: AiReportOperator | null
 }
 
-export function aiReportOperatorFields(): { entity: string; cr: string } {
-  return { entity: aiReportOperatorName(), cr: AI_REPORT_OPERATOR_CR }
+/** Smoke and tests inject a fetched row. Undefined means use the server. */
+export function previewAiReportOperator(value: AiReportOperator | null | undefined) {
+  modulePreview = value
+}
+
+export function readAiReportOperatorPreview(): AiReportOperator | null | undefined {
+  if (modulePreview !== undefined) return modulePreview
+  if (typeof window === 'undefined') return undefined
+  if (!Object.prototype.hasOwnProperty.call(window, '__baAiReportOperator')) return undefined
+  return (window as PreviewWindow).__baAiReportOperator ?? null
+}
+
+export function operatorCredit(row: AiReportOperator | null): string | null {
+  if (!row) return null
+  const entity = row.entity.trim()
+  const cr = row.cr.trim()
+  if (!entity || !cr) return null
+  return `Provided by ${entity}, CR ${cr}`
+}
+
+const FOOTER_ACT = 'Verify with licensed advisers before you act, under the Board Arabia Terms'
+
+/** Insert the operator sentence, or leave the legal footer unchanged. */
+export function footerWithOperator(footer: string, row: AiReportOperator | null): string {
+  const credit = operatorCredit(row)
+  if (!credit || !footer.includes(FOOTER_ACT)) return footer
+  return footer.replace(
+    FOOTER_ACT,
+    `Verify with licensed advisers before you act. ${credit}, under the Board Arabia Terms`,
+  )
 }

@@ -25,7 +25,6 @@ import { dealReadinessOutput, NOT_STATED } from '../supabase/functions/ai-tool-j
 import { runToolStub } from '../supabase/functions/ai-tool-job/tools/index.ts'
 import type { StubOutput } from '../supabase/functions/ai-tool-job/tools/types.ts'
 import { renderToolCopy } from '../src/lib/aiToolCopy.ts'
-import { aiReportOperatorFields } from '../src/lib/aiReportOperator.ts'
 
 const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..')
 const USER = '11111111-1111-4111-8111-111111111111'
@@ -34,7 +33,8 @@ const NOW = new Date('2026-10-05T08:00:00.000Z')
 const FIXTURE = readFileSync(path.join(root, 'fixtures/re/example-teaser.txt'), 'utf8')
 
 const SLOTS = {
-  ...aiReportOperatorFields(),
+  entity: 'To be confirmed',
+  cr: 'To be confirmed',
   provider: 'Example AI',
   privacy: '/privacy',
   terms: '/terms',
