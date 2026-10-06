@@ -243,6 +243,12 @@ export function PeoplePage({ tierShots }: { tierShots?: Record<string, TierShot>
                     />
                     <div className="min-w-0">
                     <p className="truncate text-[0.95rem] text-stone/85">{member.email}</p>
+                    <Link
+                      to={`/admin/people/member/${member.user_id}`}
+                      className="mt-1 inline-flex min-h-11 items-center text-[0.8rem] font-semibold text-brass-bright underline"
+                    >
+                      Open record
+                    </Link>
                     <p className="mt-1 text-[0.8rem] break-words text-pearl/45">
                       {peopleCardLine(member)}
                       {member.seat !== 'sponsor' && (

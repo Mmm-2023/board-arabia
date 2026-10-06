@@ -54,6 +54,12 @@ export function AdminHome() {
         >
           Desk intros
         </Link>
+        <Link
+          to="/admin/access"
+          className="inline-flex min-h-11 items-center text-[0.75rem] font-semibold tracking-[0.08em] text-brass-bright uppercase"
+        >
+          Access log
+        </Link>
       </div>
       <ReReadinessPanel />
       <RePartnersPanel />

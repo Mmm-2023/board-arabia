@@ -175,7 +175,7 @@ export const PRIVACY_EN: LegalDocument = {
           "Steps before a contract, at your request"
         ],
         [
-          "Run membership: directory, introductions, desk, mandates, deal rooms, majlis",
+          "Run membership: directory, introductions, admin, mandates, deal rooms, majlis",
           "Member data, profile, intro, mandate, deal room and event data",
           "Performance of our contract with you"
         ],

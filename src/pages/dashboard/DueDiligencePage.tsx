@@ -25,7 +25,7 @@ import {
   type ReadFailure,
 } from '../../lib/dueDiligence'
 import { earlierRunsLabel, groupPriorNotes, type PriorNote, type PriorNoteGroup } from '../../lib/priorNotes'
-import { DD_COPY, deskCtaLabel, deskProgressLine, presentDeskError } from '../../lib/dueDiligenceCopy'
+import { DD_COPY, deckHintText, deskCtaLabel, deskProgressLine, presentDeskError } from '../../lib/dueDiligenceCopy'
 import { deskPhase, nextPollFailures, type DeskPhase } from '../../lib/dueDiligencePhase'
 import { supabase } from '../../lib/supabase'
 import { useNoIndex } from '../../lib/usePageTitle'
@@ -74,7 +74,18 @@ function Desk() {
   const [deleteNote, setDeleteNote] = useState('')
   const [deleteAlert, setDeleteAlert] = useState('')
   const [fileLeft, setFileLeft] = useState<string | null>(null)
+  const [retentionCopy, setRetentionCopy] = useState(false)
   const pollFailures = useRef(0)
+
+  useEffect(() => {
+    let cancelled = false
+    void supabase.rpc('read_dd_retention_copy').then(({ data }) => {
+      if (!cancelled && data === true) setRetentionCopy(true)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   useEffect(() => {
     let cancelled = false
@@ -287,6 +298,7 @@ function Desk() {
       progress={progress}
       progressLabel={deskProgressLine(stage)}
       actionError={presentDeskError(formError || jobError)}
+      retentionCopy={retentionCopy}
       reports={reports}
       deleteNote={deleteNote}
       deleteAlert={deleteAlert}
@@ -346,6 +358,7 @@ export function DueDiligenceDeskView({
   onRetry,
   onReload,
   retryLabel = DD_COPY.errorRetry,
+  retentionCopy = false,
 }: {
   phase: DeskPhase
   loadState: 'loading' | 'ready' | ReadFailure
@@ -368,6 +381,7 @@ export function DueDiligenceDeskView({
   onRetry: () => void
   onReload: () => void
   retryLabel?: string
+  retentionCopy?: boolean
 }) {
   const fileRef = useRef<HTMLInputElement>(null)
   const fileChosen = Boolean(fileName)
@@ -426,7 +440,9 @@ export function DueDiligenceDeskView({
               {DD_COPY.deckButton}
             </button>
             {fileName ? <p className="mt-2 truncate text-[0.92rem] text-[var(--ba-muted)]">{fileName}</p> : null}
-            <p className="mt-2 text-[0.92rem] leading-relaxed text-[var(--ba-muted)]">{DD_COPY.deckHint}</p>
+            <p className="mt-2 text-[0.92rem] leading-relaxed text-[var(--ba-muted)]" data-dd-hint={retentionCopy ? 'on' : 'off'}>
+              {deckHintText(retentionCopy)}
+            </p>
             <p className="mt-3 text-[0.95rem] leading-relaxed text-ink/80">{DUE_DILIGENCE_DISCLAIMER}</p>
             <AiReportOperatorLine className="mt-2 text-[0.95rem] leading-relaxed text-ink/80" />
             <details className="mt-4 border border-[var(--ba-line)] bg-white px-4 py-2">

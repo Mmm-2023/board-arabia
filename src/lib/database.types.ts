@@ -1248,6 +1248,46 @@ export type Database = {
         Args: Record<string, never>
         Returns: Json
       }
+      set_directory_hidden: {
+        Args: { p_hidden: boolean }
+        Returns: Json
+      }
+      own_directory_visibility: {
+        Args: Record<string, never>
+        Returns: Json
+      }
+      download_my_data: {
+        Args: Record<string, never>
+        Returns: Json
+      }
+      read_dd_retention_copy: {
+        Args: Record<string, never>
+        Returns: boolean
+      }
+      set_dd_retention_copy: {
+        Args: { p_on: boolean }
+        Returns: Json
+      }
+      staff_read_membership_request: {
+        Args: { p_user_id: string }
+        Returns: Json
+      }
+      staff_read_member: {
+        Args: { p_user_id: string }
+        Returns: Json
+      }
+      staff_read_desk_intro: {
+        Args: { p_intro_id: string }
+        Returns: Json
+      }
+      staff_read_shared_item: {
+        Args: { p_table: string; p_row_id: string }
+        Returns: Json
+      }
+      staff_list_access_log: {
+        Args: { p_member_id: string }
+        Returns: Json
+      }
     }
     Enums: Record<string, never>
     CompositeTypes: Record<string, never>

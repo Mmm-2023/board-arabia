@@ -81,9 +81,9 @@ const DealRoomPage = lazy(() => import('./pages/dashboard/DealRoomPage').then((m
 const RoomsPage = lazy(() => import('./pages/dashboard/RoomsPage').then((m) => ({ default: m.RoomsPage })))
 const NetworkPage = lazy(() => import('./pages/dashboard/NetworkPage').then((m) => ({ default: m.NetworkPage })))
 const ProfilePage = lazy(() => import('./pages/dashboard/ProfilePage').then((m) => ({ default: m.ProfilePage })))
-const LeaveBoardArabiaPage = lazy(() =>
-  import('./pages/dashboard/LeaveBoardArabia').then((m) => ({ default: m.LeaveBoardArabiaPage })),
-)
+const LeaveBoardArabiaPage = lazy(() => import('./pages/dashboard/LeaveBoardArabia').then((m) => ({ default: m.LeaveBoardArabiaPage })))
+const PrivacyPanelPage = lazy(() => import('./pages/dashboard/PrivacyPanelPage').then((m) => ({ default: m.PrivacyPanelPage })))
+
 const SponsorshipPage = lazy(() =>
   import('./pages/dashboard/SponsorshipPage').then((m) => ({ default: m.SponsorshipPage })),
 )
@@ -120,7 +120,9 @@ export default function App() {
         <Route path="people" element={<AdminPeopleLayout />}>
           <Route index element={<PeoplePage />} />
           <Route path="intros" element={<AdminIntrosPage />} />
+          <Route path="member/:memberId" element={<StaffMemberRecordPage />} />
         </Route>
+        <Route path="access" element={<StaffAccessLogPage />} />
         <Route path="capacity" element={<CapacityPage />} />
         <Route path="settings" element={<SettingsPage />} />
         <Route path="ai" element={<StaffAiToolsPage />} />
@@ -160,6 +162,7 @@ export default function App() {
         </Route>
         <Route path="profile/leave" element={<LeaveBoardArabiaPage />} />
         <Route path="profile" element={<ProfilePage />} />
+        <Route path="privacy" element={<PrivacyPanelPage />} />
         <Route path="two-step" element={<TwoStepPage />} />
         <Route path="help" element={<HelpPage />} />
         <Route path="sponsorship" element={<SponsorshipPage />} />
@@ -194,4 +197,10 @@ const StaffAiToolsPage = lazy(() =>
 )
 const StaffAiToolPage = lazy(() =>
   import('./pages/admin/StaffAiToolsPage').then((m) => ({ default: m.StaffAiToolPage })),
+)
+const StaffAccessLogPage = lazy(() =>
+  import('./pages/admin/StaffAccessLogPage').then((m) => ({ default: m.StaffAccessLogPage })),
+)
+const StaffMemberRecordPage = lazy(() =>
+  import('./pages/admin/StaffMemberRecordPage').then((m) => ({ default: m.StaffMemberRecordPage })),
 )

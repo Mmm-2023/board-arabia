@@ -1,6 +1,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1'
 import { corsHeaders, jsonResponse, sendEmail } from '../_shared/mail.ts'
 import { emailLink, idleAccountReminderMail } from '../_shared/membership_copy.ts'
+import { ddDeckPathOk, purgeStoragePaths } from '../_shared/retention_storage.ts'
 
 type Plan = {
   unverified?: string[]
@@ -17,6 +18,11 @@ type Plan = {
   ai_tool_jobs?: string[]
   ai_tool_files?: string[]
   ai_tool_retention_days?: number
+  dd_decks?: string[]
+  dd_jobs?: string[]
+  dd_reports?: string[]
+  dd_files?: string[]
+  staff_access_log?: string[]
 }
 
 Deno.serve(async (req) => {
@@ -48,6 +54,9 @@ Deno.serve(async (req) => {
 
   const posthog = dry ? { sent: 0, pending: 0, failed: false } : await flushPosthog(admin)
   const aiFiles = dry ? { removed: 0, failed: false } : await purgeAiToolFiles(admin, arrayOf(plan.ai_tool_files))
+  const ddFiles = dry
+    ? { removed: 0, failed: false, removedPaths: [] as string[] }
+    : await purgeDueDiligenceFiles(admin, arrayOf(plan.dd_files))
   const counts = {
     unverified_7d: arrayOf(plan.unverified).length,
     never_submitted_120d: arrayOf(plan.never_submitted).length,
@@ -64,6 +73,11 @@ Deno.serve(async (req) => {
     posthog_pending: posthog.pending,
     ai_tool_jobs: arrayOf(plan.ai_tool_jobs).length,
     ai_tool_files: dry ? arrayOf(plan.ai_tool_files).length : aiFiles.removed,
+    dd_decks: arrayOf(plan.dd_decks).length,
+    dd_jobs: arrayOf(plan.dd_jobs).length,
+    dd_reports: arrayOf(plan.dd_reports).length,
+    dd_files: dry ? arrayOf(plan.dd_files).length : ddFiles.removed,
+    staff_access_13m: arrayOf(plan.staff_access_log).length,
   }
 
   await admin.from('retention_runs').insert({ dry_run: dry, counts })
@@ -81,9 +95,14 @@ Deno.serve(async (req) => {
       consent: arrayOf(plan.consent),
       ai_tool_jobs: arrayOf(plan.ai_tool_jobs),
       ai_tool_files: arrayOf(plan.ai_tool_files),
+      dd_decks: arrayOf(plan.dd_decks),
+      dd_jobs: arrayOf(plan.dd_jobs),
+      dd_reports: arrayOf(plan.dd_reports),
+      dd_files: arrayOf(plan.dd_files),
+      staff_access_log: arrayOf(plan.staff_access_log),
     }
   }
-  if (reminderFailed || posthog.failed || aiFiles.failed) return jsonResponse(req, body, 500)
+  if (reminderFailed || posthog.failed || aiFiles.failed || ddFiles.failed) return jsonResponse(req, body, 500)
   return jsonResponse(req, body)
 })
 
@@ -172,6 +191,25 @@ async function purgeAiToolFiles(
     else removed += 1
   }
   return { removed, failed }
+}
+
+/** Redeploy retention-sweep with this migration. Deck files leave the due-diligence-decks bucket. */
+async function purgeDueDiligenceFiles(
+  admin: ReturnType<typeof createClient>,
+  paths: string[],
+): Promise<{ removed: number; failed: boolean; removedPaths: string[] }> {
+  return purgeStoragePaths(
+    async (path) => {
+      const { error } = await admin.storage.from('due-diligence-decks').remove([path])
+      return !error
+    },
+    async (path) => {
+      const cleared = await admin.from('due_diligence_file_purge').delete().eq('storage_path', path)
+      return !cleared.error
+    },
+    paths,
+    ddDeckPathOk,
+  )
 }
 
 function authorized(req: Request) {

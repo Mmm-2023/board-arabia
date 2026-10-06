@@ -90,7 +90,7 @@ export function RegisterScreen({
             </h1>
             <p className="text-[1.02rem] leading-relaxed text-ink/70">
               For Chairpersons, Board members and C-suite executives in Saudi Arabia, the GCC and internationally. Your
-              account opens after you confirm your email. Member-only content stays locked until the desk approves full
+              account opens after you confirm your email. Member-only content stays locked until admin approves full
               membership.
             </p>
 
@@ -151,7 +151,7 @@ export function RegisterScreen({
             {role === 'other' ? (
               <p className="text-[0.92rem] leading-relaxed text-ink/60">
                 Board Arabia is held for Chairpersons, Board members and C-suite executives. If your role is different, tell
-                the desk in your statement.
+                admin in your statement.
               </p>
             ) : null}
             <label className="block">
@@ -217,7 +217,7 @@ function NextSteps() {
       <ol className="mt-4 space-y-3 text-[1rem] leading-relaxed text-ink/75">
         <li>1. Confirm your email.</li>
         <li>2. Complete a few credentials inside.</li>
-        <li>3. Request full membership. The desk decides.</li>
+        <li>3. Request full membership. Admin decides.</li>
       </ol>
       <p className="mt-4 text-[0.95rem] leading-relaxed text-ink/60">
         For Chairpersons, Board members and C-suite executives. Membership is by review.

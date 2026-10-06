@@ -31,11 +31,11 @@ export function LeaveBoardArabiaPage() {
       <p className="text-[0.72rem] font-semibold tracking-[0.14em] text-brass uppercase">Profile</p>
       <h1 className="mt-3 font-display text-[2rem] font-semibold tracking-[-0.03em]">Leave Board Arabia</h1>
       <p className="mt-4 max-w-xl text-[1.05rem] leading-relaxed text-ink/75">
-        This sends a request to the desk. Your seat stays open until the desk closes it. Nothing is deleted from this page.
+        This sends a request to admin. Your seat stays open until admin closes it. Nothing is deleted from this page.
       </p>
       {sent ? (
         <p className="mt-6 text-[1rem] text-ink" role="status">
-          The desk has your request.
+          Admin has your request.
         </p>
       ) : (
         <>
@@ -46,7 +46,7 @@ export function LeaveBoardArabiaPage() {
               checked={confirmed}
               onChange={(event) => setConfirmed(event.target.checked)}
             />
-            <span>I understand this asks the desk to close my membership.</span>
+            <span>I understand this asks admin to close my membership.</span>
           </label>
           {error ? (
             <p className="mt-4 text-[0.95rem] text-[var(--ba-error)]" role="alert">
@@ -55,7 +55,7 @@ export function LeaveBoardArabiaPage() {
           ) : null}
           <div className="mt-6 flex flex-wrap items-center gap-4">
             <button type="button" className={primary} disabled={!confirmed || busy} onClick={() => void onConfirm()}>
-              {busy ? 'Sending…' : 'Send request to the desk'}
+              {busy ? 'Sending…' : 'Send request to admin'}
             </button>
             <Link to="/dashboard/profile" className="inline-flex min-h-11 items-center text-[0.95rem] underline">
               Keep my membership
