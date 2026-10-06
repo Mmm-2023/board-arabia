@@ -663,22 +663,6 @@
   background: #4b3f9a;
 }
 
-.ba-tool-list {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0 1rem;
-}
-
-.ba-tool-list li {
-  display: flex;
-  min-height: 44px;
-  align-items: center;
-  border-bottom: 1px solid #e8e4f7;
-  font-size: 0.9375rem;
-  font-weight: 600;
-  color: var(--ba-ink);
-}
-
 .ba-frame {
   overflow: hidden;
   border: 1px solid #e8e4f7;
@@ -890,10 +874,6 @@
   .ba-frame-side li[data-current='true'] {
     color: var(--ba-ink);
     font-weight: 650;
-  }
-
-  .ba-tool-list {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .ba-steps {

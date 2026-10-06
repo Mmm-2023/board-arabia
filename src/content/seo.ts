@@ -172,7 +172,7 @@ export const MEMBERS_FAQ: FaqItem[] = [
   {
     question: 'What do members get?',
     answer:
-      'Access to capital through a mandate inbox our admin team reviews; business relationships through a private directory, Majlis, and warm intros; opening doors through deal rooms and peer vouchers; plus founding badge, sector and Vision 2030 tags, and AI Due Diligence for public-source governance support.',
+      'Mandates admin reviews, a private Directory, Intros, Invites, Deal rooms, Real estate, Majlis, and AI tools: AI Due Diligence, CFO check and Deal readiness memo. AI tools are not legal, financial or investment advice.',
   },
   NAMES_FAQ,
   {

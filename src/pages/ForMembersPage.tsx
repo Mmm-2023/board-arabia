@@ -3,80 +3,86 @@ import { CtaBand } from '../components/CtaBand'
 import { DashboardPreview } from '../components/DashboardPreview'
 import { FaqList } from '../components/FaqList'
 import { MarketingLayout } from '../components/MarketingLayout'
+import { LANDING_AI_SCOPE } from '../content/landingFeatures'
 import { MEMBER_TOOLS } from '../content/marketing'
 import { MEMBERS_FAQ } from '../content/seo'
+import { SIGNING_IN } from '../content/trust'
 
 const TOOLS = [
   {
     id: 'directory',
-    title: 'Private directory',
+    title: 'Directory',
     paragraphs: [
-      'The directory is the list of admitted members. It opens after you are inside the membership.',
-      'It is not a public profile, not a download, and not a page this site will print. Names stay in the room.',
-    ],
-  },
-  {
-    id: 'inbox',
-    title: 'Mandate inbox',
-    paragraphs: [
-      'Capital writes a mandate. Admin reads it before a member sees it. You do not receive a cold approach from this site.',
-      'Family offices, funds, and foreign investors meet the same gate. The capital page explains that side of the room.',
-    ],
-  },
-  {
-    id: 'availability',
-    title: 'Availability',
-    paragraphs: [
-      'You set whether you can be approached. The setting is yours: open to a relevant introduction, or not.',
-      'Admin and the mandate inbox follow that setting. Availability is a control, not a status badge for the public web.',
+      'The directory is the list of admitted members. It opens after you are signed in.',
+      'You can hide yourself from the directory. Names are not published on this site.',
     ],
   },
   {
     id: 'intros',
-    title: 'Warm introductions',
+    title: 'Intros',
     paragraphs: [
-      'An introduction is proposed with a reason. Admin releases it, or does not. There is no open thread between members and outsiders.',
-      'A voucher can start a name. It cannot skip the release.',
-    ],
-  },
-  {
-    id: 'badge',
-    title: 'Founding badge',
-    paragraphs: [
-      'Admitted founding members receive a mark of the hundred. You may announce it, including on LinkedIn, and add it to your profile when you choose.',
-      'The site does not sign you in with LinkedIn, and it does not post on your behalf.',
-    ],
-  },
-  {
-    id: 'majlis',
-    title: 'Quarterly majlis',
-    paragraphs: [
-      'Four salons a year. Small enough to be a conversation, held in person, and kept off the public record.',
-      'Dates are circulated to members. They are not listed here.',
+      'You ask with a short reason. The other member accepts or declines. Admin can make the introduction if you ask.',
+      'You may also see up to two suggested introductions a week, from shared sectors, themes or region.',
     ],
   },
   {
     id: 'vouchers',
-    title: 'Peer invite vouchers',
+    title: 'Invites',
     paragraphs: [
-      'Each member holds a limited number of invitations. You may extend one to a chair or advisor you would sit with.',
-      'The nominee still submits a pre-vet and still faces review. A voucher is a recommendation, not an admission.',
+      'Each member has a small number of peer invites.',
+      'The person you invite still applies and still faces review. An invite is not an admission.',
     ],
   },
   {
-    id: 'tags',
-    title: 'Sector and Vision 2030 tags',
+    id: 'mandates',
+    title: 'Mandates',
     paragraphs: [
-      'Tags say where you sit: a sector, a Vision 2030 theme, the kind of board work you actually do.',
-      'They help our admin team match a mandate to members who are available. They are not a public biography.',
+      'See capital briefs in outline. Request an intro, and admin unlocks the full brief if approved.',
+      'You do not receive a cold approach from this site.',
     ],
   },
   {
     id: 'rooms',
     title: 'Deal rooms',
     paragraphs: [
-      'A deal room opens for a live mandate, and only by our admin team. It closes when the work ends.',
-      'It is not a public data room, and it is not listed on this website.',
+      'Members open a private room for a deal and invite the people they choose. Admin can see every room.',
+      'A room does not hold documents or messages, and it is not listed on this website.',
+    ],
+  },
+  {
+    id: 'real-estate',
+    title: 'Real estate',
+    paragraphs: [
+      'Browse opportunities. The counterparty opens after admin approves your intro.',
+      'Board and non-executive seats on developer and property company boards. The organisation and the seat open after admin approves your intro.',
+      'Request an intro to a partner firm. Admin reviews it before any outreach.',
+      'Set your ticket band, places, asset classes and capital role. Admin can use that when matching real estate intros.',
+      'Express interest to co-invest on an opportunity. Admin may then open a club deal room. This does not message other members.',
+    ],
+  },
+  {
+    id: 'majlis',
+    title: 'Majlis',
+    paragraphs: [
+      'Private gatherings for members. Join one, join a waitlist, add one to your calendar, or ask to host one.',
+    ],
+  },
+  {
+    id: 'ai-tools',
+    title: 'AI tools',
+    paragraphs: [
+      LANDING_AI_SCOPE,
+      'AI Due Diligence. AI reads a PDF or PPTX, lists its claims and suggests questions. Public source checks may be limited.',
+      'CFO check. An AI first read of your accounts or model: runway, margins and red flags. Not accounting or audit.',
+      'Deal readiness memo. An AI first read of a real estate teaser or information memorandum. Indicative only, not advice.',
+    ],
+  },
+  {
+    id: 'privacy',
+    title: 'Your privacy',
+    paragraphs: [
+      'Hide yourself from the directory, download your data, and delete uploads and AI results at any time.',
+      SIGNING_IN[2],
     ],
   },
 ]
@@ -92,10 +98,7 @@ export function ForMembersPage() {
           Built for founding members
         </h1>
         <p className="mt-6 max-w-2xl text-[1.08rem] leading-relaxed text-ink/65">
-          Founding members of Board Arabia access tools designed for
-          board-level discretion: a private peer directory, structured mandate
-          inbox, warm intros our admin team oversees, and quarterly majlis. This
-          is not an open marketplace.
+          Founding members use a private Directory, Mandates, Intros, Invites, Deal rooms, Real estate, and Majlis. This is not an open marketplace.
         </p>
         <ul className="mt-8 flex flex-wrap gap-x-6 gap-y-2">
           {TOOLS.map((tool) => (
@@ -108,14 +111,6 @@ export function ForMembersPage() {
               </a>
             </li>
           ))}
-          <li>
-            <a
-              href="#due-diligence"
-              className="text-[0.75rem] font-semibold tracking-[0.1em] text-ink/45 uppercase hover:text-ink"
-            >
-              AI Due Diligence
-            </a>
-          </li>
         </ul>
       </header>
 
@@ -142,17 +137,13 @@ export function ForMembersPage() {
           </article>
         ))}
 
-        <DiligenceArticle />
-
         <article className="grid gap-6 border-t border-ink/10 py-12 md:grid-cols-[16rem_1fr] md:gap-16 md:py-16">
           <h2 className="font-display text-[1.7rem] font-semibold tracking-[-0.03em] text-ink">
             Capital, from the member side
           </h2>
           <div className="max-w-2xl space-y-4 text-[1.05rem] leading-relaxed text-ink/70">
             <p>
-              The mandate inbox and deal rooms above are how capital reaches
-              you. Our admin team reviews both. You see a mandate when you are
-              available and when it fits.
+              Mandates and deal rooms are how a live matter stays inside the membership. Admin reviews mandate intros. Members open a deal room and invite the people they choose.
             </p>
             <p>
               <Link to="/for-capital" className="border-b border-brass text-ink">
@@ -173,20 +164,4 @@ function ToolLead({ id }: { id: string }) {
   const line = MEMBER_TOOLS.find((tool) => tool.id === id)?.home
   if (!line) return null
   return <p className="text-[1.05rem] leading-relaxed text-ink/70">{line}</p>
-}
-
-function DiligenceArticle() {
-  const tool = MEMBER_TOOLS.find((item) => item.id === 'due-diligence')
-  if (!tool) return null
-  return (
-    <article
-      id={tool.id}
-      className="grid gap-6 border-t border-ink/10 py-12 md:grid-cols-[16rem_1fr] md:gap-16 md:py-16"
-    >
-      <h2 className="font-display text-[1.7rem] font-semibold tracking-[-0.03em] text-ink">
-        {tool.title}
-      </h2>
-      <p className="max-w-2xl text-[1.05rem] leading-relaxed text-ink/70">{tool.home}</p>
-    </article>
-  )
 }
