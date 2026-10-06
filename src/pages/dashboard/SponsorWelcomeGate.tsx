@@ -7,20 +7,44 @@ export const DISMISS_SAVE_ERROR = 'We could not save that. Please try again.'
 
 type DismissRpc = (name: 'dismiss_sponsor_welcome') => PromiseLike<{ error: { message?: string } | null }>
 
-/** Awaits the dismissal. The query builder does not run until it is awaited. */
-export async function dismissSponsorWelcome(
-  rpc: DismissRpc,
-): Promise<{ hidden: true } | { hidden: false; message: string }> {
-  const { error } = await rpc('dismiss_sponsor_welcome')
-  if (error) return { hidden: false, message: DISMISS_SAVE_ERROR }
-  return { hidden: true }
-}
-
 export function welcomeAfterDismiss(
   result: { hidden: true } | { hidden: false; message: string },
 ): { open: boolean; error: string } {
   if (result.hidden) return { open: false, error: '' }
   return { open: true, error: result.message }
+}
+
+/** Awaits the dismissal. A throw becomes the same plain message as a returned error. */
+export async function dismissSponsorWelcome(
+  rpc: DismissRpc,
+): Promise<{ hidden: true } | { hidden: false; message: string }> {
+  try {
+    const { error } = await rpc('dismiss_sponsor_welcome')
+    if (error) return { hidden: false, message: DISMISS_SAVE_ERROR }
+    return { hidden: true }
+  } catch {
+    return { hidden: false, message: DISMISS_SAVE_ERROR }
+  }
+}
+
+/** Takes the lock, awaits the dismissal, and always releases the lock. */
+export async function runDismiss(
+  rpc: DismissRpc,
+  lock: { current: boolean },
+  setSaving: (saving: boolean) => void,
+): Promise<{ open: boolean; error: string } | null> {
+  if (lock.current) return null
+  lock.current = true
+  setSaving(true)
+  try {
+    const result = await dismissSponsorWelcome(rpc)
+    return welcomeAfterDismiss(result)
+  } catch {
+    return { open: true, error: DISMISS_SAVE_ERROR }
+  } finally {
+    lock.current = false
+    setSaving(false)
+  }
 }
 
 export function SponsorWelcomeDismissFrame({
@@ -82,14 +106,8 @@ export function SponsorWelcomeGate() {
   }, [member.seat])
 
   async function dismiss() {
-    if (savingRef.current) return
-    savingRef.current = true
-    setSaving(true)
-    setSaveError('')
-    const result = await dismissSponsorWelcome((name) => supabase.rpc(name))
-    const next = welcomeAfterDismiss(result)
-    savingRef.current = false
-    setSaving(false)
+    const next = await runDismiss((name) => supabase.rpc(name), savingRef, setSaving)
+    if (!next) return
     setSaveError(next.error)
     setOpen(next.open)
   }
