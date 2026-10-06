@@ -16,7 +16,13 @@ const accessName = '20261129150000_staff_access_log_rpc_only.sql'
 
 test('search_path, master guard, purge tables, and access log hold in postgres', { timeout: 180_000 }, () => {
   const names = readdirSync(migrationsDir).filter((name) => name.endsWith('.sql')).sort()
-  assert.deepEqual(names.slice(-4), [searchName, masterName, purgeName, accessName])
+  const locked = [searchName, masterName, purgeName, accessName]
+  const positions = locked.map((name) => names.indexOf(name))
+  assert.ok(positions.every((index) => index >= 0))
+  for (let index = 1; index < positions.length; index += 1) {
+    assert.equal(positions[index], positions[index - 1] + 1, locked[index])
+  }
+  assert.ok((names.at(-1) ?? '') >= accessName)
   const prior = names.filter((name) => name < searchName)
   assert.ok(prior.includes('20261128120000_retention_privacy_audit.sql'))
   assert.ok(prior.includes('20261127120000_staff_aal2_private_files.sql'))

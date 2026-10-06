@@ -41,6 +41,8 @@ Deno.serve(async (req) => {
   const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
   if (!supabaseUrl || !serviceKey) return jsonResponse(req, { error: 'Not configured' }, 503)
   const admin = createClient(supabaseUrl, serviceKey)
+  // A plain POST has no dry_run=1, so dry is false and retention_sweep_plan runs with p_apply true.
+  // That is the normal retention sweep, not a dry run. Orphans are listed unless orphanPurgeEnabled is true.
   const dry = new URL(req.url).searchParams.get('dry_run') === '1'
   const purgeOrphans = orphanPurgeEnabled(req.url)
 
@@ -227,9 +229,12 @@ async function purgeDueDiligenceFiles(
 }
 
 /**
- * Orphan pass. Dry by default.
- * Real deletion: POST with purge_orphans=1 and without dry_run=1.
- * A dry_run=1 request never deletes orphans, even if purge_orphans=1 is also set.
+ * Orphan storage pass.
+ * A plain POST runs the normal retention sweep and only lists orphans.
+ * Deletion runs only when purge_orphans=1 is present and dry_run is absent.
+ * dry_run=1 lists the retention plan and lists orphans. It does not apply the plan,
+ * and it does not delete orphans even when purge_orphans=1 is also present.
+ * The age gate stays in planStorageOrphans. Files that are not older than retention_days stay.
  * Counts and paths go to the function log and the JSON response.
  */
 async function runOrphanPass(
@@ -256,7 +261,7 @@ async function runOrphanPass(
       purge: input.purge,
     })
     console.log(JSON.stringify({
-      orphan_dry_run: !input.purge,
+      orphans_listed_only: !input.purge,
       orphan_count: planned.report.length,
       orphan_paths: planned.report,
     }))
@@ -278,7 +283,7 @@ async function runOrphanPass(
     return {
       failed,
       body: {
-        dry_run: !input.purge,
+        listed_only: !input.purge,
         retention_days: input.retentionDays,
         counts: orphanCounts(planned.report),
         paths: planned.report,
@@ -286,7 +291,7 @@ async function runOrphanPass(
       },
     }
   } catch {
-    return { failed: true, body: { dry_run: !input.purge, error: 'Could not list storage.' } }
+    return { failed: true, body: { listed_only: !input.purge, error: 'Could not list storage.' } }
   }
 }
 

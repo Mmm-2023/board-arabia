@@ -1,7 +1,10 @@
 /**
  * Storage path checks for the retention sweep. SQL lists the paths. This deletes them.
- * Orphan files in the buckets this sweep already deletes from are reported every run.
- * They are removed only when the request is not dry_run and purge_orphans=1.
+ * Orphan files in ai-tool-uploads and due-diligence-decks are reported on every call.
+ * orphanPurgeEnabled is true only when the query has purge_orphans=1 and does not have dry_run=1.
+ * planStorageOrphans then returns those paths in remove. Every other call gets an empty remove list.
+ * A POST with no query string is not an orphan deletion. The sweep still applies the normal retention plan.
+ * The age gate is aiToolRetentionDue. Files that are not older than retention_days are left in place.
  */
 
 import { safeStoragePath } from './ai_tools.ts'
