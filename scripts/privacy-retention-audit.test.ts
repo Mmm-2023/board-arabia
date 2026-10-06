@@ -158,10 +158,11 @@ test('shared AI status logs through the staff read hook', async () => {
 test('access log row renders the staff name and role', async () => {
   const vite = await createServer({ server: { middlewareMode: true }, appType: 'custom', logLevel: 'error' })
   try {
+    const labels = await vite.ssrLoadModule('/src/pages/admin/accessLogLabels.ts')
     const mod = await vite.ssrLoadModule('/src/pages/admin/StaffAccessLogPage.tsx')
-    assert.equal(mod.accessActorLabel('Example Admin', 'Admin'), 'Example Admin, Admin')
-    assert.equal(mod.accessActorLabel('   ', 'Master'), 'Master')
-    assert.equal(mod.accessActorLabel('person@example.com', 'Admin'), 'Admin')
+    assert.equal(labels.accessActorLabel('Example Admin', 'Admin'), 'Example Admin, Admin')
+    assert.equal(labels.accessActorLabel('   ', 'Master'), 'Master')
+    assert.equal(labels.accessActorLabel('person@example.com', 'Admin'), 'Admin')
     const html = renderToStaticMarkup(
       createElement(mod.StaffAccessLogView, {
         rows: [

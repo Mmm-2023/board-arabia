@@ -1028,6 +1028,28 @@ export type Database = {
         Args: Record<string, never>
         Returns: Json
       }
+      staff_create_mandate: {
+        Args: {
+          p_published: boolean
+          p_sector: string
+          p_deal_type: string
+          p_ticket_band: string
+          p_geography: string
+          p_stage: string
+          p_one_liner: string
+          p_company_name: string
+          p_exact_amount: string
+          p_terms: string
+          p_contact_name: string
+          p_contact_email: string
+          p_contact_phone: string
+          p_deck_url: string | null
+          p_narrative: string
+          p_sector_tags: string[]
+          p_vision_themes: string[]
+        }
+        Returns: Json
+      }
       staff_list_mandate_matches: {
         Args: { p_mandate_id: string }
         Returns: Json
