@@ -38,8 +38,9 @@ Deno.serve(async (req) => {
   const { count: taken, error: countError } = await admin
     .from('members')
     .select('user_id', { count: 'exact', head: true })
-    .eq('seat', 'sponsor')
+    .or('seat.eq.sponsor,tiers.cs.{sponsor}')
     .in('status', ['invited', 'active'])
+    .eq('is_demo', false)
   if (countError) return jsonResponse(req, { error: countError.message }, 500)
   if (!sponsorSeatAllowed(taken ?? 0)) {
     return jsonResponse(req, { error: `Sponsor seats are full (${SPONSOR_CAP}).` }, 409)

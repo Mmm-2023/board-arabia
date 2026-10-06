@@ -44,8 +44,14 @@ export function MembershipTiersControl({
   const busy = phase === 'saving'
   const dirty = !sameTiers(selected, saved)
 
+  function tierLocked(id: MembershipTierId) {
+    if (id === 'founding' && (member.seat === 'sponsor' || selected.includes('sponsor'))) return true
+    if (id === 'sponsor' && selected.includes('founding')) return true
+    return false
+  }
+
   function toggle(id: MembershipTierId) {
-    if (frozen || busy) return
+    if (frozen || busy || tierLocked(id)) return
     setSelected((current) => {
       const next = current.includes(id) ? current.filter((item) => item !== id) : [...current, id]
       return MEMBERSHIP_TIER_IDS.filter((item) => next.includes(item))
@@ -93,7 +99,7 @@ export function MembershipTiersControl({
       <div className="mt-3 max-w-full">
         <p className="text-[0.95rem] font-semibold text-pearl">Membership tiers</p>
         <p className="mt-1 max-w-xl text-[0.9rem] leading-snug text-stone/80">
-          Founding and Member cannot both be on. Sponsor can sit with either. Founding uses a numbered seat in this region.
+          Founding and Member cannot both be on. A sponsor seat cannot also hold the Founding tier. Sponsor can sit with Member.
         </p>
         <div
           className="tier-chip-track mt-2 flex max-w-full flex-wrap items-center gap-2 md:gap-1 md:rounded-full md:bg-[var(--ba-lavender-mist)] md:p-1"
@@ -102,19 +108,21 @@ export function MembershipTiersControl({
         >
           {MEMBERSHIP_TIER_IDS.map((id) => {
             const on = selected.includes(id)
+            const locked = tierLocked(id)
             return (
               <button
                 key={id}
                 type="button"
                 role="checkbox"
                 aria-checked={on}
-                aria-disabled={busy}
+                aria-disabled={busy || locked}
+                disabled={busy || locked}
                 onClick={() => toggle(id)}
                 className={`tier-chip inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-full px-3 text-[0.875rem] font-semibold whitespace-nowrap ${
                   on
                     ? 'bg-[var(--ba-indigo)] text-white'
                     : 'bg-[var(--ba-lavender-mist)] text-[var(--ba-ink)] hover:bg-white md:bg-transparent'
-                } ${busy ? 'pointer-events-none' : ''}`}
+                } ${busy || locked ? 'pointer-events-none' : ''}`}
               >
                 {on ? (
                   <svg aria-hidden="true" viewBox="0 0 16 16" className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" strokeWidth="2">

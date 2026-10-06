@@ -1,5 +1,6 @@
-import { useEffect, useRef, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import type { DryRunInvite } from '../../lib/supabase'
+import { sponsorSignInSteps } from '../../lib/sponsorHandover'
 import {
   sponsorAddDisabled,
   sponsorCapCopy,
@@ -29,6 +30,8 @@ export function SponsorInvitePanel({
   onFirm,
   onEmail,
   onSubmit,
+  loadHandovers = true,
+  initialHanded = {},
 }: {
   members: readonly Holder[]
   firmByUser: Readonly<Record<string, string | null | undefined>>
@@ -46,6 +49,8 @@ export function SponsorInvitePanel({
   onFirm: (value: string) => void
   onEmail: (value: string) => void
   onSubmit: () => void
+  loadHandovers?: boolean
+  initialHanded?: Readonly<Record<string, string>>
 }) {
   const cap = sponsorCapView(members)
   const copy = sponsorCapCopy({
@@ -59,11 +64,64 @@ export function SponsorInvitePanel({
   const sendDisabled = addDisabled || !firm.trim() || !email.trim()
   const rows = sponsorListRows(members, firmByUser)
   const firmRef = useRef<HTMLInputElement>(null)
+  const [handed, setHanded] = useState<Record<string, string>>({ ...initialHanded })
+  const [handoverNote, setHandoverNote] = useState('')
+  const [copyNote, setCopyNote] = useState('')
 
   useEffect(() => {
     if (!open) return
     firmRef.current?.focus()
   }, [open])
+
+  useEffect(() => {
+    if (!loadHandovers) return
+    let cancel = false
+    void import('../../lib/supabase').then(({ supabase }) =>
+      supabase.rpc('staff_sponsor_handovers').then(({ data, error }) => {
+        if (cancel || error || !Array.isArray(data)) return
+        const next: Record<string, string> = {}
+        for (const item of data) {
+          if (!item || typeof item !== 'object') continue
+          const row = item as { member_id?: unknown; handed_over_at?: unknown }
+          if (typeof row.member_id !== 'string' || typeof row.handed_over_at !== 'string') continue
+          next[row.member_id] = row.handed_over_at
+        }
+        setHanded(next)
+      }),
+    )
+    return () => {
+      cancel = true
+    }
+  }, [loadHandovers, members])
+
+  async function copySteps() {
+    const steps = sponsorSignInSteps()
+    try {
+      await navigator.clipboard.writeText(steps)
+      setCopyNote('Sign-in steps copied.')
+    } catch {
+      setCopyNote('Could not copy the sign-in steps.')
+    }
+  }
+
+  async function toggleHanded(userId: string, next: boolean) {
+    setHandoverNote('')
+    const { supabase } = await import('../../lib/supabase')
+    const { error } = await supabase.rpc('mark_sponsor_handed_over', {
+      p_member_id: userId,
+      p_handed: next,
+    })
+    if (error) {
+      setHandoverNote('Could not save the hand-over.')
+      return
+    }
+    setHanded((current) => {
+      const copy = { ...current }
+      if (next) copy[userId] = new Date().toISOString()
+      else delete copy[userId]
+      return copy
+    })
+  }
 
   function onFormSubmit(event: FormEvent) {
     event.preventDefault()
@@ -108,8 +166,20 @@ export function SponsorInvitePanel({
         </p>
       )}
       {dryRunInvite && (
-        <div className="mt-4">
+        <div className="mt-4 space-y-3">
           <DryRunInviteBox invite={dryRunInvite} />
+          <button
+            type="button"
+            onClick={() => void copySteps()}
+            className="inline-flex min-h-11 items-center justify-center border border-pearl/20 px-4 text-[0.72rem] font-semibold tracking-[0.08em] text-pearl/80 uppercase"
+          >
+            Copy sign-in steps
+          </button>
+          {copyNote ? (
+            <p className="text-[0.9rem] text-pearl/70" role="status">
+              {copyNote}
+            </p>
+          ) : null}
         </div>
       )}
 
@@ -121,8 +191,8 @@ export function SponsorInvitePanel({
           className="mt-5 max-w-xl space-y-4"
         >
           <p className="text-[0.9rem] leading-relaxed text-stone/65">
-            Firm name and email are required. This sends a set-password invite and does not use a
-            founding seat.
+            Firm name and email are required. This invite is not emailed. Hand the sign-in steps over
+            yourself. It does not use a founding seat.
           </p>
           <label className="block text-[0.68rem] font-semibold tracking-[0.08em] text-pearl/45 uppercase">
             Firm name
@@ -164,7 +234,7 @@ export function SponsorInvitePanel({
               disabled={sendDisabled}
               className="ba-primary inline-flex min-h-11 items-center justify-center px-4 text-[0.72rem] font-semibold tracking-[0.08em] uppercase disabled:opacity-40"
             >
-              {submitting ? 'Sending invite' : 'Send invite'}
+              {submitting ? 'Creating invite' : 'Create invite'}
             </button>
             <button
               type="button"
@@ -194,10 +264,23 @@ export function SponsorInvitePanel({
                 <p className="mt-1 text-[0.8rem] text-pearl/45">
                   {row.firm ?? 'No firm name yet'} · {row.status}
                 </p>
+                <label className="mt-3 inline-flex min-h-11 items-center gap-2 text-[0.9rem] text-pearl/80">
+                  <input
+                    type="checkbox"
+                    checked={Boolean(handed[row.userId])}
+                    onChange={(event) => void toggleHanded(row.userId, event.target.checked)}
+                  />
+                  Handed over
+                </label>
               </li>
             ))}
           </ul>
         )}
+        {handoverNote ? (
+          <p className="mt-3 text-[0.9rem] text-red-300" role="alert">
+            {handoverNote}
+          </p>
+        ) : null}
         <p className="mt-3 text-[0.85rem] leading-relaxed text-pearl/45">
           Suspended sponsors do not hold a seat.
         </p>

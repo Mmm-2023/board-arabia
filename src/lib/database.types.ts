@@ -1179,6 +1179,22 @@ export type Database = {
         Args: Record<string, never>
         Returns: Json
       }
+      own_sponsor_welcome: {
+        Args: Record<string, never>
+        Returns: Json
+      }
+      dismiss_sponsor_welcome: {
+        Args: Record<string, never>
+        Returns: Json
+      }
+      staff_sponsor_handovers: {
+        Args: Record<string, never>
+        Returns: Json
+      }
+      mark_sponsor_handed_over: {
+        Args: { p_member_id: string; p_handed: boolean }
+        Returns: Json
+      }
       staff_list_sponsor_catalog: {
         Args: Record<string, never>
         Returns: Json

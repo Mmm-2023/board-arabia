@@ -33,6 +33,7 @@ import { IntroSuggestions } from './IntroSuggestions'
 import { ProfileCompletenessPrompt } from './ProfileCompletenessPrompt'
 import { suggestionPortrait } from './suggestionPortrait'
 import { PendingInviteCards } from './PendingInviteCards'
+import { SponsorWelcomeGate } from './SponsorWelcomeGate'
 
 function readPromptDismissed(userId: string) {
   if (typeof window === 'undefined') return false
@@ -335,6 +336,7 @@ export function DashboardHome() {
           />
         </div>
       ) : null}
+      {member.seat === 'sponsor' ? <SponsorWelcomeGate /> : null}
       {member.seat === 'sponsor' ? (
         <section className="mb-8 max-w-3xl border border-[var(--ba-line)] bg-white px-5 py-4">
           <h2 className="font-display text-[1.25rem] font-semibold tracking-[-0.02em]">Your sponsorship</h2>
