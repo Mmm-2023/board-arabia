@@ -24,6 +24,7 @@ export function PeoplePage({ tierShots }: { tierShots?: Record<string, TierShot>
   const [inviteEmail, setInviteEmail] = useState('')
   const [inviteSeat, setInviteSeat] = useState<FoundingSeat>('ksa')
   const [inviteAdmit, setInviteAdmit] = useState(true)
+  const [inviteRole, setInviteRole] = useState<'staff' | 'master'>('staff')
   const [suspending, setSuspending] = useState<MemberAdminRow | null>(null)
   const [sponsorOpen, setSponsorOpen] = useState(false)
   const [sponsorFirm, setSponsorFirm] = useState('')
@@ -59,6 +60,7 @@ export function PeoplePage({ tierShots }: { tierShots?: Record<string, TierShot>
       email: inviteEmail.trim(),
       seat: inviteSeat,
       admitMember: inviteAdmit,
+      ...(inviteRole === 'master' ? { role: 'master' as const } : {}),
     })
   }
 
@@ -134,52 +136,67 @@ export function PeoplePage({ tierShots }: { tierShots?: Record<string, TierShot>
       />
       <SponsorSeatPanel />
 
-      <section className="mt-8 border border-brass/30 px-5 py-5">
-        <h2 className="font-display text-[1.35rem] font-semibold tracking-[-0.02em]">Invite</h2>
-        <p className="mt-2 max-w-2xl text-[0.9rem] text-stone/65">
-          Promotes staff and can admit a founding member. If outbound mail is not connected, the
-          one-time link appears here and is not stored in email events.
-        </p>
-        <form onSubmit={onDirectInvite} className="mt-5 flex flex-wrap items-end gap-3">
-          <label className="block text-[0.68rem] font-semibold tracking-[0.08em] text-pearl/45 uppercase">
-            Email
-            <input
-              type="email"
-              value={inviteEmail}
-              onChange={(event) => setInviteEmail(event.target.value)}
-              placeholder="name@example.com"
-              autoComplete="off"
-              className="mt-2 block w-64 border border-pearl/20 bg-ink px-3 py-3 text-[0.9rem] text-pearl normal-case"
-            />
-          </label>
-          <label className="block text-[0.68rem] font-semibold tracking-[0.08em] text-pearl/45 uppercase">
-            Seat
-            <select
-              value={inviteSeat}
-              onChange={(event) => setInviteSeat(event.target.value as FoundingSeat)}
-              className="mt-2 block min-h-11 border border-pearl/20 bg-ink px-3 text-[0.9rem] text-pearl normal-case"
+      {room.staffRole === 'master' ? (
+        <section data-add-admin="true" className="mt-8 border border-brass/30 px-5 py-5">
+          <h2 className="font-display text-[1.35rem] font-semibold tracking-[-0.02em]">Add admin</h2>
+          <p className="mt-2 max-w-2xl text-[0.9rem] text-stone/65">
+            Adds an admin. Leave Role on Admin for a new admin. Choose Master only when this
+            person should be a master. An existing role stays as it is unless you choose Master.
+            You can also admit a founding member. If outbound mail is not connected, the one-time
+            link appears here and is not stored in email events.
+          </p>
+          <form onSubmit={onDirectInvite} className="mt-5 flex flex-wrap items-end gap-3">
+            <label className="block text-[0.68rem] font-semibold tracking-[0.08em] text-pearl/45 uppercase">
+              Email
+              <input
+                type="email"
+                value={inviteEmail}
+                onChange={(event) => setInviteEmail(event.target.value)}
+                placeholder="name@example.com"
+                autoComplete="off"
+                className="mt-2 block w-64 border border-pearl/20 bg-ink px-3 py-3 text-[0.9rem] text-pearl normal-case"
+              />
+            </label>
+            <label className="block text-[0.68rem] font-semibold tracking-[0.08em] text-pearl/45 uppercase">
+              Seat
+              <select
+                value={inviteSeat}
+                onChange={(event) => setInviteSeat(event.target.value as FoundingSeat)}
+                className="mt-2 block min-h-11 border border-pearl/20 bg-ink px-3 text-[0.9rem] text-pearl normal-case"
+              >
+                <option value="ksa">Saudi Arabia</option>
+                <option value="intl">International</option>
+              </select>
+            </label>
+            <label className="block text-[0.68rem] font-semibold tracking-[0.08em] text-pearl/45 uppercase">
+              Role
+              <select
+                value={inviteRole}
+                onChange={(event) => setInviteRole(event.target.value === 'master' ? 'master' : 'staff')}
+                className="mt-2 block min-h-11 border border-pearl/20 bg-ink px-3 text-[0.9rem] text-pearl normal-case"
+              >
+                <option value="staff">Admin</option>
+                <option value="master">Master</option>
+              </select>
+            </label>
+            <label className="flex min-h-11 items-center gap-2 text-[0.85rem] text-stone/75 normal-case">
+              <input
+                type="checkbox"
+                checked={inviteAdmit}
+                onChange={(event) => setInviteAdmit(event.target.checked)}
+              />
+              Also admit as founding member
+            </label>
+            <button
+              type="submit"
+              disabled={room.updatingId === 'invite-direct' || !inviteEmail.trim()}
+              className="ba-primary inline-flex min-h-11 items-center px-4 text-[0.72rem] font-semibold tracking-[0.08em] uppercase disabled:opacity-40"
             >
-              <option value="ksa">Saudi Arabia</option>
-              <option value="intl">International</option>
-            </select>
-          </label>
-          <label className="flex min-h-11 items-center gap-2 text-[0.85rem] text-stone/75 normal-case">
-            <input
-              type="checkbox"
-              checked={inviteAdmit}
-              onChange={(event) => setInviteAdmit(event.target.checked)}
-            />
-            Also admit as founding member
-          </label>
-          <button
-            type="submit"
-            disabled={room.updatingId === 'invite-direct' || !inviteEmail.trim()}
-            className="ba-primary inline-flex min-h-11 items-center px-4 text-[0.72rem] font-semibold tracking-[0.08em] uppercase disabled:opacity-40"
-          >
-            Send invite
-          </button>
-        </form>
-      </section>
+              Add admin
+            </button>
+          </form>
+        </section>
+      ) : null}
 
       <section className="mt-10">
         <h2 className="font-display text-[1.5rem] font-semibold tracking-[-0.02em]">Members</h2>

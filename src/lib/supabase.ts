@@ -657,6 +657,7 @@ export async function inviteMaster(input?: {
   email?: string
   seat?: FoundingSeat
   admitMember?: boolean
+  role?: 'master'
 }): Promise<{
   error?: string
   message?: string
@@ -667,6 +668,7 @@ export async function inviteMaster(input?: {
   if (input?.email) payload.email = input.email.trim()
   if (input?.seat) payload.seat = input.seat
   if (input && input.admitMember === false) payload.admit_member = false
+  if (input?.role === 'master') payload.role = 'master'
   try {
     const res = await fetch(`${functionsBase}/invite-master`, {
       method: 'POST',

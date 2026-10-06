@@ -3,6 +3,12 @@ import { requireStaff } from '../_shared/require_staff.ts'
 import { issueCredential, type Issued } from '../_shared/credentials.ts'
 import { buildMasterInvite } from '../_shared/invite_copy.ts'
 import {
+  assertMasterCaller,
+  requestedStaffRole,
+  writeStaffRole,
+  type StaffRoleStore,
+} from './handle.ts'
+import {
   adminNotifyEmail,
   corsHeaders,
   jsonResponse,
@@ -25,22 +31,38 @@ Deno.serve(async (req) => {
   if (gate instanceof Response) return gate
   const { user, admin } = gate
 
+  // gate.role is staff_users for the verified JWT user, read with the service role.
+  const callerGate = assertMasterCaller(gate.role)
+  if (!callerGate.ok) {
+    return jsonResponse(req, { error: callerGate.error }, callerGate.status)
+  }
+
   let email = ''
   let emailProvided = false
   let seat = 'ksa'
   let admitMember = true
+  let body: unknown = null
   try {
-    const body = await req.json()
-    const requested = String(body.email || '').trim().toLowerCase()
+    body = await req.json()
+    if (!body || typeof body !== 'object' || Array.isArray(body)) {
+      return jsonResponse(req, { error: 'Invalid JSON' }, 400)
+    }
+    const record = body as Record<string, unknown>
+    const requested = String(record.email || '').trim().toLowerCase()
     if (requested) {
       email = requested
       emailProvided = true
     }
-    const requestedSeat = String(body.seat || '').trim()
+    const requestedSeat = String(record.seat || '').trim()
     if (requestedSeat) seat = requestedSeat
-    if (body.admit_member === false) admitMember = false
+    if (record.admit_member === false) admitMember = false
   } catch {
     return jsonResponse(req, { error: 'Invalid JSON' }, 400)
+  }
+
+  const askedRole = requestedStaffRole(body)
+  if (askedRole === 'invalid') {
+    return jsonResponse(req, { error: 'Role must be staff or master.' }, 400)
   }
 
   if (!emailProvided) email = adminNotifyEmail().trim().toLowerCase()
@@ -58,19 +80,24 @@ Deno.serve(async (req) => {
   const issued = await issueCredential(admin, email, site)
   if ('error' in issued) return jsonResponse(req, { error: issued.error }, 502)
 
-  const { error: staffError } = await admin.from('staff_users').upsert(
-    { user_id: issued.userId, email, role: 'master' },
-    { onConflict: 'user_id' },
-  )
-  if (staffError) {
+  const staffWrite = await writeStaffRole(staffRoleStore(admin), {
+    callerRole: gate.role,
+    requestedRole: askedRole,
+    userId: issued.userId,
+    email,
+  })
+  if (!staffWrite.ok) {
     if (issued.createdNew) await admin.auth.admin.deleteUser(issued.userId)
-    const needsMigration = /role|schema cache|column/i.test(staffError.message)
+    if (staffWrite.status !== 500) {
+      return jsonResponse(req, { error: staffWrite.error }, staffWrite.status)
+    }
+    const needsMigration = /role|schema cache|column/i.test(staffWrite.error)
     return jsonResponse(
       req,
       {
         error: needsMigration
           ? 'Staff promotion needs the latest database migration.'
-          : staffError.message,
+          : staffWrite.error,
       },
       500,
     )
@@ -99,6 +126,7 @@ Deno.serve(async (req) => {
     confirmUrl,
     staffLoginUrl,
     memberLoginUrl,
+    staffRole: staffWrite.role,
     issued:
       issued.mode === 'magic_link'
         ? { mode: 'magic_link', otp: issued.otp }
@@ -139,13 +167,13 @@ Deno.serve(async (req) => {
       seat: memberOk ? admission.seat : null,
       has_otp: issued.mode === 'magic_link' && Boolean(issued.otp),
       has_temp_password: issued.mode === 'temp_password',
-      staff_role: 'master',
+      staff_role: staffWrite.role,
       member: memberOk,
     },
   })
 
   const mailed = sent.status === 'sent'
-  const parts = ['Master staff is ready.']
+  const parts = [staffWrite.role === 'master' ? 'Master staff is ready.' : 'Admin is ready.']
   if (memberOk && admission.createdMember) parts.push('Founding seat claimed.')
   if (memberOk && admission.alreadyMember) parts.push('Founding membership was already in place.')
   if (admission.memberError) parts.push(admission.memberError)
@@ -403,4 +431,34 @@ function displayName(email: string) {
   const local = email.split('@')[0] || 'Member'
   const cleaned = local.replace(/[._-]+/g, ' ').trim().slice(0, 80)
   return cleaned || 'Member'
+}
+
+function staffRoleStore(admin: SupabaseClient): StaffRoleStore {
+  return {
+    async findRole(userId) {
+      const { data, error } = await admin
+        .from('staff_users')
+        .select('role')
+        .eq('user_id', userId)
+        .maybeSingle()
+      if (error) return { role: null, error: error.message }
+      const role = data && typeof data.role === 'string' ? data.role : null
+      return { role, error: null }
+    },
+    async insertRole(row) {
+      const { error } = await admin.from('staff_users').insert({
+        user_id: row.userId,
+        email: row.email,
+        role: row.role,
+      })
+      return error?.message ?? null
+    },
+    async updateRole(row) {
+      const { error } = await admin
+        .from('staff_users')
+        .update({ email: row.email, role: row.role })
+        .eq('user_id', row.userId)
+      return error?.message ?? null
+    },
+  }
 }

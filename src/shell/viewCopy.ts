@@ -269,7 +269,6 @@ export const STAFF_VIEWS = {
   settings: {
     booking: 'The private invite email is sent on Accept. It is not shown on this page.',
     optional: 'Optional desk notes are not stored yet. Nothing here is published on the marketing site.',
-    masterLock: 'Promote Admin is limited to the master login.',
     switchAbsent: 'Switch to member appears when this login also holds an active member seat.',
     saveError: 'Could not save. Retry.',
     denied: 'Settings are for staff.',
