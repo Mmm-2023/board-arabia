@@ -7,6 +7,7 @@ import { termSheetReviewOutput } from '../../supabase/functions/ai-tool-job/tool
 import { PricingInputs } from '../../src/components/ai/PricingInputs'
 import { AiToolForm, AiToolReport, AiToolShell } from '../../src/components/ai/AiToolDesk'
 import { PRIVACY_LINK, TERMS_LINK } from '../../src/lib/aiToolConfig'
+import { previewAiReportOperator } from '../../src/lib/aiReportOperator'
 import { renderToolCopy, type LegalSlots } from '../../src/lib/aiToolCopy'
 import { AiToolSettingsPanel } from '../../src/pages/admin/AiToolSettingsPanel'
 import { AppShell } from '../../src/shell/AppShell'
@@ -14,9 +15,11 @@ import { MEMBER_ACCOUNT, MEMBER_DESTINATIONS, STAFF_DESTINATIONS, STAFF_SECONDAR
 import { PRICING_FIXTURE, TERM_SHEET_FIXTURE } from '../fixtures/legal-flagged.ts'
 import './home.css'
 
+previewAiReportOperator({ entity: 'NAMMCO Holding Co.', cr: '7043252647' })
+
 const slots: LegalSlots = {
-  entity: 'Example Holdings',
-  cr: '0000000000',
+  entity: '',
+  cr: '',
   provider: 'Example AI',
   privacy: PRIVACY_LINK,
   terms: TERMS_LINK,

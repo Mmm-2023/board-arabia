@@ -115,8 +115,8 @@ function marketStart() {
 }
 
 const slots = {
-  entity: 'Example Holdings',
-  cr: '0000000000',
+  entity: 'To be confirmed',
+  cr: 'To be confirmed',
   provider: 'Example AI',
   privacy: '/privacy',
   terms: '/terms',

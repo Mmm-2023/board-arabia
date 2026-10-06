@@ -6,6 +6,7 @@ import { cfoCheckOutput } from '../../supabase/functions/ai-tool-job/tools/cfo_c
 import { AiToolCardList } from '../../src/components/ai/AiToolCards'
 import { AiToolForm, AiToolReport, AiToolShell } from '../../src/components/ai/AiToolDesk'
 import { PRIVACY_LINK, TERMS_LINK } from '../../src/lib/aiToolConfig'
+import { previewAiReportOperator } from '../../src/lib/aiReportOperator'
 import { renderToolCopy, type LegalSlots } from '../../src/lib/aiToolCopy'
 import { AI_UI } from '../../src/lib/aiToolUi'
 import { AiToolSettingsPanel } from '../../src/pages/admin/AiToolSettingsPanel'
@@ -13,9 +14,11 @@ import { AppShell } from '../../src/shell/AppShell'
 import { MEMBER_ACCOUNT, MEMBER_DESTINATIONS, STAFF_DESTINATIONS, STAFF_SECONDARY } from '../../src/shell/destinations'
 import './home.css'
 
+previewAiReportOperator({ entity: 'NAMMCO Holding Co.', cr: '7043252647' })
+
 const slots: LegalSlots = {
-  entity: 'Example Holdings',
-  cr: '0000000000',
+  entity: '',
+  cr: '',
   provider: 'Example AI',
   privacy: PRIVACY_LINK,
   terms: TERMS_LINK,

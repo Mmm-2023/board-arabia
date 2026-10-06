@@ -12,6 +12,7 @@ import {
   type ScoreKey,
   type Severity,
 } from '../../../supabase/functions/_shared/deck_analysis.ts'
+import { AiReportOperatorLine } from '../../components/ai/AiReportOperatorLine'
 import { REPORT_COPY } from '../../lib/dueDiligenceCopy.ts'
 
 const RESULT_LABEL: Record<MathResult, string> = {
@@ -291,6 +292,7 @@ export function DueDiligenceMemo({
       <footer className="mt-8 max-w-3xl border-t border-[var(--ba-line)] pt-4" data-dd-disclaimer="true">
         <p className="text-[0.95rem] leading-relaxed text-ink/80">{ANALYSIS_DISCLAIMER}</p>
         <p className="mt-2 text-[0.95rem] leading-relaxed text-ink/80">{NOT_A_RECOMMENDATION}</p>
+        <AiReportOperatorLine className="mt-2 text-[0.95rem] leading-relaxed text-ink/80" />
       </footer>
     </div>
   )

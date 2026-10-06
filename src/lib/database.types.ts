@@ -731,6 +731,23 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_report_operator: {
+        Row: {
+          id: number
+          entity: string
+          cr: string
+        }
+        Insert: {
+          id?: number
+          entity: string
+          cr: string
+        }
+        Update: {
+          entity?: string
+          cr?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       majlis_events_member: {

@@ -7,14 +7,20 @@ import { AiToolJobStatus, AiToolReport, AiToolShell, AiToolWillList } from '../.
 import { DealReadinessSkeleton } from '../../src/components/ai/DealReadinessMemo'
 import { DealReadinessForm, DealReadinessNotice } from '../../src/components/ai/DealReadinessView'
 import { PRIVACY_LINK, TERMS_LINK } from '../../src/lib/aiToolConfig'
+import { previewAiReportOperator } from '../../src/lib/aiReportOperator'
 import { renderToolCopy, type LegalSlots } from '../../src/lib/aiToolCopy'
 import { AppShell } from '../../src/shell/AppShell'
 import { MEMBER_ACCOUNT, MEMBER_DESTINATIONS } from '../../src/shell/destinations'
 import './home.css'
 
+const operatorOff = new URLSearchParams(window.location.search).get('operator') === 'off'
+previewAiReportOperator(
+  operatorOff ? null : { entity: 'NAMMCO Holding Co.', cr: '7043252647' },
+)
+
 const slots: LegalSlots = {
-  entity: 'Example Holdings',
-  cr: '0000000000',
+  entity: '',
+  cr: '',
   provider: 'Example AI',
   privacy: PRIVACY_LINK,
   terms: TERMS_LINK,

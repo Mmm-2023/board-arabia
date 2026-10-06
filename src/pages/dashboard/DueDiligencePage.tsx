@@ -33,6 +33,7 @@ import { ConfirmDialog } from '../../shell/ConfirmDialog'
 import { CardSkeleton, EmptyState, ErrorBanner, PermissionState } from '../../shell/ViewState'
 import { MEMBER_VIEWS } from '../../shell/viewCopy'
 import { useMember } from './context'
+import { AiReportOperatorLine } from '../../components/ai/AiReportOperatorLine'
 import { DueDiligenceReport } from './DueDiligenceReport'
 
 const fieldClass =
@@ -426,6 +427,7 @@ export function DueDiligenceDeskView({
             {fileName ? <p className="mt-2 truncate text-[0.92rem] text-[var(--ba-muted)]">{fileName}</p> : null}
             <p className="mt-2 text-[0.92rem] leading-relaxed text-[var(--ba-muted)]">{DD_COPY.deckHint}</p>
             <p className="mt-3 text-[0.95rem] leading-relaxed text-ink/80">{DUE_DILIGENCE_DISCLAIMER}</p>
+            <AiReportOperatorLine className="mt-2 text-[0.95rem] leading-relaxed text-ink/80" />
             <details className="mt-4 border border-[var(--ba-line)] bg-white px-4 py-2">
               <summary className="flex min-h-11 cursor-pointer items-center text-[1rem] font-semibold text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ba-indigo)]">
                 {DD_COPY.scopeHeading}

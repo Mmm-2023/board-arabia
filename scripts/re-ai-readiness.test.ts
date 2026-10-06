@@ -33,8 +33,8 @@ const NOW = new Date('2026-10-05T08:00:00.000Z')
 const FIXTURE = readFileSync(path.join(root, 'fixtures/re/example-teaser.txt'), 'utf8')
 
 const SLOTS = {
-  entity: 'Example Holdings',
-  cr: '0000000000',
+  entity: 'To be confirmed',
+  cr: 'To be confirmed',
   provider: 'Example AI',
   privacy: '/privacy',
   terms: '/terms',

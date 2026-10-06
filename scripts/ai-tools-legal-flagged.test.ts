@@ -33,8 +33,8 @@ const PRICE_WORD = ['valu', 'ation'].join('')
 const AR_SERVICE = String.fromCharCode(0x062a, 0x0642, 0x064a, 0x064a, 0x0645)
 
 const SLOTS = {
-  entity: 'Example Holdings',
-  cr: '0000000000',
+  entity: 'To be confirmed',
+  cr: 'To be confirmed',
   provider: 'Example AI',
   privacy: '/privacy',
   terms: '/terms',

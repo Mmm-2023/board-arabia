@@ -17,6 +17,7 @@ import {
 } from '../../../supabase/functions/_shared/due_diligence.ts'
 import { REPORT_COPY } from '../../lib/dueDiligenceCopy.ts'
 import { presentNextSteps, visibleNextSteps, type NextStepItem } from '../../lib/dueDiligenceNextSteps.ts'
+import { AiReportOperatorLine } from '../../components/ai/AiReportOperatorLine'
 import { MEMBER_VIEWS } from '../../shell/viewCopy.ts'
 import { DraftMemoMissing, DueDiligenceMemo } from './DueDiligenceMemo.tsx'
 
@@ -113,6 +114,7 @@ export function DueDiligenceReport({
       <p className="mt-4 max-w-3xl border-y border-r border-[var(--ba-line)] border-l-2 border-l-[var(--ba-copper)] bg-[var(--ba-porcelain)] px-4 py-3 text-[0.98rem] leading-relaxed text-ink/80">
         {report.disclaimer}
       </p>
+      <AiReportOperatorLine className="mt-3 max-w-3xl text-[0.95rem] leading-relaxed text-ink/80" />
 
       <section className="mt-8 max-w-3xl" aria-labelledby="dd-overview">
         <h2 id="dd-overview" className="font-display text-[1.35rem] font-semibold">

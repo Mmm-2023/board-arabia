@@ -1,6 +1,7 @@
 /**
  * AI tool legal slots. One source: src/config/legal.ts.
  * Entity, commercial registration, and provider default to "To be confirmed".
+ * The AI report operator is not one of these slots. Signed-in pages load it separately.
  * Privacy and terms stay the labelled in-app routes.
  */
 import { legalField, PRIVACY_LINK, TERMS_LINK, type LegalLang } from '../config/legal'
