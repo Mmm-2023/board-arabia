@@ -1,3 +1,4 @@
+// Applies every migration, then checks seat, wallet, region, cap, and caller.
 import assert from 'node:assert/strict'
 import { execFileSync } from 'node:child_process'
 import { mkdtempSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
