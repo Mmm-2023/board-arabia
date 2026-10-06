@@ -8,11 +8,13 @@ import {
   pendingIntroNudgeMail,
   isoWeekParts,
   planIntroWeek,
+  previousIsoWeek,
   runSuggestIntros,
   scheduleAuthorized,
   type PlanIntro,
   type PlanMember,
   type PlannedSuggestion,
+  type PriorSuggestion,
 } from '../_shared/suggest_intros.ts'
 
 type MemberRow = {
@@ -21,6 +23,14 @@ type MemberRow = {
   status?: string
   seat?: string
   is_demo?: boolean
+  directory_hidden?: boolean
+}
+
+type StoredSuggestionRow = {
+  member_id?: string
+  suggested_id?: string
+  reason?: string | null
+  rank?: number | null
 }
 
 type ProfileRow = {
@@ -71,9 +81,10 @@ Deno.serve(async (req) => {
 
   const plan = planIntroWeek({
     now,
-    weekAlreadyHasSuggestions: loaded.weekCount > 0,
     members: loaded.members,
     intros: loaded.intros,
+    priorSuggestions: loaded.prior,
+    membersWithCurrentWeek: loaded.membersWithCurrentWeek,
   })
   const site = publicSite()
   const pendingMail = pendingIntroNudgeMail(site)
@@ -149,11 +160,13 @@ async function loadPlanInputs(
 ): Promise<{
   members: PlanMember[]
   intros: PlanIntro[]
-  weekCount: number
+  prior: PriorSuggestion[]
+  membersWithCurrentWeek: string[]
 } | null> {
   const week = isoWeekParts(now)
-  const [membersRes, profilesRes, introsRes, samplesRes, weekRes] = await Promise.all([
-    admin.from('members').select('user_id, email, status, seat, is_demo'),
+  const prev = previousIsoWeek(now)
+  const [membersRes, profilesRes, introsRes, samplesRes, currentRes, priorRes] = await Promise.all([
+    admin.from('members').select('user_id, email, status, seat, is_demo, directory_hidden'),
     admin.from('profiles').select('user_id, full_name, sector_tags, vision_themes, location'),
     admin
       .from('member_intros')
@@ -161,13 +174,16 @@ async function loadPlanInputs(
         'id, requester_id, target_id, status, requested_at, decided_at, pending_nudge_sent_at, meet_nudge_requester_sent_at, meet_nudge_target_sent_at',
       ),
     admin.from('directory_entries').select('id'),
+    admin.from('intro_suggestions').select('member_id').eq('iso_year', week.year).eq('iso_week', week.week),
     admin
       .from('intro_suggestions')
-      .select('id', { count: 'exact', head: true })
-      .eq('iso_year', week.year)
-      .eq('iso_week', week.week),
+      .select('member_id, suggested_id, reason, rank')
+      .eq('iso_year', prev.year)
+      .eq('iso_week', prev.week),
   ])
-  if (membersRes.error || profilesRes.error || introsRes.error || samplesRes.error || weekRes.error) return null
+  if (membersRes.error || profilesRes.error || introsRes.error || samplesRes.error || currentRes.error || priorRes.error) {
+    return null
+  }
 
   const samples = new Set(
     ((samplesRes.data ?? []) as { id?: string }[]).map((row) => row.id).filter((id): id is string => Boolean(id)),
@@ -181,8 +197,18 @@ async function loadPlanInputs(
   const intros = ((introsRes.data ?? []) as IntroRow[])
     .map(toIntro)
     .filter((row): row is PlanIntro => row !== null)
+  const membersWithCurrentWeek = [
+    ...new Set(
+      ((currentRes.data ?? []) as StoredSuggestionRow[])
+        .map((row) => String(row.member_id || ''))
+        .filter((id) => id.length > 0),
+    ),
+  ]
+  const prior = ((priorRes.data ?? []) as StoredSuggestionRow[])
+    .map(toPrior)
+    .filter((row): row is PriorSuggestion => row !== null)
 
-  return { members, intros, weekCount: weekRes.count ?? 0 }
+  return { members, intros, prior, membersWithCurrentWeek }
 }
 
 function toMember(row: MemberRow, profile: ProfileRow | undefined, samples: ReadonlySet<string>): PlanMember | null {
@@ -200,7 +226,17 @@ function toMember(row: MemberRow, profile: ProfileRow | undefined, samples: Read
     visionThemes: stringList(profile?.vision_themes),
     region: String(profile?.location || '').trim(),
     sample: samples.has(id) || row.is_demo === true || isExampleMemberName(fullName),
+    directoryHidden: row.directory_hidden === true,
   }
+}
+
+function toPrior(row: StoredSuggestionRow): PriorSuggestion | null {
+  const memberId = String(row.member_id || '')
+  const suggestedId = String(row.suggested_id || '')
+  const reason = String(row.reason || '')
+  const rank = Number(row.rank)
+  if (!memberId || !suggestedId || !reason.trim() || !Number.isInteger(rank)) return null
+  return { memberId, suggestedId, reason, rank }
 }
 
 function toIntro(row: IntroRow): PlanIntro | null {

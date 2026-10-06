@@ -1,7 +1,7 @@
 import { type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { Avatar } from '../../components/Avatar'
-import { suggestionDetail, type IntroSuggestion } from '../../lib/introSuggestions'
+import { suggestionDetail, WEEKLY_INTRO_SUGGESTION_LINE, type IntroSuggestion } from '../../lib/introSuggestions'
 import type { IntroQuota, IntroStatus } from '../../lib/memberIntros'
 import { EmptyState } from '../../shell/ViewState'
 import { DirectoryIntroAction } from './DirectoryIntroAction'
@@ -32,13 +32,10 @@ export function IntroSuggestions({
   return (
     <section aria-label="Suggested introductions" className="mt-5" data-intro-suggestions="">
       <h2 className="text-[0.72rem] font-semibold tracking-[0.14em] text-ink/40 uppercase">Suggested introductions</h2>
+      <p className="mt-2 text-[0.95rem] leading-relaxed text-ink/55">{WEEKLY_INTRO_SUGGESTION_LINE}</p>
       {rows.length === 0 ? (
         <div className="mt-3">
-          <EmptyState
-            tone="member"
-            message="No suggested introductions this week."
-            action={{ label: 'Directory', to: '/dashboard/people/directory' }}
-          />
+          <EmptyState tone="member" message="No suggested introductions this week." />
         </div>
       ) : (
         <ul className="mt-3 space-y-3">

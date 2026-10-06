@@ -2,6 +2,11 @@
 
 import { isStoredAvatarStyle, type StoredAvatarStyle } from './avatarStyle.ts'
 
+/** Mirrors WEEKLY_INTRO_SUGGESTION_CAP in the suggestion planner. Admin will own it later via settings. */
+export const WEEKLY_INTRO_SUGGESTION_CAP = 2
+
+export const WEEKLY_INTRO_SUGGESTION_LINE = `Up to ${WEEKLY_INTRO_SUGGESTION_CAP} suggestions each week.`
+
 const PHONE = /\+?\d[\d\s()-]{7,}/
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 const AVATAR_PATH = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\/avatar$/i
