@@ -1030,7 +1030,6 @@ export type Database = {
       }
       staff_create_mandate: {
         Args: {
-          p_published: boolean
           p_sector: string
           p_deal_type: string
           p_ticket_band: string

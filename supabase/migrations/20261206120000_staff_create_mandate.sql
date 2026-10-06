@@ -1,6 +1,7 @@
 -- Staff create one mandate.
 -- private.is_staff() requires aal2. This function does not change an existing row.
 -- is_demo is always false, so a new mandate is not an Example.
+-- published is always false. Publishing stays a separate step.
 -- Existing Example rows are left as they are.
 -- The old contact and deck checks only allowed the sample host, so a real
 -- mandate could not be saved. The shape checks below still accept those rows.
@@ -26,7 +27,6 @@ alter table public.mandates
   );
 
 create or replace function public.staff_create_mandate(
-  p_published boolean,
   p_sector text,
   p_deal_type text,
   p_ticket_band text,
@@ -49,7 +49,6 @@ security definer
 set search_path = ''
 as $$
 declare
-  v_published boolean;
   v_sector text;
   v_deal_type text;
   v_ticket text;
@@ -72,7 +71,6 @@ begin
     raise exception 'not_allowed' using errcode = '42501';
   end if;
 
-  v_published := coalesce(p_published, false);
   v_sector := btrim(coalesce(p_sector, ''));
   v_deal_type := btrim(coalesce(p_deal_type, ''));
   v_ticket := btrim(coalesce(p_ticket_band, ''));
@@ -150,7 +148,7 @@ begin
   ) values (
     pg_catalog.gen_random_uuid(),
     false,
-    v_published,
+    false,
     v_sector,
     v_deal_type,
     v_ticket,
@@ -174,7 +172,7 @@ begin
   return jsonb_build_object(
     'id', v_id,
     'is_demo', false,
-    'published', v_published,
+    'published', false,
     'sector', v_sector,
     'deal_type', v_deal_type,
     'ticket_band', v_ticket,
@@ -187,13 +185,13 @@ end;
 $$;
 
 revoke all on function public.staff_create_mandate(
-  boolean, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text[], text[]
+  text, text, text, text, text, text, text, text, text, text, text, text, text, text, text[], text[]
 ) from public, anon, authenticated;
 
 revoke all on function public.staff_create_mandate(
-  boolean, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text[], text[]
+  text, text, text, text, text, text, text, text, text, text, text, text, text, text, text[], text[]
 ) from public, anon;
 
 grant execute on function public.staff_create_mandate(
-  boolean, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text[], text[]
+  text, text, text, text, text, text, text, text, text, text, text, text, text, text, text[], text[]
 ) to authenticated;

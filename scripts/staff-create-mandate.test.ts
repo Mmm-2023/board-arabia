@@ -66,7 +66,10 @@ test('staff create mandate migration sorts after the held slots and locks the RP
   assert.match(sql, /raise exception 'not_allowed' using errcode = '42501'/)
   assert.match(sql, /raise exception 'invalid_mandate' using errcode = '22023'/)
   assert.match(sql, /is_demo,\s*\n\s*published/)
-  assert.match(sql, /false,\s*\n\s*v_published/)
+  assert.match(sql, /pg_catalog\.gen_random_uuid\(\),\s*\n\s*false,\s*\n\s*false,/)
+  assert.match(sql, /'published', false/)
+  assert.equal(/p_published/.test(sql), false)
+  assert.equal(/v_published/.test(sql), false)
   assert.equal(/\bupdate\b/i.test(sql), false)
   assert.equal(/majlis_/i.test(sql), false)
   assert.equal(/nammco/i.test(sql), false)
@@ -77,15 +80,15 @@ test('staff create mandate migration sorts after the held slots and locks the RP
   assert.equal(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i.test(sql), false)
   assert.match(
     sql,
-    /revoke all on function public\.staff_create_mandate\(\s*boolean, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text\[\], text\[\]\s*\) from public, anon, authenticated;/,
+    /revoke all on function public\.staff_create_mandate\(\s*text, text, text, text, text, text, text, text, text, text, text, text, text, text, text\[\], text\[\]\s*\) from public, anon, authenticated;/,
   )
   assert.match(
     sql,
-    /revoke all on function public\.staff_create_mandate\(\s*boolean, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text\[\], text\[\]\s*\) from public, anon;/,
+    /revoke all on function public\.staff_create_mandate\(\s*text, text, text, text, text, text, text, text, text, text, text, text, text, text, text\[\], text\[\]\s*\) from public, anon;/,
   )
   assert.match(
     sql,
-    /grant execute on function public\.staff_create_mandate\(\s*boolean, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text\[\], text\[\]\s*\) to authenticated;/,
+    /grant execute on function public\.staff_create_mandate\(\s*text, text, text, text, text, text, text, text, text, text, text, text, text, text, text\[\], text\[\]\s*\) to authenticated;/,
   )
   assert.equal(/grant execute on function public\.staff_create_mandate\([\s\S]*\) to anon/.test(sql), false)
   assert.equal(/grant execute on function public\.staff_create_mandate\([\s\S]*\) to public/.test(sql), false)
@@ -180,6 +183,9 @@ test('the new mandate form renders on the staff list and not on member pages', a
     assert.match(empty, /Save mandate/)
     assert.equal(empty.includes('data-new-mandate-error'), false)
     assert.equal(empty.includes('>Example<'), false)
+    assert.equal(empty.includes('Published'), false)
+    assert.equal(read('src/pages/admin/NewMandateForm.tsx').includes('Published'), false)
+    assert.equal(read('src/lib/newMandate.ts').includes('p_published'), false)
 
     const invalid = renderToStaticMarkup(
       createElement(
@@ -304,14 +310,12 @@ create or replace function pg_temp.try_mandate(
   p_phone text,
   p_deck text,
   p_tags text[],
-  p_themes text[],
-  p_published boolean
+  p_themes text[]
 ) returns jsonb
 language plpgsql
 as $$
 begin
   return public.staff_create_mandate(
-    p_published,
     p_sector,
     'Growth equity',
     'Growth band',
@@ -363,16 +367,52 @@ begin
     raise exception 'example mandates are missing';
   end if;
 
+  if exists (
+    select 1
+    from pg_proc p
+    join pg_namespace n on n.oid = p.pronamespace
+    where n.nspname = 'public'
+      and p.proname = 'staff_create_mandate'
+      and pg_get_function_identity_arguments(p.oid) ilike '%p_published%'
+  ) then
+    raise exception 'signature still accepts p_published';
+  end if;
+  begin
+    perform public.staff_create_mandate(
+      true,
+      'Logistics',
+      'Growth equity',
+      'Growth band',
+      'KSA',
+      'Diligence',
+      'Growth capital for a regional freight platform.',
+      'Example Freight',
+      'Set on request',
+      'One board seat.',
+      'Example Contact',
+      'contact@example.com',
+      'Extension 100',
+      null,
+      'A sample note.',
+      array['Logistics']::text[],
+      array['Industrial development and logistics']::text[]
+    );
+    raise exception 'p_published was accepted';
+  exception
+    when undefined_function then
+      null;
+  end;
+
   if has_function_privilege(
     'anon',
-    'public.staff_create_mandate(boolean,text,text,text,text,text,text,text,text,text,text,text,text,text,text,text[],text[])',
+    'public.staff_create_mandate(text,text,text,text,text,text,text,text,text,text,text,text,text,text,text[],text[])',
     'execute'
   ) then
     raise exception 'anon can execute staff_create_mandate';
   end if;
   if not has_function_privilege(
     'authenticated',
-    'public.staff_create_mandate(boolean,text,text,text,text,text,text,text,text,text,text,text,text,text,text,text[],text[])',
+    'public.staff_create_mandate(text,text,text,text,text,text,text,text,text,text,text,text,text,text,text[],text[])',
     'execute'
   ) then
     raise exception 'authenticated cannot execute staff_create_mandate';
@@ -401,8 +441,7 @@ begin
       'Extension 100',
       null,
       array['Logistics']::text[],
-      array['Industrial development and logistics']::text[],
-      false
+      array['Industrial development and logistics']::text[]
     );
     raise exception 'aal1 staff created a mandate';
   exception
@@ -425,8 +464,7 @@ begin
       'Extension 100',
       null,
       array['Logistics']::text[],
-      array['Industrial development and logistics']::text[],
-      false
+      array['Industrial development and logistics']::text[]
     );
     raise exception 'member created a mandate';
   exception
@@ -440,7 +478,6 @@ begin
   set role anon;
   begin
     perform public.staff_create_mandate(
-      false,
       'Logistics',
       'Growth equity',
       'Growth band',
@@ -479,8 +516,7 @@ begin
       'Extension 100',
       null,
       array['Logistics']::text[],
-      array['Industrial development and logistics']::text[],
-      false
+      array['Industrial development and logistics']::text[]
     );
     raise exception 'blank sector was stored';
   exception
@@ -497,8 +533,7 @@ begin
       'Extension 100',
       null,
       array['Logistics']::text[],
-      array['Industrial development and logistics']::text[],
-      false
+      array['Industrial development and logistics']::text[]
     );
     raise exception 'long one liner was stored';
   exception
@@ -515,8 +550,7 @@ begin
       'Extension 100',
       null,
       array['Logistics']::text[],
-      array['Industrial development and logistics']::text[],
-      false
+      array['Industrial development and logistics']::text[]
     );
     raise exception 'at sign in a public field was stored';
   exception
@@ -533,8 +567,7 @@ begin
       'Extension 100',
       null,
       array['Logistics']::text[],
-      array['Industrial development and logistics']::text[],
-      false
+      array['Industrial development and logistics']::text[]
     );
     raise exception 'company name in the one liner was stored';
   exception
@@ -558,11 +591,13 @@ begin
     'Extension 100',
     'https://example.com/brief',
     array['Logistics']::text[],
-    array['Industrial development and logistics']::text[],
-    false
+    array['Industrial development and logistics']::text[]
   );
   if created->>'is_demo' is distinct from 'false' then
     raise exception 'response marked an example %', created;
+  end if;
+  if created->>'published' is distinct from 'false' then
+    raise exception 'response published %', created;
   end if;
   if position('@' in created::text) <> 0 then
     raise exception 'response included an address %', created;

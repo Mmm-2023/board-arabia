@@ -25,7 +25,6 @@ const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/
 const DECK_RE = /^https:\/\/[a-z0-9.-]+\//
 
 export type NewMandateDraft = {
-  published: boolean
   sector: string
   dealType: string
   ticketBand: string
@@ -47,7 +46,7 @@ export type NewMandateDraft = {
 export type NewMandateField = keyof NewMandateDraft
 
 type TextField = {
-  key: Exclude<NewMandateField, 'published' | 'sectorTags' | 'visionThemes'>
+  key: Exclude<NewMandateField, 'sectorTags' | 'visionThemes'>
   label: string
   max: number
   required: boolean
@@ -73,7 +72,6 @@ const TEXT_FIELDS: readonly TextField[] = [
 
 export function emptyNewMandate(): NewMandateDraft {
   return {
-    published: false,
     sector: '',
     dealType: '',
     ticketBand: '',
@@ -160,7 +158,6 @@ export function newMandateRpcArgs(draft: NewMandateDraft) {
   const sectorTags = cleanTags(draft.sectorTags, SECTOR_TAGS) ?? []
   const visionThemes = cleanTags(draft.visionThemes, VISION_2030_THEMES) ?? []
   return {
-    p_published: draft.published,
     p_sector: draft.sector.trim(),
     p_deal_type: draft.dealType.trim(),
     p_ticket_band: draft.ticketBand.trim(),

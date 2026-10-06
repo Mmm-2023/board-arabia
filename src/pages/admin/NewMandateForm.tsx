@@ -43,7 +43,7 @@ export function NewMandateForm({
     <form data-new-mandate="form" className="mt-8 max-w-xl" onSubmit={submit}>
       <h2 className="font-display text-[1.45rem] font-semibold tracking-[-0.02em]">New mandate</h2>
       <p className="mt-2 text-[0.95rem] leading-relaxed text-pearl/70">
-        Admin adds a mandate here. It is not marked Example. Members see the public fields only after it is published.
+        Admin adds a mandate here. It is not marked Example. It starts unpublished.
       </p>
       <div className="mt-5 space-y-4">
         <TextField
@@ -186,15 +186,6 @@ export function NewMandateForm({
           invalid={field === 'visionThemes'}
           onToggle={(value) => onDraft({ ...draft, visionThemes: toggleTag(draft.visionThemes, value) })}
         />
-        <label className="flex min-h-11 items-center gap-3 text-[0.95rem] text-pearl">
-          <input
-            type="checkbox"
-            className="size-4"
-            checked={draft.published}
-            onChange={(event) => onDraft({ ...draft, published: event.target.checked })}
-          />
-          Published. Members can see the public fields.
-        </label>
       </div>
       {message ? (
         <p id="mandate-form-error" className="mt-4 text-[0.95rem] text-red-300" role="alert" data-new-mandate-error="">
