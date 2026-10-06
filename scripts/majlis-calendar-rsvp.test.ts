@@ -27,6 +27,29 @@ const EVENT = '20000000-0000-4000-8000-000000000001'
 const PAST = '20000000-0000-4000-8000-000000000002'
 const ADMIN_EVENT = '20000000-0000-4000-8000-000000000003'
 
+test('majlis calendar migration pins an empty search path', () => {
+  const sql = readFileSync(path.join(root, 'supabase/migrations', migrationName), 'utf8')
+  assert.equal(sql.includes('search_path = public'), false)
+  assert.equal(sql.includes('\u2014'), false)
+  const definers: string[] = []
+  for (const block of sql.split(/create (?:or replace )?function /).slice(1)) {
+    const header = block.split(/as \$\$|as \$fn\$/)[0] ?? ''
+    if (!/security definer/i.test(header)) continue
+    assert.match(header, /set search_path = ''/)
+    definers.push(header.split('(')[0]?.trim() ?? '')
+  }
+  assert.deepEqual(definers, [
+    'public.majlis_place_rsvp',
+    'private.majlis_events_member_rows',
+    'private.majlis_roster_rows',
+  ])
+  const place = sql.split('function public.majlis_place_rsvp')[1]?.split('$$;')[0] ?? ''
+  assert.match(place, /auth\.role\(\)/)
+  assert.match(place, /public\.majlis_events/)
+  assert.match(place, /public\.members/)
+  assert.match(place, /public\.majlis_rsvps/)
+})
+
 test('member routes keep Majlis upcoming, past, and the events redirect', () => {
   assert.deepEqual(
     MEMBER_SECTIONS.majlis?.map((item) => item.label),

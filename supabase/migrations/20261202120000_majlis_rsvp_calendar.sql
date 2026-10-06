@@ -28,7 +28,7 @@ comment on column public.majlis_events.created_by_staff is
 create or replace function private.majlis_events_guard_client_write()
 returns trigger
 language plpgsql
-set search_path = public
+set search_path = ''
 as $$
 begin
   if auth.role() = 'service_role' then
@@ -106,7 +106,7 @@ create or replace function public.majlis_place_rsvp(
 returns jsonb
 language plpgsql
 security definer
-set search_path = public
+set search_path = ''
 as $$
 declare
   ev public.majlis_events%rowtype;
