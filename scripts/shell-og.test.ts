@@ -225,23 +225,29 @@ function startPages(rootDir: string) {
 
 function request(port: number, routePath: string, method = 'GET') {
   return new Promise<{ status: number; location: string; body: string }>((resolve, reject) => {
-    const req = http.request({ hostname: '127.0.0.1', port, path: routePath, method }, (res) => {
-      const chunks: Buffer[] = []
-      res.on('data', (chunk) => chunks.push(chunk))
-      res.on('end', () => {
-        resolve({
-          status: res.statusCode || 0,
-          location: String(res.headers.location || ''),
-          body: Buffer.concat(chunks).toString('utf8'),
+    const req = http.request(
+      { hostname: '127.0.0.1', port, path: routePath, method, agent: false },
+      (res) => {
+        const chunks: Buffer[] = []
+        res.on('data', (chunk) => chunks.push(chunk))
+        res.on('end', () => {
+          resolve({
+            status: res.statusCode || 0,
+            location: String(res.headers.location || ''),
+            body: Buffer.concat(chunks).toString('utf8'),
+          })
         })
-      })
+      },
+    )
+    req.setTimeout(10000, () => {
+      req.destroy(new Error(`timed out ${method} ${routePath}`))
     })
     req.on('error', reject)
     req.end()
   })
 }
 
-test('fixed shells answer 200 on a Pages static server and unknown paths stay 404', async () => {
+test('fixed shells answer 200 on a Pages static server and unknown paths stay 404', { timeout: 60_000 }, async () => {
   assert.equal(existsSync(path.join(dist, '404.html')), true, 'dist is missing; build before this test')
   const server = startPages(dist)
   await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', () => resolve()))
@@ -282,6 +288,7 @@ test('fixed shells answer 200 on a Pages static server and unknown paths stay 40
       assert.equal(response.status, 404, routePath)
     }
   } finally {
+    server.closeAllConnections()
     await new Promise<void>((resolve, reject) => server.close((error) => (error ? reject(error) : resolve())))
   }
 })
