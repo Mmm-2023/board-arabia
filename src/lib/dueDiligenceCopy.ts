@@ -3,6 +3,7 @@
  * Paste-ready copy. No em dash in these strings.
  */
 import { MEMBER_MESSAGES } from '../../supabase/functions/_shared/due_diligence.ts'
+import { DD_PRIVATE_LINE } from '../content/trust.ts'
 
 /** Flag name: dd_retention_copy on public.ai_tool_settings. Default false. */
 export function deckHintText(retentionCopy: boolean): string {
@@ -37,7 +38,7 @@ export const DD_COPY = {
   deckLabel: 'Pitch deck',
   deckButton: 'Choose PDF or PPTX',
   deckHint:
-    'PDF or PPTX, up to 15 MB. Text-based files work best. Scanned image-only decks may not be readable. Do not upload inside information.',
+    `PDF or PPTX, up to 15 MB. Text-based files work best. Scanned image-only decks may not be readable. ${DD_PRIVATE_LINE} Do not upload inside information.`,
   ctaPrimary: 'Check this deck',
   ctaDisabled: 'Choose a deck first',
   ctaRunning: 'Starting\u2026',

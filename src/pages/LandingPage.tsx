@@ -14,6 +14,7 @@ import { StepDiagram } from '../components/landing/StepDiagram'
 import { StickyApply } from '../components/landing/StickyApply'
 import { AUDIENCE_LINE, MEMBER_TOOLS } from '../content/marketing'
 import { FAQ } from '../content/seo'
+import { LANDING_STRIP_LEAD, LANDING_STRIP_LINK } from '../content/trust'
 import { closingCtaBody } from '../content/twoTierCopy'
 import { publicConsiderationCta } from '../lib/twoTierRegister'
 import { LANDING_PREVIEW_EXAMPLES, presentLandingDealList, type LandingDeal } from '../lib/landingPreview'
@@ -53,6 +54,15 @@ export function LandingPage() {
         <ProcessSection />
         <TrustedPartnersSection />
         <FaqList items={FAQ} compact />
+        <p
+          className="mx-auto max-w-3xl px-5 pt-8 text-center text-[0.875rem] leading-relaxed text-[var(--ba-muted)] md:px-10"
+          data-trust-strip="landing"
+        >
+          {LANDING_STRIP_LEAD}{' '}
+          <Link to="/security" className="ba-textlink inline-flex min-h-11 items-center">
+            {LANDING_STRIP_LINK}
+          </Link>
+        </p>
         <CtaBand
           eyebrow="Begin"
           body={closingCtaBody()}

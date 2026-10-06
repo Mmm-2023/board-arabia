@@ -378,6 +378,7 @@ test('privacy and terms render the entity line and marketing routes keep only th
       ['/src/pages/PartnersPage.tsx', 'PartnersPage', '/partners', 'partners/index.html'],
       ['/src/pages/HowItWorksPage.tsx', 'HowItWorksPage', '/how-it-works', 'how-it-works/index.html'],
       ['/src/pages/AboutPage.tsx', 'AboutPage', '/about', 'about/index.html'],
+      ['/src/pages/SecurityPage.tsx', 'SecurityPage', '/security', 'security/index.html'],
     ] as const
     for (const [file, name, route, artifact] of pages) {
       const mod = await vite.ssrLoadModule(file)

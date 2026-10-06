@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url'
 import { createServer } from 'vite'
 import { strayPublicNammco } from './public-nammco.mjs'
 import { pages404Html } from './spa-fallback.mjs'
+import { stampDistCsp } from './stamp-csp.mjs'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const dist = path.join(root, 'dist')
@@ -16,6 +17,7 @@ const routes = [
   '/how-it-works',
   '/about',
   '/privacy',
+  '/security',
   '/terms',
 ]
 
@@ -359,6 +361,9 @@ if (pagesBase !== '/') {
   ].join('\n')
   fs.writeFileSync(path.join(dist, 'robots.txt'), robots)
 }
+
+const csp = stampDistCsp(dist)
+console.log(`stamped CSP on ${csp.files} HTML files (${csp.hashes} inline script hashes)`)
 
 assertDistClean(dist)
 

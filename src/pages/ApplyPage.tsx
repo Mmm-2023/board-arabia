@@ -8,6 +8,7 @@ import { REVIEW_SLA } from '../content/marketing'
 import { parseUsdInput, PLATFORM_TOTALS_NOTE } from '../lib/capacity'
 import { track } from '../lib/analytics'
 import { lookupMemberInvite, submitApplication } from '../lib/supabase'
+import { APPLY_STRIP, APPLY_STRIP_LINK } from '../content/trust'
 import { readSubmitAttribution } from '../lib/tracking/touch'
 
 type FormState = {
@@ -387,6 +388,12 @@ export function ApplyPage() {
             >
               {submitting ? 'Submitting…' : 'Submit for consideration'}
             </button>
+            <p className="text-[0.875rem] leading-relaxed text-ink/65" data-trust-strip="apply">
+              {APPLY_STRIP}{' '}
+              <Link to="/privacy" className="border-b border-brass text-ink">
+                {APPLY_STRIP_LINK}
+              </Link>
+            </p>
           </form>
         </div>
       </main>

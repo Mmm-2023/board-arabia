@@ -31,6 +31,7 @@ export const MARKETING_PATHS = [
   '/how-it-works',
   '/about',
   '/privacy',
+  '/security',
   '/terms',
 ] as const
 
@@ -93,6 +94,12 @@ export const MARKETING_PAGES: Record<MarketingPath, MarketingPage> = {
     title: 'Privacy | Board Arabia',
     description:
       'Privacy notice for Board Arabia: what the pre-vet collects, how site analytics works after consent, how long data is kept, and how to ask for access or deletion. No public directory and no public calendar.',
+  },
+  '/security': {
+    path: '/security',
+    title: 'Trust and privacy | Board Arabia',
+    description:
+      'How Board Arabia protects applications, member records and uploaded files: a members-only directory, private storage, Frankfurt hosting, encryption, and two-step sign-in for admin.',
   },
   '/terms': {
     path: '/terms',

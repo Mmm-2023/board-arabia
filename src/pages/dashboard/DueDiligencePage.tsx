@@ -34,6 +34,7 @@ import { CardSkeleton, EmptyState, ErrorBanner, PermissionState } from '../../sh
 import { MEMBER_VIEWS } from '../../shell/viewCopy'
 import { useMember } from './context'
 import { AiReportOperatorLine } from '../../components/ai/AiReportOperatorLine'
+import { UploadHandling } from '../../components/ai/UploadHandling'
 import { AdminShareBar } from '../../components/mfa/TwoStepScreens'
 import { DueDiligenceReport } from './DueDiligenceReport'
 
@@ -443,6 +444,7 @@ export function DueDiligenceDeskView({
             <p className="mt-2 text-[0.92rem] leading-relaxed text-[var(--ba-muted)]" data-dd-hint={retentionCopy ? 'on' : 'off'}>
               {deckHintText(retentionCopy)}
             </p>
+            <UploadHandling />
             <p className="mt-3 text-[0.95rem] leading-relaxed text-ink/80">{DUE_DILIGENCE_DISCLAIMER}</p>
             <AiReportOperatorLine className="mt-2 text-[0.95rem] leading-relaxed text-ink/80" />
             <details className="mt-4 border border-[var(--ba-line)] bg-white px-4 py-2">

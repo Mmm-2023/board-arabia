@@ -12,6 +12,11 @@ const LEGACY_MIGRATIONS = new Set([
   '20260923120000_staff_only_admin_lock.sql',
 ])
 
+/** Already applied. Uses reserved .test mail. Listed by filename. Not rewritten. */
+const DEMO_TEST_HOST_MIGRATION = '20260929120000_demo_seed_thresholds_redaction.sql'
+
+const HOST_EXCEPTIONS = new Set([...LEGACY_MIGRATIONS, DEMO_TEST_HOST_MIGRATION])
+
 const emailRe = /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g
 const jwtRe = /eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/g
 
@@ -32,7 +37,7 @@ function read(rel: string) {
 
 function allowedEmailHost(address: string) {
   const host = address.slice(address.lastIndexOf('@') + 1).toLowerCase()
-  return host === 'example.com' || host.endsWith('.test')
+  return host === 'example.com'
 }
 
 function walk(dir: string, out: string[]) {
@@ -50,11 +55,14 @@ function walk(dir: string, out: string[]) {
   }
 }
 
-test('migrations keep real addresses out, with two legacy filename exceptions', () => {
+test('migrations allow example.com hosts only, with filename exceptions', () => {
+  assert.equal(allowedEmailHost('member@example.com'), true)
+  assert.equal(allowedEmailHost('member@boardarabia.test'), false)
+  assert.equal(allowedEmailHost('member@example.test'), false)
   const hits: string[] = []
   for (const name of readdirSync(migrationsDir)) {
     if (!name.endsWith('.sql')) continue
-    if (LEGACY_MIGRATIONS.has(name)) continue
+    if (HOST_EXCEPTIONS.has(name)) continue
     const text = readFileSync(path.join(migrationsDir, name), 'utf8')
     for (const address of emailsIn(text)) {
       if (allowedEmailHost(address)) continue
@@ -63,9 +71,12 @@ test('migrations keep real addresses out, with two legacy filename exceptions', 
     }
   }
   assert.deepEqual(hits, [])
-  for (const name of LEGACY_MIGRATIONS) {
+  for (const name of HOST_EXCEPTIONS) {
     assert.equal(statSync(path.join(migrationsDir, name)).isFile(), true, name)
   }
+  const demo = readFileSync(path.join(migrationsDir, DEMO_TEST_HOST_MIGRATION), 'utf8')
+  assert.match(demo, /@boardarabia\.test/)
+  assert.equal(demo.includes('@example.com'), false)
 })
 
 test('source has no private key and no jwt other than the public anon key', () => {

@@ -1,6 +1,8 @@
 import { useState, type FormEvent, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { TurnstileField } from '../../components/TurnstileField'
+import { registerStrip } from '../../content/trust'
+import { isTwoTierRegisterEnabled } from '../../lib/twoTierRegister'
 
 const ROLES = [
   { id: 'chairperson', label: 'Chairperson' },
@@ -60,6 +62,7 @@ export function RegisterScreen({
   const [formStartedAt] = useState(() => Date.now())
   const securityReady = security === 'preview' || Boolean(token)
   const blocked = submitting || !securityReady
+  const trustStrip = registerStrip(isTwoTierRegisterEnabled())
 
   function submit(event: FormEvent) {
     event.preventDefault()
@@ -196,6 +199,11 @@ export function RegisterScreen({
             <button type="submit" className="ba-primary inline-flex min-h-11 items-center px-5 text-[0.75rem] font-semibold tracking-[0.08em] uppercase disabled:opacity-40" disabled={blocked}>
               {submitting ? 'Sending…' : 'Register for consideration'}
             </button>
+            {trustStrip ? (
+              <p className="text-[0.92rem] leading-relaxed text-ink/60" data-trust-strip="register">
+                {trustStrip}
+              </p>
+            ) : null}
             <div className="order-2 lg:hidden">
               <NextSteps />
             </div>

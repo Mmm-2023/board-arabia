@@ -91,7 +91,7 @@ function pageType(path: string): string {
   if (path === '/') return 'home'
   if (path === '/apply') return 'apply'
   if (path === '/login' || path === '/login/staff') return 'login'
-  if (path === '/for-members' || path === '/for-capital' || path === '/partners' || path === '/how-it-works' || path === '/about' || path === '/privacy' || path === '/terms') {
+  if (path === '/for-members' || path === '/for-capital' || path === '/partners' || path === '/how-it-works' || path === '/about' || path === '/privacy' || path === '/security' || path === '/terms') {
     return 'marketing'
   }
   return 'other'
