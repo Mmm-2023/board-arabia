@@ -167,6 +167,19 @@ test('landing feature copy locks', async () => {
   for (const group of LANDING_GROUPS) {
     assert.equal(words(group.title).length <= 4, true, group.title)
   }
+  const bodies = new Map(LANDING_FEATURES.map((feature) => [feature.id, feature.body]))
+  assert.equal(
+    bodies.get('board-roles'),
+    'Board and non-executive seats on developer and property company boards, for founding members.',
+  )
+  assert.equal(
+    bodies.get('partners'),
+    'Request an intro to a vetted real estate partner firm. Admin reviews it before any outreach.',
+  )
+  assert.equal(
+    bodies.get('suggestions'),
+    'Up to two suggested introductions a week, from shared sectors, themes or region.',
+  )
 })
 
 test('security card bodies match the trust page strings', async () => {

@@ -1,7 +1,7 @@
 import type { AiToolKey } from '../../supabase/functions/_shared/ai_tools.ts'
 import { SIGNING_IN, WHERE_DATA_LIVES } from './trust.ts'
 
-export type LandingGroupId = 'people' | 'deals' | 'ai' | 'events' | 'security'
+export type LandingGroupId = 'people' | 'deals' | 'real-estate' | 'ai' | 'events' | 'security'
 
 export type LandingFeature = {
   id: string
@@ -32,6 +32,7 @@ export const LANDING_AI_SCOPE =
 export const LANDING_GROUPS: { id: LandingGroupId; title: string; scope?: string }[] = [
   { id: 'people', title: 'Meet the right people' },
   { id: 'deals', title: 'Do deals privately' },
+  { id: 'real-estate', title: 'Real estate' },
   { id: 'ai', title: 'AI tools for directors', scope: LANDING_AI_SCOPE },
   { id: 'events', title: 'Events' },
   { id: 'security', title: 'Security and privacy' },
@@ -96,7 +97,7 @@ export const LANDING_FEATURES: LandingFeature[] = [
   },
   {
     id: 'opportunities',
-    group: 'deals',
+    group: 'real-estate',
     icon: 'real-estate',
     title: 'Opportunities',
     body: 'Browse real estate opportunities. Counterparty and terms open after admin approves your intro.',
@@ -104,23 +105,23 @@ export const LANDING_FEATURES: LandingFeature[] = [
   },
   {
     id: 'board-roles',
-    group: 'deals',
+    group: 'real-estate',
     icon: 'review',
     title: 'Board roles',
-    body: 'Board and non-executive seats. Organisation and seat terms open after admin approves your intro.',
+    body: 'Board and non-executive seats on developer and property company boards, for founding members.',
     route: '/dashboard/deals/real-estate',
   },
   {
     id: 'partners',
-    group: 'deals',
+    group: 'real-estate',
     icon: 'real-estate',
     title: 'Partners',
-    body: 'Request an intro to a partner firm. Admin reviews it before any outreach.',
+    body: 'Request an intro to a vetted real estate partner firm. Admin reviews it before any outreach.',
     route: '/dashboard/deals/real-estate',
   },
   {
     id: 'appetite',
-    group: 'deals',
+    group: 'real-estate',
     icon: 'capacity',
     title: 'My RE appetite',
     body: 'Set your ticket band, places, asset classes and capital role so admin can match real estate intros.',
@@ -128,7 +129,7 @@ export const LANDING_FEATURES: LandingFeature[] = [
   },
   {
     id: 'co-invest',
-    group: 'deals',
+    group: 'real-estate',
     icon: 'deals',
     title: 'Co-invest interest',
     body: 'Express interest to co-invest on an opportunity. Admin may then open a club deal room.',
