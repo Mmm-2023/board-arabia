@@ -196,6 +196,8 @@ test('public marketing body does not say the desk outside Who runs the desk', as
   }
   const label = read('src/pages/dashboard/DirectoryIntroAction.tsx')
   assert.match(label, /Ask admin to introduce us/)
+  assert.match(label, /If they accept, admin sends the introduction\./)
+  assert.equal(/the desk/i.test(label), false)
   assert.equal(label.includes('Ask the desk'), false)
   for (const file of ['src/content/legal/privacy.en.ts', 'src/content/legal/terms.en.ts']) {
     assert.equal(/the desk/i.test(read(file)), false, file)

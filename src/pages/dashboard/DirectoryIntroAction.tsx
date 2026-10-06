@@ -126,7 +126,7 @@ export function DirectoryIntroAction({
             Ask admin to introduce us
           </label>
           <p className="mt-1 text-[0.92rem] leading-relaxed text-ink/55">
-            If they accept, the desk sends the introduction.
+            If they accept, admin sends the introduction.
           </p>
           {hint ? <p className="mt-2 text-[0.95rem] text-ink/70">{hint}</p> : null}
           {limitHit ? (

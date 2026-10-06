@@ -330,6 +330,27 @@ test('legal sources have no mailbox literal and no em or en dash', () => {
   }
 })
 
+test('an unset address reads as registered address, and a set address stays of', () => {
+  setLegalEnvForTests(null)
+  const pendingPrivacy = legalPlainText(resolveLegalDocument(PRIVACY_EN, 'en', false))
+  const pendingTerms = legalPlainText(resolveLegalDocument(TERMS_EN, 'en', false))
+  assert.match(pendingPrivacy, /registered address: To be confirmed \("we", "us"\)/)
+  assert.match(pendingTerms, /registered address: To be confirmed \("Board Arabia", "we", "us"\)/)
+  assert.equal(pendingPrivacy.includes('of To be confirmed'), false)
+  assert.equal(pendingTerms.includes('of To be confirmed'), false)
+  setLegalEnvForTests({ address: '12 Example Road' })
+  try {
+    const filledPrivacy = legalPlainText(resolveLegalDocument(PRIVACY_EN, 'en', false))
+    const filledTerms = legalPlainText(resolveLegalDocument(TERMS_EN, 'en', false))
+    assert.match(filledPrivacy, /of 12 Example Road \("we", "us"\)/)
+    assert.match(filledTerms, /of 12 Example Road \("Board Arabia", "we", "us"\)/)
+    assert.equal(filledPrivacy.includes('registered address:'), false)
+    assert.equal(filledTerms.includes('registered address:'), false)
+  } finally {
+    setLegalEnvForTests(null)
+  }
+})
+
 test('privacy and terms render the entity line and marketing routes keep only the footer credit', async () => {
   const previousEntity = process.env.VITE_LEGAL_BA_ENTITY
   const previousCr = process.env.VITE_LEGAL_CR
@@ -381,6 +402,10 @@ test('privacy and terms render the entity line and marketing routes keep only th
     assert.match(privacy, /To be confirmed[\s\S]{0,80}for AI tools/)
     assert.match(terms, /contact us at[\s\S]{0,80}To be confirmed/)
     assert.match(terms, /AI provider[\s\S]{0,80}To be confirmed/)
+    assert.match(privacy, /registered address:[\s\S]{0,40}To be confirmed/)
+    assert.match(terms, /registered address:[\s\S]{0,40}To be confirmed/)
+    assert.equal(privacy.includes('of To be confirmed'), false)
+    assert.equal(terms.includes('of To be confirmed'), false)
     assert.match(privacy, /Introductions and admin/)
     assert.match(privacy, /Ask admin/)
     assert.match(terms, /Ask admin/)
