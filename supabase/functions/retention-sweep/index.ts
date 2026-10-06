@@ -1,7 +1,14 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1'
 import { corsHeaders, jsonResponse, sendEmail } from '../_shared/mail.ts'
 import { emailLink, idleAccountReminderMail } from '../_shared/membership_copy.ts'
-import { ddDeckPathOk, purgeStoragePaths } from '../_shared/retention_storage.ts'
+import { retentionDaysOrDefault } from '../_shared/ai_tools.ts'
+import {
+  ddDeckPathOk,
+  orphanPurgeEnabled,
+  planStorageOrphans,
+  purgeStoragePaths,
+  type StorageOrphan,
+} from '../_shared/retention_storage.ts'
 
 type Plan = {
   unverified?: string[]
@@ -35,6 +42,7 @@ Deno.serve(async (req) => {
   if (!supabaseUrl || !serviceKey) return jsonResponse(req, { error: 'Not configured' }, 503)
   const admin = createClient(supabaseUrl, serviceKey)
   const dry = new URL(req.url).searchParams.get('dry_run') === '1'
+  const purgeOrphans = orphanPurgeEnabled(req.url)
 
   const { data, error } = await admin.rpc('retention_sweep_plan', { p_apply: !dry })
   if (error || !data || typeof data !== 'object') {
@@ -57,6 +65,10 @@ Deno.serve(async (req) => {
   const ddFiles = dry
     ? { removed: 0, failed: false, removedPaths: [] as string[] }
     : await purgeDueDiligenceFiles(admin, arrayOf(plan.dd_files))
+  const orphans = await runOrphanPass(admin, {
+    retentionDays: retentionDaysOrDefault(plan.ai_tool_retention_days),
+    purge: purgeOrphans,
+  })
   const counts = {
     unverified_7d: arrayOf(plan.unverified).length,
     never_submitted_120d: arrayOf(plan.never_submitted).length,
@@ -82,7 +94,7 @@ Deno.serve(async (req) => {
 
   await admin.from('retention_runs').insert({ dry_run: dry, counts })
 
-  const body: Record<string, unknown> = { ok: true, dry_run: dry, counts }
+  const body: Record<string, unknown> = { ok: true, dry_run: dry, counts, orphans: orphans.body }
   if (dry) {
     body.rows = {
       unverified: arrayOf(plan.unverified),
@@ -102,7 +114,9 @@ Deno.serve(async (req) => {
       staff_access_log: arrayOf(plan.staff_access_log),
     }
   }
-  if (reminderFailed || posthog.failed || aiFiles.failed || ddFiles.failed) return jsonResponse(req, body, 500)
+  if (reminderFailed || posthog.failed || aiFiles.failed || ddFiles.failed || orphans.failed) {
+    return jsonResponse(req, body, 500)
+  }
   return jsonResponse(req, body)
 })
 
@@ -210,6 +224,130 @@ async function purgeDueDiligenceFiles(
     paths,
     ddDeckPathOk,
   )
+}
+
+/**
+ * Orphan pass. Dry by default.
+ * Real deletion: POST with purge_orphans=1 and without dry_run=1.
+ * A dry_run=1 request never deletes orphans, even if purge_orphans=1 is also set.
+ * Counts and paths go to the function log and the JSON response.
+ */
+async function runOrphanPass(
+  admin: ReturnType<typeof createClient>,
+  input: { retentionDays: number; purge: boolean },
+): Promise<{ failed: boolean; body: Record<string, unknown> }> {
+  try {
+    const objects = [
+      ...(await listBucketObjects(admin, 'ai-tool-uploads')),
+      ...(await listBucketObjects(admin, 'due-diligence-decks')),
+    ]
+    const ownedPaths = [
+      ...(await loadStoragePaths(admin, 'ai_tool_jobs')).map((path) => ({ bucket: 'ai-tool-uploads', path })),
+      ...(await loadStoragePaths(admin, 'due_diligence_decks')).map((path) => ({
+        bucket: 'due-diligence-decks',
+        path,
+      })),
+    ]
+    const planned = planStorageOrphans({
+      objects,
+      ownedPaths,
+      retentionDays: input.retentionDays,
+      now: new Date(),
+      purge: input.purge,
+    })
+    console.log(JSON.stringify({
+      orphan_dry_run: !input.purge,
+      orphan_count: planned.report.length,
+      orphan_paths: planned.report,
+    }))
+    let removed = 0
+    let failed = false
+    if (input.purge) {
+      for (const item of planned.remove) {
+        const gone = await admin.storage.from(item.bucket).remove([item.path])
+        if (gone.error) {
+          failed = true
+          continue
+        }
+        const queue = item.bucket === 'ai-tool-uploads' ? 'ai_tool_file_purge' : 'due_diligence_file_purge'
+        const cleared = await admin.from(queue).delete().eq('storage_path', item.path)
+        if (cleared.error) failed = true
+        else removed += 1
+      }
+    }
+    return {
+      failed,
+      body: {
+        dry_run: !input.purge,
+        retention_days: input.retentionDays,
+        counts: orphanCounts(planned.report),
+        paths: planned.report,
+        removed,
+      },
+    }
+  } catch {
+    return { failed: true, body: { dry_run: !input.purge, error: 'Could not list storage.' } }
+  }
+}
+
+function orphanCounts(rows: StorageOrphan[]) {
+  return {
+    'ai-tool-uploads': rows.filter((item) => item.bucket === 'ai-tool-uploads').length,
+    'due-diligence-decks': rows.filter((item) => item.bucket === 'due-diligence-decks').length,
+  }
+}
+
+async function loadStoragePaths(admin: ReturnType<typeof createClient>, table: string): Promise<string[]> {
+  const paths: string[] = []
+  for (let from = 0; ; from += 1000) {
+    const { data, error } = await admin.from(table).select('storage_path').range(from, from + 999)
+    if (error) throw new Error('owned paths failed')
+    const rows = data ?? []
+    for (const row of rows) {
+      const path = row.storage_path
+      if (typeof path === 'string' && path) paths.push(path)
+    }
+    if (rows.length < 1000) break
+  }
+  return paths
+}
+
+async function listBucketObjects(
+  admin: ReturnType<typeof createClient>,
+  bucket: string,
+): Promise<{ bucket: string; path: string; createdAt: string | null }[]> {
+  return listPrefix(admin, bucket, '', 0)
+}
+
+async function listPrefix(
+  admin: ReturnType<typeof createClient>,
+  bucket: string,
+  prefix: string,
+  depth: number,
+): Promise<{ bucket: string; path: string; createdAt: string | null }[]> {
+  if (depth > 4) return []
+  const out: { bucket: string; path: string; createdAt: string | null }[] = []
+  for (let offset = 0; ; offset += 1000) {
+    const { data, error } = await admin.storage.from(bucket).list(prefix, {
+      limit: 1000,
+      offset,
+      sortBy: { column: 'name', order: 'asc' },
+    })
+    if (error) throw new Error('list failed')
+    const rows = data ?? []
+    for (const row of rows) {
+      const name = String(row.name || '')
+      if (!name || name === '.' || name === '..' || name.includes('..')) continue
+      const path = prefix ? `${prefix}/${name}` : name
+      if (row.id == null) {
+        out.push(...(await listPrefix(admin, bucket, path, depth + 1)))
+      } else {
+        out.push({ bucket, path, createdAt: row.created_at ?? null })
+      }
+    }
+    if (rows.length < 1000) break
+  }
+  return out
 }
 
 function authorized(req: Request) {
