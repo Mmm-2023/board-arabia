@@ -25,6 +25,7 @@ import { HomeSnapshotView } from './HomeSnapshotView'
 import { IntroSuggestions } from './IntroSuggestions'
 import { suggestionPortrait } from './suggestionPortrait'
 import { PendingInviteCards } from './PendingInviteCards'
+import { SponsorWelcomeGate } from './SponsorWelcomeGate'
 
 const EMPTY_SOURCES: LoadedSources = {
   mandates: null,
@@ -306,6 +307,7 @@ export function DashboardHome() {
           />
         </div>
       ) : null}
+      {member.seat === 'sponsor' ? <SponsorWelcomeGate /> : null}
       {member.seat === 'sponsor' ? (
         <section className="mb-8 max-w-3xl border border-[var(--ba-line)] bg-white px-5 py-4">
           <h2 className="font-display text-[1.25rem] font-semibold tracking-[-0.02em]">Your sponsorship</h2>

@@ -58,7 +58,7 @@ const member = {
 test('tier set keeps founding and member apart and lets sponsor combine', () => {
   assert.deepEqual(normalizeMembershipTiers(['sponsor', 'founding', 'founding']), ['founding', 'sponsor'])
   assert.equal(membershipTiersInvalid(['founding', 'member']), 'invalid_combination')
-  assert.equal(membershipTiersInvalid(['founding', 'sponsor']), null)
+  assert.equal(membershipTiersInvalid(['founding', 'sponsor']), 'sponsor_founding')
   assert.equal(membershipTiersInvalid(['member', 'sponsor']), null)
   assert.equal(membershipTiersInvalid(['sponsor']), null)
   assert.equal(membershipTiersInvalid([]), 'invalid_tier')

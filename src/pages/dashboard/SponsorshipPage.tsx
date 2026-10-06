@@ -6,6 +6,7 @@ import { CardSkeleton, ErrorBanner, PermissionState } from '../../shell/ViewStat
 import { useMember } from './context'
 import { OwnAvatar } from './OwnAvatar'
 import { SponsorshipView } from './SponsorshipView'
+import { SponsorWelcomeGate } from './SponsorWelcomeGate'
 
 export function SponsorshipPage() {
   const { member } = useMember()
@@ -50,5 +51,10 @@ export function SponsorshipPage() {
     )
   }
   if (!desk) return <CardSkeleton tone="member" label="Loading sponsorship" />
-  return <SponsorshipView desk={desk} portrait={<OwnAvatar decorative size={56} />} />
+  return (
+    <>
+      <SponsorWelcomeGate />
+      <SponsorshipView desk={desk} portrait={<OwnAvatar decorative size={56} />} />
+    </>
+  )
 }

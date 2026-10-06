@@ -24,15 +24,16 @@ export function normalizeMembershipTiers(values: readonly string[] | null | unde
   return MEMBERSHIP_TIER_IDS.filter((id) => picked.has(id))
 }
 
-/** Founding and Member cannot combine. Sponsor can sit with either. Empty and unknown values are invalid. */
+/** Founding and Member cannot combine. A sponsor seat cannot also hold Founding. */
 export function membershipTiersInvalid(
   values: readonly string[] | null | undefined,
-): 'invalid_tier' | 'invalid_combination' | null {
+): 'invalid_tier' | 'invalid_combination' | 'sponsor_founding' | null {
   const raw = [...(values ?? [])]
   if (raw.length < 1) return 'invalid_tier'
   if (raw.some((value) => !isMembershipTierId(value))) return 'invalid_tier'
   const normalized = normalizeMembershipTiers(raw)
   if (normalized.includes('founding') && normalized.includes('member')) return 'invalid_combination'
+  if (normalized.includes('founding') && normalized.includes('sponsor')) return 'sponsor_founding'
   return null
 }
 
@@ -72,6 +73,12 @@ export function tierSaveError(message: string): string {
   if (code.includes('not_allowed') || code.includes('not staff')) return 'You do not have access to change tiers.'
   if (code.includes('not_found')) return 'This person is not on the list.'
   if (code.includes('invalid_combination')) return 'Founding and Member cannot be combined.'
+  if (code.includes('sponsor_founding') || code.includes('cannot also hold the founding tier')) {
+    return 'A sponsor seat cannot also hold the Founding tier.'
+  }
+  if (code.includes('no saved region')) {
+    return 'This sponsor has no saved region. Set the region before removing the Sponsor tier.'
+  }
   if (code.includes('invalid_tier')) return 'Choose a listed tier.'
   if (code.includes('seat_full')) return 'No founding seats left in that region.'
   if (code.includes('founding_numbers_full')) return 'Founding numbers are full.'
