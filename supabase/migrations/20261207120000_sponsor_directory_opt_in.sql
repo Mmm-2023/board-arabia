@@ -24,12 +24,12 @@ comment on column public.members.show_card_to_sponsors is
 
 revoke all (show_card_to_sponsors) on table public.members from public, anon, authenticated;
 
-create or replace function private.caller_sees_member_card(p_member uuid)
-returns boolean
+create or replace function private.caller_sees_member_card(p_member pg_catalog.uuid)
+returns pg_catalog.bool
 language sql
 stable
 security definer
-set search_path = public
+set search_path = ''
 as $$
   select auth.uid() is not null
     and p_member is not null
@@ -53,11 +53,11 @@ grant execute on function private.caller_sees_member_card(uuid) to authenticated
 comment on function private.caller_sees_member_card(uuid) is
   'True for members and aal2 staff. A sponsor sees self, or a member who opted in and is not directory_hidden.';
 
-create or replace function public.set_show_card_to_sponsors(p_show boolean)
-returns jsonb
+create or replace function public.set_show_card_to_sponsors(p_show pg_catalog.bool)
+returns pg_catalog.jsonb
 language plpgsql
 security definer
-set search_path = public
+set search_path = ''
 as $$
 begin
   if auth.uid() is null or p_show is null then
@@ -73,7 +73,7 @@ begin
     raise exception 'not_allowed' using errcode = '42501';
   end if;
 
-  return jsonb_build_object('show_card_to_sponsors', p_show);
+  return pg_catalog.jsonb_build_object('show_card_to_sponsors', p_show);
 end;
 $$;
 
@@ -84,15 +84,15 @@ comment on function public.set_show_card_to_sponsors(boolean) is
   'Sets show_card_to_sponsors on the caller row only. Authenticated members. Not anon.';
 
 create or replace function public.own_directory_visibility()
-returns jsonb
+returns pg_catalog.jsonb
 language plpgsql
 stable
 security definer
-set search_path = public
+set search_path = ''
 as $$
 declare
-  hidden boolean;
-  show_sponsors boolean;
+  hidden pg_catalog.bool;
+  show_sponsors pg_catalog.bool;
 begin
   if auth.uid() is null then
     raise exception 'not_allowed' using errcode = '42501';
@@ -108,7 +108,7 @@ begin
     raise exception 'not_allowed' using errcode = '42501';
   end if;
 
-  return jsonb_build_object(
+  return pg_catalog.jsonb_build_object(
     'directory_hidden', coalesce(hidden, false),
     'show_card_to_sponsors', coalesce(show_sponsors, false)
   );
@@ -119,21 +119,21 @@ revoke all on function public.own_directory_visibility() from public, anon;
 grant execute on function public.own_directory_visibility() to authenticated;
 
 create or replace function public.list_directory()
-returns jsonb
+returns pg_catalog.jsonb
 language plpgsql
 stable
 security definer
-set search_path = public
+set search_path = ''
 as $$
 declare
-  real_n int;
-  show_demo boolean;
+  real_n pg_catalog.int4;
+  show_demo pg_catalog.bool;
 begin
   if not private.can_read_member_room() then
     raise exception 'not_allowed' using errcode = '42501';
   end if;
 
-  select count(*)::int into real_n
+  select pg_catalog.count(*)::pg_catalog.int4 into real_n
   from public.members m
   where m.is_demo = false
     and m.status in ('invited', 'active')
@@ -146,22 +146,22 @@ begin
   end if;
 
   return coalesce((
-    select jsonb_agg(payload order by demo_flag, sort_order, sort_name)
+    select pg_catalog.jsonb_agg(payload order by demo_flag, sort_order, sort_name)
     from (
       select
         false as demo_flag,
         0 as sort_order,
-        lower(coalesce(p.full_name, '')) as sort_name,
-        jsonb_build_object(
+        pg_catalog.lower(coalesce(p.full_name, '')) as sort_name,
+        pg_catalog.jsonb_build_object(
           'id', m.user_id,
           'is_demo', false,
-          'full_name', coalesce(nullif(trim(p.full_name), ''), 'Member'),
+          'full_name', coalesce(nullif(pg_catalog.btrim(p.full_name), ''), 'Member'),
           'headline', coalesce(p.headline, ''),
           'company', coalesce(p.company, ''),
           'location', coalesce(p.location, ''),
           'sector', coalesce(p.sector_tags[1], ''),
-          'sectors', coalesce(to_jsonb(p.sector_tags), '[]'::jsonb),
-          'vision_themes', coalesce(to_jsonb(p.vision_themes), '[]'::jsonb),
+          'sectors', coalesce(pg_catalog.to_jsonb(p.sector_tags), '[]'::pg_catalog.jsonb),
+          'vision_themes', coalesce(pg_catalog.to_jsonb(p.vision_themes), '[]'::pg_catalog.jsonb),
           'availability', p.availability,
           'seat', m.seat,
           'preferred_partner', private.is_sponsor(m.user_id),
@@ -181,8 +181,8 @@ begin
       select
         true,
         d.sort_order,
-        lower(d.full_name),
-        jsonb_build_object(
+        pg_catalog.lower(d.full_name),
+        pg_catalog.jsonb_build_object(
           'id', d.id,
           'is_demo', true,
           'full_name', d.full_name,
@@ -190,8 +190,8 @@ begin
           'company', d.company,
           'location', d.location,
           'sector', d.sector,
-          'sectors', jsonb_build_array(d.sector),
-          'vision_themes', coalesce(to_jsonb(d.vision_themes), '[]'::jsonb),
+          'sectors', pg_catalog.jsonb_build_array(d.sector),
+          'vision_themes', coalesce(pg_catalog.to_jsonb(d.vision_themes), '[]'::pg_catalog.jsonb),
           'availability', d.availability,
           'seat', d.seat,
           'preferred_partner', false,
@@ -204,34 +204,34 @@ begin
       where d.is_demo
         and show_demo
     ) listed
-  ), '[]'::jsonb);
+  ), '[]'::pg_catalog.jsonb);
 end;
 $$;
 
 revoke all on function public.list_directory() from public, anon;
 grant execute on function public.list_directory() to authenticated;
 
-create or replace function public.search_deal_room_directory(p_query text)
-returns jsonb
+create or replace function public.search_deal_room_directory(p_query pg_catalog.text)
+returns pg_catalog.jsonb
 language plpgsql
 stable
 security definer
-set search_path = public
+set search_path = ''
 as $$
 declare
-  needle text;
+  needle pg_catalog.text;
 begin
   perform private.active_member(auth.uid());
-  needle := left(coalesce(p_query, ''), 80);
-  needle := regexp_replace(needle, '[%_\\]', '', 'g');
-  needle := trim(regexp_replace(needle, '\s+', ' ', 'g'));
-  if char_length(needle) < 2 then
-    return '[]'::jsonb;
+  needle := pg_catalog.left(coalesce(p_query, ''), 80);
+  needle := pg_catalog.regexp_replace(needle, '[%_\\]', '', 'g');
+  needle := pg_catalog.btrim(pg_catalog.regexp_replace(needle, '\s+', ' ', 'g'));
+  if pg_catalog.char_length(needle) < 2 then
+    return '[]'::pg_catalog.jsonb;
   end if;
 
   return coalesce((
-    select jsonb_agg(
-      jsonb_build_object(
+    select pg_catalog.jsonb_agg(
+      pg_catalog.jsonb_build_object(
         'id', found.user_id,
         'full_name', found.full_name,
         'headline', found.headline,
@@ -243,11 +243,11 @@ begin
     from (
       select
         m.user_id,
-        left(coalesce(nullif(trim(p.full_name), ''), 'Member'), 200) as full_name,
-        left(coalesce(p.headline, ''), 160) as headline,
-        left(coalesce(p.company, ''), 200) as company,
+        pg_catalog.left(coalesce(nullif(pg_catalog.btrim(p.full_name), ''), 'Member'), 200) as full_name,
+        pg_catalog.left(coalesce(p.headline, ''), 160) as headline,
+        pg_catalog.left(coalesce(p.company, ''), 200) as company,
         m.seat,
-        lower(coalesce(p.full_name, '')) as sort_name
+        pg_catalog.lower(coalesce(p.full_name, '')) as sort_name
       from public.members m
       join public.profiles p on p.user_id = m.user_id
       where m.is_demo = false
@@ -260,10 +260,10 @@ begin
           or coalesce(p.headline, '') ilike '%' || needle || '%'
           or coalesce(p.company, '') ilike '%' || needle || '%'
         )
-      order by lower(coalesce(p.full_name, ''))
+      order by pg_catalog.lower(coalesce(p.full_name, ''))
       limit 8
     ) found
-  ), '[]'::jsonb);
+  ), '[]'::pg_catalog.jsonb);
 end;
 $$;
 
@@ -271,11 +271,11 @@ revoke all on function public.search_deal_room_directory(text) from public, anon
 grant execute on function public.search_deal_room_directory(text) to authenticated;
 
 create or replace function public.list_my_intro_suggestions()
-returns jsonb
+returns pg_catalog.jsonb
 language plpgsql
 stable
 security definer
-set search_path = public
+set search_path = ''
 as $$
 begin
   if auth.uid() is null or not exists (
@@ -289,13 +289,13 @@ begin
   end if;
 
   return coalesce((
-    select jsonb_agg(jsonb_build_object(
+    select pg_catalog.jsonb_agg(pg_catalog.jsonb_build_object(
       'id', s.id,
       'suggested_id', s.suggested_id,
-      'full_name', coalesce(nullif(trim(p.full_name), ''), 'Member'),
-      'headline', coalesce(nullif(trim(p.headline), ''), ''),
-      'company', coalesce(nullif(trim(p.company), ''), ''),
-      'location', coalesce(nullif(trim(p.location), ''), ''),
+      'full_name', coalesce(nullif(pg_catalog.btrim(p.full_name), ''), 'Member'),
+      'headline', coalesce(nullif(pg_catalog.btrim(p.headline), ''), ''),
+      'company', coalesce(nullif(pg_catalog.btrim(p.company), ''), ''),
+      'location', coalesce(nullif(pg_catalog.btrim(p.location), ''), ''),
       'reason', s.reason,
       'rank', s.rank,
       'avatar_style', coalesce(p.avatar_style, 'male'),
@@ -305,14 +305,14 @@ begin
     join public.profiles p on p.user_id = s.suggested_id
     join public.members suggested on suggested.user_id = s.suggested_id
     where s.member_id = auth.uid()
-      and s.iso_year = extract(isoyear from timezone('UTC', now()))::integer
-      and s.iso_week = extract(week from timezone('UTC', now()))::integer
+      and s.iso_year = extract(isoyear from pg_catalog.timezone('UTC', pg_catalog.now()))::pg_catalog.int4
+      and s.iso_week = extract(week from pg_catalog.timezone('UTC', pg_catalog.now()))::pg_catalog.int4
       and suggested.is_demo = false
       and suggested.status in ('invited', 'active')
       and suggested.directory_hidden = false
       and private.caller_sees_member_card(s.suggested_id)
       and not private.sample_subject(s.suggested_id)
-  ), '[]'::jsonb);
+  ), '[]'::pg_catalog.jsonb);
 end;
 $$;
 
@@ -323,11 +323,11 @@ comment on function public.list_my_intro_suggestions() is
   'Current ISO week suggestions for the signed-in member. Omits suggested members hidden from the directory. A sponsor also only sees members who opted in.';
 
 create or replace function public.list_my_intros()
-returns jsonb
+returns pg_catalog.jsonb
 language plpgsql
 stable
 security definer
-set search_path = public
+set search_path = ''
 as $$
 begin
   if auth.uid() is null or not exists (
@@ -340,21 +340,21 @@ begin
   end if;
 
   return coalesce((
-    select jsonb_agg(payload order by sort_at desc)
+    select pg_catalog.jsonb_agg(payload order by sort_at desc)
     from (
       select
         i.requested_at as sort_at,
-        jsonb_build_object(
+        pg_catalog.jsonb_build_object(
           'id', i.id,
           'kind', 'member',
           'direction', case when i.requester_id = auth.uid() then 'outgoing' else 'incoming' end,
           'status', i.status,
-          'title', coalesce(nullif(trim(p.full_name), ''), 'Member'),
-          'detail', concat_ws(
+          'title', coalesce(nullif(pg_catalog.btrim(p.full_name), ''), 'Member'),
+          'detail', pg_catalog.concat_ws(
             ' · ',
-            nullif(trim(p.headline), ''),
-            nullif(trim(p.company), ''),
-            nullif(trim(p.location), '')
+            nullif(pg_catalog.btrim(p.headline), ''),
+            nullif(pg_catalog.btrim(p.company), ''),
+            nullif(pg_catalog.btrim(p.location), '')
           ),
           'reason', i.reason,
           'is_demo', private.sample_subject(i.requester_id) or private.sample_subject(i.target_id),
@@ -368,7 +368,7 @@ begin
           'meet_due', (
             i.status = 'accepted'
             and i.decided_at is not null
-            and i.decided_at <= (now() - interval '7 days')
+            and i.decided_at <= (pg_catalog.now() - pg_catalog.interval '7 days')
           ),
           'meet_outcome', (
             select o.outcome
@@ -398,7 +398,7 @@ begin
 
       select
         i.requested_at,
-        jsonb_build_object(
+        pg_catalog.jsonb_build_object(
           'id', i.id,
           'kind', 'mandate',
           'direction', 'outgoing',
@@ -418,7 +418,7 @@ begin
 
       select
         i.requested_at,
-        jsonb_build_object(
+        pg_catalog.jsonb_build_object(
           'id', i.id,
           'kind', 'real_estate',
           'direction', 'outgoing',
@@ -438,7 +438,7 @@ begin
 
       select
         i.requested_at,
-        jsonb_build_object(
+        pg_catalog.jsonb_build_object(
           'id', i.id,
           'kind', 'partner',
           'direction', 'outgoing',
@@ -454,7 +454,7 @@ begin
       join public.re_partners t on t.id = i.partner_id
       where i.member_id = auth.uid()
     ) listed
-  ), '[]'::jsonb);
+  ), '[]'::pg_catalog.jsonb);
 end;
 $$;
 
@@ -462,21 +462,21 @@ revoke all on function public.list_my_intros() from public, anon;
 grant execute on function public.list_my_intros() to authenticated;
 
 create or replace function public.request_member_intro(
-  p_target_id uuid,
-  p_reason text,
-  p_ask_desk boolean default false
+  p_target_id pg_catalog.uuid,
+  p_reason pg_catalog.text,
+  p_ask_desk pg_catalog.bool default false
 )
-returns jsonb
+returns pg_catalog.jsonb
 language plpgsql
 security definer
-set search_path = public
+set search_path = ''
 as $$
 declare
-  v_reason text := btrim(coalesce(p_reason, ''));
-  current_status text;
-  v_used integer;
-  v_allowance integer;
-  v_start timestamptz;
+  v_reason pg_catalog.text := pg_catalog.btrim(coalesce(p_reason, ''));
+  current_status pg_catalog.text;
+  v_used pg_catalog.int4;
+  v_allowance pg_catalog.int4;
+  v_start pg_catalog.timestamptz;
 begin
   if auth.uid() is null or not exists (
     select 1
@@ -496,8 +496,8 @@ begin
     raise exception 'sample_blocked' using errcode = '42501';
   end if;
 
-  if char_length(v_reason) < 1
-    or char_length(v_reason) > 280
+  if pg_catalog.char_length(v_reason) < 1
+    or pg_catalog.char_length(v_reason) > 280
     or position('@' in v_reason) > 0
     or v_reason ~ '\+?[0-9][[:space:]0-9()-]{7,}'
   then
@@ -521,7 +521,7 @@ begin
     and i.target_id = p_target_id;
 
   if current_status is not null then
-    return jsonb_build_object('status', current_status);
+    return pg_catalog.jsonb_build_object('status', current_status);
   end if;
 
   if private.is_sponsor(auth.uid())
@@ -530,12 +530,12 @@ begin
     raise exception 'not_found' using errcode = 'P0002';
   end if;
 
-  v_start := private.riyadh_month_start(now());
-  select count(*)::int into v_used
+  v_start := private.riyadh_month_start(pg_catalog.now());
+  select pg_catalog.count(*)::pg_catalog.int4 into v_used
   from public.member_intros i
   where i.requester_id = auth.uid()
     and i.requested_at >= v_start
-    and i.requested_at < (v_start + interval '1 month');
+    and i.requested_at < (v_start + pg_catalog.interval '1 month');
 
   v_allowance := private.intro_allowance_for(auth.uid());
   if v_used >= v_allowance then
@@ -545,7 +545,7 @@ begin
   insert into public.member_intros (requester_id, target_id, reason, status, ask_desk)
   values (auth.uid(), p_target_id, v_reason, 'pending', coalesce(p_ask_desk, false));
 
-  return jsonb_build_object('status', 'pending');
+  return pg_catalog.jsonb_build_object('status', 'pending');
 end;
 $$;
 
@@ -564,5 +564,5 @@ create policy member_avatars_select_peers on storage.objects
       where viewer.user_id = (select auth.uid())
         and viewer.status in ('invited', 'active')
     )
-    and private.caller_sees_member_card(split_part(name, '/', 1)::uuid)
+    and private.caller_sees_member_card(pg_catalog.split_part(name, '/', 1)::pg_catalog.uuid)
   );

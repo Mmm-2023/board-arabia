@@ -79,6 +79,17 @@ test('the sponsor card toggle is off unless the member turns it on', async () =>
   }
 })
 
+test('opt-in definers set an empty search_path', () => {
+  const migration = readFileSync(migrationPath, 'utf8')
+  assert.equal(/search_path\s*=\s*public/i.test(migration), false)
+  const headers = migration.split(/create or replace function /i).slice(1).map((chunk) => chunk.slice(0, chunk.indexOf('as $$')))
+  assert.equal(headers.length, 8)
+  for (const header of headers) {
+    assert.match(header, /security definer/i)
+    assert.match(header, /set search_path = ''/)
+  }
+})
+
 test('legal copy says a sponsor sees a card only when the member chooses', () => {
   assert.equal(clause(PRIVACY_EN, 'c-5-1'), privacyAfter)
   assert.equal(clause(TERMS_EN, 'c-5-1'), termsAfter)
@@ -101,7 +112,7 @@ test('legal copy says a sponsor sees a card only when the member chooses', () =>
   assert.match(migration, /show_card_to_sponsors boolean not null default false/)
   assert.match(migration, /where show_card_to_sponsors is null/)
   assert.match(migration, /revoke all \(show_card_to_sponsors\) on table public\.members from public, anon, authenticated/)
-  assert.match(migration, /set search_path = public/)
+  assert.equal(/search_path\s*=\s*public/i.test(migration), false)
   assert.match(migration, /where user_id = auth\.uid\(\)/)
   assert.match(migration, /revoke all on function public\.set_show_card_to_sponsors\(boolean\) from public, anon/)
   assert.match(migration, /grant execute on function public\.set_show_card_to_sponsors\(boolean\) to authenticated/)
@@ -268,16 +279,27 @@ begin
   if not has_function_privilege('authenticated', 'public.set_show_card_to_sponsors(boolean)', 'EXECUTE') then
     raise exception 'authenticated cannot call the setter';
   end if;
-  if not exists (
+  if exists (
     select 1
     from pg_proc p
     join pg_namespace n on n.oid = p.pronamespace
-    where n.nspname = 'public'
-      and p.proname = 'set_show_card_to_sponsors'
-      and p.prosecdef
-      and 'search_path=public' = any (p.proconfig)
+    where n.nspname in ('public', 'private')
+      and p.proname in (
+        'caller_sees_member_card',
+        'set_show_card_to_sponsors',
+        'own_directory_visibility',
+        'list_directory',
+        'search_deal_room_directory',
+        'list_my_intro_suggestions',
+        'list_my_intros',
+        'request_member_intro'
+      )
+      and (
+        not p.prosecdef
+        or not ('search_path=""' = any (p.proconfig))
+      )
   ) then
-    raise exception 'setter is not security definer with search_path';
+    raise exception 'a sponsor opt-in definer is missing an empty search_path';
   end if;
 
   insert into auth.users (id, email) values
