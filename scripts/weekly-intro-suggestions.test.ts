@@ -282,6 +282,7 @@ test('list_my_intro_suggestions migration hides directory members and keeps gran
   const names = readdirSync(path.join(root, 'supabase/migrations')).filter((name) => name.endsWith('.sql')).sort()
   assert.ok(names.includes(migrationName))
   assert.ok(names.indexOf(migrationName) > names.indexOf('20261130120000_definer_audit.sql'))
+  assert.ok(names.indexOf('20261202120000_majlis_rsvp_calendar.sql') > names.indexOf(migrationName))
   const migration = read(`supabase/migrations/${migrationName}`)
   const original = read('supabase/migrations/20261119120000_intros_b_suggestions_nudges.sql')
   assert.match(migration, /suggested\.directory_hidden = false/)
