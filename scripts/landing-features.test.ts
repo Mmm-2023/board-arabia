@@ -217,18 +217,22 @@ test('landing CTAs and section links stay on their routes', async () => {
   assert.match(html, /What admitted members use today/)
 })
 
+let landingServer: Awaited<ReturnType<typeof createServer>> | null = null
+
 async function renderLanding() {
-  const vite = await createServer({
-    server: { middlewareMode: true },
-    appType: 'custom',
-    logLevel: 'error',
-  })
-  try {
-    const mod = await vite.ssrLoadModule('/src/pages/LandingPage.tsx')
-    return renderToStaticMarkup(
-      createElement(MemoryRouter, { initialEntries: ['/'] }, createElement(mod.LandingPage)),
-    )
-  } finally {
-    await vite.close()
+  if (!landingServer) {
+    landingServer = await createServer({
+      server: { middlewareMode: true, hmr: false },
+      appType: 'custom',
+      logLevel: 'error',
+    })
   }
+  const mod = await landingServer.ssrLoadModule('/src/pages/LandingPage.tsx')
+  return renderToStaticMarkup(
+    createElement(MemoryRouter, { initialEntries: ['/'] }, createElement(mod.LandingPage)),
+  )
 }
+
+test.after(async () => {
+  if (landingServer) await landingServer.close()
+})
