@@ -10,7 +10,6 @@ import {
   ID_ROUTES_ON_404,
   SHELL_SHARE,
   appShells,
-  majlisPastDeclared,
   readAiToolSlugs,
   shellArtifactPath,
   shellDocument,
@@ -130,10 +129,9 @@ test('AI tool shells are derived from AI_TOOL_SLUGS and old shells stay', () => 
     assert.equal(hit?.description, SHELL_SHARE.member.description)
   }
   for (const routePath of ADDED_SHELLS) assert.equal(paths.includes(routePath), true, routePath)
-  assert.equal(paths.includes('/dashboard/majlis/past'), false)
-  assert.equal(majlisPastDeclared(read('src/App.tsx')), false)
-  const withPast = appShells({ appSource: '<Route path="majlis/past" />', slugs: fromExport })
-  assert.equal(withPast.some((item) => item.path === '/dashboard/majlis/past'), true)
+  const past = shells.find((item) => item.path === '/dashboard/majlis/past')
+  assert.equal(past?.kind, 'member')
+  assert.equal(past?.description, SHELL_SHARE.member.description)
   assert.equal(shells.some((item) => item.path.includes(':')), false)
   for (const pattern of ID_ROUTES_ON_404) assert.equal(paths.includes(pattern), false, pattern)
   const prerender = read('scripts/prerender.mjs')
@@ -271,6 +269,14 @@ test('fixed shells answer 200 on a Pages static server and unknown paths stay 40
     for (const entry of shells) {
       assert.equal(sitemap.includes(`https://boardarabia.com${entry.path}<`), false, entry.path)
     }
+    const past = shells.find((item) => item.path === '/dashboard/majlis/past')
+    assert.equal(past?.kind, 'member')
+    assert.equal(past?.description, 'A private Board Arabia members page. Sign in to open it.')
+    const pastPage = await request(port, '/dashboard/majlis/past/')
+    assert.equal(pastPage.status, 200)
+    assert.match(pastPage.body, /content="noindex, nofollow"/)
+    assert.match(pastPage.body, /A private Board Arabia members page\. Sign in to open it\./)
+    assert.equal(sitemap.includes('https://boardarabia.com/dashboard/majlis/past<'), false)
     const missing = await request(port, '/no-such-page')
     assert.equal(missing.status, 404)
     assert.match(missing.body, /data-ba-spa-fallback/)
@@ -281,7 +287,6 @@ test('fixed shells answer 200 on a Pages static server and unknown paths stay 40
       '/admin/people/member/11111111-1111-4111-8111-111111111111',
       '/dashboard/deals/rooms/11111111-1111-4111-8111-111111111111',
       '/admin/review/11111111-1111-4111-8111-111111111111',
-      '/dashboard/majlis/past',
     ]
     for (const routePath of idSamples) {
       const response = await request(port, routePath)
