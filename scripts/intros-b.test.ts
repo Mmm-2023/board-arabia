@@ -14,6 +14,7 @@ import {
   runSuggestIntros,
   scheduleAuthorized,
   suggestionReason,
+  WEEKLY_INTRO_SUGGESTION_CAP,
   type PlanIntro,
   type PlanMember,
   type PlannedNudge,
@@ -45,6 +46,7 @@ function member(id: string, patch: Partial<PlanMember> = {}): PlanMember {
     visionThemes: ['Renewable energy'],
     region: 'Riyadh',
     sample: false,
+    directoryHidden: false,
     ...patch,
   }
 }
@@ -68,14 +70,26 @@ test('ISO week is stable and a second daily call writes no new suggestions', () 
   assert.equal(suggestionReason({ sectors: ['Energy transition'], themes: [], region: 'Riyadh' }), 'Both work on energy transition in Riyadh.')
 
   const members = [member('amina'), member('layla')]
-  const first = planIntroWeek({ now: NOW, weekAlreadyHasSuggestions: false, members, intros: [] })
-  assert.equal(first.noop, false)
+  const first = planIntroWeek({
+    now: NOW,
+    members,
+    intros: [],
+    priorSuggestions: [],
+    membersWithCurrentWeek: [],
+  })
+  assert.equal(first.membersRefilled, 2)
   assert.equal(first.suggestions.length, 2)
   assert.equal(first.isoYear, 2026)
   assert.equal(first.isoWeek, 40)
 
-  const second = planIntroWeek({ now: new Date(NOW.getTime() + DAY), weekAlreadyHasSuggestions: true, members, intros: [] })
-  assert.equal(second.noop, true)
+  const second = planIntroWeek({
+    now: new Date(NOW.getTime() + DAY),
+    members,
+    intros: [],
+    priorSuggestions: [],
+    membersWithCurrentWeek: members.map((row) => row.id),
+  })
+  assert.equal(second.membersRefilled, 0)
   assert.deepEqual(second.suggestions, [])
   assert.equal(second.isoWeek, first.isoWeek)
 })
@@ -105,18 +119,25 @@ test('suggestions skip demo, EXAMPLE, samples, self, sponsors as targets, and an
     intro({ id: 'p1', requesterId: 'asked', targetId: 'amina', status: 'pending' }),
     intro({ id: 'o1', requesterId: 'amina', targetId: 'outbound', status: 'accepted', decidedAt: NOW.toISOString() }),
   ]
-  const plan = planIntroWeek({ now: NOW, weekAlreadyHasSuggestions: false, members, intros })
+  const plan = planIntroWeek({
+    now: NOW,
+    members,
+    intros,
+    priorSuggestions: [],
+    membersWithCurrentWeek: [],
+  })
   const picks = plan.suggestions.filter((row) => row.memberId === 'amina')
-  assert.deepEqual(picks.map((row) => row.suggestedId), ['layla', 'noura', 'hana'])
+  assert.deepEqual(picks.map((row) => row.suggestedId), ['layla', 'noura'])
   assert.equal(picks[0]?.reason, 'Both work on energy transition in Riyadh.')
   assert.equal(picks[1]?.reason, 'Both work on energy transition.')
-  assert.equal(picks[2]?.reason, 'Both are in Riyadh.')
+  assert.equal(picks.some((row) => row.suggestedId === 'hana'), false)
   for (const blocked of ['amina', 'demo', 'sample', 'example', 'declined', 'asked', 'outbound', 'quiet', 'paused', 'sponsor', 'lina']) {
     assert.equal(picks.some((row) => row.suggestedId === blocked), false, blocked)
   }
   assert.equal(plan.suggestions.some((row) => row.memberId === 'demo' || row.memberId === 'example' || row.memberId === 'paused'), false)
   const sponsorPicks = plan.suggestions.filter((row) => row.memberId === 'sponsor')
-  assert.equal(sponsorPicks.length, 3)
+  assert.equal(sponsorPicks.length, WEEKLY_INTRO_SUGGESTION_CAP)
+  assert.equal(picks.length, WEEKLY_INTRO_SUGGESTION_CAP)
   assert.equal(sponsorPicks.some((row) => row.suggestedId === 'layla' || row.suggestedId === 'amina'), true)
   assert.equal(plan.suggestions.some((row) => row.suggestedId === 'sponsor'), false)
   assert.equal(plan.suggestions.some((row) => row.memberId === 'layla' && row.suggestedId === 'amina'), true)
@@ -154,23 +175,42 @@ test('pending and meet nudges send once, and a dry run writes nothing', async ()
 
   const quiet = planIntroWeek({
     now: NOW,
-    weekAlreadyHasSuggestions: false,
     members: [...members, member('demo', { isDemo: true })],
     intros: [fresh, sent, earlyMeet, demoDue],
+    priorSuggestions: [],
+    membersWithCurrentWeek: [],
   })
   assert.deepEqual(quiet.pendingNudges.map((row) => row.introId), [])
   assert.deepEqual(quiet.meetNudges, [])
 
-  const pending = planIntroWeek({ now: NOW, weekAlreadyHasSuggestions: true, members, intros: [due] })
+  const pending = planIntroWeek({
+    now: NOW,
+    members,
+    intros: [due],
+    priorSuggestions: [],
+    membersWithCurrentWeek: ['amina', 'layla'],
+  })
   assert.equal(pending.suggestions.length, 0)
   assert.equal(pending.pendingNudges.length, 1)
   assert.equal(pending.pendingNudges[0]?.memberId, 'layla')
   assert.equal(pending.pendingNudges[0]?.party, 'target')
 
-  const both = planIntroWeek({ now: NOW, weekAlreadyHasSuggestions: true, members, intros: [meet] })
+  const both = planIntroWeek({
+    now: NOW,
+    members,
+    intros: [meet],
+    priorSuggestions: [],
+    membersWithCurrentWeek: ['amina', 'layla'],
+  })
   assert.deepEqual(both.meetNudges.map((row) => row.memberId).sort(), ['amina', 'layla'])
 
-  const one = planIntroWeek({ now: NOW, weekAlreadyHasSuggestions: true, members, intros: [meetHalf] })
+  const one = planIntroWeek({
+    now: NOW,
+    members,
+    intros: [meetHalf],
+    priorSuggestions: [],
+    membersWithCurrentWeek: ['amina', 'layla'],
+  })
   assert.deepEqual(one.meetNudges.map((row) => row.memberId), ['layla'])
 
   const writes: string[] = []
@@ -183,7 +223,13 @@ test('pending and meet nudges send once, and a dry run writes nothing', async ()
   assert.deepEqual(sends, [])
   assert.equal(JSON.stringify(dry).includes('@'), false)
 
-  const open = planIntroWeek({ now: NOW, weekAlreadyHasSuggestions: false, members, intros: [] })
+  const open = planIntroWeek({
+    now: NOW,
+    members,
+    intros: [],
+    priorSuggestions: [],
+    membersWithCurrentWeek: [],
+  })
   const unsent = await runSuggestIntros(runner(open, false, false, writes, sends, async () => true))
   assert.equal(unsent.mail_ready, false)
   assert.equal(unsent.sent, 0)
