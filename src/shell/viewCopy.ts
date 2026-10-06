@@ -76,7 +76,7 @@ export const MEMBER_VIEWS = {
     rolesRequested: 'Intro requested. Our admin team must approve it before the organisation and seat terms open.',
     rolesApproved: 'Intro approved for you.',
     rolesDeclined: 'This intro was not approved.',
-    rolesInventory: 'Desk record of this seat.',
+    rolesInventory: 'Admin record of this seat.',
     appetite: {
       title: 'My RE appetite',
       empty:
@@ -161,7 +161,7 @@ export const STAFF_VIEWS = {
     empty: 'No pending applications.',
     error: REFRESH_ERROR,
     retry: 'Retry',
-    denied: 'This desk is for staff.',
+    denied: 'This page is for admin.',
   },
   applications: {
     empty: 'No applications yet.',
@@ -268,7 +268,7 @@ export const STAFF_VIEWS = {
   },
   settings: {
     booking: 'The private invite email is sent on Accept. It is not shown on this page.',
-    optional: 'Optional desk notes are not stored yet. Nothing here is published on the marketing site.',
+    optional: 'Nothing here is published on the marketing site.',
     switchAbsent: 'Switch to member appears when this login also holds an active member seat.',
     saveError: 'Could not save. Retry.',
     denied: 'Settings are for staff.',

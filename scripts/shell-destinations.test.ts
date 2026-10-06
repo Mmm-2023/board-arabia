@@ -142,9 +142,9 @@ test('section title follows the active destination', () => {
   )
 })
 
-test('updated label has no em dash', () => {
+test('updated label is the Riyadh AST clock and has no em dash', () => {
   const label = formatUpdated(new Date('2026-09-23T09:05:00Z'))
-  assert.match(label || '', /^Updated /)
+  assert.equal(label, 'Updated 12:05 AST')
   assert.equal((label || '').includes('\u2014'), false)
   const stale = staleBanner(new Date('2026-09-23T09:05:00Z'))
   assert.match(stale, /^Could not refresh\. Showing what loaded at \d{2}:\d{2}\. Retry$/)

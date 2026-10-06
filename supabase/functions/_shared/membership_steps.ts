@@ -46,7 +46,7 @@ export const ROLE_OPTIONS = [
 export const STEP_COPY: Record<StepId, { label: string; why: string; required: boolean }> = {
   email: {
     label: 'Verified email',
-    why: 'So the desk can reach you and your sign-in is yours.',
+    why: 'So our admin team can reach you and your sign-in is yours.',
     required: true,
   },
   role: {
@@ -61,7 +61,7 @@ export const STEP_COPY: Record<StepId, { label: string; why: string; required: b
   },
   linkedin: {
     label: 'LinkedIn profile',
-    why: 'The desk checks your board and executive record here. It is not shown to other candidates.',
+    why: 'Our admin team checks your board and executive record here. It is not shown to other candidates.',
     required: true,
   },
   scale_band: {
@@ -76,7 +76,7 @@ export const STEP_COPY: Record<StepId, { label: string; why: string; required: b
   },
   statement: {
     label: 'Short statement',
-    why: 'Read only by the desk. What would you bring to the room, and what do you want from it?',
+    why: 'Read only by our admin team. What would you bring to the room, and what do you want from it?',
     required: true,
   },
   cr_number: {
@@ -86,17 +86,17 @@ export const STEP_COPY: Record<StepId, { label: string; why: string; required: b
   },
   referral: {
     label: 'Referral or peer invite',
-    why: 'Name a member who knows your work. The desk may ask them.',
+    why: 'Name a member who knows your work. Our admin team may ask them.',
     required: false,
   },
   capacity: {
     label: 'Investable capacity',
-    why: 'Used only inside a platform sum, and only after the desk verifies it.',
+    why: 'Used only inside a platform sum, and only after our admin team verifies it.',
     required: false,
   },
   phone: {
     label: 'Phone',
-    why: 'Only used if the desk offers a short call.',
+    why: 'Only used if our admin team offers a short call.',
     required: false,
   },
 }
@@ -302,7 +302,7 @@ export function gateCopy(input: ChecklistInput, state: string, declinedUntil: st
   return {
     enabled: state === 'open' || (state === 'declined' && (!declinedUntil || Date.parse(declinedUntil) <= now)),
     label: 'Request full membership',
-    helper: 'You can still add optional details. The desk reads everything you send.',
+    helper: 'You can still add optional details. Our admin team reads everything you send.',
     links: [] as { id: StepId; label: string }[],
   }
 }
@@ -317,15 +317,15 @@ export function lockButton(input: ChecklistInput, state: string) {
 export function statusCopy(state: string, submittedAt: string | null, declinedUntil: string | null) {
   if (state === 'submitted') {
     const when = submittedAt ? formatDeskDate(submittedAt) : 'today'
-    return `Request received on ${when}. The desk reviews every request personally. There is no fixed response time.`
+    return `Request received on ${when}. Our admin team reviews every request personally. There is no fixed response time.`
   }
-  if (state === 'in_review') return 'The desk is reviewing your request.'
-  if (state === 'needs_info') return 'The desk has one question. Reply below to keep your request moving.'
-  if (state === 'review_call') return 'The desk would like a short conversation. We have emailed you a private link to arrange it.'
+  if (state === 'in_review') return 'Our admin team is reviewing your request.'
+  if (state === 'needs_info') return 'Our admin team has one question. Reply below to keep your request moving.'
+  if (state === 'review_call') return 'Our admin team would like a short conversation. We have emailed you a private link to arrange it.'
   if (state === 'waitlisted') return 'Your request is on the waitlist. We will write to you when a place opens.'
   if (state === 'declined') {
     const when = declinedUntil ? formatDeskDate(declinedUntil) : 'the cooling off date'
-    return `The desk has not offered full membership at this time. Your account stays open to look around. You can ask again after ${when}.`
+    return `Our admin team has not offered full membership at this time. Your account stays open to look around. You can ask again after ${when}.`
   }
   if (state === 'closed') return 'This request is closed.'
   if (state === 'approved') return 'Full membership is open on this sign-in.'
@@ -381,7 +381,7 @@ export function stepError(input: ChecklistInput, step: StepId) {
   if (step === 'capacity' && input.investable.trim() && !stepDone(input, 'capacity')) {
     return 'Enter a USD amount, or leave it blank.'
   }
-  if (step === 'phone' && input.phone.trim() && !stepDone(input, 'phone')) return 'Enter a phone number the desk can use.'
+  if (step === 'phone' && input.phone.trim() && !stepDone(input, 'phone')) return 'Enter a phone number our admin team can use.'
   return ''
 }
 

@@ -97,7 +97,7 @@ const detail: DeskDetail = {
   crChecked: false,
   seatsLeft: 'Founding places left: Saudi Arabia 48, International 50.',
   events: [{ id: '1', label: '28 Sep 2026: Submitted to In review' }],
-  notes: [{ id: '1', body: 'Desk note stays internal.', at: '28 Sep 2026' }],
+  notes: [{ id: '1', body: 'Member note stays internal.', at: '28 Sep 2026' }],
 }
 
 function memberShell(chip: string | null, node: ReactNode) {

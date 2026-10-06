@@ -43,12 +43,12 @@ export function idleAccountReminderMail(input: { dashboardUrl: string }) {
   return seal(
     `You opened an account and have not sent a membership request. One reminder only.
 
-If you still want the desk to review you, complete your credentials and request full membership. If you do nothing, this account is deleted 30 days after this note.
+If you still want our admin team to review you, complete your credentials and request full membership. If you do nothing, this account is deleted 30 days after this note.
 
 Open your account:
 ${input.dashboardUrl}`,
     `<p>You opened an account and have not sent a membership request. One reminder only.</p>
-<p>If you still want the desk to review you, complete your credentials and request full membership. If you do nothing, this account is deleted 30 days after this note.</p>
+<p>If you still want our admin team to review you, complete your credentials and request full membership. If you do nothing, this account is deleted 30 days after this note.</p>
 <p><a href="${escapeHtml(input.dashboardUrl)}">Open your account</a></p>`,
     'Your Board Arabia account is still open',
   )
@@ -56,17 +56,17 @@ ${input.dashboardUrl}`,
 
 export function requestReceivedMail(input: { dashboardUrl: string }) {
   return seal(
-    `Thank you. The desk reviews every request personally. There is no fixed response time; we will write when there is news.
+    `Thank you. Our admin team reviews every request personally. There is no fixed response time; we will write when there is news.
 
 Your request:
 ${input.dashboardUrl}`,
-    `<p>Thank you. The desk reviews every request personally. There is no fixed response time; we will write when there is news.</p>
+    `<p>Thank you. Our admin team reviews every request personally. There is no fixed response time; we will write when there is news.</p>
 <p><a href="${escapeHtml(input.dashboardUrl)}">Your request</a></p>`,
     'We received your full membership request',
   )
 }
 
-/** Desk alert. No capacity, phone, CR, or statement. */
+/** Admin alert. No capacity, phone, CR, or statement. */
 export function deskRequestMail(input: {
   name: string
   role: string
@@ -98,12 +98,12 @@ ${vouchHtml}
 
 export function needsInfoMail(input: { question: string; dashboardUrl: string }) {
   return seal(
-    `The desk asks: ${input.question}
+    `Our admin team asks: ${input.question}
 
 Reply in your dashboard so it stays private. Your request resumes when you answer.
 
 ${input.dashboardUrl}`,
-    `<p>The desk asks: ${escapeHtml(input.question)}</p>
+    `<p>Our admin team asks: ${escapeHtml(input.question)}</p>
 <p>Reply in your dashboard so it stays private. Your request resumes when you answer.</p>
 <p><a href="${escapeHtml(input.dashboardUrl)}">Reply in your dashboard</a></p>`,
     'One question on your Board Arabia request',
@@ -113,10 +113,10 @@ ${input.dashboardUrl}`,
 /** The only candidate letter that may carry the private booking link. */
 export function reviewCallMail(input: { bookingUrl: string }) {
   return seal(
-    `The desk would like 20 minutes with you before a decision. Use this private link to choose a time. It is personal to you.
+    `Our admin team would like 20 minutes with you before a decision. Use this private link to choose a time. It is personal to you.
 
 ${input.bookingUrl}`,
-    `<p>The desk would like 20 minutes with you before a decision. Use this private link to choose a time. It is personal to you.</p>
+    `<p>Our admin team would like 20 minutes with you before a decision. Use this private link to choose a time. It is personal to you.</p>
 <p><a href="${escapeHtml(input.bookingUrl)}">${escapeHtml(input.bookingUrl)}</a></p>`,
     'Board Arabia: a short conversation',
   )
@@ -135,10 +135,10 @@ ${input.dashboardUrl}`,
 
 export function declinedMail(input: { askAgain: string; dashboardUrl: string }) {
   return seal(
-    `After review, the desk has not offered full membership at this time. Your account stays open, and you can ask again after ${input.askAgain}.
+    `After review, our admin team has not offered full membership at this time. Your account stays open, and you can ask again after ${input.askAgain}.
 
 ${input.dashboardUrl}`,
-    `<p>After review, the desk has not offered full membership at this time. Your account stays open, and you can ask again after ${escapeHtml(input.askAgain)}.</p>
+    `<p>After review, our admin team has not offered full membership at this time. Your account stays open, and you can ask again after ${escapeHtml(input.askAgain)}.</p>
 <p><a href="${escapeHtml(input.dashboardUrl)}">Your account</a></p>`,
     'Board Arabia membership update',
   )

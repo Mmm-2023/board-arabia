@@ -1,13 +1,13 @@
 import type { AdminAlertInput } from './notify_admin.ts'
 
-/** Names only. The desk mailbox stays in ADMIN_NOTIFY_EMAIL. */
+/** Names only. The admin mailbox stays in ADMIN_NOTIFY_EMAIL. */
 export function deskIntroAlert(input: { requesterName: string; targetName: string }): AdminAlertInput {
   const requester = oneLine(input.requesterName) || 'Member'
   const target = oneLine(input.targetName) || 'Member'
   return {
     requesterName: requester,
     requesterKind: 'member',
-    requested: 'a desk introduction',
+    requested: 'an admin introduction',
     item: `Accepted introduction with ${target}`,
     approvePath: '/admin/people/intros',
   }

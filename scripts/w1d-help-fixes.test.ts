@@ -111,7 +111,7 @@ test('help answers and the desk note do not hardcode an email', () => {
   assert.equal(cleaned.ok, true)
   if (cleaned.ok) {
     const letter = deskNoteLetter({ name: 'Member', topic: cleaned.topic, message: cleaned.message })
-    assert.match(letter.subject, /Desk note from Member: Majlis/)
+    assert.match(letter.subject, /Member note from Member: Majlis/)
     assert.match(letter.text, /The gathering date looks wrong/)
     assert.equal(letter.text.includes('@'), false)
   }
