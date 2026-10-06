@@ -7,6 +7,17 @@ type LogRow = {
   object_type: string
   action: string
   at: string
+  actor_name?: string | null
+  actor_role?: string | null
+}
+
+/** People uses Master for role master and Admin for role staff. No email and no id. */
+export function accessActorLabel(name: unknown, role: unknown): string {
+  const raw = typeof name === 'string' ? name.trim() : ''
+  const cleanName = raw.includes('@') ? '' : raw
+  const cleanRole = role === 'Master' || role === 'Admin' ? role : ''
+  if (cleanName && cleanRole) return `${cleanName}, ${cleanRole}`
+  return cleanRole
 }
 
 const LABELS: Record<string, string> = {
@@ -31,7 +42,7 @@ export function StaffAccessLogView({
   error,
   onFilter,
 }: {
-  rows: { objectLabel: string; action: string; at: string }[]
+  rows: { objectLabel: string; action: string; at: string; actor: string }[]
   filtered: boolean
   error: string
   onFilter: (memberId: string) => void
@@ -77,7 +88,8 @@ export function StaffAccessLogView({
           <li key={`${row.at}-${index}`} className="border border-pearl/10 px-4 py-4">
             <p className="text-[0.95rem] text-pearl">{row.objectLabel}</p>
             <p className="mt-1 text-[0.85rem] text-pearl/60">
-              Staff {row.action} · {row.at}
+              {row.actor ? `${row.actor} ` : ''}
+              {row.action} · {row.at}
             </p>
           </li>
         ))}
@@ -90,7 +102,7 @@ export function StaffAccessLogView({
 }
 
 export function StaffAccessLogPage() {
-  const [rows, setRows] = useState<{ objectLabel: string; action: string; at: string }[]>([])
+  const [rows, setRows] = useState<{ objectLabel: string; action: string; at: string; actor: string }[]>([])
   const [filtered, setFiltered] = useState(false)
   const [error, setError] = useState('')
   useNoIndex('Access log | Board Arabia')
@@ -118,6 +130,7 @@ export function StaffAccessLogPage() {
         return {
           objectLabel: accessObjectLabel(String(row.object_type || '')),
           action: row.action === 'read' ? 'read' : 'read',
+          actor: accessActorLabel(row.actor_name, row.actor_role),
           at,
         }
       }),

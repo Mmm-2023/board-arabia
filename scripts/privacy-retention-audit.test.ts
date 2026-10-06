@@ -5,6 +5,9 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 import test from 'node:test'
 import { fileURLToPath } from 'node:url'
+import { createElement } from 'react'
+import { renderToStaticMarkup } from 'react-dom/server'
+import { createServer } from 'vite'
 import { handleAiToolJob, type AiToolStore, type JobRow } from '../supabase/functions/ai-tool-job/handle.ts'
 import { ddDeckPathOk, purgeStoragePaths } from '../supabase/functions/_shared/retention_storage.ts'
 import { deckHintText, DD_COPY } from '../src/lib/dueDiligenceCopy.ts'
@@ -15,6 +18,8 @@ const priorMigration = path.join(root, 'supabase/migrations/20261127120000_staff
 const migrationPath = path.join(root, 'supabase/migrations/20261128120000_retention_privacy_audit.sql')
 
 const STAFF = '11111111-1111-4111-8111-111111111111'
+const MASTER = '1a1a1a1a-1a1a-41a1-81a1-1a1a1a1a1a1a'
+const BARE_LOG = '1b1b1b1b-1b1b-41b1-81b1-1b1b1b1b1b1b'
 const MEMBER = '22222222-2222-4222-8222-222222222222'
 const OTHER = '33333333-3333-4333-8333-333333333333'
 const VISIBLE = 'dddddddd-dddd-4ddd-8ddd-dddddddddddd'
@@ -148,6 +153,37 @@ test('shared AI status logs through the staff read hook', async () => {
   )
   assert.equal(hidden.status, 404)
   assert.equal(noted.length, 0)
+})
+
+test('access log row renders the staff name and role', async () => {
+  const vite = await createServer({ server: { middlewareMode: true }, appType: 'custom', logLevel: 'error' })
+  try {
+    const mod = await vite.ssrLoadModule('/src/pages/admin/StaffAccessLogPage.tsx')
+    assert.equal(mod.accessActorLabel('Example Admin', 'Admin'), 'Example Admin, Admin')
+    assert.equal(mod.accessActorLabel('   ', 'Master'), 'Master')
+    assert.equal(mod.accessActorLabel('person@example.com', 'Admin'), 'Admin')
+    const html = renderToStaticMarkup(
+      createElement(mod.StaffAccessLogView, {
+        rows: [
+          {
+            objectLabel: 'Member record',
+            action: 'read',
+            at: '6 Oct 2026, 15:00',
+            actor: 'Example Admin, Admin',
+          },
+        ],
+        filtered: true,
+        error: '',
+        onFilter: () => undefined,
+      }),
+    )
+    assert.match(html, /Example Admin, Admin/)
+    assert.match(html, /read/)
+    assert.equal(html.includes('@'), false)
+    assert.equal(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i.test(html), false)
+  } finally {
+    await vite.close()
+  }
 })
 
 test('retention, directory hide, download, and audit log run in postgres', () => {
@@ -545,7 +581,12 @@ insert into public.members (user_id, status, seat, email, directory_hidden) valu
 insert into public.profiles (user_id, full_name, headline, company, location, phone) values
   ('${MEMBER}', 'Hidden Member', 'Chair', 'Example Co', 'Riyadh', '+10000000000'),
   ('${OTHER}', 'Other Member', 'Director', 'Example Co', 'London', '+10000000001'),
-  ('${VISIBLE}', 'Visible Member', 'Director', 'Example Co', 'Jeddah', '+10000000002');
+  ('${VISIBLE}', 'Visible Member', 'Director', 'Example Co', 'Jeddah', '+10000000002'),
+  ('${STAFF}', 'Example Admin', '', '', '', '');
+insert into public.staff_users (user_id, role, email) values
+  ('${MASTER}', 'master', 'master@example.com');
+insert into public.staff_access_log (id, staff_user_id, member_id, object_type, object_id, action, created_at) values
+  ('${BARE_LOG}', '${MASTER}', '${MEMBER}', 'member', '${MEMBER}', 'read', now());
 insert into public.candidates (user_id, email, full_name, request_state, created_at) values
   ('${MEMBER}', 'member@example.com', 'Hidden Member', 'submitted', now());
 insert into public.member_intros (id, requester_id, target_id, status, reason, ask_desk, requested_at) values
@@ -640,10 +681,45 @@ begin
 
   perform pg_temp.assume('${MEMBER}', 'aal1', 'authenticated');
   if (select count(*) from public.staff_access_log) <> 0 then perform pg_temp.fail('member read log'); end if;
+  begin
+    perform public.staff_list_access_log('${MEMBER}'::uuid);
+    perform pg_temp.fail('member log rpc');
+  exception when insufficient_privilege then
+    null;
+  end;
   perform pg_temp.assume('${STAFF}', 'aal1', 'authenticated');
   if (select count(*) from public.staff_access_log) <> 0 then perform pg_temp.fail('aal1 read log'); end if;
+  begin
+    perform public.staff_list_access_log('${MEMBER}'::uuid);
+    perform pg_temp.fail('aal1 log rpc');
+  exception when insufficient_privilege then
+    null;
+  end;
   perform pg_temp.assume('${STAFF}', 'aal2', 'authenticated');
   if (select count(*) from public.staff_access_log) < 1 then perform pg_temp.fail('aal2 read log'); end if;
+  listed := public.staff_list_access_log('${MEMBER}'::uuid);
+  if listed::text like '%@%' or listed::text like '%email%' then perform pg_temp.fail('log email'); end if;
+  if exists (
+    select 1
+    from jsonb_array_elements(listed) entry
+    where entry ? 'email' or entry ? 'staff_user_id' or coalesce(entry->>'actor_role', '') not in ('Master', 'Admin')
+  ) then
+    perform pg_temp.fail('log actor shape');
+  end if;
+  if not exists (
+    select 1
+    from jsonb_array_elements(listed) entry
+    where entry->>'actor_name' = 'Example Admin' and entry->>'actor_role' = 'Admin'
+  ) then
+    perform pg_temp.fail('named admin actor');
+  end if;
+  if not exists (
+    select 1
+    from jsonb_array_elements(listed) entry
+    where entry->>'actor_name' is null and entry->>'actor_role' = 'Master'
+  ) then
+    perform pg_temp.fail('role only actor');
+  end if;
 
   perform pg_temp.assume('${MEMBER}', 'aal1', 'authenticated');
   begin

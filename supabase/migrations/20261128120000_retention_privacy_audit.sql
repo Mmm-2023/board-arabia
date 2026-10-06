@@ -342,15 +342,27 @@ begin
       'object_type', l.object_type,
       'object_id', l.object_id,
       'action', l.action,
-      'at', l.created_at
+      'at', l.created_at,
+      'actor_name', case
+        when nullif(btrim(p.full_name), '') is null then null
+        when position('@' in btrim(p.full_name)) > 0 then null
+        else btrim(p.full_name)
+      end,
+      'actor_role', case s.role
+        when 'master' then 'Master'
+        when 'staff' then 'Admin'
+        else null
+      end
     ) order by l.created_at desc)
     from (
-      select id, object_type, object_id, action, created_at
+      select id, staff_user_id, object_type, object_id, action, created_at
       from public.staff_access_log
       where member_id = p_member_id
       order by created_at desc
       limit 200
     ) l
+    left join public.staff_users s on s.user_id = l.staff_user_id
+    left join public.profiles p on p.user_id = l.staff_user_id
   ), '[]'::jsonb);
 end;
 $$;

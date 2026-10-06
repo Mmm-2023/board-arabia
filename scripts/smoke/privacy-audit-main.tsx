@@ -112,8 +112,8 @@ if (root) {
         <div className="min-h-dvh bg-ink px-5 py-8 text-pearl">
           <StaffAccessLogView
             rows={[
-              { objectLabel: 'Membership request', action: 'read', at: '6 Oct 2026, 15:00' },
-              { objectLabel: 'Shared due diligence report', action: 'read', at: '6 Oct 2026, 15:02' },
+              { objectLabel: 'Membership request', action: 'read', at: '6 Oct 2026, 15:00', actor: 'Example Admin, Admin' },
+              { objectLabel: 'Shared due diligence report', action: 'read', at: '6 Oct 2026, 15:02', actor: 'Example Admin, Admin' },
             ]}
             filtered
             error=""
