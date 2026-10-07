@@ -78,7 +78,7 @@ export function MandatesBoard({
           />
         </div>
       ) : (
-        <ul className="mt-4 grid gap-3">
+        <ul className="mt-4 grid gap-3 xl:grid-cols-2">
           {visible.map((mandate) => (
             <li key={mandate.id}>
               <MandateCard

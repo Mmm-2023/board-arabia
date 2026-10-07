@@ -162,11 +162,11 @@ function PackageForm({
       </div>
       <div className="mt-3 flex flex-wrap gap-4">
         <label className="flex min-h-11 items-center gap-2 text-[0.9rem] text-pearl/80 normal-case">
-          <input type="checkbox" checked={active} onChange={(input) => setActive(input.target.checked)} />
+          <input type="checkbox" className="size-5 shrink-0" checked={active} onChange={(input) => setActive(input.target.checked)} />
           Active
         </label>
         <label className="flex min-h-11 items-center gap-2 text-[0.9rem] text-pearl/80 normal-case">
-          <input type="checkbox" checked={placeholder} onChange={(input) => setPlaceholder(input.target.checked)} />
+          <input type="checkbox" className="size-5 shrink-0" checked={placeholder} onChange={(input) => setPlaceholder(input.target.checked)} />
           Placeholder
         </label>
       </div>

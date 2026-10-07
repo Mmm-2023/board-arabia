@@ -344,11 +344,11 @@ export function MembershipDetailView({
             <Row label="Phone" value={detail.phone || 'Not listed'} />
           </dl>
           <label className="mt-4 flex min-h-11 items-center gap-2">
-            <input type="checkbox" checked={detail.linkedinChecked} onChange={(event) => onTick('linkedin_checked', event.target.checked)} />
+            <input type="checkbox" className="size-5 shrink-0" checked={detail.linkedinChecked} onChange={(event) => onTick('linkedin_checked', event.target.checked)} />
             LinkedIn checked
           </label>
           <label className="flex min-h-11 items-center gap-2">
-            <input type="checkbox" checked={detail.crChecked} onChange={(event) => onTick('cr_checked', event.target.checked)} />
+            <input type="checkbox" className="size-5 shrink-0" checked={detail.crChecked} onChange={(event) => onTick('cr_checked', event.target.checked)} />
             CR checked on registry
           </label>
           <h2 className="mt-6 text-[0.72rem] font-semibold tracking-[0.12em] uppercase text-pearl/45">Internal notes</h2>

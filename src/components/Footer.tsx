@@ -33,9 +33,6 @@ export function Footer() {
             A selective founding membership for Saudi and international
             Chairpersons, Board members, and C-suite executives.
           </p>
-          <p className="mt-2 text-[0.8125rem] text-[var(--ba-muted)]">
-            No public calendar. Admission by review.
-          </p>
         </div>
         <nav aria-label="Footer">
           <ul className="grid grid-cols-2 gap-x-6">

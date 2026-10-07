@@ -479,6 +479,27 @@ export function DueDiligenceDeskView({
               disabled={busy || activeJob}
               onChange={onAcknowledge ?? (() => undefined)}
             />
+
+            <label className="mt-6 block text-[0.95rem] text-ink/80" htmlFor="dd-url">
+              {DD_COPY.siteLabel}
+            </label>
+            <input
+              id="dd-url"
+              value={companyUrl}
+              onChange={(event) => onCompanyUrl(event.target.value)}
+              type="url"
+              inputMode="url"
+              placeholder={DD_COPY.sitePlaceholder}
+              autoComplete="url"
+              className={fieldClass}
+              disabled={busy || activeJob}
+            />
+            <p className="mt-2 text-[0.92rem] leading-relaxed text-[var(--ba-muted)] sm:hidden">
+              {DD_COPY.siteHelperShort}
+            </p>
+            <p className="mt-2 hidden text-[0.92rem] leading-relaxed text-[var(--ba-muted)] sm:block">
+              {DD_COPY.siteHelper}
+            </p>
             <button
               type="submit"
               className={`${fileChosen ? ctaClass : fileButtonQuietClass} mt-4`}
@@ -529,27 +550,6 @@ export function DueDiligenceDeskView({
                 <p className="text-[0.98rem] leading-relaxed text-ink/75">{DD_COPY.idle}</p>
               ) : null}
             </div>
-
-            <label className="mt-6 block text-[0.95rem] text-ink/80" htmlFor="dd-url">
-              {DD_COPY.siteLabel}
-            </label>
-            <input
-              id="dd-url"
-              value={companyUrl}
-              onChange={(event) => onCompanyUrl(event.target.value)}
-              type="url"
-              inputMode="url"
-              placeholder={DD_COPY.sitePlaceholder}
-              autoComplete="url"
-              className={fieldClass}
-              disabled={busy || activeJob}
-            />
-            <p className="mt-2 text-[0.92rem] leading-relaxed text-[var(--ba-muted)] sm:hidden">
-              {DD_COPY.siteHelperShort}
-            </p>
-            <p className="mt-2 hidden text-[0.92rem] leading-relaxed text-[var(--ba-muted)] sm:block">
-              {DD_COPY.siteHelper}
-            </p>
           </form>
 
           {reports.length > 0 ? (

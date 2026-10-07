@@ -49,7 +49,7 @@ export function MandatesPage() {
   }
 
   return (
-    <div className="max-w-3xl">
+    <div className="max-w-3xl xl:max-w-6xl">
       <h1 className="font-display text-[2.2rem] font-bold tracking-[-0.03em]">Mandates</h1>
       <p className="mt-3 max-w-xl text-[1rem] leading-relaxed text-ink/60">
         Sector, deal type, size band, geography, and stage stay visible. Company, exact price, contacts, and the confidential note stay locked until you request an intro and our admin team approves it for you.
