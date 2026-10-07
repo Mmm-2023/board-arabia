@@ -61,7 +61,7 @@ function rowsOf(raw: unknown): unknown[] {
 
 export function seatLabel(seat: DirectoryCard['seat']): string {
   if (seat === 'intl') return 'International'
-  if (seat === 'sponsor') return 'Sponsor'
+  if (seat === 'sponsor') return 'Partner'
   return 'Saudi Arabia'
 }
 

@@ -213,7 +213,7 @@ function AdminSponsorSmoke({ cap }: { cap: boolean }) {
     <StaffShell path="/admin/people">
       <h1 className="font-display text-[2rem] font-semibold tracking-[-0.03em]">People</h1>
       <p className="mt-2 max-w-2xl text-[0.95rem] text-stone/65">
-        Members, admins, and sponsors. Invite, suspend, or restore. This screen does not remove
+        Members, admins, and partners. Invite, suspend, or restore. This screen does not remove
         people. The last master stays in place.
       </p>
       <SponsorInvitePanel
@@ -313,7 +313,7 @@ if (!root) throw new Error('missing root')
 
 createRoot(root).render(
   <StrictMode>
-    {path === '/admin/people' ? <AdminSponsorSmoke cap={cap} /> : null}
+    {path === '/admin/people' || view === 'admin-people' ? <AdminSponsorSmoke cap={cap} /> : null}
     {path === '/dashboard' ? <DashboardSponsorSmoke /> : null}
     {path === '/' && view === 'partners' ? (
       <MemoryRouter initialEntries={['/trusted-partners']}>

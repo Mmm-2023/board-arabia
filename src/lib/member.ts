@@ -51,12 +51,12 @@ export type FoundingCapacity = {
 export function seatLabel(seat: string | null | undefined) {
   if (seat === 'ksa') return 'Saudi Arabia'
   if (seat === 'intl') return 'International'
-  if (seat === 'sponsor') return 'Sponsor'
+  if (seat === 'sponsor') return 'Partner'
   return 'Unknown seat'
 }
 
 export function adminMemberLine(seat: string, status: string) {
-  if (seat === 'sponsor') return `Sponsor · ${status}`
+  if (seat === 'sponsor') return `Partner · ${status}`
   if (seat === 'ksa' || seat === 'intl') return `${seatLabel(seat)} · Founding Member · ${status}`
   return `${seatLabel(seat)} · ${status}`
 }

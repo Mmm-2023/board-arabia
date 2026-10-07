@@ -81,12 +81,12 @@ Deno.serve(async (req) => {
 
   if (action === 'sponsor') {
     const raw = String(body.sponsor_label ?? '').trim()
-    if (raw.length > 120) return jsonResponse(req, { error: 'The sponsor label must be 120 characters or fewer.' }, 400)
+    if (raw.length > 120) return jsonResponse(req, { error: 'The label must be 120 characters or fewer.' }, 400)
     const { error } = await admin
       .from('majlis_events')
       .update({ sponsor_label: raw || null, updated_at: new Date().toISOString() })
       .eq('id', eventId)
-    if (error) return jsonResponse(req, { error: 'Could not update the sponsor label.' }, 500)
+    if (error) return jsonResponse(req, { error: 'Could not update the label.' }, 500)
     await audit(admin, eventId, user.id, 'sponsor', raw || null)
     return jsonResponse(req, { ok: true, sponsor_label: raw || null })
   }

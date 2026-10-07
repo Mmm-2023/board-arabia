@@ -14,6 +14,7 @@ const STATIC: Record<string, string> = {
   '/dashboard/intros': '/dashboard/people/intros',
   '/dashboard/due-diligence': '/dashboard/ai/due-diligence',
   '/dashboard/events': '/dashboard/majlis',
+  '/dashboard/sponsorship': '/dashboard/partnership',
 }
 
 export function normalizePath(pathname: string) {

@@ -147,7 +147,7 @@ export function AdminMajlisPage({
     downloadCsv(
       'majlis-events.csv',
       toCsv(
-        ['Title', 'Region', 'Status', 'Starts', 'Capacity', 'Registered', 'Waitlist', 'Sponsor', 'Latitude', 'Longitude'],
+        ['Title', 'Region', 'Status', 'Starts', 'Capacity', 'Registered', 'Waitlist', 'Partner', 'Latitude', 'Longitude'],
         filtered.map((event) => [
           event.title,
           event.region,
@@ -271,10 +271,10 @@ export function AdminMajlisPage({
             <option value="upcoming">Upcoming</option>
             <option value="past">Past</option>
           </FilterSelect>
-          <FilterSelect label="Sponsor" value={sponsor} onChange={(value) => setSponsor(value as 'all' | 'with' | 'without')}>
-            <option value="all">Any sponsor</option>
-            <option value="with">With sponsor</option>
-            <option value="without">Without sponsor</option>
+          <FilterSelect label="Partner" value={sponsor} onChange={(value) => setSponsor(value as 'all' | 'with' | 'without')}>
+            <option value="all">Any partner</option>
+            <option value="with">With partner</option>
+            <option value="without">Without partner</option>
           </FilterSelect>
         </div>
         {events !== null && !error && all.length === 0 && (
@@ -321,7 +321,7 @@ export function AdminMajlisPage({
                   <Field label="Venue" value={event.venue_name} />
                   <Field label="Address" value={event.venue_address || 'Not shown'} />
                   <Field label="Geotag" value={event.map_lat != null && event.map_lng != null ? `${event.map_lat}, ${event.map_lng}` : 'Missing'} />
-                  <Field label="Sponsor" value={event.sponsor_label || 'None'} />
+                  <Field label="Partner" value={event.sponsor_label || 'None'} />
                 </dl>
                 <p className="mt-3 text-[0.92rem] text-stone/80">{(event.focus_tags ?? []).join(', ')}</p>
                 <button type="button" className={`${quietBtn} mt-4`} aria-expanded={openId === event.id} onClick={() => setOpenId(openId === event.id ? null : event.id)}>
@@ -597,7 +597,7 @@ function Ops({
         onSubmit={(submit) => {
           submit.preventDefault()
           if (catalogState !== 'ready') {
-            setMessage(catalogError || 'The sponsor list is still loading.')
+            setMessage(catalogError || 'The partner list is still loading.')
             return
           }
           setBusy(true)
@@ -628,7 +628,7 @@ function Ops({
               setSponsorLabel(choice ? choice.label : '')
             }}
           >
-            <option value="">No sponsor seat</option>
+            <option value="">No partner seat</option>
             {sponsors.map((sponsor) => (
               <option key={sponsor.user_id} value={sponsor.user_id}>
                 {sponsor.label}

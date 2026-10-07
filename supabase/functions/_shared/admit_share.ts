@@ -5,7 +5,7 @@
 const INDIGO = '#4b3f9a'
 const COHORT_FOOTER = 'Board Arabia · Private founding cohort'
 
-export const SHARE_TIERS = ['Founding Member', 'Member', 'Sponsor'] as const
+export const SHARE_TIERS = ['Founding Member', 'Member', 'Partner'] as const
 export type ShareTier = (typeof SHARE_TIERS)[number]
 
 export type AdmitShareInput = {
@@ -36,9 +36,9 @@ export function linkedInPostBody(tier: ShareTier, headline?: string | null, comp
       'boardarabia.com',
     ])
   }
-  if (tier === 'Sponsor') {
+  if (tier === 'Partner') {
     return paragraphs([
-      'Proud to support Board Arabia as a Sponsor.',
+      'Proud to support Board Arabia as a Partner.',
       credential,
       'Backing a private founding cohort for operators and capital around Saudi Arabia and the region.',
       'boardarabia.com',

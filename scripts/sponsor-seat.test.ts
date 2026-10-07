@@ -60,7 +60,7 @@ test('sponsor cap fails closed at 3 invited or active', () => {
   assert.match(migration, /status in \('invited', 'active'\)/)
   assert.match(invite, /sponsorSeatAllowed/)
   assert.match(statusFn, /sponsor_cap/)
-  assert.match(statusFn, /Sponsor seats are full \(3\)/)
+  assert.match(statusFn, /Partner seats are full \(3\)/)
 })
 
 test('claim_sponsor_seat is service_role only and does not touch staff or founding capacity', () => {
@@ -124,11 +124,11 @@ test('sponsor invite mail is a set-password letter without a booking link', () =
     issued: { mode: 'temp_password', tempPassword: 'temporary-secret' },
   })
   for (const mail of [magic, temp]) {
-    assert.equal(mail.subject, 'Board Arabia: your sponsor invitation')
+    assert.equal(mail.subject, 'Board Arabia: your partner invitation')
     assert.equal(hasBoardFooter(mail.text, mail.html), true)
     assert.equal(hasSubstantiveBody(mail.text, mail.html), true)
     assert.equal(marketingSignatureHit(mail.text, mail.html), null)
-    assert.match(mail.text, /as a sponsor/)
+    assert.match(mail.text, /as a partner/)
     assert.match(mail.text, /set a password/)
     assert.equal(/calendar\.app\.google|nammco|book(?:ing)?/i.test(`${mail.subject}\n${mail.text}\n${mail.html}`), false)
     assert.equal(mail.text.includes('\u2014'), false)

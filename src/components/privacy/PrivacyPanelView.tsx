@@ -63,11 +63,11 @@ export function PrivacyPanelView({
         </p>
 
         <div className="mt-8 border-t border-ink/10 pt-8" data-sponsor-card={showSponsors ? 'on' : 'off'}>
-          <h3 className="font-display text-[1.15rem] font-semibold tracking-[-0.02em]">Show my card to sponsors</h3>
+          <h3 className="font-display text-[1.15rem] font-semibold tracking-[-0.02em]">Show my card to partners</h3>
           <p className={body}>
-            {showSponsors ? 'Sponsors can see your directory card.' : 'Sponsors cannot see your directory card.'}
+            {showSponsors ? 'Partners can see your directory card.' : 'Partners cannot see your directory card.'}
           </p>
-          <div className="mt-4 flex flex-wrap gap-2" role="group" aria-label="Show my card to sponsors">
+          <div className="mt-4 flex flex-wrap gap-2" role="group" aria-label="Show my card to partners">
             <button
               type="button"
               className={`${choice} ${showSponsors ? 'border-ink/20 text-ink/70' : 'ba-primary border-transparent'}`}
@@ -86,7 +86,7 @@ export function PrivacyPanelView({
             </button>
           </div>
           <p className="mt-3 max-w-xl text-[0.95rem] leading-relaxed text-ink/65">
-            Off unless you turn it on. A sponsor sees your directory card only when this is on and you are visible to
+            Off unless you turn it on. A partner sees your directory card only when this is on and you are visible to
             members.
           </p>
         </div>

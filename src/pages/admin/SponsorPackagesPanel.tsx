@@ -38,9 +38,9 @@ export function SponsorPackagesPanel() {
 
   return (
     <section className={`${styles.panel} mt-4 px-5 py-5`}>
-      <h2 className={`text-[0.72rem] font-semibold tracking-[0.12em] uppercase ${styles.quiet}`}>Sponsor packages</h2>
+      <h2 className={`text-[0.72rem] font-semibold tracking-[0.12em] uppercase ${styles.quiet}`}>Partner packages</h2>
       <p className="mt-3 text-[1rem] leading-relaxed text-pearl/80">
-        Package names, prices, and entitlements. Sponsors see the name and the price only after you turn Placeholder off and save. {PLACEHOLDER_PRICE_NOTE}
+        Package names, prices, and entitlements. Partners see the name and the price only after you turn Placeholder off and save. {PLACEHOLDER_PRICE_NOTE}
       </p>
       {error ? (
         <p className="mt-3 text-[0.95rem] text-red-300" role="alert">

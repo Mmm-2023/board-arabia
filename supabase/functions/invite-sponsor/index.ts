@@ -27,7 +27,7 @@ Deno.serve(async (req) => {
 
   const requestedSeat = String(body.seat || 'sponsor').trim()
   if (requestedSeat !== 'sponsor') {
-    return jsonResponse(req, { error: 'invite-sponsor only creates a sponsor seat' }, 400)
+    return jsonResponse(req, { error: 'This invite only creates a partner seat' }, 400)
   }
 
   const email = String(body.email || '').trim().toLowerCase()
@@ -43,7 +43,7 @@ Deno.serve(async (req) => {
     .eq('is_demo', false)
   if (countError) return jsonResponse(req, { error: countError.message }, 500)
   if (!sponsorSeatAllowed(taken ?? 0)) {
-    return jsonResponse(req, { error: `Sponsor seats are full (${SPONSOR_CAP}).` }, 409)
+    return jsonResponse(req, { error: `Partner seats are full (${SPONSOR_CAP}).` }, 409)
   }
 
   const { data: existingMember } = await admin
@@ -115,7 +115,7 @@ Deno.serve(async (req) => {
     {
       to: email,
       memberName: fullName || 'there',
-      tier: 'Sponsor',
+      tier: 'Partner',
       company,
       dashboardUrl: `${site}/dashboard`,
     },
@@ -130,7 +130,7 @@ Deno.serve(async (req) => {
     provider: 'gmail',
     provider_id: null,
     detail: share.detail,
-    payload: { tier: 'Sponsor', seat: 'sponsor' },
+    payload: { tier: 'Partner', seat: 'sponsor' },
   })
 
   const dryRunInvite = sent.dryRun
@@ -148,8 +148,8 @@ Deno.serve(async (req) => {
     linkedin_share: share.status,
     seat: 'sponsor',
     message: sent.dryRun
-      ? 'Sponsor invited (dry-run). Workspace mail is not connected, so the invite was not emailed.'
-      : 'Sponsor invited. Set-password email sent.',
+      ? 'Partner invited (dry-run). Workspace mail is not connected, so the invite was not emailed.'
+      : 'Partner invited. Set-password email sent.',
     ...(dryRunInvite ? { dry_run_invite: dryRunInvite } : {}),
   })
 })
@@ -167,11 +167,11 @@ function claimStatus(message: string) {
 }
 
 function claimFailure(message: string) {
-  if (message.includes('sponsor_cap')) return { error: `Sponsor seats are full (${SPONSOR_CAP}).` }
+  if (message.includes('sponsor_cap')) return { error: `Partner seats are full (${SPONSOR_CAP}).` }
   if (message.includes('already_member')) return { error: 'This person is already a member.' }
   if (message.includes('invalid_email')) return { error: 'A valid email is required.' }
   if (message.includes('forbidden')) return { error: 'Not allowed' }
-  return { error: 'Could not claim the sponsor seat.' }
+  return { error: 'Could not claim the partner seat.' }
 }
 
 function clip(value: unknown, max: number) {

@@ -103,7 +103,7 @@ function OpenBrief({ card }: { card: ReOpportunityOpen | ReOpportunityInventory 
   return (
     <div className="mt-5 border-t border-[var(--ba-line)] pt-4">
       <p className="text-[0.92rem] text-ink/60">
-        {card.access === 'inventory' ? 'Your sponsor brief.' : 'Intro approved for you.'}
+        {card.access === 'inventory' ? 'Your partner brief.' : 'Intro approved for you.'}
       </p>
       <dl className="mt-4 space-y-3">
         {rows.map(([label, value]) => (

@@ -96,10 +96,10 @@ test('alert letter names the requester, the request, the item, the time, and the
   process.env.PUBLIC_SITE_URL = 'https://boardarabia.com'
   const message = formatAdminAlert({
     ...sample,
-    requesterName: 'Example Sponsor',
+    requesterName: 'Example Partner',
     requesterKind: 'sponsor',
   })
-  assert.match(message.text, /Example Sponsor \(sponsor\) requested mandate access\./)
+  assert.match(message.text, /Example Partner \(partner\) requested mandate access\./)
   assert.match(message.text, /Item: Energy transition, Growth equity/)
   assert.match(message.text, /Time: 29 Sep 2026, 17:19 AST \(UTC\+3\)/)
   assert.match(message.text, /Review: https:\/\/boardarabia.com\/admin#mandate-intro-queue/)

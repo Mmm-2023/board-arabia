@@ -161,7 +161,7 @@ test('admit share letter prefills LinkedIn and does not post', async () => {
   assert.equal(bare.startsWith('Honoured to be admitted as a Founding Member of Board Arabia.\n\nBoard Arabia is'), true)
   assert.equal(bare.includes('\n\n\n'), false)
   assert.match(linkedInPostBody('Member', null, 'Example House'), /Honoured to join Board Arabia as a Member\.\n\nExample House/)
-  assert.match(linkedInPostBody('Sponsor', 'Partner', null), /Proud to support Board Arabia as a Sponsor\.\n\nPartner/)
+  assert.match(linkedInPostBody('Partner', 'Example House', null), /Proud to support Board Arabia as a Partner\.\n\nExample House/)
   assert.equal(linkedInShareUrl('Hello').includes('shareActive=true'), true)
 
   let sends = 0

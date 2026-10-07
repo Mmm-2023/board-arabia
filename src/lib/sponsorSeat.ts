@@ -53,15 +53,15 @@ export function sponsorCapCopy(input: {
 }): string {
   if (input.countError || !input.capKnown) {
     if (input.countError) {
-      return 'Sponsor seats could not be counted. Retry before adding a sponsor.'
+      return 'Partner seats could not be counted. Retry before adding a partner.'
     }
-    return 'Checking how many sponsor seats are left.'
+    return 'Checking how many partner seats are left.'
   }
   if (input.full) {
-    return `All ${input.cap} sponsor seats for this year are taken. Add Sponsor stays off until a seat is free.`
+    return `All ${input.cap} partner seats for this year are taken. Add partner stays off until a seat is free.`
   }
   const noun = input.remaining === 1 ? 'seat' : 'seats'
-  return `${input.remaining} sponsor ${noun} remaining this year. This invite does not use a founding seat.`
+  return `${input.remaining} partner ${noun} remaining this year. This invite does not use a founding seat.`
 }
 
 export function firmByUserId(

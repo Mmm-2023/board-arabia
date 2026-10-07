@@ -134,12 +134,12 @@ export function sponsorInviteMail(opts: {
   const lines = [
     `Hello ${name},`,
     '',
-    'You are invited to Board Arabia as a sponsor.',
+    'You are invited to Board Arabia as a partner.',
     '',
   ]
   const parts = [
     `<p>Hello ${escapeHtml(name)},</p>`,
-    '<p>You are invited to Board Arabia as a sponsor.</p>',
+    '<p>You are invited to Board Arabia as a partner.</p>',
   ]
   if (opts.issued.mode === 'magic_link' && opts.confirmUrl) {
     lines.push('Open this one-time link to sign in. It expires and works once:', '', opts.confirmUrl, '')
@@ -171,7 +171,7 @@ export function sponsorInviteMail(opts: {
     '<p>This invitation is personal. The member dashboard is not public.</p>',
   )
   return {
-    subject: 'Board Arabia: your sponsor invitation',
+    subject: 'Board Arabia: your partner invitation',
     ...boardMail(lines.join('\n'), parts.join('\n')),
   }
 }

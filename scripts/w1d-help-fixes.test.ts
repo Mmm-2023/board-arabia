@@ -83,7 +83,7 @@ test('invitee names stay on the sent card and off the public lookup', () => {
 test('staff home counts sponsor seats instead of a fixed zero', () => {
   const home = read('src/pages/admin/AdminHome.tsx')
   assert.match(home, /sponsorSeatHolders\(room\.members\)/)
-  const at = home.indexOf('Sponsors')
+  const at = home.indexOf('Partners\n')
   assert.ok(at > 0)
   const sponsors = home.slice(at, at + 280)
   assert.match(sponsors, /\{sponsors\}/)

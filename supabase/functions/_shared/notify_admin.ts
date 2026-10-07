@@ -76,10 +76,15 @@ function clip(value: string, max = 180): string {
   return `${clean.slice(0, max - 3)}...`
 }
 
+function requesterKindLabel(kind: AdminAlertKind): string {
+  if (kind === 'sponsor') return 'partner'
+  return kind
+}
+
 function requesterLabel(input: AdminAlertInput): string {
   const name = clip(input.requesterName, 200)
   if (name) return name
-  if (input.requesterKind === 'sponsor') return 'Sponsor'
+  if (input.requesterKind === 'sponsor') return 'Partner'
   if (input.requesterKind === 'applicant') return 'Applicant'
   return 'Member'
 }
@@ -103,7 +108,7 @@ export function formatAdminAlert(input: AdminAlertInput, now = input.occurredAt 
   html: string
 } {
   const name = requesterLabel(input)
-  const kind = input.requesterKind
+  const kind = requesterKindLabel(input.requesterKind)
   const requested = clip(input.requested, 120) || 'an admin action'
   const item = clip(input.item, 180) || 'Item'
   const when = formatRiyadhStamp(now)

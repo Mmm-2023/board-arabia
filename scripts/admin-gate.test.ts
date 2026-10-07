@@ -241,8 +241,8 @@ test('the UI hides the add admin form for non-master staff', async () => {
     assert.equal(masterHtml.includes('value="master" selected'), false)
     assert.equal(staffHtml.includes('data-add-admin'), false)
     assert.equal(staffHtml.includes('Add admin'), false)
-    assert.match(staffHtml, /Add Sponsor/)
-    assert.match(masterHtml, /Add Sponsor/)
+    assert.match(staffHtml, /Add partner/)
+    assert.match(masterHtml, /Add partner/)
   } finally {
     await vite.close()
   }

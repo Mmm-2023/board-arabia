@@ -245,7 +245,7 @@ test('client majlis surfaces avoid secrets, em dashes, and sponsor deny', () => 
   assert.match(bundled, />\s*No\s*</)
   assert.match(bundled, /Add to calendar \(\.ics\)/)
   assert.match(bundled, /Founding priority until/)
-  assert.match(bundled, /Regional activity for sponsors/)
+  assert.match(bundled, /Regional activity for partners/)
   assert.match(bundled, /aria-label="Focus filters"/)
   assert.match(bundled, /aria-label="Region filters"/)
   assert.match(bundled, /Map activity/)

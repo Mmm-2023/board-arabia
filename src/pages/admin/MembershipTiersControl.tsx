@@ -99,7 +99,7 @@ export function MembershipTiersControl({
       <div className="mt-3 max-w-full">
         <p className="text-[0.95rem] font-semibold text-pearl">Membership tiers</p>
         <p className="mt-1 max-w-xl text-[0.9rem] leading-snug text-stone/80">
-          Founding and Member cannot both be on. A sponsor seat cannot also hold the Founding tier. Sponsor can sit with Member.
+          Founding and Member cannot both be on. A partner seat cannot also hold the Founding tier. Partner can sit with Member.
         </p>
         <div
           className="tier-chip-track mt-2 flex max-w-full flex-wrap items-center gap-2 md:gap-1 md:rounded-full md:bg-[var(--ba-lavender-mist)] md:p-1"

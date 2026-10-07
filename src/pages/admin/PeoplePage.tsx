@@ -88,7 +88,7 @@ export function PeoplePage({ tierShots }: { tierShots?: Record<string, TierShot>
     setSponsorFirm('')
     setSponsorEmail('')
     setSponsorOpen(false)
-    setSponsorSuccess(result.message || 'Sponsor invited.')
+    setSponsorSuccess(result.message || 'Partner invited.')
     setSponsorDryRun(result.dryRunInvite ?? null)
     room.refresh()
   }
@@ -116,7 +116,7 @@ export function PeoplePage({ tierShots }: { tierShots?: Record<string, TierShot>
     <div>
       <h1 className="font-display text-[2rem] font-semibold tracking-[-0.03em]">People</h1>
       <p className="mt-3 max-w-2xl text-[0.95rem] text-stone/65">
-        Members, admins, and sponsors. Invite, suspend, or restore. This screen does not remove
+        Members, admins, and partners. Invite, suspend, or restore. This screen does not remove
         people. The last master stays in place.
       </p>
 
@@ -349,7 +349,7 @@ export function PeoplePage({ tierShots }: { tierShots?: Record<string, TierShot>
                 <ul className="mt-3 space-y-3">
                   {rows.length === 0 && (
                     <li className="border border-pearl/10 px-5 py-6 text-stone/55">
-                      {tier === 'Sponsor' ? 'No sponsors invited yet.' : 'None yet.'}
+                      {tier === 'Partner' ? 'No partners invited yet.' : 'None yet.'}
                     </li>
                   )}
                   {rows.map((row) => {

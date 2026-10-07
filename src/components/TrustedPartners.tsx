@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { presentPartnerList, schemaMissing, type PartnerCard } from '../lib/demoRows'
-import { partnerLogoPublicUrl } from '../lib/partnerLogo'
+import { partnerLogoPublicUrl, withLogoVersion } from '../lib/partnerLogo'
 import { adviserGalleryRows, partnerGalleryRows, publicGalleryPartners, visibleMemberPartners } from '../lib/trustedPartners'
 import { usePartnerCategories } from '../lib/usePartnerCategories'
 import { supabase } from '../lib/supabase'
@@ -154,13 +154,17 @@ export function PartnerLogo({
   name,
   monogram,
   logoPath,
+  logoVersion,
 }: {
   name: string
   monogram: string
   logoPath: string | null
+  /** Admin preview cache bust. Public tiles omit this. */
+  logoVersion?: number
 }) {
   const [failed, setFailed] = useState(false)
-  const src = !failed ? partnerLogoPublicUrl(logoPath, String(import.meta.env.VITE_SUPABASE_URL || '')) : null
+  const base = !failed ? partnerLogoPublicUrl(logoPath, String(import.meta.env.VITE_SUPABASE_URL || '')) : null
+  const src = withLogoVersion(base, logoVersion)
   if (!src) {
     return (
       <div

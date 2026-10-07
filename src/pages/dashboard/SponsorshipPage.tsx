@@ -15,7 +15,7 @@ export function SponsorshipPage() {
   const [error, setError] = useState('')
   const [denied, setDenied] = useState(false)
   const [attempt, setAttempt] = useState(0)
-  useNoIndex('Sponsorship | Board Arabia')
+  useNoIndex('Partnership | Board Arabia')
 
   useEffect(() => {
     if (!sponsor) return
@@ -28,7 +28,7 @@ export function SponsorshipPage() {
           setDenied(true)
           return
         }
-        setError(result.error || 'Could not load sponsorship.')
+        setError(result.error || 'Could not load partnership.')
         return
       }
       setDenied(false)
@@ -41,7 +41,7 @@ export function SponsorshipPage() {
   }, [attempt, sponsor])
 
   if (!sponsor || denied) {
-    return <PermissionState tone="member" message="This page is for sponsor seats." />
+    return <PermissionState tone="member" message="This page is for partner seats." />
   }
   if (error) {
     return (
@@ -50,7 +50,7 @@ export function SponsorshipPage() {
       </div>
     )
   }
-  if (!desk) return <CardSkeleton tone="member" label="Loading sponsorship" />
+  if (!desk) return <CardSkeleton tone="member" label="Loading partnership" />
   return (
     <>
       <SponsorWelcomeGate />

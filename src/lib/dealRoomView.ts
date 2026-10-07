@@ -82,7 +82,7 @@ export const DEAL_COPY = {
   saveError: "Couldn't save. Retry.",
   notAvailable: 'This room is not available to you.',
   noMatches: 'No matches. Try another name.',
-  searchHint: 'Active members and approved sponsors only. The server checks each invite.',
+  searchHint: 'Active members and approved partners only. The server checks each invite.',
   readOnly: 'You can view this room. Only the owner can change it.',
   archived: 'This room is archived.',
   closed: 'This room is closed.',

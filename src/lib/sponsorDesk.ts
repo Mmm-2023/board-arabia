@@ -76,7 +76,7 @@ export type PackageSave = {
 }
 
 export const PLACEHOLDER_PRICE_NOTE = 'Placeholder. Staff have not locked a price.'
-export const SPONSOR_PACKAGE_HEADING = 'Your sponsorship'
+export const SPONSOR_PACKAGE_HEADING = 'Your partnership'
 export const NO_PACKAGE = 'No package on this seat yet.'
 
 export type SponsorPackageFace =
@@ -345,7 +345,7 @@ function presentRoster(raw: unknown): SponsorRosterRow | null {
   const row = record(raw)
   if (!row) return null
   const userId = text(row.user_id, 80)
-  const label = publicText(row.label, 200) || 'Sponsor'
+  const label = publicText(row.label, 200) || 'Partner'
   const status = row.status === 'invited' || row.status === 'active' ? row.status : ''
   const email = text(row.email, 320)
   if (!UUID.test(userId) || !status) return null

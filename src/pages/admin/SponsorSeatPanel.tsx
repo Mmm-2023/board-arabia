@@ -35,7 +35,7 @@ export function SponsorSeatPanel() {
     <section className="mt-4 border border-pearl/10 px-4 py-5 sm:px-5">
       <h3 className="text-[0.72rem] font-semibold tracking-[0.12em] text-pearl/45 uppercase">Package and category</h3>
       <p className="mt-2 text-[0.9rem] leading-relaxed text-stone/65">
-        Each sponsor seat holds one package and one category. A category stays with one sponsor until you clear it.
+        Each partner seat holds one package and one category. A category stays with one partner until you clear it.
       </p>
       {error ? (
         <p className="mt-3 text-[0.95rem] text-red-300" role="alert">
@@ -46,7 +46,7 @@ export function SponsorSeatPanel() {
         </p>
       ) : null}
       {catalog && catalog.sponsors.length === 0 ? (
-        <p className="mt-3 text-[0.9rem] text-pearl/45">No sponsors invited yet.</p>
+        <p className="mt-3 text-[0.9rem] text-pearl/45">No partners invited yet.</p>
       ) : null}
       <ul className="mt-4 space-y-3">
         {(catalog?.sponsors ?? []).map((sponsor) => (

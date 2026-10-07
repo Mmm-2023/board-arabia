@@ -38,7 +38,7 @@ export function RePartnersEditor({
   const [adding, setAdding] = useState(false)
   const nextOrder = cards.reduce((max, card) => (card.access === 'inventory' ? Math.max(max, card.sort_order) : max), 0) + 1
   return (
-    <section aria-label="Real estate partners" className="mt-8" data-re-staff-partners="true">
+    <section aria-label="Real estate firms" className="mt-8" data-re-staff-partners="true">
       <h2 className={`text-[0.72rem] font-semibold tracking-[0.14em] uppercase ${styles.quiet}`}>
         {RE_PARTNER_STAFF.title}
       </h2>

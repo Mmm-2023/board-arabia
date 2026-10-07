@@ -81,7 +81,7 @@ function mapRsvpError(message: string): { status: number; error: string } {
     return { status: 403, error: 'Hosts do not register for their own majlis.' }
   }
   if (message.includes('sponsor_cannot_rsvp')) {
-    return { status: 403, error: 'Sponsors can view regional activity. Registration is for members.' }
+    return { status: 403, error: 'Partners can view regional activity. Registration is for members.' }
   }
   if (message.includes('not_member')) return { status: 403, error: 'Registration is for members.' }
   if (message.includes('not_open')) return { status: 409, error: 'Registration is not open yet.' }

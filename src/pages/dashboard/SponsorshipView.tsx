@@ -18,8 +18,8 @@ export function SponsorshipView({ desk, portrait = null }: { desk: SponsorDesk; 
       <div className="flex items-start gap-4">
         {portrait}
         <div className="min-w-0">
-      <p className="text-[0.72rem] font-semibold tracking-[0.14em] text-brass uppercase">Sponsorship</p>
-      <h1 className="mt-3 font-display text-[2.2rem] font-bold tracking-[-0.03em]">Sponsorship</h1>
+      <p className="text-[0.72rem] font-semibold tracking-[0.14em] text-brass uppercase">Partnership</p>
+      <h1 className="mt-3 font-display text-[2.2rem] font-bold tracking-[-0.03em]">Partnership</h1>
       <p className="mt-3 max-w-xl text-[1rem] leading-relaxed text-ink/65">
         What this seat includes. Intro credits are counted for the current month.
       </p>

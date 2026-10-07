@@ -9,7 +9,9 @@ import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { MemoryRouter } from 'react-router-dom'
 import { createServer } from 'vite'
+import { nextLogoVersion, partnerLogoPublicUrl, withLogoVersion } from '../src/lib/partnerLogo.ts'
 import {
+  PARTNER_LOGO_AAL_ERROR,
   PARTNER_LOGO_SAVE_ERROR,
   partnerLogoObjectPath,
   removePartnerLogo,
@@ -81,7 +83,7 @@ test('remove deletes the storage object and clears the partner logo', async () =
     },
     async remove(paths) {
       calls.push(`remove:${paths.join(',')}`)
-      return { error: null }
+      return { data: [{ name: paths[0] || partnerLogoObjectPath(partnerId) }], error: null }
     },
     async setLogo(id, logoPath) {
       calls.push(`set:${id}:${String(logoPath)}`)
@@ -99,7 +101,7 @@ test('remove deletes the storage object and clears the partner logo', async () =
       return { error: null }
     },
     async remove() {
-      return { error: { message: 'denied' } }
+      return { data: null, error: { message: 'denied' } }
     },
     async setLogo() {
       cleared = true
@@ -117,7 +119,7 @@ test('remove deletes the storage object and clears the partner logo', async () =
         return { error: { message: 'denied' } }
       },
       async remove() {
-        return { error: null }
+        return { data: [{ name: partnerLogoObjectPath(partnerId) }], error: null }
       },
       async setLogo() {
         calls.push('set')
@@ -130,6 +132,120 @@ test('remove deletes the storage object and clears the partner logo', async () =
   )
   assert.equal(saved, PARTNER_LOGO_SAVE_ERROR)
   assert.deepEqual(calls, [`upload:${partnerLogoObjectPath(partnerId)}:true`])
+})
+
+test('an empty storage remove still clears the row when the update is allowed', async () => {
+  const calls: string[] = []
+  const empty: PartnerLogoClient = {
+    async upload() {
+      return { error: null }
+    },
+    async remove() {
+      return { data: [], error: null }
+    },
+    async setLogo(id, logoPath) {
+      calls.push(`set:${id}:${String(logoPath)}`)
+      return { error: null }
+    },
+  }
+  assert.equal(await removePartnerLogo(empty, partnerId), null)
+  assert.deepEqual(calls, [`set:${partnerId}:null`])
+
+  calls.length = 0
+  const missing: PartnerLogoClient = {
+    async upload() {
+      return { error: null }
+    },
+    async remove() {
+      return { data: null, error: null }
+    },
+    async setLogo(id, logoPath) {
+      calls.push(`set:${id}:${String(logoPath)}`)
+      return { error: null }
+    },
+  }
+  assert.equal(await removePartnerLogo(missing, partnerId), null)
+  assert.deepEqual(calls, [`set:${partnerId}:null`])
+  assert.equal(PARTNER_LOGO_AAL_ERROR, 'Please sign in again with two-step verification to change logos.')
+})
+
+test('a missing logo file at aal2 clears the row', async () => {
+  let cleared: string | null = 'unset'
+  const client: PartnerLogoClient = {
+    async upload() {
+      return { error: null }
+    },
+    async remove() {
+      return { data: [], error: null }
+    },
+    async setLogo(_id, logoPath) {
+      cleared = logoPath
+      return { error: null }
+    },
+  }
+  assert.equal(await removePartnerLogo(client, partnerId), null)
+  assert.equal(cleared, null)
+})
+
+test('aal1 logo remove shows the two-step message when the row update is refused', async () => {
+  for (const error of [
+    { message: 'not_allowed', code: '42501' },
+    { message: 'not authorized' },
+    { message: 'insufficient privilege' },
+    { message: 'permission denied' },
+  ]) {
+    let called = false
+    const client: PartnerLogoClient = {
+      async upload() {
+        return { error: null }
+      },
+      async remove() {
+        return { data: [], error: null }
+      },
+      async setLogo() {
+        called = true
+        return { error }
+      },
+    }
+    assert.equal(await removePartnerLogo(client, partnerId), PARTNER_LOGO_AAL_ERROR)
+    assert.equal(called, true)
+  }
+
+  const other: PartnerLogoClient = {
+    async upload() {
+      return { error: null }
+    },
+    async remove() {
+      return { data: [], error: null }
+    },
+    async setLogo() {
+      return { error: { message: 'could not write the row' } }
+    },
+  }
+  assert.equal(await removePartnerLogo(other, partnerId), PARTNER_LOGO_SAVE_ERROR)
+})
+
+test('admin preview url changes after a save and public tiles stay unversioned', () => {
+  const base = partnerLogoPublicUrl(partnerLogoObjectPath(partnerId), 'https://example.supabase.co')
+  assert.ok(base)
+  const before = withLogoVersion(base, 0)
+  const after = withLogoVersion(base, nextLogoVersion(0))
+  assert.equal(before, base)
+  assert.equal(after, `${base}?v=1`)
+  assert.notEqual(after, before)
+  assert.equal(withLogoVersion(base, undefined), base)
+  const panel = read('src/pages/admin/TrustedPartnersPanel.tsx')
+  const upload = panel.slice(panel.indexOf('async function uploadLogo'), panel.indexOf('async function clearLogo'))
+  const saveAt = upload.indexOf('savePartnerLogo')
+  const bumpAt = upload.indexOf('onLogoSaved(partnerId)')
+  assert.ok(saveAt > 0)
+  assert.ok(bumpAt > saveAt)
+  assert.match(panel, /logoVersion=\{logoVersions\[row\.id\]/)
+  const gallery = read('src/components/TrustedPartners.tsx')
+  assert.match(gallery, /withLogoVersion\(base, logoVersion\)/)
+  assert.equal(gallery.includes('logoVersion='), false)
+  assert.equal(read('src/pages/dashboard/PartnerShowcase.tsx').includes('logoVersion'), false)
+  assert.equal(read('src/pages/dashboard/HomeSnapshotView.tsx').includes('logoVersion'), false)
 })
 
 test('admin logo control offers remove only when a logo is stored', async () => {

@@ -50,7 +50,7 @@ async function loadContext(
     .join(', ')
   return {
     alreadyQueued: Boolean(prior.data?.id),
-    requesterName: found || (seat === 'sponsor' ? 'Sponsor' : 'Member'),
+    requesterName: found || (seat === 'sponsor' ? 'Partner' : 'Member'),
     requesterKind: seat,
     item: item || 'Mandate',
   }

@@ -520,7 +520,7 @@ export async function inviteSponsor(input: {
         }
       : undefined
     if (!res.ok) {
-      return { error: body.error || `Sponsor invite failed (${res.status})`, dryRunInvite }
+      return { error: body.error || `Partner invite failed (${res.status})`, dryRunInvite }
     }
     return {
       message: body.message,
@@ -528,7 +528,7 @@ export async function inviteSponsor(input: {
       dryRunInvite,
     }
   } catch (err) {
-    return { error: err instanceof Error ? err.message : 'Sponsor invite failed' }
+    return { error: err instanceof Error ? err.message : 'Partner invite failed' }
   }
 }
 
@@ -1262,7 +1262,7 @@ function plainStaffError(message: string): string {
   if (message.includes('category_taken')) return 'That category is already held.'
   if (message.includes('not_allowed')) return 'Staff only.'
   if (message.includes('invalid_category')) return 'Choose a category from the list.'
-  if (message.includes('invalid_sponsor')) return 'Choose an invited or active sponsor.'
+  if (message.includes('invalid_sponsor')) return 'Choose an invited or active partner.'
   return message
 }
 
@@ -1270,7 +1270,7 @@ export async function fetchSponsorDesk(): Promise<{ error: string } | { desk: Sp
   const { data, error } = await supabase.rpc('sponsor_desk')
   if (error) return { error: error.message }
   const desk = presentSponsorDesk(data)
-  if (!desk) return { error: 'Could not read the sponsorship.' }
+  if (!desk) return { error: 'Could not read the partnership.' }
   return { desk }
 }
 
@@ -1278,7 +1278,7 @@ export async function fetchSponsorCatalog(): Promise<{ error: string } | { catal
   const { data, error } = await supabase.rpc('staff_list_sponsor_catalog')
   if (error) return { error: plainStaffError(error.message) }
   const catalog = presentSponsorCatalog(data)
-  if (!catalog) return { error: 'Could not read sponsor packages.' }
+  if (!catalog) return { error: 'Could not read partner packages.' }
   return { catalog }
 }
 

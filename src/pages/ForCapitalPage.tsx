@@ -11,7 +11,7 @@ const AUDIENCES = [
   },
   {
     title: 'Private equity',
-    body: 'Sponsors with a board seat, a chairman search, or a mandate that should not travel as a cold note.',
+    body: 'Private equity firms and investors with a board seat, a chairman search, or a mandate that should not travel as a cold note.',
   },
   {
     title: 'Venture capital',

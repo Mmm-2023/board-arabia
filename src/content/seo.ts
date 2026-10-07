@@ -66,7 +66,7 @@ export const MARKETING_PAGES: Record<MarketingPath, MarketingPage> = {
   },
   '/partners': {
     path: '/partners',
-    title: 'Ecosystem partners: 3 annual seats | Board Arabia',
+    title: 'Partners: 3 annual seats | Board Arabia',
     description:
       'Board Arabia offers three annual partner seats, prioritising finance and deal-rail categories. Partner interest is by form. There is no public calendar.',
   },
