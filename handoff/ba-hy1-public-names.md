@@ -49,3 +49,10 @@ No migration. No Edge function change. No product behaviour change. VERIFIED by 
 ## Secrets grade
 
 Secrets hygiene: VERIFIED. This diff adds no live mailbox, key, token, password, service-role key, user id, booking link, or real member data. It adds no email address. example.com is not newly introduced. This handoff names no staff.
+
+## Local checks
+
+- `npm run build` with `GITHUB_PAGES=true` and `VITE_BASE_PATH=/` (tsc, vite, prerender): passed. VERIFIED.
+- `bash scripts/pages-artifact-gate.sh`: passed. VERIFIED.
+- `node --experimental-strip-types --test scripts/*.test.ts` after that build: 745 tests, 742 passed, 0 failed, 3 skipped. VERIFIED.
+
