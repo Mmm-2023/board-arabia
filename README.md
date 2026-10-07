@@ -132,7 +132,7 @@ where email = 'someone@example.com'
 on conflict (user_id) do update set email = excluded.email;
 ```
 
-## Secrets (Michael clicks)
+## Secrets (the owner sets)
 
 Set these in **Supabase → Project Settings → Edge Functions → Secrets**:
 
@@ -232,7 +232,7 @@ Then deploy `submit-application` and `admit-member`. Admit, a later capacity sav
 
 ## Security checklist (Factory audit + PR2)
 
-Evidence tags: **VERIFIED** = proved against live project / staging; **INFERRED** = from code + policies; **UNKNOWN** = needs a dashboard click; **SKIPPED BY MICHAEL** = declined, do not re-ask.
+Evidence tags: **VERIFIED** = proved against live project / staging; **INFERRED** = from code + policies; **UNKNOWN** = needs a dashboard click; **SKIPPED BY THE OWNER** = declined, do not re-ask.
 
 | Area | Result | Evidence |
 |------|--------|----------|
@@ -254,7 +254,7 @@ Evidence tags: **VERIFIED** = proved against live project / staging; **INFERRED*
 | Rate-limit + sanitize apply | **VERIFIED PASS** | `submit-application`: length caps, email/URL checks, 5/hr per email+IP via `apply_rate_limits` |
 | Secrets hygiene | **INFERRED PASS** | Only public anon in repo/`.env.example`; Gmail client secret, refresh token, or service-account JSON stay in Edge secrets |
 | Notify no cross-applicant leak | **INFERRED PASS** | Templates built from single row id only |
-| Leaked-password protection (Auth) | **SKIPPED BY MICHAEL** | 22 Sep 2026, via Sasha. No Supabase Pro upgrade. Do not re-ask |
+| Leaked-password protection (Auth) | **SKIPPED BY THE OWNER** | 22 Sep 2026. No Supabase Pro upgrade. Do not re-ask |
 | Live Workspace delivery | Dry-run until Gmail secrets exist | Edge calls `gmail.googleapis.com` users.messages.send. From and Reply-To come from `GMAIL_FROM`. `noreply@boardarabia.com` is parked until later. Dry-run while `GMAIL_REFRESH_TOKEN` (or the service-account JSON) is unset. Live send fails closed when `GMAIL_FROM` is missing |
 | `staff_users_claim_first` | **VERIFIED CLOSED** on `iirqbizwanyhgkhanntq` | Own-row SELECT made `NOT EXISTS` true for every new session, so a member could insert themselves. Migration `20260923120000_staff_only_admin_lock.sql` is applied. Authenticated INSERT is permission denied (`42501`). `list_staff_directory` and `staff_set_member_capacity` return `not_allowed` for the member account and succeed for master. |
 | Legacy `notify-application` | **GAP** | Prefer `submit-application` only |
