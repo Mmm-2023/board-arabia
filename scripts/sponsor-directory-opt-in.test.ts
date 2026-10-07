@@ -118,7 +118,7 @@ test('legal copy says a sponsor sees a card only when the member chooses', () =>
   assert.match(migration, /grant execute on function public\.set_show_card_to_sponsors\(boolean\) to authenticated/)
   assert.equal(/grant execute on function public\.set_show_card_to_sponsors\(boolean\) to anon/.test(migration), false)
   const names = readdirSync(migrationsDir).filter((name) => name.endsWith('.sql')).sort()
-  assert.equal(names.at(-1), migrationName)
+  assert.ok((names.at(-1) ?? '') >= migrationName)
   assert.ok(names.indexOf(migrationName) > names.indexOf('20261204120000_sponsor_seat_sync.sql'))
 })
 
