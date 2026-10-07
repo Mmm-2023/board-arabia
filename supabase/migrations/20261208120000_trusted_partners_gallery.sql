@@ -254,7 +254,6 @@ declare
   v_firm text;
   v_slug text;
   v_note text;
-  v_id uuid;
 begin
   v_name := pg_catalog.btrim(coalesce(p_name, ''));
   v_firm := pg_catalog.btrim(coalesce(p_firm, ''));
@@ -278,7 +277,7 @@ begin
     where lower(i.firm) = lower(v_firm)
       and i.created_at > pg_catalog.now() - interval '1 day'
   ) then
-    raise exception 'already_sent' using errcode = '23505';
+    return jsonb_build_object('ok', true);
   end if;
 
   if (
@@ -290,10 +289,9 @@ begin
   end if;
 
   insert into public.partner_interest (contact_name, firm, category_slug, note)
-  values (v_name, v_firm, v_slug, v_note)
-  returning id into v_id;
+  values (v_name, v_firm, v_slug, v_note);
 
-  return jsonb_build_object('ok', true, 'id', v_id);
+  return jsonb_build_object('ok', true);
 end;
 $$;
 

@@ -326,19 +326,24 @@ test('the 21st partner note in a day shows the busy message', () => {
   assert.equal(/search_path\s*=\s*public/i.test(fn), false)
 })
 
-test('a second note for the same firm is still rejected under the daily cap', () => {
-  assert.equal(partnerInterestError('already_sent'), null)
+test('a repeat firm within a day returns the same payload as the first success', () => {
   assert.equal(PARTNER_INTEREST_THANKS, 'Thanks, our admin team will be in touch if it is a fit.')
   assert.equal(/sponsor/i.test(PARTNER_INTEREST_THANKS), false)
   assert.equal(/\bthe desk\b/i.test(PARTNER_INTEREST_THANKS), false)
+  assert.equal(read('src/lib/partnerInterest.ts').includes('already_sent'), false)
+  assert.equal(read('src/pages/PartnersPage.tsx').includes('already_sent'), false)
   assert.match(read('src/pages/PartnersPage.tsx'), /PARTNER_INTEREST_THANKS/)
   const fn = migration.slice(
     migration.indexOf('create or replace function public.submit_partner_interest'),
     migration.indexOf('revoke all on function public.submit_partner_interest'),
   )
-  const firmAt = fn.indexOf("raise exception 'already_sent'")
+  assert.equal(fn.includes('already_sent'), false)
+  assert.equal(fn.includes("'id'"), false)
+  const returns = fn.match(/return jsonb_build_object\('ok', true\)/g) || []
+  assert.equal(returns.length, 2)
+  const firstReturn = fn.indexOf("return jsonb_build_object('ok', true)")
   const capAt = fn.indexOf("raise exception 'busy_today'")
-  assert.ok(firmAt > 0 && capAt > firmAt)
+  assert.ok(firstReturn > 0 && firstReturn < capAt)
 })
 
 test('new partner copy says partner and not sponsor', () => {
@@ -466,14 +471,11 @@ begin
   ) then
     raise exception 'anon partner flag: %', payload;
   end if;
-  perform public.submit_partner_interest('Example Person', 'Example Firm', 'investment-banking', 'A lane note');
-  begin
-    perform public.submit_partner_interest('Example Person', 'Example Firm', 'investment-banking', 'Again');
-    raise exception 'same firm was accepted';
-  exception
-    when unique_violation then
-      null;
-  end;
+  payload := public.submit_partner_interest('Example Person', 'Example Firm', 'investment-banking', 'A lane note');
+  saved := public.submit_partner_interest('Example Person', 'Example Firm', 'investment-banking', 'Again');
+  if payload is distinct from saved or payload is distinct from jsonb_build_object('ok', true) then
+    raise exception 'repeat payload % vs %', payload, saved;
+  end if;
   reset role;
   if (select count(*) from public.partner_interest where lower(firm) = lower('Example Firm')) <> 1 then
     raise exception 'same firm stored another row';

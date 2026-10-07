@@ -136,12 +136,7 @@ function InterestForm() {
     })
     setBusy(false)
     if (rpcError) {
-      const mapped = partnerInterestError(rpcError.message)
-      if (mapped == null) {
-        setSaved(true)
-        return
-      }
-      setError(mapped)
+      setError(partnerInterestError(rpcError.message))
       return
     }
     setSaved(true)
