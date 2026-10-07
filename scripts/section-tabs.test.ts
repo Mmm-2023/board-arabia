@@ -41,6 +41,7 @@ test('hub sub-tab hrefs stay on the existing routes', () => {
       ['Directory', '/dashboard/people/directory'],
       ['Intros', '/dashboard/people/intros'],
       ['Invites', '/dashboard/people/invites'],
+      ['Partners', '/dashboard/people/partners'],
     ],
   )
   assert.deepEqual(

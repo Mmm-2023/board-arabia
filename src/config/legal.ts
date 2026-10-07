@@ -8,7 +8,7 @@ export const LEGAL_PENDING = {
 } as const
 
 export const EFFECTIVE_DATE = {
-  en: '30 September 2026',
+  en: '7 October 2026',
 } as const
 
 export type LegalLang = keyof typeof LEGAL_PENDING

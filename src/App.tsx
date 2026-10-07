@@ -92,6 +92,9 @@ const PrivacyPanelPage = lazy(() => import('./pages/dashboard/PrivacyPanelPage')
 const SponsorshipPage = lazy(() =>
   import('./pages/dashboard/SponsorshipPage').then((m) => ({ default: m.SponsorshipPage })),
 )
+const PartnerShowcase = lazy(() =>
+  import('./pages/dashboard/PartnerShowcase').then((m) => ({ default: m.PartnerShowcase })),
+)
 export default function App() {
   return (
     <><EnglishOnlyQuery />
@@ -160,6 +163,7 @@ export default function App() {
           <Route path="directory" element={<DirectoryPage />} />
           <Route path="intros" element={<IntrosPage />} />
           <Route path="invites" element={<NetworkPage />} />
+          <Route path="partners" element={<PartnerShowcase />} />
           <Route path="*" element={<RedirectKeep />} />
         </Route>
         <Route path="majlis" element={<MajlisLayout />}>

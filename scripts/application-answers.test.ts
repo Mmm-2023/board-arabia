@@ -16,6 +16,7 @@ test('application answers migration bans search_path public', () => {
   const names = readdirSync(migrationsDir).filter((name) => name.endsWith('.sql')).sort()
   assert.ok(names.includes(migrationName))
   assert.ok(names.indexOf(migrationName) > names.indexOf('20261207120000_sponsor_directory_opt_in.sql'))
+  assert.ok(names.indexOf(migrationName) > names.indexOf('20261208120000_trusted_partners_gallery.sql'))
   assert.equal(/search_path\s*=\s*public/i.test(migration), false)
   assert.equal(migration.includes('\u2014'), false)
   assert.equal(migration.includes('\u2013'), false)

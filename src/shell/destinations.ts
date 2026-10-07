@@ -78,6 +78,7 @@ export const MEMBER_SECTIONS: Readonly<Record<string, readonly SectionLink[]>> =
     { id: 'directory', label: 'Directory', to: '/dashboard/people/directory', end: true },
     { id: 'intros', label: 'Intros', to: '/dashboard/people/intros', end: true },
     { id: 'invites', label: 'Invites', to: '/dashboard/people/invites', end: true },
+    { id: 'partners', label: 'Partners', to: '/dashboard/people/partners', end: true },
   ],
   ai: [
     { id: 'tools', label: 'Tools', to: '/dashboard/ai', end: true },

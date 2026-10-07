@@ -205,8 +205,9 @@ test('AI scope line is exact and each AI card names AI', async () => {
 test('landing CTAs and section links stay on their routes', async () => {
   const source = read('src/pages/LandingPage.tsx')
   assert.equal(source.includes('motion/react'), false)
-  assert.equal(source.includes('TrustedPartners'), false)
-  assert.equal(source.includes('list_trusted_partners'), false)
+  assert.match(source, /TrustedPartnersSection/)
+  assert.equal(source.includes('EXAMPLE_PARTNERS'), false)
+  assert.equal(source.includes('Qaf Ledger'), false)
   const app = read('src/App.tsx')
   assert.match(app, /path="\/apply" element=\{<ApplyPage/)
   const html = await renderLanding()

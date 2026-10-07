@@ -319,7 +319,7 @@ createRoot(root).render(
       <MemoryRouter initialEntries={['/trusted-partners']}>
         <div className="min-h-dvh bg-pearl pt-20">
           <Nav />
-          <TrustedPartnersGallery state={{ status: 'ready', partners }} />
+          <TrustedPartnersGallery partners={partners.map((partner) => ({ ...partner, logo_path: null, category_slug: null }))} surface="member" />
         </div>
       </MemoryRouter>
     ) : null}

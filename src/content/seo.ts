@@ -68,7 +68,7 @@ export const MARKETING_PAGES: Record<MarketingPath, MarketingPage> = {
     path: '/partners',
     title: 'Ecosystem partners: 3 annual seats | Board Arabia',
     description:
-      'Board Arabia offers three annual Founding Ecosystem Partner seats, prioritising finance and deal-rail categories. Partner interest is by form or email. There is no public calendar.',
+      'Board Arabia offers three annual partner seats, prioritising finance and deal-rail categories. Partner interest is by form. There is no public calendar.',
   },
   '/how-it-works': {
     path: '/how-it-works',
