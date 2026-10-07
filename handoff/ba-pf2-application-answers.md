@@ -16,14 +16,15 @@ Base at start: main `ee1938d`. Latest migration on that base: `20261207120000_sp
 | --- | --- | --- | --- |
 | New table `public.member_application_answers` with the six columns and checks | `supabase/migrations/20261209120000_application_answers_at_admission.sql:19` | `admission carries filtered tags and keeps private answers` | VERIFIED |
 | RLS enabled and forced, no policies, no table grants for anon, authenticated, or service_role | same file `:48` to `:51` | same test (catalog privileges and a direct select) | VERIFIED |
-| `public.get_my_application_answers()` returns only the caller row and omits reviewed fields | same file `:194` | same test | VERIFIED |
-| `public.dismiss_my_application_answer(p_field text)` adds the field and deletes the row when every stored field is reviewed | same file `:249` and `:274` | same test | VERIFIED |
-| No staff RPC and no new anon function | grants at `:244` and `:285` only to authenticated; private functions revoked at `:166` and `:185` | `anon allowlist stays closed and read_dd_retention_copy checks the caller` plus the new Postgres test | VERIFIED |
-| Carry sectors and themes only when that profile list is empty, keep order, drop values outside `private.profile_sector_tags()` and `private.profile_vision_themes()`, max 3 | same file `:90` to `:124` | same Postgres test (filtered list, duplicate collapsed, fourth allowed value dropped, existing list left in place, empty vision list filled alone) | VERIFIED |
-| Upsert region, board seats, statement and website, skip blanks, no row when all four are empty | same file `:126` to `:162` | same test, including a blank region after the candidate check is lifted inside the test database only | VERIFIED |
-| Those four fields are never written onto the live profile. The website is not requested | profile updates are only `sector_tags` (`:114`) and `vision_themes` (`:121`). No HTTP call in the migration | same test asserts location, bio and LinkedIn stay as admission left them | VERIFIED |
-| Trigger only on `candidate_events` kind `state_change` and `detail->>'to' = 'approved'` | trigger function `:171`, trigger `:188` | same test: in_review, a declined event, and a note whose detail says approved do not copy; an approval event before a member row does not create answers | VERIFIED |
-| Security definer functions use `set search_path = ''` | `:58`, `:175`, `:198`, `:253` | `application answers migration bans search_path public` | VERIFIED |
+| `public.get_my_application_answers()` returns only the caller row and omits reviewed fields | same file `:223` | same test | VERIFIED |
+| `public.dismiss_my_application_answer(p_field text)` adds the field and deletes the row when every stored field is reviewed | same file `:278` and `:303` | same test | VERIFIED |
+| No staff RPC and no new anon function | grants at `:273` and `:315` only to authenticated; private functions revoked from public, anon and authenticated, including `private.purge_application_answers_on_anonymise()` at `:211` | `anon allowlist stays closed and read_dd_retention_copy checks the caller` plus the new Postgres test | VERIFIED |
+| Carry sectors and themes only when that profile list is empty, keep order, drop values outside `private.profile_sector_tags()` and `private.profile_vision_themes()`, max 3 | same file `:92` to `:126` | same Postgres test (filtered list, duplicate collapsed, fourth allowed value dropped, existing list left in place, empty vision list filled alone) | VERIFIED |
+| Upsert region, board seats, statement and website, skip blanks, no row when all four are empty | same file `:128` to `:164` | same test, including a blank region after the candidate check is lifted inside the test database only | VERIFIED |
+| Those four fields are never written onto the live profile. The website is not requested | profile updates are only `sector_tags` (`:116`) and `vision_themes` (`:123`). No HTTP call in the migration | same test asserts location, bio and LinkedIn stay as admission left them | VERIFIED |
+| Trigger only on `candidate_events` kind `state_change` and `detail->>'to' = 'approved'` | trigger function `:173`, trigger `:190` | same test: in_review, a declined event, and a note whose detail says approved do not copy; an approval event before a member row does not create answers | VERIFIED |
+| Answers row is deleted when the member is anonymised | `private.purge_application_answers_on_anonymise()` at `:196`. Trigger `purge_application_answers_on_anonymise` at `:217`. Column is `anonymised_at` (`20261128120000_retention_privacy_audit.sql:429`). Fires only when that column changes from null to a time. | same Postgres test: a non-anonymise update keeps both rows; setting `anonymised_at` deletes that member only; setting it again is harmless. Static checks in `application answers migration bans search_path public` (`scripts/application-answers.test.ts:34`) | VERIFIED |
+| Security definer functions use `set search_path = ''` | `:59`, `:177`, `:200`, `:228`, `:282` | `application answers migration bans search_path public` | VERIFIED |
 | No em dash and no email pattern in the migration | migration comments and SQL | same static test | VERIFIED |
 | Definer audit anon allowlist unchanged | no edit to `scripts/definer-audit.test.ts` | `anon allowlist stays closed and read_dd_retention_copy checks the caller` | VERIFIED |
 
@@ -34,14 +35,12 @@ Base at start: main `ee1938d`. Latest migration on that base: `20261207120000_sp
 - No Edge change. `review-membership` and `admit-member` are untouched. The legacy admit path still reads `applications`, which has no sector, theme or statement columns.
 - No city mapping. Region stays the two-value band `ksa_gcc` or `intl`.
 - `src/lib/database.types.ts` not regenerated. This PR does not read the table from the app, and PR #149 also edits that file.
-- No time limit in code. See the question below.
-- Email stays off. See the question below.
+- No extra time limit. The existing sweep still anonymises a member 24 months after `left_at`. This migration deletes the answers row at that moment.
+- Email stays off. See below.
 
-## Retention question for Sasha
+## Retention
 
-`supabase/functions/_shared/retention_plan.ts` does not know about `member_application_answers`. The sweep anonymises a member 24 months after `left_at` and clears profile fields, and it does not delete the member row (`supabase/migrations/20261128120000_retention_privacy_audit.sql` around the member update in `retention_sweep_plan`). This row therefore stays until the member row is deleted (on delete cascade) or the member reviews every stored field.
-
-Should the sweep also delete `member_application_answers` when it anonymises the member? This PR does not add that.
+Answered. Members are anonymised, not deleted, so `on delete cascade` does not run. `anonymised_at` is the real column (`supabase/migrations/20261128120000_retention_privacy_audit.sql:429`). When it changes from null to a time, `purge_application_answers_on_anonymise` deletes that member's `member_application_answers` row and leaves every other member alone. The row also still leaves when the member row is deleted, or when every stored field is reviewed.
 
 ## Email, parked
 
@@ -49,7 +48,7 @@ Nothing here sends mail. No `sendEmail`, no `mail.ts`, no `ADMIN_NOTIFY_EMAIL`. 
 
 ## Sasha apply list
 
-1. Apply `supabase/migrations/20261209120000_application_answers_at_admission.sql` (table, RPCs, trigger, carry function). In merge order this sorts after FW3's `20261208120000` if that file is applied too. This migration does not depend on FW3.
+1. Apply `supabase/migrations/20261209120000_application_answers_at_admission.sql` (table, RPCs, admission trigger, carry function, and the anonymise purge trigger). In merge order this sorts after FW3's `20261208120000` if that file is applied too. This migration does not depend on FW3.
 2. No Edge redeploy.
 
 Smoke after apply: approve a test candidate who has sectors, themes and a statement. The member Profile shows the filtered tags. The answers row holds region, board seats, statement and website. Location, bio and the rest of the card are unchanged. The website is not requested.
@@ -59,3 +58,5 @@ Smoke after apply: approve a test candidate who has sectors, themes and a statem
 `node --experimental-strip-types --test scripts/*.test.ts` after the production build: 717 passed, 0 failed, 3 skipped. `npm run build` (tsc, vite, prerender) and `scripts/pages-artifact-gate.sh` passed.
 
 The first GitHub pr-checks run failed in `anon cannot read the operator row and an authenticated member can` with a duplicate role name. That statement runs before this migration is loaded. Parallel tests create the cluster role `anon` at the same moment. The same full suite then passed locally. Grade for that GitHub failure: INFERRED race, not this migration.
+
+The anonymise trigger was checked the same way: 717 passed, 0 failed, 3 skipped.

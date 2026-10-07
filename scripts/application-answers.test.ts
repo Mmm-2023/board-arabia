@@ -31,10 +31,15 @@ test('application answers migration bans search_path public', () => {
   assert.match(migration, /grant execute on function public\.dismiss_my_application_answer\(text\) to authenticated/)
   assert.match(migration, /when \(new\.kind = 'state_change' and \(new\.detail ->> 'to'\) = 'approved'\)/)
   assert.match(migration, /perform private\.carry_application_answers\(new\.candidate_user_id\)/)
+  assert.match(migration, /function private\.purge_application_answers_on_anonymise\(\)/)
+  assert.match(migration, /revoke all on function private\.purge_application_answers_on_anonymise\(\) from public, anon, authenticated/)
+  assert.equal(/grant execute on function private\.purge_application_answers_on_anonymise/i.test(migration), false)
+  assert.match(migration, /after update of anonymised_at on public\.members/)
+  assert.match(migration, /when \(old\.anonymised_at is null and new\.anonymised_at is not null\)/)
   assert.equal(/create or replace function public\.transition_candidate/i.test(migration), false)
 
   const headers = migration.split(/create or replace function /i).slice(1).map((chunk) => chunk.slice(0, chunk.indexOf('as $$')))
-  assert.equal(headers.length, 4)
+  assert.equal(headers.length, 5)
   for (const header of headers) {
     assert.match(header, /security definer/i)
     assert.match(header, /set search_path = ''/)
@@ -607,6 +612,7 @@ begin
      or has_function_privilege('anon', 'public.dismiss_my_application_answer(text)', 'execute')
      or has_function_privilege('anon', 'private.carry_application_answers(uuid)', 'execute')
      or has_function_privilege('anon', 'private.tg_carry_application_answers()', 'execute')
+     or has_function_privilege('anon', 'private.purge_application_answers_on_anonymise()', 'execute')
   then
     raise exception 'anon can execute an answers function';
   end if;
@@ -698,6 +704,66 @@ begin
     raise exception 'aal2 staff received answers: %', mine;
   end if;
   set role postgres;
+
+  insert into public.member_application_answers (member_id, region, statement)
+  values
+    (one_id, 'ksa_gcc', 'Kept until anonymised.'),
+    (two_id, 'intl', 'Stays with the other member.')
+  on conflict (member_id) do update
+  set region = excluded.region,
+      statement = excluded.statement;
+
+  update public.members
+  set directory_hidden = true
+  where user_id = one_id
+    and anonymised_at is null;
+  if not exists (select 1 from public.member_application_answers where member_id = one_id)
+     or not exists (select 1 from public.member_application_answers where member_id = two_id)
+  then
+    raise exception 'a non anonymise update deleted answers';
+  end if;
+
+  update public.members
+  set anonymised_at = pg_catalog.now()
+  where user_id = one_id;
+  if exists (select 1 from public.member_application_answers where member_id = one_id) then
+    raise exception 'anonymised member kept answers';
+  end if;
+  if not exists (
+    select 1 from public.member_application_answers a
+    where a.member_id = two_id
+      and a.statement = 'Stays with the other member.'
+  ) then
+    raise exception 'other member answers were deleted';
+  end if;
+
+  update public.members
+  set anonymised_at = pg_catalog.now()
+  where user_id = one_id;
+  if exists (select 1 from public.member_application_answers where member_id = one_id) then
+    raise exception 'second anonymise stamp recreated answers';
+  end if;
+  if not exists (
+    select 1 from public.member_application_answers a
+    where a.member_id = two_id
+      and a.statement = 'Stays with the other member.'
+  ) then
+    raise exception 'second anonymise stamp deleted the other member';
+  end if;
+
+  select p.proconfig, p.prosecdef
+    into config, definer
+  from pg_proc p
+  join pg_namespace n on n.oid = p.pronamespace
+  where n.nspname = 'private' and p.proname = 'purge_application_answers_on_anonymise';
+  if definer is distinct from true
+     or not exists (
+       select 1 from unnest(config) as item
+       where item like 'search_path=%' and item not like '%public%'
+     )
+  then
+    raise exception 'purge search path: %', config;
+  end if;
 end
 $answers$;
 `

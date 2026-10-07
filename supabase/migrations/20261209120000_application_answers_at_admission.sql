@@ -13,7 +13,9 @@
 -- Region, board seats, statement and company website stay off the live profile.
 -- They are stored for the member only. The website is text. Nothing requests the site.
 -- An empty set of those four values does not create a row.
--- The row leaves when the member row is deleted, or when every stored field is reviewed.
+-- The row leaves when the member row is deleted, when the member is anonymised
+-- (anonymised_at changes from null to a time), or when every stored field is reviewed.
+-- Members are anonymised in place, so the delete cascade does not run then.
 -- This file does not add a time limit.
 
 create table if not exists public.member_application_answers (
@@ -190,6 +192,33 @@ create trigger carry_application_answers_on_approval
   for each row
   when (new.kind = 'state_change' and (new.detail ->> 'to') = 'approved')
   execute function private.tg_carry_application_answers();
+
+create or replace function private.purge_application_answers_on_anonymise()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if old.anonymised_at is null and new.anonymised_at is not null then
+    delete from public.member_application_answers
+    where member_id = new.user_id;
+  end if;
+  return new;
+end;
+$$;
+
+revoke all on function private.purge_application_answers_on_anonymise() from public, anon, authenticated;
+
+comment on function private.purge_application_answers_on_anonymise() is
+  'Deletes the member application answers when anonymised_at changes from null to a time. Not callable by anon.';
+
+drop trigger if exists purge_application_answers_on_anonymise on public.members;
+create trigger purge_application_answers_on_anonymise
+  after update of anonymised_at on public.members
+  for each row
+  when (old.anonymised_at is null and new.anonymised_at is not null)
+  execute function private.purge_application_answers_on_anonymise();
 
 create or replace function public.get_my_application_answers()
 returns pg_catalog.jsonb
