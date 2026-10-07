@@ -53,3 +53,9 @@ Nothing here sends mail. No `sendEmail`, no `mail.ts`, no `ADMIN_NOTIFY_EMAIL`. 
 2. No Edge redeploy.
 
 Smoke after apply: approve a test candidate who has sectors, themes and a statement. The member Profile shows the filtered tags. The answers row holds region, board seats, statement and website. Location, bio and the rest of the card are unchanged. The website is not requested.
+
+## Local checks
+
+`node --experimental-strip-types --test scripts/*.test.ts` after the production build: 717 passed, 0 failed, 3 skipped. `npm run build` (tsc, vite, prerender) and `scripts/pages-artifact-gate.sh` passed.
+
+The first GitHub pr-checks run failed in `anon cannot read the operator row and an authenticated member can` with a duplicate role name. That statement runs before this migration is loaded. Parallel tests create the cluster role `anon` at the same moment. The same full suite then passed locally. Grade for that GitHub failure: INFERRED race, not this migration.
