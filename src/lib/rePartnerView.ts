@@ -14,8 +14,8 @@ export const RE_PARTNER_KIND_LABEL = {
 } as const
 
 export const RE_PARTNER_STAFF = {
-  title: 'Real estate partners',
-  lead: 'Add, edit, hide, or reorder vetted firms. They stay in the Real estate sponsor category. Example firms stay locked. Members do not see admin contacts.',
+  title: 'Real estate firms',
+  lead: 'Add, edit, hide, or reorder vetted firms. They stay in the Real estate firms category. Example firms stay locked. Members do not see admin contacts.',
   demo: 'Example firms stay as seeded.',
   saved: 'Partner saved.',
   error: 'Could not save. Retry.',

@@ -12,7 +12,10 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks(id) {
-          if (id.replaceAll('\\', '/').endsWith('/src/config/legalPageIdentity.ts')) return 'legal-pages'
+          const normalized = id.replaceAll('\\', '/')
+          if (normalized.endsWith('/src/config/legalPageIdentity.ts')) return 'legal-pages'
+          if (normalized.endsWith('/src/content/legal/terms.en.ts')) return 'legal-pages'
+          if (normalized.endsWith('/src/content/legal/privacy.en.ts')) return 'legal-pages'
         },
       },
     },

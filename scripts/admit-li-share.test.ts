@@ -125,8 +125,8 @@ test('an empty role line drops out with its blank line', () => {
   assert.equal(firstName('  '), 'there')
   assert.deepEqual(shareSeat('ksa'), { seatLabel: 'Founding Member', founding: true })
   assert.deepEqual(shareSeat('intl'), { seatLabel: 'Founding Member', founding: true })
-  const sponsor = linkedInPostText({ founding: false, seatLabel: 'Sponsor', headline: null, company: null })
-  assert.equal(sponsor.startsWith('I am honoured to join Board Arabia as a Sponsor.\n\nBoard Arabia connects'), true)
+  const sponsor = linkedInPostText({ founding: false, seatLabel: 'Partner', headline: null, company: null })
+  assert.equal(sponsor.startsWith('I am honoured to join Board Arabia as a Partner.\n\nBoard Arabia connects'), true)
   assert.equal(sponsor.includes('\n\n\n'), false)
 })
 

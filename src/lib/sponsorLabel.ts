@@ -1,2 +1,2 @@
-/** Public name for a sponsor seat. The final name is still open. */
-export const SPONSOR_LABEL = 'Sponsor'
+/** Public name for a partner seat. The stored seat value stays sponsor. */
+export const SPONSOR_LABEL = 'Partner'

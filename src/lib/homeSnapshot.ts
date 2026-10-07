@@ -581,7 +581,7 @@ export function assembleHome(input: AssembleInput): HomeModel {
         id: card.id,
         name: card.full_name,
         headline: card.headline,
-        seat: card.seat === 'intl' ? 'International' : card.seat === 'sponsor' ? 'Sponsor' : 'Saudi Arabia',
+        seat: card.seat === 'intl' ? 'International' : card.seat === 'sponsor' ? 'Partner' : 'Saudi Arabia',
         example: card.is_demo,
       })),
       mandates: mandateRows.slice(0, 2).map((row) => mandateTeaser(row)),

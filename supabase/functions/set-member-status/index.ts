@@ -55,7 +55,7 @@ Deno.serve(async (req) => {
     .eq('user_id', userId)
   if (updateError) {
     if (updateError.message.includes('sponsor_cap')) {
-      return jsonResponse(req, { error: 'Sponsor seats are full (3).' }, 409)
+      return jsonResponse(req, { error: 'Partner seats are full (3).' }, 409)
     }
     return jsonResponse(req, { error: updateError.message }, 500)
   }

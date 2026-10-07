@@ -27,10 +27,10 @@ async function renderView(desk: SponsorDesk) {
   }
 }
 
-test('sign-in steps are plain and the public name is Sponsor', () => {
-  assert.equal(SPONSOR_LABEL, 'Sponsor')
+test('sign-in steps are plain and the public name is Partner', () => {
+  assert.equal(SPONSOR_LABEL, 'Partner')
   const steps = sponsorSignInSteps()
-  assert.match(steps, /Sponsor sign-in steps/)
+  assert.match(steps, /Partner sign-in steps/)
   assert.match(steps, /Set a password when the page asks for one/)
   assert.match(steps, /not emailed/)
   assert.equal(/https?:|token|one-time|otp/i.test(steps), false)
@@ -89,15 +89,15 @@ test('welcome uses the package allowances or an empty admin line', async () => {
     await vite.close()
   }
   assert.match(filled, /What your seat includes/)
-  assert.match(filled, /Sponsor/)
+  assert.match(filled, /Partner/)
   assert.match(filled, /Majlis slots: 1 included/)
   assert.match(filled, /Intro credits: 2 per month, added to the monthly member allowance of 5/)
   assert.match(filled, /Room credits: 0 included/)
   assert.match(empty, /Admin will confirm your package\./)
   assert.equal(empty.includes('1 included'), false)
-  assert.equal(tierSaveError('sponsor_founding'), 'A sponsor seat cannot also hold the Founding tier.')
+  assert.equal(tierSaveError('sponsor_founding'), 'A partner seat cannot also hold the Founding tier.')
   assert.equal(
     tierSaveError('This sponsor has no saved region. Set the region before removing the Sponsor tier.'),
-    'This sponsor has no saved region. Set the region before removing the Sponsor tier.',
+    'This partner has no saved region. Set the region before removing the Partner tier.',
   )
 })

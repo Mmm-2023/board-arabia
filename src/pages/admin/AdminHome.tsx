@@ -259,7 +259,7 @@ export function StaffDesk({ children, closing }: { children?: ReactNode; closing
           </article>
           <article className={`${styles.panel} px-4 py-4`}>
             <p className={`text-[0.72rem] font-semibold tracking-[0.12em] uppercase ${styles.quiet}`}>
-              Sponsors
+              Partners
             </p>
             <p className="mt-2 font-display text-[1.6rem] font-semibold">{sponsors}</p>
             {room.panelFailed.members ? (

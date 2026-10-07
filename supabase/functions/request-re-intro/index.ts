@@ -69,7 +69,7 @@ async function loadRole(
     .join(', ')
   return {
     alreadyQueued: Boolean(prior.data?.id),
-    requesterName: found || (seat === 'sponsor' ? 'Sponsor' : 'Member'),
+    requesterName: found || (seat === 'sponsor' ? 'Partner' : 'Member'),
     requesterKind: seat,
     item: item || 'Real estate board role',
   }
@@ -104,7 +104,7 @@ async function loadPartner(
     .join(', ')
   return {
     alreadyQueued: Boolean(prior.data?.id),
-    requesterName: found || (seat === 'sponsor' ? 'Sponsor' : 'Member'),
+    requesterName: found || (seat === 'sponsor' ? 'Partner' : 'Member'),
     requesterKind: seat,
     item: item || 'Real estate partner',
   }
@@ -130,7 +130,7 @@ async function loadClubInterest(
     .join(', ')
   return {
     alreadyQueued: Boolean(prior.data?.id),
-    requesterName: found || (seat === 'sponsor' ? 'Sponsor' : 'Member'),
+    requesterName: found || (seat === 'sponsor' ? 'Partner' : 'Member'),
     requesterKind: seat,
     item: item || 'Real estate opportunity',
   }
@@ -156,7 +156,7 @@ async function loadContext(
     .join(', ')
   return {
     alreadyQueued: Boolean(prior.data?.id),
-    requesterName: found || (seat === 'sponsor' ? 'Sponsor' : 'Member'),
+    requesterName: found || (seat === 'sponsor' ? 'Partner' : 'Member'),
     requesterKind: seat,
     item: item || 'Real estate opportunity',
   }

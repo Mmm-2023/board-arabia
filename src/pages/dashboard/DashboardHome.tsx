@@ -339,15 +339,15 @@ export function DashboardHome() {
       {member.seat === 'sponsor' ? <SponsorWelcomeGate /> : null}
       {member.seat === 'sponsor' ? (
         <section className="mb-8 max-w-3xl border border-[var(--ba-line)] bg-white px-5 py-4">
-          <h2 className="font-display text-[1.25rem] font-semibold tracking-[-0.02em]">Your sponsorship</h2>
+          <h2 className="font-display text-[1.25rem] font-semibold tracking-[-0.02em]">Your partnership</h2>
           <p className="mt-2 text-[0.95rem] leading-relaxed text-ink/70">
             Package, seat category, majlis slots, approved intros, and credits.
           </p>
           <Link
-            to="/dashboard/sponsorship"
+            to="/dashboard/partnership"
             className="mt-3 inline-flex min-h-11 items-center font-semibold text-[var(--ba-indigo)] underline"
           >
-            Open sponsorship
+            Open partnership
           </Link>
         </section>
       ) : null}

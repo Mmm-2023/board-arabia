@@ -176,7 +176,7 @@ export const STAFF_VIEWS = {
     empty: 'No members yet. Admit from Applications.',
     error: REFRESH_ERROR,
     retry: 'Retry',
-    denied: 'A sponsor login cannot open full member records here.',
+    denied: 'A partner login cannot open full member records here.',
     filtered: 'No matches. Clear filters.',
     clear: 'Clear filters',
   },

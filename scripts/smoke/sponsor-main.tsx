@@ -14,7 +14,7 @@ import './home.css'
 
 const screen = new URLSearchParams(window.location.search).get('screen') || 'desk'
 const path =
-  screen === 'directory' ? '/dashboard/people/directory' : screen === 'majlis' ? '/dashboard/majlis' : '/dashboard/sponsorship'
+  screen === 'directory' ? '/dashboard/people/directory' : screen === 'majlis' ? '/dashboard/majlis' : '/dashboard/partnership'
 
 const desk: SponsorDesk = {
   package: {
@@ -174,7 +174,7 @@ function Screen() {
   }
   if (screen === 'majlis') {
     return (
-      <MemberContext.Provider value={memberRoom}>
+      <MemberContext.Provider value={{ ...memberRoom, member: { ...memberRoom.member, seat: 'sponsor' } }}>
         <MajlisPage preview={majlisPreview} />
       </MemberContext.Provider>
     )

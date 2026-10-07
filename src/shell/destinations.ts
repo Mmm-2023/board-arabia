@@ -90,7 +90,7 @@ export const MEMBER_SECTIONS: Readonly<Record<string, readonly SectionLink[]>> =
   ],
 }
 
-/** Account links. Not tabs. Sponsorship is added only for a sponsor seat. */
+/** Account links. Not tabs. Partnership is added only for a sponsor seat. */
 export const MEMBER_ACCOUNT: readonly SecondaryLink[] = [
   { id: 'profile', label: 'Profile', to: '/dashboard/profile' },
   { id: 'help', label: 'Help', to: '/dashboard/help' },
@@ -110,7 +110,7 @@ export const LOCKED_HUBS = ['deals', 'people', 'majlis', 'ai'] as const
 
 export function memberAccountLinks(seat: string | null | undefined): readonly SecondaryLink[] {
   if (seat !== 'sponsor') return MEMBER_ACCOUNT
-  return [{ id: 'sponsorship', label: 'Sponsorship', to: '/dashboard/sponsorship' }, ...MEMBER_ACCOUNT]
+  return [{ id: 'sponsorship', label: 'Partnership', to: '/dashboard/partnership' }, ...MEMBER_ACCOUNT]
 }
 
 /** Older previews still import this name. It is the account list, not a More sheet. */
@@ -167,7 +167,7 @@ export function shellSectionTitle(
   secondary: readonly SecondaryLink[],
 ) {
   const path = pathname.length > 1 && pathname.endsWith('/') ? pathname.replace(/\/+$/, '') : pathname
-  if (path === '/dashboard/sponsorship') return 'Sponsorship'
+  if (path === '/dashboard/partnership' || path === '/dashboard/sponsorship') return 'Partnership'
   for (const item of ACCOUNT_TITLES) {
     if (path === item.prefix || path.startsWith(`${item.prefix}/`)) return item.title
   }

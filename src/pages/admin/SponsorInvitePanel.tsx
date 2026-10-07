@@ -137,7 +137,7 @@ export function SponsorInvitePanel({
             id="sponsor-invite-heading"
             className="font-display text-[1.35rem] font-semibold tracking-[-0.02em]"
           >
-            Sponsors
+            Partners
           </h2>
           <p
             id="sponsor-seat-note"
@@ -156,7 +156,7 @@ export function SponsorInvitePanel({
           onClick={onOpen}
           className="ba-primary inline-flex min-h-11 w-full items-center justify-center px-4 text-[0.72rem] font-semibold tracking-[0.08em] uppercase disabled:opacity-40 sm:w-auto"
         >
-          Add Sponsor
+          Add partner
         </button>
       </div>
 
@@ -254,7 +254,7 @@ export function SponsorInvitePanel({
         </h3>
         {rows.length === 0 ? (
           <div className="mt-3">
-            <EmptyState tone="staff" message="No sponsors invited yet." />
+            <EmptyState tone="staff" message="No partners invited yet." />
           </div>
         ) : (
           <ul className="mt-3 space-y-3">
@@ -282,7 +282,7 @@ export function SponsorInvitePanel({
           </p>
         ) : null}
         <p className="mt-3 text-[0.85rem] leading-relaxed text-pearl/45">
-          Suspended sponsors do not hold a seat.
+          Suspended partners do not hold a seat.
         </p>
       </div>
     </section>

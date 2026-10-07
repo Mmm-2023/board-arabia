@@ -29,7 +29,7 @@ export type RealEstateTab = 'opportunities' | 'partners' | 'roles'
 
 const TABS = [
   { id: 'opportunities', label: 'Opportunities' },
-  { id: 'partners', label: 'Partners' },
+  { id: 'partners', label: 'Real estate firms' },
   { id: 'roles', label: 'Board roles' },
 ] as const
 

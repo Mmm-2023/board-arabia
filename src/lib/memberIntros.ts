@@ -86,7 +86,7 @@ export const INTRO_KIND_LABEL: Record<IntroKind, string> = {
   member: 'Member',
   mandate: 'Mandate',
   real_estate: 'Real estate',
-  partner: 'Partner',
+  partner: 'Real estate firm',
 }
 
 export function introStatusLabel(status: IntroStatus): string {

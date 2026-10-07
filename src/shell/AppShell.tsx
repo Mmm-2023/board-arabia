@@ -79,6 +79,8 @@ export function AppShell({
     location.pathname.startsWith('/dashboard/profile/') ||
     location.pathname === '/dashboard/help' ||
     location.pathname.startsWith('/dashboard/help/') ||
+    location.pathname === '/dashboard/partnership' ||
+    location.pathname.startsWith('/dashboard/partnership/') ||
     location.pathname === '/dashboard/sponsorship' ||
     location.pathname.startsWith('/dashboard/sponsorship/')
   const moreCurrent = moreOpen || secondaryActive || moreDestinationActive

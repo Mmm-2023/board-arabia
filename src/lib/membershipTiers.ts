@@ -8,7 +8,7 @@ export type MembershipTierId = (typeof MEMBERSHIP_TIER_IDS)[number]
 export const MEMBERSHIP_TIER_LABELS: Record<MembershipTierId, string> = {
   founding: 'Founding',
   member: 'Member',
-  sponsor: 'Sponsor',
+  sponsor: 'Partner',
 }
 
 export function isMembershipTierId(value: string): value is MembershipTierId {
@@ -74,16 +74,16 @@ export function tierSaveError(message: string): string {
   if (code.includes('not_found')) return 'This person is not on the list.'
   if (code.includes('invalid_combination')) return 'Founding and Member cannot be combined.'
   if (code.includes('sponsor_founding') || code.includes('cannot also hold the founding tier')) {
-    return 'A sponsor seat cannot also hold the Founding tier.'
+    return 'A partner seat cannot also hold the Founding tier.'
   }
   if (code.includes('no saved region')) {
-    return 'This sponsor has no saved region. Set the region before removing the Sponsor tier.'
+    return 'This partner has no saved region. Set the region before removing the Partner tier.'
   }
   if (code.includes('invalid_tier')) return 'Choose a listed tier.'
   if (code.includes('seat_full')) return 'No founding seats left in that region.'
   if (code.includes('founding_numbers_full')) return 'Founding numbers are full.'
   if (code.includes('no_region')) return 'Founding needs a Saudi Arabia or International seat.'
-  if (code.includes('sponsor_cap')) return 'Sponsor seats are full (3).'
+  if (code.includes('sponsor_cap')) return 'Partner seats are full (3).'
   return 'Could not save membership tiers.'
 }
 

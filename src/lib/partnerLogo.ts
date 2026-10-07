@@ -21,6 +21,16 @@ export function partnerLogoPublicUrl(logoPath: string | null | undefined, supaba
   return `${url.origin}/storage/v1/object/public/${PARTNER_LOGO_BUCKET}/${logoPath}`
 }
 
+/** Admin preview only. Public tiles keep partnerLogoPublicUrl with no query. */
+export function withLogoVersion(url: string | null, version?: number): string | null {
+  if (!url || !version) return url
+  return `${url}?v=${encodeURIComponent(String(version))}`
+}
+
+export function nextLogoVersion(current: number | undefined): number {
+  return (current ?? 0) + 1
+}
+
 export function monogramFromName(name: string): string {
   const letters = name
     .trim()

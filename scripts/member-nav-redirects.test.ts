@@ -38,7 +38,10 @@ test('old member routes resolve to the new homes and keep params', () => {
   assert.equal(resolveRedirect('/dashboard'), null)
   assert.equal(resolveRedirect('/dashboard/profile'), null)
   assert.equal(resolveRedirect('/dashboard/help'), null)
-  assert.equal(resolveRedirect('/dashboard/sponsorship'), null)
+  assert.equal(resolveRedirect('/dashboard/sponsorship'), '/dashboard/partnership')
+  assert.equal(resolveRedirect('/dashboard/partnership'), null)
+  assert.equal(resolveRedirect('/dashboard/sponsors'), null)
+  assert.equal(resolveRedirect('/dashboard/people/partners'), null)
   assert.equal(resolveRedirect('/dashboard/deals/mandates'), null)
   assert.equal(resolveRedirect('/dashboard/people/directory'), null)
   assert.equal(resolveRedirect('/dashboard/ai'), null)
@@ -72,6 +75,14 @@ test('redirects keep search and hash', () => {
       hash: '',
     }),
     { pathname: '/dashboard/people/intros', search: '', hash: '' },
+  )
+  assert.deepEqual(
+    redirectLocation({
+      pathname: '/dashboard/sponsorship',
+      search: '?seat=open',
+      hash: '#package',
+    }),
+    { pathname: '/dashboard/partnership', search: '?seat=open', hash: '#package' },
   )
   assert.equal(
     redirectLocation({ pathname: '/dashboard/profile', search: '', hash: '#password' }),

@@ -11,7 +11,7 @@ import type {
   StaffDirectoryRow,
 } from '../../lib/supabase'
 
-const PEOPLE_TIERS = ['Master', 'Admin', 'Sponsor', 'Founding Member', 'Member'] as const
+const PEOPLE_TIERS = ['Master', 'Admin', 'Partner', 'Founding Member', 'Member'] as const
 export type PersonTier = (typeof PEOPLE_TIERS)[number]
 export { PEOPLE_TIERS }
 
@@ -48,7 +48,7 @@ export function peopleInTier(
         pills: [{ id: 'admin', label: 'Admin' }],
       }))
   }
-  if (tier === 'Sponsor') {
+  if (tier === 'Partner') {
     return members
       .filter((member) => holdsSponsorSeat(member))
       .map((member) => ({

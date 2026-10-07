@@ -31,12 +31,12 @@ function sliceExport(source: string, name: string) {
 test('seat labels keep sponsor off the International founding label', () => {
   assert.equal(seatLabel('ksa'), 'Saudi Arabia')
   assert.equal(seatLabel('intl'), 'International')
-  assert.equal(seatLabel('sponsor'), 'Sponsor')
+  assert.equal(seatLabel('sponsor'), 'Partner')
   assert.notEqual(seatLabel('sponsor'), 'International')
   assert.equal(seatLabel('staff'), 'Unknown seat')
   assert.equal(seatLabel(null), 'Unknown seat')
   assert.equal(seatLabel(undefined), 'Unknown seat')
-  assert.equal(adminMemberLine('sponsor', 'invited'), 'Sponsor · invited')
+  assert.equal(adminMemberLine('sponsor', 'invited'), 'Partner · invited')
   assert.equal(adminMemberLine('intl', 'active'), 'International · Founding Member · active')
   assert.equal(adminMemberLine('ksa', 'active'), 'Saudi Arabia · Founding Member · active')
   assert.equal(home.includes("seat === 'ksa' ? 'Saudi Arabia' : 'International'"), false)
@@ -63,7 +63,7 @@ test('sponsor cap state disables Add Sponsor at 3 invited or active seats', () =
   assert.equal(sponsorAddDisabled({ capKnown: true, full: room.full, submitting: false }), false)
   assert.equal(
     sponsorCapCopy({ capKnown: true, countError: false, full: false, remaining: 1, cap: 3 }),
-    '1 sponsor seat remaining this year. This invite does not use a founding seat.',
+    '1 partner seat remaining this year. This invite does not use a founding seat.',
   )
   assert.equal(sponsorSeatHolders(open).map((row) => row.user_id).join(','), 's1,s2')
 
@@ -78,7 +78,7 @@ test('sponsor cap state disables Add Sponsor at 3 invited or active seats', () =
   assert.equal(sponsorAddDisabled({ capKnown: true, full: true, submitting: false }), true)
   assert.equal(sponsorAddDisabled({ capKnown: false, full: false, submitting: false }), true)
   assert.equal(sponsorAddDisabled({ capKnown: true, full: false, submitting: true }), true)
-  assert.match(sponsorCapCopy({ capKnown: true, countError: false, full: true, remaining: 0, cap: 3 }), /All 3 sponsor seats/)
+  assert.match(sponsorCapCopy({ capKnown: true, countError: false, full: true, remaining: 0, cap: 3 }), /All 3 partner seats/)
   assert.match(
     sponsorCapCopy({ capKnown: false, countError: true, full: false, remaining: 3, cap: 3 }),
     /could not be counted/i,
@@ -108,8 +108,8 @@ test('Add Sponsor calls invite-sponsor with the staff session and does not take 
   assert.equal(fn.includes('admit-member'), false)
   assert.equal(fn.includes('invite-master'), false)
   assert.match(people, /inviteSponsor\(/)
-  assert.match(people, /Add Sponsor|SponsorInvitePanel/)
-  assert.match(panel, /Add Sponsor/)
+  assert.match(people, /Add partner|SponsorInvitePanel/)
+  assert.match(panel, /Add partner/)
   assert.match(panel, /Firm name/)
   assert.match(panel, /Creating invite/)
   assert.match(panel, /This invite is not emailed/)

@@ -28,7 +28,7 @@ const termsAfter =
 const partnersBefore =
   'A partner does not receive the directory and does not message members around our admin team.'
 const partnersAfter =
-  "A partner does not receive the directory. A sponsor sees a member's directory card only when that member chooses to show it. No partner or sponsor messages members around our admin team."
+  "A partner does not receive the directory. A partner sees a member's directory card only when that member chooses to show it. No partner messages members around our admin team."
 
 function clause(doc: { blocks: { id?: string; text?: string }[] }, id: string) {
   const block = doc.blocks.find((item) => item.id === id)
@@ -62,12 +62,12 @@ test('the sponsor card toggle is off unless the member turns it on', async () =>
   const viewMod = await vite.ssrLoadModule('/src/components/privacy/PrivacyPanelView.tsx')
   const off = panel(viewMod.PrivacyPanelView, false)
   const on = panel(viewMod.PrivacyPanelView, true)
-  assert.match(off, /Show my card to sponsors/)
-  assert.match(off, /Sponsors cannot see your directory card\./)
+  assert.match(off, /Show my card to partners/)
+  assert.match(off, /Partners cannot see your directory card\./)
   assert.match(off, /data-sponsor-card="off"/)
   assert.match(off, /aria-pressed="true"/)
-  assert.match(off, /Off unless you turn it on\. A sponsor sees your directory card only when this is on and you are visible to members\./)
-  assert.match(on, /Sponsors can see your directory card\./)
+  assert.match(off, /Off unless you turn it on\. A partner sees your directory card only when this is on and you are visible to members\./)
+  assert.match(on, /Partners can see your directory card\./)
   assert.match(on, /data-sponsor-card="on"/)
   assert.match(off, /privacy@example\.com/)
   assert.equal(off.includes('\u2014'), false)

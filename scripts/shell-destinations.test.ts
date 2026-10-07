@@ -112,14 +112,15 @@ test('section title follows the active destination', () => {
   assert.equal(shellSectionTitle('/dashboard/privacy', MEMBER_DESTINATIONS, MEMBER_ACCOUNT), 'Your privacy')
   assert.equal(shellSectionTitle('/dashboard/two-step', MEMBER_DESTINATIONS, MEMBER_ACCOUNT), 'Two-step sign-in')
   assert.equal(shellSectionTitle('/dashboard/help', MEMBER_DESTINATIONS, MEMBER_ACCOUNT), 'Help')
-  assert.equal(shellSectionTitle('/dashboard/sponsorship', MEMBER_DESTINATIONS, MEMBER_ACCOUNT), 'Sponsorship')
+  assert.equal(shellSectionTitle('/dashboard/sponsorship', MEMBER_DESTINATIONS, MEMBER_ACCOUNT), 'Partnership')
+  assert.equal(shellSectionTitle('/dashboard/partnership', MEMBER_DESTINATIONS, MEMBER_ACCOUNT), 'Partnership')
   assert.deepEqual(
     memberAccountLinks('ksa').map((item) => item.label),
     ['Profile', 'Help'],
   )
   assert.deepEqual(
     memberAccountLinks('sponsor').map((item) => item.label),
-    ['Sponsorship', 'Profile', 'Help'],
+    ['Partnership', 'Profile', 'Help'],
   )
   assert.equal(memberAccountLinks('sponsor').some((item) => MEMBER_DESTINATIONS.some((tab) => tab.label === item.label)), false)
   assert.equal(shellSectionTitle('/admin/applications', STAFF_DESTINATIONS, STAFF_SECONDARY), 'Applications')

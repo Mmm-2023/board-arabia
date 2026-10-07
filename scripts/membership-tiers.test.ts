@@ -158,7 +158,7 @@ test('people card shows tiers, a save control, and mapped errors clear of the ri
   assert.equal(peopleCardLine({ ...member, status: 'active' }), 'Saudi Arabia · Founding No. 7 · active')
   assert.equal(
     peopleCardLine({ ...member, status: 'active', tiers: ['founding', 'sponsor'], founding_number: 7 }),
-    'Saudi Arabia · Founding No. 7, Sponsor · active',
+    'Saudi Arabia · Founding No. 7, Partner · active',
   )
   assert.equal(tierSaveError('seat_full'), 'No founding seats left in that region.')
   assert.equal(tierSaveError('invalid_combination'), 'Founding and Member cannot be combined.')
@@ -260,7 +260,7 @@ test('people card shows tiers, a save control, and mapped errors clear of the ri
       { ...member, user_id: '22222222-2222-4222-8222-222222222222', email: 'beau@example.com', seat: 'intl' as const, tier: 'member' as const, tiers: ['member'], founding_number: null },
     ]
     groupedFounding = bitsMod.peopleInTier('Founding Member', [], grouped).map((row: { email: string }) => row.email).join(',')
-    groupedSponsor = bitsMod.peopleInTier('Sponsor', [], grouped).map((row: { email: string }) => row.email).join(',')
+    groupedSponsor = bitsMod.peopleInTier('Partner', [], grouped).map((row: { email: string }) => row.email).join(',')
     groupedMember = bitsMod.peopleInTier('Member', [], grouped).map((row: { email: string }) => row.email).join(',')
   } finally {
     await vite.close()
@@ -413,7 +413,7 @@ test('tiers overview shows every pill on each row for a person in several groups
         ),
       ),
     )
-    const sponsor = overviewSection(html, 'Sponsor')
+    const sponsor = overviewSection(html, 'Partner')
     const memberGroup = overviewSection(html, 'Member')
     const founding = overviewSection(html, 'Founding Member')
     const sponsorRow = overviewRow(sponsor, combined.email)
@@ -422,7 +422,7 @@ test('tiers overview shows every pill on each row for a person in several groups
       assert.match(row, /data-tier-pill="member"/)
       assert.match(row, /data-tier-pill="sponsor"/)
       assert.match(row, />Member</)
-      assert.match(row, />Sponsor</)
+      assert.match(row, />Partner</)
     }
     const foundingRow = overviewRow(founding, foundingOnly.email)
     assert.match(foundingRow, /data-tier-pill="founding"/)

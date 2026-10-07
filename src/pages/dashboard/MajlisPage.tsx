@@ -202,7 +202,7 @@ export function MajlisPage({ preview }: { preview?: MajlisPreview } = {}) {
       <h1 className="font-display text-[2rem] font-semibold tracking-[-0.03em]">Majlis</h1>
       <p className="mt-2 max-w-full break-words text-[0.98rem] leading-relaxed text-[var(--ba-muted)]">
         {sponsor
-          ? 'Regional activity for sponsors. Guest names and contact details stay with the host.'
+          ? 'Regional activity for partners. Guest names and contact details stay with the host.'
           : past
             ? 'Past gatherings stay on record. Venue addresses and guest lists are not shown.'
             : 'Upcoming gatherings are listed first. Host a majlis when you want to hold one.'}

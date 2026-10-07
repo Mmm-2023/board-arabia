@@ -1,6 +1,12 @@
 import { PARTNER_LOGO_BUCKET } from './partnerLogo.ts'
 
 export const PARTNER_LOGO_SAVE_ERROR = 'We could not save that. Please try again.'
+export const PARTNER_LOGO_AAL_ERROR = 'Please sign in again with two-step verification to change logos.'
+
+export type PartnerLogoRemoveResult = {
+  data: { name: string }[] | null
+  error: { message: string } | null
+}
 
 export type PartnerLogoClient = {
   upload(
@@ -8,7 +14,7 @@ export type PartnerLogoClient = {
     bytes: Uint8Array,
     options: { upsert: true; contentType: string; cacheControl: string },
   ): Promise<{ error: { message: string } | null }>
-  remove(paths: string[]): Promise<{ error: { message: string } | null }>
+  remove(paths: string[]): Promise<PartnerLogoRemoveResult>
   setLogo(partnerId: string, logoPath: string | null): Promise<{ error: { message: string } | null }>
 }
 
@@ -44,6 +50,7 @@ export async function removePartnerLogo(client: PartnerLogoClient, partnerId: st
   const path = partnerLogoObjectPath(partnerId)
   const removed = await client.remove([path])
   if (removed.error) return PARTNER_LOGO_SAVE_ERROR
+  if (!removed.data || removed.data.length === 0) return PARTNER_LOGO_AAL_ERROR
   const saved = await client.setLogo(partnerId, null)
   if (saved.error) return PARTNER_LOGO_SAVE_ERROR
   return null

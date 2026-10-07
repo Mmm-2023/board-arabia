@@ -13,17 +13,17 @@ const RULES = [
   {
     n: '02',
     title: 'Three only',
-    body: 'Three Founding Ecosystem Partner seats a year. When they are filled, the year is closed. There is no waiting list published here.',
+    body: 'Three partner seats a year. When they are filled, the year is closed. There is no waiting list published here.',
   },
   {
     n: '03',
     title: 'Finance first',
-    body: 'The seat is for a firm on the rails of a deal. A general logo sponsorship is not the point.',
+    body: 'The seat is for a firm on the rails of a deal. A general logo partnership is not the point.',
   },
   {
     n: '04',
     title: 'Still gated',
-    body: "A partner does not receive the directory. A sponsor sees a member's directory card only when that member chooses to show it. No partner or sponsor messages members around our admin team.",
+    body: "A partner does not receive the directory. A partner sees a member's directory card only when that member chooses to show it. No partner messages members around our admin team.",
   },
 ]
 
@@ -32,13 +32,13 @@ export function PartnersPage() {
     <MarketingLayout path="/partners">
       <header className="mx-auto max-w-7xl px-5 pt-12 md:px-10 md:pt-20">
         <p className="mb-4 font-serif text-[1.2rem] italic text-ink-soft/70">
-          Founding Ecosystem Partners
+          Partners
         </p>
         <h1 className="max-w-3xl font-display text-[clamp(2.5rem,5.5vw,4.4rem)] font-bold leading-[1.02] tracking-[-0.04em] text-balance text-ink">
           Three annual partner seats
         </h1>
         <p className="mt-6 max-w-2xl text-[1.08rem] leading-relaxed text-ink/65">
-          Board Arabia reserves three annual Founding Ecosystem Partner seats,
+          Board Arabia reserves three annual partner seats,
           weighted toward finance and deal-infrastructure categories. Interest
           is collected privately; there is no public booking link for partners.
           There is no fee schedule here, and there is no directory of partner

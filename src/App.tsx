@@ -184,7 +184,8 @@ export default function App() {
         <Route path="privacy" element={<PrivacyPanelPage />} />
         <Route path="two-step" element={<TwoStepPage />} />
         <Route path="help" element={<HelpPage />} />
-        <Route path="sponsorship" element={<SponsorshipPage />} />
+        <Route path="partnership" element={<SponsorshipPage />} />
+        <Route path="sponsorship" element={<RedirectKeep />} />
         <Route path="directory" element={<RedirectKeep />} />
         <Route path="mandates" element={<RedirectKeep />} />
         <Route path="real-estate" element={<RedirectKeep />} />

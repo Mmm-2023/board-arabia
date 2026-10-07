@@ -54,7 +54,7 @@ export function IntroAllowancePanel() {
         Introduction allowance
       </h2>
       <p className="mt-3 text-[1rem] leading-relaxed text-pearl/80">
-        Members can request this many introductions each calendar month, Riyadh time. Sponsors also receive the introduction credits on their package.
+        Members can request this many introductions each calendar month, Riyadh time. Partners also receive the introduction credits on their package.
       </p>
       <form className="mt-4" onSubmit={(event) => void onSave(event)}>
         <label className="block text-[0.95rem] text-pearl/80" htmlFor="intro-monthly-limit">

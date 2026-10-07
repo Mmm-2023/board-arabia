@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { PartnerLogo } from '../../components/TrustedPartners'
 import { schemaMissing } from '../../lib/demoRows'
-import { inspectPartnerLogo, monogramFromName, PARTNER_LOGO_BUCKET } from '../../lib/partnerLogo'
+import { inspectPartnerLogo, monogramFromName, nextLogoVersion, PARTNER_LOGO_BUCKET } from '../../lib/partnerLogo'
 import {
   removePartnerLogo,
   savePartnerLogo,
@@ -38,6 +38,7 @@ export function TrustedPartnersPanel({ previewRows }: { previewRows?: PartnerRow
   const [error, setError] = useState('')
   const [editing, setEditing] = useState<PartnerRow | null>(null)
   const [attempt, setAttempt] = useState(0)
+  const [logoVersions, setLogoVersions] = useState<Record<string, number>>({})
 
   useEffect(() => {
     if (previewRows) return
@@ -120,7 +121,12 @@ export function TrustedPartnersPanel({ previewRows }: { previewRows?: PartnerRow
         {(rows ?? []).map((row, index) => (
           <li key={row.id} className="border border-pearl/15 px-4 py-4">
             <div className="flex items-start gap-3">
-              <PartnerLogo name={row.name} monogram={row.monogram} logoPath={row.logo_path} />
+              <PartnerLogo
+                name={row.name}
+                monogram={row.monogram}
+                logoPath={row.logo_path}
+                logoVersion={logoVersions[row.id] ?? 0}
+              />
               <div className="min-w-0 flex-1">
                 <p className="font-display text-[1.15rem] font-semibold">{row.name}</p>
                 <p className={`mt-1 ${styles.muted}`}>{row.blurb}</p>
@@ -147,6 +153,9 @@ export function TrustedPartnersPanel({ previewRows }: { previewRows?: PartnerRow
                 partnerId={row.id}
                 hasLogo={Boolean(row.logo_path)}
                 onDone={() => void reload()}
+                onLogoSaved={(partnerId) =>
+                  setLogoVersions((current) => ({ ...current, [partnerId]: nextLogoVersion(current[partnerId]) }))
+                }
                 onError={setError}
               />
             </div>
@@ -170,11 +179,13 @@ function LogoControls({
   hasLogo,
   onDone,
   onError,
+  onLogoSaved,
 }: {
   partnerId: string
   hasLogo: boolean
   onDone: () => void
   onError: (message: string) => void
+  onLogoSaved: (partnerId: string) => void
 }) {
   return (
     <>
@@ -188,7 +199,7 @@ function LogoControls({
           onChange={(event) => {
             const file = event.target.files?.[0]
             event.target.value = ''
-            if (file) void uploadLogo(partnerId, file, onDone, onError)
+            if (file) void uploadLogo(partnerId, file, onDone, onError, onLogoSaved)
           }}
         />
       </label>
@@ -213,8 +224,9 @@ function partnerLogoClient(): PartnerLogoClient {
       return { error: error ? { message: error.message } : null }
     },
     async remove(paths) {
-      const { error } = await bucket.remove(paths)
-      return { error: error ? { message: error.message } : null }
+      const { data, error } = await bucket.remove(paths)
+      const removed = Array.isArray(data) ? data.flatMap((item) => (item?.name ? [{ name: item.name }] : [])) : null
+      return { data: removed, error: error ? { message: error.message } : null }
     },
     async setLogo(partnerId, logoPath) {
       const { error } = await supabase.rpc('staff_set_trusted_partner_logo', {
@@ -231,6 +243,7 @@ async function uploadLogo(
   file: File,
   onDone: () => void,
   onError: (message: string) => void,
+  onLogoSaved: (partnerId: string) => void,
 ) {
   onError('')
   const bytes = new Uint8Array(await file.arrayBuffer())
@@ -244,6 +257,7 @@ async function uploadLogo(
     onError(message)
     return
   }
+  onLogoSaved(partnerId)
   onDone()
 }
 
