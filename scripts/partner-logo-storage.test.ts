@@ -134,8 +134,8 @@ test('remove deletes the storage object and clears the partner logo', async () =
   assert.deepEqual(calls, [`upload:${partnerLogoObjectPath(partnerId)}:true`])
 })
 
-test('an empty storage remove is a failure and does not clear the logo', async () => {
-  let cleared = false
+test('an empty storage remove still clears the row when the update is allowed', async () => {
+  const calls: string[] = []
   const empty: PartnerLogoClient = {
     async upload() {
       return { error: null }
@@ -143,16 +143,15 @@ test('an empty storage remove is a failure and does not clear the logo', async (
     async remove() {
       return { data: [], error: null }
     },
-    async setLogo() {
-      cleared = true
+    async setLogo(id, logoPath) {
+      calls.push(`set:${id}:${String(logoPath)}`)
       return { error: null }
     },
   }
-  assert.equal(await removePartnerLogo(empty, partnerId), PARTNER_LOGO_AAL_ERROR)
-  assert.equal(cleared, false)
-  assert.equal(PARTNER_LOGO_AAL_ERROR, 'Please sign in again with two-step verification to change logos.')
+  assert.equal(await removePartnerLogo(empty, partnerId), null)
+  assert.deepEqual(calls, [`set:${partnerId}:null`])
 
-  cleared = false
+  calls.length = 0
   const missing: PartnerLogoClient = {
     async upload() {
       return { error: null }
@@ -160,13 +159,70 @@ test('an empty storage remove is a failure and does not clear the logo', async (
     async remove() {
       return { data: null, error: null }
     },
-    async setLogo() {
-      cleared = true
+    async setLogo(id, logoPath) {
+      calls.push(`set:${id}:${String(logoPath)}`)
       return { error: null }
     },
   }
-  assert.equal(await removePartnerLogo(missing, partnerId), PARTNER_LOGO_AAL_ERROR)
-  assert.equal(cleared, false)
+  assert.equal(await removePartnerLogo(missing, partnerId), null)
+  assert.deepEqual(calls, [`set:${partnerId}:null`])
+  assert.equal(PARTNER_LOGO_AAL_ERROR, 'Please sign in again with two-step verification to change logos.')
+})
+
+test('a missing logo file at aal2 clears the row', async () => {
+  let cleared: string | null = 'unset'
+  const client: PartnerLogoClient = {
+    async upload() {
+      return { error: null }
+    },
+    async remove() {
+      return { data: [], error: null }
+    },
+    async setLogo(_id, logoPath) {
+      cleared = logoPath
+      return { error: null }
+    },
+  }
+  assert.equal(await removePartnerLogo(client, partnerId), null)
+  assert.equal(cleared, null)
+})
+
+test('aal1 logo remove shows the two-step message when the row update is refused', async () => {
+  for (const error of [
+    { message: 'not_allowed', code: '42501' },
+    { message: 'not authorized' },
+    { message: 'insufficient privilege' },
+    { message: 'permission denied' },
+  ]) {
+    let called = false
+    const client: PartnerLogoClient = {
+      async upload() {
+        return { error: null }
+      },
+      async remove() {
+        return { data: [], error: null }
+      },
+      async setLogo() {
+        called = true
+        return { error }
+      },
+    }
+    assert.equal(await removePartnerLogo(client, partnerId), PARTNER_LOGO_AAL_ERROR)
+    assert.equal(called, true)
+  }
+
+  const other: PartnerLogoClient = {
+    async upload() {
+      return { error: null }
+    },
+    async remove() {
+      return { data: [], error: null }
+    },
+    async setLogo() {
+      return { error: { message: 'could not write the row' } }
+    },
+  }
+  assert.equal(await removePartnerLogo(other, partnerId), PARTNER_LOGO_SAVE_ERROR)
 })
 
 test('admin preview url changes after a save and public tiles stay unversioned', () => {

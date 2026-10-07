@@ -98,25 +98,135 @@ function walk(dir: string, out: string[]) {
   }
 }
 
-function codeValue(literal: string) {
-  const masked = literal.replace(/\binvite-sponsor\b/g, '').replaceAll('/dashboard/sponsorship', '')
-  if (!BANNED.test(masked) && !masked.includes(ECOSYSTEM)) return true
-  if (literal === 'sponsor' || literal === 'sponsorship') return true
+function hasSponsorWord(value: string) {
+  const masked = value.replace(/\binvite-sponsor\b/g, '').replaceAll('/dashboard/sponsorship', '')
+  return BANNED.test(masked) || masked.includes(ECOSYSTEM)
+}
+
+function isDataSponsor(context: string, literal: string) {
+  if (literal !== 'sponsor' && literal !== 'sponsorship') return false
+  if (/(?:===|!==|==|!=)\s*$/.test(context)) return true
+  if (/(?:seat|role|tier|kind|status|enum)\s*:\s*$/i.test(context)) return true
+  if (literal === 'sponsorship' && /path\s*=\s*$/.test(context)) return true
+  return false
+}
+
+function isRenderedSponsor(context: string, literal: string) {
+  if (!/^sponsor$/i.test(literal)) return false
+  if (/(?:label|title|children|heading|message)\s*[:=]\s*$/i.test(context)) return true
+  if (/\{\s*$/.test(context)) return true
+  return false
+}
+
+function literalAllowed(literal: string, context: string) {
+  if (isRenderedSponsor(context, literal)) return false
+  if (!hasSponsorWord(literal)) return true
+  if (isDataSponsor(context, literal)) return true
+  if ((literal === 'sponsor' || literal === 'sponsorship') && !isRenderedSponsor(context, literal)) return true
   if (!/\s/.test(literal) && !literal.includes(ECOSYSTEM)) {
+    const masked = literal.replace(/\binvite-sponsor\b/g, '').replaceAll('/dashboard/sponsorship', '')
     const matches = masked.match(/\bsponsor(s|ship|ships|ed)?\b/gi) || []
-    return matches.length > 0 && matches.every((token) => token === 'sponsor')
+    if (matches.length > 0 && matches.every((token) => token === 'sponsor')) return true
+    if (!BANNED.test(masked) && !masked.includes(ECOSYSTEM)) return true
   }
   return false
 }
 
-function literalHits(literal: string, where: string, hits: string[]) {
-  if (codeValue(literal)) return
+function pushHit(hits: string[], where: string, literal: string) {
   const shown = literal.replace(/\s+/g, ' ').trim().slice(0, 160)
-  hits.push(`${where}: ${shown}`)
+  if (shown) hits.push(`${where}: ${shown}`)
 }
 
-function scan(rel: string, hits: string[]) {
-  const text = stripImports(stripComments(read(rel)))
+function jsxTexts(source: string) {
+  const texts: string[] = []
+  let i = 0
+  while (i < source.length) {
+    if (source[i] !== '<') {
+      i += 1
+      continue
+    }
+    const prev = i === 0 ? '' : source[i - 1] || ''
+    if (/[A-Za-z0-9.]/.test(prev)) {
+      i += 1
+      continue
+    }
+    const next = source[i + 1]
+    if (next !== '/' && !/[A-Za-z]/.test(next || '')) {
+      i += 1
+      continue
+    }
+    const closing = next === '/'
+    i += 1
+    if (closing) i += 1
+    while (i < source.length && /[A-Za-z0-9.]/.test(source[i] || '')) i += 1
+    let quote: string | null = null
+    let ended = false
+    while (i < source.length) {
+      const ch = source[i]
+      if (quote) {
+        if (ch === '\\') {
+          i += 2
+          continue
+        }
+        if (ch === quote) quote = null
+        i += 1
+        continue
+      }
+      if (ch === '"' || ch === "'" || ch === '`') {
+        quote = ch
+        i += 1
+        continue
+      }
+      if (ch === '{') {
+        i += 1
+        let depth = 1
+        while (i < source.length && depth > 0) {
+          if (source[i] === '{') depth += 1
+          else if (source[i] === '}') depth -= 1
+          i += 1
+        }
+        continue
+      }
+      if (ch === '>') {
+        i += 1
+        ended = true
+        break
+      }
+      i += 1
+    }
+    if (!ended || closing || source[i - 2] === '/') continue
+    let buf = ''
+    while (i < source.length && source[i] !== '<') {
+      if (source[i] === '{') {
+        if (buf.trim()) texts.push(buf)
+        buf = ''
+        i += 1
+        const exprStart = i
+        let depth = 1
+        while (i < source.length && depth > 0) {
+          if (source[i] === '{') depth += 1
+          else if (source[i] === '}') depth -= 1
+          if (depth > 0) i += 1
+        }
+        const expr = source.slice(exprStart, i).trim()
+        const rendered = expr.match(/^(['"`])([\s\S]*)\1$/)
+        if (rendered?.[2]) texts.push(rendered[2])
+        if (source[i] === '}') i += 1
+        continue
+      }
+      buf += source[i]
+      i += 1
+    }
+    if (buf.trim()) texts.push(buf)
+  }
+  return texts
+}
+
+/** Same scan the repo gate uses. Test files and legal files are out of scope. */
+export function partnerWordingHits(source: string, rel = 'src/fixture.tsx') {
+  if (/\.test\.(ts|tsx)$/.test(rel) || rel.startsWith('src/content/legal/')) return []
+  const text = stripImports(stripComments(source))
+  const hits: string[] = []
   let i = 0
   while (i < text.length) {
     const quote = text[i]
@@ -124,6 +234,7 @@ function scan(rel: string, hits: string[]) {
       i += 1
       continue
     }
+    const context = text.slice(Math.max(0, i - 48), i)
     i += 1
     let body = ''
     while (i < text.length) {
@@ -134,7 +245,7 @@ function scan(rel: string, hits: string[]) {
         continue
       }
       if (quote === '`' && ch === '$' && text[i + 1] === '{') {
-        literalHits(body, rel, hits)
+        if (!literalAllowed(body, context)) pushHit(hits, rel, body)
         body = ''
         i += 2
         let depth = 1
@@ -152,15 +263,18 @@ function scan(rel: string, hits: string[]) {
       body += ch
       i += 1
     }
-    literalHits(body, rel, hits)
+    if (!literalAllowed(body, context)) pushHit(hits, rel, body)
   }
-  const jsx = />([^<>{}]+)</g
-  let match: RegExpExecArray | null
-  while ((match = jsx.exec(text))) {
-    const bit = (match[1] || '').replace(/\s+/g, ' ').trim()
-    if (!bit || /=>|\bconst\b|\bfunction\b|\breturn\b|=/.test(bit)) continue
-    literalHits(bit, rel, hits)
+  if (rel.endsWith('.tsx')) {
+    for (const bit of jsxTexts(text)) {
+      if (hasSponsorWord(bit)) pushHit(hits, rel, bit)
+    }
   }
+  return hits
+}
+
+function scan(rel: string, hits: string[]) {
+  hits.push(...partnerWordingHits(read(rel), rel))
 }
 
 test('user-facing copy says partner, and legal files stay out of this gate', () => {
@@ -179,6 +293,57 @@ test('user-facing copy says partner, and legal files stay out of this gate', () 
   assert.equal(/\bsponsor/i.test(STORED_EQUITY_GLOSS), false)
   assert.match(read('src/content/marketing.ts'), /PARTNER_CATEGORIES/)
   assert.match(read('src/pages/ForCapitalPage.tsx'), /Private equity firms and investors with a board seat/)
+})
+
+test('partner wording gate flags rendered sponsor text', () => {
+  const negatives = [
+    '<p>Your sponsor {name}</p>',
+    '<p>{name} is your sponsor</p>',
+    '<p>count = sponsor</p>',
+    '<p>please return your sponsor card</p>',
+    "<p>{'sponsor'}</p>",
+    '<Label title="sponsor" />',
+    "const row = { label: 'sponsor', children: 'sponsor' }",
+  ]
+  for (const sample of negatives) {
+    assert.ok(partnerWordingHits(sample, 'src/fixture.tsx').length > 0, sample)
+  }
+})
+
+test('partner wording gate allows seat values, routes, identifiers, comments, tests, and legal files', () => {
+  const positives = [
+    "if (seat === 'sponsor') return null",
+    "const row = { role: 'sponsor', tier: 'sponsor' }",
+    "const STATIC = { '/dashboard/sponsorship': '/dashboard/partnership' }",
+    "const fn = 'invite-sponsor'",
+    'const sponsorId = 1\nconst isSponsor = true\nconst label = SPONSOR_LABEL',
+    "import { SPONSOR_LABEL } from './sponsorLabel'\n// a sponsor note\n/* sponsor */",
+  ]
+  for (const sample of positives) {
+    assert.deepEqual(partnerWordingHits(sample, 'src/fixture.tsx'), [], sample)
+  }
+  assert.deepEqual(partnerWordingHits("export const line = 'A sponsor sees a card.'", 'src/content/legal/terms.en.ts'), [])
+  assert.deepEqual(partnerWordingHits("assert.equal(seat, 'sponsor')", 'scripts/example.test.ts'), [])
+})
+
+test('built sentence check catches sponsor wording and allows code tokens', () => {
+  for (const sample of [
+    'const msg = "Your sponsor brief."',
+    'const msg = "a sponsor-backed deal"',
+    'const msg = "for sponsors: three"',
+  ]) {
+    assert.ok(builtSentenceSponsorHits(sample).length > 0, sample)
+  }
+  assert.ok(builtSentenceSponsorHits('<p>Your sponsor brief.</p>', true).length > 0)
+  for (const sample of [
+    'if (seat === "sponsor") return null',
+    'const row = { role: "sponsor" }',
+    'const path = "/dashboard/sponsorship"',
+    'const fn = "invite-sponsor"',
+    'const sponsorId = 1; const isSponsor = SPONSOR_LABEL',
+  ]) {
+    assert.deepEqual(builtSentenceSponsorHits(sample), [], sample)
+  }
 })
 
 test('sponsorship redirects to partnership and both shells stay prerendered', () => {
@@ -242,53 +407,64 @@ function walkDist(dir: string, out: string[]) {
   }
 }
 
-function builtSponsorHits(text: string) {
-  let cleaned = text
-  cleaned = cleaned.replaceAll('/dashboard/sponsorship', '')
-  cleaned = cleaned.replaceAll('invite-sponsor', '')
-  cleaned = cleaned.replaceAll('data-sponsorship', '')
-  cleaned = cleaned.replaceAll('data-sponsor-card', '')
-  cleaned = cleaned.replaceAll('data-seat-badge', '')
-  cleaned = cleaned.replace(/sponsor-[a-z0-9-]+/g, '')
-  cleaned = cleaned.replace(/['"`]sponsor['"`]/g, '')
-  cleaned = cleaned.replace(/['"`]sponsorship['"`]/g, '')
-  cleaned = cleaned.replace(/\.sponsors\b/g, '')
-  cleaned = cleaned.replace(/\bsponsors\s*:/g, '')
-  cleaned = cleaned.replace(/\b[A-Za-z0-9_]*sponsor[A-Za-z0-9_]*\b/gi, (token) => {
-    if (token.includes('_')) return ''
-    if (/[A-Z]/.test(token.slice(1)) && /[a-z]/.test(token)) return ''
-    const lower = token.toLowerCase()
-    if (['sponsor', 'sponsors', 'sponsorship', 'sponsorships', 'sponsored'].includes(lower)) return token
-    return ''
-  })
-  cleaned = cleaned.replace(/\b[a-z0-9$.{}=,'`/-]*sponsor\b/g, (token) => {
-    if (!/\s/.test(token) && !/sponsors|sponsorship|sponsored/i.test(token)) return ''
-    return token
-  })
+function builtSponsorSentence(blob: string, index: number, token: string) {
+  const before = index === 0 ? '' : blob[index - 1] || ''
+  const after = blob[index + token.length] || ''
+  if (/[A-Za-z0-9_./]/.test(before)) return false
+  if (before === '-') return false
+  if (after === '_' || /[A-Za-z0-9]/.test(after)) return false
+  const quotedValue = (before === '"' || before === "'" || before === '`') && before === after
+  if (quotedValue && (token.toLowerCase() === 'sponsor' || token.toLowerCase() === 'sponsorship')) return false
+  if (after === ':' && blob[index + token.length + 1] !== ' ') return false
+  if (after === '-' && (before === ' ' || before === '\n' || before === '\t')) return true
+  const spaceBefore = before === ' ' || before === '\n' || before === '\t'
+  const spaceAfter = after === ' ' || after === '\n' || after === '\t'
+  const sentenceAfter = after === ':' || after === '.' || after === ',' || after === '!' || after === '?'
+  return spaceBefore && (spaceAfter || sentenceAfter || after === '-')
+}
+
+/** Sentence text in built JS or HTML. Identifiers, enum values, paths, and function names stay. */
+export function builtSentenceSponsorHits(blob: string, _html = false) {
   const hits: string[] = []
-  const found = cleaned.match(/\bsponsor(s|ship|ships|ed)?\b/gi) || []
-  for (const token of found) hits.push(token)
-  if (cleaned.includes(ECOSYSTEM)) hits.push(ECOSYSTEM)
+  const re = /\bsponsor(?:s|ship|ships|ed)?\b|\bsponsor-/gi
+  let match: RegExpExecArray | null
+  while ((match = re.exec(blob))) {
+    const token = match[0]
+    if (!builtSponsorSentence(blob, match.index, token)) continue
+    const start = Math.max(0, match.index - 24)
+    const end = Math.min(blob.length, match.index + token.length + 24)
+    hits.push(blob.slice(start, end).replace(/\s+/g, ' ').trim())
+  }
+  if (blob.includes(ECOSYSTEM)) hits.push(ECOSYSTEM)
   return hits
 }
 
+function legalBuiltFile(rel: string) {
+  return (
+    /^assets\/legal-pages-[A-Za-z0-9_-]+\.js$/.test(rel) ||
+    rel === 'privacy/index.html' ||
+    rel === 'terms/index.html'
+  )
+}
+
 test('built assets keep sponsor wording inside the legal-pages chunk', () => {
-  const assets = path.join(root, 'dist/assets')
+  const dist = path.join(root, 'dist')
+  const assets = path.join(dist, 'assets')
   assert.equal(existsSync(assets), true, 'dist/assets is missing; build before this test')
   const files = [] as string[]
-  walkDist(assets, files)
+  walkDist(dist, files)
   const outside: string[] = []
   let legalHit = false
   for (const file of files) {
-    const rel = path.relative(path.join(root, 'dist'), file).split(path.sep).join('/')
+    const rel = path.relative(dist, file).split(path.sep).join('/')
+    if (!rel.endsWith('.js') && !rel.endsWith('.html') && !rel.endsWith('.css')) continue
     const text = readFileSync(file).toString('latin1')
-    const legal = /\/legal-pages-[A-Za-z0-9_-]+\.js$/.test(`/${rel}`) || /^assets\/legal-pages-[A-Za-z0-9_-]+\.js$/.test(rel)
-    if (legal) {
+    if (legalBuiltFile(rel)) {
       if (/sponsor/i.test(text)) legalHit = true
       continue
     }
-    const hits = builtSponsorHits(text)
-    if (hits.length) outside.push(`${rel}: ${[...new Set(hits)].join(', ')}`)
+    const hits = builtSentenceSponsorHits(text, rel.endsWith('.html'))
+    if (hits.length) outside.push(`${rel}: ${[...new Set(hits)].join(' | ')}`)
   }
   assert.equal(legalHit, true)
   assert.deepEqual(outside, [])

@@ -233,7 +233,7 @@ function partnerLogoClient(): PartnerLogoClient {
         p_id: partnerId,
         p_logo_path: logoPath,
       })
-      return { error: error ? { message: error.message } : null }
+      return { error: error ? { message: error.message, code: error.code } : null }
     },
   }
 }

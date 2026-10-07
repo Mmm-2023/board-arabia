@@ -22,13 +22,13 @@ Base: `9470ccb3b350b8fc65621662139e41aa1fc5cfc6` (Keep application answers at ad
 | Copy gate | `scripts/partner-wording.test.ts` scans user-facing strings in `src` and `supabase/functions`. It skips comments, imports, legal files, test files, the seat value `sponsor`, the route id `sponsorship`, and `invite-sponsor`. | `user-facing copy says partner, and legal files stay out of this gate` | VERIFIED |
 | Built assets | `vite.config.ts` places `terms.en.ts` and `privacy.en.ts` on the existing `legal-pages` chunk. The build check allows seat values, route ids, file names, and API field `sponsors` outside that chunk. Display wording `sponsor` outside it fails. | `built assets keep sponsor wording inside the legal-pages chunk` | VERIFIED |
 | Admin logo preview | `withLogoVersion` in `src/lib/partnerLogo.ts`. `TrustedPartnersPanel` bumps a local counter after a successful save and passes it only to the admin preview. Public tiles do not pass a version. | `admin preview url changes after a save and public tiles stay unversioned` | VERIFIED |
-| Empty storage remove | `remove` now returns `data`. An empty list or null data, with no error, returns `Please sign in again with two-step verification to change logos.` and does not clear the row. No policy change. | `an empty storage remove is a failure and does not clear the logo`; existing remove test still expects a successful delete when data is returned | VERIFIED |
+| Empty storage remove | An empty or null storage remove still calls `setLogo(null)`, because a missing file returns the same empty list as aal1. The two-step message is shown only when that row update is refused (42501, not authorized, insufficient privilege, permission denied, or not_allowed). Any other row failure uses the normal save error. A storage error still stops before the row update. | `an empty storage remove still clears the row when the update is allowed`; `a missing logo file at aal2 clears the row`; `aal1 logo remove shows the two-step message when the row update is refused` | VERIFIED |
 
 ## Legal lines for PF-14
 
 `src/content/legal/*` was not edited. On this base the word match is 22 lines (18 in terms, 4 in privacy). The older scan counted 21. The extra line is `terms.en.ts:719`. VERIFIED by grep on this base.
 
-Suggested wording is for the legal desk. It is not applied here.
+Suggested wording is for legal review. It is not applied here.
 
 | File:line | Current text | Suggested wording |
 | --- | --- | --- |
@@ -55,7 +55,11 @@ Suggested wording is for the legal desk. It is not applied here.
 | privacy.en.ts:260 | Other members and sponsors. Signed-in members can see directory profiles. A sponsor sees a member's card only if that member chooses to show it. Contact details are shared only with the two parties, and only after an intro is accepted. Members you add to a deal room can see what is shared there. Members can see mandate details once unlocked. | Other members and partners. Signed-in members can see directory profiles. A partner sees a member's card only if that member chooses to show it. Contact details are shared only with the two parties, and only after an intro is accepted. Members you add to a deal room can see what is shared there. Members can see mandate details once unlocked. |
 | privacy.en.ts:266 | Event hosts and attendees. Your name and company may be shared with the event host, which may be a sponsor. They may also be shared with other attendees where the event page says so. | Event hosts and attendees. Your name and company may be shared with the event host, which may be a partner. They may also be shared with other attendees where the event page says so. |
 
-## Sasha redeploy
+## Why terms and privacy sit on the legal-pages chunk
+
+Terms and Privacy still say sponsor until the legal track ships. The built-asset check looks for sponsor sentences outside that chunk. `vite.config.ts` places `src/content/legal/terms.en.ts` and `src/content/legal/privacy.en.ts` on the existing `legal-pages` chunk, next to `legalPageIdentity.ts`, so that wording stays in one built file. The nammco allowlist already names that chunk. `scripts/public-nammco.mjs`, `scripts/prerender.mjs`, and `scripts/check-pages-artifact.mjs` are not changed.
+
+## Redeploy list
 
 Migration: none.
 
