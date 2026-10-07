@@ -21,6 +21,7 @@ import { publicConsiderationCta } from '../lib/twoTierRegister'
 import { LANDING_PREVIEW_EXAMPLES, presentLandingDealList, type LandingDeal } from '../lib/landingPreview'
 import { supabase } from '../lib/supabase'
 import { PlatformTotalsLine, seatDiamondFill, useLandingTotals } from '../components/StatsStrip'
+import { TrustedPartnersSection } from '../components/TrustedPartners'
 import { trackApplyClick } from '../lib/tracking/browser'
 
 const WHY = [
@@ -52,6 +53,7 @@ export function LandingPage() {
         <WhySection />
         <FoundingSection />
         <MembershipSection />
+        <TrustedPartnersSection />
         <ProcessSection />
         <FaqList items={FAQ} compact />
         <p

@@ -120,73 +120,7 @@ export const PROCESS_STEPS: ProcessStep[] = [
   },
 ]
 
-export type PartnerCategory = {
-  name: string
-  gloss: string
-}
-
-export const PARTNER_CATEGORIES: PartnerCategory[] = [
-  {
-    name: 'Investment banking',
-    gloss: 'Coverage, mandates, and sell-side work.',
-  },
-  {
-    name: 'Private equity',
-    gloss: 'Sponsors acquiring or governing companies.',
-  },
-  {
-    name: 'Venture capital',
-    gloss: 'Funds backing companies that will need boards.',
-  },
-  {
-    name: 'Family offices',
-    gloss: 'Principals investing their own capital.',
-  },
-  {
-    name: 'Sovereign and development finance',
-    gloss: 'Public and development capital with a Saudi nexus.',
-  },
-  {
-    name: 'Asset management',
-    gloss: 'Long-only and alternative managers.',
-  },
-  {
-    name: 'Private credit and direct lending',
-    gloss: 'Lenders inside a capital structure.',
-  },
-  {
-    name: 'Mergers and acquisitions advisory',
-    gloss: 'Boutiques running a live process.',
-  },
-  {
-    name: 'Equity and debt capital markets',
-    gloss: 'Issuance for companies and funds.',
-  },
-  {
-    name: 'Project and infrastructure finance',
-    gloss: 'Capital for long-lived assets.',
-  },
-  {
-    name: 'Custody, escrow, and fund administration',
-    gloss: 'The pipes a closing actually uses.',
-  },
-  {
-    name: 'Placement and capital introduction',
-    gloss: 'Raising a fund from the right rooms.',
-  },
-  {
-    name: 'Transaction counsel',
-    gloss: 'Counsel on the transaction itself.',
-  },
-  {
-    name: 'Financial due diligence and tax',
-    gloss: 'The work that sits under a price.',
-  },
-  {
-    name: 'Corporate finance advisory',
-    gloss: 'Independent advice to boards and owners.',
-  },
-]
+export { PARTNER_CATEGORIES, type PartnerCategory } from '../data/partnerCategories.ts'
 
 /** Public sign-in for members. Staff use /login/staff. */
 export const MEMBER_LOGIN = '/login'

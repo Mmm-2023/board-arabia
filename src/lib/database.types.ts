@@ -1040,6 +1040,75 @@ export type Database = {
         Args: Record<string, never>
         Returns: Json
       }
+      list_partner_categories: {
+        Args: Record<string, never>
+        Returns: Json
+      }
+      submit_partner_interest: {
+        Args: { p_name: string; p_firm: string; p_category: string; p_note: string }
+        Returns: Json
+      }
+      staff_list_trusted_partners: {
+        Args: Record<string, never>
+        Returns: Json
+      }
+      staff_save_trusted_partner: {
+        Args: {
+          p_id: string | null
+          p_name: string
+          p_blurb: string
+          p_monogram: string
+          p_is_demo: boolean
+          p_category_slug: string | null
+          p_offer: string | null
+          p_sponsor_user_id: string | null
+        }
+        Returns: Json
+      }
+      staff_set_trusted_partner_published: {
+        Args: { p_id: string; p_published: boolean }
+        Returns: Json
+      }
+      staff_reorder_trusted_partners: {
+        Args: { p_ids: string[] }
+        Returns: Json
+      }
+      staff_set_trusted_partner_logo: {
+        Args: { p_id: string; p_logo_path: string | null }
+        Returns: Json
+      }
+      staff_list_sponsor_options: {
+        Args: Record<string, never>
+        Returns: Json
+      }
+      list_sponsor_showcase: {
+        Args: Record<string, never>
+        Returns: Json
+      }
+      request_sponsor_intro: {
+        Args: { p_partner_id: string }
+        Returns: Json
+      }
+      sponsor_intro_counts: {
+        Args: Record<string, never>
+        Returns: Json
+      }
+      staff_list_sponsor_intros: {
+        Args: Record<string, never>
+        Returns: Json
+      }
+      staff_decide_sponsor_intro: {
+        Args: { p_intro_id: string; p_decision: string }
+        Returns: Json
+      }
+      staff_list_partner_interest: {
+        Args: Record<string, never>
+        Returns: Json
+      }
+      staff_mark_partner_interest_seen: {
+        Args: { p_id: string }
+        Returns: Json
+      }
       list_landing_preview_deals: {
         Args: Record<string, never>
         Returns: Json
