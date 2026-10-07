@@ -475,7 +475,7 @@ function AiResultShare({ jobId }: { jobId: string }) {
   return <AdminShareBar shared={shared} busy={busy} onToggle={() => void toggle()} />
 }
 
-function OffToolNotice({
+export function OffToolNotice({
   flags,
   current,
   title,

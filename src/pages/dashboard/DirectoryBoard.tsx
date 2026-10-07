@@ -212,12 +212,11 @@ function DirectoryPerson({
             </div>
           ) : null}
           {card.membership_status === 'invited' ? (
-            <p className="mt-1 text-[0.85rem] font-semibold text-ink">Invited</p>
+            <p className="mt-1 text-[0.85rem] font-semibold text-ink md:hidden">Invited</p>
           ) : null}
-          {card.seat === 'sponsor' ? null : (
-            <p className="mt-1 text-[0.85rem] text-[var(--ba-muted)]">{seatLabel(card.seat)}</p>
-          )}
-          {card.availability ? <AvailabilityMark value={card.availability} /> : null}
+          <div className="hidden md:block">
+            <CardStatus card={card} />
+          </div>
         </div>
       </div>
       <h2 className="mt-4 font-display text-[1.35rem] font-semibold tracking-[-0.03em]">{card.full_name}</h2>
@@ -229,6 +228,12 @@ function DirectoryPerson({
         </dl>
         {open ? (
           <div id={moreId}>
+            <div className="mt-3 text-end">
+              {card.seat === 'sponsor' ? null : (
+                <p className="mt-1 text-[0.85rem] text-[var(--ba-muted)]">{seatLabel(card.seat)}</p>
+              )}
+              {card.availability ? <AvailabilityMark value={card.availability} /> : null}
+            </div>
             {vision || city ? (
               <dl className="mt-2 space-y-2">
                 {vision}
@@ -259,6 +264,20 @@ function DirectoryPerson({
         {action}
       </div>
     </article>
+  )
+}
+
+function CardStatus({ card }: { card: DirectoryCard }) {
+  return (
+    <>
+      {card.membership_status === 'invited' ? (
+        <p className="mt-1 text-[0.85rem] font-semibold text-ink">Invited</p>
+      ) : null}
+      {card.seat === 'sponsor' ? null : (
+        <p className="mt-1 text-[0.85rem] text-[var(--ba-muted)]">{seatLabel(card.seat)}</p>
+      )}
+      {card.availability ? <AvailabilityMark value={card.availability} /> : null}
+    </>
   )
 }
 
