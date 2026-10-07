@@ -1,7 +1,12 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { PartnerLogo } from '../../components/TrustedPartners'
-import { PARTNER_LOGO_BUCKET, inspectPartnerLogo, monogramFromName } from '../../lib/partnerLogo'
 import { schemaMissing } from '../../lib/demoRows'
+import { inspectPartnerLogo, monogramFromName, PARTNER_LOGO_BUCKET } from '../../lib/partnerLogo'
+import {
+  removePartnerLogo,
+  savePartnerLogo,
+  type PartnerLogoClient,
+} from '../../lib/partnerLogoActions'
 import { usePartnerCategories } from '../../lib/usePartnerCategories'
 import { supabase } from '../../lib/supabase'
 import { toneClasses } from '../../shell/ViewState'
@@ -138,7 +143,12 @@ export function TrustedPartnersPanel({ previewRows }: { previewRows?: PartnerRow
               <button type="button" className="inline-flex min-h-11 items-center border border-pearl/30 px-3 text-[0.75rem] font-semibold tracking-[0.08em] text-pearl uppercase disabled:opacity-40" disabled={!rows || index === rows.length - 1} onClick={() => void move(row, 1)}>
                 Move down
               </button>
-              <LogoButton partnerId={row.id} onDone={() => void reload()} onError={setError} />
+              <LogoControls
+                partnerId={row.id}
+                hasLogo={Boolean(row.logo_path)}
+                onDone={() => void reload()}
+                onError={setError}
+              />
             </div>
           </li>
         ))}
@@ -155,31 +165,65 @@ export function TrustedPartnersPanel({ previewRows }: { previewRows?: PartnerRow
   )
 }
 
-function LogoButton({
+function LogoControls({
   partnerId,
+  hasLogo,
   onDone,
   onError,
 }: {
   partnerId: string
+  hasLogo: boolean
   onDone: () => void
   onError: (message: string) => void
 }) {
   return (
-    <label className="relative inline-flex min-h-11 cursor-pointer items-center border border-pearl/30 px-3 text-[0.75rem] font-semibold tracking-[0.08em] text-pearl uppercase">
-      Logo
-      <input
-        type="file"
-        accept="image/png,image/jpeg,image/webp"
-        className="absolute"
-        style={{ width: 1, height: 1, overflow: 'hidden', clip: 'rect(0 0 0 0)' }}
-        onChange={(event) => {
-          const file = event.target.files?.[0]
-          event.target.value = ''
-          if (file) void uploadLogo(partnerId, file, onDone, onError)
-        }}
-      />
-    </label>
+    <>
+      <label className="relative inline-flex min-h-11 cursor-pointer items-center border border-pearl/30 px-3 text-[0.75rem] font-semibold tracking-[0.08em] text-pearl uppercase">
+        Logo
+        <input
+          type="file"
+          accept="image/png,image/jpeg,image/webp"
+          className="absolute"
+          style={{ width: 1, height: 1, overflow: 'hidden', clip: 'rect(0 0 0 0)' }}
+          onChange={(event) => {
+            const file = event.target.files?.[0]
+            event.target.value = ''
+            if (file) void uploadLogo(partnerId, file, onDone, onError)
+          }}
+        />
+      </label>
+      {hasLogo ? (
+        <button
+          type="button"
+          className="inline-flex min-h-11 items-center border border-pearl/30 px-3 text-[0.75rem] font-semibold tracking-[0.08em] text-pearl uppercase"
+          onClick={() => void clearLogo(partnerId, onDone, onError)}
+        >
+          Remove logo
+        </button>
+      ) : null}
+    </>
   )
+}
+
+function partnerLogoClient(): PartnerLogoClient {
+  const bucket = supabase.storage.from(PARTNER_LOGO_BUCKET)
+  return {
+    async upload(path, bytes, options) {
+      const { error } = await bucket.upload(path, bytes, options)
+      return { error: error ? { message: error.message } : null }
+    },
+    async remove(paths) {
+      const { error } = await bucket.remove(paths)
+      return { error: error ? { message: error.message } : null }
+    },
+    async setLogo(partnerId, logoPath) {
+      const { error } = await supabase.rpc('staff_set_trusted_partner_logo', {
+        p_id: partnerId,
+        p_logo_path: logoPath,
+      })
+      return { error: error ? { message: error.message } : null }
+    },
+  }
 }
 
 async function uploadLogo(
@@ -188,28 +232,26 @@ async function uploadLogo(
   onDone: () => void,
   onError: (message: string) => void,
 ) {
+  onError('')
   const bytes = new Uint8Array(await file.arrayBuffer())
   const inspected = inspectPartnerLogo(bytes)
   if (!inspected.ok) {
     onError('Use a PNG, JPEG, or WebP under 512 KB. SVG is not accepted.')
     return
   }
-  const path = `${partnerId}/logo`
-  const { error: uploadError } = await supabase.storage.from(PARTNER_LOGO_BUCKET).upload(path, bytes, {
-    upsert: true,
-    contentType: inspected.contentType,
-    cacheControl: '3600',
-  })
-  if (uploadError) {
-    onError('Could not upload that logo.')
+  const message = await savePartnerLogo(partnerLogoClient(), partnerId, bytes, inspected.contentType)
+  if (message) {
+    onError(message)
     return
   }
-  const { error: saveError } = await supabase.rpc('staff_set_trusted_partner_logo', {
-    p_id: partnerId,
-    p_logo_path: path,
-  })
-  if (saveError) {
-    onError('Could not save that logo.')
+  onDone()
+}
+
+async function clearLogo(partnerId: string, onDone: () => void, onError: (message: string) => void) {
+  onError('')
+  const message = await removePartnerLogo(partnerLogoClient(), partnerId)
+  if (message) {
+    onError(message)
     return
   }
   onDone()
