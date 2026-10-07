@@ -55,7 +55,7 @@ Deno.serve(async (req) => {
       p_patch: patch,
     })
     if (error) return jsonResponse(req, { error: 'Could not save the reply.' }, 500)
-    if (status !== 'ok') return jsonResponse(req, { error: 'The desk is not waiting on a reply.' }, 409)
+    if (status !== 'ok') return jsonResponse(req, { error: 'Admin is not waiting on a reply.' }, 409)
     return jsonResponse(req, { ok: true, state: 'in_review' })
   }
 

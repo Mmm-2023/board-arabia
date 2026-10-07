@@ -225,7 +225,7 @@ export function IntroFunnelView({
       ) : null}
       {denied ? (
         <p className="mt-4 text-[1rem] text-pearl" role="alert">
-          This desk is for staff.
+          This page is for admin.
         </p>
       ) : null}
       {error && !denied ? (

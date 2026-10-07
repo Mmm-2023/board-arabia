@@ -216,8 +216,15 @@ export function lastDealsSection() {
 
 export function formatUpdated(date: Date | null) {
   if (!date) return null
-  const clock = date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
-  return `Updated ${clock}`
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Asia/Riyadh',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  }).formatToParts(date)
+  const hh = parts.find((part) => part.type === 'hour')?.value ?? '00'
+  const mm = parts.find((part) => part.type === 'minute')?.value ?? '00'
+  return `Updated ${hh}:${mm} AST`
 }
 
 /** Member refresh failure only. Staff keeps formatUpdated. */

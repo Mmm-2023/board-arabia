@@ -1,4 +1,4 @@
-/** Member note to the desk. The address stays in Edge config (ADMIN_NOTIFY_EMAIL). */
+/** Member note to admin. The address stays in Edge config (ADMIN_NOTIFY_EMAIL). */
 
 export const DESK_TOPICS = [
   'Seat',
@@ -27,7 +27,7 @@ export function cleanDeskNote(input: {
     .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '')
     .replace(/\r\n/g, '\n')
     .trim()
-  if (message.length < DESK_NOTE_MIN) return { ok: false, error: 'Write a few words so the desk can help.' }
+  if (message.length < DESK_NOTE_MIN) return { ok: false, error: 'Write a few words so our admin team can help.' }
   if (message.length > DESK_NOTE_MAX) return { ok: false, error: 'Keep the note under 500 characters.' }
   return { ok: true, topic, message }
 }
@@ -50,7 +50,7 @@ export function deskNoteLetter(input: { name: string; topic: DeskTopic; message:
   html: string
 } {
   const name = input.name.replace(/[\r\n]+/g, ' ').trim().slice(0, 80) || 'A member'
-  const subject = `Desk note from ${name}: ${input.topic}`.slice(0, 140)
+  const subject = `Member note from ${name}: ${input.topic}`.slice(0, 140)
   const text = [`${name} sent a note from Help.`, `Topic: ${input.topic}`, '', input.message].join('\n')
   const html = [
     `<p>${escapeDeskText(name)} sent a note from Help.</p>`,

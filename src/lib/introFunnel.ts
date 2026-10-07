@@ -231,7 +231,7 @@ export function introDealAllowed(row: { kind: string; status: string; is_demo: b
 
 export function introDealError(message: string): string {
   if (/sample_blocked/i.test(message)) return 'Sample requests stay as they are.'
-  if (/not_allowed|42501/i.test(message)) return 'This desk is for staff.'
+  if (/not_allowed|42501/i.test(message)) return 'This page is for admin.'
   if (/not_found/i.test(message)) return 'That introduction cannot be tagged.'
   return 'Could not save the deal tag. Retry.'
 }

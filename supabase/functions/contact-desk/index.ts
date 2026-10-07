@@ -53,7 +53,7 @@ Deno.serve(async (req) => {
   if (!countError && (count ?? 0) >= DESK_NOTE_HOURLY_CAP) {
     return jsonResponse(
       req,
-      { error: 'The desk already has several notes from you this hour. Try again later.' },
+      { error: 'Admin already has several notes from you this hour. Try again later.' },
       429,
     )
   }
@@ -91,7 +91,7 @@ Deno.serve(async (req) => {
     payload: redactPayload({ user_id: session.user.id, topic: cleaned.topic }),
   })
   if (logError && status !== 'sent') {
-    return jsonResponse(req, { error: 'Could not reach the desk. Try again.' }, 502)
+    return jsonResponse(req, { error: 'Could not reach admin. Try again.' }, 502)
   }
 
   return jsonResponse(req, { ok: true })
