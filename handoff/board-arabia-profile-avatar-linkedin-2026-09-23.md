@@ -19,7 +19,7 @@
 
 `supabase/migrations/20260929203000_member_avatar_peer_read.sql`
 
-Michael / Code PM applies it live. It does not create a bucket and does not change insert, update, or delete.
+The operator applies it live. It does not create a bucket and does not change insert, update, or delete.
 
 After apply, an invited or active member may read any `member-avatars` object named `{uuid}/avatar`. Until then, other members' photos stay initials.
 

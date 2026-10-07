@@ -1,4 +1,4 @@
-# Introduction suggestions run from server routines owned by Sasha.
+# Introduction suggestions run from server routines.
 # The schedule trigger is removed. workflow_dispatch stays for a manual check.
 # No-op until INTROS_SCHEDULE_SECRET is set on this repository and the same
 # value is set as an Edge secret.

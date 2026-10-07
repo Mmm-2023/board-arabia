@@ -20,7 +20,7 @@ export type StoredAvatarStyle = AvatarStyle | LegacyAvatarStyle
 
 export const DEFAULT_AVATAR_STYLE: AvatarStyle = 'man-shemagh'
 
-/** Michael's mapping. A shemagh is the red and white check. A ghutra is plain white. */
+/** Mapping. A shemagh is the red and white check. A ghutra is plain white. */
 export const LEGACY_AVATAR_STYLE: Record<LegacyAvatarStyle, AvatarStyle> = {
   male: 'man-shemagh',
   female: 'woman-hijab-black',

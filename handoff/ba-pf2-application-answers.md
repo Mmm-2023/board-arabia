@@ -46,7 +46,7 @@ Answered. Members are anonymised, not deleted, so `on delete cascade` does not r
 
 Nothing here sends mail. No `sendEmail`, no `mail.ts`, no `ADMIN_NOTIFY_EMAIL`. A later in-app note that answers are waiting belongs with PF-6. Turning mail on would be a separate change.
 
-## Sasha apply list
+## Apply list
 
 1. Apply `supabase/migrations/20261209120000_application_answers_at_admission.sql` (table, RPCs, admission trigger, carry function, and the anonymise purge trigger). In merge order this sorts after FW3's `20261208120000` if that file is applied too. This migration does not depend on FW3.
 2. No Edge redeploy.

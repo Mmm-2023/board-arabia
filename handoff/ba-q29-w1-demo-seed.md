@@ -4,7 +4,7 @@
 - Branch: `cursor/ba-demo-seed`
 - Base: `main` at `6447c363cbd88ac09784aff2ba6ef9e90218c863`
 - PR: https://github.com/Mmm-2023/board-arabia/pull/38
-- Agent does not merge. Michael merges.
+- Agent does not merge. The owner merges.
 
 ## What shipped
 
@@ -15,7 +15,7 @@
 - Landing Trusted Partners: 3 fictional monogram cards. Hero was not edited.
 - One server config table: `public.demo_thresholds`. Demos are returned while the real count is below the threshold. At the threshold, real rows only.
 
-## Proposed thresholds (Michael confirms)
+## Proposed thresholds (the owner confirms)
 
 | Surface | Real count that hides demos | What counts as real |
 | --- | --- | --- |
@@ -28,7 +28,7 @@
 
 - Migration file: `supabase/migrations/20260929120000_demo_seed_thresholds_redaction.sql`
 - Edge functions to redeploy: none
-- Who applies it on live Supabase: Michael (or the operator of the live project). Not this agent. The migration was not applied here and no Edge deploy was run.
+- Who applies it on live Supabase: the owner, or the operator of the live project. Not this agent. The migration was not applied here and no Edge deploy was run.
 
 ## Redaction proof
 

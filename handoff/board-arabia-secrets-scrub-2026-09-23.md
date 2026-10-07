@@ -1,6 +1,6 @@
 # Board Arabia public secrets scrub (23 Sep 2026)
 
-Michael lock. One PR. Not merged.
+Owner lock. One PR. Not merged.
 
 PR: https://github.com/Mmm-2023/board-arabia/pull/15
 
@@ -14,7 +14,7 @@ The audit file named in the task (`github-public-secrets-audit-2026-09-23.md`) w
 - `decide-application` returns an error and does not send Accept mail when `PRIVATE_BOOKING_LINK` is missing or blank. The application row is not marked accepted on that path.
 - `supabase/functions/_shared/mail.ts` no longer contains ops mailbox literals. From and Reply-To come from `GMAIL_FROM`. Staff notify comes from `ADMIN_NOTIFY_EMAIL`. A live send (Gmail credentials present) fails closed when `GMAIL_FROM` is missing or is the parked noreply address. Dry-run still applies when Gmail credentials are absent.
 - `submit-application` and `notify-application` do not send the staff notice when `ADMIN_NOTIFY_EMAIL` is missing. They record an error and do not substitute an address.
-- `invite-master` uses `ADMIN_NOTIFY_EMAIL` when the request omits an email, and fails closed when that env is unset. The admin button **Invite / promote Michael** depends on that secret.
+- `invite-master` uses `ADMIN_NOTIFY_EMAIL` when the request omits an email, and fails closed when that env is unset. The admin invite and promote action depends on that secret.
 - README ops docs use `ops@example.com` and `staff@example.com`. Secret names stay.
 - `scripts/gmail-mail.test.ts` and `scripts/peer-invite.test.ts` assert those placeholders.
 
@@ -32,11 +32,11 @@ The audit file named in the task (`github-public-secrets-audit-2026-09-23.md`) w
 | Service-role credential | NOT ADDED. |
 | Diff scan of added lines | VERIFIED. No ops-domain emails, no booking URL, no JWT, no private-key block, and no service-role credential. |
 | Parked product address `noreply@boardarabia.com` | Still a code rule and a doc note. Not used as a From fallback. |
-| Migration `supabase/migrations/20260922190000_staff_master_admin_read.sql` | NOT REWRITTEN. It still hardcodes the master mailbox in old SQL. Leave history. A later migration can replace the guard if Michael wants the address out of git. |
+| Migration `supabase/migrations/20260922190000_staff_master_admin_read.sql` | NOT REWRITTEN. It still hardcodes the master mailbox in old SQL. Leave history. A later migration can replace the guard if the owner wants the address out of git. |
 | Marketing-signature fixture in `scripts/gmail-mail.test.ts` | UNCHANGED. A synthetic mailbox on the filtered domain remains so the site-vs-mailbox check still runs. It is not a send default. |
 | Older task handoff | Updated in this PR so it no longer names the ops mailbox. It now points at `GMAIL_FROM`. |
 
-## Edge secrets Michael must set before live mail
+## Edge secrets the owner must set before live mail
 
 Set these on the Supabase Edge Function secrets. Do not commit the values.
 
@@ -63,4 +63,4 @@ Until `GMAIL_CLIENT_ID`, `GMAIL_CLIENT_SECRET`, and `GMAIL_REFRESH_TOKEN` (or th
 
 ## Merge
 
-Michael merges https://github.com/Mmm-2023/board-arabia/pull/15. This agent does not merge.
+The owner merges https://github.com/Mmm-2023/board-arabia/pull/15. This agent does not merge.
