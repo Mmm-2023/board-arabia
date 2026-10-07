@@ -35,7 +35,7 @@ This branch is not a Pages deploy trigger. After merge to `main`, the shell is a
 
 ## SECURITY checklist
 
-Evidence: **VERIFIED** = proved against the live project or the Pages-compatible build; **INFERRED** = from code and policies; **SKIPPED BY MICHAEL** = declined, do not re-ask.
+Evidence: **VERIFIED** = proved against the live project or the Pages-compatible build; **INFERRED** = from code and policies; **SKIPPED BY THE OWNER** = declined, do not re-ask.
 
 | Check | Result |
 | --- | --- |
@@ -44,10 +44,10 @@ Evidence: **VERIFIED** = proved against the live project or the Pages-compatible
 | No anon directory scrape | **VERIFIED.** Anon cannot select `members` or `profiles`. Directory does not query other members. Schema `private` is not API-exposed (`PGRST106`). `founding_capacity()` returns counts only to a member or staff user. |
 | Secrets hygiene | **VERIFIED** for the repo and for `email_events`. No service role or Gmail secret in the client. Invite payload has no token. |
 | `/dashboard` vs `/admin` | **VERIFIED.** Staff login without `next` opens `/admin`. `/admin` still requires `staff_users`. `/dashboard` requires a non-suspended `members` row. A member cannot call Admit (403). |
-| Leaked-password protection | **SKIPPED BY MICHAEL** (via Sasha, 22 Sep 2026). No Supabase Pro upgrade. Do not re-ask. |
+| Leaked-password protection | **SKIPPED BY THE OWNER** (22 Sep 2026). No Supabase Pro upgrade. Do not re-ask. |
 | Live Workspace mail (Accept / Reject / Admit) | Sent by the Edge Function through the Gmail API. From and Reply-To come from `GMAIL_FROM` (example `ops@example.com`). noreply@boardarabia.com is parked until later. Dry-run while Gmail auth is missing. Live send fails closed when `GMAIL_FROM` is missing. Do not set a Resend key. |
 
-## Left with Michael
+## Left with the owner
 
 - Set `GMAIL_CLIENT_ID`, `GMAIL_CLIENT_SECRET`, `GMAIL_REFRESH_TOKEN`, and `GMAIL_FROM` on the Supabase Edge Function (consent as the `GMAIL_FROM` mailbox, example `ops@example.com`) when live Accept, Reject, and Admit mail should send. Dry-run is the path until Gmail auth succeeds. Do not set a Resend key.
 - Merge PR #4 to `main` when Pages should publish `/dashboard`.

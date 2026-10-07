@@ -2,7 +2,7 @@
 
 Base: latest `main` (`a7c31d2ce74388b84ce967ca495bf813852c94d0` or later). FW3 `20261208120000` is live. This PR does not edit that file.
 
-## Sasha applies
+## Apply list
 
 1. Apply `supabase/migrations/20261208130000_partner_logos_select_staff.sql`.
 2. No Edge.
@@ -27,8 +27,8 @@ Admin remove deletes `{partner id}/logo` and then calls `staff_set_trusted_partn
 - No anon policy and no new definer function: VERIFIED (the migration creates one policy and no function).
 - Admin remove calls storage delete and then clears `logo_path`: VERIFIED (client test). A failed delete does not clear the row: VERIFIED (same test).
 - The public bucket still serves a known object URL, including an unpublished logo if the uuid path is already known: INFERRED from the unchanged `public = true` bucket. This change does not add or remove that HTTP path. Listing stays closed for anon and members.
-- Hosted Storage returns the deleted object to staff at aal2 after this migration is applied: UNKNOWN until Sasha smokes it. The local replay uses a stub `storage.objects` table, not the Storage HTTP API.
-- The leftover unlinked smoke object: UNKNOWN here. It is not deleted by this PR. Sasha deletes it as staff at aal2 after apply.
+- Hosted Storage returns the deleted object to staff at aal2 after this migration is applied: UNKNOWN until the operator smokes it. The local replay uses a stub `storage.objects` table, not the Storage HTTP API.
+- The leftover unlinked smoke object: UNKNOWN here. It is not deleted by this PR. The operator deletes it as staff at aal2 after apply.
 - Secrets hygiene: VERIFIED. This diff has no live mailbox, key, token, password, service-role key, live user id, live bucket object id, or staff name. Tests use example.com only.
 
 ## Not in this PR
