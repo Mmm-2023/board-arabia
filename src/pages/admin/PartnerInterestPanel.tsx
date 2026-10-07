@@ -145,8 +145,8 @@ export function SponsorIntroQueue() {
   if (!rows || (rows.length === 0 && !error)) return null
 
   return (
-    <section aria-label="Sponsor intro requests" className="mt-8">
-      <h2 className={`text-[0.72rem] font-semibold tracking-[0.14em] uppercase ${styles.quiet}`}>Sponsor intro requests</h2>
+    <section aria-label="Partner intro requests" className="mt-8">
+      <h2 className={`text-[0.72rem] font-semibold tracking-[0.14em] uppercase ${styles.quiet}`}>Partner intro requests</h2>
       {error ? <p className={`mt-3 ${styles.muted}`}>Could not update a request.</p> : null}
       <ul className="mt-3 space-y-3">
         {rows.map((row) => (

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { presentPartnerList, schemaMissing, type PartnerCard } from '../lib/demoRows'
 import { partnerLogoPublicUrl } from '../lib/partnerLogo'
-import { publicGalleryPartners, visibleMemberPartners } from '../lib/trustedPartners'
+import { adviserGalleryRows, partnerGalleryRows, publicGalleryPartners, visibleMemberPartners } from '../lib/trustedPartners'
 import { usePartnerCategories } from '../lib/usePartnerCategories'
 import { supabase } from '../lib/supabase'
 import { SampleMark } from './SampleMark'
@@ -61,70 +61,92 @@ export function TrustedPartnersGallery({
 }) {
   const categories = usePartnerCategories()
   const visible = surface === 'public' ? publicGalleryPartners(partners) : visibleMemberPartners(partners)
+  const partnerRows = partnerGalleryRows(visible)
+  const adviserRows = adviserGalleryRows(visible)
   const real = visible.some((partner) => !partner.is_demo)
   const [category, setCategory] = useState('')
   const names = useMemo(() => new Map(categories.map((item) => [item.slug, item.name])), [categories])
-  const shown = category ? visible.filter((partner) => partner.category_slug === category) : visible
+  const shownPartners = category ? partnerRows.filter((partner) => partner.category_slug === category) : partnerRows
   const filterSlugs = categories
     .map((item) => item.slug)
-    .filter((slug) => visible.some((partner) => partner.category_slug === slug))
+    .filter((slug) => partnerRows.some((partner) => partner.category_slug === slug))
 
-  if (surface === 'public' && visible.length === 0) return null
+  if (partnerRows.length === 0 && adviserRows.length === 0) return null
 
   return (
-    <section id="partners" className="border-t border-ink/10 bg-pearl py-5 md:py-10" data-trusted-partners={surface}>
-      <div className="mx-auto max-w-7xl px-5 md:px-10">
-        <Eyebrow>Trusted Partners</Eyebrow>
-        <DisplayHeading compact className="max-w-3xl">
-          Three seats a year.
-        </DisplayHeading>
-        <p className="ba-quiet mt-3 max-w-xl text-[0.9375rem] leading-relaxed">
-          Three annual seats for firms on the finance rails of a deal, not a wall of logos.
-        </p>
+    <>
+      {partnerRows.length > 0 ? (
+        <section id="partners" className="border-t border-ink/10 bg-pearl py-5 md:py-10" data-trusted-partners={surface} data-gallery="partners">
+          <div className="mx-auto max-w-7xl px-5 md:px-10">
+            <Eyebrow>Trusted Partners</Eyebrow>
+            <DisplayHeading compact className="max-w-3xl">
+              Three seats a year.
+            </DisplayHeading>
+            <p className="ba-quiet mt-3 max-w-xl text-[0.9375rem] leading-relaxed">
+              Three annual seats for firms on the finance rails of a deal, not a wall of logos.
+            </p>
 
-        {filterSlugs.length > 1 ? (
-          <div className="mt-4 max-w-xs">
-            <label htmlFor="trusted-partner-category" className="block text-[0.72rem] font-semibold tracking-[0.08em] text-ink/50 uppercase">
-              Category
-            </label>
-            <select
-              id="trusted-partner-category"
-              value={category}
-              onChange={(event) => setCategory(event.target.value)}
-              className="mt-2 w-full min-h-11 border border-ink/15 bg-white px-3 text-[1rem] text-ink"
-            >
-              <option value="">All</option>
-              {filterSlugs.map((slug) => (
-                <option key={slug} value={slug}>
-                  {names.get(slug) ?? slug}
-                </option>
-              ))}
-            </select>
-          </div>
-        ) : null}
-
-        <ul className="mt-3 grid gap-2 md:mt-5 md:grid-cols-3 md:gap-3">
-          {shown.map((partner) => (
-            <li key={partner.id} className="ba-card px-3 py-3" data-partner-name={partner.name}>
-              <div className="flex items-start justify-between gap-3">
-                <PartnerLogo name={partner.name} monogram={partner.monogram} logoPath={partner.logo_path} />
-                {surface === 'member' && partner.is_demo && !real ? <SampleMark /> : null}
+            {filterSlugs.length > 1 ? (
+              <div className="mt-4 max-w-xs">
+                <label htmlFor="trusted-partner-category" className="block text-[0.72rem] font-semibold tracking-[0.08em] text-ink/50 uppercase">
+                  Category
+                </label>
+                <select
+                  id="trusted-partner-category"
+                  value={category}
+                  onChange={(event) => setCategory(event.target.value)}
+                  className="mt-2 w-full min-h-11 border border-ink/15 bg-white px-3 text-[1rem] text-ink"
+                >
+                  <option value="">All</option>
+                  {filterSlugs.map((slug) => (
+                    <option key={slug} value={slug}>
+                      {names.get(slug) ?? slug}
+                    </option>
+                  ))}
+                </select>
               </div>
-              <h3 className="mt-3 font-display text-[1.05rem] font-semibold tracking-[-0.03em]">{partner.name}</h3>
-              <p className="ba-quiet mt-1 text-[0.875rem] leading-relaxed">{partner.blurb}</p>
-            </li>
-          ))}
-        </ul>
+            ) : null}
 
-        <Link
-          to="/partners"
-          data-partner-cta="/partners"
-          className="ba-secondary mt-4 inline-flex min-h-11 items-center justify-center px-5 text-[0.9375rem] font-semibold"
-        >
-          Partner with us
-        </Link>
-      </div>
-    </section>
+            <ul className="mt-3 grid gap-2 md:mt-5 md:grid-cols-3 md:gap-3">
+              {shownPartners.map((partner) => (
+                <li key={partner.id} className="ba-card px-3 py-3" data-partner-name={partner.name}>
+                  <div className="flex items-start justify-between gap-3">
+                    <PartnerLogo name={partner.name} monogram={partner.monogram} logoPath={partner.logo_path} />
+                    {surface === 'member' && partner.is_demo && !real ? <SampleMark /> : null}
+                  </div>
+                  <h3 className="mt-3 font-display text-[1.05rem] font-semibold tracking-[-0.03em]">{partner.name}</h3>
+                  <p className="ba-quiet mt-1 text-[0.875rem] leading-relaxed">{partner.blurb}</p>
+                </li>
+              ))}
+            </ul>
+
+            <Link
+              to="/partners"
+              data-partner-cta="/partners"
+              className="ba-secondary mt-4 inline-flex min-h-11 items-center justify-center px-5 text-[0.9375rem] font-semibold"
+            >
+              Partner with us
+            </Link>
+          </div>
+        </section>
+      ) : null}
+      {adviserRows.length > 0 ? (
+        <section className="border-t border-ink/10 bg-pearl py-5 md:py-10" data-gallery="advisers">
+          <div className="mx-auto max-w-7xl px-5 md:px-10">
+            <h2 className="font-display text-[1.35rem] font-semibold tracking-[-0.03em]">Trusted advisers</h2>
+            <ul className="mt-3 grid gap-2 md:mt-5 md:grid-cols-3 md:gap-3">
+              {adviserRows.map((partner) => (
+                <li key={partner.id} className="ba-card px-3 py-3" data-adviser-name={partner.name}>
+                  <PartnerLogo name={partner.name} monogram={partner.monogram} logoPath={partner.logo_path} />
+                  <h3 className="mt-3 font-display text-[1.05rem] font-semibold tracking-[-0.03em]">{partner.name}</h3>
+                  <p className="ba-quiet mt-1 text-[0.875rem] leading-relaxed">{partner.blurb}</p>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
+      ) : null}
+    </>
   )
 }
 

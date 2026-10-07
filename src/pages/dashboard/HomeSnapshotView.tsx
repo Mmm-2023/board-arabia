@@ -8,7 +8,7 @@ import { formatActivityWhen, type HomeModel } from '../../lib/homeSnapshot'
 import { FORMING_TOTALS } from '../../lib/platformFloors'
 import { ErrorBanner, HomeSkeleton, toneClasses } from '../../shell/ViewState'
 import { MEMBER_VIEWS } from '../../shell/viewCopy'
-import { SPONSOR_LABEL } from '../../lib/sponsorLabel'
+import { adviserGalleryRows, partnerGalleryRows } from '../../lib/trustedPartners'
 
 const styles = toneClasses('member')
 
@@ -41,6 +41,9 @@ export function HomeSnapshotView({
   hasSuggestions?: boolean
   promptShowing?: boolean
 }) {
+  const homePartners = model.platform.partners.map((partner) => ({ ...partner, is_demo: partner.example }))
+  const partnerRows = partnerGalleryRows(homePartners)
+  const adviserRows = adviserGalleryRows(homePartners)
   const livePulse = model.pulse.filter((item) => !item.example)
   const pulseVisible = livePulse.length > 0 || model.majlis != null
   const nextAction = model.cta && !model.cta.to.includes('#password') ? model.cta : null
@@ -305,13 +308,13 @@ export function HomeSnapshotView({
               </div>
             ) : null}
 
-            {model.platform.partners.length > 0 ? (
-              <div className="mt-6">
+            {partnerRows.length > 0 ? (
+              <div className="mt-6" data-gallery="partners">
                 <h3 className="text-[0.72rem] font-semibold tracking-[0.12em] text-ink/40 uppercase">
                   Trusted Partners
                 </h3>
                 <ul className="mt-3 flex flex-col gap-3">
-                  {model.platform.partners.map((partner) => (
+                  {partnerRows.map((partner) => (
                     <li key={partner.id} className={`${styles.panel} flex items-center gap-3 px-4 py-3`} data-partner-name={partner.name}>
                       <PartnerLogo name={partner.name} monogram={partner.monogram} logoPath={partner.logo_path} />
                       <span className="min-w-0 flex-1">
@@ -323,11 +326,29 @@ export function HomeSnapshotView({
                   ))}
                 </ul>
                 <Link
-                  to="/dashboard/sponsors"
+                  to="/dashboard/people/partners"
                   className="mt-3 inline-flex min-h-11 items-center font-semibold text-[var(--ba-indigo)] underline"
                 >
-                  {SPONSOR_LABEL} showcase
+                  Partner showcase
                 </Link>
+              </div>
+            ) : null}
+            {adviserRows.length > 0 ? (
+              <div className="mt-6" data-gallery="advisers">
+                <h3 className="text-[0.72rem] font-semibold tracking-[0.12em] text-ink/40 uppercase">
+                  Trusted advisers
+                </h3>
+                <ul className="mt-3 flex flex-col gap-3">
+                  {adviserRows.map((partner) => (
+                    <li key={partner.id} className={`${styles.panel} flex items-center gap-3 px-4 py-3`} data-adviser-name={partner.name}>
+                      <PartnerLogo name={partner.name} monogram={partner.monogram} logoPath={partner.logo_path} />
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-[1rem] text-ink">{partner.name}</span>
+                        {partner.blurb ? <span className="mt-1 block text-[0.92rem] text-ink/70">{partner.blurb}</span> : null}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
               </div>
             ) : null}
             {figuresAsOf ? <p className="mt-4 text-[0.8125rem] text-ink/60">{figuresAsOf}</p> : null}

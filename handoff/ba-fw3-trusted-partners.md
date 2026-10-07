@@ -4,7 +4,7 @@ Base: main `97d6121d09ad6525147619f1f93b35aed27381ab` (VERIFIED: `git fetch orig
 
 Migration for Sasha, in order, after `20261207120000` (live as recorded `20261006215108`):
 
-1. `supabase/migrations/20261208120000_trusted_partners_gallery.sql`
+1. `supabase/migrations/20261208120000_trusted_partners_gallery.sql` (same file, edited in place; not applied). It now returns `is_partner` and does not return `sponsor_user_id` to anon.
 2. No Edge function.
 
 Factory did not apply the migration and did not deploy Edge.
@@ -19,7 +19,8 @@ Anon `list_trusted_partners` returns published real rows with a logo only. The J
 
 - Logo column `logo_path`, public-read bucket `partner-logos`, staff-only write, PNG/JPEG/WebP, 512 KB, path `{uuid}/logo`. Client magic-byte check rejects SVG. Alt text is the partner name. Monogram if the image is missing.
 - Admin Settings panel: add, edit, hide, reorder, logo, sample flag, optional sponsor link. Staff RPCs check `private.is_staff()` in the body (aal2).
-- Members-only `/dashboard/sponsors`: logo, one line, offer, Request an intro. Admin approves or declines. The sponsor sees pending and approved counts only. The public name uses `SPONSOR_LABEL`.
+- Members-only Partner showcase at `/dashboard/people/partners` (People, then Partners). Logo, one line, offer, Request an intro. Admin approves or declines. The linked member sees pending and approved counts only. New copy on this page says partner. `SPONSOR_LABEL` and `/dashboard/sponsorship` are unchanged for the later rename.
+- Gallery split: a row with `is_partner` true (partner seat) stays in the partners list. A published real row that is not a partner seat renders only under the heading Trusted advisers. The public page stays hidden when there are zero real rows. The logo rule is unchanged.
 - Partner categories live in `src/data/partnerCategories.ts` and are seeded into `partner_categories`. The page and filters start from that list and replace it when `list_partner_categories` returns rows, so a later swap is a data change.
 - Partner interest is saved by `submit_partner_interest`. The admin home shows a count of new notes and Settings lists them. Email to admin is parked. There is no `ADMIN_NOTIFY_EMAIL` dependency.
 

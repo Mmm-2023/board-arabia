@@ -293,7 +293,7 @@ function PartnerForm({
         </select>
       </label>
       <label className={labelClass}>
-        Sponsor account
+        Partner account
         <select className={fieldClass} value={sponsor} onChange={(event) => setSponsor(event.target.value)} disabled={sample}>
           <option value="">None</option>
           {sponsors.map((item) => (

@@ -1,6 +1,7 @@
 -- Trusted partners gallery, partner interest, and the members-only sponsor showcase.
 -- Anon list_trusted_partners returns published real rows that have a logo.
--- It never returns is_demo, and it never returns a sample row.
+-- It never returns is_demo, a sample row, or sponsor_user_id.
+-- is_partner is true only when sponsor_user_id is set and private.is_sponsor is true.
 -- Members see published samples only when no real published row exists.
 -- The public landing stays hidden until a real logo exists. That rule is in the client.
 -- Partner interest is stored here. An email alert to admin is parked.
@@ -205,6 +206,7 @@ begin
       select jsonb_agg(jsonb_build_object(
         'id', t.id,
         'is_demo', t.is_demo,
+        'is_partner', (t.sponsor_user_id is not null and private.is_sponsor(t.sponsor_user_id)),
         'name', t.name,
         'blurb', t.blurb,
         'monogram', t.monogram,
@@ -223,6 +225,7 @@ begin
   return coalesce((
     select jsonb_agg(jsonb_build_object(
       'id', t.id,
+      'is_partner', (t.sponsor_user_id is not null and private.is_sponsor(t.sponsor_user_id)),
       'name', t.name,
       'blurb', t.blurb,
       'monogram', t.monogram,

@@ -35,7 +35,7 @@ test('member primaries stay in the locked order', () => {
   )
   assert.deepEqual(
     MEMBER_SECTIONS.people?.map((item) => item.label),
-    ['Directory', 'Intros', 'Invites'],
+    ['Directory', 'Intros', 'Invites', 'Partners'],
   )
   assert.deepEqual(
     MEMBER_SECTIONS.majlis?.map((item) => item.label),

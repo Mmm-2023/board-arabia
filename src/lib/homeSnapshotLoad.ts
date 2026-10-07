@@ -70,6 +70,7 @@ export async function loadHomeSources(input: { userId: string; sponsor: boolean 
       monogram: row.monogram,
       blurb: row.blurb,
       logo_path: row.logo_path,
+      is_partner: row.is_partner,
     })),
   )
   if (!directoryRows || !mandateRows || !roomRows || !partnerRows) partialError = true

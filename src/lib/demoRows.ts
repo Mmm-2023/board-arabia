@@ -43,6 +43,7 @@ export type PartnerCard = {
   monogram: string
   logo_path: string | null
   category_slug: string | null
+  is_partner: boolean
 }
 
 export function schemaMissing(message: string): boolean {
@@ -153,6 +154,7 @@ export function presentPartnerCard(raw: unknown): PartnerCard | null {
     monogram,
     logo_path: isPartnerLogoPath(logo) ? logo : null,
     category_slug: /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(category) ? category : null,
+    is_partner: row.is_partner === true,
   }
 }
 

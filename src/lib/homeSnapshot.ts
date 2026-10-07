@@ -79,6 +79,7 @@ export type PartnerBrief = {
   monogram: string
   blurb?: string
   logo_path?: string | null
+  is_partner?: boolean
 }
 
 export type HomeActivity = {
@@ -127,7 +128,15 @@ export type HomeModel = {
     regions: { region: string; count: number; to: string }[]
     regionsKnown: boolean
     money: { label: string; value: string }[]
-    partners: { id: string; name: string; monogram: string; blurb: string; logo_path: string | null; example: boolean }[]
+    partners: {
+      id: string
+      name: string
+      monogram: string
+      blurb: string
+      logo_path: string | null
+      example: boolean
+      is_partner: boolean
+    }[]
   }
   teasers: {
     directory: { id: string; name: string; headline: string; seat: string; example: boolean }[]
@@ -564,6 +573,7 @@ export function assembleHome(input: AssembleInput): HomeModel {
         blurb: partner.blurb ?? '',
         logo_path: partner.logo_path ?? null,
         example: partner.is_demo,
+        is_partner: partner.is_partner === true,
       })),
     },
     teasers: {

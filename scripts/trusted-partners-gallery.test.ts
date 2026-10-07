@@ -110,10 +110,11 @@ test('public landing hides the gallery at zero, one real fixture has no Sample, 
     const homeMod = await vite.ssrLoadModule('/src/lib/homeSnapshot.ts')
     const homeView = await vite.ssrLoadModule('/src/pages/dashboard/HomeSnapshotView.tsx')
     const editor = await vite.ssrLoadModule('/src/pages/admin/TrustedPartnersPanel.tsx')
-    const showcase = await vite.ssrLoadModule('/src/pages/dashboard/SponsorShowcasePage.tsx')
+    const showcase = await vite.ssrLoadModule('/src/pages/dashboard/PartnerShowcase.tsx')
     const app = read('src/App.tsx')
     assert.match(app, /path="\/apply" element=\{<ApplyPage/)
-    assert.match(app, /path="sponsors" element=\{<SponsorShowcasePage/)
+    assert.match(app, /path="partners" element=\{<PartnerShowcase/)
+    assert.equal(app.includes('path="sponsors"'), false)
 
     const zero = renderToStaticMarkup(createElement(MemoryRouter, null, createElement(landing.LandingPage)))
     assert.equal(zero.includes('id="partners"'), false)
@@ -132,6 +133,7 @@ test('public landing hides the gallery at zero, one real fixture has no Sample, 
       monogram: 'EC',
       logo_path: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1/logo',
       category_slug: 'investment-banking',
+      is_partner: true,
     }
     const one = renderToStaticMarkup(
       createElement(MemoryRouter, null, createElement(gallery.TrustedPartnersGallery, { partners: [fixture], surface: 'public' })),
@@ -142,6 +144,29 @@ test('public landing hides the gallery at zero, one real fixture has no Sample, 
     assert.match(one, /href="\/partners"/)
     assert.equal(one.includes('Sample'), false)
     assert.equal(one.includes('data-sample'), false)
+
+    const adviser = {
+      id: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb1',
+      is_demo: false,
+      is_partner: false,
+      name: 'Example Advisory',
+      blurb: 'One line for a fixture adviser.',
+      monogram: 'EA',
+      logo_path: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb1/logo',
+      category_slug: null,
+    }
+    const split = renderToStaticMarkup(
+      createElement(MemoryRouter, null, createElement(gallery.TrustedPartnersGallery, { partners: [fixture, adviser], surface: 'public' })),
+    )
+    const partnerMarkup = split.slice(0, split.indexOf('data-gallery="advisers"'))
+    const adviserMarkup = split.slice(split.indexOf('data-gallery="advisers"'))
+    assert.match(partnerMarkup, /data-gallery="partners"/)
+    assert.match(partnerMarkup, /data-partner-name="Example Capital"/)
+    assert.equal(partnerMarkup.includes('Example Advisory'), false)
+    assert.match(adviserMarkup, /Trusted advisers/)
+    assert.match(adviserMarkup, /data-adviser-name="Example Advisory"/)
+    assert.equal(adviserMarkup.includes('Example Capital'), false)
+    assert.equal(adviserMarkup.includes('data-partner-name'), false)
 
     const destination = renderToStaticMarkup(createElement(MemoryRouter, null, createElement(partners.PartnersPage)))
     assert.match(destination, /Partner with us/)
@@ -215,7 +240,9 @@ test('public landing hides the gallery at zero, one real fixture has no Sample, 
     )
     assert.match(member, /Qaf Ledger/)
     assert.match(member, />Sample</)
-    assert.match(member, /href="\/dashboard\/sponsors"/)
+    assert.match(member, /href="\/dashboard\/people\/partners"/)
+    assert.match(member, /Partner showcase/)
+    assert.equal(member.toLowerCase().includes('sponsor'), false)
 
     const admin = renderToStaticMarkup(
       createElement(
@@ -249,7 +276,7 @@ test('public landing hides the gallery at zero, one real fixture has no Sample, 
       createElement(
         MemoryRouter,
         null,
-        createElement(showcase.SponsorShowcasePage, {
+        createElement(showcase.PartnerShowcase, {
           preview: {
             counts: { pending: 1, approved: 0 },
             cards: [
@@ -280,6 +307,38 @@ test('public landing hides the gallery at zero, one real fixture has no Sample, 
   }
 })
 
+test('new partner copy says partner and not sponsor', () => {
+  const files = [
+    'src/components/TrustedPartners.tsx',
+    'src/components/SampleMark.tsx',
+    'src/pages/admin/TrustedPartnersPanel.tsx',
+    'src/pages/admin/PartnerInterestPanel.tsx',
+    'src/pages/dashboard/PartnerShowcase.tsx',
+  ]
+  const banned = /sponsor|Founding Ecosystem Partner/i
+  for (const file of files) {
+    const source = read(file)
+    const bits = [
+      ...source.matchAll(/>([^<>{}\n]+)</g),
+      ...source.matchAll(/\b(?:aria-label|placeholder|alt)="([^"]+)"/g),
+      ...source.matchAll(/useNoIndex\('([^']+)'\)/g),
+    ]
+    for (const bit of bits) {
+      const text = (bit[1] || '').trim()
+      if (!text) continue
+      assert.equal(banned.test(text), false, `${file}: ${text}`)
+    }
+  }
+  const home = read('src/pages/dashboard/HomeSnapshotView.tsx')
+  assert.match(home, /Partner showcase/)
+  assert.match(home, /Trusted advisers/)
+  assert.equal(home.includes('/dashboard/sponsors'), false)
+  assert.equal(home.includes('SPONSOR_LABEL'), false)
+  assert.match(read('src/App.tsx'), /path="partners" element=\{<PartnerShowcase/)
+  assert.match(read('src/shell/destinations.ts'), /label: 'Partners', to: '\/dashboard\/people\/partners'/)
+  assert.equal(read('scripts/public-nammco.mjs').includes('powered by nammco'), true)
+})
+
 function stubSql() {
   const text = readFileSync(new URL('./sponsor-directory-opt-in.test.ts', import.meta.url), 'utf8')
   const marker = 'const stubSql = `'
@@ -299,6 +358,7 @@ declare
   sponsor_id uuid := '22222222-2222-4222-8222-222222222222';
   staff_id uuid := '33333333-3333-4333-8333-333333333333';
   partner_id uuid := 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1';
+  adviser_id uuid := 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb1';
   payload jsonb;
   saved jsonb;
   intro jsonb;
@@ -354,12 +414,23 @@ begin
 
   insert into public.trusted_partners (id, is_demo, published, name, blurb, monogram, logo_path, offer, sponsor_user_id)
   values (partner_id, false, true, 'Example Capital', 'One line for a fixture partner.', 'EC', partner_id::text || '/logo', 'A fixture offer.', sponsor_id);
+  insert into public.trusted_partners (id, is_demo, published, name, blurb, monogram, logo_path, offer, sponsor_user_id)
+  values (adviser_id, false, true, 'Example Advisory', 'One line for a fixture adviser.', 'EA', adviser_id::text || '/logo', null, null);
 
   perform set_config('request.jwt.claims', '{}', true);
   set local role anon;
   payload := public.list_trusted_partners();
-  if payload::text not ilike '%Example Capital%' or payload::text ilike '%is_demo%' or payload::text ilike '%Qaf Ledger%' then
+  if payload::text not ilike '%Example Capital%' or payload::text ilike '%is_demo%' or payload::text ilike '%Qaf Ledger%' or payload::text ilike '%sponsor_user_id%' then
     raise exception 'anon list with one real logo: %', payload;
+  end if;
+  if not exists (
+    select 1 from jsonb_array_elements(payload) elem
+    where elem ->> 'name' = 'Example Capital' and (elem ->> 'is_partner')::boolean is true
+  ) or not exists (
+    select 1 from jsonb_array_elements(payload) elem
+    where elem ->> 'name' = 'Example Advisory' and (elem ->> 'is_partner')::boolean is false
+  ) then
+    raise exception 'anon partner flag: %', payload;
   end if;
   perform public.submit_partner_interest('Example Person', 'Example Firm', 'investment-banking', 'A lane note');
   begin

@@ -41,12 +41,8 @@ const preview = start('npx', ['vite', 'preview', '--host', '127.0.0.1', '--port'
 const smoke = start('npx', ['vite', '--config', 'scripts/smoke/vite.config.ts'])
 
 const shots = [
-  ['http://127.0.0.1:4178/', 'landing-zero', false],
-  ['http://127.0.0.1:4179/trusted-partners.html?view=one', 'landing-one', true],
-  ['http://127.0.0.1:4179/trusted-partners.html?view=member', 'member-sample', false],
-  ['http://127.0.0.1:4179/trusted-partners.html?view=admin', 'admin-editor', true],
-  ['http://127.0.0.1:4178/partners', 'partners-cta', false],
-  ['http://127.0.0.1:4179/trusted-partners.html?view=showcase', 'sponsor-showcase', true],
+  ['http://127.0.0.1:4179/trusted-partners.html?view=split', 'trusted-advisers', true],
+  ['http://127.0.0.1:4179/trusted-partners.html?view=showcase', 'partner-showcase', true],
 ]
 
 try {
@@ -59,12 +55,9 @@ try {
       await page.route('**/partner-logos/**', (route) => route.fulfill({ status: 200, contentType: 'image/png', body: png }))
       for (const [url, name, logo] of shots) {
         await page.goto(url, { waitUntil: 'networkidle' })
+        if (name === 'trusted-advisers') await page.waitForSelector('text=Trusted advisers')
+        if (name === 'partner-showcase') await page.waitForSelector('text=Partner showcase')
         if (logo) await page.waitForSelector('img[alt="Example Capital"]')
-        if (name === 'member-sample') await page.waitForSelector('text=Sample')
-        if (name === 'landing-zero') {
-          const html = await page.content()
-          if (html.includes('id="partners"') || html.includes('Qaf Ledger')) throw new Error('zero landing rendered partners')
-        }
         const file = path.join(outDir, `${name}-${width}.png`)
         await page.screenshot({ path: file, fullPage: true })
         console.log(file)

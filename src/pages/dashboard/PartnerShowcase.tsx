@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react'
 import { PartnerLogo } from '../../components/TrustedPartners'
 import { schemaMissing } from '../../lib/demoRows'
 import { isPartnerLogoPath } from '../../lib/partnerLogo'
-import { SPONSOR_LABEL } from '../../lib/sponsorLabel'
 import { usePartnerCategories } from '../../lib/usePartnerCategories'
 import { supabase } from '../../lib/supabase'
 import { useNoIndex } from '../../lib/usePageTitle'
@@ -21,12 +20,12 @@ type ShowcaseCard = {
 
 type Counts = { pending: number; approved: number }
 
-export function SponsorShowcasePage({
+export function PartnerShowcase({
   preview,
 }: {
   preview?: { cards: ShowcaseCard[]; counts: Counts | null }
 } = {}) {
-  useNoIndex('Sponsors | Board Arabia')
+  useNoIndex('Partner showcase | Board Arabia')
   const categories = usePartnerCategories()
   const [cards, setCards] = useState<ShowcaseCard[] | null>(preview?.cards ?? null)
   const [counts, setCounts] = useState<Counts | null>(preview?.counts ?? null)
@@ -77,9 +76,8 @@ export function SponsorShowcasePage({
   const shown = (cards ?? []).filter((card) => !category || card.category_slug === category)
 
   return (
-    <div className="max-w-3xl" data-sponsor-showcase="">
-      <p className="text-[0.72rem] font-semibold tracking-[0.14em] text-brass uppercase">{SPONSOR_LABEL}</p>
-      <h1 className="mt-3 font-display text-[2.2rem] font-bold tracking-[-0.03em]">{SPONSOR_LABEL} showcase</h1>
+    <div className="max-w-3xl" data-partner-showcase="">
+      <h1 className="font-display text-[2.2rem] font-bold tracking-[-0.03em]">Partner showcase</h1>
       <p className="mt-3 max-w-xl text-[1rem] leading-relaxed text-ink/65">
         Logo, one line, and what they offer. Request an intro and our admin team reviews it. This page does not share contact details.
       </p>
@@ -128,12 +126,12 @@ export function SponsorShowcasePage({
       ) : null}
 
       {cards && shown.length === 0 && !error ? (
-        <p className="mt-6 text-[1rem] text-ink/70">No sponsor is listed yet.</p>
+        <p className="mt-6 text-[1rem] text-ink/70">No partner is listed yet.</p>
       ) : null}
 
       <ul className="mt-6 space-y-3">
         {shown.map((card) => (
-          <li key={card.id} className="border border-[var(--ba-line)] bg-white px-4 py-4" data-sponsor-card={card.name}>
+          <li key={card.id} className="border border-[var(--ba-line)] bg-white px-4 py-4" data-partner-card={card.name}>
             <div className="flex items-start gap-3">
               <PartnerLogo name={card.name} monogram={card.monogram} logoPath={card.logo_path} />
               <div className="min-w-0">

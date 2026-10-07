@@ -7,9 +7,10 @@ import { assembleHome } from '../../src/lib/homeSnapshot'
 import { seatLabel } from '../../src/lib/member'
 import { TrustedPartnersPanel } from '../../src/pages/admin/TrustedPartnersPanel'
 import { HomeSnapshotView } from '../../src/pages/dashboard/HomeSnapshotView'
-import { SponsorShowcasePage } from '../../src/pages/dashboard/SponsorShowcasePage'
+import { PartnerShowcase } from '../../src/pages/dashboard/PartnerShowcase'
+import { SectionTabs } from '../../src/shell/SectionTabs'
 import { AppShell } from '../../src/shell/AppShell'
-import { MEMBER_DESTINATIONS, MEMBER_SECONDARY, STAFF_DESTINATIONS, STAFF_SECONDARY } from '../../src/shell/destinations'
+import { MEMBER_DESTINATIONS, MEMBER_SECTIONS, MEMBER_SECONDARY, STAFF_DESTINATIONS, STAFF_SECONDARY } from '../../src/shell/destinations'
 import '../../src/index.css'
 
 const fixture = {
@@ -20,6 +21,18 @@ const fixture = {
   monogram: 'EC',
   logo_path: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1/logo',
   category_slug: 'investment-banking',
+  is_partner: true,
+}
+
+const adviser = {
+  id: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb1',
+  is_demo: false,
+  is_partner: false,
+  name: 'Example Advisory',
+  blurb: 'One line for a fixture adviser.',
+  monogram: 'EA',
+  logo_path: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb1/logo',
+  category_slug: null,
 }
 
 const view = new URLSearchParams(window.location.search).get('view') || 'one'
@@ -62,12 +75,12 @@ const memberModel = assembleHome({
 
 createRoot(root).render(
   <StrictMode>
-    <MemoryRouter initialEntries={[view === 'admin' ? '/admin/settings' : view === 'showcase' ? '/dashboard/sponsors' : '/dashboard']}>
-      {view === 'one' ? (
+    <MemoryRouter initialEntries={[view === 'admin' ? '/admin/settings' : view === 'showcase' ? '/dashboard/people/partners' : '/dashboard']}>
+      {view === 'one' || view === 'split' ? (
         <div className="ba-landing min-h-dvh bg-pearl">
           <Nav />
           <main className="pt-28">
-            <TrustedPartnersGallery partners={[fixture]} surface="public" />
+            <TrustedPartnersGallery partners={view === 'split' ? [fixture, adviser] : [fixture]} surface="public" />
           </main>
         </div>
       ) : null}
@@ -120,7 +133,9 @@ createRoot(root).render(
           onSignOut={() => undefined}
           accountLabel="Member"
         >
-          <SponsorShowcasePage
+          <SectionTabs label="People sections" sections={MEMBER_SECTIONS.people ?? []} />
+          <div className="mt-6">
+          <PartnerShowcase
             preview={{
               counts: { pending: 1, approved: 2 },
               cards: [
@@ -137,6 +152,7 @@ createRoot(root).render(
               ],
             }}
           />
+          </div>
         </AppShell>
       ) : null}
     </MemoryRouter>
