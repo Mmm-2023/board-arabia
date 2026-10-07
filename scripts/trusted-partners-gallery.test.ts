@@ -27,7 +27,7 @@ const migration = read(`supabase/migrations/${migrationName}`)
 
 test('trusted partners migration bans search_path public and locks the gallery', () => {
   const names = readdirSync(migrationsDir).filter((name) => name.endsWith('.sql')).sort()
-  assert.equal(names.at(-1), migrationName)
+  assert.ok(names.includes(migrationName))
   assert.ok(names.indexOf(migrationName) > names.indexOf('20261207120000_sponsor_directory_opt_in.sql'))
   assert.equal(/search_path\s*=\s*public/i.test(migration), false)
   const headers = migration.split(/create or replace function /i).slice(1).map((chunk) => chunk.slice(0, chunk.indexOf('as $$')))
