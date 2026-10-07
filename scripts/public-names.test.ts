@@ -43,7 +43,7 @@ function staffNameHits(text: string) {
 }
 
 function legalSourceBanned(source: string) {
-  return /nammco/i.test(source) || source.includes('CR 7043252647')
+  return /nammco/i.test(source) || /\bCR\s*\d{10}\b/.test(source)
 }
 
 test('public docs and workflows contain no staff first names', () => {
@@ -80,7 +80,7 @@ test('legal page sources carry no nammco text and no registration line', () => {
   for (const file of LEGAL_SOURCES) {
     const source = read(file)
     assert.equal(/nammco/i.test(source), false, file)
-    assert.equal(source.includes('CR 7043252647'), false, file)
+    assert.equal(/\bCR\s*\d{10}\b/.test(source), false, file)
     assert.match(source, /\[BA ENTITY\]/)
     assert.match(source, /commercial registration number \[CR\]/)
   }
@@ -93,5 +93,5 @@ test('legal page sources carry no nammco text and no registration line', () => {
   assert.equal(legalSourceBanned('operated by [BA ENTITY], commercial registration number [CR]'), false)
   assert.equal(legalSourceBanned('powered by nammco'), true)
   assert.equal(legalSourceBanned('NAMMCO Holding Co.'), true)
-  assert.equal(legalSourceBanned('CR 7043252647'), true)
+  assert.equal(legalSourceBanned('CR 0000000000'), true)
 })
