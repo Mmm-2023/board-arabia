@@ -148,7 +148,7 @@ export const PRIVACY_EN: LegalDocument = {
       "kind": "clause",
       "id": "c-3-14",
       "number": "3.14",
-      "text": "Partner interest. The partner form opens a draft in your own mail app to [PARTNERS EMAIL]. The note is not stored on the website. If you send it, we receive it as an email."
+      "text": "Partner interest. We store the name, firm, category and note you send so our admin team can review it. We never ask for an email or phone. Only admin can read it."
     },
     {
       "kind": "h2",

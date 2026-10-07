@@ -174,7 +174,11 @@ test('rendered legal copy has no drafting brackets and both retention states', (
 
   const privacyEnOff = legalPlainText(resolveLegalDocument(PRIVACY_EN, 'en', false))
   const privacyEnOn = legalPlainText(resolveLegalDocument(PRIVACY_EN, 'en', true))
-  assert.match(privacyEnOff, /opens a draft in your own mail app/)
+  assert.match(privacyEnOff, /We store the name, firm, category and note you send so our admin team can review it/)
+  assert.match(privacyEnOff, /We never ask for an email or phone/)
+  assert.match(privacyEnOff, /Only admin can read it/)
+  assert.equal(privacyEnOff.includes('opens a draft in your own mail app'), false)
+  assert.equal(privacyEnOff.includes('is not stored on the website'), false)
   assert.match(privacyEnOff, /We may ask you to confirm your identity/)
   assert.match(privacyEnOff, /Kept while your account is active; you can delete them at any time/)
   assert.match(privacyEnOff, /Retained while your account is active; you can delete at any time/)
@@ -190,7 +194,7 @@ test('rendered legal copy has no drafting brackets and both retention states', (
   })
   try {
     const filled = legalPlainText(resolveLegalDocument(PRIVACY_EN, 'en', false))
-    assert.match(filled, /partners@example\.com/)
+    assert.equal(filled.includes('partners@example.com'), false)
     assert.match(filled, /service@example\.com/)
     assert.match(filled, /Example Entity/)
     assert.equal(filled.includes('[PARTNERS EMAIL]'), false)

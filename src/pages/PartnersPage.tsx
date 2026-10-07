@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { MarketingLayout } from '../components/MarketingLayout'
-import { partnerInterestError } from '../lib/partnerInterest'
+import { PARTNER_INTEREST_THANKS, partnerInterestError } from '../lib/partnerInterest'
 import { usePartnerCategories } from '../lib/usePartnerCategories'
 import { supabase } from '../lib/supabase'
 
@@ -73,8 +73,8 @@ export function PartnersPage() {
             </h2>
             <p className="mt-4 text-[1.05rem] leading-relaxed text-ink/65">
               A summary of the lanes a seat can occupy. All of them are
-              finance. We do not fill this list by scraping firms, and we do
-              not print who holds a seat.
+              finance. We do not fill this list by scraping firms. We list a
+              partner on the site only when admin publishes their listing.
             </p>
           </div>
           <CategoryList />
@@ -136,7 +136,12 @@ function InterestForm() {
     })
     setBusy(false)
     if (rpcError) {
-      setError(partnerInterestError(rpcError.message))
+      const mapped = partnerInterestError(rpcError.message)
+      if (mapped == null) {
+        setSaved(true)
+        return
+      }
+      setError(mapped)
       return
     }
     setSaved(true)
@@ -207,7 +212,7 @@ function InterestForm() {
             Partner with us
           </button>
           {saved ? (
-            <p className="text-[0.92rem] leading-relaxed text-ink/60">Saved for our admin team. This does not reserve a seat.</p>
+            <p className="text-[0.92rem] leading-relaxed text-ink/60">{PARTNER_INTEREST_THANKS}</p>
           ) : null}
         </form>
       </div>

@@ -25,7 +25,7 @@ revoke all on table public.partner_categories from public, anon, authenticated;
 insert into public.partner_categories (slug, name, gloss, sort_order)
 values
   ('investment-banking', 'Investment banking', 'Coverage, mandates, and sell-side work.', 1),
-  ('private-equity', 'Private equity', 'Sponsors acquiring or governing companies.', 2),
+  ('private-equity', 'Private equity', 'Firms acquiring or governing companies.', 2),
   ('venture-capital', 'Venture capital', 'Funds backing companies that will need boards.', 3),
   ('family-offices', 'Family offices', 'Principals investing their own capital.', 4),
   ('sovereign-and-development-finance', 'Sovereign and development finance', 'Public and development capital with a Saudi nexus.', 5),
@@ -117,13 +117,9 @@ set
   file_size_limit = excluded.file_size_limit,
   allowed_mime_types = excluded.allowed_mime_types;
 
+-- Public bucket URLs do not use a select policy. No select policy means the
+-- bucket cannot be listed. A known path can still be fetched while the bucket is public.
 drop policy if exists partner_logos_select_public on storage.objects;
-create policy partner_logos_select_public on storage.objects
-  for select to anon, authenticated
-  using (
-    bucket_id = 'partner-logos'
-    and name ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/logo$'
-  );
 
 drop policy if exists partner_logos_insert_staff on storage.objects;
 create policy partner_logos_insert_staff on storage.objects
@@ -571,13 +567,13 @@ begin
           'user_id', m.user_id,
           'label', case
             when p.full_name is null or position('@' in p.full_name) > 0 or pg_catalog.btrim(p.full_name) = ''
-              then 'Sponsor'
+              then 'Partner'
             else pg_catalog.btrim(p.full_name)
           end
         ) as row_json,
         case
           when p.full_name is null or position('@' in p.full_name) > 0 or pg_catalog.btrim(p.full_name) = ''
-            then 'Sponsor'
+            then 'Partner'
           else pg_catalog.btrim(p.full_name)
         end as label
       from public.members m

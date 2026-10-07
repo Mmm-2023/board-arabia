@@ -14,7 +14,7 @@ export const PARTNER_CATEGORIES: PartnerCategory[] = [
   {
     slug: 'private-equity',
     name: 'Private equity',
-    gloss: 'Sponsors acquiring or governing companies.',
+    gloss: 'Firms acquiring or governing companies.',
   },
   {
     slug: 'venture-capital',

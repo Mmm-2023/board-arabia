@@ -12,7 +12,7 @@ import { createServer } from 'vite'
 import { PARTNER_CATEGORIES } from '../src/data/partnerCategories.ts'
 import { contentSecurityPolicy } from './csp-policy.mjs'
 import { inspectPartnerLogo, partnerLogoPublicUrl, PARTNER_LOGO_MAX_BYTES } from '../src/lib/partnerLogo.ts'
-import { PARTNER_INTEREST_BUSY, partnerInterestError } from '../src/lib/partnerInterest.ts'
+import { PARTNER_INTEREST_BUSY, PARTNER_INTEREST_THANKS, partnerInterestError } from '../src/lib/partnerInterest.ts'
 import { publicGalleryPartners, visibleMemberPartners } from '../src/lib/trustedPartners.ts'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
@@ -327,7 +327,11 @@ test('the 21st partner note in a day shows the busy message', () => {
 })
 
 test('a second note for the same firm is still rejected under the daily cap', () => {
-  assert.equal(partnerInterestError('already_sent'), 'We already have a note for this firm.')
+  assert.equal(partnerInterestError('already_sent'), null)
+  assert.equal(PARTNER_INTEREST_THANKS, 'Thanks, our admin team will be in touch if it is a fit.')
+  assert.equal(/sponsor/i.test(PARTNER_INTEREST_THANKS), false)
+  assert.equal(/\bthe desk\b/i.test(PARTNER_INTEREST_THANKS), false)
+  assert.match(read('src/pages/PartnersPage.tsx'), /PARTNER_INTEREST_THANKS/)
   const fn = migration.slice(
     migration.indexOf('create or replace function public.submit_partner_interest'),
     migration.indexOf('revoke all on function public.submit_partner_interest'),
@@ -470,6 +474,11 @@ begin
     when unique_violation then
       null;
   end;
+  reset role;
+  if (select count(*) from public.partner_interest where lower(firm) = lower('Example Firm')) <> 1 then
+    raise exception 'same firm stored another row';
+  end if;
+  set local role anon;
   begin
     perform 1 from public.partner_interest;
     raise exception 'anon read the interest table';
@@ -580,11 +589,8 @@ begin
 
   insert into storage.objects (bucket_id, name) values ('partner-logos', 'secret.txt');
   set local role anon;
-  if exists (select 1 from storage.objects where name = 'secret.txt') then
-    raise exception 'anon listed a non logo object';
-  end if;
-  if not exists (select 1 from storage.objects where name = partner_id::text || '/logo') then
-    raise exception 'anon could not read the logo path';
+  if exists (select 1 from storage.objects where bucket_id = 'partner-logos') then
+    raise exception 'anon listed a partner logo';
   end if;
   reset role;
 end

@@ -31,7 +31,9 @@ Anon `list_trusted_partners` returns published real rows with a logo only. The J
 - Member samples labelled Sample only when zero real: VERIFIED (same replay, plus the member home render).
 - Staff aal1 and members cannot save, publish, reorder, or upload: VERIFIED (replay: `42501`).
 - SVG and oversize rejected in the client checker: VERIFIED (unit test). Bucket mime list and 524288 byte limit: VERIFIED in the migration. Hosted Storage enforcing those limits on the API: INFERRED from the bucket row. Magic bytes are not re-checked inside Postgres: UNKNOWN until a later check is added.
-- Bucket select policy allows only the logo path: VERIFIED (replay: anon cannot see `secret.txt`, can see `{id}/logo`).
+- Logo bucket is public and has no select policy, so it cannot be listed: VERIFIED (replay: anon select on `storage.objects` for `partner-logos` returns no rows, including a published logo and a stray file). A signed-out browser can still load a published logo from the public object URL: INFERRED from Supabase public-bucket behaviour. This SQL file cannot serve that HTTP path. An unpublished or sample logo cannot be listed. The same public URL still opens an unpublished logo if someone already knows the exact uuid path. That is a consequence of the public bucket, not a list.
+- Partner interest retention: there is no delete path in this migration. How long a note is kept is UNKNOWN. Do not invent a retention period until Sasha decides one.
+- Secrets hygiene: VERIFIED. This diff has no live mailbox, key, token, or staff name. Tests use example.com only.
 - CSP `img-src` includes the Supabase https origin: VERIFIED (`scripts/csp-policy.mjs`). A live logo request after Sasha applies the migration: UNKNOWN until that apply.
 - `private.is_staff()` requires aal2: VERIFIED in the existing function. This migration calls it and does not replace it.
 - Staff write log: the Security 3 log accepts `action = 'read'` only. Admin writes are not logged. Follow-up if a write action is added later. INFERRED from `staff_access_log_action_check`.
