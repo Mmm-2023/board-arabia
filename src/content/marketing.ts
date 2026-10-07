@@ -49,7 +49,7 @@ export const MEMBER_TOOLS: MemberTool[] = [
     id: 'majlis',
     n: '05',
     title: 'Majlis',
-    home: 'Private member gatherings. Join one, join a waitlist, or ask to host.',
+    home: 'Members can host a majlis; our admin team reviews each one.',
     href: '/for-members#majlis',
   },
   {

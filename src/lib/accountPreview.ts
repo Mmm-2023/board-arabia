@@ -36,7 +36,7 @@ export const LOCK_COPY = {
 
 export const MAJLIS_ACCOUNT_COPY = {
   title: 'Majlis',
-  body: 'Majlis is four small salons a year, in person, and off the record. Invitations go to full members.',
+  body: 'Members can host a majlis; our admin team reviews each one. In person, and off the record. Invitations go to full members.',
 } as const
 
 export const DIRECTORY_ACCOUNT_COPY = {
@@ -48,7 +48,7 @@ export const DIRECTORY_ACCOUNT_COPY = {
 export const HOME_TILES = [
   { id: 'mandates', label: 'Mandates', line: 'Clear fields on a mandate, then a locked brief.', to: '/dashboard/deals/mandates' },
   { id: 'directory', label: 'Directory', line: 'Admitted members, after a human review.', to: '/dashboard/people/directory' },
-  { id: 'majlis', label: 'Majlis', line: 'Four small salons a year, off the record.', to: '/dashboard/majlis' },
+  { id: 'majlis', label: 'Majlis', line: 'Members can host a majlis, off the record. Our admin team reviews each one.', to: '/dashboard/majlis' },
   { id: 'ai', label: 'AI Due Diligence', line: 'A sample report. Runs open with full membership.', to: '/dashboard/ai/due-diligence' },
   { id: 'rooms', label: 'Deal rooms', line: 'A private room for a full member and their guests.', to: '/dashboard/deals/rooms' },
 ] as const

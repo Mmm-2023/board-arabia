@@ -17,7 +17,7 @@ import { DealReadinessSkeleton } from '../../components/ai/DealReadinessMemo'
 import { MarketBriefForm } from '../../components/ai/MarketBriefForm'
 import { PricingInputs } from '../../components/ai/PricingInputs'
 import { isMarketSector, marketFileName, type MarketSector } from '../../../supabase/functions/ai-tool-job/tools/market_brief.ts'
-import { AI_UI } from '../../lib/aiToolUi'
+import { AI_UI, liveToolLinks, OFF_TOOL_LEAD } from '../../lib/aiToolUi'
 import {
   acceptAiToolFile,
   acceptCfoFile,
@@ -27,6 +27,7 @@ import {
   readAiToolFrame,
   recordAiToolConsent,
   uploadAiToolFile,
+  type AiToolFlags,
   type AiToolNote,
 } from '../../lib/aiToolApi'
 import { digitsOnly, pricingSourceFromDraft, type PricingDraft } from '../../../supabase/functions/ai-tool-job/tools/pricing_format.ts'
@@ -46,6 +47,7 @@ export function AiToolPage() {
   const navigate = useNavigate()
   const { userId } = useMember()
   const [load, setLoad] = useState<Load>('loading')
+  const [flags, setFlags] = useState<AiToolFlags | null>(null)
   const [retentionDays, setRetentionDays] = useState(30)
   const [attempt, setAttempt] = useState(0)
   const [consented, setConsented] = useState(false)
@@ -82,6 +84,7 @@ export function AiToolPage() {
         return
       }
       setRetentionDays(frame.retentionDays)
+      setFlags(frame.flags)
       const on = frame.flags[tool]
       if (!on) {
         setLoad('denied')
@@ -263,10 +266,7 @@ export function AiToolPage() {
         />
       ) : null}
       {load === 'denied' ? (
-        <div data-ai-unavailable="">
-          <h2 className="font-display text-[1.6rem] font-semibold">{ui.unavailableTitle}</h2>
-          <p className="mt-3 text-[1rem] leading-relaxed text-ink/70">{ui.unavailable}</p>
-        </div>
+        <OffToolNotice flags={flags} current={tool} title={ui.unavailableTitle} />
       ) : null}
       {load === 'ready' && output ? (
         <div className="space-y-4">
@@ -473,6 +473,41 @@ function AiResultShare({ jobId }: { jobId: string }) {
   }
 
   return <AdminShareBar shared={shared} busy={busy} onToggle={() => void toggle()} />
+}
+
+export function OffToolNotice({
+  flags,
+  current,
+  title,
+}: {
+  flags: AiToolFlags | null
+  current: AiToolKey
+  title: string
+}) {
+  const links = flags ? liveToolLinks(flags, current) : []
+  return (
+    <div data-ai-unavailable="">
+      <h2 className="font-display text-[1.6rem] font-semibold">{title}</h2>
+      <p className="mt-3 text-[1rem] leading-relaxed text-ink/70">
+        {OFF_TOOL_LEAD}
+        {links.length > 0 ? (
+          <>
+            {' '}
+            Try{' '}
+            {links.map((link, index) => (
+              <span key={link.key}>
+                {index === 0 ? null : index === links.length - 1 ? ' or ' : ', '}
+                <Link to={link.to} className="font-semibold text-[var(--ba-indigo)] underline">
+                  {link.name}
+                </Link>
+              </span>
+            ))}
+            .
+          </>
+        ) : null}
+      </p>
+    </div>
+  )
 }
 
 function pricingFile(draft: PricingDraft): File | null {

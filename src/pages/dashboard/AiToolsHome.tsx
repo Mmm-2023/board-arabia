@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useId, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   deleteOwnDueDiligenceReport,
@@ -219,17 +219,54 @@ export function RecentReportList({
             className="flex min-h-11 min-w-0 flex-1 flex-col justify-center px-4 py-3"
           >
             <span className="text-[1rem] text-ink">{report.title}</span>
+            <span className="mt-1 block text-[0.92rem] text-ink/70">
+              {report.tool}
+              {report.date ? `, ${report.date}` : ''}
+            </span>
           </Link>
-          <button
-            type="button"
-            className="inline-flex min-h-11 items-center border-s border-[var(--ba-line)] px-4 text-[0.95rem] font-semibold text-ink"
-            onClick={() => onDelete(report.id)}
-          >
-            Delete
-          </button>
+          <ReportActions onDelete={() => onDelete(report.id)} />
         </li>
       ))}
     </ul>
+  )
+}
+
+function ReportActions({ onDelete }: { onDelete: () => void }) {
+  const [open, setOpen] = useState(false)
+  const menuId = useId()
+  return (
+    <div className="relative shrink-0">
+      <button
+        type="button"
+        className="inline-flex min-h-11 min-w-11 items-center justify-center px-3 text-[1.1rem] font-semibold text-ink"
+        aria-expanded={open}
+        aria-haspopup="menu"
+        aria-controls={menuId}
+        aria-label="Report actions"
+        onClick={() => setOpen((value) => !value)}
+      >
+        ...
+      </button>
+      {open ? (
+        <div
+          id={menuId}
+          role="menu"
+          className="absolute end-0 z-10 min-w-36 border border-[var(--ba-line)] bg-white"
+        >
+          <button
+            type="button"
+            role="menuitem"
+            className="flex min-h-11 w-full items-center px-4 text-start text-[0.95rem] font-semibold text-ink"
+            onClick={() => {
+              setOpen(false)
+              onDelete()
+            }}
+          >
+            Delete
+          </button>
+        </div>
+      ) : null}
+    </div>
   )
 }
 

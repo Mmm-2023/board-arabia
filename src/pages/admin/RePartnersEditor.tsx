@@ -162,7 +162,6 @@ function PartnerForm({
   const contactId = `partner-contact-${initial.id ?? 'new'}`
   const emailId = `partner-email-${initial.id ?? 'new'}`
   const phoneId = `partner-phone-${initial.id ?? 'new'}`
-  const visibleId = `partner-visible-${initial.id ?? 'new'}`
   return (
     <form
       className="mt-4 space-y-3"
@@ -260,19 +259,16 @@ function PartnerForm({
           className="min-h-11 w-full border border-white/30 bg-pearl ps-3 pe-3 text-[0.95rem] text-ink"
         />
       </Field>
-      <div className="flex min-h-11 items-center gap-3">
+      <label className="flex min-h-11 items-center gap-3 text-[0.95rem] text-pearl">
         <input
-          id={visibleId}
           type="checkbox"
           checked={draft.published}
           disabled={busy}
           onChange={(event) => setDraft({ ...draft, published: event.target.checked })}
-          className="size-5"
+          className="size-5 shrink-0"
         />
-        <label htmlFor={visibleId} className="text-[0.95rem] text-pearl">
-          {RE_PARTNER_STAFF.visible}
-        </label>
-      </div>
+        {RE_PARTNER_STAFF.visible}
+      </label>
       <button
         type="submit"
         disabled={busy}
