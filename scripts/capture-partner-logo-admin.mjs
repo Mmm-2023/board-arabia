@@ -61,9 +61,14 @@ function chromePath() {
 const executablePath = chromePath()
 if (!executablePath) throw new Error('Chrome is not installed')
 
-const dev = spawn('npx', ['vite', '--host', '127.0.0.1', '--port', '4178', '--strictPort'], {
+const port = 4181
+let devExited = false
+const dev = spawn('npx', ['vite', '--host', '127.0.0.1', '--port', String(port), '--strictPort'], {
   cwd: root,
   stdio: 'ignore',
+})
+dev.on('exit', () => {
+  devExited = true
 })
 
 function json(status, body) {
@@ -77,6 +82,7 @@ function json(status, body) {
 async function waitFor(url) {
   const deadline = Date.now() + 30000
   while (Date.now() < deadline) {
+    if (devExited) throw new Error('dev server exited before it was ready')
     try {
       const response = await fetch(url)
       if (response.ok || response.status === 404) return
@@ -89,7 +95,7 @@ async function waitFor(url) {
 }
 
 try {
-  await waitFor('http://127.0.0.1:4178/admin/settings')
+  await waitFor(`http://127.0.0.1:${port}/admin/settings`)
   const browser = await chromium.launch({ executablePath, args: ['--no-sandbox', '--disable-dev-shm-usage'] })
   try {
     for (const width of [1280, 390]) {
@@ -138,13 +144,30 @@ try {
           },
         },
       )
-      await page.goto('http://127.0.0.1:4178/admin/settings', { waitUntil: 'networkidle' })
+      await page.goto(`http://127.0.0.1:${port}/admin/settings`, { waitUntil: 'networkidle' })
       const section = page.locator('#trusted-partners')
       await section.waitFor({ timeout: 15000 })
       await section.getByText('Example Capital').waitFor()
-      await section.getByRole('button', { name: 'Remove logo' }).waitFor()
+      const remove = section.getByRole('button', { name: 'Remove logo' })
+      await remove.waitFor()
       const file = path.join(outDir, `admin-logo-control-${width}.png`)
-      await section.screenshot({ path: file })
+      if (width < 768) {
+        await section.locator('h2').scrollIntoViewIfNeeded()
+        const head = await section.locator('h2').boundingBox()
+        const card = await section.locator('li').first().boundingBox()
+        if (!head || !card) throw new Error('logo control was not on screen')
+        await page.screenshot({
+          path: file,
+          clip: {
+            x: 0,
+            y: Math.max(0, head.y - 12),
+            width,
+            height: card.y + card.height - head.y + 28,
+          },
+        })
+      } else {
+        await section.screenshot({ path: file })
+      }
       console.log(file)
       await page.close()
     }
