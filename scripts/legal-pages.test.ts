@@ -100,7 +100,7 @@ test('legal config defaults, links, and the 30 day flag', () => {
   assert.equal(readAiUploads30DayRetention(true), true)
   assert.equal(PRIVACY_LINK, '/privacy')
   assert.equal(TERMS_LINK, '/terms')
-  assert.equal(EFFECTIVE_DATE.en, '30 September 2026')
+  assert.equal(EFFECTIVE_DATE.en, '7 October 2026')
   assert.equal('ar' in EFFECTIVE_DATE, false)
   assert.equal('ar' in LEGAL_PENDING, false)
   setLegalEnvForTests(null)
