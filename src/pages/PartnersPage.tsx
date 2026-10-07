@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { MarketingLayout } from '../components/MarketingLayout'
+import { partnerInterestError } from '../lib/partnerInterest'
 import { usePartnerCategories } from '../lib/usePartnerCategories'
 import { supabase } from '../lib/supabase'
 
@@ -135,7 +136,7 @@ function InterestForm() {
     })
     setBusy(false)
     if (rpcError) {
-      setError(rpcError.message.includes('already_sent') ? 'We already have a note for this firm.' : 'Could not save that note. Try again.')
+      setError(partnerInterestError(rpcError.message))
       return
     }
     setSaved(true)

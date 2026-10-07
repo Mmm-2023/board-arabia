@@ -285,6 +285,14 @@ begin
     raise exception 'already_sent' using errcode = '23505';
   end if;
 
+  if (
+    select count(*)
+    from public.partner_interest i
+    where i.created_at > pg_catalog.now() - interval '1 day'
+  ) >= 20 then
+    raise exception 'busy_today' using errcode = 'P0001';
+  end if;
+
   insert into public.partner_interest (contact_name, firm, category_slug, note)
   values (v_name, v_firm, v_slug, v_note)
   returning id into v_id;

@@ -12,6 +12,7 @@ import { createServer } from 'vite'
 import { PARTNER_CATEGORIES } from '../src/data/partnerCategories.ts'
 import { contentSecurityPolicy } from './csp-policy.mjs'
 import { inspectPartnerLogo, partnerLogoPublicUrl, PARTNER_LOGO_MAX_BYTES } from '../src/lib/partnerLogo.ts'
+import { PARTNER_INTEREST_BUSY, partnerInterestError } from '../src/lib/partnerInterest.ts'
 import { publicGalleryPartners, visibleMemberPartners } from '../src/lib/trustedPartners.ts'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
@@ -307,6 +308,35 @@ test('public landing hides the gallery at zero, one real fixture has no Sample, 
   }
 })
 
+test('the 21st partner note in a day shows the busy message', () => {
+  assert.equal(partnerInterestError('busy_today'), 'We have had a lot of requests today. Please try again tomorrow.')
+  assert.equal(PARTNER_INTEREST_BUSY, 'We have had a lot of requests today. Please try again tomorrow.')
+  assert.equal(/sponsor/i.test(PARTNER_INTEREST_BUSY), false)
+  assert.equal(/\bthe desk\b/i.test(PARTNER_INTEREST_BUSY), false)
+  assert.equal(PARTNER_INTEREST_BUSY.includes('\u2014'), false)
+  assert.match(read('src/pages/PartnersPage.tsx'), /partnerInterestError\(rpcError\.message\)/)
+  const fn = migration.slice(
+    migration.indexOf('create or replace function public.submit_partner_interest'),
+    migration.indexOf('revoke all on function public.submit_partner_interest'),
+  )
+  assert.match(fn, /count\(\*\)/)
+  assert.match(fn, /pg_catalog\.now\(\) - interval '1 day'/)
+  assert.match(fn, /\) >= 20 then/)
+  assert.match(fn, /raise exception 'busy_today' using errcode = 'P0001'/)
+  assert.equal(/search_path\s*=\s*public/i.test(fn), false)
+})
+
+test('a second note for the same firm is still rejected under the daily cap', () => {
+  assert.equal(partnerInterestError('already_sent'), 'We already have a note for this firm.')
+  const fn = migration.slice(
+    migration.indexOf('create or replace function public.submit_partner_interest'),
+    migration.indexOf('revoke all on function public.submit_partner_interest'),
+  )
+  const firmAt = fn.indexOf("raise exception 'already_sent'")
+  const capAt = fn.indexOf("raise exception 'busy_today'")
+  assert.ok(firmAt > 0 && capAt > firmAt)
+})
+
 test('new partner copy says partner and not sponsor', () => {
   const files = [
     'src/components/TrustedPartners.tsx',
@@ -434,10 +464,34 @@ begin
   end if;
   perform public.submit_partner_interest('Example Person', 'Example Firm', 'investment-banking', 'A lane note');
   begin
+    perform public.submit_partner_interest('Example Person', 'Example Firm', 'investment-banking', 'Again');
+    raise exception 'same firm was accepted';
+  exception
+    when unique_violation then
+      null;
+  end;
+  begin
     perform 1 from public.partner_interest;
     raise exception 'anon read the interest table';
   exception when insufficient_privilege then
     null;
+  end;
+  reset role;
+
+  for i in 1..19 loop
+    insert into public.partner_interest (contact_name, firm, category_slug)
+    values ('Example Person', 'Example Firm ' || i::text, 'investment-banking');
+  end loop;
+  perform set_config('request.jwt.claims', '{}', true);
+  set local role anon;
+  begin
+    perform public.submit_partner_interest('Example Person', 'Example Firm Last', 'investment-banking', 'A note');
+    raise exception 'cap did not hold';
+  exception
+    when raise_exception then
+      if sqlerrm is distinct from 'busy_today' then
+        raise exception 'unexpected interest error %', sqlerrm;
+      end if;
   end;
   reset role;
 
