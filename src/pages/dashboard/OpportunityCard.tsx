@@ -1,3 +1,4 @@
+import { useId, useState, type ReactNode } from 'react'
 import { CardMeta, PlaceMeta } from '../../components/CardMeta'
 import { ExampleMark } from '../../components/ExampleMark'
 import { SampleAction } from '../../components/SampleAction'
@@ -53,22 +54,110 @@ export function OpportunityCard({
         </div>
       </div>
       <h2 className="mt-3 font-display text-[1.45rem] font-semibold tracking-[-0.03em] text-balance">{card.one_liner}</h2>
+      <div className="md:hidden">
+        <PhoneFields
+          card={card}
+          rest={
+            <CardRest
+              card={card}
+              fits={fits}
+              busy={busy}
+              onRequest={onRequest}
+              showInterest={showInterest}
+              interestPending={interestPending}
+              interested={interested}
+              interestBusy={interestBusy}
+              onInterest={onInterest}
+              collapseReadiness
+            />
+          }
+        />
+      </div>
+      <div className="hidden md:block">
+        <PlaceMeta
+          city={card.city}
+          hint={card.one_liner}
+          trailing={[reAssetClassLabel(card.asset_class)]}
+          className="mt-2 text-[0.95rem] text-ink/70"
+        />
+        <CardMeta
+          parts={[card.ticket_band, reCapitalRoleLabel(card.capital_role)]}
+          className="mt-1 text-[0.95rem] text-ink/70"
+        />
+        <CardRest
+          card={card}
+          fits={fits}
+          busy={busy}
+          onRequest={onRequest}
+          showInterest={showInterest}
+          interestPending={interestPending}
+          interested={interested}
+          interestBusy={interestBusy}
+          onInterest={onInterest}
+        />
+      </div>
+    </article>
+  )
+}
+
+function PhoneFields({ card, rest }: { card: ReOpportunityCard; rest: ReactNode }) {
+  const [open, setOpen] = useState(false)
+  const moreId = useId()
+  return (
+    <>
       <PlaceMeta
         city={card.city}
         hint={card.one_liner}
         trailing={[reAssetClassLabel(card.asset_class)]}
         className="mt-2 text-[0.95rem] text-ink/70"
       />
-      <CardMeta
-        parts={[card.ticket_band, reCapitalRoleLabel(card.capital_role)]}
-        className="mt-1 text-[0.95rem] text-ink/70"
-      />
+      <p className="mt-1 text-[0.95rem] text-ink/70">{card.ticket_band}</p>
+      <p className="mt-1 text-[0.95rem] text-ink/70">{reCapitalRoleLabel(card.capital_role)}</p>
+      {open ? <div id={moreId}>{rest}</div> : null}
+      <button
+        type="button"
+        className="mt-3 inline-flex min-h-11 items-center text-[0.95rem] font-semibold text-[var(--ba-indigo)]"
+        aria-expanded={open}
+        aria-controls={moreId}
+        onClick={() => setOpen((value) => !value)}
+      >
+        {open ? 'Less' : 'More'}
+      </button>
+    </>
+  )
+}
+
+function CardRest({
+  card,
+  fits,
+  busy,
+  onRequest,
+  showInterest,
+  interestPending,
+  interested,
+  interestBusy,
+  onInterest,
+  collapseReadiness = false,
+}: {
+  card: ReOpportunityCard
+  fits: boolean
+  busy?: boolean
+  onRequest?: (id: string) => void
+  showInterest: boolean
+  interestPending: boolean
+  interested: boolean
+  interestBusy: boolean
+  onInterest?: (id: string) => void
+  collapseReadiness?: boolean
+}) {
+  return (
+    <>
       {fits ? (
         <p data-re-fit="true" className="mt-3 text-[0.92rem] font-semibold text-[var(--ba-indigo)]">
           {MEMBER_VIEWS.realEstate.appetite.fit}
         </p>
       ) : null}
-      <ReadinessStrip card={card} />
+      <ReadinessStrip card={card} collapsed={collapseReadiness} />
       {card.unlocked ? (
         <OpenBrief card={card} />
       ) : (
@@ -88,7 +177,7 @@ export function OpportunityCard({
           onExpress={onInterest ? () => onInterest(card.id) : undefined}
         />
       ) : null}
-    </article>
+    </>
   )
 }
 

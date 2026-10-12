@@ -3,7 +3,7 @@ import { peopleLine, statusLabel, type MemberDealRoom } from '../../lib/dealRoom
 
 export function MemberRoomsList({ rooms }: { rooms: MemberDealRoom[] }) {
   return (
-    <ul className="mt-4 grid gap-3">
+    <ul className="mt-4 grid gap-3 xl:grid-cols-2">
       {rooms.map((room) => (
         <li key={room.id}>
           <article className="border border-[var(--ba-line)] bg-white px-5 py-5">

@@ -121,8 +121,7 @@ function Hero() {
             Where Saudi boardrooms meet international capital
           </h1>
           <p className="mt-3 max-w-xl text-[1rem] leading-relaxed text-[#F6F5FB] md:text-[1.05rem]">
-            {AUDIENCE_LINE}. Credentials before any conversation. No public
-            booking calendar.
+            No public booking calendar is offered, and credentials come first for {AUDIENCE_LINE}.
           </p>
           <HeroEnter index={1}>
             <HeroConsideration />

@@ -179,7 +179,10 @@ export function CreateRoomForm({
         </p>
       ) : null}
 
-      <div className="mt-6 flex flex-wrap gap-3">
+      <p className="mt-6 text-[1rem] leading-relaxed text-ink/70">
+        Only people you invite, and admin, can see this room.
+      </p>
+      <div className="mt-3 flex flex-wrap gap-3">
         <button
           type="submit"
           disabled={busy}

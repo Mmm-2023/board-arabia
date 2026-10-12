@@ -8,7 +8,7 @@ export function RoomsBoard({ rooms, embedded = false }: { rooms: RoomCard[]; emb
     ? 'Deal rooms opened by our admin team. Cards marked Example are samples.'
     : 'Deal rooms opened by our admin team.'
   const cards = (
-    <ul className={embedded ? 'mt-4 grid gap-3' : 'mt-8 grid gap-3'}>
+    <ul className={embedded ? 'mt-4 grid gap-3 xl:grid-cols-2' : 'mt-8 grid gap-3 xl:grid-cols-2'}>
       {rooms.map((room) => (
         <li key={room.id}>
           <article className="border border-[var(--ba-line)] bg-white px-5 py-5">
@@ -44,7 +44,7 @@ export function RoomsBoard({ rooms, embedded = false }: { rooms: RoomCard[]; emb
     )
   }
   return (
-    <div className="max-w-3xl">
+    <div className="max-w-3xl xl:max-w-6xl">
       <h1 className="font-display text-[2.2rem] font-bold tracking-[-0.03em]">Rooms</h1>
       <p className="mt-3 max-w-xl text-[1rem] leading-relaxed text-ink/65">{intro}</p>
       {cards}

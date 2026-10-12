@@ -306,21 +306,29 @@ export function ApplyPage() {
               placeholder="+966…"
               autoComplete="tel"
             />
-            <Field
-              id="turnover"
-              label="Turnover"
-              value={form.turnover}
-              onChange={(v) => setField('turnover', v)}
-              placeholder="e.g. SAR 50m+ group revenue"
-              hint="Turnover or family-office size (at least one). This is for review, not a time slot."
-            />
-            <Field
-              id="fo_aum"
-              label="Family office size / AUM"
-              value={form.foAum}
-              onChange={(v) => setField('foAum', v)}
-              placeholder="e.g. FO AUM USD 100m+"
-            />
+            <fieldset>
+              <legend id="scale-pair" className="text-[0.95rem] leading-relaxed text-ink/80">
+                One of these is required. This is for review, not a time slot.
+              </legend>
+              <div className="mt-4 space-y-6">
+                <Field
+                  id="turnover"
+                  label="Turnover (one of these is required)"
+                  value={form.turnover}
+                  onChange={(v) => setField('turnover', v)}
+                  placeholder="e.g. SAR 50m+ group revenue"
+                  describedBy="scale-pair"
+                />
+                <Field
+                  id="fo_aum"
+                  label="Family-office size (one of these is required)"
+                  value={form.foAum}
+                  onChange={(v) => setField('foAum', v)}
+                  placeholder="e.g. FO AUM USD 100m+"
+                  describedBy="scale-pair"
+                />
+              </div>
+            </fieldset>
             <Field
               id="investable_capacity_usd"
               label="Investable capacity (USD)"
@@ -414,6 +422,7 @@ function Field({
   hint,
   autoComplete,
   inputMode,
+  describedBy,
 }: {
   id: string
   label: string
@@ -426,6 +435,7 @@ function Field({
   hint?: string
   autoComplete?: string
   inputMode?: 'decimal' | 'text' | 'tel' | 'email' | 'url'
+  describedBy?: string
 }) {
   const shared =
     'mt-2 w-full border border-ink/15 bg-white/70 px-4 py-3.5 text-[1rem] text-ink outline-none transition-colors placeholder:text-ink/30 focus:border-brass'
@@ -448,6 +458,7 @@ function Field({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
+          aria-describedby={describedBy}
           className={`${shared} resize-y`}
         />
       ) : (
@@ -461,6 +472,7 @@ function Field({
           placeholder={placeholder}
           autoComplete={autoComplete}
           inputMode={inputMode}
+          aria-describedby={describedBy}
           className={shared}
         />
       )}

@@ -28,8 +28,10 @@ test('locked account pages render no member-private fields', async () => {
       assert.equal(/title="[^"]*(Nahla|Riyadh|amal\.desk)/.test(html), false)
       assert.equal(/aria-label="[^"]*(Nahla|Riyadh|amal\.desk)/.test(html), false)
     }
-    const majlis = htmls.find((html) => html.includes('four small salons')) || ''
-    assert.match(majlis, /four small salons a year/)
+    const majlis = htmls.find((html) => html.includes('off the record')) || ''
+    assert.match(majlis, /Members can host a majlis/)
+    assert.match(majlis, /our admin team reviews each one/)
+    assert.match(majlis, /off the record/)
     assert.equal(majlis.includes(CITY), false)
     assert.equal(majlis.includes(WHEN), false)
     assert.equal(

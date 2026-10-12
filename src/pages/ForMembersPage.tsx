@@ -64,7 +64,7 @@ const TOOLS = [
     id: 'majlis',
     title: 'Majlis',
     paragraphs: [
-      'Private gatherings for members. Join one, join a waitlist, add one to your calendar, or ask to host one.',
+      'Members can host a majlis; our admin team reviews each one. Join one, join a waitlist, or add one to your calendar.',
     ],
   },
   {

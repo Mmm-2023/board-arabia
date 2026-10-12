@@ -186,6 +186,7 @@ export function PeoplePage({ tierShots }: { tierShots?: Record<string, TierShot>
             <label className="flex min-h-11 items-center gap-2 text-[0.85rem] text-stone/75 normal-case">
               <input
                 type="checkbox"
+                className="size-5 shrink-0"
                 checked={inviteAdmit}
                 onChange={(event) => setInviteAdmit(event.target.checked)}
               />

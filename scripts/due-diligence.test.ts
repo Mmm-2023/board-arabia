@@ -328,7 +328,7 @@ test('desk screen keeps one status and puts the error under the check button', a
     assert.ok(idle.includes(DD_COPY.deckHint))
     assert.ok(idle.includes('Choose a deck first'))
     assert.ok(idle.indexOf(DD_COPY.deckLabel) < idle.indexOf(DD_COPY.ctaDisabled))
-    assert.ok(idle.indexOf(DD_COPY.ctaDisabled) < idle.indexOf(DD_COPY.siteLabel))
+    assert.ok(idle.indexOf(DD_COPY.siteLabel) < idle.indexOf(DD_COPY.ctaDisabled))
     assert.equal(idle.includes(DD_COPY.errorStart), false)
     assert.match(idle, /min-h-11 w-full/)
 
@@ -338,8 +338,8 @@ test('desk screen keeps one status and puts the error under the check button', a
     assert.equal(chosen.includes(DD_COPY.emptyHistory), false)
     assert.equal(chosen.includes(DD_COPY.errorStart), false)
 
+    assert.ok(error.indexOf(DD_COPY.siteLabel) < error.indexOf('Check this deck'))
     assert.ok(error.indexOf('Check this deck') < error.indexOf('id="dd-action-error"'))
-    assert.ok(error.indexOf('id="dd-action-error"') < error.indexOf(DD_COPY.siteLabel))
     assert.ok(error.includes(DD_COPY.errorStart))
     assert.ok(error.includes(DD_COPY.errorRetry))
     assert.equal(error.includes(DD_COPY.emptyHistory), false)

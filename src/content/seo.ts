@@ -55,7 +55,7 @@ export const MARKETING_PAGES: Record<MarketingPath, MarketingPage> = {
     path: '/for-members',
     title: 'Member tools: directory, mandates, majlis | Board Arabia',
     description:
-      'Board Arabia members use a private directory, mandates and intros our admin team reviews, availability controls, founding badge, quarterly majlis, invite vouchers, Vision 2030 tags, and deal rooms.',
+      'Board Arabia members use a private directory, mandates and intros our admin team reviews, availability controls, founding badge, majlis our admin team reviews, invite vouchers, Vision 2030 tags, and deal rooms.',
     faq: true,
   },
   '/for-capital': {
@@ -81,7 +81,7 @@ export const MARKETING_PAGES: Record<MarketingPath, MarketingPage> = {
     path: '/apply',
     title: 'Apply for consideration | Board Arabia',
     description:
-      'Submit credentials for Board Arabia founding membership review. LinkedIn, titles, companies, turnover or family-office AUM, and optional investable capacity. Private next step by email if accepted. There is no public calendar.',
+      'Submit credentials for Board Arabia founding membership review. LinkedIn, titles, companies, turnover or family-office AUM, and optional investable capacity. A private invite email follows if accepted. There is no public calendar.',
   },
   '/about': {
     path: '/about',
@@ -119,7 +119,7 @@ export type FaqItem = {
 const APPLY_FAQ: FaqItem = {
   question: 'How do I apply?',
   answer:
-    'Submit the pre-vet form with your credentials (LinkedIn, titles, companies, turnover or family-office AUM). Applications are reviewed personally; accepted candidates receive a private next-step email.',
+    'Submit the pre-vet form with your credentials (LinkedIn, titles, companies, turnover or family-office AUM). Applications are reviewed personally; accepted candidates receive a private invite email.',
   to: '/apply',
   toLabel: 'Apply for consideration',
 }

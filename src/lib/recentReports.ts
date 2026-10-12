@@ -7,11 +7,27 @@ export type RecentReportInput = {
   id: string
   company_label: string
   file_name: string
+  created_at?: string
+  tool?: string
 }
 
 export type RecentReportRow = {
   id: string
   title: string
+  tool: string
+  date: string
+}
+
+const LIST_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] as const
+const DEFAULT_REPORT_TOOL = 'AI Due Diligence'
+
+/** Hub list date, for example "6 Oct 2026". UTC so the label does not shift with the viewer zone. */
+export function formatListDate(iso: string): string {
+  const date = new Date(iso)
+  if (Number.isNaN(date.getTime())) return ''
+  const month = LIST_MONTHS[date.getUTCMonth()]
+  if (!month) return ''
+  return `${date.getUTCDate()} ${month} ${date.getUTCFullYear()}`
 }
 
 const RECENT_LIMIT = 5
@@ -251,7 +267,12 @@ export function recentReports(items: readonly RecentReportInput[], limit = RECEN
     const key = title.toLowerCase().replace(/[·•]/g, ' ').replace(/\s+/g, ' ').trim()
     if (seen.has(key)) continue
     seen.add(key)
-    rows.push({ id: item.id, title })
+    rows.push({
+      id: item.id,
+      title,
+      tool: item.tool?.trim() || DEFAULT_REPORT_TOOL,
+      date: item.created_at ? formatListDate(item.created_at) : '',
+    })
     if (rows.length >= cap) break
   }
   return rows
