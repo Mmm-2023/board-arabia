@@ -2,7 +2,7 @@ name: App test builds
 
 on:
   pull_request:
-    branches: [main]
+    branches: [main, cursor/app-1-capacitor-shell-88cd]
   workflow_dispatch:
 
 permissions:
@@ -105,4 +105,31 @@ jobs:
         with:
           name: ios-simulator-app
           path: ${{ runner.temp }}/BoardArabia-ios-simulator.zip
+          if-no-files-found: error
+      - name: Screenshot Home on the iOS simulator
+        run: |
+          set -euo pipefail
+          app="$RUNNER_TEMP/DerivedData/Build/Products/Debug-iphonesimulator/App.app"
+          entitlements="$(mktemp)"
+          printf '%s\n' '<?xml version="1.0" encoding="UTF-8"?>' '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">' '<plist version="1.0"><dict></dict></plist>' > "$entitlements"
+          codesign --force --deep --sign - --entitlements "$entitlements" "$app"
+          udid="$(
+            xcrun simctl list devices available |
+              sed -n 's/.*iPhone.*(\([0-9A-F-]\{36\}\)).*/\1/p' |
+              head -n 1
+          )"
+          if [ -z "$udid" ]; then
+            echo "No iPhone simulator is available"
+            exit 1
+          fi
+          xcrun simctl boot "$udid" || true
+          xcrun simctl bootstatus "$udid" -b
+          xcrun simctl install "$udid" "$app"
+          xcrun simctl launch "$udid" com.boardarabia.app
+          sleep 15
+          xcrun simctl io "$udid" screenshot "$RUNNER_TEMP/ios-home.png"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ios-home-screenshot
+          path: ${{ runner.temp }}/ios-home.png
           if-no-files-found: error
