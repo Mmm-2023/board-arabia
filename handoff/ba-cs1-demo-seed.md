@@ -30,7 +30,7 @@ Partners, one each, published, with an existing category slug a later Home fix c
 | Law firm | Bayt Counsel | `transaction-counsel` |
 | Accounting and audit | Mizaan Audit House | `financial-due-diligence-and-tax` |
 | Bank | Nahr Ledger Bank | `investment-banking` |
-| Executive search | Najm Search | `placement-and-capital-introduction` |
+| Executive search | Example Search House | `placement-and-capital-introduction` |
 | Insurer and advisory | Wifaq Cover House | `corporate-finance-advisory` |
 
 No new category rows. The gallery test still expects 15 categories after every migration. New slugs would fail that check and would also change the public interest list. VERIFIED: those five slugs are seeded in `20261208120000_trusted_partners_gallery.sql:27-41`.
@@ -39,7 +39,7 @@ Removal stays commented at `:270-274`. Rooms go first, then mandates, then direc
 
 ## Labels
 
-Directory, Mandates, Rooms, and Home teasers already render `Example` from `is_demo` (`src/components/ExampleMark.tsx`, `DirectoryBoard.tsx:220`, `MandateCard.tsx`, `RoomsBoard.tsx:20`, `HomeSnapshotView.tsx:448`). Partner samples already render `Sample` (`src/components/SampleMark.tsx`). This PR does not change that UI. Home still drops example partners (`src/lib/homeNeeds.ts:154-156`). They show on the member sample gallery, labelled Sample, while every published partner row is a sample (`src/lib/trustedPartners.ts:4-7`).
+Directory, Mandates, Rooms, and Home teasers already render `Example` from `is_demo` (`src/components/ExampleMark.tsx`, `DirectoryBoard.tsx:220`, `MandateCard.tsx`, `RoomsBoard.tsx:20`, `HomeSnapshotView.tsx:448`). Partner samples already render `Sample` (`src/components/SampleMark.tsx`). This PR does not change that UI. Home partner Example rows swap per category: a live partner hides only the example in its own category, and the other examples stay. That swap is done in PT-1 #174. They show on the member sample gallery, labelled Sample, while every published partner row is a sample (`src/lib/trustedPartners.ts:4-7`).
 
 ## Email conflict
 
