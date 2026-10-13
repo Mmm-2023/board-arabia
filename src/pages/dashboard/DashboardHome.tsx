@@ -22,6 +22,8 @@ import { useNoIndex } from '../../lib/usePageTitle'
 import { ErrorBanner, HomeSkeleton } from '../../shell/ViewState'
 import { MEMBER_VIEWS } from '../../shell/viewCopy'
 import { readMemberDailyBrief, type MemberBrief } from '../../lib/dailyMarketBrief'
+import { loadUnreadNotification, markNotificationRead } from '../../lib/memberNotifications'
+import type { UnreadNotification } from '../../lib/boardSeats'
 import { useDashboardStatus, useMember } from './context'
 import { DailyMarketBriefCard } from './DailyMarketBriefCard'
 import { AdmitShareCard } from './AdmitShareCard'
@@ -68,6 +70,7 @@ export function DashboardHome() {
   const [weekLines, setWeekLines] = useState<string[]>([])
   const [dailyBrief, setDailyBrief] = useState<MemberBrief | null>(null)
   const [digestNotice, setDigestNotice] = useState<DigestHomeNotice | null>(null)
+  const [unreadNote, setUnreadNote] = useState<UnreadNotification | null>(null)
   useNoIndex('Home | Board Arabia')
 
   useEffect(() => {
@@ -90,6 +93,16 @@ export function DashboardHome() {
       cancelled = true
     }
   }, [])
+
+  useEffect(() => {
+    let cancelled = false
+    void loadUnreadNotification().then((row) => {
+      if (!cancelled) setUnreadNote(row)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [attempt, userId])
 
   useEffect(() => {
     if (!membershipLine(member.tier, member.founding_number)) return
@@ -354,6 +367,12 @@ export function DashboardHome() {
           attention,
         })}
         dailyBriefSlot={dailyBrief ? <DailyMarketBriefCard brief={dailyBrief} /> : null}
+        unreadNote={unreadNote}
+        onMarkNotificationRead={(id) => {
+          void markNotificationRead(id).then((ok) => {
+            if (ok) setUnreadNote(null)
+          })
+        }}
         shareSlot={
           shareCard.show ? (
             <AdmitShareCard
