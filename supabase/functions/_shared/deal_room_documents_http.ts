@@ -6,13 +6,14 @@
 import { corsHeaders, jsonResponse } from './mail.ts'
 import type { DealGate, DealOpenFailure } from './deal_room_http.ts'
 import {
-  DEAL_ROOM_SIGNED_URL_SECONDS,
   sanitiseFileName,
   sniffDocument,
+  stampedDownloadName,
   uploadDeclaredTooLarge,
   watermarkLine,
   type DocumentMime,
 } from './deal_room_documents.ts'
+import { documentStampSupported } from './deal_room_pdf_stamp.ts'
 
 export type DocumentStorage = {
   upload: (path: string, bytes: Uint8Array, mime: string) => Promise<{ error: string | null }>
@@ -155,18 +156,12 @@ async function view(req: Request, gate: DealGate, row: Record<string, unknown>, 
   if (!opened.ok) return fail(req, opened.message)
   if (opened.hold === 'hidden') return jsonResponse(req, { error: 'Not found' }, 404)
   if (opened.hold === 'expired') return jsonResponse(req, { error: 'Access expired' }, 403)
-  const identity = await viewerIdentity(gate)
-  if (!identity.ok) return fail(req, identity.message)
-  const line = watermarkLine({
-    name: identity.name,
-    email: identity.email,
-    at: deps.now(),
-    roomId: opened.roomId,
-  })
-  const file = await deps.storage.download(opened.path)
-  if (!file.bytes) return jsonResponse(req, { error: "Couldn't open this file. Retry." }, 500)
-  const stamped = await deps.stamp(file.bytes, opened.mime, line)
-  if (!stamped.ok) return jsonResponse(req, { error: "Couldn't open this file. Retry." }, 500)
+  if (!documentStampSupported(opened.mime)) return jsonResponse(req, { error: 'Not found' }, 404)
+  const stamped = await loadStamped(gate, opened, deps)
+  if (!stamped.ok) {
+    if (stamped.reason === 'rpc') return fail(req, stamped.message)
+    return jsonResponse(req, { error: "Couldn't open this file. Retry." }, 500)
+  }
   const logged = await rpc(gate, 'record_room_document_event', {
     p_actor: gate.caller.userId,
     p_document_id: opened.id,
@@ -177,11 +172,13 @@ async function view(req: Request, gate: DealGate, row: Record<string, unknown>, 
     ok: true,
     mime: 'application/pdf',
     file_name: opened.fileName,
-    stamp: line,
+    stamp: stamped.line,
     download_allowed: opened.downloadAllowed,
     file_base64: bytesToBase64(stamped.bytes),
   })
 }
+
+const CANNOT_DOWNLOAD = 'This file can be viewed but not downloaded.'
 
 async function download(
   req: Request,
@@ -196,15 +193,54 @@ async function download(
   if (!opened.downloadAllowed) {
     return jsonResponse(req, { error: 'Downloads are turned off for this file.' }, 403)
   }
-  const signed = await deps.storage.sign(opened.path, DEAL_ROOM_SIGNED_URL_SECONDS)
-  if (!signed.url) return jsonResponse(req, { error: "Couldn't open this file. Retry." }, 500)
+  if (!documentStampSupported(opened.mime)) return jsonResponse(req, { error: CANNOT_DOWNLOAD }, 403)
+  const stamped = await loadStamped(gate, opened, deps)
+  if (!stamped.ok) {
+    if (stamped.reason === 'unstampable') return jsonResponse(req, { error: CANNOT_DOWNLOAD }, 403)
+    if (stamped.reason === 'rpc') return fail(req, stamped.message)
+    return jsonResponse(req, { error: "Couldn't open this file. Retry." }, 500)
+  }
   const logged = await rpc(gate, 'record_room_document_event', {
     p_actor: gate.caller.userId,
     p_document_id: opened.id,
     p_action: 'download',
   })
-  if (!logged.ok) return jsonResponse(req, { error: "Couldn't open this file. Retry." }, 500)
-  return jsonResponse(req, { ok: true, url: signed.url, expires_in: DEAL_ROOM_SIGNED_URL_SECONDS })
+  if (!logged.ok) return fail(req, logged.message)
+  return jsonResponse(req, {
+    ok: true,
+    mime: 'application/pdf',
+    file_name: stampedDownloadName(opened.fileName),
+    stamp: stamped.line,
+    file_base64: bytesToBase64(stamped.bytes),
+  })
+}
+
+async function loadStamped(
+  gate: DealGate,
+  opened: { mime: string; path: string; roomId: string },
+  deps: DocumentDeps,
+): Promise<
+  | { ok: true; line: string; bytes: Uint8Array }
+  | { ok: false; reason: 'unstampable' | 'unavailable' }
+  | { ok: false; reason: 'rpc'; message: string }
+> {
+  if (!documentStampSupported(opened.mime)) return { ok: false, reason: 'unstampable' }
+  const identity = await viewerIdentity(gate)
+  if (!identity.ok) return { ok: false, reason: 'rpc', message: identity.message }
+  const line = watermarkLine({
+    name: identity.name,
+    email: identity.email,
+    at: deps.now(),
+    roomId: opened.roomId,
+  })
+  const file = await deps.storage.download(opened.path)
+  if (!file.bytes) return { ok: false, reason: 'unavailable' }
+  const stamped = await deps.stamp(file.bytes, opened.mime, line)
+  if (!stamped.ok) {
+    if (stamped.error === 'unstampable') return { ok: false, reason: 'unstampable' }
+    return { ok: false, reason: 'unavailable' }
+  }
+  return { ok: true, line, bytes: stamped.bytes }
 }
 
 async function setExpiry(req: Request, gate: DealGate, row: Record<string, unknown>): Promise<Response> {
@@ -300,7 +336,7 @@ async function openFor(gate: DealGate, row: Record<string, unknown>) {
   if (!opened.ok) return opened
   const data = record(opened.data)
   const hold = data?.hold === 'open' || data?.hold === 'expired' || data?.hold === 'hidden' ? data.hold : 'hidden'
-  const mime = data?.mime === 'application/pdf' || data?.mime === 'image/png' || data?.mime === 'image/jpeg' ? data.mime : null
+  const mime = typeof data?.mime === 'string' ? data.mime : ''
   const path = typeof data?.storage_path === 'string' ? data.storage_path : ''
   const roomId = requiredUuid(data?.room_id) || ''
   const fileName = typeof data?.file_name === 'string' ? data.file_name : 'document'
@@ -309,7 +345,7 @@ async function openFor(gate: DealGate, row: Record<string, unknown>) {
     ok: true as const,
     id: documentId,
     hold,
-    mime: mime || 'application/pdf',
+    mime,
     path,
     roomId,
     fileName,

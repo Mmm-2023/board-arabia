@@ -1437,6 +1437,35 @@ export type Database = {
         Args: { p_member_id: string }
         Returns: Json
       }
+      market_brief_for_member: {
+        Args: Record<string, never>
+        Returns: Json
+      }
+      market_brief_admin_state: {
+        Args: Record<string, never>
+        Returns: Json
+      }
+      market_brief_save_settings: {
+        Args: {
+          p_enabled: boolean
+          p_members_visible: boolean
+        }
+        Returns: undefined
+      }
+      market_brief_save_outlet: {
+        Args: {
+          p_id: string | null
+          p_name: string
+          p_domain: string
+          p_path_prefix: string | null
+          p_enabled: boolean
+        }
+        Returns: string
+      }
+      market_brief_reorder_outlets: {
+        Args: { p_ids: string[] }
+        Returns: undefined
+      }
       my_weekly_digest: {
         Args: Record<string, never>
         Returns: Json
@@ -1459,6 +1488,26 @@ export type Database = {
       }
       staff_decide_digest_issue: {
         Args: { p_action: string }
+        Returns: Json
+      }
+      staff_save_digest_draft: {
+        Args: { p_payload: Json; p_audience: string[] }
+        Returns: Json
+      }
+      staff_digest_sources: {
+        Args: Record<string, never>
+        Returns: Json
+      }
+      staff_digest_mail_plan: {
+        Args: { p_issue_id: string }
+        Returns: Json
+      }
+      my_digest_notices: {
+        Args: Record<string, never>
+        Returns: Json
+      }
+      mark_my_digest_notice_read: {
+        Args: Record<string, never>
         Returns: Json
       }
     }

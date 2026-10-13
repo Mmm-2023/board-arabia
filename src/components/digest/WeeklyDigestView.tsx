@@ -78,6 +78,19 @@ export function WeeklyDigestView({
         </section>
       ) : null}
 
+      {(digest.notes ?? []).length > 0 ? (
+        <section aria-label="Notes">
+          <h2 className="text-[0.72rem] font-semibold tracking-[0.14em] text-ink/40 uppercase">Notes</h2>
+          <ul className="mt-3 flex flex-col gap-3">
+            {(digest.notes ?? []).map((note) => (
+              <li key={note.text} className={`${styles.panel} px-4 py-3`}>
+                <p className="text-[0.95rem] text-ink/80">{note.text}</p>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
       {digest.introductions.length > 0 ? (
         <section aria-label="Introductions">
           <h2 className="text-[0.72rem] font-semibold tracking-[0.14em] text-ink/40 uppercase">Introductions</h2>

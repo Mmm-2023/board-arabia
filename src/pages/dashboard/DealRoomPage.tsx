@@ -352,11 +352,10 @@ export function DealRoomPage() {
           setFileError('')
           void downloadRoomDocument(id).then((result) => {
             setBusy(false)
-            if (result.status !== 'ok' || !result.data.url) {
-              setFileError(result.status === 'ok' ? 'Downloads are turned off for this file.' : result.message)
+            if (result.status !== 'ok' || !saveStampedPdf(result.data.fileBase64, result.data.fileName)) {
+              setFileError(result.status === 'ok' ? "Couldn't open this file. Retry." : result.message)
               return
             }
-            window.open(result.data.url, '_blank', 'noopener')
           })
         },
         onSetDownload: (id, allowed) => {
@@ -386,6 +385,20 @@ export function DealRoomPage() {
       }}
     />
   )
+}
+
+function saveStampedPdf(fileBase64: string, fileName: string): boolean {
+  const src = pdfBlobUrl(fileBase64)
+  if (!src) return false
+  const link = document.createElement('a')
+  link.href = src
+  link.download = fileName || 'document.pdf'
+  link.rel = 'noopener'
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
+  window.setTimeout(() => URL.revokeObjectURL(src), 1000)
+  return true
 }
 
 function pdfBlobUrl(fileBase64: string): string {

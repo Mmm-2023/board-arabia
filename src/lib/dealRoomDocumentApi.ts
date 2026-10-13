@@ -64,9 +64,12 @@ export function viewRoomDocument(documentId: string): Promise<
   })
 }
 
-export function downloadRoomDocument(documentId: string): Promise<DocumentCall<{ url: string }>> {
+export function downloadRoomDocument(
+  documentId: string,
+): Promise<DocumentCall<{ fileName: string; fileBase64: string }>> {
   return postJson({ action: 'download', document_id: documentId }, (payload) => ({
-    url: typeof payload.url === 'string' ? payload.url : '',
+    fileName: text(payload.file_name, 180) || 'document.pdf',
+    fileBase64: typeof payload.file_base64 === 'string' ? payload.file_base64 : '',
   }))
 }
 

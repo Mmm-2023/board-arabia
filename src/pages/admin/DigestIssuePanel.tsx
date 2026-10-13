@@ -1,10 +1,13 @@
 import { useEffect, useState } from 'react'
+import { DigestDraftEditor, digestPayloadFromModel, type DigestPickLists } from '../../components/digest/DigestDraftEditor'
 import { WeeklyDigestView } from '../../components/digest/WeeklyDigestView'
 import { formatUkDateTime } from '../../lib/ukDate'
 import {
   digestAuditLabel,
   presentDigestIssue,
+  presentDigestSources,
   type DigestIssueModel,
+  type WeeklyDigestModel,
 } from '../../lib/weeklyDigest'
 import { weeklyDigestMail } from '../../../supabase/functions/_shared/weekly_digest_copy.ts'
 import { supabase } from '../../lib/supabase'
@@ -20,6 +23,20 @@ export function DigestIssuePanel() {
   const [busy, setBusy] = useState(false)
   const [notice, setNotice] = useState('')
   const [attempt, setAttempt] = useState(0)
+  const [draft, setDraft] = useState<WeeklyDigestModel | null>(null)
+  const [audience, setAudience] = useState<string[]>([])
+  const [sources, setSources] = useState<DigestPickLists>({ members: [], mandates: [], events: [] })
+
+  function applyModel(next: DigestIssueModel) {
+    setModel(next)
+    setState('ready')
+    if (next.status === 'draft') {
+      setDraft(next.preview)
+      setAudience(next.audience)
+      return
+    }
+    setDraft(null)
+  }
 
   useEffect(() => {
     let cancelled = false
@@ -29,16 +46,53 @@ export function DigestIssuePanel() {
       const next = error ? null : presentDigestIssue(data)
       if (!next) {
         setModel(null)
+        setDraft(null)
         setState('error')
         return
       }
-      setModel(next)
-      setState('ready')
+      applyModel(next)
     })
     return () => {
       cancelled = true
     }
   }, [attempt])
+
+  useEffect(() => {
+    if (model?.status !== 'draft') return
+    let cancelled = false
+    void supabase.rpc('staff_digest_sources').then(({ data }) => {
+      if (cancelled) return
+      setSources(presentDigestSources(data))
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [model?.status])
+
+  async function saveDraft() {
+    if (!draft) return false
+    setBusy(true)
+    setNotice('')
+    const { data, error } = await supabase.rpc('staff_save_digest_draft', {
+      p_payload: digestPayloadFromModel(draft),
+      p_audience: audience,
+    })
+    setBusy(false)
+    const next = error ? null : presentDigestIssue(data)
+    if (!next) {
+      setNotice('Could not update this issue.')
+      return false
+    }
+    applyModel(next)
+    return true
+  }
+
+  async function approve() {
+    if (audience.length === 0) return
+    const saved = await saveDraft()
+    if (!saved) return
+    await run('approve')
+  }
 
   async function run(kind: 'prepare' | 'approve' | 'withdraw') {
     setBusy(true)
@@ -54,8 +108,7 @@ export function DigestIssuePanel() {
       setNotice('Could not update this issue.')
       return
     }
-    setModel(next)
-    setState('ready')
+    applyModel(next)
   }
 
   return (
@@ -65,9 +118,17 @@ export function DigestIssuePanel() {
       busy={busy}
       notice={notice}
       onPrepare={() => void run('prepare')}
-      onApprove={() => void run('approve')}
+      onApprove={() => void approve()}
       onWithdraw={() => void run('withdraw')}
       onRetry={() => setAttempt((value) => value + 1)}
+      draft={draft}
+      audience={audience}
+      sources={sources}
+      onDraftChange={(next, tiers) => {
+        setDraft(next)
+        setAudience(tiers)
+      }}
+      onSave={() => void saveDraft()}
     />
   )
 }
@@ -81,6 +142,11 @@ export function DigestIssuePanelView({
   onApprove,
   onWithdraw,
   onRetry,
+  draft = null,
+  audience = [],
+  sources = { members: [], mandates: [], events: [] },
+  onDraftChange,
+  onSave,
 }: {
   model: DigestIssueModel | null
   state: 'loading' | 'ready' | 'error'
@@ -90,15 +156,22 @@ export function DigestIssuePanelView({
   onApprove: () => void
   onWithdraw: () => void
   onRetry: () => void
+  draft?: WeeklyDigestModel | null
+  audience?: string[]
+  sources?: DigestPickLists
+  onDraftChange?: (digest: WeeklyDigestModel, audience: string[]) => void
+  onSave?: () => void
 }) {
   const status = model?.status ?? null
-  const letter = model
+  const shown = status === 'draft' && draft ? draft : model?.preview ?? null
+  const letter = shown
     ? weeklyDigestMail(
         {
-          newMembers: model.preview.newMembers,
-          newMandates: model.preview.newMandates,
-          upcomingEvents: model.preview.upcomingEvents,
-          introductions: model.preview.introductions,
+          newMembers: shown.newMembers,
+          newMandates: shown.newMandates,
+          upcomingEvents: shown.upcomingEvents,
+          introductions: shown.introductions,
+          notes: shown.notes,
         },
         SITE,
       )
@@ -147,7 +220,12 @@ export function DigestIssuePanelView({
             >
               Prepare this week
             </button>
-            <button type="button" className={actionClass} disabled={busy || status !== 'draft'} onClick={onApprove}>
+            <button
+              type="button"
+              className={actionClass}
+              disabled={busy || status !== 'draft' || audience.length === 0}
+              onClick={onApprove}
+            >
               Approve
             </button>
             <button
@@ -159,13 +237,25 @@ export function DigestIssuePanelView({
               Withdraw
             </button>
           </div>
+          {status === 'draft' && draft && onDraftChange ? (
+            <>
+              <DigestDraftEditor digest={draft} audience={audience} sources={sources} onChange={onDraftChange} />
+              {onSave ? (
+                <button type="button" className={`${actionClass} mt-4`} disabled={busy} onClick={onSave}>
+                  Save draft
+                </button>
+              ) : null}
+            </>
+          ) : null}
           <div className="mt-6 border border-pearl/10 bg-pearl p-4 text-ink" data-digest-preview="member">
             <p className="text-[0.7rem] font-semibold tracking-[0.1em] text-ink/45 uppercase">Member view</p>
             <div className="mt-4">
-              <WeeklyDigestView
-                digest={model.preview}
-                introNote="Example. Not a member record."
-              />
+              {shown ? (
+                <WeeklyDigestView
+                  digest={shown}
+                  introNote="Example. Not a member record."
+                />
+              ) : null}
             </div>
           </div>
           {letter ? (
