@@ -1,6 +1,6 @@
 # SM-1 Board seats and in-app notifications
 
-One undrafted PR against main. Data and the admin panel only. Member posting, the shortlist, and matching nudges stay for later.
+Undrafted PR: https://github.com/Mmm-2023/board-arabia/pull/177 against main. Data and the admin panel only. Member posting, the shortlist, and matching nudges stay for later.
 
 ## Secrets grade
 
