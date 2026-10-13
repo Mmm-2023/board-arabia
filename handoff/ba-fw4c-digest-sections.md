@@ -4,7 +4,7 @@ Base is `bdb2a45` (PR #159). This change does not edit `supabase/migrations/2026
 
 Apply `20261218120000_digest_sections.sql` via MCP after `20261214120000_digest_review_tiers.sql`. On file, `20261215120000_daily_market_brief.sql` is also earlier. Slots `20261216120000` and `20261217120000` are used by other open work. Do not treat this file as the newest migration.
 
-Secrets grade: VERIFIED. The diff has no API keys, service-role keys, live tokens, staff names, or mailbox allowlists. Tests and the smoke page use example.com and example.org only. The one address in member copy is the public contact `contact@boardarabia.com`, and it is not stored in SQL.
+Secrets grade: VERIFIED. The diff has no API keys, service-role keys, live tokens, staff names, or mailbox allowlists. Tests and the smoke page use example.com and example.org only. The sign-off reads the legal contact field and renders nothing when it is unset. No address is stored in SQL.
 
 ## What members see
 
