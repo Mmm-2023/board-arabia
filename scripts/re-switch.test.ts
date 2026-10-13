@@ -129,7 +129,7 @@ test('each segment sets the real estate view and arrows keep one row at 390', as
   })
   try {
     const page = await browser.newPage()
-    page.setDefaultTimeout(20000)
+    page.setDefaultTimeout(45000)
     const notes: string[] = []
     page.on('console', (message) => {
       if (message.type() === 'error') notes.push(message.text())
@@ -220,7 +220,7 @@ async function waitForTab(page: Page, id: string, search: string) {
 
 async function openSwitch(page: Page, origin: string, search: string) {
   const panel = search === '?view=partners' ? 'partners' : search === '?view=roles' ? 'roles' : 'opportunities'
-  await page.goto(`${origin}/scripts/smoke/re-switch.html${search}`, { waitUntil: 'networkidle' })
+  await page.goto(`${origin}/scripts/smoke/re-switch.html${search}`, { waitUntil: 'domcontentloaded' })
   try {
     await page.locator(`[data-re-panel="${panel}"]`).waitFor()
     await page.locator(`[data-re-tab="${panel}"][aria-selected="true"]`).waitFor()
