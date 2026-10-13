@@ -41,6 +41,20 @@ function contrast(foreground: string, background: string) {
   return (lighter + 0.05) / (darker + 0.05)
 }
 
+test('account menu keeps one header control and closes back to that control', () => {
+  const shell = read('src/shell/AppShell.tsx')
+  assert.equal((shell.match(/data-account-control="header"/g) || []).length, 1)
+  assert.match(shell, /accountPathActive\(location\.pathname, secondary\)/)
+  assert.match(shell, /if \(event\.key === 'Escape'\)/)
+  assert.match(shell, /setAccountOpen\(false\)/)
+  assert.match(shell, /button\?\.focus\(\)/)
+  assert.match(shell, /function closeAccount\(\)/)
+  assert.match(shell, /aria-label="Close"/)
+  assert.match(shell, /onClick=\{closeAccount\}/)
+  assert.equal(/lg:inline[^<]*Account/.test(shell), false)
+  assert.equal(shell.includes('\u2014'), false)
+})
+
 test('trailing slash normaliser stays on the same path', () => {
   assert.equal(slashlessPath('/dashboard/'), '/dashboard')
   assert.equal(slashlessPath('/dashboard/deals/mandates/'), '/dashboard/deals/mandates')

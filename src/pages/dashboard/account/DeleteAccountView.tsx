@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { AccountBackLink } from '../AccountBackLink'
 
 const primary =
   'ba-primary inline-flex min-h-11 items-center px-4 text-[0.75rem] font-semibold tracking-[0.08em] uppercase disabled:opacity-40'
@@ -16,6 +17,7 @@ export function DeleteAccountView({
   const [confirmed, setConfirmed] = useState(false)
   return (
     <div className="account-main max-w-xl" data-screen="delete-account">
+      <AccountBackLink to="/dashboard/privacy" label="Back to Your privacy" />
       <p className="text-[0.72rem] font-semibold tracking-[0.14em] text-[var(--ba-indigo)] uppercase">Account</p>
       <h1 className="mt-3 font-display text-[2rem] font-semibold tracking-[-0.03em]">Delete account</h1>
       <p className="mt-4 max-w-xl text-[1.05rem] leading-relaxed text-ink/75">

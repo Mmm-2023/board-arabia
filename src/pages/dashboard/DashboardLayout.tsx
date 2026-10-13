@@ -10,7 +10,7 @@ import { fetchMyDealRooms } from '../../lib/dealRoomApi'
 import { stillMustSetPassword } from '../../lib/passwordSet'
 import { dealsNavCount } from '../../lib/dealRoomView'
 import { AppShell } from '../../shell/AppShell'
-import { ACCOUNT_SHEET_LINKS, LOCKED_HUBS, MEMBER_ACCOUNT, MEMBER_DESTINATIONS, memberAccountLinks, staleBanner } from '../../shell/destinations'
+import { ACCOUNT_SHEET_LINKS, LOCKED_HUBS, MEMBER_DESTINATIONS, memberAccountLinks, staleBanner } from '../../shell/destinations'
 import { HomeSkeleton, PermissionState } from '../../shell/ViewState'
 import { REFRESH_ERROR } from '../../shell/viewCopy'
 import { endAuthSession } from '../../lib/endSession'
@@ -317,7 +317,7 @@ export function DashboardLayout() {
       <AppShell
         tone="member"
         destinations={memberNav}
-        secondary={MEMBER_ACCOUNT}
+        secondary={ACCOUNT_SHEET_LINKS}
         updatedLabel={null}
         roleSwitch={null}
         onSignOut={() => {}}
