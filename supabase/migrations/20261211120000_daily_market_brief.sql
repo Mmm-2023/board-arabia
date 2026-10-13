@@ -37,7 +37,7 @@ create table public.market_brief_outlets (
   constraint market_brief_outlets_domain_key unique (domain),
   constraint market_brief_outlets_name_check check (
     pg_catalog.char_length(pg_catalog.btrim(name)) between 1 and 120
-    and pg_catalog.position('@' in name) = 0
+    and pg_catalog.strpos(name, '@') = 0
   ),
   constraint market_brief_outlets_domain_check check (
     domain ~ '^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)+$'
@@ -289,7 +289,7 @@ begin
   v_name := pg_catalog.btrim(coalesce(p_name, ''));
   if pg_catalog.char_length(v_name) < 1
      or pg_catalog.char_length(v_name) > 120
-     or pg_catalog.position('@' in v_name) > 0 then
+     or pg_catalog.strpos(v_name, '@') > 0 then
     raise exception 'invalid_name' using errcode = '22023';
   end if;
   v_domain := pg_catalog.lower(pg_catalog.btrim(coalesce(p_domain, '')));
@@ -307,7 +307,7 @@ begin
     if v_prefix !~ '^/[a-z0-9][a-z0-9/_-]{0,60}$'
        or v_prefix ~ '\.\.'
        or pg_catalog.right(v_prefix, 1) = '/'
-       or pg_catalog.position('//' in v_prefix) > 0 then
+       or pg_catalog.strpos(v_prefix, '//') > 0 then
       raise exception 'invalid_prefix' using errcode = '22023';
     end if;
   end if;
