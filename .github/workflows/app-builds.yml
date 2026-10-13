@@ -1,0 +1,108 @@
+name: App test builds
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: app-builds-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  android-debug-apk:
+    name: Android debug APK
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Install
+        run: npm ci
+      - name: Build web assets at /
+        run: |
+          cp .env.example .env
+          npm run build:app
+      - name: Sync Android
+        run: npx cap sync android
+      - name: Install Android SDK 36
+        run: |
+          set -euo pipefail
+          sdkroot="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
+          if [ -z "$sdkroot" ]; then
+            echo "Android SDK is not installed on this runner"
+            exit 1
+          fi
+          export ANDROID_HOME="$sdkroot"
+          if command -v sdkmanager >/dev/null 2>&1; then
+            sm=sdkmanager
+          elif [ -x "$sdkroot/cmdline-tools/latest/bin/sdkmanager" ]; then
+            sm="$sdkroot/cmdline-tools/latest/bin/sdkmanager"
+          else
+            sm="$(find "$sdkroot" -type f -name sdkmanager | head -n 1)"
+          fi
+          if [ -z "$sm" ]; then
+            echo "sdkmanager was not found"
+            exit 1
+          fi
+          yes | "$sm" --licenses >/dev/null || true
+          "$sm" "platforms;android-36" "build-tools;36.0.0"
+      - name: Assemble debug APK
+        working-directory: android
+        run: ./gradlew assembleDebug --no-daemon
+      - uses: actions/upload-artifact@v7
+        with:
+          name: android-debug-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+
+  ios-simulator:
+    name: iOS simulator
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install
+        run: npm ci
+      - name: Build web assets at /
+        run: |
+          cp .env.example .env
+          npm run build:app
+      - name: Sync iOS
+        run: npx cap sync ios
+      - name: Build unsigned simulator app
+        working-directory: ios/App
+        run: |
+          xcodebuild \
+            -project App.xcodeproj \
+            -scheme App \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath "$RUNNER_TEMP/DerivedData" \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            build
+      - name: Pack the simulator app
+        run: |
+          ditto -c -k --keepParent \
+            "$RUNNER_TEMP/DerivedData/Build/Products/Debug-iphonesimulator/App.app" \
+            "$RUNNER_TEMP/BoardArabia-ios-simulator.zip"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ios-simulator-app
+          path: ${{ runner.temp }}/BoardArabia-ios-simulator.zip
+          if-no-files-found: error
