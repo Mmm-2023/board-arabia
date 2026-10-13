@@ -30,4 +30,11 @@ None. No new slot. Nothing applied.
 
 ## Shots
 
-`scripts/capture-pt1-home-partners.mjs` opens Home with See more open. Fixture states are `partners-examples` (five Example rows) and `partners-bank` (the bank example replaced by Harbour Clearing). Widths 1440 and 390. Output directory: `/opt/cursor/artifacts/pt1-home-partners/`.
+`scripts/capture-pt1-home-partners.mjs` opens Home, clicks See more, and captures one viewport the height of the page. Fixture states are `partners-examples` (five Example rows) and `partners-bank` (Dar Clearing replaced by Harbour Clearing, with no Example mark). Widths 1440 and 390.
+
+| State | 1440 | 390 |
+| --- | --- | --- |
+| Five Example rows | `home-partners-examples-1440.png` | `home-partners-examples-390.png` |
+| Bank example replaced | `home-partners-bank-1440.png` | `home-partners-bank-390.png` |
+
+Files are in `/opt/cursor/artifacts/pt1-home-partners/`. The four shots show See less, the Partners heading, and the rows above. VERIFIED by reading each image.

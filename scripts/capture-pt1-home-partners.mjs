@@ -46,8 +46,9 @@ try {
         await page.locator('[data-partner-name="Qaf Counsel"]').waitFor()
       }
       const file = `home-${state}-${width}.png`
-      await gallery.scrollIntoViewIfNeeded()
-      await page.screenshot({ path: path.join(outDir, file), fullPage: true })
+      const scrollHeight = await page.evaluate(() => document.documentElement.scrollHeight)
+      await page.setViewportSize({ width, height: Math.min(scrollHeight, 8000) })
+      await page.screenshot({ path: path.join(outDir, file), fullPage: false })
       shots.push(file)
       await context.close()
     }
