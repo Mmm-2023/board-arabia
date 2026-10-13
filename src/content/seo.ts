@@ -1,4 +1,5 @@
 import { ACCOUNT_FLOW_APPLY_ANSWER } from './twoTierCopy.ts'
+import { DATA_SECURE_LINE } from './trust.ts'
 import { isTwoTierRegisterEnabled, publicConsiderationCta } from '../lib/twoTierRegister.ts'
 
 export const SITE_ORIGIN = 'https://boardarabia.com'
@@ -99,7 +100,7 @@ export const MARKETING_PAGES: Record<MarketingPath, MarketingPage> = {
     path: '/security',
     title: 'Trust and privacy | Board Arabia',
     description:
-      'How Board Arabia protects applications, member records and uploaded files: a members-only directory, private storage, Frankfurt hosting, encryption, and two-step sign-in for admin.',
+      `How Board Arabia protects applications, member records and uploaded files: a members-only directory, private storage, and two-step sign-in for admin. ${DATA_SECURE_LINE}`,
   },
   '/terms': {
     path: '/terms',

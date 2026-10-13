@@ -44,7 +44,7 @@ export function SecurityPage() {
         <p className="mt-6 text-[1.08rem] leading-relaxed text-ink/75">{SECURITY_LEAD}</p>
 
         <Section title="Private by design" items={PRIVATE_BY_DESIGN} />
-        <Section title="Where your data lives" items={WHERE_DATA_LIVES} />
+        <Section title="How your data is protected" items={WHERE_DATA_LIVES} />
         <section aria-labelledby="trust-files">
           <h2 id="trust-files" className={sectionTitle}>
             Your files and AI tools
