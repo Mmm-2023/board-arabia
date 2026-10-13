@@ -15,7 +15,7 @@ import { MEMBER_ACCOUNT, MEMBER_DESTINATIONS, STAFF_DESTINATIONS, STAFF_SECONDAR
 import { PRICING_FIXTURE, TERM_SHEET_FIXTURE } from '../fixtures/legal-flagged.ts'
 import './home.css'
 
-previewAiReportOperator({ entity: 'NAMMCO Holding Co.', cr: '7043252647' })
+previewAiReportOperator({ entity: 'Board Arabia', cr: 'on file' })
 
 const slots: LegalSlots = {
   entity: '',

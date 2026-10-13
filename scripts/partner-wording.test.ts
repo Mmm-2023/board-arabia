@@ -284,8 +284,11 @@ test('user-facing copy says partner, and legal files stay out of this gate', () 
   const hits: string[] = []
   for (const rel of files) scan(rel, hits)
   assert.deepEqual(hits, [])
-  assert.match(read('src/content/legal/terms.en.ts'), /Founding, Member and Sponsor/)
-  assert.match(read('src/content/legal/privacy.en.ts'), /Sponsors and payments/)
+  assert.match(read('src/content/legal/terms.en.ts'), /Founding, Member and Partner/)
+  assert.match(read('src/content/legal/privacy.en.ts'), /Partners and payments/)
+  for (const legal of ['src/content/legal/terms.en.ts', 'src/content/legal/privacy.en.ts']) {
+    assert.doesNotMatch(read(legal), /\bsponsor(s|ship|ships|ed)?\b/i, legal)
+  }
   assert.equal(read('src/lib/sponsorLabel.ts').includes("SPONSOR_LABEL = 'Partner'"), true)
   assert.match(read('src/lib/member.ts'), /seat === 'sponsor'/)
   assert.match(read('src/lib/membershipTiers.ts'), /sponsor: 'Partner'/)
@@ -447,25 +450,25 @@ function legalBuiltFile(rel: string) {
   )
 }
 
-test('built assets keep sponsor wording inside the legal-pages chunk', () => {
+test('built terms, privacy, and the legal chunk contain no sponsor wording', () => {
   const dist = path.join(root, 'dist')
   const assets = path.join(dist, 'assets')
   assert.equal(existsSync(assets), true, 'dist/assets is missing; build before this test')
   const files = [] as string[]
   walkDist(dist, files)
   const outside: string[] = []
-  let legalHit = false
+  const legalHits: string[] = []
   for (const file of files) {
     const rel = path.relative(dist, file).split(path.sep).join('/')
     if (!rel.endsWith('.js') && !rel.endsWith('.html') && !rel.endsWith('.css')) continue
     const text = readFileSync(file).toString('latin1')
     if (legalBuiltFile(rel)) {
-      if (/sponsor/i.test(text)) legalHit = true
+      if (/\bsponsor(?:s|ship|ships|ed)?\b/i.test(text)) legalHits.push(rel)
       continue
     }
     const hits = builtSentenceSponsorHits(text, rel.endsWith('.html'))
     if (hits.length) outside.push(`${rel}: ${[...new Set(hits)].join(' | ')}`)
   }
-  assert.equal(legalHit, true)
+  assert.deepEqual(legalHits, [])
   assert.deepEqual(outside, [])
 })

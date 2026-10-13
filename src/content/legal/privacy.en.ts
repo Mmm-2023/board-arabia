@@ -24,7 +24,7 @@ export const PRIVACY_EN: LegalDocument = {
       "kind": "clause",
       "id": "c-1-1",
       "number": "1.1",
-      "text": "Board Arabia is operated by [BA ENTITY], commercial registration number [CR], of [ADDRESS] (\"we\", \"us\"). We are the controller of the personal data described in this notice."
+      "text": "Board Arabia is the operator of the Platform, of [ADDRESS] (\"we\", \"us\"). Board Arabia is the controller of the personal data described in this notice."
     },
     {
       "kind": "clause",
@@ -124,7 +124,7 @@ export const PRIVACY_EN: LegalDocument = {
       "kind": "clause",
       "id": "c-3-10",
       "number": "3.10",
-      "text": "Sponsors and payments. Sponsorship package, intro credits and other allowances used, invoices and payment records. We do not take card details on the public pages."
+      "text": "Partners and payments. Partnership package, intro credits and other allowances used, invoices and payment records. We do not take card details on the public pages."
     },
     {
       "kind": "clause",
@@ -206,7 +206,7 @@ export const PRIVACY_EN: LegalDocument = {
         ],
         [
           "Fees, invoices, tax records",
-          "Sponsor and payment data",
+          "Partner and payment data",
           "Performance of our contract and legal obligation"
         ],
         [
@@ -257,13 +257,13 @@ export const PRIVACY_EN: LegalDocument = {
       "kind": "clause",
       "id": "c-5-1",
       "number": "5.1",
-      "text": "Other members and sponsors. Signed-in members can see directory profiles. A sponsor sees a member's card only if that member chooses to show it. Contact details are shared only with the two parties, and only after an intro is accepted. Members you add to a deal room can see what is shared there. Members can see mandate details once unlocked."
+      "text": "Other members and partners. Signed-in members can see directory profiles. A partner sees a member's card only if that member chooses to show it. Contact details are shared only with the two parties, and only after an intro is accepted. Members you add to a deal room can see what is shared there. Members can see mandate details once unlocked."
     },
     {
       "kind": "clause",
       "id": "c-5-2",
       "number": "5.2",
-      "text": "Event hosts and attendees. Your name and company may be shared with the event host, which may be a sponsor. They may also be shared with other attendees where the event page says so."
+      "text": "Event hosts and attendees. Your name and company may be shared with the event host, which may be a partner. They may also be shared with other attendees where the event page says so."
     },
     {
       "kind": "clause",

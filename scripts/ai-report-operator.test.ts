@@ -5,7 +5,6 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 import test from 'node:test'
 import { footerWithOperator, operatorCredit } from '../src/lib/aiReportOperator.ts'
-import { allowsLegalEntityLine } from './public-nammco.mjs'
 import { renderToolCopy } from '../src/lib/aiToolCopy.ts'
 
 const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..')
@@ -73,7 +72,7 @@ test('the logged-in footer adds the fetched operator and drops the sentence when
   assert.equal(operatorCredit(null), null)
   assert.equal(operatorCredit({ entity: ' ', cr: OPERATOR_CR }), null)
   assert.equal(operatorCredit({ entity: OPERATOR_NAME, cr: ' ' }), null)
-  assert.equal(operatorCredit({ entity: OPERATOR_NAME, cr: OPERATOR_CR }), `Provided by ${OPERATOR_NAME}, CR ${OPERATOR_CR}`)
+  assert.equal(operatorCredit({ entity: OPERATOR_NAME, cr: OPERATOR_CR }), 'Provided by Board Arabia')
 
   const copy = renderToolCopy('deal_readiness', 'en', {
     entity: 'To be confirmed',
@@ -91,7 +90,9 @@ test('the logged-in footer adds the fetched operator and drops the sentence when
   assert.match(copy.footer, /under the Board Arabia Terms/)
 
   const named = footerWithOperator(copy.footer, { entity: OPERATOR_NAME, cr: OPERATOR_CR })
-  assert.match(named, /Provided by NAMMCO Holding Co\., CR 7043252647, under the Board Arabia Terms/)
+  assert.match(named, /Provided by Board Arabia, under the Board Arabia Terms/)
+  assert.equal(named.includes(OPERATOR_NAME), false)
+  assert.equal(named.includes(OPERATOR_CR), false)
   assert.equal(footerWithOperator(copy.footer, null), copy.footer)
   assert.equal(footerWithOperator(named, { entity: OPERATOR_NAME, cr: OPERATOR_CR }), named)
 
@@ -105,7 +106,10 @@ test('the logged-in footer adds the fetched operator and drops the sentence when
     date: '06 Oct 2026',
   })
   assert.equal(cfo.footer.includes('Provided by'), false)
-  assert.match(footerWithOperator(cfo.footer, { entity: OPERATOR_NAME, cr: OPERATOR_CR }), /CR 7043252647/)
+  const cfoNamed = footerWithOperator(cfo.footer, { entity: OPERATOR_NAME, cr: OPERATOR_CR })
+  assert.match(cfoNamed, /Provided by Board Arabia/)
+  assert.equal(cfoNamed.includes(OPERATOR_CR), false)
+  assert.equal(cfoNamed.includes(OPERATOR_NAME), false)
 })
 
 test('the operator placeholder is gone from src and edge, and the seed is only in the migration', () => {
@@ -186,7 +190,7 @@ test('the operator placeholder is gone from src and edge, and the seed is only i
   assert.match(apply, /path="\/apply"/)
 })
 
-test('the built site keeps the operator name and CR on the legal pages only', () => {
+test('the built site has no operator name and no registration number', () => {
   const dist = path.join(root, 'dist')
   if (!existsSync(dist)) {
     execFileSync('npx', ['vite', 'build'], { cwd: root, stdio: 'inherit' })
@@ -210,8 +214,6 @@ test('the built site keeps the operator name and CR on the legal pages only', ()
     if (encoded.some((value) => text.includes(value))) reasons.push('base64')
     if (!reasons.length) continue
     const relative = rel(file)
-    const identityOnly = reasons.every((reason) => reason === 'name' || reason === 'cr')
-    if (identityOnly && allowsLegalEntityLine(relative)) continue
     hits.push(`${relative}: ${reasons.join(', ')}`)
   }
   assert.deepEqual(hits, [])
