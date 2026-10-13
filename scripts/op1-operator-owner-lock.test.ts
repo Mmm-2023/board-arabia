@@ -59,8 +59,10 @@ test('operator clear migration exists after the owner gate and does not have to 
   assert.match(sql, /cr = ''/)
   assert.match(sql, /alter table public\.ai_report_operator force row level security/)
   assert.match(sql, /if not private\.is_staff\(\) then/)
-  assert.equal((sql.match(/security definer/g) ?? []).length, 2)
-  assert.equal((sql.match(/set search_path = ''/g) ?? []).length, 2)
+  assert.equal(
+    (sql.match(/language plpgsql\nsecurity definer\nset search_path = ''/g) ?? []).length,
+    2,
+  )
   assert.equal((sql.match(/\bfor update\b/g) ?? []).length, 2)
   assert.match(sql, /revoke all on function public\.staff_set_role\(uuid, text\) from public, anon;/)
   assert.match(sql, /grant execute on function public\.staff_set_role\(uuid, text\) to authenticated;/)

@@ -26,6 +26,7 @@ The registration value is the empty string, which the brief allows. The column s
 ## Checks
 
 - `scripts/op1-operator-owner-lock.test.ts` checks the file exists and sorts after `20261217120000`. It does not require this migration to be the newest file. It pins the `select ... for update` clause before `select count(*) into v_others` in both functions. It runs `publicEntityHits` on the new migration and on the test itself.
+- Local Postgres applied every migration, including this one. `scripts/owner-gate.test.ts`, `scripts/repo-db-hygiene.test.ts`, and `scripts/definer-audit.test.ts` passed. The operator clear check inside the migration ran as part of that apply.
 - No screen changed, so there is no screenshot.
 
 ## Apply
