@@ -92,6 +92,12 @@ const DigestPage = lazy(() => import('./pages/dashboard/DigestPage').then((m) =>
 const DigestUnsubscribePage = lazy(() =>
   import('./pages/dashboard/DigestPage').then((m) => ({ default: m.DigestUnsubscribePage })),
 )
+const MemberMembershipPage = lazy(() =>
+  import('./pages/dashboard/MemberMembershipPage').then((m) => ({ default: m.MemberMembershipPage })),
+)
+const DeleteAccountScreen = lazy(() =>
+  import('./pages/dashboard/account/DeleteAccountScreen').then((m) => ({ default: m.DeleteAccountScreen })),
+)
 
 const SponsorshipPage = lazy(() =>
   import('./pages/dashboard/SponsorshipPage').then((m) => ({ default: m.SponsorshipPage })),
@@ -186,6 +192,8 @@ export default function App() {
         <Route path="profile/leave" element={<LeaveBoardArabiaPage />} />
         <Route path="profile" element={<ProfilePage />} />
         <Route path="privacy" element={<PrivacyPanelPage />} />
+        <Route path="membership" element={<MemberMembershipPage />} />
+        <Route path="account/delete" element={<DeleteAccountScreen />} />
         <Route path="digest" element={<DigestPage />} />
         <Route path="digest/unsubscribe" element={<DigestUnsubscribePage />} />
         <Route path="two-step" element={<TwoStepPage />} />

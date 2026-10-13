@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { enrollTotp, listTotpFactors, readAssurance, removeTotpFactor, verifyTotp } from '../../lib/mfa'
 import { useNoIndex } from '../../lib/usePageTitle'
 import { TwoStepEnrolScreen } from '../../components/mfa/TwoStepScreens'
+import { AccountBackLink } from './AccountBackLink'
 
 export function TwoStepPage() {
   const [code, setCode] = useState('')
@@ -65,10 +66,19 @@ export function TwoStepPage() {
     if (!result.ok) setError(result.error)
   }
 
-  if (!ready) return <p className="text-ink/60">Loading…</p>
+  if (!ready) {
+    return (
+      <div>
+        <AccountBackLink />
+        <p className="text-ink/60">Loading…</p>
+      </div>
+    )
+  }
 
   return (
-    <TwoStepEnrolScreen
+    <div>
+      <AccountBackLink />
+      <TwoStepEnrolScreen
       tone="light"
       forced={false}
       qr={qr}
@@ -81,6 +91,7 @@ export function TwoStepPage() {
       onVerify={(event) => void onVerify(event)}
       onStart={() => void startEnrol()}
       onRemove={(id) => void onRemove(id)}
-    />
+      />
+    </div>
   )
 }
