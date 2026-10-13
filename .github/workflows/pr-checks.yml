@@ -2,7 +2,7 @@ name: PR checks
 
 on:
   pull_request:
-    branches: [main, cursor/app-1-capacitor-shell-88cd]
+    branches: [main]
 
 permissions:
   contents: read

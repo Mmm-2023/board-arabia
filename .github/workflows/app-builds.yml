@@ -128,10 +128,23 @@ jobs:
           xcrun simctl launch "$udid" com.boardarabia.app
           sleep 15
           xcrun simctl io "$udid" screenshot "$RUNNER_TEMP/ios-home.png"
+          xcrun simctl openurl "$udid" "com.boardarabia.app://native/biometric-shot/settings"
+          sleep 10
+          xcrun simctl io "$udid" screenshot "$RUNNER_TEMP/ios-biometric-settings.png"
+          xcrun simctl openurl "$udid" "com.boardarabia.app://native/biometric-shot/lock"
+          sleep 10
+          xcrun simctl io "$udid" screenshot "$RUNNER_TEMP/ios-biometric-lock.png"
       - uses: actions/upload-artifact@v7
         with:
           name: ios-home-screenshot
           path: ${{ runner.temp }}/ios-home.png
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ios-biometric-screenshots
+          path: |
+            ${{ runner.temp }}/ios-biometric-settings.png
+            ${{ runner.temp }}/ios-biometric-lock.png
           if-no-files-found: error
 
   android-emulator-home:
@@ -170,6 +183,13 @@ jobs:
             mkdir -p "$GITHUB_WORKSPACE/emulator-shot"
             adb logcat -d > "$GITHUB_WORKSPACE/emulator-shot/logcat.txt"
             adb exec-out screencap -p > "$GITHUB_WORKSPACE/emulator-shot/android-home.png"
+            adb shell am start -a android.intent.action.VIEW -d "com.boardarabia.app://native/biometric-shot/settings"
+            sleep 12
+            adb exec-out screencap -p > "$GITHUB_WORKSPACE/emulator-shot/android-biometric-settings.png"
+            adb shell am start -a android.intent.action.VIEW -d "com.boardarabia.app://native/biometric-shot/lock"
+            sleep 12
+            adb exec-out screencap -p > "$GITHUB_WORKSPACE/emulator-shot/android-biometric-lock.png"
+            adb logcat -d > "$GITHUB_WORKSPACE/emulator-shot/logcat-after-biometric.txt"
             grep -E "Fatal signal|libwebviewchromium|Renderer process|Capacitor:|CrRendererMain|signal 5" "$GITHUB_WORKSPACE/emulator-shot/logcat.txt" > "$GITHUB_WORKSPACE/emulator-shot/logcat-webview.txt" || true
       - uses: actions/upload-artifact@v7
         if: always()
