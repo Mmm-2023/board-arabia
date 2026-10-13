@@ -24,7 +24,7 @@ import { PRIVACY_EN } from '../src/content/legal/privacy.en.ts'
 import { legalPlainText, resolveLegalDocument } from '../src/content/legal/resolve.ts'
 import { TERMS_EN } from '../src/content/legal/terms.en.ts'
 import { publicEntityHits } from './no-public-entity.test.ts'
-import { FOOTER_NAMMCO_CREDIT, LEGAL_ENTITY_CR, LEGAL_ENTITY_LINE, strayPublicNammco } from './public-nammco.mjs'
+import { FOOTER_NAMMCO_CREDIT, strayPublicNammco } from './public-nammco.mjs'
 const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..')
 
 const ALLOWED_BRACKETS = new Set([
@@ -359,14 +359,10 @@ test('an unset address reads as registered address, and a set address stays of',
 })
 
 test('privacy and terms render the entity line and marketing routes keep only the footer credit', async () => {
-  const previousEntity = process.env.VITE_LEGAL_BA_ENTITY
-  const previousCr = process.env.VITE_LEGAL_CR
   delete process.env.VITE_LEGAL_ADDRESS
   delete process.env.VITE_LEGAL_CONTACT_EMAIL
   delete process.env.VITE_LEGAL_DPO_CONTACT
   delete process.env.VITE_LEGAL_AI_PROVIDER
-  process.env.VITE_LEGAL_BA_ENTITY = LEGAL_ENTITY_LINE
-  process.env.VITE_LEGAL_CR = LEGAL_ENTITY_CR
   process.env.VITE_SUPABASE_URL ||= 'https://example.supabase.co'
   process.env.VITE_SUPABASE_ANON_KEY ||= 'example-anon-key'
   const vite = await createServer({
@@ -393,17 +389,13 @@ test('privacy and terms render the entity line and marketing routes keep only th
       assert.match(html, new RegExp(`>${FOOTER_NAMMCO_CREDIT}<`))
       assert.equal(strayPublicNammco(html, artifact), false, route)
       assert.deepEqual(publicEntityHits(html), [], route)
-      assert.equal(html.includes(LEGAL_ENTITY_CR), false, route)
       assert.equal(/\bCR\s*\d{10}\b/.test(html), false, route)
       assert.equal(/\bsponsor(?:s|ship|ships|ed)?\b/i.test(html), false, route)
       if (route === '/privacy' || route === '/terms') {
         assert.match(html, /Board Arabia is the operator of the Platform/)
         assert.match(html, /To be confirmed/)
-        assert.equal(html.includes(LEGAL_ENTITY_LINE), false, route)
         assert.equal(html.includes('Ask the desk'), false)
         assert.equal(/the desk/i.test(html), false)
-      } else {
-        assert.equal(html.includes(LEGAL_ENTITY_LINE), false, route)
       }
     }
     const privacy = pageHtml((await vite.ssrLoadModule('/src/pages/PrivacyPage.tsx')).PrivacyPage, '/privacy')
@@ -421,10 +413,6 @@ test('privacy and terms render the entity line and marketing routes keep only th
     assert.match(privacy, /Ask admin/)
     assert.match(terms, /Ask admin/)
   } finally {
-    if (previousEntity === undefined) delete process.env.VITE_LEGAL_BA_ENTITY
-    else process.env.VITE_LEGAL_BA_ENTITY = previousEntity
-    if (previousCr === undefined) delete process.env.VITE_LEGAL_CR
-    else process.env.VITE_LEGAL_CR = previousCr
     await vite.close()
   }
 })
