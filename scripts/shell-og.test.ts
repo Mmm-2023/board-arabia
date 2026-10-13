@@ -89,8 +89,6 @@ const ADDED_SHELLS = [
   '/book',
   '/verify',
   '/apply/verify',
-  '/ar',
-  '/ar/for-members',
   '/admin/intros',
 ]
 

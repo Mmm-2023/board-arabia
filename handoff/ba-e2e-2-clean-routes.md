@@ -1,50 +1,42 @@
 # E2E-2 clean routes
 
-Base: `af3c4b91e9bdf349f881f54cd98c9b867b48ad3d` (Add a weekly digest that admin approves, with sending left off, #158). Branch started from that commit after `git fetch origin main`.
+Base: `af3c4b91e9bdf349f881f54cd98c9b867b48ad3d`. Branch `cursor/clean-ar-admin-intros-routes-67d4`.
 
 PR: https://github.com/Mmm-2023/board-arabia/pull/160
 
 ## What changed
 
-- Three stale paths are app shells, so Pages answers 200 and React hops. `/ar` and `/ar/for-members` are `public-utility`. `/admin/intros` is `admin`. `scripts/shell-manifest.mjs:93-95`. VERIFIED by reading the list and by `appShells()` in `scripts/clean-routes.test.ts`.
-- Prerender already writes one `index.html` per `appShells()` entry. That file was not edited. The built files are `dist/ar/index.html`, `dist/ar/for-members/index.html`, and `dist/admin/intros/index.html`. Each is `noindex, nofollow`, has no Arabic script (`[\u0600-\u06FF]`), and is absent from `dist/sitemap.xml`. VERIFIED by the built-shell test and by reading those files after `node scripts/build-for-csp-crawl.mjs`.
-- `/admin/intros` is a child of `/admin` and renders `AdminIntrosRedirect`. `src/App.tsx:151`. The target is `/admin/people/intros` and keeps search and hash. `src/shell/adminIntrosRedirect.tsx:4-14`. VERIFIED by the router test.
-- `/ar` and `/ar/*` still use `ArabicPrefixRedirect`. `/ar` resolves to `/`. `/ar/for-members` resolves to `/for-members`. Query `lang=ar` is dropped. Other query values and the hash stay. VERIFIED by `englishPath` cases and by the browser.
-- The `/apply` line in `src/App.tsx` is unchanged. VERIFIED by the diff and by `scripts/apply-route.test.ts`.
-- Other `/ar/*` paths, such as `/ar/about`, still use the 404 bounce. `/nonexistent-xyz` still answers 404. VERIFIED by `scripts/shell-og.test.ts` on the built artifact.
-- No Arabic copy, language switcher, or hreflang. No sitemap entry for `/ar`.
+- `/ar` and `/ar/*` are no longer React routes. `ArabicPrefixRedirect` is gone. `src/App.tsx` no longer imports it. `src/components/EnglishOnly.tsx` only drops `?lang=ar` through `englishPath`. VERIFIED by `scripts/clean-routes.test.ts`.
+- `/ar` and `/ar/for-members` are not app shells. `/admin/intros` stays an admin shell. `scripts/shell-manifest.mjs`.
+- `scripts/write-ar-redirects.mjs` runs at the end of `npm run build`. It writes one bare HTML file for `/ar` and for each public route and fixed shell under `/ar`. Each file is `noindex`, a meta refresh, and a canonical link to the matching English URL. No app root, no Arabic text, no hreflang. VERIFIED by reading `dist/ar/index.html` and `dist/ar/for-members/index.html`, and by the built-output test.
+- A request for `/ar/` and `/ar/for-members/` answers 200. `/nonexistent-xyz` stays 404. VERIFIED by the static server test.
+- The built `dist` tree has no `hreflang="ar"` and no link whose target is `/ar` or `https://boardarabia.com/ar`. The stub targets are English, so they do not count. Sitemap has no `/ar` loc. VERIFIED by `arabicLinkHits` over the built files.
+- `/admin/intros` still renders `AdminIntrosRedirect` to `/admin/people/intros` and keeps search and hash. `src/App.tsx:149` and `src/shell/adminIntrosRedirect.tsx:4-14`. A local fixture staff session (example token, role `staff`, no real account) landed on `/admin/people/intros?status=open#queue` with the Intros heading. VERIFIED in the browser.
 
-## Browser
+## Removed
 
-Local Pages-style server on the built `dist` (bare path 301 to the slash, slash 200, unknown path 404 with `404.html`).
-
-| Request | First responses | After React | Arabic |
-| --- | --- | --- | --- |
-| `/ar` | 301 `/ar`, then 200 `/ar/` | `/` English home | none |
-| `/ar/for-members?from=old#tools` | 301, then 200 `/ar/for-members/` | `/for-members?from=old#tools` | none |
-| `/admin/intros?status=open#queue` | 301, then 200 `/admin/intros/` | staff sign-in, `next` keeps the original path, search, and hash | none |
-| `/nonexistent-xyz` | 404 | stays on that path | n/a |
-
-No console error on the three shells. Desktop and 390 px both show the English pages for `/ar` and `/ar/for-members`. VERIFIED.
-
-An unsigned visit to `/admin/intros` stops at staff sign-in because `AdminLayout` checks the session before the child route renders (`src/pages/admin/AdminLayout.tsx:37-42`). A signed-in staff session that passes that gate renders the child `Navigate`. That signed-in landing was not opened in the browser. The target path, search, and hash are covered by the router test. Grade for the staff landing itself: INFERRED from the route tree and the unit test. The 200 shell and the unsigned sign-in hop are VERIFIED.
+- React routes `path="/ar"` and `path="/ar/*"`.
+- The `ArabicPrefixRedirect` component.
+- App shell entries for `/ar` and `/ar/for-members`.
+- No in-app `/ar` link, hreflang tag, or alternate tag was present to delete. None were added.
+- `/ar` was not in the sitemap. The new test fails if it appears.
 
 ## Locked files
 
-Not edited: `scripts/public-nammco.mjs`, `scripts/prerender.mjs`, `scripts/check-pages-artifact.mjs`, `.github/workflows/pages.yml`, `src/content/legal/*`, `src/lib/aiReportOperator.ts`, the `/apply` route, apply-route.test.ts, #37 Sadu files, mail-sending code. VERIFIED by `git diff origin/main --name-only`.
+Not edited: `scripts/public-nammco.mjs`, `scripts/prerender.mjs`, `scripts/check-pages-artifact.mjs`, `.github/workflows/pages.yml`, `src/content/legal/*`, `src/lib/aiReportOperator.ts`, the `/apply` route, #37 Sadu files, mail-sending code.
 
 ## Apply list
 
-None. Pages deploy happens on merge. After deploy, `curl -sI` on `/ar/`, `/ar/for-members/`, and `/admin/intros/` should show 200. The bare path 301s to the slash, the same way every other shell does. `/nonexistent-xyz` should stay 404.
+None. Pages deploy happens on merge. After deploy, `/ar/` and `/ar/for-members/` should answer 200 and refresh to the English URL. `/nonexistent-xyz` should stay 404.
 
 No migration. No Edge function change. No product mail.
 
 ## Secrets grade
 
-Secrets hygiene: VERIFIED. This diff adds no mailbox, key, token, password, service-role key, user id, booking link, or staff allowlist. It adds no email address. example.com is not newly introduced. The handoff names no person. A scan of `git diff origin/main` for key and token markers returned only diff hunk headers.
+Secrets hygiene: VERIFIED. This diff adds no mailbox, key, token, password, service-role key, user id, booking link, or staff allowlist. The fixture session in the local screenshot uses the label Example Member and an example token. It is not a real account and it is not committed.
 
 ## Local checks
 
-- `node scripts/build-for-csp-crawl.mjs` with `GITHUB_PAGES=true` and `VITE_BASE_PATH=/`: passed. Wrote 10 routes and 66 app shells. VERIFIED.
+- `node scripts/build-for-csp-crawl.mjs`: passed. 10 routes, 64 app shells, 74 English redirect stubs. VERIFIED.
 - `bash scripts/pages-artifact-gate.sh`: passed. VERIFIED.
-- `scripts/clean-routes.test.ts`, `scripts/shell-og.test.ts`, `scripts/member-nav-redirects.test.ts`, `scripts/partner-wording.test.ts`, `scripts/public-names.test.ts`, `scripts/public-nammco.test.ts`, `scripts/apply-route.test.ts`: passed after copying `.env.example` to the gitignored `.env`, the same step PR checks uses. VERIFIED.
+- `scripts/clean-routes.test.ts`, `scripts/shell-og.test.ts`, `scripts/legal-pages.test.ts`, `scripts/apply-route.test.ts`, `scripts/public-names.test.ts`, `scripts/public-nammco.test.ts`: passed. VERIFIED.

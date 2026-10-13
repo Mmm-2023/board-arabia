@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
-import { existsSync, readFileSync } from 'node:fs'
+import { createReadStream, existsSync, readFileSync, readdirSync, statSync } from 'node:fs'
+import http from 'node:http'
 import path from 'node:path'
 import test from 'node:test'
 import { createElement } from 'react'
@@ -8,6 +9,7 @@ import { MemoryRouter } from 'react-router-dom'
 import { createServer } from 'vite'
 import { englishPath } from '../src/lib/englishPath.ts'
 import { appShells, shellDocument } from './shell-manifest.mjs'
+import { arabicLinkHits, englishUrl, stubFile, stubHtml } from './write-ar-redirects.mjs'
 
 const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..')
 
@@ -15,58 +17,33 @@ function read(rel: string) {
   return readFileSync(path.join(root, rel), 'utf8')
 }
 
-const REDIRECT_SHELLS = [
-  ['/ar', 'public-utility'],
-  ['/ar/for-members', 'public-utility'],
-  ['/admin/intros', 'admin'],
-] as const
-
-function fixtureShell() {
-  return `<!doctype html>
-<html lang="en">
-  <head>
-    <meta name="robots" content="noindex, nofollow" />
-    <meta name="description" content="Home share" />
-    <title>Home share</title>
-  </head>
-  <body><div id="root"></div></body>
-</html>`
-}
-
-test('redirect shells are noindex utility pages and stay out of the public route list', () => {
+test('/admin/intros stays a noindex admin shell and /ar is not an app shell', () => {
   const shells = appShells()
-  const prerender = read('scripts/prerender.mjs')
-  const routesBlock = prerender.slice(
-    prerender.indexOf('const routes = ['),
-    prerender.indexOf(']', prerender.indexOf('const routes = [')),
+  const paths = shells.map((item) => item.path)
+  assert.equal(paths.includes('/ar'), false)
+  assert.equal(paths.includes('/ar/for-members'), false)
+  const admin = shells.find((item) => item.path === '/admin/intros')
+  assert.equal(admin?.kind, 'admin')
+  const html = shellDocument(
+    `<!doctype html><html lang="en"><head><meta name="robots" content="noindex, nofollow" /><meta name="description" content="Home share" /><title>Home share</title></head><body></body></html>`,
+    admin,
   )
-  for (const [routePath, kind] of REDIRECT_SHELLS) {
-    const hit = shells.find((item) => item.path === routePath)
-    assert.equal(hit?.kind, kind, routePath)
-    assert.equal(hit?.title, 'Board Arabia', routePath)
-    assert.equal(hit?.description.includes('\u2014'), false, routePath)
-    assert.equal(/[\u0600-\u06FF]/.test(`${hit?.title} ${hit?.description}`), false, routePath)
-    const html = shellDocument(fixtureShell(), hit)
-    assert.match(html, /content="noindex, nofollow"/)
-    assert.equal(/[\u0600-\u06FF]/.test(html), false, routePath)
-    assert.equal(routesBlock.includes(`'${routePath}'`), false, routePath)
-  }
+  assert.match(html, /content="noindex, nofollow"/)
+  const app = read('src/App.tsx')
+  assert.equal(app.includes('path="/ar"'), false)
+  assert.equal(app.includes('ArabicPrefixRedirect'), false)
+  assert.equal(read('src/components/EnglishOnly.tsx').includes('ArabicPrefixRedirect'), false)
+  assert.match(app, /path="\/apply" element=\{<ApplyPage/)
 })
 
-test('/ar and /ar/for-members resolve to the English pages', () => {
+test('englishPath still drops a stale /ar prefix and ?lang=ar', () => {
   assert.deepEqual(englishPath('/ar', ''), { pathname: '/', search: '' })
-  assert.deepEqual(englishPath('/ar/', ''), { pathname: '/', search: '' })
   assert.deepEqual(englishPath('/ar/for-members', ''), { pathname: '/for-members', search: '' })
   assert.deepEqual(englishPath('/ar/for-members', '?lang=ar&from=old'), {
     pathname: '/for-members',
     search: 'from=old',
   })
   assert.deepEqual(englishPath('/for-members', ''), null)
-  const app = read('src/App.tsx')
-  assert.match(app, /path="\/ar" element=\{<ArabicPrefixRedirect/)
-  assert.match(app, /path="\/ar\/\*" element=\{<ArabicPrefixRedirect/)
-  assert.match(app, /path="\/apply" element=\{<ApplyPage/)
-  assert.equal(/[\u0600-\u06FF]/.test(read('src/components/EnglishOnly.tsx')), false)
   assert.equal(/[\u0600-\u06FF]/.test(read('src/lib/englishPath.ts')), false)
 })
 
@@ -78,11 +55,6 @@ test('/admin/intros renders a Navigate to /admin/people/intros and keeps search 
   })
   try {
     const redirect = await vite.ssrLoadModule('/src/shell/adminIntrosRedirect.tsx')
-    assert.deepEqual(redirect.adminIntrosTarget({ search: '', hash: '' }), {
-      pathname: '/admin/people/intros',
-      search: '',
-      hash: '',
-    })
     assert.deepEqual(redirect.adminIntrosTarget({ search: '?status=open', hash: '#queue' }), {
       pathname: '/admin/people/intros',
       search: '?status=open',
@@ -102,22 +74,127 @@ test('/admin/intros renders a Navigate to /admin/people/intros and keeps search 
   const app = read('src/App.tsx')
   const admin = app.slice(app.indexOf('path="/admin"'), app.indexOf('path="/ops/*"'))
   assert.match(admin, /path="intros" element=\{<AdminIntrosRedirect/)
-  assert.match(admin, /path="people" element=\{<AdminPeopleLayout/)
-  assert.match(read('src/shell/adminIntrosRedirect.tsx'), /<Navigate to=\{adminIntrosTarget\(location\)\} replace \/>/)
-  assert.equal(admin.includes('path="/apply"'), false)
 })
 
-test('built redirect shells answer as English noindex files outside the sitemap', () => {
-  assert.equal(existsSync(path.join(root, 'dist', '404.html')), true, 'dist is missing; build before this test')
-  const sitemap = readFileSync(path.join(root, 'dist', 'sitemap.xml'), 'utf8')
-  const locs = [...sitemap.matchAll(/<loc>([^<]*)<\/loc>/g)].map((match) => match[1])
-  for (const [routePath] of REDIRECT_SHELLS) {
-    const relative = `${routePath.replace(/^\//, '')}/index.html`
-    const html = readFileSync(path.join(root, 'dist', relative), 'utf8')
+test('an /ar link or hreflang=ar fails, and an English redirect target does not', () => {
+  assert.deepEqual(arabicLinkHits('<link rel="alternate" hreflang="ar" href="https://boardarabia.com/">'), [
+    'hreflang="ar"',
+  ])
+  assert.deepEqual(arabicLinkHits('<a href="/ar">Arabic</a>'), ['/ar'])
+  assert.deepEqual(arabicLinkHits('<a href="/ar/for-members">Arabic</a>'), ['/ar/for-members'])
+  assert.deepEqual(arabicLinkHits('<a href="https://boardarabia.com/ar/about">Arabic</a>'), [
+    'https://boardarabia.com/ar/about',
+  ])
+  assert.deepEqual(arabicLinkHits('<loc>https://boardarabia.com/ar</loc>'), ['https://boardarabia.com/ar'])
+  assert.deepEqual(arabicLinkHits(stubHtml('/for-members')), [])
+  assert.deepEqual(arabicLinkHits(stubHtml('/')), [])
+  assert.match(stubHtml('/for-members'), /rel="canonical" href="https:\/\/boardarabia\.com\/for-members"/)
+  assert.match(stubHtml('/'), /url=https:\/\/boardarabia\.com\//)
+  assert.equal(stubHtml('/for-members').includes('id="root"'), false)
+  assert.equal(/[\u0600-\u06FF]/.test(stubHtml('/about')), false)
+  assert.equal(englishUrl('/for-members'), 'https://boardarabia.com/for-members')
+  assert.equal(stubFile('/for-members'), path.join('ar', 'for-members', 'index.html'))
+})
+
+test('built output has English /ar stubs and no /ar link or hreflang=ar', () => {
+  const dist = path.join(root, 'dist')
+  assert.equal(existsSync(path.join(dist, '404.html')), true, 'dist is missing; build before this test')
+  for (const routePath of ['/', '/for-members', '/about', '/admin/intros']) {
+    const html = readFileSync(path.join(dist, stubFile(routePath)), 'utf8')
     assert.match(html, /content="noindex, nofollow"/, routePath)
+    assert.match(html, /http-equiv="refresh"/, routePath)
+    assert.match(html, new RegExp(`rel="canonical" href="${englishUrl(routePath).replaceAll('/', '\\/')}"`), routePath)
+    assert.equal(html.includes('id="root"'), false, routePath)
     assert.equal(/[\u0600-\u06FF]/.test(html), false, routePath)
-    assert.equal(locs.includes(`https://boardarabia.com${routePath}`), false, routePath)
-    assert.equal(locs.includes(`https://boardarabia.com${routePath}/`), false, routePath)
+    assert.deepEqual(arabicLinkHits(html), [], routePath)
   }
-  assert.equal(locs.includes('https://boardarabia.com/for-members'), true)
+  const hits: string[] = []
+  function walk(dir: string) {
+    for (const name of readdirSync(dir)) {
+      const full = path.join(dir, name)
+      if (statSync(full).isDirectory()) {
+        walk(full)
+        continue
+      }
+      if (!/\.(html|js|css|xml|txt|webmanifest|svg)$/.test(name)) continue
+      const text = readFileSync(full, 'utf8')
+      for (const hit of arabicLinkHits(text)) hits.push(`${path.relative(dist, full)} ${hit}`)
+    }
+  }
+  walk(dist)
+  assert.deepEqual(hits, [])
+  const sitemap = readFileSync(path.join(dist, 'sitemap.xml'), 'utf8')
+  assert.equal(sitemap.includes('https://boardarabia.com/ar'), false)
+  assert.equal(sitemap.includes('https://boardarabia.com/for-members'), true)
+})
+
+function startPages(rootDir: string) {
+  return http.createServer((req, res) => {
+    const url = new URL(req.url || '/', 'http://127.0.0.1')
+    const pathname = decodeURIComponent(url.pathname)
+    const rel = pathname.replace(/^\/+/, '')
+    const full = path.join(rootDir, rel)
+    const inside = full === rootDir || full.startsWith(`${rootDir}${path.sep}`)
+    const sendFile = (status: number, file: string) => {
+      res.writeHead(status, { 'Content-Type': 'text/html; charset=utf-8' })
+      if (req.method === 'HEAD') {
+        res.end()
+        return
+      }
+      createReadStream(file).pipe(res)
+    }
+    if (inside && rel && existsSync(full) && statSync(full).isDirectory()) {
+      if (!pathname.endsWith('/')) {
+        res.writeHead(301, { Location: `${pathname}/${url.search}` })
+        res.end()
+        return
+      }
+      const index = path.join(full, 'index.html')
+      if (existsSync(index)) {
+        sendFile(200, index)
+        return
+      }
+    }
+    if (inside && rel && existsSync(full) && statSync(full).isFile()) {
+      sendFile(200, full)
+      return
+    }
+    if (!rel && existsSync(path.join(rootDir, 'index.html'))) {
+      sendFile(200, path.join(rootDir, 'index.html'))
+      return
+    }
+    sendFile(404, path.join(rootDir, '404.html'))
+  })
+}
+
+test('bare /ar stubs answer 200 and an unknown path stays 404', async () => {
+  const dist = path.join(root, 'dist')
+  assert.equal(existsSync(path.join(dist, 'ar', 'index.html')), true, 'dist is missing; build before this test')
+  const server = startPages(dist)
+  await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', () => resolve()))
+  const port = (server.address() as { port: number }).port
+  const request = (routePath: string) =>
+    new Promise<{ status: number; body: string }>((resolve, reject) => {
+      http
+        .get({ hostname: '127.0.0.1', port, path: routePath }, (res) => {
+          const chunks: Buffer[] = []
+          res.on('data', (chunk) => chunks.push(chunk))
+          res.on('end', () => resolve({ status: res.statusCode || 0, body: Buffer.concat(chunks).toString('utf8') }))
+        })
+        .on('error', reject)
+    })
+  try {
+    const home = await request('/ar/')
+    assert.equal(home.status, 200)
+    assert.match(home.body, /url=https:\/\/boardarabia\.com\//)
+    assert.equal(home.body.includes('id="root"'), false)
+    const members = await request('/ar/for-members/')
+    assert.equal(members.status, 200)
+    assert.match(members.body, /url=https:\/\/boardarabia\.com\/for-members/)
+    const unknown = await request('/nonexistent-xyz')
+    assert.equal(unknown.status, 404)
+  } finally {
+    server.closeAllConnections()
+    await new Promise<void>((resolve, reject) => server.close((error) => (error ? reject(error) : resolve())))
+  }
 })

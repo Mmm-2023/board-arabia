@@ -89,9 +89,7 @@ const FIXED_SHELLS = [
   ['/book', 'public-utility'],
   ['/verify', 'public-utility'],
   ['/apply/verify', 'public-utility'],
-  // Stale links. Pages answers 200 and React hops. No Arabic copy.
-  ['/ar', 'public-utility'],
-  ['/ar/for-members', 'public-utility'],
+  // Old /admin/intros bookmarks. Pages answers 200 and React hops.
   ['/admin/intros', 'admin'],
 ]
 

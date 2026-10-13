@@ -1,7 +1,7 @@
 import { lazy, Suspense } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { AnalyticsRoot } from './components/AnalyticsRoot'
-import { ArabicPrefixRedirect, EnglishOnlyQuery } from './components/EnglishOnly'
+import { EnglishOnlyQuery } from './components/EnglishOnly'
 import { AboutPage } from './pages/AboutPage'
 import { ApplyPage } from './pages/ApplyPage'
 import { RegisterPage } from './pages/RegisterPage'
@@ -120,8 +120,6 @@ export default function App() {
       <Route path="/about" element={<AboutPage />} />
       <Route path="/privacy" element={<PrivacyPage />} />
       <Route path="/terms" element={<TermsPage />} />
-      <Route path="/ar" element={<ArabicPrefixRedirect />} />
-      <Route path="/ar/*" element={<ArabicPrefixRedirect />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/login/staff" element={<LoginPage />} />
       <Route path="/auth/confirm" element={<AuthConfirmPage />} />
