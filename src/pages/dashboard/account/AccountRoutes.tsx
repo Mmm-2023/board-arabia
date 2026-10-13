@@ -5,7 +5,10 @@ import { displayPlatformMoney, type DisplayTotals } from '../../../lib/platformF
 import { fetchPlatformStats, supabase } from '../../../lib/supabase'
 import { MEMBER_SECTIONS } from '../../../shell/destinations'
 import { SectionTabs } from '../../../shell/SectionTabs'
+import { DigestPage, DigestUnsubscribePage } from '../DigestPage'
 import { HelpPage } from '../HelpPage'
+import { PrivacyPanelPage } from '../PrivacyPanelPage'
+import { TwoStepPage } from '../TwoStepPage'
 import { DeleteAccountScreen } from './DeleteAccountScreen'
 import { useAccountRoom } from './context'
 import { MembershipScreen } from './MembershipScreen'
@@ -181,6 +184,10 @@ export function AccountSurface() {
   if (pathname === '/dashboard/membership' || pathname.startsWith('/dashboard/membership/')) return <MembershipScreen />
   if (pathname === '/dashboard/profile' || pathname.startsWith('/dashboard/profile/')) return <AccountProfile />
   if (pathname === '/dashboard/help' || pathname.startsWith('/dashboard/help/')) return <HelpPage desk={false} />
+  if (pathname === '/dashboard/digest') return <DigestPage />
+  if (pathname === '/dashboard/digest/unsubscribe') return <DigestUnsubscribePage />
+  if (pathname === '/dashboard/privacy' || pathname.startsWith('/dashboard/privacy/')) return <PrivacyPanelPage />
+  if (pathname === '/dashboard/two-step' || pathname.startsWith('/dashboard/two-step/')) return <TwoStepPage />
   if (pathname === '/dashboard/account/delete') return <DeleteAccountScreen />
   return <Navigate to="/dashboard" replace />
 }

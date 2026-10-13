@@ -239,11 +239,54 @@ test('public landing hides the gallery at zero, one real fixture has no Sample, 
     const member = renderToStaticMarkup(
       createElement(MemoryRouter, null, createElement(homeView.HomeSnapshotView, { model })),
     )
-    assert.match(member, /Qaf Ledger/)
-    assert.match(member, />Sample</)
-    assert.match(member, /href="\/dashboard\/people\/partners"/)
-    assert.match(member, /Partner showcase/)
+    assert.equal(member.includes('Qaf Ledger'), false)
+    assert.equal(member.includes('>Sample<'), false)
+    assert.equal(member.includes('Trusted Partners'), false)
+    assert.equal(member.includes('data-gallery="partners"'), false)
     assert.equal(member.toLowerCase().includes('sponsor'), false)
+    const liveModel = homeMod.assembleHome({
+      nowMs: Date.parse('2026-10-06T12:00:00.000Z'),
+      seat: 'ksa',
+      name: 'Example Member',
+      photoUrl: null,
+      profileReady: true,
+      mustSetPassword: false,
+      invitesRemaining: 0,
+      personalCapacityIncluded: false,
+      attention: [],
+      mandates: [],
+      rooms: [],
+      directory: [],
+      partners: [
+        {
+          id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1',
+          is_demo: false,
+          is_partner: true,
+          name: 'Example Capital',
+          monogram: 'EC',
+          blurb: 'One line for a fixture partner.',
+        },
+      ],
+      gatherings: [],
+      admitted: 1,
+      ksa: 1,
+      intl: 0,
+      money: [],
+      activity: [],
+      activityStatus: 'empty',
+      loading: false,
+      partialError: false,
+      updatedLabel: null,
+    })
+    const liveHome = renderToStaticMarkup(
+      createElement(MemoryRouter, null, createElement(homeView.HomeSnapshotView, { model: liveModel })),
+    )
+    assert.match(liveHome, />Partners</)
+    assert.match(liveHome, /data-partner-name="Example Capital"/)
+    assert.match(liveHome, /href="\/dashboard\/people\/partners"/)
+    assert.match(liveHome, /Partner showcase/)
+    assert.equal(liveHome.includes('Trusted Partners'), false)
+    assert.equal(liveHome.includes('>Sample<'), false)
 
     const admin = renderToStaticMarkup(
       createElement(
@@ -371,6 +414,8 @@ test('new partner copy says partner and not sponsor', () => {
   const home = read('src/pages/dashboard/HomeSnapshotView.tsx')
   assert.match(home, /Partner showcase/)
   assert.match(home, /Trusted advisers/)
+  assert.equal(home.includes('Trusted Partners'), false)
+  assert.match(home, />\s*Partners\s*</)
   assert.equal(home.includes('/dashboard/sponsors'), false)
   assert.equal(home.includes('SPONSOR_LABEL'), false)
   assert.match(read('src/App.tsx'), /path="partners" element=\{<PartnerShowcase/)

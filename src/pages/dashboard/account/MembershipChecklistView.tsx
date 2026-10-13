@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { AccountBackLink } from '../AccountBackLink'
 import { SECTOR_TAGS, VISION_2030_THEMES } from '../../../lib/profileTags'
 import {
   AUM_BANDS,
@@ -92,6 +93,7 @@ export function MembershipChecklistView({
   if (mode === 'review') {
     return (
       <div className="account-main max-w-xl lg:pe-8" data-screen="membership-review">
+        <AccountBackLink />
         <p className="text-[0.72rem] font-semibold tracking-[0.14em] text-[var(--ba-indigo)] uppercase">Membership</p>
         <h1 className="mt-3 font-display text-[2rem] font-semibold tracking-[-0.03em]">Review and submit</h1>
         <p className="mt-3 text-[1rem] leading-relaxed text-ink/70">You cannot edit after you submit, unless our admin team asks.</p>
@@ -131,6 +133,7 @@ export function MembershipChecklistView({
 
   return (
     <div className="account-main max-w-5xl pb-36 lg:pe-8" data-screen="membership-checklist">
+      <AccountBackLink />
       <p className="text-[0.72rem] font-semibold tracking-[0.14em] text-[var(--ba-indigo)] uppercase">Account · Membership</p>
       <h1 className="mt-3 font-display text-[2rem] font-semibold tracking-[-0.03em]">Your path to full membership</h1>
       {showMeter ? (

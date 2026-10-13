@@ -1,5 +1,7 @@
 import { Link } from 'react-router-dom'
 import { LEAVE_BOARD_PATH } from '../../lib/leaveBoard'
+import { DELETE_ACCOUNT_PATH } from '../../shell/destinations'
+import { AccountBackLink } from '../../pages/dashboard/AccountBackLink'
 
 const section = 'border-t border-ink/10 pt-8'
 const heading = 'font-display text-[1.35rem] font-semibold tracking-[-0.02em]'
@@ -36,6 +38,7 @@ export function PrivacyPanelView({
 }) {
   return (
     <div className="max-w-xl" data-screen="your-privacy" data-directory={hidden ? 'hidden' : 'visible'}>
+      <AccountBackLink />
       <p className="text-[0.72rem] font-semibold tracking-[0.14em] text-brass uppercase">Account</p>
       <h1 className="mt-3 font-display text-[2rem] font-semibold tracking-[-0.03em]">Your privacy</h1>
 
@@ -197,6 +200,22 @@ export function PrivacyPanelView({
         </p>
         <Link to={LEAVE_BOARD_PATH} className="mt-3 inline-flex min-h-11 items-center text-[0.95rem] font-semibold underline">
           Leave Board Arabia
+        </Link>
+      </section>
+
+      <section className={section} aria-labelledby="privacy-delete-account" data-privacy-delete="">
+        <h2 id="privacy-delete-account" className={heading}>
+          Delete account
+        </h2>
+        <p className={body}>
+          This removes your account, the professional details you added for membership review, and your sign-in. It
+          cannot be undone. A full member record is not removed from this page.
+        </p>
+        <Link
+          to={DELETE_ACCOUNT_PATH}
+          className="mt-3 inline-flex min-h-11 items-center text-[0.95rem] font-semibold underline"
+        >
+          Delete account
         </Link>
       </section>
 

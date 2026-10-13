@@ -87,6 +87,21 @@ export function HelpPage({ desk = true }: { desk?: boolean } = {}) {
         .
       </p>
 
+      <nav className="mt-6 flex flex-col" aria-label="Account pages">
+        <Link to="/dashboard/digest" className="inline-flex min-h-11 items-center text-ink underline">
+          This week
+        </Link>
+        <Link to="/dashboard/privacy" className="inline-flex min-h-11 items-center text-ink underline">
+          Your privacy
+        </Link>
+        <Link to="/dashboard/two-step" className="inline-flex min-h-11 items-center text-ink underline">
+          Two-step sign-in
+        </Link>
+        <Link to="/dashboard/ai" className="inline-flex min-h-11 items-center text-ink underline">
+          AI tools
+        </Link>
+      </nav>
+
       <div className="mt-8 border-t border-ink/10">
         {ANSWERS.map((item) => (
           <details key={item.question} className="border-b border-ink/10 py-3">

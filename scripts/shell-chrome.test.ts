@@ -35,10 +35,19 @@ test('desktop sidebar and mobile tabs share the locked destinations', async () =
     const closed = mod.renderMemberShell()
     assert.equal((closed.match(/data-photo-size="44"/g) || []).length, 0)
     assert.match(account, /aria-label="Account"/)
-    assert.match(account, />Profile</)
-    assert.match(account, />Help</)
-    assert.match(account, /Switch to admin/)
+    assert.match(account, /data-account-control="header"/)
+    const rowOrder = ['Profile', 'This week', 'Your privacy', 'Two-step sign-in', 'Membership', 'Help', 'Switch to admin']
+    let cursor = 0
+    for (const label of rowOrder) {
+      const at = sheet.indexOf(label, cursor)
+      assert.ok(at >= cursor, label)
+      cursor = at + label.length
+    }
+    assert.equal(sheet.includes('Delete account'), false)
+    assert.equal(/sponsor/i.test(sheet), false)
     assert.match(account, /data-nav="sign-out"/)
+    assert.equal(header(account).includes('>Account<'), false)
+    assert.equal((account.match(/data-account-control="header"/g) || []).length, 1)
     assert.equal(account.includes('aria-label="More"'), false)
     assert.equal(account.includes('Updated '), false)
     const home = mod.renderMemberShell()
@@ -58,6 +67,16 @@ test('desktop sidebar and mobile tabs share the locked destinations', async () =
     const profile = mod.renderMemberShell(false, '/dashboard/profile')
     assert.match(header(profile), /Profile/)
     assert.match(profile, /ring-2/)
+    const digest = mod.renderMemberShell(false, '/dashboard/digest')
+    assert.match(header(digest), /This week/)
+    assert.match(digest, /ring-2/)
+    const privacy = mod.renderMemberShell(false, '/dashboard/privacy')
+    assert.match(header(privacy), /Your privacy/)
+    assert.match(privacy, /ring-2/)
+    const twoStep = mod.renderMemberShell(false, '/dashboard/two-step')
+    assert.match(header(twoStep), /Two-step sign-in/)
+    assert.match(twoStep, /ring-2/)
+    assert.equal(header(home).includes('ring-2'), false)
     const badge = mod.renderMemberShell(false, '/dashboard/deals/badge')
     assert.match(badge, /Deals, 2 invitations waiting/)
   } finally {
