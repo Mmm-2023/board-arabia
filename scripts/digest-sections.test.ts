@@ -7,6 +7,7 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { MemoryRouter } from 'react-router-dom'
 import { chromium } from 'playwright-core'
 import { createServer } from 'vite'
+import { LEGAL_PENDING } from '../src/config/legal.ts'
 import { strayPublicNammco } from './public-nammco.mjs'
 import { DIGEST_SECTION_ORDER, type DigestNewsItem } from '../supabase/functions/_shared/weekly_digest_copy.ts'
 import {
@@ -17,7 +18,6 @@ import {
   type WeeklyDigestModel,
 } from '../src/lib/weeklyDigest.ts'
 
-const DIGEST_CONTACT_EMAIL = 'contact@boardarabia.com'
 const DIGEST_CTA_LABEL = "Review this week's mandates"
 const DIGEST_FOOTER_CREDIT = 'powered by nammco'
 import { resolveChromePath } from './chrome-path.ts'
@@ -119,9 +119,11 @@ function ctaCount(html: string) {
   return (html.match(/Review this week(?:'|&#x27;|&#39;)s mandates/g) ?? []).length
 }
 
-async function renderDigest(digest: WeeklyDigestModel) {
+async function renderDigest(digest: WeeklyDigestModel, contactEmail?: string) {
   const vite = await createServer({ server: { middlewareMode: true, hmr: false }, appType: 'custom', logLevel: 'error' })
   try {
+    const legal = await vite.ssrLoadModule('/src/config/legal.ts')
+    legal.setLegalEnvForTests(contactEmail === undefined ? { contactEmail: '' } : { contactEmail })
     const view = await vite.ssrLoadModule('/src/components/digest/WeeklyDigestView.tsx')
     return renderToStaticMarkup(createElement(MemoryRouter, null, createElement(view.WeeklyDigestView, { digest })))
   } finally {
@@ -245,10 +247,15 @@ test('news items need a headline and a source, and the board lens renders when p
 })
 
 test('digest copy keeps one contact, the footer credit, and no prices', async () => {
-  const html = await renderDigest(exampleDigest())
+  const unset = await renderDigest(exampleDigest())
+  assert.equal(emailRe.test(unset), false)
+  assert.equal(unset.includes('mailto:'), false)
+  assert.equal(unset.includes(LEGAL_PENDING.en), false)
+  emailRe.lastIndex = 0
+  const html = await renderDigest(exampleDigest(), 'contact@example.com')
   const found = html.match(emailRe) ?? []
-  assert.ok(found.length > 0)
-  assert.ok(found.every((address) => address === DIGEST_CONTACT_EMAIL))
+  assert.deepEqual(found, ['contact@example.com', 'contact@example.com'])
+  assert.match(html, /href="mailto:contact@example.com"/)
   assert.equal(html.includes(DIGEST_FOOTER_CREDIT), true)
   assert.equal(strayPublicNammco(html), false)
   assert.equal(/\bsponsor/i.test(html), false)
@@ -274,11 +281,7 @@ test('digest copy keeps one contact, the footer credit, and no prices', async ()
     assert.equal(priceRe.test(source), false, file)
     emailRe.lastIndex = 0
     const addresses = source.match(emailRe) ?? []
-    if (file.endsWith('WeeklyDigestView.tsx')) {
-      assert.ok(addresses.every((address) => address === DIGEST_CONTACT_EMAIL), file)
-    } else {
-      assert.deepEqual(addresses, [], file)
-    }
+    assert.deepEqual(addresses, [], file)
     if (file.endsWith('WeeklyDigestView.tsx')) {
       assert.equal(strayPublicNammco(source), false, file)
     } else {

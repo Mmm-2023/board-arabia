@@ -18,7 +18,7 @@ The page is still `/dashboard/digest`. Home still links there. Home layout is un
 | News items: headline, 2 to 3 sentences, Board lens when present, source links. A name is a LinkedIn link only when the stored URL is https on linkedin.com | `WeeklyDigestView` news block, `digestLinkedinUrl` in `src/lib/weeklyDigest.ts` | VERIFIED |
 | Section 4 outline: title, sector, region, stage, one line. No counterparty name and no ticket band | `DatabaseBlock` in `WeeklyDigestView.tsx` | VERIFIED |
 | One call to action, after section 4: Review this week's mandates | `DIGEST_CTA_LABEL` at `WeeklyDigestView.tsx:24`, link at `:83` | VERIFIED |
-| Sign-off `contact@boardarabia.com`. Footer credit is the only nammco text: powered by nammco | `WeeklyDigestView.tsx:22`, sign-off `:98`, footer `:104` | VERIFIED |
+| Sign-off uses `legalField('contactEmail')` and renders nothing when that field is unset. Footer credit is the only nammco text: powered by nammco | `WeeklyDigestView.tsx` sign-off, footer credit constant | VERIFIED |
 | Approved issue only, same tier gate as before. `mail_ready` stays false | `public.my_weekly_digest()` in `20261218120000_digest_sections.sql:551` | VERIFIED |
 
 ## Section 4 visibility

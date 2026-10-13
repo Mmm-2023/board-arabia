@@ -17,9 +17,9 @@ import {
   visibleDigestSections,
   type WeeklyDigestModel,
 } from '../../lib/weeklyDigest'
+import { LEGAL_PENDING, legalField } from '../../config/legal'
 import { toneClasses } from '../../shell/ViewState'
 
-export const DIGEST_CONTACT_EMAIL = 'contact@boardarabia.com'
 export const DIGEST_FOOTER_CREDIT = 'powered by nammco'
 export const DIGEST_CTA_LABEL = "Review this week's mandates"
 const MANDATES_HREF = '/dashboard/deals/mandates'
@@ -40,6 +40,8 @@ export function WeeklyDigestView({
     )
   }
 
+  const contactEmail = legalField('contactEmail')
+  const shownContact = contactEmail === LEGAL_PENDING.en ? '' : contactEmail
   const shown = new Set(visibleDigestSections(digest))
   const opening = digest.opening?.trim() || 'What changed for members this week.'
   const minutes = digestReadMinutes(digest)
@@ -94,11 +96,13 @@ export function WeeklyDigestView({
 
       <div data-digest-signoff="">
         <p className="font-display text-[1.15rem] font-semibold">Board Arabia</p>
-        <p className="mt-2">
-          <a className="text-[0.95rem] text-ink/80 underline" href={`mailto:${DIGEST_CONTACT_EMAIL}`}>
-            {DIGEST_CONTACT_EMAIL}
-          </a>
-        </p>
+        {shownContact ? (
+          <p className="mt-2">
+            <a className="text-[0.95rem] text-ink/80 underline" href={`mailto:${shownContact}`}>
+              {shownContact}
+            </a>
+          </p>
+        ) : null}
       </div>
       <footer data-digest-footer="">
         <p className="text-[0.75rem] text-ink/50">{DIGEST_FOOTER_CREDIT}</p>
