@@ -38,7 +38,7 @@ The definers anon executes are the private impls, which are not in the Data API 
 | landing_platform_totals_impl | `:224` |
 | lookup_member_invite_impl | `:250` |
 
-Sasha should confirm the live advisor after apply. This agent did not apply the file, so the live count is not re-read here.
+The operator should confirm the live advisor after apply. This agent did not apply the file, so the live count is not re-read here.
 
 Returned columns were checked:
 
