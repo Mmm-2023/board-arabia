@@ -9,6 +9,7 @@ import { useNoIndex } from '../../lib/usePageTitle'
 export function PrivacyPanelPage() {
   const [hidden, setHidden] = useState(false)
   const [showSponsors, setShowSponsors] = useState(false)
+  const [digestOptIn, setDigestOptIn] = useState(false)
   const [twoStepOn, setTwoStepOn] = useState(false)
   const [downloadState, setDownloadState] = useState<'idle' | 'ready' | 'limited' | 'error'>('idle')
   const [busy, setBusy] = useState(false)
@@ -21,6 +22,11 @@ export function PrivacyPanelPage() {
       const row = data as { directory_hidden?: boolean; show_card_to_sponsors?: boolean }
       if (row.directory_hidden === true) setHidden(true)
       if (row.show_card_to_sponsors === true) setShowSponsors(true)
+    })
+    void supabase.rpc('own_digest_preference').then(({ data }) => {
+      if (cancelled || !data || typeof data !== 'object' || Array.isArray(data)) return
+      const row = data as { digest_email_opt_in?: boolean }
+      if (row.digest_email_opt_in === true) setDigestOptIn(true)
     })
     void listTotpFactors().then((factors) => {
       if (!cancelled) setTwoStepOn(factors.some((factor) => factor.status === 'verified'))
@@ -42,6 +48,13 @@ export function PrivacyPanelPage() {
     setShowSponsors(next)
     const { error } = await supabase.rpc('set_show_card_to_sponsors', { p_show: next })
     if (error) setShowSponsors(previous)
+  }
+
+  async function onDigest(next: boolean) {
+    const previous = digestOptIn
+    setDigestOptIn(next)
+    const { error } = await supabase.rpc('set_digest_email_opt_in', { p_opt_in: next })
+    if (error) setDigestOptIn(previous)
   }
 
   async function onDownload() {
@@ -78,6 +91,8 @@ export function PrivacyPanelPage() {
       onHidden={(next) => void onHidden(next)}
       onShowSponsors={(next) => void onShowSponsors(next)}
       onDownload={() => void onDownload()}
+      digestOptIn={digestOptIn}
+      onDigestOptIn={(next) => void onDigest(next)}
     />
   )
 }

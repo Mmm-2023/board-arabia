@@ -18,6 +18,8 @@ export function PrivacyPanelView({
   onHidden,
   onShowSponsors,
   onDownload,
+  digestOptIn = false,
+  onDigestOptIn,
 }: {
   hidden: boolean
   showSponsors: boolean
@@ -29,6 +31,8 @@ export function PrivacyPanelView({
   onHidden: (hidden: boolean) => void
   onShowSponsors: (show: boolean) => void
   onDownload: () => void
+  digestOptIn?: boolean
+  onDigestOptIn?: (optIn: boolean) => void
 }) {
   return (
     <div className="max-w-xl" data-screen="your-privacy" data-directory={hidden ? 'hidden' : 'visible'}>
@@ -90,6 +94,38 @@ export function PrivacyPanelView({
             members.
           </p>
         </div>
+      </section>
+
+      <section className={section} aria-labelledby="privacy-digest" data-digest-email={digestOptIn ? 'on' : 'off'}>
+        <h2 id="privacy-digest" className={heading}>
+          Weekly email
+        </h2>
+        <p className={body}>
+          {digestOptIn
+            ? 'You asked to receive the weekly email. It is not connected yet.'
+            : 'Off. The weekly email is not connected yet.'}
+        </p>
+        <div className="mt-4 flex flex-wrap gap-2" role="group" aria-label="Weekly email">
+          <button
+            type="button"
+            className={`${choice} ${digestOptIn ? 'border-ink/20 text-ink/70' : 'ba-primary border-transparent'}`}
+            aria-pressed={!digestOptIn}
+            onClick={() => onDigestOptIn?.(false)}
+          >
+            Off
+          </button>
+          <button
+            type="button"
+            className={`${choice} ${digestOptIn ? 'ba-primary border-transparent' : 'border-ink/20 text-ink/70'}`}
+            aria-pressed={digestOptIn}
+            onClick={() => onDigestOptIn?.(true)}
+          >
+            On
+          </button>
+        </div>
+        <p className="mt-3 max-w-xl text-[0.95rem] leading-relaxed text-ink/65">
+          This choice is saved for when weekly email is connected. Nothing is sent now.
+        </p>
       </section>
 
       <section className={section} aria-labelledby="privacy-two-step">

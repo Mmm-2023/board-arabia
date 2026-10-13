@@ -79,6 +79,8 @@ const ADDED_SHELLS = [
   '/dashboard/partnership',
   '/dashboard/people/partners',
   '/dashboard/privacy',
+  '/dashboard/digest',
+  '/dashboard/digest/unsubscribe',
   '/admin/ai',
   '/admin/marketing',
   '/admin/access',

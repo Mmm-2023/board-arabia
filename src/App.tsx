@@ -88,6 +88,10 @@ const NetworkPage = lazy(() => import('./pages/dashboard/NetworkPage').then((m) 
 const ProfilePage = lazy(() => import('./pages/dashboard/ProfilePage').then((m) => ({ default: m.ProfilePage })))
 const LeaveBoardArabiaPage = lazy(() => import('./pages/dashboard/LeaveBoardArabia').then((m) => ({ default: m.LeaveBoardArabiaPage })))
 const PrivacyPanelPage = lazy(() => import('./pages/dashboard/PrivacyPanelPage').then((m) => ({ default: m.PrivacyPanelPage })))
+const DigestPage = lazy(() => import('./pages/dashboard/DigestPage').then((m) => ({ default: m.DigestPage })))
+const DigestUnsubscribePage = lazy(() =>
+  import('./pages/dashboard/DigestPage').then((m) => ({ default: m.DigestUnsubscribePage })),
+)
 
 const SponsorshipPage = lazy(() =>
   import('./pages/dashboard/SponsorshipPage').then((m) => ({ default: m.SponsorshipPage })),
@@ -182,6 +186,8 @@ export default function App() {
         <Route path="profile/leave" element={<LeaveBoardArabiaPage />} />
         <Route path="profile" element={<ProfilePage />} />
         <Route path="privacy" element={<PrivacyPanelPage />} />
+        <Route path="digest" element={<DigestPage />} />
+        <Route path="digest/unsubscribe" element={<DigestUnsubscribePage />} />
         <Route path="two-step" element={<TwoStepPage />} />
         <Route path="help" element={<HelpPage />} />
         <Route path="partnership" element={<SponsorshipPage />} />

@@ -79,6 +79,8 @@ const FIXED_SHELLS = [
   ['/dashboard/partnership', 'member'],
   ['/dashboard/people/partners', 'member'],
   ['/dashboard/privacy', 'member'],
+  ['/dashboard/digest', 'member'],
+  ['/dashboard/digest/unsubscribe', 'member'],
   ['/admin/ai', 'admin'],
   ['/admin/marketing', 'admin'],
   ['/admin/access', 'admin'],
