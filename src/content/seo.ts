@@ -102,8 +102,7 @@ export const MARKETING_PAGES: Record<MarketingPath, MarketingPage> = {
   '/account-deletion': {
     path: '/account-deletion',
     title: 'Delete your account | Board Arabia',
-    description:
-      'How a Board Arabia member deletes an account from Your privacy, and how to ask for deletion when sign-in is not available. The profile, directory listing, introductions, notifications and event replies are removed. Deal room files and AI tool uploads are removed on request or in periodic retention runs.',
+    description: `How a Board Arabia member deletes an account from Your privacy, and how to ask for deletion when sign-in is not available. The profile, directory listing, introductions, notifications and event replies are removed. Deal room files and AI tool uploads are removed on request to ${legalField('contactEmail')}, and in any case within 24 months of exit.`,
   },
   '/legal': {
     path: '/legal',

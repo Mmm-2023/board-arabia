@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { legalField } from '../../config/legal'
 import { LEAVE_BOARD_PATH } from '../../lib/leaveBoard'
 import { DELETE_ACCOUNT_PATH } from '../../shell/destinations'
 import { AccountBackLink } from '../../pages/dashboard/AccountBackLink'
@@ -211,7 +212,7 @@ export function PrivacyPanelView({
         <p className={body}>
           This removes your profile, directory card, directory listing, introductions, notifications and event replies.
           Contact details already shared with another member through an accepted introduction cannot be recalled from
-          that member. Deal room files you uploaded and AI tool uploads are removed on request or in periodic retention runs. Legal
+          that member. Deal room files you uploaded and AI tool uploads are removed on request to {legalField('contactEmail')}, and in any case within 24 months of exit. Legal
           records and consent logs are kept. It cannot be undone.
         </p>
         <Link

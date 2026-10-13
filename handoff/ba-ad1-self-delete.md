@@ -34,13 +34,13 @@ There is no messages table yet, so this change does not delete messages. A consi
 - Consent log rows, with `user_id` cleared
 - Staff access log, tier audits, intro audits, and AI tool consent rows, with the user reference cleared
 - A legal hold skips that anonymising and keeps the references
-- Deal room files you uploaded. Account deletion does not remove them. They are removed on request or in periodic retention runs. Those runs are not scheduled.
-- AI tool upload rows and due diligence deck rows. Account deletion does not remove them or their storage objects. They are removed on request or in periodic retention runs. Those runs are not scheduled.
+- Deal room files you uploaded. Account deletion does not remove them. They are removed on request to the contact email from legalField('contactEmail'), and in any case within 24 months of exit.
+- AI tool upload rows and due diligence deck rows. Account deletion does not remove them or their storage objects. They are removed on request to the contact email from legalField('contactEmail'), and in any case within 24 months of exit.
 - The project has no automatic database backup. Supabase documents daily backups for Pro, Team, and Enterprise only.
 
 ## Approved exceptions
 
-`scripts/prerender.mjs` adds `/account-deletion` and `/legal`. `/legal` redirects to `/terms/`. Sitemap URLs use the trailing slash, matching the rest of the sitemap. `src/content/legal/privacy.en.ts` states what self-delete removes, that the member sign-in is anonymised, and that leftover member data is removed on request or in periodic retention runs. `.github/workflows/pages.yml` was not edited.
+`scripts/prerender.mjs` adds `/account-deletion` and `/legal`. `/legal` redirects to `/terms/`. Sitemap URLs use the trailing slash, matching the rest of the sitemap. `src/content/legal/privacy.en.ts` states what self-delete removes, that the member sign-in is anonymised, and that leftover member data is removed on request to the contact email from legalField('contactEmail'), and in any case within 24 months of exit. `.github/workflows/pages.yml` was not edited.
 
 ## Secrets
 

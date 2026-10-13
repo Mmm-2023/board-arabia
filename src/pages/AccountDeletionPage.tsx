@@ -32,7 +32,7 @@ export function AccountDeletionPage() {
         <h2 className="mt-10 font-display text-[1.55rem] font-semibold tracking-[-0.03em] text-ink">What is kept</h2>
         <p className="mt-3 text-[1.05rem] leading-relaxed text-ink/75">
           Legal records and consent logs stay for the period in the retention rules. The account reference on those rows
-          is removed, unless a legal hold applies. Deal room files you uploaded and AI tool uploads are removed on request or in periodic retention runs. Contact details already shared with another member through an accepted introduction cannot
+          is removed, unless a legal hold applies. Deal room files you uploaded and AI tool uploads are removed on request to {legalField('contactEmail')}, and in any case within 24 months of exit. Contact details already shared with another member through an accepted introduction cannot
           be recalled from that member. Admin sees a notice in the app.
         </p>
         <h2 className="mt-10 font-display text-[1.55rem] font-semibold tracking-[-0.03em] text-ink">
