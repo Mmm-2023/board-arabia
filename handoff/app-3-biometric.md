@@ -8,8 +8,8 @@ Base: `f17e56b` (main, APP-2). No migration. No Edge. The `/apply` route was not
 | --- | --- | --- |
 | Opt-in "Unlock with Face ID / fingerprint", off unless the member turns it on | `src/components/privacy/BiometricUnlockSetting.tsx:16`, `src/components/privacy/PrivacyPanelView.tsx:154` | VERIFIED |
 | Hidden on the web and when the device has no biometric | `src/shell/biometricLock.ts:36`, `src/pages/dashboard/PrivacyPanelPage.tsx:48` | VERIFIED |
-| Lock after 5 minutes in the background, and only when a session exists | `src/shell/biometricLock.ts:3`, `src/shell/biometricLock.ts:47` | VERIFIED |
-| Cancel or failure signs out locally and drops the vault copy. The preference stays on | `src/shell/biometricLock.ts:162`, `src/shell/BiometricGateNative.tsx:36` | VERIFIED |
+| Lock after 5 minutes in the background, and only when a session exists | `src/shell/biometricLock.ts:3`, `src/shell/biometricLock.ts:56` | VERIFIED |
+| Cancel or failure signs out locally and drops the vault copy. The preference stays on | `src/shell/biometricLock.ts:171`, `src/shell/BiometricGateNative.tsx:36` | VERIFIED |
 | Session JSON stays in Keychain and Keystore through `@capgo/capacitor-native-biometric` 8.6.7 | `src/shell/nativeBiometric.ts:50`, `package.json` | VERIFIED |
 | Prompt does not accept the device passcode as success | `src/shell/nativeBiometric.ts:19` | VERIFIED |
 | Face ID usage string | `ios/App/App/Info.plist` | VERIFIED |
@@ -17,18 +17,18 @@ Base: `f17e56b` (main, APP-2). No migration. No Edge. The `/apply` route was not
 | PR checks listen to `main` only | `.github/workflows/pr-checks.yml:4` | VERIFIED |
 | Existing iOS simulator and Android emulator jobs also capture the settings toggle and the unlock screen | `.github/workflows/app-builds.yml` | VERIFIED |
 
-The member privacy page needs a signed-in session. CI has no credentials, so the same jobs open `com.boardarabia.app://native/biometric-shot/settings` and `com.boardarabia.app://native/biometric-shot/lock`. Those routes render the real control and the real lock screen, and only inside the native app. On the web they are a not-found page.
+The member privacy page needs a signed-in session. CI has no credentials, so the same jobs open the native-only shot routes. Those routes render the real control and the real lock screen. On the web they are a not-found page.
 
 Biometric data is never sent anywhere. The plugin stores the access token and refresh token on the device. A failed or cancelled prompt calls `signOut({ scope: 'local' })` and deletes that copy. There is no server change.
 
 ## Shots
 
-Filled from the app build artifacts after CI:
+From the iOS simulator job and the Android emulator job on the app test build:
 
-- `handoff/app-3-biometric/ios-biometric-settings.png`
-- `handoff/app-3-biometric/ios-biometric-lock.png`
-- `handoff/app-3-biometric/android-biometric-settings.png`
-- `handoff/app-3-biometric/android-biometric-lock.png`
+- `handoff/app-3-biometric/ios-biometric-settings.png` shows Your privacy with Unlock with Face ID / fingerprint off.
+- `handoff/app-3-biometric/ios-biometric-lock.png` shows Unlock to continue.
+- `handoff/app-3-biometric/android-biometric-settings.png` shows the same toggle on the emulator.
+- `handoff/app-3-biometric/android-biometric-lock.png` shows Unlock to continue on the emulator.
 
 ## Not done
 
