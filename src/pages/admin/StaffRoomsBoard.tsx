@@ -27,7 +27,9 @@ export function StaffRoomsBoard({
         </p>
       ) : null}
       <ul className="mt-8 grid gap-3">
-        {rooms.map((room) => (
+        {rooms.map((room) => {
+          const documentCount = room.documentCount ?? 0
+          return (
           <li key={room.id}>
             <article className="border border-white/15 bg-white/[0.04] px-5 py-5">
               <div className="flex items-start justify-between gap-4">
@@ -41,6 +43,9 @@ export function StaffRoomsBoard({
               <p className="mt-4 text-[0.92rem] text-pearl/60">
                 {room.acceptedCount} accepted · {room.invitedCount} invited
               </p>
+              <p className="mt-1 text-[0.92rem] text-pearl/60" data-deal-staff-counts="">
+                {documentCount} {documentCount === 1 ? 'document' : 'documents'}
+              </p>
               {room.status === 'open' ? (
                 <button
                   type="button"
@@ -53,7 +58,8 @@ export function StaffRoomsBoard({
               ) : null}
             </article>
           </li>
-        ))}
+          )
+        })}
       </ul>
       {pending ? (
         <ConfirmDialog

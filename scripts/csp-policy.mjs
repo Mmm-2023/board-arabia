@@ -92,7 +92,9 @@ export function contentSecurityPolicy({
     `img-src 'self' data: blob: ${supabase.https}`,
     "font-src 'self'",
     `connect-src ${connectSrc.join(' ')}`,
-    `frame-src ${TURNSTILE}`,
+    // blob: is the in-app deal room viewer. It shows a watermarked PDF in an iframe.
+    // No PDF worker is added. worker-src stays 'self' blob: for other pages.
+    `frame-src ${TURNSTILE} blob:`,
     "worker-src 'self' blob:",
     "object-src 'none'",
     "base-uri 'self'",

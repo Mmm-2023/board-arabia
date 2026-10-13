@@ -87,6 +87,11 @@ verify_jwt = true
 [functions.deal-room-staff]
 verify_jwt = true
 
+# Deal room files. The anon key alone is not enough.
+# Members never read the bucket. This function stamps and logs each view.
+[functions.deal-room-documents]
+verify_jwt = true
+
 # Member Help note. The anon key alone is not enough. Address comes from ADMIN_NOTIFY_EMAIL.
 [functions.contact-desk]
 verify_jwt = true
