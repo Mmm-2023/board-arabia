@@ -14,7 +14,7 @@ Your privacy already links to Delete account. That screen is two steps.
 
 Leave Board Arabia is the same screen. Admin gets an in-app notice, not a new email. Staff read it with `list_account_closure_notices()`, which calls `private.is_staff()`.
 
-`/account-deletion` explains the in-app steps. The contact line uses `legalField('contactEmail')`. Nothing is rendered when that value is blank or still "To be confirmed".
+`/account-deletion` explains the in-app steps. The contact line always uses `legalField('contactEmail')`. The Pages build fails when `VITE_LEGAL_CONTACT_EMAIL` is unset. No mailbox literal is stored in the repo.
 
 ## Deleted now
 
@@ -22,6 +22,7 @@ Leave Board Arabia is the same screen. Admin gets an in-app notice, not a new em
 - Directory listing (status suspended, directory hidden, partner card off)
 - Introductions
 - Notifications (`digest_notices`, `member_notifications`, `member_notification_prefs`)
+- Event replies (`majlis_rsvps` and `majlis_rsvp_limits`)
 - The member sign-in is anonymised, not deleted. Sessions are cleared when those tables exist.
 
 There is no messages table yet, so this change does not delete messages. A consideration account that is not a member still goes through `prepare_candidate_delete`, which deletes that sign-in. Consent log rows for that account stay, with the user reference cleared by the foreign key.
@@ -33,6 +34,9 @@ There is no messages table yet, so this change does not delete messages. A consi
 - Consent log rows, with `user_id` cleared
 - Staff access log, tier audits, intro audits, and AI tool consent rows, with the user reference cleared
 - A legal hold skips that anonymising and keeps the references
+- Deal room files you uploaded, until you delete them. Account deletion does not remove them. A 30 day removal after the room closes is defined and the retention sweep does not call it yet.
+- AI tool upload rows and due diligence deck rows. Account deletion does not remove them or their storage objects. The retention sweep deletes those rows after the AI retention setting, which defaults to 30 days, and the sweep function removes the stored files.
+- The project has no automatic database backup. Supabase documents daily backups for Pro, Team, and Enterprise only.
 
 ## Approved exceptions
 

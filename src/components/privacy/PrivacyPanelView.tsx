@@ -209,7 +209,9 @@ export function PrivacyPanelView({
           Delete account
         </h2>
         <p className={body}>
-          This removes your profile, directory card, directory listing, introductions and notifications. Legal
+          This removes your profile, directory card, directory listing, introductions, notifications and event replies.
+          Contact details already shared with another member through an accepted introduction cannot be recalled from
+          that member. Deal room files you uploaded stay in the room. AI tool uploads follow their own schedule. Legal
           records and consent logs are kept. It cannot be undone.
         </p>
         <Link

@@ -1,5 +1,6 @@
 -- Members and consideration accounts delete themselves after a one-time code.
--- Profile, directory card, intros and notifications go now.
+-- Profile, directory card, intros, notifications and event replies go now.
+-- Deal room files and AI upload rows stay. Storage objects are not deleted here.
 -- Legal records, consent rows and audit rows stay. The user reference is cleared
 -- unless a legal hold is set.
 -- Staff read the in-app closure notice through private.is_staff().
@@ -446,6 +447,16 @@ begin
      )
   then
     execute 'delete from public.notifications where user_id = $1' using p_user_id;
+  end if;
+
+  if pg_catalog.to_regclass('public.majlis_rsvps') is not null then
+    delete from public.majlis_rsvps
+    where member_id = p_user_id;
+  end if;
+
+  if pg_catalog.to_regclass('public.majlis_rsvp_limits') is not null then
+    delete from public.majlis_rsvp_limits
+    where member_id = p_user_id;
   end if;
 
   update public.profiles

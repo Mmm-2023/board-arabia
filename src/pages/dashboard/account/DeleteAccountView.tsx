@@ -46,11 +46,14 @@ export function DeleteAccountView({
             <li>Your directory listing</li>
             <li>Your introductions</li>
             <li>Your notifications</li>
+            <li>Your event replies</li>
           </ul>
           <h2 className="mt-8 font-display text-[1.35rem] font-semibold tracking-[-0.02em]">What is kept</h2>
           <p className="mt-3 max-w-xl text-[1rem] leading-relaxed text-ink/75">
             Legal records and consent logs stay, as set out in the retention rules. The account reference on those rows
-            is removed, unless a legal hold applies.
+            is removed, unless a legal hold applies. Deal room files you uploaded stay in the room. AI tool uploads
+            follow their own schedule. Contact details already shared with another member through an accepted
+            introduction cannot be recalled from that member.
           </p>
           <p className="mt-3 max-w-xl text-[1rem] leading-relaxed text-ink/75">
             Admin sees a notice in the app. No separate request is sent.

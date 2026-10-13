@@ -103,7 +103,7 @@ export const MARKETING_PAGES: Record<MarketingPath, MarketingPage> = {
     path: '/account-deletion',
     title: 'Delete your account | Board Arabia',
     description:
-      'How a Board Arabia member deletes an account from Your privacy, and how to ask for deletion when sign-in is not available. The profile, directory card, intros and notifications are removed. Legal records and consent logs are kept.',
+      'How a Board Arabia member deletes an account from Your privacy, and how to ask for deletion when sign-in is not available. The profile, directory listing, introductions, notifications and event replies are removed. Deal room files and AI tool uploads are not removed by that step.',
   },
   '/legal': {
     path: '/legal',

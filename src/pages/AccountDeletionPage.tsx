@@ -27,22 +27,27 @@ export function AccountDeletionPage() {
           <li>Directory listing</li>
           <li>Introductions</li>
           <li>Notifications</li>
+          <li>Event replies</li>
         </ul>
         <h2 className="mt-10 font-display text-[1.55rem] font-semibold tracking-[-0.03em] text-ink">What is kept</h2>
         <p className="mt-3 text-[1.05rem] leading-relaxed text-ink/75">
           Legal records and consent logs stay for the period in the retention rules. The account reference on those rows
-          is removed, unless a legal hold applies. Admin sees a notice in the app.
+          is removed, unless a legal hold applies. Deal room files you uploaded stay in the room. AI tool uploads follow
+          their own schedule. Contact details already shared with another member through an accepted introduction cannot
+          be recalled from that member. Admin sees a notice in the app.
         </p>
-        {contact ? (
-          <>
-            <h2 className="mt-10 font-display text-[1.55rem] font-semibold tracking-[-0.03em] text-ink">
-              If you cannot sign in
-            </h2>
-            <p className="mt-3 text-[1.05rem] leading-relaxed text-ink/75" data-deletion-contact="">
-              Write to <a href={`mailto:${contact}`}>{contact}</a> and ask us to delete the account.
-            </p>
-          </>
-        ) : null}
+        <h2 className="mt-10 font-display text-[1.55rem] font-semibold tracking-[-0.03em] text-ink">
+          If you cannot sign in
+        </h2>
+        <p className="mt-3 text-[1.05rem] leading-relaxed text-ink/75" data-deletion-contact="">
+          Write to{' '}
+          {contact ? (
+            <a href={`mailto:${contact}`}>{contact}</a>
+          ) : (
+            legalField('contactEmail')
+          )}{' '}
+          and ask us to delete the account.
+        </p>
         <p className="mt-8">
           <Link to="/privacy/" className="border-b border-brass text-ink">
             Privacy Notice

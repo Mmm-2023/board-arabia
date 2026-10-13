@@ -6,6 +6,7 @@ import path from 'node:path'
 import test from 'node:test'
 import { fileURLToPath } from 'node:url'
 import { deletionContact } from '../src/lib/deletionContact.ts'
+import { pagesContactEmailError } from './pages-contact-email.mjs'
 import { handleDeleteAccount } from '../supabase/functions/delete-candidate-account/handle.ts'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
@@ -67,10 +68,21 @@ function deps(overrides: Partial<Parameters<typeof handleDeleteAccount>[0]> = {}
   return { input, calls }
 }
 
-test('public deletion page reads the legal contact and renders nothing when unset', () => {
+test('public deletion page always shows the legal contact', () => {
   const page = read('src/pages/AccountDeletionPage.tsx')
   const privacy = read('src/pages/PrivacyPage.tsx')
   assert.match(page, /legalField\('contactEmail'\)/)
+  assert.match(page, /data-deletion-contact=/)
+  assert.match(page, /If you cannot sign in/)
+  assert.equal(page.includes(': null'), false)
+  assert.equal(pagesContactEmailError({ GITHUB_PAGES: 'true' }), 'Pages build requires VITE_LEGAL_CONTACT_EMAIL')
+  assert.equal(
+    pagesContactEmailError({ GITHUB_PAGES: 'true', VITE_LEGAL_CONTACT_EMAIL: 'To be confirmed' }),
+    'Pages build requires VITE_LEGAL_CONTACT_EMAIL',
+  )
+  assert.equal(pagesContactEmailError({ GITHUB_PAGES: 'true', VITE_LEGAL_CONTACT_EMAIL: 'privacy@example.com' }), '')
+  assert.equal(pagesContactEmailError({ VITE_LEGAL_CONTACT_EMAIL: '' }), '')
+  assert.match(read('scripts/with-public-legal-env.mjs'), /pagesContactEmailError/)
   assert.match(privacy, /to="\/account-deletion\/"/)
   assert.match(page, /to="\/privacy\/"/)
   assert.match(read('scripts/prerender.mjs'), /'\/account-deletion'/)
@@ -99,6 +111,10 @@ test('public deletion page reads the legal contact and renders nothing when unse
   assert.match(sql, /private\.is_staff\(\)/)
   assert.match(sql, /revoke all on function public\.confirm_account_delete\(uuid, text\) from public, anon, authenticated/)
   assert.match(sql, /grant execute on function public\.confirm_account_delete\(uuid, text\) to service_role/)
+  assert.match(sql, /delete from public\.majlis_rsvps/)
+  assert.equal(sql.includes('delete from public.room_documents'), false)
+  assert.equal(sql.includes('storage.objects'), false)
+  assert.equal(sql.includes('delete from public.ai_tool_jobs'), false)
   assert.equal(/\bto anon\b/i.test(sql), false)
   assert.equal(/\bto public\b/i.test(sql), false)
   const names = readdirSync(migrationsDir).filter((name) => name.endsWith('.sql')).sort()
@@ -223,6 +239,11 @@ declare
   result jsonb;
   notices int;
   consent_left int;
+  rsvp_event uuid := '66666666-6666-4666-8666-666666666666';
+  room_key uuid := '77777777-7777-4777-8777-777777777777';
+  doc_key uuid := '88888888-8888-4888-8888-888888888888';
+  job_key uuid := '99999999-9999-4999-8999-999999999999';
+  deck_key uuid := 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
   consent_named int;
   intro_left int;
   digest_left int;
@@ -355,6 +376,63 @@ begin
 
   perform set_config('request.jwt.claims', json_build_object('role', 'service_role')::text, true);
 
+  insert into public.majlis_events (
+    id, host_member_id, title, description, region, focus_tags,
+    starts_at, ends_at, capacity, venue_name, venue_address, status
+  ) values (
+    rsvp_event, other_id, 'Example gathering', 'A short note for members.', 'Riyadh', array['Energy'],
+    now() + interval '2 days', now() + interval '2 days 2 hours', 20, 'Example hall', 'Example street', 'pending_approval'
+  );
+
+  insert into public.majlis_rsvps (event_id, member_id, status)
+  values (rsvp_event, ad1.member_id, 'registered');
+
+  insert into public.rooms (id, name, summary, sector, stage, member_count, host_name, opened_by)
+  values (
+    room_key,
+    'Example room',
+    'A short note for members in the room.',
+    'Energy',
+    'Open',
+    1,
+    'Example Host',
+    'admin'
+  );
+
+  insert into public.room_documents (
+    id, room_id, uploaded_by, storage_path, file_name, mime, size_bytes, page_count
+  ) values (
+    doc_key,
+    room_key,
+    ad1.member_id,
+    room_key::text || '/' || doc_key::text || '/source',
+    'brief.pdf',
+    'application/pdf',
+    1200,
+    1
+  );
+
+  insert into public.ai_tool_jobs (id, member_id, tool_key, storage_path, file_name, mime_type, byte_size)
+  values (
+    job_key,
+    ad1.member_id,
+    'cfo_check',
+    ad1.member_id::text || '/' || job_key::text || '/source.pdf',
+    'brief.pdf',
+    'application/pdf',
+    1200
+  );
+
+  insert into public.due_diligence_decks (id, member_id, storage_path, file_name, mime_type, byte_size)
+  values (
+    deck_key,
+    ad1.member_id,
+    ad1.member_id::text || '/' || deck_key::text || '/source.pdf',
+    'deck.pdf',
+    'application/pdf',
+    2400
+  );
+
   issued := public.issue_account_delete_code(staff_id, code_hash, now() + interval '10 minutes');
   if issued is distinct from 'staff' then
     raise exception 'staff issue returned %', issued;
@@ -429,6 +507,22 @@ begin
   select count(*) into digest_left from public.digest_notices n where n.member_id = ad1.member_id;
   if intro_left <> 0 or digest_left <> 0 then
     raise exception 'intros or notices remain % %', intro_left, digest_left;
+  end if;
+
+  if (select count(*) from public.majlis_rsvps r where r.member_id = ad1.member_id) <> 0 then
+    raise exception 'event reply remains';
+  end if;
+  if (select count(*) from public.majlis_events where id = rsvp_event) <> 1 then
+    raise exception 'event row was removed';
+  end if;
+  if (select count(*) from public.room_documents where id = doc_key) <> 1 then
+    raise exception 'deal room file was removed';
+  end if;
+  if (select count(*) from public.ai_tool_jobs where id = job_key) <> 1 then
+    raise exception 'ai upload row was removed';
+  end if;
+  if (select count(*) from public.due_diligence_decks where id = deck_key) <> 1 then
+    raise exception 'due diligence file was removed';
   end if;
 
   select count(*) into consent_left from public.consent_log;
