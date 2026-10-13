@@ -175,8 +175,10 @@ test('home and prior notes render the wave 2 lines', async () => {
     const nudgeHtml = renderToStaticMarkup(
       createElement(MemoryRouter, null, createElement(home.HomeSnapshotView, { model: nudged })),
     )
-    assert.match(nudgeHtml, /Finish your profile: add sector and availability \(2 left\)/)
-    assert.match(nudgeHtml, /href="\/dashboard\/profile#profile-tags"/)
+    assert.equal(nudgeHtml.includes('Finish your profile: add sector and availability'), false)
+    assert.equal((nudgeHtml.match(/data-home-cta=/g) || []).length, 1)
+    assert.match(nudgeHtml, /href="\/dashboard\/deals"/)
+    assert.match(nudgeHtml, />Explore deals</)
     assert.equal(nudgeHtml.includes('Nothing needs you right now'), false)
 
     const clear = assembleHome(homeInput({ status: 'ready', availabilitySet: true, sectorSet: true }))
@@ -184,7 +186,8 @@ test('home and prior notes render the wave 2 lines', async () => {
       createElement(MemoryRouter, null, createElement(home.HomeSnapshotView, { model: clear })),
     )
     assert.equal(clearHtml.includes('Finish your profile'), false)
-    assert.match(clearHtml, /Nothing needs you right now/)
+    assert.equal((clearHtml.match(/data-home-cta=/g) || []).length, 1)
+    assert.match(clearHtml, />Explore deals</)
 
     const desk = await vite.ssrLoadModule('/src/pages/dashboard/DueDiligencePage.tsx')
     const html = renderToStaticMarkup(

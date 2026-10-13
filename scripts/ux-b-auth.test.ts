@@ -111,8 +111,10 @@ test('home prompt is absent on mandates and two-step', async () => {
     await vite.close()
   }
   const layout = read('src/pages/dashboard/DashboardLayout.tsx')
-  assert.match(layout, /MemberHomePrompt/)
+  assert.equal(layout.includes('MemberHomePrompt'), false)
   assert.equal(layout.includes('MemberMfaPrompt'), false)
+  assert.match(read('src/lib/homeNeeds.ts'), /Turn on two-step sign-in to protect your account/)
+  assert.match(read('src/pages/dashboard/DashboardHome.tsx'), /twoStepOff/)
   assert.match(read('src/lib/mfaFlow.ts'), /export function routeHold/)
 })
 
