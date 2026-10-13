@@ -234,6 +234,26 @@ test('same-city matching uses fixed keys and falls back to text for other', () =
   assert.equal(picks.some((row) => row.suggestedId === 'noura'), false)
 })
 
+test('a fixed city matches other only when the location text is the same', () => {
+  const now = new Date('2026-09-30T12:00:00.000Z')
+  const plan = planIntroWeek({
+    now,
+    members: [
+      member('amina', { region: 'Riyadh', cityKey: 'riyadh' }),
+      member('layla', { region: 'Riyadh', cityKey: 'other' }),
+      member('noura', { region: 'Abha', cityKey: 'other' }),
+    ],
+    intros: [],
+    priorSuggestions: [],
+    membersWithCurrentWeek: [],
+  })
+  const amina = plan.suggestions.filter((row) => row.memberId === 'amina')
+  assert.equal(amina.some((row) => row.suggestedId === 'layla' && row.reason === 'Both are in Riyadh.'), true)
+  assert.equal(amina.some((row) => row.suggestedId === 'noura'), false)
+  const layla = plan.suggestions.filter((row) => row.memberId === 'layla')
+  assert.equal(layla.some((row) => row.suggestedId === 'amina' && row.reason === 'Both are in Riyadh.'), true)
+})
+
 test('the checklist and the admin mandate form show the longer sector list', async () => {
   const client = await loadClient()
   const checklist = renderToStaticMarkup(
@@ -387,6 +407,7 @@ test('the pf3 migration bans search_path public and keeps directory rules', () =
   assert.match(migration, /set search_path = ''/)
   assert.match(migration, /check \(bio is null or pg_catalog\.char_length\(bio\) <= 400\)\s+not valid/i)
   assert.match(migration, /grant update \(location, city_key\)/)
+  assert.match(migration, /before insert or update of location, city_key on public\.profiles/)
   assert.match(migration, /grant select \(city_key\)/)
   assert.match(migration, /coalesce\(m\.directory_hidden, false\) = false or m\.user_id = auth\.uid\(\)/)
   assert.match(migration, /private\.caller_sees_member_card\(m\.user_id\)/)
@@ -604,6 +625,12 @@ begin
   select p.city_key, p.location into city, place from public.profiles p where p.user_id = sponsor_id;
   if city is distinct from 'other' or place is distinct from 'Oasis Town' then
     raise exception 'unknown city was not kept: % %', city, place;
+  end if;
+
+  update public.profiles set city_key = 'riyadh' where user_id = sponsor_id;
+  select p.city_key, p.location into city, place from public.profiles p where p.user_id = sponsor_id;
+  if city is distinct from 'other' or place is distinct from 'Oasis Town' then
+    raise exception 'city_key write drifted from location: % %', city, place;
   end if;
 
   update public.profiles set sector_tags = array['Real estate']::text[] where user_id = member_id;

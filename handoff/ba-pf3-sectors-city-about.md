@@ -15,7 +15,7 @@ No new table. No legal text. `/apply` is unchanged. `scripts/definer-audit.test.
 | Application checklist and admin mandate form show the new list because both render `SECTOR_TAGS` | `src/pages/dashboard/account/MembershipChecklistView.tsx:392`, `src/pages/admin/NewMandateForm.tsx:175` | `the checklist and the admin mandate form show the longer sector list` | VERIFIED |
 | `profiles.city_key` is a fixed key or `other`. `profiles.location` stays the display text. Member can update `city_key` alongside `location`. | migration `:127`, `:175`, `:184` | `sectors, city keys, and about hold in postgres` | VERIFIED |
 | Existing location text maps generically: trim, lower case, first comma part, aliases. No row-specific SQL. Unmatched values become `other` and keep their trimmed text. A known city is stored as the picklist label. | `private.city_key_from_location` at migration `:49`. Backfill at `:175`. Client twin `supabase/functions/_shared/cities.ts` | `city mapping sends Riyadh variants to riyadh and keeps unknown text as other` and the Postgres mapping checks | VERIFIED for the named aliases (khobar, al khobar, dammam) and the picklist labels. INFERRED for extra spellings (riaydh, mecca, medina, jiddah, kuwait, masqat) |
-| A trigger sets `city_key` from `location` on insert and on update of location, so a later write cannot leave the key blank | migration `:152` and `:170` | Postgres test: `khobar, east` stores `dammam_khobar` and keeps the typed text | VERIFIED |
+| A trigger sets `city_key` from `location` on insert and on update of location or `city_key`, so a key-only write cannot drift from the display text | migration `:152` and `:170` | Postgres test: a `city_key` write on an other city is put back to `other` | VERIFIED |
 | Same-city suggestions use `city_key` when both keys are fixed. `other` falls back to the normalised text compare. The reason uses the city label. Cap, refill, and hidden rules are unchanged. | `supabase/functions/_shared/suggest_intros.ts:446`. Load at `supabase/functions/suggest-intros/index.ts:171` and `:229` | `same-city matching uses fixed keys and falls back to text for other` | VERIFIED |
 | Directory city filter uses the key | `src/lib/directoryFilters.ts:43` and `:78`. Chips in `src/pages/dashboard/DirectoryBoard.tsx:81` | `directory filter uses the city key, and the card keeps about as plain text` | VERIFIED |
 | About label, helper, and 400 character max on the client | `src/lib/about.ts:3`, `src/pages/dashboard/ProfilePage.tsx:544` | `about rejects 401 characters and warns on contact details without blocking` | VERIFIED |
@@ -54,7 +54,7 @@ Example data only. `scripts/capture-pf3.mjs` at 1280 and 390:
 ## Apply list
 
 1. Apply `supabase/migrations/20261210120000_sectors_city_about.sql` (sector list, `city_key`, mapping, About check NOT VALID, `list_directory` replace, grants). Do not apply it from the app or from CI.
-2. Redeploy `suggest-intros`. It is the only function that imports `supabase/functions/_shared/suggest_intros.ts`. Redeploy after the migration, because the function selects `profiles.city_key`.
+2. Redeploy suggest-intros only, do not invoke or schedule. It is the only function that imports `supabase/functions/_shared/suggest_intros.ts`. Redeploy after the migration, because the function selects `profiles.city_key`.
 3. After deploy, run:
 
 ```sql
@@ -67,7 +67,7 @@ If that count is 0:
 alter table public.profiles validate constraint profiles_bio_max_400;
 ```
 
-4. Smoke: set a city from the picker for two test members who share that city. A dry run of suggest-intros should give a same-city reason that uses the city label.
+4. Smoke is UI only. Set a city from the picker. Open the expanded directory card and confirm About. Open the intro screen and confirm About. Do not invoke or schedule suggest-intros.
 
 ## Local checks
 

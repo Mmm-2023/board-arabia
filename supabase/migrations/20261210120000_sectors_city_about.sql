@@ -164,11 +164,11 @@ $$;
 revoke all on function private.profiles_set_city_key() from public, anon, authenticated;
 
 comment on function private.profiles_set_city_key() is
-  'Sets city_key from location on the row being written. Not callable by anon.';
+  'Sets city_key from location when location or city_key is written. Not callable by anon.';
 
 drop trigger if exists profiles_set_city_key on public.profiles;
 create trigger profiles_set_city_key
-  before insert or update of location on public.profiles
+  before insert or update of location, city_key on public.profiles
   for each row
   execute function private.profiles_set_city_key();
 
