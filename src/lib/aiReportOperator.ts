@@ -2,8 +2,9 @@
  * Logged-in AI report operator credit.
  * A signed-in client still loads the operator row.
  * The stored name and registration number are not shown.
- * When a row is present the credit is "Provided by Board Arabia".
- * If that read fails, the Provided by sentence is omitted.
+ * The credit requires only the entity name.
+ * An empty registration field still renders "Provided by Board Arabia", with no registration clause.
+ * A blank entity, or a failed read, omits the Provided by sentence.
  */
 
 export type AiReportOperator = {
@@ -32,8 +33,7 @@ export function readAiReportOperatorPreview(): AiReportOperator | null | undefin
 export function operatorCredit(row: AiReportOperator | null): string | null {
   if (!row) return null
   const entity = row.entity.trim()
-  const cr = row.cr.trim()
-  if (!entity || !cr) return null
+  if (!entity) return null
   return 'Provided by Board Arabia'
 }
 
