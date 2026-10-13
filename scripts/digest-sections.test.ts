@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
-import { existsSync, mkdirSync, readdirSync, readFileSync } from 'node:fs'
+import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
 import path from 'node:path'
 import test from 'node:test'
 import { createElement } from 'react'
@@ -298,8 +299,7 @@ test('member and admin digest shots at 1440 and 390', async (t) => {
     t.skip('Chrome is not installed')
     return
   }
-  const shotDir = path.join('/opt/cursor/artifacts', 'fw4c-digest-sections')
-  mkdirSync(shotDir, { recursive: true })
+  const shotDir = mkdtempSync(path.join(tmpdir(), 'ba-fw4c-digest-'))
   const vite = await createServer({
     server: { host: '127.0.0.1', port: 0, hmr: false },
     logLevel: 'error',
@@ -358,5 +358,6 @@ test('member and admin digest shots at 1440 and 390', async (t) => {
   } finally {
     await browser.close()
     await vite.close()
+    rmSync(shotDir, { recursive: true, force: true })
   }
 })
