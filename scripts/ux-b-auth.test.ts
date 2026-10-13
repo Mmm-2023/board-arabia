@@ -111,8 +111,10 @@ test('home prompt is absent on mandates and two-step', async () => {
     await vite.close()
   }
   const layout = read('src/pages/dashboard/DashboardLayout.tsx')
-  assert.match(layout, /MemberHomePrompt/)
+  assert.equal(layout.includes('MemberHomePrompt'), false)
   assert.equal(layout.includes('MemberMfaPrompt'), false)
+  assert.match(read('src/lib/homeNeeds.ts'), /Turn on two-step sign-in to protect your account/)
+  assert.match(read('src/pages/dashboard/DashboardHome.tsx'), /twoStepOff/)
   assert.match(read('src/lib/mfaFlow.ts'), /export function routeHold/)
 })
 
@@ -191,7 +193,7 @@ test('staff name card shows only when the signed-in name is empty', async () => 
   assert.equal(showStaffNameCard('', false), false)
   assert.equal(cleanStaffDisplayName('name@example.com').ok, false)
   assert.equal(ownStaffRowLabel('staff@example.com', 'Admin', true, 'Example Name'), 'Example Name, Admin')
-  assert.equal(ownStaffRowLabel('staff@example.com', 'Master', true, 'Example Name'), 'Example Name, Master')
+  assert.equal(ownStaffRowLabel('staff@example.com', 'Owner', true, 'Example Name'), 'Example Name, Owner')
   assert.equal(ownStaffRowLabel('other@example.com', 'Admin', false, 'Example Name'), 'other@example.com')
   const vite = await createServer({ server: { middlewareMode: true }, appType: 'custom', logLevel: 'error' })
   try {

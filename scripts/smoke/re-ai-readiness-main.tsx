@@ -15,7 +15,7 @@ import './home.css'
 
 const operatorOff = new URLSearchParams(window.location.search).get('operator') === 'off'
 previewAiReportOperator(
-  operatorOff ? null : { entity: 'NAMMCO Holding Co.', cr: '7043252647' },
+  operatorOff ? null : { entity: 'Board Arabia', cr: 'on file' },
 )
 
 const slots: LegalSlots = {

@@ -4,6 +4,7 @@ import { WeeklyDigestView } from '../../components/digest/WeeklyDigestView'
 import { presentWeeklyDigest, type WeeklyDigestModel } from '../../lib/weeklyDigest'
 import { supabase } from '../../lib/supabase'
 import { useNoIndex } from '../../lib/usePageTitle'
+import { AccountBackLink } from './AccountBackLink'
 
 export function DigestPage() {
   const [digest, setDigest] = useState<WeeklyDigestModel | null>(null)
@@ -33,6 +34,7 @@ export function DigestPage() {
 
   return (
     <div className="max-w-3xl">
+      <AccountBackLink to="/dashboard" label="Back to Home" />
       <p className="text-[0.72rem] font-semibold tracking-[0.14em] text-brass uppercase">Home</p>
       <h1 className="mt-3 font-display text-[2rem] font-semibold tracking-[-0.03em]">This week</h1>
       <p className="mt-2 max-w-xl text-[0.95rem] leading-relaxed text-ink/70">

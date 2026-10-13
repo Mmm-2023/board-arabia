@@ -162,7 +162,7 @@ export function appShells(options = {}) {
     seen.add(entry.path)
     if (entry.title !== 'Board Arabia') throw new Error(`${entry.path} share title`)
     if (entry.description.includes('\u2014')) throw new Error(`${entry.path} em dash in share text`)
-    if (/nammco/i.test(entry.description) || entry.description.includes('7043252647')) {
+    if (/nammco/i.test(entry.description) || /\b\d{10}\b/.test(entry.description)) {
       throw new Error(`${entry.path} banned share text`)
     }
   }

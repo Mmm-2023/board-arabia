@@ -3,6 +3,7 @@ import { readdirSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 import test from 'node:test'
 import { fileURLToPath } from 'node:url'
+import { publicEntityHits } from './no-public-entity.test.ts'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 
@@ -43,7 +44,7 @@ function staffNameHits(text: string) {
 }
 
 function legalSourceBanned(source: string) {
-  return /nammco/i.test(source) || /\bCR\s*\d{10}\b/.test(source)
+  return /nammco/i.test(source) || publicEntityHits(source).length > 0
 }
 
 test('public docs and workflows contain no staff first names', () => {
@@ -76,22 +77,24 @@ test('a bad staff line fails and the locked credit passes', () => {
   assert.deepEqual(staffNameHits(`${ALLOWED_MICHAEL}\nSasha applies`), ['Sasha'])
 })
 
-test('legal page sources carry no nammco text and no registration line', () => {
+test('legal page sources name Board Arabia and carry no entity or registration line', () => {
   for (const file of LEGAL_SOURCES) {
     const source = read(file)
     assert.equal(/nammco/i.test(source), false, file)
     assert.equal(/\bCR\s*\d{10}\b/.test(source), false, file)
-    assert.match(source, /\[BA ENTITY\]/)
-    assert.match(source, /commercial registration number \[CR\]/)
+    assert.deepEqual(publicEntityHits(source), [], file)
+    assert.equal(source.includes('[BA ENTITY]'), false, file)
+    assert.equal(source.includes('commercial registration number [CR]'), false, file)
+    assert.match(source, /Board Arabia is the operator of the Platform/)
   }
   const resolve = read('src/content/legal/resolve.ts')
   assert.match(resolve, /from '\.\.\/\.\.\/config\/legalPageIdentity\.ts'/)
   assert.match(resolve, /publishedLegalIdentity\(\)/)
+  assert.match(resolve, /'\[AI PROVIDER\]': 'aiProvider'/)
   const identity = read('src/config/legalPageIdentity.ts')
-  assert.match(identity, /VITE_LEGAL_BA_ENTITY/)
-  assert.match(identity, /VITE_LEGAL_CR/)
-  assert.equal(legalSourceBanned('operated by [BA ENTITY], commercial registration number [CR]'), false)
+  assert.equal(identity.includes('VITE_LEGAL_BA_ENTITY'), false)
+  assert.equal(identity.includes('VITE_LEGAL_CR'), false)
+  assert.equal(identity.includes('import.meta.env'), false)
   assert.equal(legalSourceBanned('powered by nammco'), true)
-  assert.equal(legalSourceBanned('NAMMCO Holding Co.'), true)
-  assert.equal(legalSourceBanned('CR 0000000000'), true)
+  assert.equal(legalSourceBanned('Board Arabia is the operator of the Platform'), false)
 })

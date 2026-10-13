@@ -3,8 +3,11 @@ import { readFileSync, readdirSync, statSync } from 'node:fs'
 import path from 'node:path'
 import test from 'node:test'
 import {
+  ACCOUNT_SHEET_LINKS,
+  DELETE_ACCOUNT_PATH,
   MEMBER_ACCOUNT,
   MEMBER_DESTINATIONS,
+  accountPathActive,
   memberAccountLinks,
   MEMBER_SECTIONS,
   phoneDestinations,
@@ -77,7 +80,7 @@ test('account links are not tabs and staff secondary stays put', () => {
   for (const item of STAFF_SECONDARY) assert.equal(staffLabels.has(item.label), false)
   assert.deepEqual(
     MEMBER_ACCOUNT.map((item) => item.label),
-    ['Profile', 'Help'],
+    ['Profile', 'This week', 'Your privacy', 'Two-step sign-in', 'Membership', 'Help'],
   )
   assert.deepEqual(
     STAFF_SECONDARY.map((item) => item.label),
@@ -116,11 +119,11 @@ test('section title follows the active destination', () => {
   assert.equal(shellSectionTitle('/dashboard/partnership', MEMBER_DESTINATIONS, MEMBER_ACCOUNT), 'Partnership')
   assert.deepEqual(
     memberAccountLinks('ksa').map((item) => item.label),
-    ['Profile', 'Help'],
+    ['Profile', 'This week', 'Your privacy', 'Two-step sign-in', 'Membership', 'Help'],
   )
   assert.deepEqual(
     memberAccountLinks('sponsor').map((item) => item.label),
-    ['Partnership', 'Profile', 'Help'],
+    ['Partnership', 'Profile', 'This week', 'Your privacy', 'Two-step sign-in', 'Membership', 'Help'],
   )
   assert.equal(memberAccountLinks('sponsor').some((item) => MEMBER_DESTINATIONS.some((tab) => tab.label === item.label)), false)
   assert.equal(shellSectionTitle('/admin/applications', STAFF_DESTINATIONS, STAFF_SECONDARY), 'Applications')
@@ -200,6 +203,57 @@ test('product shell files have no em dash', () => {
   assert.match(css, /\.shell-tab-bar\s*\{[^}]*padding-bottom:\s*env\(safe-area-inset-bottom,\s*0px\)/)
   assert.match(css, /safe-area-inset-left/)
   assert.match(css, /safe-area-inset-right/)
+})
+
+test('account list order, partner row, and delete account stays off the list', () => {
+  const labels = ['Profile', 'This week', 'Your privacy', 'Two-step sign-in', 'Membership', 'Help']
+  const paths = [
+    '/dashboard/profile',
+    '/dashboard/digest',
+    '/dashboard/privacy',
+    '/dashboard/two-step',
+    '/dashboard/membership',
+    '/dashboard/help',
+  ]
+  assert.deepEqual(ACCOUNT_SHEET_LINKS.map((item) => item.label), labels)
+  assert.deepEqual(ACCOUNT_SHEET_LINKS.map((item) => item.to), paths)
+  assert.equal(ACCOUNT_SHEET_LINKS.length, 6)
+  assert.equal(MEMBER_ACCOUNT, ACCOUNT_SHEET_LINKS)
+  assert.equal(ACCOUNT_SHEET_LINKS.some((item) => item.to === DELETE_ACCOUNT_PATH), false)
+  assert.equal(ACCOUNT_SHEET_LINKS.some((item) => /sponsor/i.test(item.label)), false)
+  const partner = memberAccountLinks('sponsor')
+  assert.equal(partner[0]?.label, 'Partnership')
+  assert.equal(partner[0]?.to, '/dashboard/partnership')
+  assert.deepEqual(partner.slice(1).map((item) => item.label), labels)
+  assert.equal(partner.some((item) => /sponsor/i.test(item.label)), false)
+  assert.deepEqual(memberAccountLinks('intl').map((item) => item.label), labels)
+  assert.deepEqual(memberAccountLinks(null).map((item) => item.label), labels)
+  for (const item of partner) {
+    assert.equal(MEMBER_DESTINATIONS.some((tab) => tab.to === item.to), false)
+  }
+  assert.equal(accountPathActive('/dashboard/digest', ACCOUNT_SHEET_LINKS), true)
+  assert.equal(accountPathActive('/dashboard/privacy', ACCOUNT_SHEET_LINKS), true)
+  assert.equal(accountPathActive('/dashboard/two-step', ACCOUNT_SHEET_LINKS), true)
+  assert.equal(accountPathActive('/dashboard/membership', ACCOUNT_SHEET_LINKS), true)
+  assert.equal(accountPathActive('/dashboard/help', ACCOUNT_SHEET_LINKS), true)
+  assert.equal(accountPathActive('/dashboard/profile/leave', ACCOUNT_SHEET_LINKS), true)
+  assert.equal(accountPathActive('/dashboard/digest/unsubscribe', ACCOUNT_SHEET_LINKS), true)
+  assert.equal(accountPathActive(DELETE_ACCOUNT_PATH, ACCOUNT_SHEET_LINKS), true)
+  assert.equal(shellSectionTitle(DELETE_ACCOUNT_PATH, MEMBER_DESTINATIONS, ACCOUNT_SHEET_LINKS), 'Delete account')
+  assert.equal(accountPathActive('/dashboard/partnership', ACCOUNT_SHEET_LINKS), true)
+  assert.equal(accountPathActive('/dashboard/sponsorship', ACCOUNT_SHEET_LINKS), true)
+  assert.equal(accountPathActive('/dashboard', ACCOUNT_SHEET_LINKS), false)
+  assert.equal(accountPathActive('/dashboard/ai', ACCOUNT_SHEET_LINKS), false)
+  assert.equal(shellSectionTitle('/dashboard/digest', MEMBER_DESTINATIONS, ACCOUNT_SHEET_LINKS), 'This week')
+  assert.equal(shellSectionTitle('/dashboard/membership', MEMBER_DESTINATIONS, ACCOUNT_SHEET_LINKS), 'Membership')
+  const privacy = readFileSync(path.join(root, 'src/components/privacy/PrivacyPanelView.tsx'), 'utf8')
+  assert.match(privacy, /Delete account/)
+  assert.match(privacy, /DELETE_ACCOUNT_PATH/)
+  assert.match(privacy, /data-privacy-delete/)
+  const shell = readFileSync(path.join(root, 'src/shell/AppShell.tsx'), 'utf8')
+  assert.match(shell, /accountPathActive\(location\.pathname, secondary\)/)
+  assert.equal(/lg:inline[^<]*Account/.test(shell), false)
+  assert.match(shell, /data-account-control="header"/)
 })
 
 function walk(dir: string): string[] {

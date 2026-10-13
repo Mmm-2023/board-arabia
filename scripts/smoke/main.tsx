@@ -214,7 +214,7 @@ function AdminSponsorSmoke({ cap }: { cap: boolean }) {
       <h1 className="font-display text-[2rem] font-semibold tracking-[-0.03em]">People</h1>
       <p className="mt-2 max-w-2xl text-[0.95rem] text-stone/65">
         Members, admins, and partners. Invite, suspend, or restore. This screen does not remove
-        people. The last master stays in place.
+        people. The last owner stays in place.
       </p>
       <SponsorInvitePanel
         members={holders}

@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Navigate, Outlet, useLocation } from 'react-router-dom'
 import { MfaHold } from '../../components/mfa/MfaHold'
-import { MemberHomePrompt } from '../../components/mfa/TwoStepScreens'
-import { dismissMfaPrompt, readAssurance } from '../../lib/mfa'
+import { readAssurance } from '../../lib/mfa'
 import { routeHold, type MfaHold as Hold } from '../../lib/mfaFlow'
 import { isStaffRole, showRoleSwitch } from '../../../supabase/functions/_shared/staff_auth.ts'
 import { clearPasswordFlag } from '../../lib/clearPasswordFlag'
@@ -10,7 +9,7 @@ import { fetchMyDealRooms } from '../../lib/dealRoomApi'
 import { stillMustSetPassword } from '../../lib/passwordSet'
 import { dealsNavCount } from '../../lib/dealRoomView'
 import { AppShell } from '../../shell/AppShell'
-import { ACCOUNT_SHEET_LINKS, LOCKED_HUBS, MEMBER_ACCOUNT, MEMBER_DESTINATIONS, memberAccountLinks, staleBanner } from '../../shell/destinations'
+import { ACCOUNT_SHEET_LINKS, LOCKED_HUBS, MEMBER_DESTINATIONS, memberAccountLinks, staleBanner } from '../../shell/destinations'
 import { HomeSkeleton, PermissionState } from '../../shell/ViewState'
 import { REFRESH_ERROR } from '../../shell/viewCopy'
 import { endAuthSession } from '../../lib/endSession'
@@ -99,7 +98,6 @@ export function DashboardLayout() {
   const location = useLocation()
   const [hold, setHold] = useState<Hold | 'loading'>('loading')
   const [passCount, setPassCount] = useState(0)
-  const [prompt, setPrompt] = useState<{ verifiedFactor: boolean; dismissedAt: number | null; now: number } | null>(null)
   const memberNav = MEMBER_DESTINATIONS
   useNoIndex('Member dashboard | Board Arabia')
 
@@ -115,11 +113,6 @@ export function DashboardLayout() {
           verifiedFactor: assurance.verifiedFactor,
         }),
       )
-      setPrompt({
-        verifiedFactor: assurance.verifiedFactor,
-        dismissedAt: assurance.dismissedAt,
-        now: Date.now(),
-      })
     })
     return () => {
       cancelled = true
@@ -317,7 +310,7 @@ export function DashboardLayout() {
       <AppShell
         tone="member"
         destinations={memberNav}
-        secondary={MEMBER_ACCOUNT}
+        secondary={ACCOUNT_SHEET_LINKS}
         updatedLabel={null}
         roleSwitch={null}
         onSignOut={() => {}}
@@ -447,19 +440,6 @@ export function DashboardLayout() {
           accountName={gate.room.profile?.full_name?.trim() || 'Member'}
             renderAccountMark={(size) => <OwnAvatar decorative size={size} />}
         >
-          {prompt ? (
-            <MemberHomePrompt
-              pathname={location.pathname}
-              verifiedFactor={prompt.verifiedFactor}
-              dismissedAt={prompt.dismissedAt}
-              now={prompt.now}
-              onDismiss={() => {
-                const now = Date.now()
-                setPrompt({ verifiedFactor: prompt.verifiedFactor, dismissedAt: now, now })
-                void dismissMfaPrompt(gate.room.userId)
-              }}
-            />
-          ) : null}
           <Outlet />
         </AppShell>
       </MemberContext.Provider>

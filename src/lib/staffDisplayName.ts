@@ -10,7 +10,7 @@ export function cleanStaffDisplayName(value: string): { ok: true; name: string }
 
 export function ownStaffRowLabel(
   email: string,
-  role: 'Admin' | 'Master',
+  role: 'Admin' | 'Owner',
   self: boolean,
   displayName: string,
 ): string {

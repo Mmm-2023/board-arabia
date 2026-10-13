@@ -90,27 +90,40 @@ export const MEMBER_SECTIONS: Readonly<Record<string, readonly SectionLink[]>> =
   ],
 }
 
-/** Account links. Not tabs. Partnership is added only for a sponsor seat. */
-export const MEMBER_ACCOUNT: readonly SecondaryLink[] = [
-  { id: 'profile', label: 'Profile', to: '/dashboard/profile' },
-  { id: 'help', label: 'Help', to: '/dashboard/help' },
-]
-
-/** Open account sheet. Membership is a row, not a sixth tab. */
+/**
+ * One account list. Not a tab. Partnership is added only for a partner seat.
+ * Delete account is not in this list. It lives under Your privacy.
+ */
 export const ACCOUNT_SHEET_LINKS: readonly SecondaryLink[] = [
   { id: 'profile', label: 'Profile', to: '/dashboard/profile' },
+  { id: 'digest', label: 'This week', to: '/dashboard/digest' },
   { id: 'privacy', label: 'Your privacy', to: '/dashboard/privacy' },
   { id: 'two-step', label: 'Two-step sign-in', to: '/dashboard/two-step' },
   { id: 'membership', label: 'Membership', to: '/dashboard/membership' },
   { id: 'help', label: 'Help', to: '/dashboard/help' },
-  { id: 'delete', label: 'Delete account', to: '/dashboard/account/delete' },
 ]
+
+/** Same list. Older previews still import this name. */
+export const MEMBER_ACCOUNT: readonly SecondaryLink[] = ACCOUNT_SHEET_LINKS
+
+/** Existing delete screen. Reached from Your privacy, not from the account list. */
+export const DELETE_ACCOUNT_PATH = '/dashboard/account/delete'
 
 export const LOCKED_HUBS = ['deals', 'people', 'majlis', 'ai'] as const
 
 export function memberAccountLinks(seat: string | null | undefined): readonly SecondaryLink[] {
-  if (seat !== 'sponsor') return MEMBER_ACCOUNT
-  return [{ id: 'sponsorship', label: 'Partnership', to: '/dashboard/partnership' }, ...MEMBER_ACCOUNT]
+  if (seat !== 'sponsor') return ACCOUNT_SHEET_LINKS
+  return [{ id: 'sponsorship', label: 'Partnership', to: '/dashboard/partnership' }, ...ACCOUNT_SHEET_LINKS]
+}
+
+/** Active ring for every account list path, plus the delete screen and partnership alias. */
+export function accountPathActive(pathname: string, links: readonly { to: string }[]) {
+  const path = pathname.length > 1 && pathname.endsWith('/') ? pathname.replace(/\/+$/, '') : pathname
+  if (links.some((item) => path === item.to || path.startsWith(`${item.to}/`))) return true
+  if (path === DELETE_ACCOUNT_PATH) return true
+  if (path === '/dashboard/partnership' || path.startsWith('/dashboard/partnership/')) return true
+  if (path === '/dashboard/sponsorship' || path.startsWith('/dashboard/sponsorship/')) return true
+  return false
 }
 
 /** Older previews still import this name. It is the account list, not a More sheet. */
@@ -156,6 +169,7 @@ export function sectionsForHub(hubId: string): readonly SectionLink[] {
 }
 
 const ACCOUNT_TITLES = [
+  { prefix: '/dashboard/account/delete', title: 'Delete account' },
   { prefix: '/dashboard/two-step', title: 'Two-step sign-in' },
   { prefix: '/dashboard/privacy', title: 'Your privacy' },
   { prefix: '/dashboard/profile/leave', title: 'Profile' },

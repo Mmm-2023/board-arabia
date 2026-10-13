@@ -31,8 +31,7 @@ let envOverride: Partial<Record<LegalField, string>> | null = null
 /**
  * Tests inject placeholder values.
  * Address, contacts, and the AI provider are read here.
- * The controller name and CR are read in legalPageIdentity.ts so the
- * production strings stay on the legal pages chunk.
+ * The entity name and registration number are not read and are not rendered.
  */
 export function setLegalEnvForTests(value: Partial<Record<LegalField, string>> | null) {
   envOverride = value
