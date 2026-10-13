@@ -5,9 +5,6 @@ import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { createServer } from 'vite'
-import path from 'node:path'
-import react from '@vitejs/plugin-react'
-import tailwindcss from '@tailwindcss/vite'
 import { chromium, type Page } from 'playwright-core'
 import { CHROME_SKIP, resolveChromePath } from './chrome-path.ts'
 
@@ -119,11 +116,7 @@ test('each segment sets the real estate view and arrows keep one row at 390', as
   process.env.VITE_ANALYTICS_ENABLED = 'false'
   mkdirSync(SHOTS, { recursive: true })
   const vite = await createServer({
-    configFile: false,
-    root: path.resolve('scripts/smoke'),
-    publicDir: path.resolve('public'),
     server: { host: '127.0.0.1', port: 0, hmr: false },
-    plugins: [react(), tailwindcss()],
     logLevel: 'error',
   })
   await vite.listen()
@@ -227,17 +220,17 @@ async function waitForTab(page: Page, id: string, search: string) {
 
 async function openSwitch(page: Page, origin: string, search: string) {
   const panel = search === '?view=partners' ? 'partners' : search === '?view=roles' ? 'roles' : 'opportunities'
-  await page.goto(`${origin}/re-switch.html${search}`)
+  await page.goto(`${origin}/scripts/smoke/re-switch.html${search}`, { waitUntil: 'networkidle' })
   try {
     await page.locator(`[data-re-panel="${panel}"]`).waitFor()
     await page.locator(`[data-re-tab="${panel}"][aria-selected="true"]`).waitFor()
     await page.locator('[data-section-tabs]').waitFor()
   } catch (error) {
-    const text = await page.locator('body').innerText()
-    throw new Error(`${page.url()}\n${text.slice(0, 700)}\n${error}`)
+    const html = await page.content()
+    throw new Error(`${page.url()}\n${html.slice(0, 900)}\n${error}`)
   }
   const url = new URL(page.url())
-  assert.equal(url.pathname, '/re-switch.html')
+  assert.equal(url.pathname, '/scripts/smoke/re-switch.html')
   assert.equal(url.search, search)
 }
 
