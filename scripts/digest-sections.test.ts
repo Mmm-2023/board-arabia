@@ -321,10 +321,27 @@ test('member and admin digest shots at 1440 and 390', async (t) => {
     ]
     for (const [viewName, label, width] of shots) {
       const page = await browser.newPage({ viewport: { width, height: 900 } })
-      await page.goto(`${origin}/scripts/smoke/weekly-digest.html?view=${viewName}`, { waitUntil: 'networkidle' })
-      const rootText = viewName === 'sections'
-        ? await page.locator('[data-digest="full"]').innerText()
-        : await page.locator('[data-digest-editor]').innerText()
+      const pageErrors: string[] = []
+      page.on('pageerror', (error) => {
+        pageErrors.push(error instanceof Error ? error.message : String(error))
+      })
+      const rootSelector = viewName === 'sections' ? '[data-digest="full"]' : '[data-digest-editor]'
+      const url = `${origin}/scripts/smoke/weekly-digest.html?view=${viewName}`
+      await page.goto(url, { waitUntil: 'networkidle' })
+      const root = page.locator(rootSelector)
+      try {
+        await root.waitFor({ timeout: 8000 })
+      } catch {
+        await page.goto(url, { waitUntil: 'networkidle' })
+      }
+      let rootText = ''
+      try {
+        rootText = await root.innerText()
+      } catch (error) {
+        const detail = error instanceof Error ? error.message : String(error)
+        const body = await page.locator('body').innerText().catch(() => '')
+        throw new Error(`${detail}\npage errors: ${pageErrors.join(' | ')}\nbody: ${body.slice(0, 400)}`)
+      }
       assert.match(rootText, /Boardroom and markets/)
       assert.match(rootText, /Deals and investments/)
       assert.match(rootText, /On the platform/)
