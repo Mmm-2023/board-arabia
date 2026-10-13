@@ -13,7 +13,6 @@ import {
   type SponsorDesk,
 } from './sponsorDesk'
 import { readRecoveryLocation } from './recovery'
-import { staffChangeMessage } from './staffRoster'
 
 const url = import.meta.env.VITE_SUPABASE_URL
 const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
@@ -681,12 +680,14 @@ export async function staffSetRole(
   userId: string,
   role: 'staff' | 'master',
 ): Promise<{ error?: string }> {
+  const { staffChangeMessage } = await import('./staffRoster')
   const { error } = await supabase.rpc('staff_set_role', { p_user: userId, p_role: role })
   if (error) return { error: staffChangeMessage(error.message) }
   return {}
 }
 
 export async function staffRemove(userId: string): Promise<{ error?: string }> {
+  const { staffChangeMessage } = await import('./staffRoster')
   const { error } = await supabase.rpc('staff_remove', { p_user: userId })
   if (error) return { error: staffChangeMessage(error.message) }
   return {}
