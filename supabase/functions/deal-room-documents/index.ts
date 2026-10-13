@@ -31,10 +31,8 @@ Deno.serve((req) => {
         const { error } = await bucket.remove([path])
         return { error: error?.message ?? null }
       },
-      sign: async (path, expiresIn) => {
-        const { data, error } = await bucket.createSignedUrl(path, expiresIn)
-        return { url: data?.signedUrl ?? null, error: error?.message ?? null }
-      },
+      // Member downloads return stamped bytes. Never sign the stored original.
+      sign: async (_path, _expiresIn) => ({ url: null, error: 'not_served' }),
     },
   })
 })
