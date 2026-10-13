@@ -34,6 +34,7 @@ import {
   TWO_STEP_TO,
   buildNeedsYou,
   digestPreviewLines,
+  liveHomePartners,
   profileGapLabel,
   roomInviteCopy,
 } from '../src/lib/homeNeeds.ts'
@@ -587,7 +588,8 @@ test('home sections follow needs you, this week, one next action, activity, then
     assert.match(more, />Partners</)
     assert.match(more, /Example Capital/)
     assert.match(more, /data-daily-brief-card/)
-    assert.equal(more.includes('Qaf Ledger'), false)
+    assert.match(more, /Qaf Ledger/)
+    assert.match(more, />Example</)
     assert.equal(more.includes('Trusted Partners'), false)
 
     const quiet = renderToStaticMarkup(
@@ -612,8 +614,109 @@ test('home sections follow needs you, this week, one next action, activity, then
         needsYou: [],
       })),
     )
-    assert.equal(samplesOnly.includes('Qaf Ledger'), false)
-    assert.equal(samplesOnly.includes('data-gallery="partners"'), false)
+    assert.match(samplesOnly, /Qaf Ledger/)
+    assert.match(samplesOnly, /data-gallery="partners"/)
+    assert.match(samplesOnly, />Example</)
+  } finally {
+    await vite.close()
+  }
+})
+
+const HOME_PARTNER_EXAMPLES = [
+  { id: 'ex-law', is_demo: true, name: 'Qaf Counsel', monogram: 'QC', blurb: 'Law firm.', category_slug: 'law-firm' },
+  { id: 'ex-audit', is_demo: true, name: 'Mirsad Audit', monogram: 'MA', blurb: 'Accounting and audit firm.', category_slug: 'accounting-audit' },
+  { id: 'ex-bank', is_demo: true, name: 'Dar Clearing', monogram: 'DC', blurb: 'Bank.', category_slug: 'bank' },
+  { id: 'ex-search', is_demo: true, name: 'Nahla Search', monogram: 'NS', blurb: 'Executive search firm.', category_slug: 'executive-search' },
+  { id: 'ex-cover', is_demo: true, name: 'Safa Cover', monogram: 'SC', blurb: 'Insurer and advisory firm.', category_slug: 'insurer-advisory' },
+] as const
+
+test('a live bank partner hides only the bank example', async () => {
+  const examples = HOME_PARTNER_EXAMPLES.map((row) => ({
+    ...row,
+    example: true,
+    is_partner: false,
+  }))
+  assert.deepEqual(
+    liveHomePartners(examples).map((row) => row.name),
+    ['Qaf Counsel', 'Mirsad Audit', 'Dar Clearing', 'Nahla Search', 'Safa Cover'],
+  )
+  const withBank = liveHomePartners([
+    ...examples,
+    {
+      id: 'live-bank',
+      example: false,
+      is_partner: true,
+      name: 'Harbour Clearing',
+      category_slug: 'bank',
+    },
+    {
+      id: 'adviser',
+      example: false,
+      is_partner: false,
+      name: 'Example Advisory',
+      category_slug: null,
+    },
+  ])
+  assert.deepEqual(
+    withBank.map((row) => row.name),
+    ['Qaf Counsel', 'Mirsad Audit', 'Nahla Search', 'Safa Cover', 'Harbour Clearing'],
+  )
+  assert.equal(withBank.some((row) => row.name === 'Dar Clearing'), false)
+  assert.equal(withBank.some((row) => row.name === 'Example Advisory'), false)
+
+  const vite = await createServer({ server: { middlewareMode: true }, appType: 'custom', logLevel: 'error' })
+  try {
+    const home = await vite.ssrLoadModule('/src/pages/dashboard/HomeSnapshotView.tsx')
+    const render = (partners: AssembleInput['partners']) => renderToStaticMarkup(
+      createElement(MemoryRouter, null, createElement(home.HomeSnapshotView, {
+        model: assembleHome(base({ partners })),
+        needsYou: [],
+      })),
+    )
+    const examplesOnly = render(HOME_PARTNER_EXAMPLES.map((row) => ({ ...row })))
+    const partnerGallery = examplesOnly.slice(examplesOnly.indexOf('data-gallery="partners"'))
+    assert.equal((partnerGallery.match(/>Example</g) || []).length, 5)
+    for (const row of HOME_PARTNER_EXAMPLES) assert.match(partnerGallery, new RegExp(row.name))
+
+    const swapped = render([
+      ...HOME_PARTNER_EXAMPLES.map((row) => ({ ...row })),
+      {
+        id: 'live-bank',
+        is_demo: false,
+        is_partner: true,
+        name: 'Harbour Clearing',
+        monogram: 'HC',
+        blurb: 'A published bank partner.',
+        category_slug: 'bank',
+      },
+      {
+        id: 'adviser',
+        is_demo: false,
+        is_partner: false,
+        name: 'Example Advisory',
+        monogram: 'EA',
+        blurb: 'One line for a fixture adviser.',
+        category_slug: null,
+      },
+    ])
+    const partnersAt = swapped.indexOf('data-gallery="partners"')
+    const advisersAt = swapped.indexOf('data-gallery="advisers"')
+    assert.ok(partnersAt >= 0 && advisersAt > partnersAt)
+    const partnersHtml = swapped.slice(partnersAt, advisersAt)
+    const advisersHtml = swapped.slice(advisersAt)
+    assert.equal(partnersHtml.includes('Dar Clearing'), false)
+    assert.match(partnersHtml, /Harbour Clearing/)
+    assert.equal((partnersHtml.match(/>Example</g) || []).length, 4)
+    const liveRow = partnersHtml.slice(partnersHtml.indexOf('data-partner-name="Harbour Clearing"'))
+    assert.equal(liveRow.slice(0, liveRow.indexOf('</li>')).includes('>Example<'), false)
+    for (const name of ['Qaf Counsel', 'Mirsad Audit', 'Nahla Search', 'Safa Cover']) {
+      assert.match(partnersHtml, new RegExp(name))
+    }
+    assert.match(advisersHtml, /Trusted advisers/)
+    assert.match(advisersHtml, /data-adviser-name="Example Advisory"/)
+    assert.equal(partnersHtml.includes('Example Advisory'), false)
+    assert.equal(swapped.includes('\u2014'), false)
+    assert.equal(swapped.toLowerCase().includes('sponsor'), false)
   } finally {
     await vite.close()
   }

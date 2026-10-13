@@ -150,7 +150,20 @@ export function digestPreviewLines(digest: DigestPreviewSource, limit = 3): stri
   return lines.slice(0, Math.max(0, limit))
 }
 
-/** Live partner rows only. Samples never stand in for an empty Partners page. */
-export function liveHomePartners<T extends { example?: boolean; is_partner?: boolean }>(rows: readonly T[]): T[] {
-  return rows.filter((row) => row.is_partner === true && row.example !== true)
+type HomePartnerRow = {
+  example?: boolean
+  is_partner?: boolean
+  category_slug?: string | null
+}
+
+/** Home Partners. An example stays until a live partner shares its category. */
+export function liveHomePartners<T extends HomePartnerRow>(rows: readonly T[]): T[] {
+  const covered = new Set<string>()
+  for (const row of rows) {
+    if (row.is_partner === true && row.example !== true && row.category_slug) covered.add(row.category_slug)
+  }
+  return rows.filter((row) => {
+    if (row.example === true) return !row.category_slug || !covered.has(row.category_slug)
+    return row.is_partner === true
+  })
 }

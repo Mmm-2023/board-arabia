@@ -239,10 +239,11 @@ test('public landing hides the gallery at zero, one real fixture has no Sample, 
     const member = renderToStaticMarkup(
       createElement(MemoryRouter, null, createElement(homeView.HomeSnapshotView, { model })),
     )
-    assert.equal(member.includes('Qaf Ledger'), false)
+    assert.match(member, /Qaf Ledger/)
+    assert.match(member, />Example</)
     assert.equal(member.includes('>Sample<'), false)
     assert.equal(member.includes('Trusted Partners'), false)
-    assert.equal(member.includes('data-gallery="partners"'), false)
+    assert.match(member, /data-gallery="partners"/)
     assert.equal(member.toLowerCase().includes('sponsor'), false)
     const liveModel = homeMod.assembleHome({
       nowMs: Date.parse('2026-10-06T12:00:00.000Z'),
