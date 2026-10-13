@@ -22,6 +22,7 @@ import { TermsPage } from './pages/TermsPage'
 import { AdminIntrosRedirect } from './shell/adminIntrosRedirect'
 import { RedirectKeep } from './shell/RedirectKeep'
 import { ShellNotFound } from './shell/ShellNotFound'
+import { NativeShell } from './shell/NativeShell'
 import { TrailingSlash } from './shell/TrailingSlash'
 
 const AdminLayout = lazy(() => import('./pages/admin/AdminLayout').then((m) => ({ default: m.AdminLayout })))
@@ -111,6 +112,7 @@ const PartnerShowcase = lazy(() =>
 export default function App() {
   return (
     <><EnglishOnlyQuery />
+    <NativeShell />
     <AnalyticsRoot />
     <Suspense fallback={<p role="status">Loading</p>}>
     <Routes>
