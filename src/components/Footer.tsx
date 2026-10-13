@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 import { BrandLockup } from './BrandLockup'
 import { MEMBER_LOGIN } from '../content/marketing'
 import { CONSENT_COPY } from '../content/privacyNotice'
-import { publicHref, publishedContactEmail } from '../content/seo'
+import { publicHref } from '../content/seo'
 import { publicConsiderationCta } from '../lib/twoTierRegister'
 import { ANALYTICS_CONFIG } from '../lib/tracking/flags'
 import { trackApplyClick, trackLoginClick } from '../lib/tracking/browser'
@@ -25,7 +25,6 @@ function footerLinks() {
 
 export function Footer() {
   const links = footerLinks()
-  const contact = publishedContactEmail()
   return (
     <footer className="border-t border-ink/10 bg-pearl">
       <div className="mx-auto grid max-w-7xl gap-3 px-5 py-4 md:grid-cols-[1.4fr_1fr] md:gap-6 md:px-10 md:py-8">
@@ -70,11 +69,6 @@ export function Footer() {
           </p>
         </nav>
       </div>
-      {contact ? (
-        <p className="mx-auto max-w-7xl px-5 pb-2 text-[0.75rem] font-normal leading-snug text-[var(--ba-muted)] md:px-10">
-          <a href={`mailto:${contact}`}>{contact}</a>
-        </p>
-      ) : null}
       <p className="mx-auto max-w-7xl px-5 pb-4 text-[0.75rem] font-normal leading-snug text-[var(--ba-muted)] md:px-10 md:pb-6">
         powered by nammco
       </p>

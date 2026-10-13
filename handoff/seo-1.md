@@ -7,26 +7,28 @@ Base: e29ca722068f2bba0b525b33269610c5a4ff4338 (main, includes #163 and #160)
 
 Each public route uses the brief title and description for the document title, Open Graph, and Twitter tags. Canonical, og:url, sitemap loc, and JSON-LD WebPage url use the trailing-slash form. `/about` has a visible FAQ and FAQPage. `public/llms.txt` is a real file. `robots.txt` allows the named AI crawlers and keeps the private paths disallowed.
 
-## Locked file
+## Locked files
 
-Only `scripts/prerender.mjs`:
+`scripts/prerender.mjs`:
 
 - FAQPage allowlist adds `/about` (was line 64).
 - Title and og:title checks accept the brief titles (was lines 123-130).
 - `writeSitemap()` emits trailing-slash locs (was lines 206-216). `lastmod` stays the build date.
 
-`check-pages-artifact.mjs`, `pages.yml`, and `public-nammco.mjs` were not edited.
+`.github/workflows/pages.yml` line 39 sets `VITE_LEGAL_CONTACT_EMAIL` from the Actions variable of the same name. That is the only pages.yml change.
+
+`check-pages-artifact.mjs` and `public-nammco.mjs` were not edited.
 
 ## Email
 
-`PARTNER_EMAIL()` in `src/content/marketing.ts`, Organization JSON-LD, and the public footer read `legalField('contactEmail')`. No mailbox literal. The Pages build sets `VITE_LEGAL_CONTACT_EMAIL` from the Actions variable of the same name. When that variable is unset, prerender omits `email`, `contactPoint`, and the footer line. README uses "the contact email in the legal config". The sign-in placeholder is `you@example.com`.
+`PARTNER_EMAIL()` in `src/content/marketing.ts` and Organization JSON-LD read `legalField('contactEmail')`. No mailbox literal. When `VITE_LEGAL_CONTACT_EMAIL` is unset, prerender omits `email` and `contactPoint`. The public footer does not show a contact email. README uses "the contact email in the legal config". The sign-in placeholder is `you@example.com`.
 
 ## Not redone
 
 Privacy 1.1: `src/content/legal/privacy.en.ts` line 27.
 Terms 1.1: `src/content/legal/terms.en.ts` line 27.
 Terms section 13: `src/content/legal/terms.en.ts` line 495.
-Footer credit: `src/components/Footer.tsx` line 72.
+Footer credit: `src/components/Footer.tsx` line 73.
 
 ## Migration
 
