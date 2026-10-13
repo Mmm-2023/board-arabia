@@ -1,6 +1,6 @@
 import { legalField } from '../config/legal.ts'
 
-/** Partner interest mailbox. Read from VITE_LEGAL_CONTACT_EMAIL. No address is stored here. */
+/** Partner interest mailbox from the legal contact field. No address is stored here. */
 export function PARTNER_EMAIL(): string {
   return legalField('contactEmail')
 }
