@@ -93,6 +93,24 @@ test('sec-c anon grants are the six impls, their wrappers, and private usage', (
   }
 })
 
+test('sec-c private impl execute is exactly anon and authenticated', () => {
+  const names = readdirSync(migrationsDir).filter((name) => name.endsWith('.sql')).sort()
+  assert.equal(names.includes(migrationName), true)
+  assert.ok(names.indexOf(migrationName) > names.indexOf(priorName))
+  const sql = migrationSql().replace(/--.*$/gm, '')
+  for (const name of anonNames) {
+    assert.match(sql, new RegExp(`revoke execute on function private\\.${name}_impl\\([^)]*\\) from public`, 'i'))
+    const grant = sql.match(new RegExp(`grant execute on function private\\.${name}_impl\\([^)]*\\) to ([^;]+)`, 'i'))
+    assert.ok(grant, name)
+    const roles = grant[1].split(',').map((role) => role.trim().toLowerCase()).sort()
+    assert.deepEqual(roles, ['anon', 'authenticated'], name)
+  }
+  const config = readFileSync(path.join(root, 'supabase/config.toml'), 'utf8')
+  assert.equal(/\bprivate\b/.test(config), false)
+  const schemaLines = config.split('\n').filter((line) => /^\s*schemas\s*=/.test(line))
+  assert.deepEqual(schemaLines, [])
+})
+
 test('sec-c definers in this file set an empty search_path and the interest cap stays generic', () => {
   const sql = migrationSql()
   const chunks = sql.split(/create or replace function /i).slice(1)
@@ -291,6 +309,51 @@ begin
     );
   if bad is not null then
     raise exception 'public definer search_path or anon execute: %', bad;
+  end if;
+
+  select string_agg(p.proname || '=' || listed.roles, ', ' order by p.proname)
+    into bad
+  from pg_proc p
+  join pg_namespace n on n.oid = p.pronamespace
+  join lateral (
+    select coalesce(string_agg(a.grantee::regrole::text, ',' order by a.grantee::regrole::text), '') as roles
+    from aclexplode(p.proacl) a
+    where a.privilege_type = 'EXECUTE'
+      and a.grantee <> 0
+      and a.grantee <> p.proowner
+  ) listed on true
+  where n.nspname = 'private'
+    and p.proname in (
+      'landing_platform_totals_impl',
+      'list_landing_preview_deals_impl',
+      'list_partner_categories_impl',
+      'list_trusted_partners_impl',
+      'lookup_member_invite_impl',
+      'submit_partner_interest_impl'
+    )
+    and (
+      listed.roles is distinct from 'anon,authenticated'
+      or has_function_privilege('public', p.oid, 'execute')
+      or has_function_privilege('service_role', p.oid, 'execute')
+    );
+  if bad is not null then
+    raise exception 'impl execute grants are not anon and authenticated only: %', bad;
+  end if;
+  if (
+    select count(*)
+    from pg_proc p
+    join pg_namespace n on n.oid = p.pronamespace
+    where n.nspname = 'private'
+      and p.proname in (
+        'landing_platform_totals_impl',
+        'list_landing_preview_deals_impl',
+        'list_partner_categories_impl',
+        'list_trusted_partners_impl',
+        'lookup_member_invite_impl',
+        'submit_partner_interest_impl'
+      )
+  ) <> 6 then
+    raise exception 'expected six private impls';
   end if;
 
   select string_agg(p.proname, ', ' order by p.proname)

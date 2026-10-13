@@ -5,9 +5,12 @@
 -- The six public RPCs that anon must call move their bodies into private
 -- security definer impls with search_path ''. The public functions become
 -- security invoker wrappers, so the Data API no longer exposes a definer
--- to anon. Anon execute on those impls is the same six calls, not a new
--- table grant. Usage on schema private is required for an invoker wrapper
+-- to anon. Execute on each impl is revoked from public, then granted only
+-- to anon and authenticated. Those are the roles that call the wrappers.
+-- service_role does not call them. This is not a table grant.
+-- Usage on schema private is required for an invoker wrapper
 -- to see the impl. 20260923120000 revoked that usage from anon.
+-- supabase/config.toml does not list private in an API schemas setting.
 --
 -- The other member and staff RPCs stay security definer. Authenticated
 -- keeps execute. Public and anon lose execute. That remaining authenticated
@@ -39,8 +42,9 @@ as $fn$
   ), '[]'::jsonb);
 $fn$;
 
-revoke all on function private.list_partner_categories_impl() from public, anon, authenticated;
-grant execute on function private.list_partner_categories_impl() to anon, authenticated, service_role;
+revoke all on function private.list_partner_categories_impl() from public, anon, authenticated, service_role;
+revoke execute on function private.list_partner_categories_impl() from public;
+grant execute on function private.list_partner_categories_impl() to anon, authenticated;
 
 create or replace function private.list_trusted_partners_impl()
 returns jsonb
@@ -105,8 +109,9 @@ begin
 end;
 $fn$;
 
-revoke all on function private.list_trusted_partners_impl() from public, anon, authenticated;
-grant execute on function private.list_trusted_partners_impl() to anon, authenticated, service_role;
+revoke all on function private.list_trusted_partners_impl() from public, anon, authenticated, service_role;
+revoke execute on function private.list_trusted_partners_impl() from public;
+grant execute on function private.list_trusted_partners_impl() to anon, authenticated;
 
 create or replace function private.submit_partner_interest_impl(
   p_name text,
@@ -174,8 +179,9 @@ begin
 end;
 $fn$;
 
-revoke all on function private.submit_partner_interest_impl(text, text, text, text) from public, anon, authenticated;
-grant execute on function private.submit_partner_interest_impl(text, text, text, text) to anon, authenticated, service_role;
+revoke all on function private.submit_partner_interest_impl(text, text, text, text) from public, anon, authenticated, service_role;
+revoke execute on function private.submit_partner_interest_impl(text, text, text, text) from public;
+grant execute on function private.submit_partner_interest_impl(text, text, text, text) to anon, authenticated;
 
 create or replace function private.list_landing_preview_deals_impl()
 returns jsonb
@@ -218,8 +224,9 @@ begin
 end;
 $fn$;
 
-revoke all on function private.list_landing_preview_deals_impl() from public, anon, authenticated;
-grant execute on function private.list_landing_preview_deals_impl() to anon, authenticated, service_role;
+revoke all on function private.list_landing_preview_deals_impl() from public, anon, authenticated, service_role;
+revoke execute on function private.list_landing_preview_deals_impl() from public;
+grant execute on function private.list_landing_preview_deals_impl() to anon, authenticated;
 
 create or replace function private.landing_platform_totals_impl()
 returns jsonb
@@ -242,8 +249,9 @@ as $fn$
   where t.id = 1;
 $fn$;
 
-revoke all on function private.landing_platform_totals_impl() from public, anon, authenticated;
-grant execute on function private.landing_platform_totals_impl() to anon, authenticated, service_role;
+revoke all on function private.landing_platform_totals_impl() from public, anon, authenticated, service_role;
+revoke execute on function private.landing_platform_totals_impl() from public;
+grant execute on function private.landing_platform_totals_impl() to anon, authenticated;
 
 -- valid, state, and inviter_label only. inviter_label is a display name.
 -- No email, member id, seat, or tier is selected or returned.
@@ -332,8 +340,9 @@ begin
 end;
 $fn$;
 
-revoke all on function private.lookup_member_invite_impl(text) from public, anon, authenticated;
-grant execute on function private.lookup_member_invite_impl(text) to anon, authenticated, service_role;
+revoke all on function private.lookup_member_invite_impl(text) from public, anon, authenticated, service_role;
+revoke execute on function private.lookup_member_invite_impl(text) from public;
+grant execute on function private.lookup_member_invite_impl(text) to anon, authenticated;
 
 grant usage on schema private to anon;
 

@@ -20,42 +20,42 @@ Fixed in the repo by making the public functions security invoker:
 
 | Function | Wrapper |
 | --- | --- |
-| list_partner_categories | `supabase/migrations/20261216120000_sec_c_definer_grants.sql:340` |
-| list_trusted_partners | `:353` |
-| submit_partner_interest | `:368` |
-| list_landing_preview_deals | `:387` |
-| landing_platform_totals | `:402` |
-| lookup_member_invite | `:415` |
+| list_partner_categories | `supabase/migrations/20261216120000_sec_c_definer_grants.sql:349` |
+| list_trusted_partners | `:362` |
+| submit_partner_interest | `:377` |
+| list_landing_preview_deals | `:396` |
+| landing_platform_totals | `:411` |
+| lookup_member_invite | `:424` |
 
 The definers anon executes are the private impls, which are not in the Data API schema:
 
 | Impl | Line |
 | --- | --- |
-| list_partner_categories_impl | `:25` |
-| list_trusted_partners_impl | `:45` |
-| submit_partner_interest_impl | `:111` |
-| list_landing_preview_deals_impl | `:180` |
-| landing_platform_totals_impl | `:224` |
-| lookup_member_invite_impl | `:250` |
+| list_partner_categories_impl | `:28` |
+| list_trusted_partners_impl | `:49` |
+| submit_partner_interest_impl | `:116` |
+| list_landing_preview_deals_impl | `:186` |
+| landing_platform_totals_impl | `:231` |
+| lookup_member_invite_impl | `:258` |
 
 The operator should confirm the live advisor after apply. This agent did not apply the file, so the live count is not re-read here.
 
 Returned columns were checked:
 
-- Categories: slug, name, gloss. No email, no user id. `:29`
-- Trusted partners: published card fields. `id` is the partner row. `sponsor_user_id` is not returned. No email. `:45`
-- Landing preview: mandate id, demo flag, sector, ask, status. No email, no user id. `:180`
-- Platform totals: aggregates only. No email, no user id. `:224`
-- Invite lookup: `valid`, `state`, `inviter_label` only. The label is the profile display name. The function does not read an email, a member id, a seat, or a tier. `:250`. The apply and register pages show that label next to "Invited by", so it was not replaced with a seat or tier label.
-- Partner interest: `{ok:true}` only. Global cap `:157`. Category cap `:164`.
+- Categories: slug, name, gloss. No email, no user id. `:32`
+- Trusted partners: published card fields. `id` is the partner row. `sponsor_user_id` is not returned. No email. `:49`
+- Landing preview: mandate id, demo flag, sector, ask, status. No email, no user id. `:186`
+- Platform totals: aggregates only. No email, no user id. `:231`
+- Invite lookup: `valid`, `state`, `inviter_label` only. The label is the profile display name. The function does not read an email, a member id, a seat, or a tier. `:258`. The apply and register pages show that label next to "Invited by", so it was not replaced with a seat or tier label.
+- Partner interest: `{ok:true}` only. Global cap `:162`. Category cap `:171`.
 
 ### authenticated_security_definer_function_executable (119 WARN)
 
-Not cleared for the 113 member and staff RPCs. Revoking authenticated execute would break the app. Public and anon are revoked, and authenticated is granted again, in the loop at `supabase/migrations/20261216120000_sec_c_definer_grants.sql:596`. The six wrappers are no longer definers, so they drop off this lint. The rest stay an accepted warning. The closed anon list is in `scripts/sec-c-grants.test.ts` and `scripts/definer-audit.test.ts`.
+Not cleared for the 113 member and staff RPCs. Revoking authenticated execute would break the app. Public and anon are revoked, and authenticated is granted again, in the loop at `supabase/migrations/20261216120000_sec_c_definer_grants.sql:605`. The six wrappers are no longer definers, so they drop off this lint. The rest stay an accepted warning. The closed anon list is in `scripts/sec-c-grants.test.ts` and `scripts/definer-audit.test.ts`.
 
 ### function_search_path_mutable
 
-Live count was already 0, because every definer set some search_path. This file pins the empty path at `supabase/migrations/20261216120000_sec_c_definer_grants.sql:616`. Bodies were called under that setting in the local replay. No relation-missing errors.
+Live count was already 0, because every definer set some search_path. This file pins the empty path at `supabase/migrations/20261216120000_sec_c_definer_grants.sql:625`. Bodies were called under that setting in the local replay. No relation-missing errors.
 
 ### security_definer_view
 
@@ -79,16 +79,16 @@ Every `public.staff_*` function in the repo already starts with `if not private.
 
 `PartnersPage` is a public route, and it is the only caller of `submit_partner_interest`. A signed-in visitor still uses the shared client, which sends the session, so the call runs as authenticated. `lookup_member_invite` is used on `/apply` and `/register`, which a signed-in browser can open. `landing_platform_totals`, `list_landing_preview_deals`, `list_partner_categories`, and `list_trusted_partners` are also called from signed-in dashboard pages. Authenticated execute stays on all six.
 
-## Anon privileges added
+## Impl execute
 
 No table grant to anon.
 
-New anon privileges, and only these:
+Each private impl revokes execute from public, then grants execute only to anon and authenticated. service_role is not a caller of these six wrappers, so it is not granted. `supabase/config.toml` has no `[api]` schemas list and does not name private, so private is not a Data API schema.
 
-- `grant usage on schema private to anon` at `supabase/migrations/20261216120000_sec_c_definer_grants.sql:338`. The invoker wrapper cannot see the impl without it. `20260923120000` had revoked that usage.
-- `execute` on the six `private.*_impl` functions.
+- `grant usage on schema private to anon` at `supabase/migrations/20261216120000_sec_c_definer_grants.sql:347`. The invoker wrapper cannot see the impl without it. `20260923120000` had revoked that usage.
+- `revoke execute ... from public` then `grant execute ... to anon, authenticated` on all six impls, starting at `:46`.
 
-Public wrapper `execute` for anon is the same six RPCs anon already had. Other private functions that anon could execute are revoked in the loop at `:573`.
+Public wrapper execute for anon is the same six RPCs anon already had. Other private functions that anon could execute are revoked in the loop that follows the surface list.
 
 ## The 17 policies
 
