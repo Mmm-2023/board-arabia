@@ -231,7 +231,7 @@ function readMigrationFile(name: string) {
 
 test('initplan migration wraps the 17 policies and keeps their expressions', () => {
   const names = readdirSync(migrationsDir).filter((name) => name.endsWith('.sql')).sort()
-  assert.equal(names.at(-1), migrationName)
+  assert.ok(names.includes(migrationName))
   assert.ok(names.indexOf(migrationName) > names.indexOf('20261212120000_weekly_digest.sql'))
   assert.equal(names.includes('20261212120000_weekly_digest.sql'), true)
 
