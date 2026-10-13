@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { publicHref } from '../../content/seo'
 import { publicConsiderationCta } from '../../lib/twoTierRegister'
 import { trackApplyClick } from '../../lib/tracking/browser'
 
@@ -54,7 +55,7 @@ export function StickyApply({ menuOpen }: { menuOpen: boolean }) {
   return (
     <div className="ba-sticky" data-state={open ? 'shown' : 'hidden'}>
       <Link
-        to={cta.to}
+        to={publicHref(cta.to)}
         className="ba-primary ba-sticky-btn"
         data-consideration-cta="public"
         tabIndex={open ? undefined : -1}

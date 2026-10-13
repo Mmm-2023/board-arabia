@@ -208,7 +208,7 @@ export function LoginPage() {
                 autoComplete="username"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@boardarabia.com"
+                placeholder="you@example.com"
                 className={signInFieldClass}
               />
             </label>

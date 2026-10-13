@@ -3,7 +3,7 @@ import { CtaBand } from '../components/CtaBand'
 import { FaqList } from '../components/FaqList'
 import { MarketingLayout } from '../components/MarketingLayout'
 import { REVIEW_SLA } from '../content/marketing'
-import { HOW_IT_WORKS_FAQ } from '../content/seo'
+import { HOW_IT_WORKS_FAQ, publicHref } from '../content/seo'
 import {
   closingCtaBody,
   howItWorksHeading,
@@ -90,7 +90,7 @@ export function HowItWorksPage() {
             ))}
           </ul>
           <Link
-            to={cta.to}
+            to={publicHref(cta.to)}
             className="ba-primary mt-10 inline-flex items-center justify-center px-7 py-3.5 text-[0.78rem] font-semibold tracking-[0.08em] uppercase"
             data-consideration-cta="public"
             onClick={() => trackApplyClick('section-how-it-works', cta.label)}

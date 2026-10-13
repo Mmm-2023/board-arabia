@@ -1,4 +1,9 @@
-export const PARTNER_EMAIL = 'partners@boardarabia.com'
+import { legalField } from '../config/legal.ts'
+
+/** Partner interest mailbox. Read from VITE_LEGAL_CONTACT_EMAIL. No address is stored here. */
+export function PARTNER_EMAIL(): string {
+  return legalField('contactEmail')
+}
 
 /** One audience line. Landing and About use this wording. */
 export const AUDIENCE_LINE = 'Chairpersons, Board members, and C-suite executives'
@@ -22,56 +27,56 @@ export const MEMBER_TOOLS: MemberTool[] = [
     n: '01',
     title: 'Directory',
     home: 'Find admitted members by name, firm or sector. Only signed-in members can see it.',
-    href: '/for-members#directory',
+    href: '/for-members/#directory',
   },
   {
     id: 'mandates',
     n: '02',
     title: 'Mandates',
     home: 'Capital briefs in outline. Request an intro, and admin unlocks the full brief if approved.',
-    href: '/for-members#mandates',
+    href: '/for-members/#mandates',
   },
   {
     id: 'intros',
     n: '03',
     title: 'Intros',
     home: 'Ask a member with a short reason. They accept or decline. No open messaging.',
-    href: '/for-members#intros',
+    href: '/for-members/#intros',
   },
   {
     id: 'rooms',
     n: '04',
     title: 'Deal rooms',
     home: 'A private room for a deal. Members open it and invite the people they choose.',
-    href: '/for-members#rooms',
+    href: '/for-members/#rooms',
   },
   {
     id: 'majlis',
     n: '05',
     title: 'Majlis',
     home: 'Members can host a majlis; our admin team reviews each one.',
-    href: '/for-members#majlis',
+    href: '/for-members/#majlis',
   },
   {
     id: 'vouchers',
     n: '06',
     title: 'Invites',
     home: 'Invite someone you would sit with on a board. They still face review.',
-    href: '/for-members#vouchers',
+    href: '/for-members/#vouchers',
   },
   {
     id: 'real-estate',
     n: '07',
     title: 'Real estate',
     home: 'Opportunities, board roles, partner firms, appetite, and co-invest interest. Admin reviews the intros.',
-    href: '/for-members#real-estate',
+    href: '/for-members/#real-estate',
   },
   {
     id: 'due-diligence',
     n: '08',
     title: 'AI Due Diligence',
     home: 'AI reads a PDF or PPTX, lists its claims and suggests questions. Public source checks may be limited.',
-    href: '/for-members#ai-tools',
+    href: '/for-members/#ai-tools',
   },
 ]
 

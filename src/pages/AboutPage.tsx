@@ -1,8 +1,10 @@
 import { Link } from 'react-router-dom'
 import { CtaBand } from '../components/CtaBand'
+import { FaqList } from '../components/FaqList'
 import { MarketingLayout } from '../components/MarketingLayout'
 import { WhoRunsTheDesk } from '../components/WhoRunsTheDesk'
 import { AUDIENCE_LINE } from '../content/marketing'
+import { faqFor, publicHref } from '../content/seo'
 
 export function AboutPage() {
   return (
@@ -39,13 +41,14 @@ export function AboutPage() {
             display members, and it does not invent them.
           </p>
           <p>
-            <Link to="/how-it-works" className="border-b border-brass text-ink">
+            <Link to={publicHref('/how-it-works')} className="border-b border-brass text-ink">
               Read the sequence
             </Link>
           </p>
         </div>
         <WhoRunsTheDesk />
       </article>
+      <FaqList items={faqFor('/about') ?? []} heading="About Board Arabia" />
       <CtaBand location="section-about" />
     </MarketingLayout>
   )

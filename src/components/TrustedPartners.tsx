@@ -121,8 +121,8 @@ export function TrustedPartnersGallery({
             </ul>
 
             <Link
-              to="/partners"
-              data-partner-cta="/partners"
+              to="/partners/"
+              data-partner-cta="/partners/"
               className="ba-secondary mt-4 inline-flex min-h-11 items-center justify-center px-5 text-[0.9375rem] font-semibold"
             >
               Partner with us

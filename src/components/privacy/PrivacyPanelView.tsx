@@ -224,7 +224,7 @@ export function PrivacyPanelView({
           <p className={body}>{privacyContact}</p>
         ) : (
           <p className={body}>
-            <Link to="/privacy" className="font-semibold underline">
+            <Link to="/privacy/" className="font-semibold underline">
               Privacy Notice
             </Link>
           </p>

@@ -1,12 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url><loc>https://boardarabia.com/</loc></url>
-  <url><loc>https://boardarabia.com/apply</loc></url>
-  <url><loc>https://boardarabia.com/for-members</loc></url>
-  <url><loc>https://boardarabia.com/for-capital</loc></url>
-  <url><loc>https://boardarabia.com/partners</loc></url>
-  <url><loc>https://boardarabia.com/how-it-works</loc></url>
-  <url><loc>https://boardarabia.com/about</loc></url>
-  <url><loc>https://boardarabia.com/privacy</loc></url>
-  <url><loc>https://boardarabia.com/terms</loc></url>
+  <url><loc>https://boardarabia.com/</loc><lastmod>2026-10-13</lastmod></url>
+  <url><loc>https://boardarabia.com/apply/</loc><lastmod>2026-10-13</lastmod></url>
+  <url><loc>https://boardarabia.com/for-members/</loc><lastmod>2026-10-13</lastmod></url>
+  <url><loc>https://boardarabia.com/for-capital/</loc><lastmod>2026-10-13</lastmod></url>
+  <url><loc>https://boardarabia.com/partners/</loc><lastmod>2026-10-13</lastmod></url>
+  <url><loc>https://boardarabia.com/how-it-works/</loc><lastmod>2026-10-13</lastmod></url>
+  <url><loc>https://boardarabia.com/about/</loc><lastmod>2026-10-13</lastmod></url>
+  <url><loc>https://boardarabia.com/privacy/</loc><lastmod>2026-10-13</lastmod></url>
+  <url><loc>https://boardarabia.com/security/</loc><lastmod>2026-10-13</lastmod></url>
+  <url><loc>https://boardarabia.com/terms/</loc><lastmod>2026-10-13</lastmod></url>
 </urlset>

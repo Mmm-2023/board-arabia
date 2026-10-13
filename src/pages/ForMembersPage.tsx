@@ -5,7 +5,7 @@ import { FaqList } from '../components/FaqList'
 import { MarketingLayout } from '../components/MarketingLayout'
 import { LANDING_AI_SCOPE } from '../content/landingFeatures'
 import { MEMBER_TOOLS } from '../content/marketing'
-import { MEMBERS_FAQ } from '../content/seo'
+import { MEMBERS_FAQ, publicHref } from '../content/seo'
 import { SIGNING_IN } from '../content/trust'
 
 const TOOLS = [
@@ -146,7 +146,7 @@ export function ForMembersPage() {
               Mandates and deal rooms are how a live matter stays inside the membership. Admin reviews mandate intros. Members open a deal room and invite the people they choose.
             </p>
             <p>
-              <Link to="/for-capital" className="border-b border-brass text-ink">
+              <Link to={publicHref('/for-capital')} className="border-b border-brass text-ink">
                 How capital engages
               </Link>
             </p>

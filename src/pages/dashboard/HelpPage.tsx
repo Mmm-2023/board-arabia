@@ -34,7 +34,7 @@ const ANSWERS = [
     question: 'What stays private?',
     answer:
       'The public site does not publish member names or individual amounts. Inside the membership, the Directory shows the profile fields you fill in. Your phone number and capacity figures stay off that card.',
-    to: '/privacy',
+    to: '/privacy/',
     toLabel: 'Privacy',
   },
   {

@@ -142,7 +142,7 @@ test('/security prerender output omits the DD 30-day line and keeps the allowed 
 
     const apply = render('/apply').body
     assert.match(apply, /data-trust-strip="apply"/)
-    assert.match(apply, new RegExp(`${APPLY_STRIP}[\\s\\S]{0,200}href="/privacy"`))
+    assert.match(apply, new RegExp(`${APPLY_STRIP}[\\s\\S]{0,200}href="/privacy/"`))
     const submit = apply.indexOf('Submit for consideration')
     const applyStrip = apply.indexOf('data-trust-strip="apply"')
     assert.equal(submit > -1 && applyStrip > submit, true)
