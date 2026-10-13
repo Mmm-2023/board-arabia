@@ -39,7 +39,7 @@ Unchanged. A staff storage read of a shared file still calls `private.note_staff
 
 ## Migration
 
-None. Not needed: no table, policy, or function change. The latest migration on main at the start of this work was `20261210120000_sectors_city_about.sql`. A new file would have used a slot after `20261212120000`.
+None. Not needed: no table, policy, or function change. The latest migration on main after merging `af3c4b9` is `20261212120000_weekly_digest.sql`. A new file would have used a slot after that.
 
 ## Apply order for the operator
 
