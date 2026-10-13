@@ -6,20 +6,15 @@ import { dismissAdmitShareCard, loadAdmitShareCard, type AdmitShareCardState } f
 import { SponsorBadge } from '../../components/SponsorBadge'
 import { AVATAR_BUCKET } from '../../lib/avatar'
 import { isProfileReady } from '../../lib/directoryGate'
-import { fetchIntroQuota, fetchMyIntroSuggestions, fetchMyIntros, requestMemberIntro } from '../../lib/demoFetch'
-import { fetchMyDealRooms, respondDealRoom } from '../../lib/dealRoomApi'
+import { fetchMyIntroSuggestions } from '../../lib/demoFetch'
+import { fetchMyDealRooms } from '../../lib/dealRoomApi'
 import { pendingInvites, type MemberDealRoom } from '../../lib/dealRoomView'
 import { assembleHome, isFoundingMember, type AttentionItem, type ProfileMatchInput } from '../../lib/homeSnapshot'
 import { loadHomeSources, type LoadedSources } from '../../lib/homeSnapshotLoad'
-import type { IntroSuggestion } from '../../lib/introSuggestions'
-import {
-  isProfilePromptDismissed,
-  profilePromptShowing,
-  profilePromptStorageKey,
-  suggestionTagsReady,
-} from '../../lib/suggestionProfile'
+import { buildNeedsYou, digestPreviewLines, profileGapCount } from '../../lib/homeNeeds'
+import { readAssurance } from '../../lib/mfa'
 import { useOwnSuggestionProfile } from '../../lib/suggestionProfileLoad'
-import { outgoingMemberStatus, type IntroQuota, type IntroRow } from '../../lib/memberIntros'
+import { presentWeeklyDigest } from '../../lib/weeklyDigest'
 import { seatLabel } from '../../lib/member'
 import { loadProfileMatch, profileMatchFromRow } from '../../lib/profileMatchLoad'
 import { supabase } from '../../lib/supabase'
@@ -31,20 +26,7 @@ import { useDashboardStatus, useMember } from './context'
 import { DailyMarketBriefCard } from './DailyMarketBriefCard'
 import { AdmitShareCard } from './AdmitShareCard'
 import { HomeSnapshotView, type DigestHomeNotice } from './HomeSnapshotView'
-import { IntroSuggestions } from './IntroSuggestions'
-import { ProfileCompletenessPrompt } from './ProfileCompletenessPrompt'
-import { suggestionPortrait } from './suggestionPortrait'
-import { PendingInviteCards } from './PendingInviteCards'
 import { SponsorWelcomeGate } from './SponsorWelcomeGate'
-
-function readPromptDismissed(userId: string) {
-  if (typeof window === 'undefined') return false
-  try {
-    return isProfilePromptDismissed(window.localStorage.getItem(profilePromptStorageKey(userId)))
-  } catch {
-    return false
-  }
-}
 
 const EMPTY_SOURCES: LoadedSources = {
   mandates: null,
@@ -65,17 +47,6 @@ const EMPTY_SOURCES: LoadedSources = {
 export function DashboardHome() {
   const { member, profile, staffRole, userId } = useMember()
   const suggestionProfile = useOwnSuggestionProfile(userId)
-  const [promptUser, setPromptUser] = useState(userId)
-  const [promptDismissed, setPromptDismissed] = useState(() => readPromptDismissed(userId))
-  if (promptUser !== userId) {
-    setPromptUser(userId)
-    setPromptDismissed(readPromptDismissed(userId))
-  }
-  const promptShowing = profilePromptShowing({
-    staff: staffRole != null,
-    dismissed: promptDismissed,
-    profile: suggestionProfile,
-  })
   const status = useDashboardStatus()
   const [attempt, setAttempt] = useState(0)
   const [profileMatch, setProfileMatch] = useState<ProfileMatchInput>({
@@ -87,21 +58,14 @@ export function DashboardHome() {
   const [photo, setPhoto] = useState<{ path: string; url: string } | null>(null)
   const [invites, setInvites] = useState<MemberDealRoom[]>([])
   const [inviteError, setInviteError] = useState('')
-  const [inviteBusy, setInviteBusy] = useState<string | null>(null)
-  const [inviteErrors, setInviteErrors] = useState<Record<string, string>>({})
   const [inviteAttempt, setInviteAttempt] = useState(0)
   const [shareCard, setShareCard] = useState<AdmitShareCardState>({ show: false })
   const [shareDismissing, setShareDismissing] = useState(false)
   const [shareDismissError, setShareDismissError] = useState('')
   const [upgradeOpen, setUpgradeOpen] = useState(false)
-  const [suggestAttempt, setSuggestAttempt] = useState(0)
-  const [suggestions, setSuggestions] = useState<IntroSuggestion[]>([])
-  const [suggestStatus, setSuggestStatus] = useState<'loading' | 'ready' | 'error'>('loading')
-  const [suggestQuota, setSuggestQuota] = useState<IntroQuota | null>(null)
-  const [suggestIntros, setSuggestIntros] = useState<IntroRow[]>([])
-  const [suggestBusy, setSuggestBusy] = useState<string | null>(null)
-  const [suggestErrorId, setSuggestErrorId] = useState<string | null>(null)
-  const [suggestError, setSuggestError] = useState('')
+  const [suggestionCount, setSuggestionCount] = useState(0)
+  const [twoStepOff, setTwoStepOff] = useState(false)
+  const [weekLines, setWeekLines] = useState<string[]>([])
   const [dailyBrief, setDailyBrief] = useState<MemberBrief | null>(null)
   const [digestNotice, setDigestNotice] = useState<DigestHomeNotice | null>(null)
   useNoIndex('Home | Board Arabia')
@@ -218,41 +182,34 @@ export function DashboardHome() {
     let cancelled = false
     void fetchMyIntroSuggestions().then((result) => {
       if (cancelled) return
-      if (result.status === 'error') {
-        setSuggestStatus('error')
-        setSuggestions([])
-        return
-      }
-      setSuggestStatus('ready')
-      setSuggestions(result.status === 'ready' ? result.rows : [])
-    })
-    void fetchIntroQuota().then((result) => {
-      if (!cancelled) setSuggestQuota(result)
-    })
-    void fetchMyIntros().then((result) => {
-      if (!cancelled) setSuggestIntros(result.status === 'ready' ? result.rows : [])
+      setSuggestionCount(result.status === 'ready' ? result.rows.length : 0)
     })
     return () => {
       cancelled = true
     }
-  }, [suggestAttempt])
+  }, [userId])
 
-  function requestSuggestion(id: string, reason: string, askDesk: boolean) {
-    setSuggestError('')
-    setSuggestErrorId(null)
-    setSuggestBusy(id)
-    void requestMemberIntro(id, reason, askDesk).then(async (message) => {
-      setSuggestBusy(null)
-      if (message) {
-        setSuggestErrorId(id)
-        setSuggestError(message)
-        return
-      }
-      const [nextIntros, nextQuota] = await Promise.all([fetchMyIntros(), fetchIntroQuota()])
-      if (nextIntros.status === 'ready') setSuggestIntros(nextIntros.rows)
-      setSuggestQuota(nextQuota)
+  useEffect(() => {
+    let cancelled = false
+    void readAssurance().then((assurance) => {
+      if (!cancelled) setTwoStepOff(Boolean(assurance.userId) && !assurance.verifiedFactor)
     })
-  }
+    return () => {
+      cancelled = true
+    }
+  }, [userId])
+
+  useEffect(() => {
+    let cancelled = false
+    void supabase.rpc('my_weekly_digest').then(({ data, error }) => {
+      if (cancelled) return
+      const next = error ? null : presentWeeklyDigest(data)
+      setWeekLines(next ? digestPreviewLines(next) : [])
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [userId])
 
   useEffect(() => {
     let cancelled = false
@@ -271,23 +228,6 @@ export function DashboardHome() {
       cancelled = true
     }
   }, [inviteAttempt])
-
-  function respond(roomId: string, decision: 'accept' | 'decline') {
-    setInviteBusy(roomId)
-    setInviteErrors((current) => {
-      const next = { ...current }
-      delete next[roomId]
-      return next
-    })
-    void respondDealRoom(roomId, decision).then((result) => {
-      setInviteBusy(null)
-      if (result.status !== 'ok') {
-        setInviteErrors((current) => ({ ...current, [roomId]: result.message }))
-        return
-      }
-      setInviteAttempt((value) => value + 1)
-    })
-  }
 
   if (status.refreshing && !status.updatedAt) {
     return <HomeSkeleton tone="member" cards={3} />
@@ -386,74 +326,34 @@ export function DashboardHome() {
           </Link>
         </section>
       ) : null}
-      {dailyBrief ? <DailyMarketBriefCard brief={dailyBrief} /> : null}
+      {inviteError ? (
+        <div className="mb-6 max-w-3xl">
+          <ErrorBanner
+            tone="member"
+            message={inviteError}
+            retryLabel={MEMBER_VIEWS.rooms.retry}
+            onRetry={() => setInviteAttempt((value) => value + 1)}
+          />
+        </div>
+      ) : null}
       <HomeSnapshotView
         model={model}
         sponsorBadge={member.seat === 'sponsor' ? <SponsorBadge /> : null}
         seatCaption={member.seat === 'sponsor' ? 'Seat' : 'Founding seat'}
         seatValue={seatLabel(member.seat)}
-        attentionLead={
-          invites.length > 0 || inviteError ? (
-            <div className="space-y-3">
-              {inviteError ? (
-                <ErrorBanner
-                  tone="member"
-                  message={inviteError}
-                  retryLabel={MEMBER_VIEWS.rooms.retry}
-                  onRetry={() => setInviteAttempt((value) => value + 1)}
-                />
-              ) : null}
-              <PendingInviteCards
-                invites={invites}
-                busyId={inviteBusy}
-                errors={inviteErrors}
-                onAccept={(roomId) => respond(roomId, 'accept')}
-                onDecline={(roomId) => respond(roomId, 'decline')}
-              />
-            </div>
-          ) : null
-        }
         figuresAsOf={sources.figuresAsOf}
         userId={userId}
         digestNotice={digestNotice}
-        hasSuggestions={suggestions.length > 0}
-        promptShowing={promptShowing}
-        profilePrompt={
-          <ProfileCompletenessPrompt
-            userId={userId}
-            staff={staffRole != null}
-            profile={suggestionProfile}
-            onDismiss={() => setPromptDismissed(true)}
-          />
-        }
-        suggestionsSlot={
-          suggestStatus === 'error' ? (
-            <div className="mt-4">
-              <ErrorBanner
-                tone="member"
-                message={MEMBER_VIEWS.home.error}
-                retryLabel={MEMBER_VIEWS.home.retry}
-                onRetry={() => {
-                  setSuggestStatus('loading')
-                  setSuggestAttempt((value) => value + 1)
-                }}
-              />
-            </div>
-          ) : suggestStatus === 'ready' && suggestionProfile.status !== 'loading' ? (
-            <IntroSuggestions
-              rows={suggestions}
-              quota={suggestQuota}
-              introStatus={(id) => outgoingMemberStatus(suggestIntros, id)}
-              busyId={suggestBusy}
-              errorId={suggestErrorId}
-              error={suggestError}
-              showEmpty
-              emptyMode={suggestionTagsReady(suggestionProfile) ? 'complete' : 'needs_tags'}
-              portrait={suggestionPortrait}
-              onRequest={requestSuggestion}
-            />
-          ) : null
-        }
+        staff={staffRole != null}
+        weekLines={weekLines}
+        needsYou={buildNeedsYou({
+          twoStepOff,
+          profileGaps: staffRole != null ? 0 : profileGapCount(suggestionProfile),
+          invites: invites.map((room) => ({ id: room.id, name: room.name })),
+          suggestionCount,
+          attention,
+        })}
+        dailyBriefSlot={dailyBrief ? <DailyMarketBriefCard brief={dailyBrief} /> : null}
         shareSlot={
           shareCard.show ? (
             <AdmitShareCard

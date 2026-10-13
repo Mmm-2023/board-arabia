@@ -2,6 +2,10 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import test from 'node:test'
+import { createElement } from 'react'
+import { renderToStaticMarkup } from 'react-dom/server'
+import { MemoryRouter } from 'react-router-dom'
+import { createServer } from 'vite'
 import { DEMO_THRESHOLD_DEFAULTS, demoRowsVisible } from '../src/lib/demoThreshold.ts'
 import {
   applyDemoThreshold,
@@ -16,6 +20,23 @@ import {
   type IntroState,
   type MandateBrief,
 } from '../src/lib/homeSnapshot.ts'
+import {
+  EXPLORE_DEALS_TO,
+  NEEDS_YOU_EMPTY,
+  NEEDS_YOU_SUBTITLE,
+  NEEDS_YOU_TITLE,
+  SEE_LESS_LABEL,
+  SEE_MORE_ACCESSIBLE,
+  SEE_MORE_LABEL,
+  SUGGESTED_INTROS_TO,
+  THIS_WEEK_SEE_ALL,
+  TWO_STEP_LABEL,
+  TWO_STEP_TO,
+  buildNeedsYou,
+  digestPreviewLines,
+  profileGapLabel,
+  roomInviteCopy,
+} from '../src/lib/homeNeeds.ts'
 
 const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..')
 
@@ -425,4 +446,175 @@ test('home copy and the activity migration stay free of private fields and em da
   assert.equal(sql.includes('contact_email'), false)
   assert.equal(sql.includes('venue_address'), false)
   assert.match(source('src/pages/dashboard/DashboardHome.tsx'), /cards=\{3\}/)
+})
+
+test('needs you copy, this week lines, and live partners stay exact', () => {
+  assert.equal(NEEDS_YOU_TITLE, 'Needs you')
+  assert.equal(NEEDS_YOU_SUBTITLE, 'A few things to finish so your membership works for you.')
+  assert.equal(NEEDS_YOU_EMPTY, "You're all set. Nothing needs you right now.")
+  assert.equal(profileGapLabel(1), 'One step left to complete your profile')
+  assert.equal(profileGapLabel(3), 'Your profile is 3 steps from complete')
+  assert.equal(profileGapLabel(0), null)
+  assert.equal(roomInviteCopy(1, 'Care network room')?.label, "You're invited to a deal room: Care network room")
+  assert.equal(roomInviteCopy(1, 'Care network room')?.action, 'View invite')
+  assert.equal(roomInviteCopy(2, 'Care network room')?.label, 'You have 2 deal room invites')
+  assert.equal(roomInviteCopy(2, 'Care network room')?.action, 'View invites')
+  assert.equal(TWO_STEP_LABEL, 'Turn on two-step sign-in to protect your account')
+  assert.equal(SEE_MORE_LABEL, 'See more')
+  assert.equal(SEE_LESS_LABEL, 'See less')
+  assert.equal(SEE_MORE_ACCESSIBLE, 'Show more from Board Arabia')
+  const items = buildNeedsYou({
+    twoStepOff: true,
+    profileGaps: 1,
+    invites: [{ id: 'a3000001-0000-4000-8000-000000000001', name: 'Care network room' }],
+    suggestionCount: 2,
+    attention: [
+      {
+        title: 'Set your password',
+        body: 'Set a password before you leave this session so your invite link is not the only way back in.',
+        to: '/dashboard/profile#password',
+        cta: 'Set password',
+      },
+    ],
+  })
+  assert.deepEqual(
+    items.map((item) => [item.label, item.action, item.to]),
+    [
+      [TWO_STEP_LABEL, 'Turn on', TWO_STEP_TO],
+      ['Set your password', 'Set password', '/dashboard/profile#password'],
+      ['One step left to complete your profile', 'Finish profile', '/dashboard/profile#profile-tags'],
+      ["You're invited to a deal room: Care network room", 'View invite', '/dashboard/deals/rooms/a3000001-0000-4000-8000-000000000001'],
+      ['2 suggested introductions for you', 'Suggested introductions', SUGGESTED_INTROS_TO],
+    ],
+  )
+  assert.equal(buildNeedsYou({
+    twoStepOff: false,
+    profileGaps: 0,
+    invites: [],
+    suggestionCount: 0,
+    attention: [],
+  }).length, 0)
+  const lines = digestPreviewLines({
+    newMembers: [{ fullName: 'Example Member' }],
+    newMandates: [{ oneLiner: 'A clear example mandate.' }],
+    upcomingEvents: [{ title: 'Example gathering' }],
+    notes: [{ text: 'A fourth line stays off the card.' }],
+    introductions: [{ fullName: 'Sample Person', example: true }, { fullName: 'Live Person', example: false }],
+  })
+  assert.deepEqual(lines, ['Example Member', 'A clear example mandate.', 'Example gathering'])
+  const home = source('src/pages/dashboard/DashboardHome.tsx')
+  const view = source('src/pages/dashboard/HomeSnapshotView.tsx')
+  assert.equal(home.includes("from './IntroSuggestions'"), false)
+  assert.equal(home.includes('<IntroSuggestions'), false)
+  assert.equal(home.includes('fetchIntroQuota'), false)
+  assert.equal(home.includes('fetchMyIntros'), false)
+  assert.equal(view.includes('Trusted Partners'), false)
+  assert.match(view, />\s*Partners\s*</)
+  assert.match(view, /to="\/dashboard\/digest"/)
+  assert.match(view, /homePrimaryAction/)
+  assert.match(source('src/lib/homeNeeds.ts'), /Explore deals/)
+  assert.equal(home.includes('\u2014'), false)
+  assert.equal(view.includes('\u2014'), false)
+  assert.equal(source('src/lib/homeNeeds.ts').includes('\u2014'), false)
+})
+
+test('home sections follow needs you, this week, one next action, activity, then see more', async () => {
+  const vite = await createServer({ server: { middlewareMode: true }, appType: 'custom', logLevel: 'error' })
+  try {
+    const home = await vite.ssrLoadModule('/src/pages/dashboard/HomeSnapshotView.tsx')
+    const filled = assembleHome(base({
+      invitesRemaining: 2,
+      partners: [
+        {
+          id: 'p-sample',
+          is_demo: true,
+          name: 'Qaf Ledger',
+          monogram: 'QL',
+          blurb: 'A sample firm.',
+        },
+        {
+          id: 'p-live',
+          is_demo: false,
+          is_partner: true,
+          name: 'Example Capital',
+          monogram: 'EC',
+          blurb: 'One line for a fixture partner.',
+        },
+      ],
+    }))
+    const html = renderToStaticMarkup(
+      createElement(
+        MemoryRouter,
+        null,
+        createElement(home.HomeSnapshotView, {
+          model: filled,
+          weekLines: ['Example Member', 'A clear example mandate.', 'Example gathering'],
+          needsYou: buildNeedsYou({
+            twoStepOff: true,
+            profileGaps: 2,
+            invites: [],
+            suggestionCount: 1,
+            attention: [],
+          }),
+          dailyBriefSlot: createElement('p', { 'data-daily-brief-card': '' }, 'Daily market brief'),
+        }),
+      ),
+    )
+    const needsAt = html.indexOf('data-home-needs')
+    const weekAt = html.indexOf('data-home-digest')
+    const nextAt = html.indexOf('data-home-next')
+    const activityAt = html.indexOf('data-home-activity')
+    const moreAt = html.indexOf('data-home-more')
+    assert.ok(needsAt >= 0 && needsAt < weekAt && weekAt < nextAt && nextAt < activityAt && activityAt < moreAt)
+    assert.match(html, new RegExp(NEEDS_YOU_TITLE))
+    assert.match(html, /Your profile is 2 steps from complete/)
+    assert.match(html, /href="\/dashboard\/profile#profile-tags"/)
+    assert.match(html, /1 suggested introductions for you/)
+    assert.match(html, new RegExp(`href="${SUGGESTED_INTROS_TO}"`))
+    assert.match(html, /Example Member/)
+    assert.match(html, new RegExp(`>${THIS_WEEK_SEE_ALL}<`))
+    assert.match(html, /href="\/dashboard\/digest"/)
+    assert.equal((html.match(/data-home-cta=/g) || []).length, 1)
+    assert.match(html, /data-home-cta="invite"/)
+    assert.equal(html.includes('Add sector and availability'), false)
+    assert.equal(html.includes('IntroSuggestions'), false)
+    assert.match(html, />See more</)
+    assert.match(html, new RegExp(`aria-label="${SEE_MORE_ACCESSIBLE}"`))
+    const more = html.slice(moreAt)
+    assert.match(more, /Your pulse/)
+    assert.match(more, /Platform snapshot/)
+    assert.match(more, /From the room/)
+    assert.match(more, />Partners</)
+    assert.match(more, /Example Capital/)
+    assert.match(more, /data-daily-brief-card/)
+    assert.equal(more.includes('Qaf Ledger'), false)
+    assert.equal(more.includes('Trusted Partners'), false)
+
+    const quiet = renderToStaticMarkup(
+      createElement(MemoryRouter, null, createElement(home.HomeSnapshotView, {
+        model: assembleHome(base()),
+        needsYou: [],
+      })),
+    )
+    assert.equal(quiet.includes('data-home-needs'), false)
+    assert.equal(quiet.includes(NEEDS_YOU_EMPTY), false)
+    assert.equal((quiet.match(/data-home-cta=/g) || []).length, 1)
+    assert.match(quiet, new RegExp(`href="${EXPLORE_DEALS_TO}"`))
+    assert.match(quiet, />Explore deals</)
+
+    const samplesOnly = renderToStaticMarkup(
+      createElement(MemoryRouter, null, createElement(home.HomeSnapshotView, {
+        model: assembleHome(base({
+          partners: [
+            { id: 'p-sample', is_demo: true, name: 'Qaf Ledger', monogram: 'QL', blurb: 'A sample firm.' },
+          ],
+        })),
+        needsYou: [],
+      })),
+    )
+    assert.equal(samplesOnly.includes('Qaf Ledger'), false)
+    assert.equal(samplesOnly.includes('data-gallery="partners"'), false)
+  } finally {
+    await vite.close()
+  }
 })
