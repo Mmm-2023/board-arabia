@@ -159,6 +159,7 @@ const ACCOUNT_TITLES = [
   { prefix: '/dashboard/two-step', title: 'Two-step sign-in' },
   { prefix: '/dashboard/privacy', title: 'Your privacy' },
   { prefix: '/dashboard/profile/leave', title: 'Profile' },
+  { prefix: '/dashboard/digest', title: 'This week' },
 ] as const
 
 export function shellSectionTitle(

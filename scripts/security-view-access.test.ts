@@ -198,7 +198,10 @@ test('every staff_* function checks staff and is not executable by anon', () => 
     'staff_set_intro_deal',
     'staff_list_mandate_intros',
     'staff_list_mandates',
+    'staff_create_digest_draft',
     'staff_create_mandate',
+    'staff_decide_digest_issue',
+    'staff_digest_issue',
     'staff_list_mandate_matches',
     'staff_decide_mandate_intro',
     'staff_list_re_appetites',
@@ -359,6 +362,9 @@ begin
   if not exists (select 1 from pg_roles where rolname = 'service_role') then
     create role service_role nologin;
   end if;
+exception
+  when unique_violation then
+    null;
 end
 $roles$;
 grant anon, authenticated, service_role to current_user;
