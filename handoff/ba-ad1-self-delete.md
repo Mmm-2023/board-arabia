@@ -22,10 +22,9 @@ Leave Board Arabia is the same screen. Admin gets an in-app notice, not a new em
 - Directory listing (status suspended, directory hidden, partner card off)
 - Introductions
 - Notifications (`digest_notices`, `member_notifications`, `member_notification_prefs`)
-- Messages the member sent
 - The member sign-in is anonymised, not deleted. Sessions are cleared when those tables exist.
 
-Messages other people sent stay, with the recipient reference cleared. A consideration account that is not a member still goes through `prepare_candidate_delete`, which deletes that sign-in.
+There is no messages table yet, so this change does not delete messages. A consideration account that is not a member still goes through `prepare_candidate_delete`, which deletes that sign-in. Consent log rows for that account stay, with the user reference cleared by the foreign key.
 
 ## Kept
 

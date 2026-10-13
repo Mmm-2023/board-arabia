@@ -209,7 +209,7 @@ export function PrivacyPanelView({
           Delete account
         </h2>
         <p className={body}>
-          This removes your profile, directory card, directory listing, introductions, notifications and messages. Legal
+          This removes your profile, directory card, directory listing, introductions and notifications. Legal
           records and consent logs are kept. It cannot be undone.
         </p>
         <Link

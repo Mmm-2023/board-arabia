@@ -1,5 +1,5 @@
 -- Members and consideration accounts delete themselves after a one-time code.
--- Profile, directory card, intros, notifications and messages go now.
+-- Profile, directory card, intros and notifications go now.
 -- Legal records, consent rows and audit rows stay. The user reference is cleared
 -- unless a legal hold is set.
 -- Staff read the in-app closure notice through private.is_staff().
@@ -446,37 +446,6 @@ begin
      )
   then
     execute 'delete from public.notifications where user_id = $1' using p_user_id;
-  end if;
-
-  if pg_catalog.to_regclass('public.messages') is not null
-     and exists (
-       select 1
-       from information_schema.columns
-       where table_schema = 'public'
-         and table_name = 'messages'
-         and column_name = 'sender_id'
-     )
-  then
-    execute 'delete from public.messages where sender_id = $1' using p_user_id;
-    if exists (
-      select 1
-      from information_schema.columns
-      where table_schema = 'public'
-        and table_name = 'messages'
-        and column_name = 'recipient_id'
-    ) then
-      if exists (
-        select 1
-        from information_schema.columns
-        where table_schema = 'public'
-          and table_name = 'messages'
-          and column_name = 'recipient_id'
-          and is_nullable = 'NO'
-      ) then
-        execute 'alter table public.messages alter column recipient_id drop not null';
-      end if;
-      execute 'update public.messages set recipient_id = null where recipient_id = $1' using p_user_id;
-    end if;
   end if;
 
   update public.profiles
