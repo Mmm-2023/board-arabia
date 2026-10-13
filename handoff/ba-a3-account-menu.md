@@ -1,6 +1,6 @@
 # A3 + A4 + A5 + A13: account menu
 
-Base: `156917b` (main after #164). No migration. No Edge. Pages deploys on merge.
+Base: `156917b`, then merged main through `350de40` (staff owner gate, daily market brief, legal partner copy). No migration in this change. No Edge. Pages deploys on merge.
 
 ## What changed
 
@@ -17,7 +17,7 @@ Digest uses "Back to Home" (`/dashboard`). Privacy, two-step, membership, and th
 - Active ring derived from the list: `src/shell/AppShell.tsx:77`, `src/shell/AppShell.tsx:372-390`
 - Close, Escape, focus return: `src/shell/AppShell.tsx:115-138`, `src/shell/AppShell.tsx:151`
 - Loading and member shells: `src/pages/dashboard/DashboardLayout.tsx:320`, `src/pages/dashboard/DashboardLayout.tsx:376`, `src/pages/dashboard/DashboardLayout.tsx:437-442`
-- Member routes: `src/App.tsx:195-196` (`/apply` at `src/App.tsx:116` is unchanged)
+- Member routes: `src/App.tsx:195-196` (`/apply` at `src/App.tsx:117` is unchanged)
 - Candidate routes for digest, privacy, two-step, and delete: `src/pages/dashboard/account/AccountRoutes.tsx:187-191`
 - Back links: `src/pages/dashboard/DigestPage.tsx:37`, `src/components/privacy/PrivacyPanelView.tsx:41`, `src/pages/dashboard/TwoStepPage.tsx:72`, `src/pages/dashboard/MemberMembershipPage.tsx:21`, `src/pages/dashboard/account/MembershipChecklistView.tsx:96`, `src/pages/dashboard/account/DeleteAccountView.tsx:20`
 - Delete under privacy, safeguards unchanged: `src/components/privacy/PrivacyPanelView.tsx:206-220`, `src/pages/dashboard/account/DeleteAccountView.tsx:34-46`, `src/pages/dashboard/account/DeleteAccountScreen.tsx:14`
