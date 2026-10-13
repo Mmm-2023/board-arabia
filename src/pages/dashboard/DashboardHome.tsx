@@ -26,7 +26,9 @@ import { supabase } from '../../lib/supabase'
 import { useNoIndex } from '../../lib/usePageTitle'
 import { ErrorBanner, HomeSkeleton } from '../../shell/ViewState'
 import { MEMBER_VIEWS } from '../../shell/viewCopy'
+import { readMemberDailyBrief, type MemberBrief } from '../../lib/dailyMarketBrief'
 import { useDashboardStatus, useMember } from './context'
+import { DailyMarketBriefCard } from './DailyMarketBriefCard'
 import { AdmitShareCard } from './AdmitShareCard'
 import { HomeSnapshotView } from './HomeSnapshotView'
 import { IntroSuggestions } from './IntroSuggestions'
@@ -100,6 +102,7 @@ export function DashboardHome() {
   const [suggestBusy, setSuggestBusy] = useState<string | null>(null)
   const [suggestErrorId, setSuggestErrorId] = useState<string | null>(null)
   const [suggestError, setSuggestError] = useState('')
+  const [dailyBrief, setDailyBrief] = useState<MemberBrief | null>(null)
   useNoIndex('Home | Board Arabia')
 
   useEffect(() => {
@@ -178,6 +181,16 @@ export function DashboardHome() {
       setShareCard({ show: false })
     })
   }
+
+  useEffect(() => {
+    let cancelled = false
+    void readMemberDailyBrief().then((next) => {
+      if (!cancelled) setDailyBrief(next)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [userId])
 
   useEffect(() => {
     let cancelled = false
@@ -351,6 +364,7 @@ export function DashboardHome() {
           </Link>
         </section>
       ) : null}
+      {dailyBrief ? <DailyMarketBriefCard brief={dailyBrief} /> : null}
       <HomeSnapshotView
         model={model}
         sponsorBadge={member.seat === 'sponsor' ? <SponsorBadge /> : null}
