@@ -18,6 +18,7 @@ import {
 } from '../../lib/homeNeeds'
 import { FORMING_TOTALS } from '../../lib/platformFloors'
 import { ErrorBanner, HomeSkeleton, toneClasses } from '../../shell/ViewState'
+import { notificationLine, type UnreadNotification } from '../../lib/boardSeats'
 import { MEMBER_VIEWS } from '../../shell/viewCopy'
 import { adviserGalleryRows, partnerGalleryRows } from '../../lib/trustedPartners'
 
@@ -42,6 +43,8 @@ export function HomeSnapshotView({
   weekLines = [],
   dailyBriefSlot = null,
   staff = false,
+  unreadNote = null,
+  onMarkNotificationRead,
 }: {
   model: HomeModel
   onRetry?: () => void
@@ -56,6 +59,8 @@ export function HomeSnapshotView({
   weekLines?: string[]
   dailyBriefSlot?: ReactNode
   staff?: boolean
+  unreadNote?: UnreadNotification | null
+  onMarkNotificationRead?: (id: string) => void
 }) {
   const homePartners = model.platform.partners.map((partner) => ({ ...partner, is_demo: partner.example }))
   const partnerRows = liveHomePartners(partnerGalleryRows(homePartners))
@@ -102,6 +107,21 @@ export function HomeSnapshotView({
           </p>
         </div>
       </section>
+
+      {unreadNote ? (
+        <section aria-label="Notification" className="mt-4" data-home-notification="">
+          <div className={`${styles.panel} flex flex-wrap items-center justify-between gap-3 px-4 py-3`}>
+            <p className="text-[1rem] text-ink">{notificationLine(unreadNote)}</p>
+            <button
+              type="button"
+              onClick={() => onMarkNotificationRead?.(unreadNote.id)}
+              className="inline-flex min-h-11 shrink-0 items-center text-[0.95rem] font-semibold text-[var(--ba-indigo)] underline"
+            >
+              {MEMBER_VIEWS.home.notificationRead}
+            </button>
+          </div>
+        </section>
+      ) : null}
 
       {needsItems.length > 0 ? (
         <section aria-label="Needs you" className="mt-4" data-home-needs="">
