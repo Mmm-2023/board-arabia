@@ -82,6 +82,15 @@ const PeopleIndexRedirect = lazy(() =>
 const RealEstatePage = lazy(() =>
   import('./pages/dashboard/RealEstatePage').then((m) => ({ default: m.RealEstatePage })),
 )
+const BoardSeatsPage = lazy(() =>
+  import('./pages/dashboard/BoardSeatsPage').then((m) => ({ default: m.BoardSeatsPage })),
+)
+const BoardSeatDetailPage = lazy(() =>
+  import('./pages/dashboard/BoardSeatsPage').then((m) => ({ default: m.BoardSeatDetailPage })),
+)
+const PostBoardSeatPage = lazy(() =>
+  import('./pages/dashboard/BoardSeatsPage').then((m) => ({ default: m.PostBoardSeatPage })),
+)
 const CreateRoomPage = lazy(() =>
   import('./pages/dashboard/CreateRoomPage').then((m) => ({ default: m.CreateRoomPage })),
 )
@@ -167,6 +176,9 @@ export default function App() {
           <Route index element={<DealsIndexRedirect />} />
           <Route path="mandates" element={<MandatesPage />} />
           <Route path="real-estate" element={<RealEstatePage />} />
+          <Route path="board-seats" element={<BoardSeatsPage />} />
+          <Route path="board-seats/new" element={<PostBoardSeatPage />} />
+          <Route path="board-seats/:seatId" element={<BoardSeatDetailPage />} />
           <Route path="rooms" element={<RoomsPage />} />
           <Route path="rooms/new" element={<CreateRoomPage />} />
           <Route path="rooms/:roomId" element={<DealRoomPage />} />
