@@ -71,7 +71,7 @@ function textFiles(dir: string): string[] {
 test('the logged-in footer adds the fetched operator and drops the sentence when it is missing', () => {
   assert.equal(operatorCredit(null), null)
   assert.equal(operatorCredit({ entity: ' ', cr: OPERATOR_CR }), null)
-  assert.equal(operatorCredit({ entity: OPERATOR_NAME, cr: ' ' }), null)
+  assert.equal(operatorCredit({ entity: OPERATOR_NAME, cr: ' ' }), 'Provided by Board Arabia')
   assert.equal(operatorCredit({ entity: OPERATOR_NAME, cr: OPERATOR_CR }), 'Provided by Board Arabia')
 
   const copy = renderToolCopy('deal_readiness', 'en', {
@@ -110,6 +110,33 @@ test('the logged-in footer adds the fetched operator and drops the sentence when
   assert.match(cfoNamed, /Provided by Board Arabia/)
   assert.equal(cfoNamed.includes(OPERATOR_CR), false)
   assert.equal(cfoNamed.includes(OPERATOR_NAME), false)
+})
+
+test('an empty registration still credits Board Arabia and a filled one adds no registration clause', () => {
+  const empty = operatorCredit({ entity: 'Board Arabia', cr: '' })
+  const filled = operatorCredit({ entity: 'Board Arabia', cr: OPERATOR_CR })
+  assert.equal(empty, 'Provided by Board Arabia')
+  assert.equal(filled, 'Provided by Board Arabia')
+  assert.equal(empty?.includes(OPERATOR_CR), false)
+  assert.equal(filled?.includes(OPERATOR_CR), false)
+
+  const copy = renderToolCopy('deal_readiness', 'en', {
+    entity: 'To be confirmed',
+    cr: 'To be confirmed',
+    provider: 'Example AI',
+    privacy: '/privacy',
+    terms: '/terms',
+    retentionDays: 30,
+    date: '06 Oct 2026',
+  })
+  const emptyFooter = footerWithOperator(copy.footer, { entity: 'Board Arabia', cr: '' })
+  const filledFooter = footerWithOperator(copy.footer, { entity: 'Board Arabia', cr: OPERATOR_CR })
+  assert.match(emptyFooter, /Provided by Board Arabia, under the Board Arabia Terms/)
+  assert.match(filledFooter, /Provided by Board Arabia, under the Board Arabia Terms/)
+  assert.equal(emptyFooter.includes(OPERATOR_CR), false)
+  assert.equal(filledFooter.includes(OPERATOR_CR), false)
+  assert.equal(/commercial registration/i.test(emptyFooter), false)
+  assert.equal(/commercial registration/i.test(filledFooter), false)
 })
 
 test('the operator placeholder is gone from src and edge, and the seed is only in the migration', () => {
