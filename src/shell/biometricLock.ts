@@ -41,6 +41,15 @@ export function biometricShotAllowed(native: boolean): boolean {
 }
 
 /**
+ * Shot screens load as a document so the WebView paints them.
+ * Client-side routing left the home page up after a deep link.
+ */
+export function nativeShotHref(path: string, search: string, hash: string): string | null {
+  if (path !== '/native/biometric-shot/settings' && path !== '/native/biometric-shot/lock') return null
+  return `${path}${search}${hash}`
+}
+
+/**
  * Lock after the app has been in the background for the timeout.
  * A missing background time means the app has not been left, so it stays open.
  */

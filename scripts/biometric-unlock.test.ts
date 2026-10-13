@@ -14,6 +14,7 @@ import {
   biometricAttemptFromError,
   biometricShotAllowed,
   completeUnlock,
+  nativeShotHref,
   markUnlockDisabled,
   markUnlockEnabled,
   parseBackgroundedAt,
@@ -186,6 +187,10 @@ test('the web privacy page hides the toggle and the native page can turn it on',
   assert.equal(showBiometricSetting(true, true), true)
   assert.equal(biometricShotAllowed(false), false)
   assert.equal(biometricShotAllowed(true), true)
+  assert.equal(nativeShotHref('/dashboard/privacy', '', ''), null)
+  assert.equal(nativeShotHref('/native/biometric-shot/settings', '', ''), '/native/biometric-shot/settings')
+  assert.equal(nativeShotHref('/native/biometric-shot/lock', '', ''), '/native/biometric-shot/lock')
+  assert.match(read('src/shell/NativeShell.tsx'), /window\.location\.assign/)
 
   const vite = await createServer({ server: { middlewareMode: true, hmr: false }, appType: 'custom', logLevel: 'error' })
   try {
@@ -243,6 +248,8 @@ test('Face ID usage, the Android biometric permission, and main-only PR checks a
   assert.match(workflow, /android-biometric-lock\.png/)
   assert.match(workflow, /native\/biometric-shot\/settings/)
   assert.match(workflow, /native\/biometric-shot\/lock/)
+  assert.match(workflow, /schemeapproval\.plist/)
+  assert.match(workflow, /PlistBuddy/)
   assert.equal(workflow.includes('secrets.'), false)
   assert.equal(/eyJ[A-Za-z0-9_-]{10,}/.test(workflow), false)
 

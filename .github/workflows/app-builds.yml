@@ -122,17 +122,27 @@ jobs:
             echo "No iPhone simulator is available"
             exit 1
           fi
-          xcrun simctl boot "$udid" || true
+          xcrun simctl shutdown "$udid" || true
+          approval="$HOME/Library/Developer/CoreSimulator/Devices/$udid/data/Library/Preferences/com.apple.launchservices.schemeapproval.plist"
+          mkdir -p "$(dirname "$approval")"
+          rm -f "$approval"
+          /usr/libexec/PlistBuddy -c "Add :com.apple.CoreSimulator.CoreSimulatorBridge-->com.boardarabia.app string com.boardarabia.app" "$approval"
+          xcrun simctl boot "$udid"
           xcrun simctl bootstatus "$udid" -b
+          open -a Simulator || true
           xcrun simctl install "$udid" "$app"
           xcrun simctl launch "$udid" com.boardarabia.app
           sleep 15
           xcrun simctl io "$udid" screenshot "$RUNNER_TEMP/ios-home.png"
           xcrun simctl openurl "$udid" "com.boardarabia.app://native/biometric-shot/settings"
-          sleep 10
+          sleep 2
+          osascript -e 'tell application "Simulator" to activate' -e 'delay 1' -e 'tell application "System Events" to keystroke return' || true
+          sleep 12
           xcrun simctl io "$udid" screenshot "$RUNNER_TEMP/ios-biometric-settings.png"
           xcrun simctl openurl "$udid" "com.boardarabia.app://native/biometric-shot/lock"
-          sleep 10
+          sleep 2
+          osascript -e 'tell application "Simulator" to activate' -e 'delay 1' -e 'tell application "System Events" to keystroke return' || true
+          sleep 12
           xcrun simctl io "$udid" screenshot "$RUNNER_TEMP/ios-biometric-lock.png"
       - uses: actions/upload-artifact@v7
         with:
@@ -184,10 +194,10 @@ jobs:
             adb logcat -d > "$GITHUB_WORKSPACE/emulator-shot/logcat.txt"
             adb exec-out screencap -p > "$GITHUB_WORKSPACE/emulator-shot/android-home.png"
             adb shell am start -a android.intent.action.VIEW -d "com.boardarabia.app://native/biometric-shot/settings"
-            sleep 12
+            sleep 15
             adb exec-out screencap -p > "$GITHUB_WORKSPACE/emulator-shot/android-biometric-settings.png"
             adb shell am start -a android.intent.action.VIEW -d "com.boardarabia.app://native/biometric-shot/lock"
-            sleep 12
+            sleep 15
             adb exec-out screencap -p > "$GITHUB_WORKSPACE/emulator-shot/android-biometric-lock.png"
             adb logcat -d > "$GITHUB_WORKSPACE/emulator-shot/logcat-after-biometric.txt"
             grep -E "Fatal signal|libwebviewchromium|Renderer process|Capacitor:|CrRendererMain|signal 5" "$GITHUB_WORKSPACE/emulator-shot/logcat.txt" > "$GITHUB_WORKSPACE/emulator-shot/logcat-webview.txt" || true
