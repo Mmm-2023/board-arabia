@@ -1,15 +1,15 @@
 # BA FW4 handoff: weekly digest, admin approval, sending parked
 
-Base at start: `6da30503` (later than `ac016d95`). Latest migration on that base: `20261209120000_application_answers_at_admission.sql`. Slot `20261209130000` was free and is the file used. Re-checked against `origin/main` at start. While this branch was open, main gained `20261209140000` and `20261210120000`. This file still sorts between `20261209120000` and those later files, so the slot stayed. No Edge deploy. No schedule. No mailbox.
+Base at start: `6da30503` (later than `ac016d95`). The digest migration is `supabase/migrations/20261212120000_weekly_digest.sql`. That name sorts after `20261211120000`. No Edge deploy. No schedule. No mailbox.
 
-Secrets grade: VERIFIED. The diff has no API keys, service-role keys, live tokens, staff names, or mailbox addresses. Tests use `example.com`. One Postgres fixture uses the existing mandate host check (`@boardarabia.test`) and asserts that value never appears in a digest payload.
+Secrets grade: VERIFIED. The diff has no API keys, service-role keys, live tokens, staff names, or mailbox addresses. Test fixtures use `example.com` only.
 
 ## What members get
 
 | Item | Where | Grade |
 | --- | --- | --- |
 | In-app This week page at `/dashboard/digest`, linked from Home. No new nav item. | `src/App.tsx:189`, `src/pages/dashboard/HomeSnapshotView.tsx:88` | VERIFIED |
-| Live sections for the current ISO week: new members, new mandates, upcoming Majlis, the caller's own introductions | `public.my_weekly_digest()` at `supabase/migrations/20261209130000_weekly_digest.sql:495` | VERIFIED |
+| Live sections for the current ISO week: new members, new mandates, upcoming Majlis, the caller's own introductions | `public.my_weekly_digest()` at `supabase/migrations/20261212120000_weekly_digest.sql:495` | VERIFIED |
 | Empty sections hidden. Whole page empty state is "Nothing new this week." | `src/components/digest/WeeklyDigestView.tsx` | VERIFIED |
 | Weekly email preference, default false, owner only, next to the other privacy controls | `public.set_digest_email_opt_in` at migration `:461`. UI `src/components/privacy/PrivacyPanelView.tsx:101` | VERIFIED |
 | Unsubscribe route exists and does not read a token | `src/App.tsx:190`, `src/pages/dashboard/DigestPage.tsx:67` | VERIFIED |
@@ -47,9 +47,50 @@ Members do not read `digest_issues`. A draft is not a member page. The in-app di
 - Email list dates use `formatUkDateTime` (`src/lib/ukDate.ts:4`), Asia/Riyadh, for example `22 Sept 2026, 14:49`. Kind becomes a plain label (`src/lib/emailEventLabel.ts`). The address is not rendered. A stored subject is shown as stored.
 - Home "Got it", "Details", and "Open" controls use a 44 by 44 px minimum. Asserted by bounding box at 390.
 
+## Review pass
+
+`src/pages/dashboard/HomeSnapshotView.tsx` and `src/pages/admin/EmailPage.tsx` stay as approved. This commit does not edit them.
+
+### Privacy files
+
+Both files are touched only to add the weekly email preference. No earlier privacy sentence was rewritten.
+
+`src/pages/dashboard/PrivacyPanelPage.tsx` (data only, no new sentences):
+
+- `:12` holds `digestOptIn` for the signed-in member.
+- `:26` to `:30` read `own_digest_preference` and set the toggle when the member already opted in.
+- `:53` to `:58` call `set_digest_email_opt_in` for `auth.uid()` and put the toggle back if the call fails.
+- `:94` and `:95` pass that state into the view.
+
+`src/components/privacy/PrivacyPanelView.tsx`:
+
+- `:21`, `:22`, `:34`, and `:35` add the optional `digestOptIn` and `onDigestOptIn` props. Existing callers still render.
+- `:99` to `:129` are the new Weekly email control. The heading and the three sentences are new privacy wording.
+
+LEGAL CHANGE. The new sentences are: "Weekly email", "You asked to receive the weekly email. It is not connected yet.", "Off. The weekly email is not connected yet.", and "This choice is saved for when weekly email is connected. Nothing is sent now." They sit on Your privacy. They are not in the Privacy Notice. Review this wording before apply.
+
+### App.tsx
+
+`/apply` is still `<Route path="/apply" element={<ApplyPage />} />` at `src/App.tsx:110`. The `/dashboard/ai` order is unchanged: due diligence, then `:toolSlug`, then `:toolSlug/:jobId`, then the catch-all. Diff against main:
+
+```
+ const PrivacyPanelPage = lazy(() => import('./pages/dashboard/PrivacyPanelPage').then((m) => ({ default: m.PrivacyPanelPage })))
++const DigestPage = lazy(() => import('./pages/dashboard/DigestPage').then((m) => ({ default: m.DigestPage })))
++const DigestUnsubscribePage = lazy(() =>
++  import('./pages/dashboard/DigestPage').then((m) => ({ default: m.DigestUnsubscribePage })),
++)
+
+         <Route path="privacy" element={<PrivacyPanelPage />} />
++        <Route path="digest" element={<DigestPage />} />
++        <Route path="digest/unsubscribe" element={<DigestUnsubscribePage />} />
+         <Route path="two-step" element={<TwoStepPage />} />
+```
+
+`scripts/weekly-digest.test.ts` matches `/dashboard/digest` to `DigestPage` and `/dashboard/not-a-page` to the `*` `RedirectKeep` route.
+
 ## Apply list
 
-1. Apply `supabase/migrations/20261209130000_weekly_digest.sql` only, after `20261209120000_application_answers_at_admission.sql`.
+1. Apply `supabase/migrations/20261212120000_weekly_digest.sql` after `20261211120000`.
 2. Do not deploy an Edge function. The letter template is `supabase/functions/_shared/weekly_digest_copy.ts` for a later brief.
 3. Do not connect a mailbox and do not add a schedule. A later brief has to require `digest_issue_sendable` before any send.
 

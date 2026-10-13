@@ -2,8 +2,9 @@ import assert from 'node:assert/strict'
 import { existsSync, mkdirSync, readdirSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 import test from 'node:test'
-import { createElement } from 'react'
+import { createElement, isValidElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
+import { createRoutesFromElements, matchRoutes } from 'react-router-dom'
 import { chromium } from 'playwright-core'
 import { createServer } from 'vite'
 import { hasBoardFooter, marketingSignatureHit } from '../supabase/functions/_shared/mail.ts'
@@ -18,7 +19,7 @@ import { shellSectionTitle, MEMBER_ACCOUNT, MEMBER_DESTINATIONS } from '../src/s
 import { resolveChromePath } from './chrome-path.ts'
 
 const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..')
-const migrationName = '20261209130000_weekly_digest.sql'
+const migrationName = '20261212120000_weekly_digest.sql'
 
 function read(rel: string) {
   return readFileSync(path.join(root, rel), 'utf8')
@@ -37,7 +38,7 @@ test('weekly digest migration is the free slot and does not send', () => {
     .filter((name) => name.endsWith('.sql'))
     .sort()
   assert.ok(names.includes(migrationName))
-  assert.ok(names.indexOf(migrationName) > names.indexOf('20261209120000_application_answers_at_admission.sql'))
+  assert.ok(names.indexOf(migrationName) > names.indexOf('20261210120000_sectors_city_about.sql'))
   const sql = read(`supabase/migrations/${migrationName}`)
   assert.equal(sql.includes('\u2014'), false)
   assert.equal(sql.includes('\u2013'), false)
@@ -63,6 +64,41 @@ test('weekly digest migration is the free slot and does not send', () => {
   for (const header of headers) {
     assert.match(header, /security definer/i)
     assert.match(header, /set search_path = ''/)
+  }
+})
+
+test('dashboard digest route loads DigestPage and not the catch-all', async () => {
+  const appSource = read('src/App.tsx')
+  const applyLine = appSource.split('\n').find((line) => line.includes('path="/apply"'))
+  assert.equal(applyLine?.trim(), '<Route path="/apply" element={<ApplyPage />} />')
+  const aiStart = appSource.indexOf('<Route path="ai" element={<AiToolsLayout />}>')
+  const aiEnd = appSource.indexOf('<Route path="profile/leave"', aiStart)
+  const aiBlock = appSource.slice(aiStart, aiEnd)
+  const due = aiBlock.indexOf('path="due-diligence" element={<DueDiligencePage />}')
+  const tool = aiBlock.indexOf('path=":toolSlug" element={<AiToolPage />}')
+  const job = aiBlock.indexOf('path=":toolSlug/:jobId" element={<AiToolPage />}')
+  const catchAll = aiBlock.indexOf('path="*" element={<RedirectKeep />}')
+  assert.ok(due > 0 && tool > due && job > tool && catchAll > job)
+
+  const vite = await createServer({ server: { middlewareMode: true, hmr: false }, appType: 'custom', logLevel: 'error' })
+  try {
+    const appMod = await vite.ssrLoadModule('/src/App.tsx')
+    const tree = appMod.default()
+    const routesElement = findElement(tree, (node) => node.type?.name === 'Routes' || node.type?.displayName === 'Routes')
+    assert.ok(routesElement)
+    const matched = matchRoutes(createRoutesFromElements(routesElement.props.children), '/dashboard/digest')
+    assert.ok(matched)
+    assert.equal(matched.at(-1)?.route.path, 'digest')
+    const loaded = await loadLazy(matched.at(-1)?.route.element)
+    assert.equal(loaded.name, 'DigestPage')
+
+    const missed = matchRoutes(createRoutesFromElements(routesElement.props.children), '/dashboard/not-a-page')
+    assert.ok(missed)
+    assert.equal(missed.at(-1)?.route.path, '*')
+    assert.equal(missed.at(-1)?.route.element?.type?.name, 'RedirectKeep')
+    assert.notEqual(missed.at(-1)?.route.element?.type, matched.at(-1)?.route.element?.type)
+  } finally {
+    await vite.close()
   }
 })
 
@@ -165,7 +201,7 @@ test('presented digest drops contact fields and keeps only the caller introducti
         ticket_band: 'Mid band',
         geography: 'KSA',
         one_liner: 'A clear regional mandate for members.',
-        contact_email: 'desk@example.com',
+        contact_email: 'admin@example.com',
         contact_phone: '+966 50 123 4567',
       },
     ],
@@ -354,6 +390,27 @@ test('home tap targets are at least 44px at 390 and digest shots exist', async (
     await vite.close()
   }
 })
+
+function findElement(node, pred) {
+  if (!isValidElement(node)) return null
+  if (pred(node)) return node
+  const children = node.props?.children
+  const list = Array.isArray(children) ? children : [children]
+  for (const child of list) {
+    const found = findElement(child, pred)
+    if (found) return found
+  }
+  return null
+}
+
+async function loadLazy(element) {
+  const type = element?.type
+  const payload = type?._payload
+  assert.equal(typeof payload?._result, 'function')
+  const loaded = await payload._result()
+  assert.equal(typeof loaded.default, 'function')
+  return loaded.default
+}
 
 function bodyStart(chunk: string) {
   const fn = chunk.indexOf('as $fn$')

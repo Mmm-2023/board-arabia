@@ -1,6 +1,6 @@
 -- Weekly digest. An admin prepares each issue and approves it before a future letter can go out.
 -- Sending stays off. This file does not send mail, does not call a mailbox, and does not schedule anything.
--- Apply after 20261209120000_application_answers_at_admission.sql.
+-- Apply after 20261211120000. This file is 20261212120000.
 -- Factory does not apply migrations.
 
 alter table public.members

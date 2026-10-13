@@ -11,8 +11,8 @@ const migrationsDir = path.join(root, 'supabase/migrations')
 
 test('weekly digest hides private rows and refuses an unapproved send', { timeout: 300_000 }, () => {
   const names = readdirSync(migrationsDir).filter((name) => name.endsWith('.sql')).sort()
-  assert.ok(names.includes('20261209130000_weekly_digest.sql'))
-  assert.ok(names.indexOf('20261209130000_weekly_digest.sql') > names.indexOf('20261209120000_application_answers_at_admission.sql'))
+  assert.ok(names.includes('20261212120000_weekly_digest.sql'))
+  assert.ok(names.indexOf('20261212120000_weekly_digest.sql') > names.indexOf('20261210120000_sectors_city_about.sql'))
   const include = (name: string) => `\\i ${path.join(migrationsDir, name)}`
   const dir = mkdtempSync(path.join(tmpdir(), 'ba-digest-'))
   const script = path.join(dir, 'run.sql')
@@ -92,10 +92,11 @@ begin
     (s_id, 'Sample Person', 'Director', 'Sample Co'),
     (p_id, 'Sponsor Person', 'Director', 'Partner Co');
 
+  alter table public.directory_entries drop constraint if exists directory_entries_email_test;
   insert into public.directory_entries (
     id, is_demo, email, full_name, headline, company, location, sector, seat, portrait_asset
   ) values (
-    s_id, true, 'sample.seat@boardarabia.test', 'Sample Person', 'Director', 'Sample Co',
+    s_id, true, 'sample.seat@example.com', 'Sample Person', 'Director', 'Sample Co',
     'Riyadh', 'Energy', 'ksa', '/demo/portraits/sample-person.svg'
   );
 
@@ -114,7 +115,7 @@ begin
     'Energy', 'Growth equity', 'Mid band', 'KSA', 'Diligence',
     'A clear regional mandate for members.',
     'Northwind Example', 'Terms on request', 'One board seat.',
-    'Amal N.', 'desk.note@boardarabia.test', 'Room note',
+    'Amal N.', 'admin.note@example.com', 'Room note',
     'The private brief stays out of the weekly digest.'
   );
 
