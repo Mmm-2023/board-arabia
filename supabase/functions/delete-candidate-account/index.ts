@@ -1,5 +1,6 @@
-import { corsHeaders, jsonResponse } from '../_shared/mail.ts'
+import { corsHeaders, jsonResponse, sendEmail } from '../_shared/mail.ts'
 import { requireUser } from '../_shared/require_user.ts'
+import { handleDeleteAccount } from './handle.ts'
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders(req) })
@@ -9,28 +10,53 @@ Deno.serve(async (req) => {
   if ('error' in gate) return jsonResponse(req, { error: gate.error }, gate.status)
   const { user, admin } = gate
 
-  const { data, error } = await admin.rpc('prepare_candidate_delete', { p_user_id: user.id })
-  if (error || !data || typeof data !== 'object') {
-    return jsonResponse(req, { error: 'Could not delete the account.' }, 500)
+  let body: unknown = {}
+  try {
+    body = await req.json()
+  } catch {
+    body = {}
   }
-  const status = String((data as { status?: string }).status || '')
-  if (status === 'member') {
-    return jsonResponse(req, { error: 'A full member account is not removed from here.' }, 409)
-  }
-  if (status === 'staff') {
-    return jsonResponse(req, { error: 'This sign-in is a staff account and is not removed from here.' }, 409)
-  }
-  if (status === 'missing') {
-    return jsonResponse(req, { error: 'No account was found to delete.' }, 404)
-  }
-  if (status !== 'ok') return jsonResponse(req, { error: 'Could not delete the account.' }, 500)
 
-  const analyticsId = (data as { analytics_id?: string | null }).analytics_id
-  if (typeof analyticsId === 'string' && analyticsId && !analyticsId.includes('@')) {
-    const removed = await deletePosthogPerson(analyticsId)
-    if (removed) await admin.from('retention_posthog_queue').delete().eq('analytics_id', analyticsId)
-  }
-  return jsonResponse(req, { ok: true })
+  const outcome = await handleDeleteAccount({
+    userId: user.id,
+    email: typeof user.email === 'string' ? user.email : null,
+    body,
+    now: () => Date.now(),
+    pepper: Deno.env.get('CANDIDATE_CODE_PEPPER')?.trim() || '',
+    issueCode: async (userId, codeHash, expiresAt) => {
+      const { data, error } = await admin.rpc('issue_account_delete_code', {
+        p_user_id: userId,
+        p_code_hash: codeHash,
+        p_expires_at: expiresAt,
+      })
+      if (error || typeof data !== 'string') return 'error'
+      return data
+    },
+    voidCode: async (userId) => {
+      await admin.rpc('void_account_delete_code', { p_user_id: userId })
+    },
+    confirmDelete: async (userId, codeHash) => {
+      const { data, error } = await admin.rpc('confirm_account_delete', {
+        p_user_id: userId,
+        p_code_hash: codeHash,
+      })
+      if (error || !data || typeof data !== 'object') return null
+      return data as Record<string, unknown>
+    },
+    sendMail: async (message) => {
+      const sent = await sendEmail(message)
+      return { ok: sent.status === 'sent' || sent.status === 'dry_run' }
+    },
+    removeAvatar: async (path) => {
+      await admin.storage.from('member-avatars').remove([path])
+    },
+    deleteAnalytics: async (analyticsId) => {
+      const removed = await deletePosthogPerson(analyticsId)
+      if (removed) await admin.from('retention_posthog_queue').delete().eq('analytics_id', analyticsId)
+    },
+  })
+
+  return jsonResponse(req, outcome.body, outcome.status)
 })
 
 async function deletePosthogPerson(analyticsId: string) {

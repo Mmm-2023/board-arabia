@@ -42,7 +42,7 @@ export const PRIVACY_NOTICE_EN: PrivacyNotice = {
       heading: 'What we collect',
       paragraphs: [
         'Application and member data: name, email, LinkedIn, title, company, turnover or AUM band, optional phone, commercial registration number, sector tags, statement, first-touch campaign values, and referrer host.',
-        'If you open an account for consideration, we keep that account: your name, work email, role, region, your sign-in, and the professional details you add for membership review. We also keep which link brought you here. You can delete that account yourself from Account after you confirm. Deleting it removes those details and the sign-in. It does not remove a full member record.',
+        'If you open an account for consideration, we keep that account: your name, work email, role, region, your sign-in, and the professional details you add for membership review. We also keep which link brought you here. You can delete that account yourself from Your privacy after you confirm with a code. Deleting it removes the profile, directory card, intros, notifications and messages. Legal records and consent logs are kept.',
         'Site analytics: pages, engaged time, scroll depth, coarse location taken from an IP address that is not stored, campaign source, and named events.',
         'Site analytics are not the membership file. Cookies for analytics run only after you choose Accept. Before that, visits are counted without an identifier that could tie one visit to the next.',
         'If you leave the public-totals box checked, a verified capacity figure can be added into a platform sum after you are admitted. The public site shows that sum only. It does not show your name, your company, or your amount.',
@@ -88,7 +88,7 @@ export const PRIVACY_NOTICE_EN: PrivacyNotice = {
       heading: 'Your rights',
       paragraphs: [
         'You can ask to be informed, to access your data, to obtain a copy, to correct it, and to have it destroyed. You can withdraw consent at any time. You can complain to SDAIA (the Saudi Data and AI Authority).',
-        'From Account, you can delete an account that has not become a full member. Confirming that deletion destroys the credentials on the account and the sign-in.',
+        'From Your privacy, you can delete your account, including a full membership. Confirming that deletion with a code removes the profile and the sign-in. Legal records and consent logs are kept.',
         `To exercise these rights, write to the privacy contact in the first section once it is published. Until then the contact remains ${PLACEHOLDER_CONFIRM}.`,
       ],
     },

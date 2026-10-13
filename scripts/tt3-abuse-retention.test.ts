@@ -285,15 +285,20 @@ test('review chips list all 8 states and the staff phone tabs stay at five contr
   assert.equal(shell.includes('destinationCount + 1 === 7'), false)
 })
 
-test('delete account confirms, and members are refused', () => {
+test('delete account confirms with a code, and members are included', () => {
   const view = read('src/pages/dashboard/account/DeleteAccountView.tsx')
   const fn = read('supabase/functions/delete-candidate-account/index.ts')
+  const handle = read('supabase/functions/delete-candidate-account/handle.ts')
   const sql = read('supabase/migrations/20261111120000_abuse_retention.sql')
+  const selfDelete = read('supabase/migrations/20261225120000_member_self_delete.sql')
   assert.match(view, /I understand this removes my account/)
   assert.match(view, /data-screen="delete-account"/)
   assert.equal(/\bBasic\b/.test(view), false)
-  assert.match(fn, /prepare_candidate_delete/)
-  assert.match(fn, /A full member account is not removed/)
+  assert.match(fn, /requireUser/)
+  assert.match(fn, /confirm_account_delete/)
+  assert.match(handle, /send_code/)
+  assert.equal(fn.includes('A full member account is not removed'), false)
+  assert.match(selfDelete, /A member closed their account/)
   assert.match(sql, /return jsonb_build_object\('status', 'member'\)/)
   assert.match(sql, /delete from public\.candidate_events/)
   assert.match(sql, /delete from auth\.users/)

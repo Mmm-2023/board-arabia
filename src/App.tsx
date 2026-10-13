@@ -3,6 +3,7 @@ import { Navigate, Route, Routes } from 'react-router-dom'
 import { AnalyticsRoot } from './components/AnalyticsRoot'
 import { EnglishOnlyQuery } from './components/EnglishOnly'
 import { AboutPage } from './pages/AboutPage'
+import { AccountDeletionPage } from './pages/AccountDeletionPage'
 import { ApplyPage } from './pages/ApplyPage'
 import { RegisterPage } from './pages/RegisterPage'
 import { VerifyPage } from './pages/VerifyPage'
@@ -125,6 +126,7 @@ export default function App() {
       <Route path="/how-it-works" element={<HowItWorksPage />} />
       <Route path="/about" element={<AboutPage />} />
       <Route path="/privacy" element={<PrivacyPage />} />
+      <Route path="/account-deletion" element={<AccountDeletionPage />} />
       <Route path="/terms" element={<TermsPage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/login/staff" element={<LoginPage />} />

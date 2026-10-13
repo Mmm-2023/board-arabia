@@ -306,7 +306,7 @@ async function walkAccountRoutes(page: Page, origin: string) {
   await page.goto(`${origin}/dashboard/privacy`, { waitUntil: 'networkidle' })
   await page.locator('[data-privacy-delete] a').click()
   await page.waitForURL((url) => url.pathname === DELETE_ACCOUNT_PATH)
-  const confirm = page.getByRole('button', { name: 'Delete account' })
+  const confirm = page.getByRole('button', { name: 'Continue' })
   await confirm.waitFor()
   assert.equal(await confirm.isDisabled(), true)
   await page.getByRole('checkbox', { name: 'I understand this removes my account.' }).check()

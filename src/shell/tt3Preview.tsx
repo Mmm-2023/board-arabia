@@ -62,7 +62,17 @@ if (state === 'delete') {
       accountName="Example Chair"
       renderAccountMark={() => <span className="inline-flex h-full w-full items-center justify-center text-[0.7rem]">EC</span>}
     >
-      <DeleteAccountView busy={false} error="" onConfirm={() => {}} />
+      <DeleteAccountView
+        step="explain"
+        busy={false}
+        error=""
+        code=""
+        sent={false}
+        onCode={() => {}}
+        onContinue={() => {}}
+        onSendCode={() => {}}
+        onConfirm={() => {}}
+      />
     </AppShell>,
   )
 }
