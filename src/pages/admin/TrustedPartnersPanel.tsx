@@ -109,7 +109,7 @@ export function TrustedPartnersPanel({ previewRows }: { previewRows?: PartnerRow
     <section id="trusted-partners" className={`${styles.panel} mt-8 px-5 py-5`} data-trusted-partners-editor="">
       <h2 className={`text-[0.72rem] font-semibold tracking-[0.12em] uppercase ${styles.quiet}`}>Trusted partners</h2>
       <p className="mt-3 text-[1rem] leading-relaxed text-pearl/80">
-        Add a name, one line, and a logo. The public page stays hidden until a real partner has a logo. Sample rows stay in the member area, and only while no real partner is published.
+        Add a name, one line, and a logo. The public page stays hidden until a real partner has a logo. Example rows stay on Home, one per category, until a live partner shares that category.
       </p>
       {error ? (
         <p className="mt-3 text-[0.95rem] text-red-300" role="alert">
@@ -132,7 +132,7 @@ export function TrustedPartnersPanel({ previewRows }: { previewRows?: PartnerRow
                 <p className={`mt-1 ${styles.muted}`}>{row.blurb}</p>
                 <p className={`mt-1 text-[0.85rem] ${styles.quiet}`}>
                   {row.published ? 'Published' : 'Hidden'}
-                  {row.is_demo ? '. Sample' : ''}
+                  {row.is_demo ? '. Example' : ''}
                 </p>
               </div>
             </div>
@@ -361,7 +361,7 @@ function PartnerForm({
       </label>
       <label className="flex min-h-11 items-center gap-3 text-[0.95rem] text-pearl">
         <input type="checkbox" checked={sample} onChange={(event) => setSample(event.target.checked)} />
-        Sample. Members see it only when no real partner is published.
+        Example. Home shows one per category until a live partner shares that category.
       </label>
       <button type="submit" disabled={busy} className="ba-primary inline-flex min-h-11 items-center px-4 text-[0.75rem] font-semibold tracking-[0.08em] uppercase disabled:opacity-40">
         Save partner

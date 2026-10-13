@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { FAQ, publicFaqItems, type FaqItem } from '../content/seo'
+import { FAQ, publicFaqItems, publicHref, type FaqItem } from '../content/seo'
 import { publicConsiderationCta } from '../lib/twoTierRegister'
 import { DisplayHeading, Eyebrow } from './Type'
 
@@ -30,7 +30,7 @@ export function FaqList({
               <p className="pb-3 text-[0.9375rem] leading-relaxed text-[var(--ba-muted)]">{item.answer}</p>
               {item.to && item.toLabel && (
                 <Link
-                  to={item.to}
+                  to={publicHref(item.to)}
                   className="ba-textlink mb-3 inline-flex min-h-11 items-center text-[0.9375rem]"
                   data-consideration-cta={item.to === cta.to && item.toLabel === cta.label ? 'public' : undefined}
                 >

@@ -14,7 +14,7 @@ English only. No public calendar, no member names or photographs, no fee schedul
 | `/apply` | Pre-vet form. CTA language is “Apply for consideration”. |
 | `/for-members` | All nine tools, including mandate inbox and deal rooms, plus a dashboard preview |
 | `/for-capital` | How FDI, family offices, PE, and VC reach members: mandate inbox and deal rooms, admin-gated |
-| `/partners` | Three annual Founding Ecosystem Partner seats, fifteen finance categories, interest via `mailto:partners@boardarabia.com` (not stored) |
+| `/partners` | Three annual Founding Ecosystem Partner seats, fifteen finance categories, interest via the contact email in the legal config (not stored) |
 | `/how-it-works` | Pre-vet → personal review (no fixed SLA) → Accept → private booking email → admit |
 | `/about` | Short founding note |
 | `/privacy`, `/terms` | What the site collects, and what the pages do not promise |

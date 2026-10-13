@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { CLOSING_CTA_BODY, LEGACY_CTA_BODY } from '../content/twoTierCopy'
+import { publicHref } from '../content/seo'
 import { isTwoTierRegisterEnabled, publicConsiderationCta } from '../lib/twoTierRegister'
 import { trackApplyClick, trackLoginClick } from '../lib/tracking/browser'
 import { Reveal } from './Reveal'
@@ -41,7 +42,7 @@ export function CtaBand({
             {copy}
           </p>
           <Link
-            to={href}
+            to={publicHref(href)}
             className="ba-primary mt-5 inline-flex min-h-12 items-center justify-center px-6 text-[0.9375rem] font-semibold"
             data-consideration-cta="public"
             onClick={() => {

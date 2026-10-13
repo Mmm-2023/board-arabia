@@ -2,14 +2,11 @@ import { useEffect } from 'react'
 import {
   canonicalUrl,
   MARKETING_PAGES,
-  OG_DESCRIPTION,
   OG_IMAGE,
   OG_IMAGE_ALT,
   OG_IMAGE_HEIGHT,
   OG_IMAGE_TYPE,
   OG_IMAGE_WIDTH,
-  OG_TITLE,
-  HOME_SHARE_TITLE,
   pageGraph,
   publicMarketingTitle,
   type MarketingPath,
@@ -43,19 +40,18 @@ export function Seo({ path }: { path: MarketingPath }) {
   const title = publicMarketingTitle(page)
 
   useEffect(() => {
-    const url = canonicalUrl(page.path)
+    const url = page.path === '/legal' ? canonicalUrl('/terms') : canonicalUrl(page.path)
     document.title = title
     document.documentElement.lang = 'en'
     document.documentElement.dir = 'ltr'
     upsertMeta('name', 'description', page.description)
-    upsertMeta('name', 'robots', 'index, follow')
+    upsertMeta('name', 'robots', page.path === '/legal' ? 'noindex, nofollow' : 'index, follow')
     upsertLink('canonical', url)
     upsertMeta('property', 'og:type', 'website')
     upsertMeta('property', 'og:site_name', 'Board Arabia')
     upsertMeta('property', 'og:locale', 'en_US')
-    const shareTitle = page.path === '/' ? HOME_SHARE_TITLE : OG_TITLE
-    upsertMeta('property', 'og:title', shareTitle)
-    upsertMeta('property', 'og:description', OG_DESCRIPTION)
+    upsertMeta('property', 'og:title', title)
+    upsertMeta('property', 'og:description', page.description)
     upsertMeta('property', 'og:url', url)
     upsertMeta('property', 'og:image', OG_IMAGE)
     upsertMeta('property', 'og:image:width', OG_IMAGE_WIDTH)
@@ -63,8 +59,8 @@ export function Seo({ path }: { path: MarketingPath }) {
     upsertMeta('property', 'og:image:type', OG_IMAGE_TYPE)
     upsertMeta('property', 'og:image:alt', OG_IMAGE_ALT)
     upsertMeta('name', 'twitter:card', 'summary_large_image')
-    upsertMeta('name', 'twitter:title', shareTitle)
-    upsertMeta('name', 'twitter:description', OG_DESCRIPTION)
+    upsertMeta('name', 'twitter:title', title)
+    upsertMeta('name', 'twitter:description', page.description)
     upsertMeta('name', 'twitter:image', OG_IMAGE)
     upsertMeta('name', 'twitter:image:alt', OG_IMAGE_ALT)
 

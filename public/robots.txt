@@ -1,6 +1,23 @@
 User-agent: *
 Allow: /
+Disallow: /admin
+Disallow: /ops
+Disallow: /login
+Disallow: /dashboard
+Disallow: /auth
+Disallow: /book
+Disallow: /verify
+Disallow: /shell.html
 
+# AI answer engines: allowed to read public pages
+User-agent: GPTBot
+User-agent: OAI-SearchBot
+User-agent: ChatGPT-User
+User-agent: PerplexityBot
+User-agent: ClaudeBot
+User-agent: Google-Extended
+User-agent: Applebot-Extended
+Allow: /
 Disallow: /admin
 Disallow: /ops
 Disallow: /login

@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { Footer } from '../components/Footer'
 import { Nav } from '../components/Nav'
+import { publicHref } from '../content/seo'
 import { useNoIndex } from '../lib/usePageTitle'
 
 export function NotFoundPage() {
@@ -24,7 +25,7 @@ export function NotFoundPage() {
               Home
             </Link>
             <Link
-              to="/apply"
+              to={publicHref('/apply')}
               className="inline-flex min-h-11 items-center text-[0.95rem] font-semibold text-[var(--ba-indigo)]"
             >
               Apply

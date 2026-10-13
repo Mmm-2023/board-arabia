@@ -8,6 +8,7 @@ import { STAFF_VIEWS } from '../../shell/viewCopy'
 import { PanelNotice } from './bits'
 import { MandateIntroQueue } from './MandateIntroQueue'
 import { ReAppetitePanel } from './ReAppetitePanel'
+import { BoardSeatsPanel } from './BoardSeatsPanel'
 import { ReBoardRoleIntroQueue } from './ReBoardRoleIntroQueue'
 import { ReClubInterestPanel } from './ReClubInterestPanel'
 import { ReIntroQueue } from './ReIntroQueue'
@@ -20,6 +21,7 @@ import { sponsorSeatHolders } from '../../lib/sponsorSeat'
 import { useAdmin } from './context'
 import { PrivateWorkCountsPanel } from '../../components/mfa/PrivateWorkCountsPanel'
 import { MarketingHomeCard } from './MarketingHomeCard'
+import { AccountClosureNotices } from './AccountClosureNotices'
 import { PartnerInterestAlert, SponsorIntroQueue } from './PartnerInterestPanel'
 
 export function AdminHome({
@@ -46,6 +48,7 @@ export function AdminHome({
         </details>
       }
     >
+      <AccountClosureNotices />
       <PartnerInterestAlert />
       <SponsorIntroQueue />
       <div id="mandate-intro-queue" className="scroll-mt-24">
@@ -54,6 +57,7 @@ export function AdminHome({
       <ReIntroQueue />
       <ReAppetitePanel />
       <RePartnerIntroQueue />
+      <BoardSeatsPanel />
       <ReBoardRoleIntroQueue />
       <ReClubInterestPanel />
       <div className="mt-6 flex flex-wrap gap-x-5">
