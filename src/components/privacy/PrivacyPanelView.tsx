@@ -3,6 +3,7 @@ import { legalField } from '../../config/legal'
 import { LEAVE_BOARD_PATH } from '../../lib/leaveBoard'
 import { DELETE_ACCOUNT_PATH } from '../../shell/destinations'
 import { AccountBackLink } from '../../pages/dashboard/AccountBackLink'
+import { BiometricUnlockSetting } from './BiometricUnlockSetting'
 
 const section = 'border-t border-ink/10 pt-8'
 const heading = 'font-display text-[1.35rem] font-semibold tracking-[-0.02em]'
@@ -23,6 +24,9 @@ export function PrivacyPanelView({
   onDownload,
   digestOptIn = false,
   onDigestOptIn,
+  biometricAvailable = false,
+  biometricEnabled = false,
+  onBiometricEnabled,
 }: {
   hidden: boolean
   showSponsors: boolean
@@ -36,6 +40,9 @@ export function PrivacyPanelView({
   onDownload: () => void
   digestOptIn?: boolean
   onDigestOptIn?: (optIn: boolean) => void
+  biometricAvailable?: boolean
+  biometricEnabled?: boolean
+  onBiometricEnabled?: (enabled: boolean) => void
 }) {
   return (
     <div className="max-w-xl" data-screen="your-privacy" data-directory={hidden ? 'hidden' : 'visible'}>
@@ -143,6 +150,12 @@ export function PrivacyPanelView({
           is {twoStepOn ? 'on' : 'off'}.
         </p>
       </section>
+
+      {biometricAvailable ? (
+        <section className={section} aria-labelledby="privacy-biometric">
+          <BiometricUnlockSetting enabled={biometricEnabled} onEnabled={(next) => onBiometricEnabled?.(next)} />
+        </section>
+      ) : null}
 
       <section className={section} aria-labelledby="privacy-files">
         <h2 id="privacy-files" className={heading}>

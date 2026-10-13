@@ -1,3 +1,4 @@
+import { Capacitor } from '@capacitor/core'
 import { useEffect, useState } from 'react'
 import { PrivacyPanelView } from '../../components/privacy/PrivacyPanelView'
 import { LEGAL_PENDING, legalField } from '../../config/legal'
@@ -5,6 +6,8 @@ import { listTotpFactors } from '../../lib/mfa'
 import { ANALYTICS_CONFIG } from '../../lib/tracking/flags'
 import { supabase } from '../../lib/supabase'
 import { useNoIndex } from '../../lib/usePageTitle'
+import { BIOMETRIC_PREF_EVENT, readUnlockState, showBiometricSetting } from '../../shell/biometricLock'
+import { deviceSupportsBiometrics, disableNativeUnlock, enableNativeUnlock, nativeVault } from '../../shell/nativeBiometric'
 
 export function PrivacyPanelPage() {
   const [hidden, setHidden] = useState(false)
@@ -13,6 +16,8 @@ export function PrivacyPanelPage() {
   const [twoStepOn, setTwoStepOn] = useState(false)
   const [downloadState, setDownloadState] = useState<'idle' | 'ready' | 'limited' | 'error'>('idle')
   const [busy, setBusy] = useState(false)
+  const [biometricAvailable, setBiometricAvailable] = useState(false)
+  const [biometricEnabled, setBiometricEnabled] = useState(false)
   useNoIndex('Your privacy | Board Arabia')
 
   useEffect(() => {
@@ -35,6 +40,41 @@ export function PrivacyPanelPage() {
       cancelled = true
     }
   }, [])
+
+  useEffect(() => {
+    let cancelled = false
+    void deviceSupportsBiometrics().then(async (hardware) => {
+      if (cancelled) return
+      const available = showBiometricSetting(Capacitor.isNativePlatform(), hardware)
+      if (!available) return
+      const state = await readUnlockState(nativeVault())
+      if (cancelled) return
+      setBiometricAvailable(true)
+      setBiometricEnabled(state.enabled)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  async function onBiometric(next: boolean) {
+    if (!next) {
+      await disableNativeUnlock()
+      setBiometricEnabled(false)
+      window.dispatchEvent(new Event(BIOMETRIC_PREF_EVENT))
+      return
+    }
+    const { data } = await supabase.auth.getSession()
+    const session = data.session
+    const ok = await enableNativeUnlock(
+      session?.access_token && session.refresh_token
+        ? { access_token: session.access_token, refresh_token: session.refresh_token }
+        : null,
+    )
+    if (!ok) return
+    setBiometricEnabled(true)
+    window.dispatchEvent(new Event(BIOMETRIC_PREF_EVENT))
+  }
 
   async function onHidden(next: boolean) {
     const previous = hidden
@@ -93,6 +133,9 @@ export function PrivacyPanelPage() {
       onDownload={() => void onDownload()}
       digestOptIn={digestOptIn}
       onDigestOptIn={(next) => void onDigest(next)}
+      biometricAvailable={biometricAvailable}
+      biometricEnabled={biometricEnabled}
+      onBiometricEnabled={(next) => void onBiometric(next)}
     />
   )
 }

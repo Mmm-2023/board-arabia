@@ -4,6 +4,7 @@ import { App } from '@capacitor/app'
 import { Browser } from '@capacitor/browser'
 import { Capacitor, SystemBars, SystemBarsStyle } from '@capacitor/core'
 import { THEME_COLOR } from '../content/seo'
+import { nativeShotHref } from './biometricLock'
 import { androidBackAction, classifyIncomingUrl, type InAppLink } from './incomingLink'
 
 const BRAND = THEME_COLOR
@@ -20,6 +21,12 @@ export function NativeShell() {
     let lastUrl = ''
 
     function openInApp(link: InAppLink) {
+      const shot = nativeShotHref(link.path, link.search, link.hash)
+      if (shot) {
+        const here = window.location.pathname.replace(/\/+$/, '') || '/'
+        if (here !== link.path) window.location.assign(shot)
+        return
+      }
       navigate({ pathname: link.path, search: link.search, hash: link.hash })
     }
 

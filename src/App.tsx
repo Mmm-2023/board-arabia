@@ -23,6 +23,8 @@ import { AdminIntrosRedirect } from './shell/adminIntrosRedirect'
 import { RedirectKeep } from './shell/RedirectKeep'
 import { ShellNotFound } from './shell/ShellNotFound'
 import { NativeShell } from './shell/NativeShell'
+import { BiometricGate } from './shell/BiometricGate'
+import { BiometricShot } from './shell/BiometricShot'
 import { TrailingSlash } from './shell/TrailingSlash'
 
 const AdminLayout = lazy(() => import('./pages/admin/AdminLayout').then((m) => ({ default: m.AdminLayout })))
@@ -113,6 +115,7 @@ export default function App() {
   return (
     <><EnglishOnlyQuery />
     <NativeShell />
+    <BiometricGate />
     <AnalyticsRoot />
     <Suspense fallback={<p role="status">Loading</p>}>
     <Routes>
@@ -133,6 +136,8 @@ export default function App() {
       <Route path="/legal" element={<LegalRedirectPage />} />
       <Route path="/terms" element={<TermsPage />} />
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/native/biometric-shot/settings" element={<BiometricShot screen="settings" />} />
+      <Route path="/native/biometric-shot/lock" element={<BiometricShot screen="lock" />} />
       <Route path="/login/staff" element={<LoginPage />} />
       <Route path="/auth/confirm" element={<AuthConfirmPage />} />
       <Route path="/auth/reset" element={<AuthConfirmPage />} />
