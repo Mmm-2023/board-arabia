@@ -23,6 +23,7 @@ import { englishPath } from '../src/lib/englishPath.ts'
 import { PRIVACY_EN } from '../src/content/legal/privacy.en.ts'
 import { legalPlainText, resolveLegalDocument } from '../src/content/legal/resolve.ts'
 import { TERMS_EN } from '../src/content/legal/terms.en.ts'
+import { publicEntityHits } from './no-public-entity.test.ts'
 import { FOOTER_NAMMCO_CREDIT, LEGAL_ENTITY_CR, LEGAL_ENTITY_LINE, strayPublicNammco } from './public-nammco.mjs'
 const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..')
 
@@ -127,7 +128,7 @@ test('legal config defaults, links, and the 30 day flag', () => {
   assert.equal(identity.includes('VITE_LEGAL_CONTACT_EMAIL'), false)
   assert.equal(identity.includes('VITE_LEGAL_DPO_CONTACT'), false)
   assert.equal(identity.includes('VITE_LEGAL_AI_PROVIDER'), false)
-  assert.equal(/NAMMCO|7043252647/i.test(identity), false)
+  assert.deepEqual(publicEntityHits(identity), [])
   const example = read('.env.example')
   for (const name of [
     'VITE_LEGAL_BA_ENTITY',
@@ -391,8 +392,7 @@ test('privacy and terms render the entity line and marketing routes keep only th
       const html = pageHtml(mod[name], route)
       assert.match(html, new RegExp(`>${FOOTER_NAMMCO_CREDIT}<`))
       assert.equal(strayPublicNammco(html, artifact), false, route)
-      assert.equal(/NAMMCO Holding/i.test(html), false, route)
-      assert.equal(/Holding Co\b/i.test(html), false, route)
+      assert.deepEqual(publicEntityHits(html), [], route)
       assert.equal(html.includes(LEGAL_ENTITY_CR), false, route)
       assert.equal(/\bCR\s*\d{10}\b/.test(html), false, route)
       assert.equal(/\bsponsor(?:s|ship|ships|ed)?\b/i.test(html), false, route)

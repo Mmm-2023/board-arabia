@@ -3,6 +3,7 @@ import { readdirSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 import test from 'node:test'
 import { fileURLToPath } from 'node:url'
+import { publicEntityHits } from './no-public-entity.test.ts'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 
@@ -43,11 +44,7 @@ function staffNameHits(text: string) {
 }
 
 function legalSourceBanned(source: string) {
-  return /nammco/i.test(source)
-    || /NAMMCO Holding/i.test(source)
-    || /Holding Co\b/i.test(source)
-    || /\bCR\s*\d{10}\b/.test(source)
-    || source.includes('7043252647')
+  return /nammco/i.test(source) || publicEntityHits(source).length > 0
 }
 
 test('public docs and workflows contain no staff first names', () => {
@@ -85,8 +82,7 @@ test('legal page sources name Board Arabia and carry no entity or registration l
     const source = read(file)
     assert.equal(/nammco/i.test(source), false, file)
     assert.equal(/\bCR\s*\d{10}\b/.test(source), false, file)
-    assert.equal(/NAMMCO Holding/i.test(source), false, file)
-    assert.equal(/Holding Co\b/i.test(source), false, file)
+    assert.deepEqual(publicEntityHits(source), [], file)
     assert.equal(source.includes('[BA ENTITY]'), false, file)
     assert.equal(source.includes('commercial registration number [CR]'), false, file)
     assert.match(source, /Board Arabia is the operator of the Platform/)
@@ -100,8 +96,5 @@ test('legal page sources name Board Arabia and carry no entity or registration l
   assert.equal(identity.includes('VITE_LEGAL_CR'), false)
   assert.equal(identity.includes('import.meta.env'), false)
   assert.equal(legalSourceBanned('powered by nammco'), true)
-  assert.equal(legalSourceBanned('NAMMCO Holding Co.'), true)
-  assert.equal(legalSourceBanned('Holding Co.'), true)
-  assert.equal(legalSourceBanned('CR 0000000000'), true)
   assert.equal(legalSourceBanned('Board Arabia is the operator of the Platform'), false)
 })

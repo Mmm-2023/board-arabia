@@ -8,11 +8,11 @@ Base: `af3c4b91e9bdf349f881f54cd98c9b867b48ad3d` (main after the weekly digest c
 - Clause 1.1 on both pages names Board Arabia as the operator. Privacy also names Board Arabia as the controller. The commercial registration placeholder is gone from those sentences.
 - `publishedLegalIdentity()` no longer reads `VITE_LEGAL_BA_ENTITY` or `VITE_LEGAL_CR`. Choice: stop rendering, not delete the function. `src/content/legal/resolve.ts` stays byte-identical to main (sha256 `f5740b538295e39e5be8344201e2dd6bc90b7c3c3ad7eabf26e6a7e4ed61fe9c`). The env names remain in `src/config/legal.ts`, `.env.example`, and the locked Pages workflow. Nothing under `src/` reads them, so the production build cannot inline the old entity.
 - The logged-in AI report credit is `Provided by Board Arabia`. The stored name and registration number are not shown. `src/lib/aiReportOperator.ts` and `scripts/ai-report-operator.test.ts` are the only AI-report files edited for that.
-- `scripts/no-public-entity.test.ts` fails if `NAMMCO Holding`, `Holding Co`, `CR` plus 10 digits, or `7043252647` appears in `src/`, the built bundle, or prerendered pages. No path exception.
+- `scripts/no-public-entity.test.ts` builds the banned needles from fragments. It scans `src/`, `scripts/` (except itself), the built bundle, and prerendered pages. The only remaining hit is the locked file `scripts/public-nammco.mjs`. That file was not edited.
 
 ## Locked files
 
-`scripts/public-nammco.mjs`, `scripts/prerender.mjs`, `scripts/check-pages-artifact.mjs`, and `.github/workflows/pages.yml` are not edited. The locked checker still strips the old entity on legal artifacts if it appeared. Editing it was not required: the strings are absent from `src/`, `dist` JS, and prerendered HTML, so that checker still passes. The new guard is the no-exception check.
+`scripts/public-nammco.mjs`, `scripts/prerender.mjs`, `scripts/check-pages-artifact.mjs`, and `.github/workflows/pages.yml` are not edited. The scripts scan fails on `scripts/public-nammco.mjs` because that locked file still holds the entity line and the registration number. Clearing it would require editing the locked file, so it was left in place.
 
 ## Not changed
 

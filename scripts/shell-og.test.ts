@@ -160,7 +160,7 @@ test('each shell kind has one generic share card and no banned wording', () => {
   assert.equal(shells.find((item) => item.path === '/register')?.kind, 'public-utility')
   assert.equal(shells.find((item) => item.path === '/book')?.kind, 'public-utility')
   assert.equal(shells.find((item) => item.path === '/verify')?.kind, 'public-utility')
-  const banned = [/nammco/i, /7043252647/, /\u2014/]
+  const banned = [/nammco/i, /\b\d{10}\b/, /\u2014/]
   for (const entry of shells) {
     for (const pattern of banned) {
       assert.equal(pattern.test(entry.title), false, entry.path)
