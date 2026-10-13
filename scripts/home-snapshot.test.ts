@@ -588,8 +588,7 @@ test('home sections follow needs you, this week, one next action, activity, then
     assert.match(more, />Partners</)
     assert.match(more, /Example Capital/)
     assert.match(more, /data-daily-brief-card/)
-    assert.match(more, /Qaf Ledger/)
-    assert.match(more, />Example</)
+    assert.equal(more.includes('Qaf Ledger'), false)
     assert.equal(more.includes('Trusted Partners'), false)
 
     const quiet = renderToStaticMarkup(
@@ -608,15 +607,27 @@ test('home sections follow needs you, this week, one next action, activity, then
       createElement(MemoryRouter, null, createElement(home.HomeSnapshotView, {
         model: assembleHome(base({
           partners: [
+            { id: 'p-sample', is_demo: true, name: 'Qaf Counsel', monogram: 'QC', blurb: 'Law firm.', category_slug: 'law-firm' },
+          ],
+        })),
+        needsYou: [],
+      })),
+    )
+    assert.match(samplesOnly, /Qaf Counsel/)
+    assert.match(samplesOnly, /data-gallery="partners"/)
+    assert.match(samplesOnly, />Example</)
+    const uncategorised = renderToStaticMarkup(
+      createElement(MemoryRouter, null, createElement(home.HomeSnapshotView, {
+        model: assembleHome(base({
+          partners: [
             { id: 'p-sample', is_demo: true, name: 'Qaf Ledger', monogram: 'QL', blurb: 'A sample firm.' },
           ],
         })),
         needsYou: [],
       })),
     )
-    assert.match(samplesOnly, /Qaf Ledger/)
-    assert.match(samplesOnly, /data-gallery="partners"/)
-    assert.match(samplesOnly, />Example</)
+    assert.equal(uncategorised.includes('Qaf Ledger'), false)
+    assert.equal(uncategorised.includes('data-gallery="partners"'), false)
   } finally {
     await vite.close()
   }
@@ -637,7 +648,11 @@ test('a live bank partner hides only the bank example', async () => {
     is_partner: false,
   }))
   assert.deepEqual(
-    liveHomePartners(examples).map((row) => row.name),
+    liveHomePartners([
+      ...examples,
+      { id: 'ex-null', example: true, is_partner: false, name: 'Qaf Ledger', category_slug: null },
+      { id: 'ex-bank-2', example: true, is_partner: false, name: 'Extra Bank', category_slug: 'bank' },
+    ]).map((row) => row.name),
     ['Qaf Counsel', 'Mirsad Audit', 'Dar Clearing', 'Nahla Search', 'Safa Cover'],
   )
   const withBank = liveHomePartners([

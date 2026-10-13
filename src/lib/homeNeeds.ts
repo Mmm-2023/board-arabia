@@ -156,14 +156,20 @@ type HomePartnerRow = {
   category_slug?: string | null
 }
 
-/** Home Partners. An example stays until a live partner shares its category. */
+/** Home Partners. One example per category until a live partner shares it. No category means omit. */
 export function liveHomePartners<T extends HomePartnerRow>(rows: readonly T[]): T[] {
   const covered = new Set<string>()
   for (const row of rows) {
     if (row.is_partner === true && row.example !== true && row.category_slug) covered.add(row.category_slug)
   }
+  const seen = new Set<string>()
   return rows.filter((row) => {
-    if (row.example === true) return !row.category_slug || !covered.has(row.category_slug)
+    if (row.example === true) {
+      const category = row.category_slug
+      if (!category || covered.has(category) || seen.has(category)) return false
+      seen.add(category)
+      return true
+    }
     return row.is_partner === true
   })
 }

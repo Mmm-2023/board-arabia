@@ -1,6 +1,6 @@
 # PT-1 Home Partners examples
 
-Base: main `143e23e` (Clear the operator row and lock owner demotes, #170). No migration. No Edge deploy. Factory did not apply SQL and did not merge.
+Base: main `143e23e` (Clear the operator row and lock owner demotes, #170). Migration `20261226120000_home_partner_examples.sql` is in the repo and was not applied. No Edge deploy. Factory did not merge.
 
 ## Secrets grade
 
@@ -14,19 +14,16 @@ Trusted advisers are unchanged: a real row that is not a partner seat still rend
 
 | Claim | Where | Grade |
 | --- | --- | --- |
-| An example stays until a live partner shares its category. | `src/lib/homeNeeds.ts:159-168` | VERIFIED |
+| One example per category. An example with no category is omitted. | `src/lib/homeNeeds.ts:159-172` | VERIFIED |
+| The member list returns a published example only when its category has no live partner, skips uncategorised examples, and keeps one example per category. Grants match SEC-C. | `supabase/migrations/20261226120000_home_partner_examples.sql` | VERIFIED in the file. Replay of the filter: the gallery SQL test. |
 | Home no longer drops every example when any real row exists. Category travels with the row. | `src/lib/homeSnapshot.ts:539-540`, `:571-580` | VERIFIED |
 | The loader keeps `category_slug` from the partner list. | `src/lib/homeSnapshotLoad.ts:74` | VERIFIED |
 | Example rows render the existing Example mark. Live rows do not. | `src/pages/dashboard/HomeSnapshotView.tsx:61`, `:397` | VERIFIED |
 | Zero live rows: five examples, each marked Example. One live bank: the bank example is hidden and the other four stay. The adviser row stays under Trusted advisers. | `scripts/home-snapshot.test.ts:633` | VERIFIED |
 
-## Data dependency
-
-The example names are not hardcoded in the app. Home displays the rows it receives. The current member list still returns either every published example or every published live row, not both (`supabase/migrations/20261216120000_sec_c_definer_grants.sql:87-89`). This PR does not change that function. The per-category swap is verified when both kinds of row are in the list. Until that list includes the other categories' examples beside a live partner, those examples cannot appear. Whether a later data change returns both kinds: UNKNOWN until that change lands. The filter text in the migration file: VERIFIED.
-
 ## Migration
 
-None. No new slot. Nothing applied.
+`supabase/migrations/20261226120000_home_partner_examples.sql` replaces `private.list_trusted_partners_impl`. It does not have to be the newest file. Grants are the SEC-C set: revoke from public, anon, authenticated, and service_role, then execute for anon and authenticated only. `search_path` is empty. Not applied. No `db push`. Hosted state after a later apply: UNKNOWN until the operator applies it.
 
 ## Shots
 
