@@ -6,6 +6,7 @@ import { useNoIndex } from '../../lib/usePageTitle'
 import { FormSkeleton, toneClasses } from '../../shell/ViewState'
 import { UtmBuilder } from '../../components/UtmBuilder'
 import { AiToolSettingsPanel } from './AiToolSettingsPanel'
+import { DailyMarketBriefPanel } from './DailyMarketBriefPanel'
 import { IntroAllowancePanel } from './IntroAllowancePanel'
 import { PartnerInterestPanel } from './PartnerInterestPanel'
 import { SponsorPackagesPanel } from './SponsorPackagesPanel'
@@ -43,6 +44,7 @@ export function SettingsPage() {
       <SponsorPackagesPanel />
       <IntroAllowancePanel />
       <AiToolSettingsPanel />
+      <DailyMarketBriefPanel />
 
       <section className={`${styles.panel} mt-8 px-5 py-5`}>
         <h2 className={`text-[0.72rem] font-semibold tracking-[0.12em] uppercase ${styles.quiet}`}>

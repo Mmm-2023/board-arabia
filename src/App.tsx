@@ -189,6 +189,7 @@ export default function App() {
         <Route path="digest" element={<DigestPage />} />
         <Route path="digest/unsubscribe" element={<DigestUnsubscribePage />} />
         <Route path="two-step" element={<TwoStepPage />} />
+        <Route path="market-brief" element={<DailyMarketBriefPage />} />
         <Route path="help" element={<HelpPage />} />
         <Route path="partnership" element={<SponsorshipPage />} />
         <Route path="sponsorship" element={<RedirectKeep />} />
@@ -218,6 +219,9 @@ export default function App() {
 }
 
 const AiToolPage = lazy(() => import('./pages/dashboard/AiToolPage').then((m) => ({ default: m.AiToolPage })))
+const DailyMarketBriefPage = lazy(() =>
+  import('./pages/dashboard/DailyMarketBriefPage').then((m) => ({ default: m.DailyMarketBriefPage })),
+)
 const TwoStepPage = lazy(() => import('./pages/dashboard/TwoStepPage').then((m) => ({ default: m.TwoStepPage })))
 const StaffAiToolsPage = lazy(() =>
   import('./pages/admin/StaffAiToolsPage').then((m) => ({ default: m.StaffAiToolsPage })),
