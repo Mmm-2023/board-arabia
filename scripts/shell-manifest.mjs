@@ -89,6 +89,10 @@ const FIXED_SHELLS = [
   ['/book', 'public-utility'],
   ['/verify', 'public-utility'],
   ['/apply/verify', 'public-utility'],
+  // Stale links. Pages answers 200 and React hops. No Arabic copy.
+  ['/ar', 'public-utility'],
+  ['/ar/for-members', 'public-utility'],
+  ['/admin/intros', 'admin'],
 ]
 
 /** ID routes stay on the GitHub Pages 404 bounce. No query alias. */

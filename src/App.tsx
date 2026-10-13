@@ -17,6 +17,7 @@ import { PartnersPage } from './pages/PartnersPage'
 import { PrivacyPage } from './pages/PrivacyPage'
 import { SecurityPage } from './pages/SecurityPage'
 import { TermsPage } from './pages/TermsPage'
+import { AdminIntrosRedirect } from './shell/adminIntrosRedirect'
 import { RedirectKeep } from './shell/RedirectKeep'
 import { ShellNotFound } from './shell/ShellNotFound'
 import { TrailingSlash } from './shell/TrailingSlash'
@@ -147,6 +148,7 @@ export default function App() {
         <Route path="mandates" element={<AdminMandatesPage />} />
         <Route path="mandates/:mandateId" element={<AdminMandateMatchPage />} />
         <Route path="rooms" element={<StaffRoomsPage />} />
+        <Route path="intros" element={<AdminIntrosRedirect />} />
         <Route path="*" element={<ShellNotFound homeTo="/admin" />} />
       </Route>
       <Route path="/ops/*" element={<Navigate to="/admin" replace />} />

@@ -89,6 +89,9 @@ const ADDED_SHELLS = [
   '/book',
   '/verify',
   '/apply/verify',
+  '/ar',
+  '/ar/for-members',
+  '/admin/intros',
 ]
 
 function fixtureShell() {
@@ -284,6 +287,9 @@ test('fixed shells answer 200 on a Pages static server and unknown paths stay 40
     const missing = await request(port, '/no-such-page')
     assert.equal(missing.status, 404)
     assert.match(missing.body, /data-ba-spa-fallback/)
+    const unknown = await request(port, '/nonexistent-xyz')
+    assert.equal(unknown.status, 404)
+    assert.match(unknown.body, /data-ba-spa-fallback/)
     const idSamples = [
       '/dashboard/ai/due-diligence/11111111-1111-4111-8111-111111111111',
       '/dashboard/ai/cfo-check/11111111-1111-4111-8111-111111111111',
