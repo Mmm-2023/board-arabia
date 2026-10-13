@@ -53,6 +53,25 @@ export function requestedStaffRole(body: unknown): StaffRoleName | null | 'inval
   return normalizeRequestedRole(record.role)
 }
 
+export type InvitePurpose = 'legacy' | 'staff' | 'member'
+
+/** Absent purpose keeps the combined staff write. member never writes a staff role. */
+export function requestedPurpose(body: unknown): InvitePurpose | 'invalid' {
+  if (!body || typeof body !== 'object' || Array.isArray(body)) return 'legacy'
+  if (!Object.prototype.hasOwnProperty.call(body, 'purpose')) return 'legacy'
+  const purpose = (body as { purpose?: unknown }).purpose
+  if (purpose === 'staff' || purpose === 'member') return purpose
+  return 'invalid'
+}
+
+export function planInvite(input: {
+  purpose: InvitePurpose
+  admitMember: boolean
+}): { writeStaff: boolean; admitMember: boolean } {
+  if (input.purpose === 'member') return { writeStaff: false, admitMember: true }
+  return { writeStaff: true, admitMember: input.admitMember }
+}
+
 export function normalizeRequestedRole(raw: unknown): StaffRoleName | null | 'invalid' {
   if (raw === undefined || raw === null || raw === '') return null
   if (raw === 'staff' || raw === 'master') return raw

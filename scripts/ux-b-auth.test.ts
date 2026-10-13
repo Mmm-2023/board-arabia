@@ -191,7 +191,7 @@ test('staff name card shows only when the signed-in name is empty', async () => 
   assert.equal(showStaffNameCard('', false), false)
   assert.equal(cleanStaffDisplayName('name@example.com').ok, false)
   assert.equal(ownStaffRowLabel('staff@example.com', 'Admin', true, 'Example Name'), 'Example Name, Admin')
-  assert.equal(ownStaffRowLabel('staff@example.com', 'Master', true, 'Example Name'), 'Example Name, Master')
+  assert.equal(ownStaffRowLabel('staff@example.com', 'Owner', true, 'Example Name'), 'Example Name, Owner')
   assert.equal(ownStaffRowLabel('other@example.com', 'Admin', false, 'Example Name'), 'other@example.com')
   const vite = await createServer({ server: { middlewareMode: true }, appType: 'custom', logLevel: 'error' })
   try {

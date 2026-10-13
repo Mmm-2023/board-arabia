@@ -25,10 +25,10 @@ import { SponsorSeatPanel } from './SponsorSeatPanel'
 export function PeoplePage({ tierShots }: { tierShots?: Record<string, TierShot> } = {}) {
   const room = useAdmin()
   const ownName = useOwnStaffName()
-  const [inviteEmail, setInviteEmail] = useState('')
-  const [inviteSeat, setInviteSeat] = useState<FoundingSeat>('ksa')
-  const [inviteAdmit, setInviteAdmit] = useState(true)
-  const [inviteRole, setInviteRole] = useState<'staff' | 'master'>('staff')
+  const [memberEmail, setMemberEmail] = useState('')
+  const [memberSeat, setMemberSeat] = useState<FoundingSeat>('ksa')
+  const [staffEmail, setStaffEmail] = useState('')
+  const [staffRolePick, setStaffRolePick] = useState<'staff' | 'master'>('staff')
   const [suspending, setSuspending] = useState<MemberAdminRow | null>(null)
   const [sponsorOpen, setSponsorOpen] = useState(false)
   const [sponsorFirm, setSponsorFirm] = useState('')
@@ -55,16 +55,24 @@ export function PeoplePage({ tierShots }: { tierShots?: Record<string, TierShot>
     return <CardSkeleton tone="staff" label="Loading people" />
   }
 
-  function onDirectInvite(event: FormEvent) {
+  function onInviteMember(event: FormEvent) {
     event.preventDefault()
-    if (!inviteEmail.trim()) {
-      return
-    }
-    void room.runInvite('invite-direct', {
-      email: inviteEmail.trim(),
-      seat: inviteSeat,
-      admitMember: inviteAdmit,
-      ...(inviteRole === 'master' ? { role: 'master' as const } : {}),
+    if (!memberEmail.trim()) return
+    void room.runInvite('invite-member', {
+      email: memberEmail.trim(),
+      seat: memberSeat,
+      purpose: 'member',
+    })
+  }
+
+  function onAddStaff(event: FormEvent) {
+    event.preventDefault()
+    if (!staffEmail.trim()) return
+    void room.runInvite('add-staff', {
+      email: staffEmail.trim(),
+      purpose: 'staff',
+      admitMember: false,
+      ...(staffRolePick === 'master' ? { role: 'master' as const } : {}),
     })
   }
 
@@ -117,7 +125,7 @@ export function PeoplePage({ tierShots }: { tierShots?: Record<string, TierShot>
       <h1 className="font-display text-[2rem] font-semibold tracking-[-0.03em]">People</h1>
       <p className="mt-3 max-w-2xl text-[0.95rem] text-stone/65">
         Members, admins, and partners. Invite, suspend, or restore. This screen does not remove
-        people. The last master stays in place.
+        people. The last owner stays in place.
       </p>
 
       <SponsorInvitePanel
@@ -141,66 +149,85 @@ export function PeoplePage({ tierShots }: { tierShots?: Record<string, TierShot>
       <SponsorSeatPanel />
 
       {room.staffRole === 'master' ? (
-        <section data-add-admin="true" className="mt-8 border border-brass/30 px-5 py-5">
-          <h2 className="font-display text-[1.35rem] font-semibold tracking-[-0.02em]">Add admin</h2>
-          <p className="mt-2 max-w-2xl text-[0.9rem] text-stone/65">
-            Adds an admin. Leave Role on Admin for a new admin. Choose Master only when this
-            person should be a master. An existing role stays as it is unless you choose Master.
-            You can also admit a founding member. If outbound mail is not connected, the one-time
-            link appears here and is not stored in email events.
-          </p>
-          <form onSubmit={onDirectInvite} className="mt-5 flex flex-wrap items-end gap-3">
-            <label className="block text-[0.68rem] font-semibold tracking-[0.08em] text-pearl/45 uppercase">
-              Email
-              <input
-                type="email"
-                value={inviteEmail}
-                onChange={(event) => setInviteEmail(event.target.value)}
-                placeholder="name@example.com"
-                autoComplete="off"
-                className="mt-2 block w-64 border border-pearl/20 bg-ink px-3 py-3 text-[0.9rem] text-pearl normal-case"
-              />
-            </label>
-            <label className="block text-[0.68rem] font-semibold tracking-[0.08em] text-pearl/45 uppercase">
-              Seat
-              <select
-                value={inviteSeat}
-                onChange={(event) => setInviteSeat(event.target.value as FoundingSeat)}
-                className="mt-2 block min-h-11 border border-pearl/20 bg-ink px-3 text-[0.9rem] text-pearl normal-case"
+        <>
+          <section data-invite-member="true" className="mt-8 border border-brass/30 px-5 py-5">
+            <h2 className="font-display text-[1.35rem] font-semibold tracking-[-0.02em]">Invite member</h2>
+            <p className="mt-2 max-w-2xl text-[0.9rem] text-stone/65">
+              Invites a founding member. This does not add staff. If outbound mail is not connected,
+              the one-time link appears here and is not stored in email events.
+            </p>
+            <form onSubmit={onInviteMember} className="mt-5 flex flex-wrap items-end gap-3">
+              <label className="block text-[0.68rem] font-semibold tracking-[0.08em] text-pearl/45 uppercase">
+                Email
+                <input
+                  type="email"
+                  value={memberEmail}
+                  onChange={(event) => setMemberEmail(event.target.value)}
+                  placeholder="name@example.com"
+                  autoComplete="off"
+                  className="mt-2 block w-64 border border-pearl/20 bg-ink px-3 py-3 text-[0.9rem] text-pearl normal-case"
+                />
+              </label>
+              <label className="block text-[0.68rem] font-semibold tracking-[0.08em] text-pearl/45 uppercase">
+                Seat
+                <select
+                  value={memberSeat}
+                  onChange={(event) => setMemberSeat(event.target.value as FoundingSeat)}
+                  className="mt-2 block min-h-11 border border-pearl/20 bg-ink px-3 text-[0.9rem] text-pearl normal-case"
+                >
+                  <option value="ksa">Saudi Arabia</option>
+                  <option value="intl">International</option>
+                </select>
+              </label>
+              <button
+                type="submit"
+                disabled={room.updatingId === 'invite-member' || !memberEmail.trim()}
+                className="ba-primary inline-flex min-h-11 items-center px-4 text-[0.72rem] font-semibold tracking-[0.08em] uppercase disabled:opacity-40"
               >
-                <option value="ksa">Saudi Arabia</option>
-                <option value="intl">International</option>
-              </select>
-            </label>
-            <label className="block text-[0.68rem] font-semibold tracking-[0.08em] text-pearl/45 uppercase">
-              Role
-              <select
-                value={inviteRole}
-                onChange={(event) => setInviteRole(event.target.value === 'master' ? 'master' : 'staff')}
-                className="mt-2 block min-h-11 border border-pearl/20 bg-ink px-3 text-[0.9rem] text-pearl normal-case"
+                Invite member
+              </button>
+            </form>
+          </section>
+          <section data-add-staff="true" className="mt-8 border border-brass/30 px-5 py-5">
+            <h2 className="font-display text-[1.35rem] font-semibold tracking-[-0.02em]">Add staff</h2>
+            <p className="mt-2 max-w-2xl text-[0.9rem] text-stone/65">
+              Adds staff. New staff join as Admin unless you choose Owner. This does not admit a
+              member. If outbound mail is not connected, the one-time link appears here and is not
+              stored in email events.
+            </p>
+            <form onSubmit={onAddStaff} className="mt-5 flex flex-wrap items-end gap-3">
+              <label className="block text-[0.68rem] font-semibold tracking-[0.08em] text-pearl/45 uppercase">
+                Email
+                <input
+                  type="email"
+                  value={staffEmail}
+                  onChange={(event) => setStaffEmail(event.target.value)}
+                  placeholder="name@example.com"
+                  autoComplete="off"
+                  className="mt-2 block w-64 border border-pearl/20 bg-ink px-3 py-3 text-[0.9rem] text-pearl normal-case"
+                />
+              </label>
+              <label className="block text-[0.68rem] font-semibold tracking-[0.08em] text-pearl/45 uppercase">
+                Role
+                <select
+                  value={staffRolePick}
+                  onChange={(event) => setStaffRolePick(event.target.value === 'master' ? 'master' : 'staff')}
+                  className="mt-2 block min-h-11 border border-pearl/20 bg-ink px-3 text-[0.9rem] text-pearl normal-case"
+                >
+                  <option value="staff">Admin</option>
+                  <option value="master">Owner</option>
+                </select>
+              </label>
+              <button
+                type="submit"
+                disabled={room.updatingId === 'add-staff' || !staffEmail.trim()}
+                className="ba-primary inline-flex min-h-11 items-center px-4 text-[0.72rem] font-semibold tracking-[0.08em] uppercase disabled:opacity-40"
               >
-                <option value="staff">Admin</option>
-                <option value="master">Master</option>
-              </select>
-            </label>
-            <label className="flex min-h-11 items-center gap-2 text-[0.85rem] text-stone/75 normal-case">
-              <input
-                type="checkbox"
-                className="size-5 shrink-0"
-                checked={inviteAdmit}
-                onChange={(event) => setInviteAdmit(event.target.checked)}
-              />
-              Also admit as founding member
-            </label>
-            <button
-              type="submit"
-              disabled={room.updatingId === 'invite-direct' || !inviteEmail.trim()}
-              className="ba-primary inline-flex min-h-11 items-center px-4 text-[0.72rem] font-semibold tracking-[0.08em] uppercase disabled:opacity-40"
-            >
-              Add admin
-            </button>
-          </form>
-        </section>
+                Add staff
+              </button>
+            </form>
+          </section>
+        </>
       ) : null}
 
       <section className="mt-10">
@@ -357,7 +384,7 @@ export function PeoplePage({ tierShots }: { tierShots?: Record<string, TierShot>
                     const member = room.members.find((item) => item.email.toLowerCase() === row.email.toLowerCase())
                     const profile = member ? room.profileByUser[member.user_id] : null
                     const self = row.email.toLowerCase() === room.email.toLowerCase()
-                    const role = tier === 'Master' ? 'Master' : tier === 'Admin' ? 'Admin' : null
+                    const role = tier === 'Owner' ? 'Owner' : tier === 'Admin' ? 'Admin' : null
                     const label = role ? ownStaffRowLabel(row.email, role, self, ownName.name) : row.email
                     return (
                     <li

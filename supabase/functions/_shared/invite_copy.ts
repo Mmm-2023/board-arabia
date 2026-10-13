@@ -19,7 +19,7 @@ export function buildMasterInvite(opts: {
   confirmUrl: string | null
   staffLoginUrl: string
   memberLoginUrl: string
-  staffRole?: 'staff' | 'master'
+  staffRole?: 'staff' | 'master' | 'member'
   issued: LinkIssued | PasswordIssued
 }): { subject: string; text: string; html: string } {
   const subject = opts.seatLabel
@@ -36,7 +36,7 @@ function inviteText(opts: {
   confirmUrl: string | null
   staffLoginUrl: string
   memberLoginUrl: string
-  staffRole?: 'staff' | 'master'
+  staffRole?: 'staff' | 'master' | 'member'
   issued: LinkIssued | PasswordIssued
 }) {
   const lines = [`Hello ${opts.greeting},`, '']
@@ -72,7 +72,7 @@ function inviteHtml(opts: {
   confirmUrl: string | null
   staffLoginUrl: string
   memberLoginUrl: string
-  staffRole?: 'staff' | 'master'
+  staffRole?: 'staff' | 'master' | 'member'
   issued: LinkIssued | PasswordIssued
 }) {
   const parts = [`<p>Hello ${escapeHtml(opts.greeting)},</p>`]
@@ -103,8 +103,12 @@ function inviteHtml(opts: {
   return parts.join('\n')
 }
 
-function invitedAs(staffRole: 'staff' | 'master' | undefined, seatLabel: string | null) {
-  const who = staffRole === 'staff' ? 'an admin' : 'master staff'
+function invitedAs(staffRole: 'staff' | 'master' | 'member' | undefined, seatLabel: string | null) {
+  if (staffRole === 'member') {
+    if (!seatLabel) return 'You are invited to Board Arabia as a member.'
+    return `You are invited to Board Arabia as a founding member (${seatLabel} seat).`
+  }
+  const who = staffRole === 'master' ? 'an owner' : 'an admin'
   if (!seatLabel) return `You are invited to Board Arabia as ${who}.`
   return `You are invited to Board Arabia as ${who}, and as a founding member (${seatLabel} seat).`
 }

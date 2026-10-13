@@ -8,6 +8,7 @@ import { createServer } from 'vite'
 import { buildMasterInvite } from '../supabase/functions/_shared/invite_copy.ts'
 import {
   MASTER_ONLY_MESSAGE,
+  planInvite,
   writeStaffRole,
   type StaffRoleStore,
 } from '../supabase/functions/invite-master/handle.ts'
@@ -213,11 +214,40 @@ test('an admin invite does not call the person master staff', () => {
     staffRole: 'master',
     issued: { mode: 'temp_password', tempPassword: 'example-temp' },
   })
-  assert.match(master.text, /as master staff/)
+  assert.match(master.text, /as an owner/)
+  assert.equal(master.text.includes('master staff'), false)
+  const member = buildMasterInvite({
+    greeting: 'there',
+    seatLabel: 'Saudi Arabia',
+    loginUrl: 'https://boardarabia.com/login',
+    confirmUrl: null,
+    staffLoginUrl: 'https://boardarabia.com/login/staff',
+    memberLoginUrl: 'https://boardarabia.com/login',
+    staffRole: 'member',
+    issued: { mode: 'magic_link', otp: '123456' },
+  })
+  assert.match(member.text, /as a founding member/)
+  assert.equal(member.text.includes('an owner'), false)
+  assert.equal(member.text.includes('an admin'), false)
   assert.equal(admin.text.includes('\u2014') || admin.text.includes('\u2013'), false)
 })
 
-test('the UI hides the add admin form for non-master staff', async () => {
+test('a member invite does not write staff, and add staff can skip admission', () => {
+  assert.deepEqual(planInvite({ purpose: 'member', admitMember: false }), {
+    writeStaff: false,
+    admitMember: true,
+  })
+  assert.deepEqual(planInvite({ purpose: 'staff', admitMember: false }), {
+    writeStaff: true,
+    admitMember: false,
+  })
+  assert.deepEqual(planInvite({ purpose: 'legacy', admitMember: true }), {
+    writeStaff: true,
+    admitMember: true,
+  })
+})
+
+test('the UI hides invite member and add staff for non-owner staff', async () => {
   process.env.VITE_SUPABASE_URL = 'https://example.supabase.co'
   process.env.VITE_SUPABASE_ANON_KEY = 'example-anon-key'
   const vite = await createServer({
@@ -234,13 +264,22 @@ test('the UI hides the add admin form for non-master staff', async () => {
     }
     const masterHtml = renderPeople(previewMod.AdminPreview, peopleMod.PeoplePage, 'master')
     const staffHtml = renderPeople(previewMod.AdminPreview, peopleMod.PeoplePage, 'staff')
-    assert.match(masterHtml, /data-add-admin="true"/)
-    assert.match(masterHtml, />Add admin</)
+    assert.match(masterHtml, /data-invite-member="true"/)
+    assert.match(masterHtml, /data-add-staff="true"/)
+    assert.match(masterHtml, />Invite member</)
+    assert.match(masterHtml, />Add staff</)
     assert.match(masterHtml, /<option value="staff" selected="">Admin<\/option>/)
-    assert.match(masterHtml, /<option value="master">Master<\/option>/)
+    assert.match(masterHtml, /<option value="master">Owner<\/option>/)
     assert.equal(masterHtml.includes('value="master" selected'), false)
-    assert.equal(staffHtml.includes('data-add-admin'), false)
-    assert.equal(staffHtml.includes('Add admin'), false)
+    assert.equal(masterHtml.includes('>Master<'), false)
+    const inviteAt = masterHtml.indexOf('data-invite-member="true"')
+    const addAt = masterHtml.indexOf('data-add-staff="true"')
+    assert.ok(inviteAt > 0 && addAt > inviteAt)
+    assert.equal(masterHtml.slice(inviteAt, addAt).includes('value="master"'), false)
+    assert.equal(staffHtml.includes('data-invite-member'), false)
+    assert.equal(staffHtml.includes('data-add-staff'), false)
+    assert.equal(staffHtml.includes('Invite member'), false)
+    assert.equal(staffHtml.includes('Add staff'), false)
     assert.match(staffHtml, /Add partner/)
     assert.match(masterHtml, /Add partner/)
   } finally {
@@ -260,7 +299,12 @@ test('no email literal in SettingsPage or People', () => {
   }
   assert.equal(settings.includes('Promote admin'), false)
   assert.match(people, /staffRole === 'master'/)
-  assert.match(people, /Add admin/)
+  assert.match(people, /Invite member/)
+  assert.match(people, /Add staff/)
+  assert.match(people, /purpose: 'member'/)
+  assert.match(people, /purpose: 'staff'/)
+  assert.equal(people.includes('Add admin'), false)
+  assert.equal(people.includes('>Master<'), false)
   const client = read('src/lib/supabase.ts')
   const start = client.indexOf('export async function inviteMaster')
   const next = client.indexOf('\nexport ', start + 10)

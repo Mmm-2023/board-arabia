@@ -1,8 +1,8 @@
-/** People uses Master for role master and Admin for role staff. No email and no id. */
+/** People uses Owner for role master and Admin for role staff. No email and no id. */
 export function accessActorLabel(name: unknown, role: unknown): string {
   const raw = typeof name === 'string' ? name.trim() : ''
   const cleanName = raw.includes('@') ? '' : raw
-  const cleanRole = role === 'Master' || role === 'Admin' ? role : ''
+  const cleanRole = role === 'Owner' || role === 'Master' ? 'Owner' : role === 'Admin' ? 'Admin' : ''
   if (cleanName && cleanRole) return `${cleanName}, ${cleanRole}`
   return cleanRole
 }
