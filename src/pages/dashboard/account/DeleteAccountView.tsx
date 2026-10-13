@@ -51,8 +51,7 @@ export function DeleteAccountView({
           <h2 className="mt-8 font-display text-[1.35rem] font-semibold tracking-[-0.02em]">What is kept</h2>
           <p className="mt-3 max-w-xl text-[1rem] leading-relaxed text-ink/75">
             Legal records and consent logs stay, as set out in the retention rules. The account reference on those rows
-            is removed, unless a legal hold applies. Deal room files you uploaded stay in the room. AI tool uploads
-            follow their own schedule. Contact details already shared with another member through an accepted
+            is removed, unless a legal hold applies. Deal room files you uploaded and AI tool uploads are removed on request or in periodic retention runs. Contact details already shared with another member through an accepted
             introduction cannot be recalled from that member.
           </p>
           <p className="mt-3 max-w-xl text-[1rem] leading-relaxed text-ink/75">

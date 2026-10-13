@@ -211,7 +211,7 @@ export function PrivacyPanelView({
         <p className={body}>
           This removes your profile, directory card, directory listing, introductions, notifications and event replies.
           Contact details already shared with another member through an accepted introduction cannot be recalled from
-          that member. Deal room files you uploaded stay in the room. AI tool uploads follow their own schedule. Legal
+          that member. Deal room files you uploaded and AI tool uploads are removed on request or in periodic retention runs. Legal
           records and consent logs are kept. It cannot be undone.
         </p>
         <Link
