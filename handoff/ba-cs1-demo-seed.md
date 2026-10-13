@@ -39,7 +39,7 @@ Removal stays commented at `:270-274`. Rooms go first, then mandates, then direc
 
 ## Labels
 
-Directory, Mandates, Rooms, and Home teasers already render `Example` from `is_demo` (`src/components/ExampleMark.tsx`, `DirectoryBoard.tsx:220`, `MandateCard.tsx`, `RoomsBoard.tsx:20`, `HomeSnapshotView.tsx:448`). Partner samples already render `Sample` (`src/components/SampleMark.tsx`). This PR does not change that UI. Home partner Example rows swap per category: a live partner hides only the example in its own category, and the other examples stay. That swap is done in PT-1 #174. They show on the member sample gallery, labelled Sample, while every published partner row is a sample (`src/lib/trustedPartners.ts:4-7`).
+Directory, Mandates, Rooms, and Home teasers already render `Example` from `is_demo` (`src/components/ExampleMark.tsx`, `DirectoryBoard.tsx:220`, `MandateCard.tsx`, `RoomsBoard.tsx:20`, `HomeSnapshotView.tsx:448`). Partner examples already render `Example` (`src/components/SampleMark.tsx`). This PR does not change that UI. Home partner Example rows swap per category: a live partner hides only the example in its own category, and the other examples stay. That swap is done in PT-1 #174. They show on the member example gallery, labelled Example, while every published partner row is an example (`src/lib/trustedPartners.ts:4-7`).
 
 ## Email conflict
 
