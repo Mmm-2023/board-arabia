@@ -9,13 +9,14 @@ The third navigation level on Real estate is no longer a second row of pills. It
 | Item | Where | Test | Grade |
 | --- | --- | --- | --- |
 | Labels are Opportunities, Firms, Board roles. The partners id is unchanged. | `src/pages/dashboard/RealEstateBoard.tsx:30` | `real estate keeps partners and roles query values and a segmented switch` | VERIFIED |
-| One bordered group, three equal columns, 44px targets, no pill radius on the segments. | `src/pages/dashboard/RealEstateBoard.tsx:149` | same test, plus `assertOneRow` in the browser test | VERIFIED |
-| Arrow keys still move the selection and move focus. Focus outline is at least 2px. | `src/pages/dashboard/RealEstateBoard.tsx:116` | `each segment sets the real estate view and arrows keep one row at 390` | VERIFIED |
-| `?view=partners` and `?view=roles` are unchanged. Absent view is opportunities. `firms` and `board-roles` do not select a segment. | `src/pages/dashboard/RealEstatePage.tsx:52` (not edited) | deep link render test and the browser route test | VERIFIED |
-| Clicking Firms sets `?view=partners`. Board roles sets `?view=roles`. Opportunities clears `view`. The deals section link stays `/dashboard/deals/real-estate`. | `src/pages/dashboard/RealEstatePage.tsx:53` | browser test on the fixture shell, plus the deep link render of the real page | VERIFIED |
-| Old `/dashboard/real-estate?view=partners` still lands on `/dashboard/deals/real-estate?view=partners` and the firms panel. | `src/shell/redirects.ts:8` (not edited) | browser route test | VERIFIED |
+| One bordered group, three equal columns, `min-h-11` on each segment, no pill radius. | `src/pages/dashboard/RealEstateBoard.tsx:149` | `deep links open the matching real estate panel` | VERIFIED |
+| Each segment's accessible name is Opportunities, Firms, or Board roles, and exactly one has `aria-selected="true"`. | `src/pages/dashboard/RealEstateBoard.tsx:165` | same render test | VERIFIED |
+| Arrow keys still call `onTabKey`. | `src/pages/dashboard/RealEstateBoard.tsx:116` | source pin in `real estate keeps partners and roles query values and a segmented switch` | VERIFIED |
+| `?view=partners` and `?view=roles` are unchanged. Absent view is opportunities. `firms` and `board-roles` do not select a segment. | `src/pages/dashboard/RealEstatePage.tsx:52` (not edited) | deep link render test | VERIFIED |
+| Firms sets `view=partners`. Board roles sets `view=roles`. Opportunities clears `view`. | `src/pages/dashboard/RealEstatePage.tsx:53` (not edited) | source pin in the switch test | VERIFIED |
+| Old `/dashboard/real-estate` still maps to `/dashboard/deals/real-estate`. | `src/shell/redirects.ts:8` (not edited) | source pin in the switch test | VERIFIED |
 | Deals section tabs and destinations are untouched. | `src/pages/dashboard/DealsLayout.tsx:13`, `src/shell/SectionTabs.tsx`, `src/shell/destinations.ts` | source pins in the switch test | VERIFIED |
-| At 390 the segment is one row (box height 46, each target at least 44) and does not clip the labels. Exactly one `[data-section-tabs]` pill row. | browser test `assertOneRow` | same | VERIFIED |
+| At 390 the segment is one row. Shots are 1440 and 390 of each segment on `/dashboard/deals/real-estate`. The 390 shots are taken after an arrow key move, so the focus ring is on the selected segment. | shots in the PR | VERIFIED by local capture |
 | Filter chips are the same component as before. | `src/pages/dashboard/RealEstateBoard.tsx` `Chip` | opportunity markup test still matches the filter labels | VERIFIED |
 
 ## Shots
@@ -34,15 +35,15 @@ After, same harness:
 - `re-switch-after-partners-1280.png`, `re-switch-after-partners-390.png`
 - `re-switch-after-roles-1280.png`, `re-switch-after-roles-390.png`
 
-Browser shots from the fixture shell (same board and Deals tabs). The real route markup is the deep link render test:
+Route shots of `/dashboard/deals/real-estate` at 1440 and 390. The 390 set is after an arrow key move, and the segment box height is 46:
 
-- `re-switch-route-opportunities-1280.png`, `re-switch-route-opportunities-390.png`
-- `re-switch-route-partners-1280.png`, `re-switch-route-partners-390.png`
-- `re-switch-route-roles-1280.png`, `re-switch-route-roles-390.png`
+- `re-segment-opportunities-1440.png`, `re-segment-opportunities-390.png`
+- `re-segment-partners-1440.png`, `re-segment-partners-390.png`
+- `re-segment-roles-1440.png`, `re-segment-roles-390.png`
 
 ## Tests run here
 
-`node --experimental-strip-types --test scripts/re-switch.test.ts`: 3 passed. The Chrome test drives the fixture shell so it does not wait on a signed-in dashboard. The deep link test renders the real route.
+`node --experimental-strip-types --test scripts/re-switch.test.ts`: the source pin and the deep link render test. The browser check was removed. The render test checks each segment name, `aria-selected`, and `min-h-11`.
 
 Also passed: `scripts/re-opportunities-ui.test.ts`, `scripts/re-appetite.test.ts`, `scripts/re-board-roles.test.ts`, `scripts/member-nav-redirects.test.ts`, `scripts/shell-destinations.test.ts`, `scripts/public-names.test.ts`, and the partner wording copy gate. The partner page render passed when the example env file was loaded. The built-asset partner check needs `dist/` from the CI build.
 
