@@ -16,6 +16,7 @@ const view = new URLSearchParams(window.location.search).get('view') || 'full'
 
 const full: WeeklyDigestModel = {
   mailReady: false,
+  notes: [],
   newMembers: [{ fullName: 'Example Member B', headline: 'Director', company: 'Example Company B' }],
   newMandates: [
     {
@@ -47,16 +48,33 @@ const full: WeeklyDigestModel = {
 
 const empty: WeeklyDigestModel = {
   mailReady: false,
+  notes: [],
   newMembers: [],
   newMandates: [],
   upcomingEvents: [],
   introductions: [],
 }
 
+const edited: WeeklyDigestModel = {
+  ...full,
+  newMembers: [{ fullName: 'Example Member B', headline: 'Director', company: '' }],
+  upcomingEvents: [
+    {
+      title: 'Example gathering',
+      when: '16 Oct 2026, 18:00',
+      region: '',
+      hostName: 'Board Arabia',
+      venueAddress: null,
+    },
+  ],
+  notes: [{ text: 'Example note for members' }],
+}
+
 const issue: DigestIssueModel = {
   sendEnabled: false,
   mailReady: false,
   status: 'draft',
+  audience: ['founding'],
   source: 'issue',
   log: [{ action: 'created', createdAt: '2026-10-13T09:15:00.000Z' }],
   preview: {
@@ -160,7 +178,8 @@ function digestPage(model: WeeklyDigestModel) {
 }
 
 function screen() {
-  if (view === 'empty') return digestPage(empty)
+  if (view === 'empty' || view === 'out-of-tier') return digestPage(empty)
+  if (view === 'in-tier') return digestPage(full)
   if (view === 'privacy') {
     return (
       <MemberShell path="/dashboard/privacy">
@@ -178,6 +197,52 @@ function screen() {
           onDigestOptIn={() => undefined}
         />
       </MemberShell>
+    )
+  }
+  if (view === 'edit' || view === 'audience' || view === 'blocked') {
+    const picked = view === 'blocked' ? [] : view === 'audience' ? ['founding', 'sponsor'] : ['founding']
+    const draft = view === 'blocked' ? full : edited
+    return (
+      <MemoryRouter initialEntries={['/admin/email']}>
+        <AppShell
+          tone="staff"
+          destinations={STAFF_DESTINATIONS}
+          secondary={STAFF_SECONDARY}
+          updatedLabel="Updated 12:15 AST"
+          roleSwitch={null}
+          onSignOut={() => undefined}
+          accountLabel="Account"
+          accountName="Admin"
+        >
+          <div className="max-w-3xl" data-preview="">
+            <h1 className="font-display text-[2rem] font-semibold tracking-[-0.03em]">Email</h1>
+            <DigestIssuePanelView
+              model={{ ...issue, status: 'draft', preview: draft, audience: picked }}
+              state="ready"
+              draft={draft}
+              audience={picked}
+              sources={{
+                members: [{ fullName: 'Example Member C', headline: 'Director', company: 'Example Company C' }],
+                mandates: [
+                  {
+                    sector: 'Energy',
+                    dealType: 'Growth equity',
+                    ticketBand: 'Mid band',
+                    geography: 'KSA',
+                    oneLiner: 'A clear example mandate for members.',
+                  },
+                ],
+                events: edited.upcomingEvents,
+              }}
+              onDraftChange={() => undefined}
+              onPrepare={() => undefined}
+              onApprove={() => undefined}
+              onWithdraw={() => undefined}
+              onRetry={() => undefined}
+            />
+          </div>
+        </AppShell>
+      </MemoryRouter>
     )
   }
   if (view === 'prepare' || view === 'preview' || view === 'approved' || view === 'withdrawn' || view === 'admin') {
@@ -238,10 +303,18 @@ function screen() {
       </MemoryRouter>
     )
   }
-  if (view === 'home') {
+  if (view === 'home' || view === 'notice') {
     return (
       <MemberShell path="/dashboard">
-        <HomeSnapshotView model={homeModel} seatCaption="Founding seat" seatValue="Saudi Arabia" userId="example-a" />
+        <HomeSnapshotView
+          model={homeModel}
+          seatCaption="Founding seat"
+          seatValue="Saudi Arabia"
+          userId="example-a"
+          digestNotice={
+            view === 'notice' ? { title: "This week's update is ready", href: '/dashboard/digest' } : null
+          }
+        />
       </MemberShell>
     )
   }
