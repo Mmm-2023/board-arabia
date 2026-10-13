@@ -194,24 +194,21 @@ jobs:
             mkdir -p "$GITHUB_WORKSPACE/emulator-shot"
             adb logcat -d > "$GITHUB_WORKSPACE/emulator-shot/logcat.txt"
             adb exec-out screencap -p > "$GITHUB_WORKSPACE/emulator-shot/android-home.png"
-            open_shot() {
-              path="$1"
-              out="$2"
-              pid="$(adb shell pidof -s com.boardarabia.app | tr -d '\r')"
-              socket="$(adb shell cat /proc/net/unix | tr -d '\0' | tr ' ' '\n' | grep "webview_devtools_remote_${pid}" | head -n 1 | sed 's/^@//')"
-              if [ -z "$socket" ]; then
-                echo "WebView devtools socket was not found"
-                adb shell cat /proc/net/unix | tr -d '\0' | grep devtools || true
-                exit 1
-              fi
-              adb forward --remove tcp:9222 >/dev/null 2>&1 || true
-              adb forward tcp:9222 "localabstract:${socket}"
-              python3 "$GITHUB_WORKSPACE/scripts/android-webview-navigate.py" "https://localhost${path}"
-              sleep 12
-              adb exec-out screencap -p > "$out"
-            }
-            open_shot /native/biometric-shot/settings "$GITHUB_WORKSPACE/emulator-shot/android-biometric-settings.png"
-            open_shot /native/biometric-shot/lock "$GITHUB_WORKSPACE/emulator-shot/android-biometric-lock.png"
+            pid="$(adb shell pidof -s com.boardarabia.app | tr -d '\r')"
+            socket="$(adb shell cat /proc/net/unix | tr -d '\0' | tr ' ' '\n' | grep webview_devtools_remote_"$pid" | head -n 1 | sed 's/^@//')"
+            if [ -z "$socket" ]; then
+              echo "WebView devtools socket was not found"
+              adb shell cat /proc/net/unix | tr -d '\0' | grep devtools || true
+              exit 1
+            fi
+            adb forward --remove tcp:9222 >/dev/null 2>&1 || true
+            adb forward tcp:9222 localabstract:"$socket"
+            python3 "$GITHUB_WORKSPACE/scripts/android-webview-navigate.py" https://localhost/native/biometric-shot/settings
+            sleep 12
+            adb exec-out screencap -p > "$GITHUB_WORKSPACE/emulator-shot/android-biometric-settings.png"
+            python3 "$GITHUB_WORKSPACE/scripts/android-webview-navigate.py" https://localhost/native/biometric-shot/lock
+            sleep 12
+            adb exec-out screencap -p > "$GITHUB_WORKSPACE/emulator-shot/android-biometric-lock.png"
             adb logcat -d > "$GITHUB_WORKSPACE/emulator-shot/logcat-after-biometric.txt"
             grep -E "Fatal signal|libwebviewchromium|Renderer process|Capacitor:|CrRendererMain|signal 5" "$GITHUB_WORKSPACE/emulator-shot/logcat.txt" > "$GITHUB_WORKSPACE/emulator-shot/logcat-webview.txt" || true
       - uses: actions/upload-artifact@v7
