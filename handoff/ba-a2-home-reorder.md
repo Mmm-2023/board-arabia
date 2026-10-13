@@ -48,7 +48,16 @@ First viewport, no scroll, Needs you and Next action both on screen: 1440 bottom
 
 ## Shots
 
-`/opt/cursor/artifacts/home-reorder/`. Before and after at 1440, 1280, and 390. Destination shots for digest, deals, intros, rooms, one room, profile, and two-step at 1440 and 390.
+`/opt/cursor/artifacts/home-reorder/`. Fixture is `scripts/smoke/home.html` with `example.supabase.co`. Populated is `?state=populated`. Empty is `?state=empty`.
+
+| Screen | 1440 | 390 |
+| --- | --- | --- |
+| Home populated, See more closed | `home-populated-closed-1440.png` | `home-populated-closed-390.png` |
+| Home populated, See more open | `home-populated-open-1440.png` | `home-populated-open-390.png` |
+| Home empty, See more closed | `home-empty-closed-1440.png` | `home-empty-closed-390.png` |
+| Home empty, See more open | `home-empty-open-1440.png` | `home-empty-open-390.png` |
+
+Also before and after full pages at 1440, 1280, and 390, plus destination shots for digest, deals, intros, rooms, one room, profile, and two-step.
 
 ## Apply
 

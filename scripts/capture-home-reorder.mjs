@@ -72,8 +72,29 @@ try {
     await context.close()
   }
 
+  const reviewShots = []
+  for (const state of ['populated', 'empty']) {
+    for (const [width, height] of [[1440, 900], [390, 844]]) {
+      const context = await browser.newContext({ viewport: { width, height } })
+      const page = await context.newPage()
+      await page.goto(`${origin}/scripts/smoke/home.html?state=${state}`, { waitUntil: 'networkidle' })
+      await page.locator('[data-home-snapshot]').waitFor()
+      const summary = page.locator('[data-home-more] summary')
+      await summary.waitFor()
+      await summary.filter({ hasText: 'See more' }).waitFor()
+      const closed = `home-${state}-closed-${width}.png`
+      await page.screenshot({ path: path.join(outDir, closed), fullPage: true })
+      await summary.click()
+      await summary.filter({ hasText: 'See less' }).waitFor()
+      const opened = `home-${state}-open-${width}.png`
+      await page.screenshot({ path: path.join(outDir, opened), fullPage: true })
+      reviewShots.push(closed, opened)
+      await context.close()
+    }
+  }
+
   const before = { 1280: 3393, 1440: 3393, 390: 4079 }
-  const report = { before, after: heights, first }
+  const report = { before, after: heights, first, reviewShots }
   writeFileSync(path.join(outDir, 'heights.json'), `${JSON.stringify(report, null, 2)}\n`)
   console.log(JSON.stringify(report, null, 2))
 } finally {
