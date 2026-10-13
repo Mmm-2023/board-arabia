@@ -47,6 +47,12 @@ export function sanitiseFileName(name: string): string {
   return clean || 'document'
 }
 
+/** Downloads are the stamped PDF a view already builds, including for PNG and JPEG. */
+export function stampedDownloadName(fileName: string): string {
+  const stem = sanitiseFileName(fileName).replace(/\.[A-Za-z0-9]{1,8}$/, '')
+  return sanitiseFileName(`${stem}.pdf`)
+}
+
 export function sniffDocument(
   bytes: Uint8Array,
   byteLength = bytes.byteLength,

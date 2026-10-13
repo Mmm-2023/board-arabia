@@ -24,6 +24,7 @@ export function DigestPage() {
       }
       setDigest(next)
       setState('ready')
+      void supabase.rpc('mark_my_digest_notice_read')
     })
     return () => {
       cancelled = true

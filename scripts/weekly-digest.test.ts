@@ -14,7 +14,8 @@ import {
 } from '../supabase/functions/_shared/weekly_digest_copy.ts'
 import { emailEventLabel } from '../src/lib/emailEventLabel.ts'
 import { formatUkDateTime } from '../src/lib/ukDate.ts'
-import { presentDigestIssue, presentWeeklyDigest } from '../src/lib/weeklyDigest.ts'
+import { DIGEST_AUDIENCE_LABELS } from '../src/lib/digestAudience.ts'
+import { presentDigestIssue, presentDigestSources, presentWeeklyDigest } from '../src/lib/weeklyDigest.ts'
 import { shellSectionTitle, MEMBER_ACCOUNT, MEMBER_DESTINATIONS } from '../src/shell/destinations.ts'
 import { resolveChromePath } from './chrome-path.ts'
 
@@ -65,6 +66,61 @@ test('weekly digest migration is the free slot and does not send', () => {
     assert.match(header, /security definer/i)
     assert.match(header, /set search_path = ''/)
   }
+})
+
+test('review migration keeps mail off and does not depend on live stamps', () => {
+  const names = readdirSync(path.join(root, 'supabase/migrations'))
+    .filter((name) => name.endsWith('.sql'))
+    .sort()
+  const review = '20261214120000_digest_review_tiers.sql'
+  assert.ok(names.includes(review))
+  assert.ok(names.indexOf(review) > names.indexOf('20261212120000_weekly_digest.sql'))
+  const sql = read(`supabase/migrations/${review}`)
+  assert.equal(sql.includes('\u2014'), false)
+  assert.equal(/schema_migrations|supabase_migrations/.test(sql), false)
+  assert.equal(/sendEmail|pg_cron|cron\.schedule/i.test(sql), false)
+  assert.equal(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/.test(sql), false)
+  assert.match(sql, /audience_required/)
+  assert.match(sql, /This week''s update is ready/)
+  assert.match(sql, /'mail_ready', false/)
+  assert.match(sql, /'sendable', false/)
+  assert.match(sql, /force row level security/)
+  const noticesPolicy = sql.split('create policy digest_notices_staff')[1]?.split('create or replace function')[0] ?? ''
+  assert.match(noticesPolicy, /to authenticated/)
+  assert.equal(/\bto public\b/.test(noticesPolicy), false)
+  assert.match(sql, /revoke all on function public\.my_digest_notices\(\) from public, anon/)
+  assert.match(sql, /revoke all on function public\.staff_save_digest_draft\(jsonb, text\[\]\) from public, anon/)
+  assert.equal(/grant execute on function public\.staff_digest_mail_plan\(uuid\) to anon/.test(sql), false)
+  const pf3 = read('scripts/pf3-sectors-city-about.test.ts')
+  assert.match(pf3, /20261210120000_sectors_city_about\.sql/)
+  assert.match(pf3, /20261209140000_deal_room_documents\.sql/)
+  assert.equal(pf3.includes('names.at(-1)'), false)
+  assert.equal(/schema_migrations|supabase_migrations/.test(pf3), false)
+})
+
+test('audience labels are Basic, Founding member, and Partner', () => {
+  assert.deepEqual(DIGEST_AUDIENCE_LABELS, {
+    member: 'Basic',
+    founding: 'Founding member',
+    sponsor: 'Partner',
+  })
+  const editor = read('src/components/digest/DigestDraftEditor.tsx')
+  assert.match(editor, /Choose at least one tier before you approve\./)
+  assert.match(editor, /Remove company/)
+  assert.match(editor, /Remove region/)
+  assert.match(editor, /Add a mandate/)
+  assert.equal(editor.toLowerCase().includes('sponsor'), false)
+  assert.equal(editor.includes('\u2014'), false)
+  assert.equal(/\bSAR\b|\bpackage\b/i.test(editor), false)
+  const sources = presentDigestSources({
+    members: [{ id: '11111111-1111-1111-1111-111111111111', full_name: 'Example Member C', headline: 'Director', company: 'Example Company C' }],
+    mandates: [{ sector: 'Energy', deal_type: 'Growth equity', ticket_band: 'Mid band', geography: 'KSA', one_liner: 'A clear example mandate for members.' }],
+    events: [{ title: 'Example gathering', starts_at: '16 Oct 2026, 18:00', region: 'Riyadh', host_name: 'Board Arabia' }],
+  })
+  assert.equal(sources.members[0]?.fullName, 'Example Member C')
+  assert.equal(sources.members[0]?.id, '11111111-1111-1111-1111-111111111111')
+  assert.equal(sources.mandates[0]?.oneLiner, 'A clear example mandate for members.')
+  assert.equal(sources.events[0]?.hostName, 'Board Arabia')
 })
 
 test('dashboard digest route loads DigestPage and not the catch-all', async () => {
@@ -345,6 +401,18 @@ test('home tap targets are at least 44px at 390 and digest shots exist', async (
       ['admin-approved', 'approved', 390, 844],
       ['admin-withdrawn', 'withdrawn', 1280, 1100],
       ['admin-withdrawn', 'withdrawn', 390, 844],
+      ['admin-edit', 'edit', 1280, 1100],
+      ['admin-edit', 'edit', 390, 844],
+      ['admin-audience', 'audience', 1280, 1100],
+      ['admin-audience', 'audience', 390, 844],
+      ['admin-blocked', 'blocked', 1280, 1100],
+      ['admin-blocked', 'blocked', 390, 844],
+      ['member-notice', 'notice', 1280, 900],
+      ['member-notice', 'notice', 390, 844],
+      ['member-in-tier', 'in-tier', 1280, 900],
+      ['member-in-tier', 'in-tier', 390, 844],
+      ['member-out-of-tier', 'out-of-tier', 1280, 900],
+      ['member-out-of-tier', 'out-of-tier', 390, 844],
     ]
     for (const [name, viewName, width, height] of shots) {
       const page = await browser.newPage({ viewport: { width, height } })
@@ -385,6 +453,36 @@ test('home tap targets are at least 44px at 390 and digest shots exist', async (
       }
       if (viewName === 'withdrawn') {
         assert.equal(await page.locator('[data-issue-status]').getAttribute('data-issue-status'), 'withdrawn')
+      }
+      if (viewName === 'edit') {
+        const text = await page.locator('[data-preview]').innerText()
+        assert.match(text, /Example Member B/)
+        assert.equal(text.includes('Example Company B'), false)
+        assert.match(text, /remove company/i)
+        assert.match(text, /Example note for members/)
+      }
+      if (viewName === 'audience') {
+        const text = await page.locator('[data-audience-picker]').innerText()
+        assert.match(text, /Basic/)
+        assert.match(text, /Founding member/)
+        assert.match(text, /Partner/)
+        assert.equal(text.toLowerCase().includes('sponsor'), false)
+      }
+      if (viewName === 'blocked') {
+        const text = await page.locator('[data-approve-block]').innerText()
+        assert.match(text, /Choose at least one tier before you approve\./)
+        assert.equal(await page.getByRole('button', { name: 'Approve' }).isDisabled(), true)
+      }
+      if (viewName === 'notice') {
+        const text = await page.locator('[data-digest-notice]').innerText()
+        assert.match(text, /This week's update is ready/)
+        assert.equal(await page.locator('[data-tap="digest-notice"]').getAttribute('href'), '/dashboard/digest')
+      }
+      if (viewName === 'in-tier') {
+        assert.match(await page.locator('[data-digest="full"]').innerText(), /Example Member B/)
+      }
+      if (viewName === 'out-of-tier') {
+        assert.match(await page.locator('[data-digest="empty"]').innerText(), /Nothing new this week\./)
       }
       const file = path.join(shotDir, `digest-${name}-${width}.png`)
       await page.screenshot({ path: file, fullPage: true })

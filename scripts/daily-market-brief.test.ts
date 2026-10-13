@@ -456,9 +456,10 @@ test('the member route is its own page and the card links to it', async () => {
 
 test('migration seeds 11 outlets, keeps both switches off, and limits writes to aal2 staff', () => {
   const names = readdirSync(path.join(root, 'supabase/migrations')).filter((name) => name.endsWith('.sql')).sort()
-  assert.ok(names.includes('20261211120000_daily_market_brief.sql'))
-  assert.ok(names.indexOf('20261211120000_daily_market_brief.sql') > names.indexOf('20261210120000_sectors_city_about.sql'))
-  const sql = read('supabase/migrations/20261211120000_daily_market_brief.sql')
+  const migration = '20261215120000_daily_market_brief.sql'
+  assert.ok(names.includes(migration))
+  assert.ok(names.indexOf(migration) > names.indexOf('20261214120000_digest_review_tiers.sql'))
+  const sql = read(`supabase/migrations/${migration}`)
   assert.match(sql, /enabled boolean not null default false/)
   assert.match(sql, /members_visible boolean not null default false/)
   assert.match(sql, /values \(1, false, false\)/)

@@ -58,6 +58,8 @@ declare
   sponsor_digest jsonb;
   issue jsonb;
   issue_id uuid;
+  plan jsonb;
+  notices jsonb;
   token text;
   other_token text;
   sendable boolean;
@@ -82,6 +84,10 @@ begin
     (d_id, 'demo@example.com', 'ksa', 'active', false, true, now()),
     (s_id, 'sample@example.com', 'ksa', 'active', false, false, now()),
     (p_id, 'partner@example.com', 'sponsor', 'active', false, false, now() - interval '40 days');
+
+  update public.members
+  set tiers = array['member']::text[]
+  where user_id = c_id;
 
   insert into public.profiles (user_id, full_name, headline, company) values
     (a_id, 'Amina Caller', 'Director', 'Caller Co'),
@@ -190,71 +196,12 @@ begin
   if digest->>'mail_ready' is distinct from 'false' then
     raise exception 'mail ready was true';
   end if;
-  if position('@' in digest::text) > 0 then
-    raise exception 'digest leaked an address %', digest;
-  end if;
-  if digest::text ~ '[0-9][0-9 ()+.-]{6,}[0-9]' then
-    raise exception 'digest leaked a phone %', digest;
-  end if;
-  if digest::text ilike '%nahla%' or digest::text ilike '%private hall%' or digest::text ilike '%hidden person%'
-     or digest::text ilike '%demo person%' or digest::text ilike '%sample person%'
-     or digest::text ilike '%separate introduction%' or digest::text ilike '%northwind%'
-     or digest::text ilike '%room note%' then
-    raise exception 'digest leaked a private row %', digest;
-  end if;
-
-  select coalesce(jsonb_agg(item->>'full_name' order by item->>'full_name'), '[]'::jsonb)
-    into names
-  from jsonb_array_elements(digest->'new_members') item;
-  if names <> '["Layla New"]'::jsonb then
-    raise exception 'new members %', names;
-  end if;
-
-  select coalesce(jsonb_agg(item->>'full_name' order by item->>'full_name'), '[]'::jsonb)
-    into suggestions
-  from jsonb_array_elements(digest->'suggestions') item;
-  if suggestions <> '["Layla New"]'::jsonb then
-    raise exception 'suggestions %', suggestions;
-  end if;
-  if digest->'new_mandates'->0->>'one_liner' is distinct from 'A clear regional mandate for members.' then
-    raise exception 'mandate %', digest->'new_mandates';
-  end if;
-  if digest->'upcoming_events'->0->>'title' is distinct from 'Open gathering'
-     or digest->'upcoming_events'->0->>'venue_address' is distinct from 'Open hall'
-     or digest->'upcoming_events'->1->>'title' is distinct from 'Private gathering'
-     or digest->'upcoming_events'->1->>'venue_address' is not null
-     or digest->'upcoming_events'->2->>'title' is distinct from 'Hidden host gathering'
-     or digest->'upcoming_events'->2->>'host_name' is distinct from 'Board Arabia'
-     or jsonb_array_length(digest->'upcoming_events') <> 3 then
-    raise exception 'events %', digest->'upcoming_events';
-  end if;
-
-  perform set_config(
-    'request.jwt.claims',
-    json_build_object('sub', b_id, 'aal', 'aal1', 'role', 'authenticated')::text,
-    false
-  );
-  set role authenticated;
-  other := public.my_weekly_digest();
-  set role postgres;
-  select coalesce(jsonb_agg(item->>'full_name'), '[]'::jsonb)
-    into suggestions
-  from jsonb_array_elements(other->'suggestions') item;
-  if suggestions <> '["Noura Older"]'::jsonb then
-    raise exception 'other suggestions %', suggestions;
-  end if;
-
-  perform set_config(
-    'request.jwt.claims',
-    json_build_object('sub', p_id, 'aal', 'aal1', 'role', 'authenticated')::text,
-    false
-  );
-  set role authenticated;
-  sponsor_digest := public.my_weekly_digest();
-  set role postgres;
-  if jsonb_array_length(sponsor_digest->'upcoming_events') <> 0
-     or sponsor_digest::text ilike '%layla new%' then
-    raise exception 'sponsor digest %', sponsor_digest;
+  if jsonb_array_length(digest->'new_members') <> 0
+     or jsonb_array_length(digest->'new_mandates') <> 0
+     or jsonb_array_length(digest->'upcoming_events') <> 0
+     or jsonb_array_length(digest->'suggestions') <> 0
+     or digest::text ilike '%layla%' then
+    raise exception 'digest was live before approval %', digest;
   end if;
 
   select m.digest_unsubscribe_token, b.digest_unsubscribe_token
@@ -317,6 +264,38 @@ begin
   if issue->'issue'->'payload'->'upcoming_events'->0->>'venue_address' is distinct from 'Open hall' then
     raise exception 'staff venue %', issue->'issue'->'payload'->'upcoming_events';
   end if;
+  if position('@' in (issue->'issue'->'payload')::text) > 0 then
+    raise exception 'draft leaked an address %', issue->'issue'->'payload';
+  end if;
+  if regexp_replace((issue->'issue'->'payload')::text, '[0-9a-fA-F-]{36}', '', 'g') ~ '[0-9][0-9 ()+.-]{6,}[0-9]' then
+    raise exception 'draft leaked a phone %', issue->'issue'->'payload';
+  end if;
+  if (issue->'issue'->'payload')::text ilike '%nahla%'
+     or (issue->'issue'->'payload')::text ilike '%private hall%'
+     or (issue->'issue'->'payload')::text ilike '%hidden person%'
+     or (issue->'issue'->'payload')::text ilike '%demo person%'
+     or (issue->'issue'->'payload')::text ilike '%sample person%'
+     or (issue->'issue'->'payload')::text ilike '%separate introduction%'
+     or (issue->'issue'->'payload')::text ilike '%northwind%'
+     or (issue->'issue'->'payload')::text ilike '%room note%' then
+    raise exception 'draft leaked a private row %', issue->'issue'->'payload';
+  end if;
+  select coalesce(jsonb_agg(item->>'full_name' order by item->>'full_name'), '[]'::jsonb)
+    into names
+  from jsonb_array_elements(issue->'issue'->'payload'->'new_members') item;
+  if names <> '["Amina Caller", "Layla New"]'::jsonb then
+    raise exception 'draft members %', names;
+  end if;
+  if issue->'issue'->'payload'->'new_mandates'->0->>'one_liner' is distinct from 'A clear regional mandate for members.' then
+    raise exception 'draft mandate %', issue->'issue'->'payload'->'new_mandates';
+  end if;
+  if issue->'issue'->'payload'->'upcoming_events'->1->>'title' is distinct from 'Private gathering'
+     or issue->'issue'->'payload'->'upcoming_events'->1->>'venue_address' is not null
+     or issue->'issue'->'payload'->'upcoming_events'->2->>'title' is distinct from 'Hidden host gathering'
+     or issue->'issue'->'payload'->'upcoming_events'->2->>'host_name' is distinct from 'Board Arabia'
+     or jsonb_array_length(issue->'issue'->'payload'->'upcoming_events') <> 3 then
+    raise exception 'draft events %', issue->'issue'->'payload'->'upcoming_events';
+  end if;
   issue_id := (issue->'issue'->>'id')::uuid;
   sendable := public.digest_issue_sendable(issue_id);
   if sendable then
@@ -350,11 +329,194 @@ begin
     false
   );
   set role authenticated;
-  perform public.staff_decide_digest_issue('approve');
+  begin
+    perform public.staff_decide_digest_issue('approve');
+    raise exception 'approved with no tier';
+  exception
+    when insufficient_privilege then
+      if sqlerrm not like '%audience_required%' then
+        raise exception 'audience error %', sqlerrm;
+      end if;
+  end;
+  set role postgres;
+
+  perform set_config(
+    'request.jwt.claims',
+    json_build_object('sub', a_id, 'aal', 'aal1', 'role', 'authenticated')::text,
+    false
+  );
+  set role authenticated;
+  begin
+    perform public.staff_save_digest_draft('{}'::jsonb, array['founding']);
+    raise exception 'member saved a draft';
+  exception
+    when insufficient_privilege then
+      if sqlerrm not like '%not_allowed%' then
+        raise exception 'member save error %', sqlerrm;
+      end if;
+  end;
+  begin
+    perform public.staff_decide_digest_issue('approve');
+    raise exception 'member approved an issue';
+  exception
+    when insufficient_privilege then
+      if sqlerrm not like '%not_allowed%' then
+        raise exception 'member approve error %', sqlerrm;
+      end if;
+  end;
+  set role postgres;
+
+  perform set_config(
+    'request.jwt.claims',
+    json_build_object('sub', staff_id, 'aal', 'aal2', 'role', 'authenticated')::text,
+    false
+  );
+  set role authenticated;
+  select coalesce(jsonb_agg(
+    case when listed.item->>'full_name' = 'Layla New' then listed.item - 'company' else listed.item end
+    order by listed.ord
+  ), '[]'::jsonb)
+    into names
+  from jsonb_array_elements(issue->'issue'->'payload'->'new_members') with ordinality as listed(item, ord);
+  issue := public.staff_save_digest_draft(
+    jsonb_build_object(
+      'new_members', names,
+      'new_mandates', issue->'issue'->'payload'->'new_mandates',
+      'upcoming_events', (
+        select coalesce(jsonb_agg(
+          case
+            when listed.item->>'title' = 'Hidden host gathering' then listed.item - 'region'
+            else listed.item
+          end
+          order by listed.ord
+        ), '[]'::jsonb)
+        from jsonb_array_elements(issue->'issue'->'payload'->'upcoming_events') with ordinality as listed(item, ord)
+      ),
+      'introductions', '[]'::jsonb,
+      'notes', jsonb_build_array(jsonb_build_object('text', 'Example note for members'))
+    ),
+    array['founding']
+  );
+  if issue->'issue'->'audience' <> '["founding"]'::jsonb then
+    raise exception 'audience was not saved %', issue->'issue'->'audience';
+  end if;
+  if exists (
+    select 1
+    from jsonb_array_elements(issue->'issue'->'payload'->'new_members') item
+    where item->>'full_name' = 'Layla New' and item ? 'company'
+  ) then
+    raise exception 'company stayed on the saved draft %', issue->'issue'->'payload'->'new_members';
+  end if;
+  if exists (
+    select 1
+    from jsonb_array_elements(issue->'issue'->'payload'->'upcoming_events') item
+    where item->>'title' = 'Hidden host gathering' and item ? 'region'
+  ) then
+    raise exception 'region stayed on the saved draft %', issue->'issue'->'payload'->'upcoming_events';
+  end if;
+  if issue->'issue'->'payload'->'notes'->0->>'text' is distinct from 'Example note for members' then
+    raise exception 'note was not saved %', issue->'issue'->'payload'->'notes';
+  end if;
+  if not exists (
+    select 1
+    from jsonb_array_elements(issue->'issue'->'log') item
+    where item->>'action' = 'edited'
+  ) then
+    raise exception 'edit was not audited %', issue->'issue'->'log';
+  end if;
+  issue := public.staff_decide_digest_issue('approve');
   if public.digest_issue_sendable(issue_id) then
     raise exception 'approved issue was sendable while mail was off';
   end if;
+  plan := public.staff_digest_mail_plan(issue_id);
+  if plan->>'mail_ready' is distinct from 'false'
+     or plan->>'sendable' is distinct from 'false'
+     or plan->>'stored_mail_ready' is distinct from 'false' then
+    raise exception 'mail plan was sendable %', plan;
+  end if;
+  if position('@' in plan::text) > 0 then
+    raise exception 'mail plan returned an address %', plan;
+  end if;
+  if (plan->>'recipient_count')::integer <> 4 then
+    raise exception 'recipient count %', plan;
+  end if;
   set role postgres;
+  if (select updated_by from public.digest_issues where id = issue_id) is distinct from staff_id
+     or (select updated_at from public.digest_issues where id = issue_id) is null then
+    raise exception 'edit stamp missing';
+  end if;
+
+  perform set_config(
+    'request.jwt.claims',
+    json_build_object('sub', a_id, 'aal', 'aal1', 'role', 'authenticated')::text,
+    false
+  );
+  set role authenticated;
+  digest := public.my_weekly_digest();
+  notices := public.my_digest_notices();
+  set role postgres;
+  if exists (
+    select 1
+    from jsonb_array_elements(digest->'new_members') item
+    where item->>'full_name' = 'Layla New' and item ? 'company'
+  ) or exists (
+    select 1
+    from jsonb_array_elements(digest->'new_members') item
+    where item ? 'id'
+  ) then
+    raise exception 'member still saw a removed field %', digest->'new_members';
+  end if;
+  if digest->'notes'->0->>'text' is distinct from 'Example note for members' then
+    raise exception 'member note %', digest->'notes';
+  end if;
+  if position('@' in digest::text) > 0 or digest::text ~ '[0-9][0-9 ()+.-]{6,}[0-9]' then
+    raise exception 'member digest leaked contact data %', digest;
+  end if;
+  if digest->'upcoming_events'->2->>'host_name' is distinct from 'Board Arabia'
+     or exists (
+       select 1
+       from jsonb_array_elements(digest->'upcoming_events') item
+       where item->>'title' = 'Hidden host gathering' and item ? 'region'
+     ) then
+    raise exception 'member events %', digest->'upcoming_events';
+  end if;
+  if digest::text ilike '%example member a%' then
+    raise exception 'member saw the sample introduction %', digest;
+  end if;
+  if notices->0->>'title' is distinct from 'This week''s update is ready'
+     or notices->0->>'href' is distinct from '/dashboard/digest' then
+    raise exception 'in-tier notice %', notices;
+  end if;
+
+  perform set_config(
+    'request.jwt.claims',
+    json_build_object('sub', c_id, 'aal', 'aal1', 'role', 'authenticated')::text,
+    false
+  );
+  set role authenticated;
+  other := public.my_weekly_digest();
+  notices := public.my_digest_notices();
+  set role postgres;
+  if jsonb_array_length(other->'new_members') <> 0
+     or other::text ilike '%example note%'
+     or jsonb_array_length(notices) <> 0 then
+    raise exception 'out-of-tier member saw the issue % %', other, notices;
+  end if;
+
+  perform set_config(
+    'request.jwt.claims',
+    json_build_object('sub', p_id, 'aal', 'aal1', 'role', 'authenticated')::text,
+    false
+  );
+  set role authenticated;
+  sponsor_digest := public.my_weekly_digest();
+  notices := public.my_digest_notices();
+  set role postgres;
+  if jsonb_array_length(sponsor_digest->'upcoming_events') <> 0
+     or sponsor_digest::text ilike '%layla new%'
+     or jsonb_array_length(notices) <> 0 then
+    raise exception 'out-of-tier partner saw the issue % %', sponsor_digest, notices;
+  end if;
 
   update public.digest_issues
   set payload = jsonb_set(payload, '{mail_ready}', 'true'::jsonb)
@@ -377,6 +539,101 @@ begin
     raise exception 'audit log incomplete %', issue->'issue'->'log';
   end if;
   set role postgres;
+
+  perform set_config(
+    'request.jwt.claims',
+    json_build_object('sub', a_id, 'aal', 'aal1', 'role', 'authenticated')::text,
+    false
+  );
+  set role authenticated;
+  digest := public.my_weekly_digest();
+  notices := public.my_digest_notices();
+  set role postgres;
+  if jsonb_array_length(digest->'new_members') <> 0
+     or digest::text ilike '%example note%'
+     or jsonb_array_length(notices) <> 0 then
+    raise exception 'withdraw left the issue visible % %', digest, notices;
+  end if;
+
+  update public.members set show_card_to_sponsors = true where user_id = b_id;
+  update public.digest_settings set send_enabled = false where id;
+
+  perform set_config(
+    'request.jwt.claims',
+    json_build_object('sub', staff_id, 'aal', 'aal2', 'role', 'authenticated')::text,
+    false
+  );
+  set role authenticated;
+  issue := public.staff_create_digest_draft();
+  issue := public.staff_save_digest_draft(
+    jsonb_build_object(
+      'new_members', issue->'issue'->'payload'->'new_members',
+      'new_mandates', issue->'issue'->'payload'->'new_mandates',
+      'upcoming_events', issue->'issue'->'payload'->'upcoming_events',
+      'introductions', '[]'::jsonb,
+      'notes', '[]'::jsonb
+    ),
+    array['sponsor']
+  );
+  perform public.staff_decide_digest_issue('approve');
+  if public.digest_issue_sendable((issue->'issue'->>'id')::uuid) then
+    raise exception 'partner issue was sendable';
+  end if;
+  set role postgres;
+
+  perform set_config(
+    'request.jwt.claims',
+    json_build_object('sub', p_id, 'aal', 'aal1', 'role', 'authenticated')::text,
+    false
+  );
+  set role authenticated;
+  sponsor_digest := public.my_weekly_digest();
+  notices := public.my_digest_notices();
+  set role postgres;
+  select coalesce(jsonb_agg(item->>'full_name' order by item->>'full_name'), '[]'::jsonb)
+    into names
+  from jsonb_array_elements(sponsor_digest->'new_members') item;
+  if names <> '["Layla New"]'::jsonb
+     or jsonb_array_length(sponsor_digest->'upcoming_events') <> 0
+     or sponsor_digest::text ilike '%amina caller%'
+     or notices->0->>'title' is distinct from 'This week''s update is ready' then
+    raise exception 'partner digest % %', sponsor_digest, notices;
+  end if;
+
+  perform set_config(
+    'request.jwt.claims',
+    json_build_object('sub', a_id, 'aal', 'aal1', 'role', 'authenticated')::text,
+    false
+  );
+  set role authenticated;
+  digest := public.my_weekly_digest();
+  notices := public.my_digest_notices();
+  set role postgres;
+  if jsonb_array_length(digest->'new_members') <> 0 or jsonb_array_length(notices) <> 0 then
+    raise exception 'founding member saw a partner issue % %', digest, notices;
+  end if;
+
+  perform set_config(
+    'request.jwt.claims',
+    json_build_object('sub', staff_id, 'aal', 'aal2', 'role', 'authenticated')::text,
+    false
+  );
+  set role authenticated;
+  perform public.staff_decide_digest_issue('withdraw');
+  set role postgres;
+
+  perform set_config(
+    'request.jwt.claims',
+    json_build_object('sub', p_id, 'aal', 'aal1', 'role', 'authenticated')::text,
+    false
+  );
+  set role authenticated;
+  sponsor_digest := public.my_weekly_digest();
+  notices := public.my_digest_notices();
+  set role postgres;
+  if jsonb_array_length(sponsor_digest->'new_members') <> 0 or jsonb_array_length(notices) <> 0 then
+    raise exception 'withdraw left the partner notice % %', sponsor_digest, notices;
+  end if;
 end
 $checks$;
 `

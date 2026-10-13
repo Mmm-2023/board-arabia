@@ -5,6 +5,7 @@ export type DigestCopyPerson = {
   fullName: string
   headline: string
   company: string
+  id?: string
 }
 
 export type DigestCopyMandate = {
@@ -13,6 +14,7 @@ export type DigestCopyMandate = {
   ticketBand: string
   geography: string
   oneLiner: string
+  stage?: string
 }
 
 export type DigestCopyEvent = {
@@ -36,6 +38,7 @@ export type DigestCopyInput = {
   newMandates: DigestCopyMandate[]
   upcomingEvents: DigestCopyEvent[]
   introductions: DigestCopyIntro[]
+  notes?: { text: string }[]
 }
 
 export type WeeklyDigestMail = {
@@ -79,12 +82,14 @@ export function weeklyDigestMail(input: DigestCopyInput, site: string): WeeklyDi
   pushMandates(textParts, htmlParts, input.newMandates)
   pushEvents(textParts, htmlParts, input.upcomingEvents)
   pushIntros(textParts, htmlParts, input.introductions)
+  pushNotes(textParts, htmlParts, input.notes ?? [])
 
   if (
     input.newMembers.length === 0 &&
     input.newMandates.length === 0 &&
     input.upcomingEvents.length === 0 &&
-    input.introductions.length === 0
+    input.introductions.length === 0 &&
+    (input.notes ?? []).length === 0
   ) {
     textParts.push('', 'Nothing new is listed for this week.')
     htmlParts.push('<p>Nothing new is listed for this week.</p>')
@@ -150,6 +155,17 @@ function pushEvents(textParts: string[], htmlParts: string[], rows: DigestCopyEv
     const line = [row.title, when, place, row.hostName].filter(Boolean).join('. ')
     textParts.push(line)
     htmlParts.push(`<li>${escapeHtml(line)}</li>`)
+  }
+  htmlParts.push('</ul>')
+}
+
+function pushNotes(textParts: string[], htmlParts: string[], rows: { text: string }[]) {
+  if (rows.length === 0) return
+  textParts.push('', 'Notes')
+  htmlParts.push('<h2>Notes</h2>', '<ul>')
+  for (const row of rows) {
+    textParts.push(row.text)
+    htmlParts.push(`<li>${escapeHtml(row.text)}</li>`)
   }
   htmlParts.push('</ul>')
 }

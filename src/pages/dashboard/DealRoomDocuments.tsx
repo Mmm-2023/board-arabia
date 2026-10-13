@@ -78,7 +78,7 @@ export function DealRoomDocuments({
     <section aria-label="Documents" data-deal-documents="" className="mt-8 max-w-xl">
       <h2 className="font-display text-[1.25rem] font-semibold tracking-[-0.02em]">Documents</h2>
       <p className="mt-2 text-[0.95rem] leading-relaxed text-ink/60">
-        Viewing is watermarked and logged.
+        Views and downloads are watermarked and logged.
       </p>
       {error ? (
         <p className="mt-4 text-[0.98rem] text-[var(--ba-error)]" role="alert">
@@ -142,7 +142,7 @@ export function DealRoomDocuments({
               Close
             </button>
           </div>
-          <p className="mt-2 text-[0.95rem] text-ink/70">Viewing is watermarked and logged.</p>
+          <p className="mt-2 text-[0.95rem] text-ink/70">Views and downloads are watermarked and logged.</p>
           <div className="relative mt-4 min-h-48 border border-[var(--ba-line)] bg-white">
             {view.src ? <iframe title={view.fileName} src={view.src} className="h-[28rem] w-full bg-white" /> : null}
             <p
@@ -154,7 +154,7 @@ export function DealRoomDocuments({
           </div>
           {view.downloadAllowed ? (
             <p className="mt-3 text-[0.92rem] text-ink/60" data-deal-download-on="">
-              Download is on for this file. The watermark above is the one on the viewed pages.
+              Download is on for this file. The saved copy carries the same watermark.
             </p>
           ) : (
             <p className="mt-3 text-[0.92rem] text-ink/60" data-deal-download-off="">

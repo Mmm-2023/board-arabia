@@ -1,5 +1,5 @@
 -- Daily market brief outlets, days, and settings.
--- Apply after 20261210120000_sectors_city_about.sql.
+-- Apply after 20261214120000_digest_review_tiers.sql.
 -- Do not apply this file from the app, from CI, or against a live database from this PR.
 -- No personal data. Days are kept 90 days by market-brief-daily on a real run.
 -- The retention sweep is not changed here.

@@ -12,6 +12,11 @@ import { adviserGalleryRows, partnerGalleryRows } from '../../lib/trustedPartner
 
 const styles = toneClasses('member')
 
+export type DigestHomeNotice = {
+  title: string
+  href: string
+}
+
 export function HomeSnapshotView({
   model,
   onRetry,
@@ -26,6 +31,7 @@ export function HomeSnapshotView({
   profilePrompt = null,
   hasSuggestions = false,
   promptShowing = false,
+  digestNotice = null,
 }: {
   model: HomeModel
   onRetry?: () => void
@@ -40,6 +46,7 @@ export function HomeSnapshotView({
   profilePrompt?: ReactNode
   hasSuggestions?: boolean
   promptShowing?: boolean
+  digestNotice?: DigestHomeNotice | null
 }) {
   const homePartners = model.platform.partners.map((partner) => ({ ...partner, is_demo: partner.example }))
   const partnerRows = partnerGalleryRows(homePartners)
@@ -113,11 +120,23 @@ export function HomeSnapshotView({
         </div>
       ) : null}
 
-      {(model.attention.length > 0 || attentionLead) && (
+      {(model.attention.length > 0 || attentionLead || digestNotice) && (
         <section aria-label="Needs attention" className="mt-5 space-y-3 md:mt-8">
           <h2 className="text-[0.72rem] font-semibold tracking-[0.14em] text-ink/40 uppercase">
             Needs attention
           </h2>
+          {digestNotice ? (
+            <article className={`${styles.panel} px-4 py-3 md:py-4`} data-digest-notice="">
+              <p className="text-[1rem] text-ink">{digestNotice.title}</p>
+              <Link
+                to={digestNotice.href}
+                data-tap="digest-notice"
+                className="mt-3 inline-flex min-h-11 min-w-11 items-center text-[0.75rem] font-semibold tracking-[0.08em] text-brass uppercase"
+              >
+                Open
+              </Link>
+            </article>
+          ) : null}
           {attentionLead}
           {model.attention.length > 0 ? (
             <ul className="space-y-3">

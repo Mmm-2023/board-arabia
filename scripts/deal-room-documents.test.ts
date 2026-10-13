@@ -16,11 +16,12 @@ import {
   dealRoomStoragePathOk,
   sanitiseFileName,
   sniffDocument,
+  stampedDownloadName,
   uploadDeclaredTooLarge,
   watermarkLine,
 } from '../supabase/functions/_shared/deal_room_documents.ts'
 import { handleDealRoomDocuments, type DocumentDeps } from '../supabase/functions/_shared/deal_room_documents_http.ts'
-import { stampDocument } from '../supabase/functions/_shared/deal_room_pdf_stamp.ts'
+import { documentStampSupported, stampDocument } from '../supabase/functions/_shared/deal_room_pdf_stamp.ts'
 import type { DealCaller, DealGate } from '../supabase/functions/_shared/deal_room_http.ts'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
@@ -79,6 +80,12 @@ test('upload sniff rejects the wrong bytes, svg, html, and oversize files', () =
   assert.equal(sniffDocument(Uint8Array.from([0x25, 0x50, 0x44, 0x46, 0x2d]), DEAL_ROOM_MAX_BYTES + 1).error, 'too_large')
   assert.equal(sanitiseFileName('../../Board pack!.pdf'), 'Board pack.pdf')
   assert.equal(sanitiseFileName('   '), 'document')
+  assert.equal(stampedDownloadName('Site plan.png'), 'Site plan.pdf')
+  assert.equal(stampedDownloadName('Board pack.pdf'), 'Board pack.pdf')
+  assert.equal(documentStampSupported('application/pdf'), true)
+  assert.equal(documentStampSupported('image/png'), true)
+  assert.equal(documentStampSupported('image/jpeg'), true)
+  assert.equal(documentStampSupported('image/gif'), false)
 })
 
 test('stamped pdf bytes contain the viewer email and not another member', async () => {
@@ -143,21 +150,105 @@ test('view stamps the caller only, and download stays off the wire', async () =>
   assert.equal(signed, 0)
 })
 
-test('download signs for 60 seconds only when the switch is on', async () => {
+test('download returns stamped bytes and never signs the stored original', async () => {
+  const plain = await PDFDocument.create()
+  plain.addPage([400, 400])
+  const source = await plain.save()
   const calls: { name: string; args: Record<string, unknown> }[] = []
-  const signed: number[] = []
+  const signed: string[] = []
   const deps = fakeDeps(calls, {
     downloadAllowed: true,
-    onSign: (expiresIn) => signed.push(expiresIn),
+    mime: 'application/pdf',
+    fileName: 'Board pack.pdf',
+    fileBytes: source,
+    stamp: (bytes, mime, line) => stampDocument({ PDFDocument, StandardFonts, rgb }, bytes, mime, line),
+    onSign: (path) => signed.push(path),
   })
-  const response = await handleDealRoomDocuments(post({ action: 'download', document_id: DOC }), deps)
+  const response = await handleDealRoomDocuments(
+    post({ action: 'download', document_id: DOC, email: OTHER_EMAIL, room_id: OTHER, viewer_email: UPLOADER_EMAIL }),
+    deps,
+  )
   assert.equal(response.status, 200)
-  const body = (await response.json()) as { expires_in?: number; url?: string }
-  assert.equal(body.expires_in, 60)
-  assert.equal(signed.length, 1)
-  assert.equal(signed[0], 60)
-  assert.equal(typeof body.url, 'string')
+  const body = (await response.json()) as { file_base64?: string; stamp?: string; url?: string; file_name?: string }
+  assert.equal(body.url, undefined)
+  assert.equal(body.file_name, 'Board pack.pdf')
+  assert.equal(body.stamp?.includes(VIEWER_EMAIL), true)
+  assert.equal(body.stamp?.includes(OTHER_EMAIL), false)
+  assert.equal(body.stamp?.includes(UPLOADER_EMAIL), false)
+  assert.equal(typeof body.file_base64, 'string')
+  const text = pdfText(Buffer.from(body.file_base64 || '', 'base64'))
+  assert.equal(text.includes(VIEWER_EMAIL), true)
+  assert.equal(text.includes(OTHER_EMAIL), false)
+  assert.equal(text.includes(UPLOADER_EMAIL), false)
+  assert.equal(signed.length, 0)
+  assert.equal(JSON.stringify(body).includes(PATH), false)
+  assert.equal(JSON.stringify(body).includes('/source'), false)
+  const identity = calls.find((call) => call.name === 'room_document_viewer_identity')
+  assert.equal(identity?.args.p_actor, VIEWER)
   assert.equal(calls.some((call) => call.name === 'record_room_document_event' && call.args.p_action === 'download'), true)
+
+  calls.length = 0
+  const imageCalls: { name: string; args: Record<string, unknown> }[] = []
+  const imageSigned: string[] = []
+  const image = await handleDealRoomDocuments(
+    post({ action: 'download', document_id: DOC }),
+    fakeDeps(imageCalls, {
+      downloadAllowed: true,
+      mime: 'image/png',
+      fileName: 'Site plan.png',
+      fileBytes: PNG,
+      stamp: (bytes, mime, line) => stampDocument({ PDFDocument, StandardFonts, rgb }, bytes, mime, line),
+      onSign: (path) => imageSigned.push(path),
+    }),
+  )
+  assert.equal(image.status, 200)
+  const imageBody = (await image.json()) as { file_base64?: string; file_name?: string; url?: string }
+  assert.equal(imageBody.url, undefined)
+  assert.equal(imageBody.file_name, 'Site plan.pdf')
+  assert.equal(pdfText(Buffer.from(imageBody.file_base64 || '', 'base64')).includes(VIEWER_EMAIL), true)
+  assert.equal(imageSigned.length, 0)
+  assert.equal(imageSigned.includes(PATH), false)
+})
+
+test('download refuses a type that cannot be stamped', async () => {
+  const calls: { name: string; args: Record<string, unknown> }[] = []
+  const signed: string[] = []
+  const response = await handleDealRoomDocuments(
+    post({ action: 'download', document_id: DOC }),
+    fakeDeps(calls, {
+      downloadAllowed: true,
+      mime: 'image/gif',
+      onSign: (path) => signed.push(path),
+    }),
+  )
+  assert.equal(response.status, 403)
+  assert.equal(((await response.json()) as { error?: string }).error, 'This file can be viewed but not downloaded.')
+  assert.equal(signed.length, 0)
+  assert.equal(calls.some((call) => call.name === 'record_room_document_event'), false)
+  assert.equal(calls.some((call) => call.name === 'room_document_viewer_identity'), false)
+  const refused = await stampDocument({ PDFDocument, StandardFonts, rgb }, PNG, 'image/gif', 'Example Viewer')
+  assert.equal(refused.ok, false)
+  if (!refused.ok) assert.equal(refused.error, 'unstampable')
+})
+
+test('cross-room and non-participant downloads are refused without signing the original', async () => {
+  const calls: { name: string; args: Record<string, unknown> }[] = []
+  const signed: string[] = []
+  const hidden = await handleDealRoomDocuments(
+    post({ action: 'download', document_id: DOC, room_id: OTHER }),
+    fakeDeps(calls, { hold: 'hidden', downloadAllowed: true, onSign: (path) => signed.push(path) }),
+  )
+  assert.equal(hidden.status, 404)
+  assert.equal(((await hidden.json()) as { error?: string }).error, 'Not found')
+
+  const outsider = await handleDealRoomDocuments(
+    post({ action: 'download', document_id: DOC }),
+    fakeDeps(calls, { openError: 'not_participant', downloadAllowed: true, onSign: (path) => signed.push(path) }),
+  )
+  assert.equal(outsider.status, 403)
+  assert.equal(((await outsider.json()) as { error?: string }).error, 'Not allowed')
+  assert.equal(signed.length, 0)
+  assert.equal(signed.includes(PATH), false)
 })
 
 test('upload rejects a declared body over 20 MB before reading it', async () => {
@@ -255,6 +346,17 @@ test('migration slot, close stamp, and retention interval are locked', () => {
   const client = readFileSync(path.join(root, 'src/lib/dealRoomDocumentApi.ts'), 'utf8')
   assert.equal(/\.from\(/.test(client), false)
   assert.equal(client.includes('\u2014'), false)
+  assert.equal(client.includes('payload.url'), false)
+  const edge = readFileSync(path.join(root, 'supabase/functions/deal-room-documents/index.ts'), 'utf8')
+  assert.equal(edge.includes('createSignedUrl'), false)
+  assert.equal(edge.includes('getPublicUrl'), false)
+  const page = readFileSync(path.join(root, 'src/pages/dashboard/DealRoomPage.tsx'), 'utf8')
+  assert.equal(page.includes('window.open'), false)
+  const panel = readFileSync(path.join(root, 'src/pages/dashboard/DealRoomDocuments.tsx'), 'utf8')
+  assert.match(panel, /Views and downloads are watermarked and logged\./)
+  assert.match(panel, /The saved copy carries the same watermark\./)
+  assert.equal(panel.includes('viewed pages'), false)
+  assert.equal(panel.toLowerCase().includes('original'), false)
   const policy = contentSecurityPolicy({
     supabaseUrl: 'https://example.supabase.co',
     analyticsFlag: 'false',
@@ -304,21 +406,35 @@ function form(bytes: Uint8Array, name: string): Request {
 
 function fakeDeps(
   calls: { name: string; args: Record<string, unknown> }[],
-  options: { hold?: 'open' | 'expired' | 'hidden'; downloadAllowed?: boolean; onSign?: (expiresIn: number) => void } = {},
+  options: {
+    hold?: 'open' | 'expired' | 'hidden'
+    downloadAllowed?: boolean
+    mime?: string
+    fileName?: string
+    fileBytes?: Uint8Array
+    openError?: string
+    stamp?: DocumentDeps['stamp']
+    onSign?: (path: string, expiresIn: number) => void
+  } = {},
 ): DocumentDeps {
   const hold = options.hold ?? 'open'
   const downloadAllowed = options.downloadAllowed ?? false
   return {
-    open: async () => gate(calls, hold, downloadAllowed),
+    open: async () => gate(calls, hold, downloadAllowed, options),
     now: () => WHEN,
-    countPages: async (_bytes, mime) => ({ ok: true, pages: mime === 'application/pdf' ? 1 : 1 }),
-    stamp: async (bytes, _mime, line) => ({ ok: true, bytes: new TextEncoder().encode(line + Buffer.from(bytes).toString('base64url').slice(0, 8)) }),
+    countPages: async () => ({ ok: true, pages: 1 }),
+    stamp:
+      options.stamp ??
+      (async (bytes, _mime, line) => ({
+        ok: true as const,
+        bytes: new TextEncoder().encode(line + Buffer.from(bytes).toString('base64url').slice(0, 8)),
+      })),
     storage: {
       upload: async () => ({ error: null }),
-      download: async () => ({ bytes: PNG, error: null }),
+      download: async () => ({ bytes: options.fileBytes ?? PNG, error: null }),
       remove: async () => ({ error: null }),
-      sign: async (_path, expiresIn) => {
-        options.onSign?.(expiresIn)
+      sign: async (path, expiresIn) => {
+        options.onSign?.(path, expiresIn)
         return { url: 'https://example.com/signed', error: null }
       },
     },
@@ -329,6 +445,7 @@ function gate(
   calls: { name: string; args: Record<string, unknown> }[],
   hold: 'open' | 'expired' | 'hidden',
   downloadAllowed: boolean,
+  options: { mime?: string; fileName?: string; openError?: string } = {},
 ): DealGate {
   const caller: DealCaller = {
     userId: VIEWER,
@@ -345,6 +462,7 @@ function gate(
     call: async (name, args) => {
       calls.push({ name, args })
       if (name === 'room_document_open_for') {
+        if (options.openError) return { data: null, error: { message: options.openError } }
         if (hold === 'hidden') return { data: { ok: true, hold: 'hidden' }, error: null }
         return {
           data: {
@@ -352,8 +470,8 @@ function gate(
             hold,
             room_id: ROOM,
             storage_path: PATH,
-            file_name: 'Board pack.pdf',
-            mime: 'image/png',
+            file_name: options.fileName ?? 'Board pack.pdf',
+            mime: options.mime ?? 'image/png',
             download_allowed: downloadAllowed,
             uploaded_by: OTHER,
           },

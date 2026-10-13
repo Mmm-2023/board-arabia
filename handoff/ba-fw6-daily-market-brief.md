@@ -12,7 +12,7 @@ Admin edits an outlet allowlist. A daily function can later pull headlines only 
 
 The model id is written only on `market_brief_days.model_id` (`supabase/functions/market-brief-daily/index.ts:56`). No RPC and no HTTP body return it (`supabase/functions/_shared/daily_market_brief.ts:369-376`). The vendor is not named in the UI.
 
-`enabled` and `members_visible` default to false (`supabase/migrations/20261211120000_daily_market_brief.sql:11-12` and `:26`). Members receive the latest ok brief only when both are true (`:128-129`). Otherwise the member RPC returns null, the Home card stays hidden (`src/pages/dashboard/DashboardHome.tsx:367`), and the page says "No brief today." (`src/pages/dashboard/DailyMarketBriefPage.tsx:41`). A member RPC error also becomes that empty state. No error is shown to members.
+`enabled` and `members_visible` default to false (`supabase/migrations/20261215120000_daily_market_brief.sql:11-12` and `:26`). Members receive the latest ok brief only when both are true (`:128-129`). Otherwise the member RPC returns null, the Home card stays hidden (`src/pages/dashboard/DashboardHome.tsx:389`), and the page says "No brief today." (`src/pages/dashboard/DailyMarketBriefPage.tsx:41`). A member RPC error also becomes that empty state. No error is shown to members.
 
 ## Matching rule
 
@@ -20,7 +20,7 @@ The model id is written only on `market_brief_days.model_id` (`supabase/function
 
 ## Seeded outlets
 
-`supabase/migrations/20261211120000_daily_market_brief.sql:64-76`. The same 11 rows are `STARTER_OUTLETS` at `supabase/functions/_shared/outlet_allowlist.ts:20`.
+`supabase/migrations/20261215120000_daily_market_brief.sql:64-76`. The same 11 rows are `STARTER_OUTLETS` at `supabase/functions/_shared/outlet_allowlist.ts:20`.
 
 | Outlet | Domain | Path prefix |
 | --- | --- | --- |
@@ -54,7 +54,7 @@ Build and deploy only. `supabase/config.toml:155-159` pins `verify_jwt = false` 
 
 Do not apply this from the app or from CI. Do not call retention-sweep, suggest-intros, invite refill, PostHog, invite-sponsor, or any mail function. Do not invoke `market-brief-daily`.
 
-1. Migration `supabase/migrations/20261211120000_daily_market_brief.sql` after `20261210120000_sectors_city_about.sql`.
+1. Migration `supabase/migrations/20261215120000_daily_market_brief.sql` after `20261214120000_digest_review_tiers.sql`.
 2. Deploy Edge `market-brief-daily` only. Do not set `MARKET_BRIEF_DAILY_SECRET`. Do not add a cron or a routine. Do not invoke the function, including `?dry_run=1`.
 
 The search key stays parked. Turning the two admin switches on is a later decision, after a schedule exists and a dry run has been reviewed. Do not do that as part of this apply.
@@ -77,9 +77,9 @@ The existing per-member market entry brief and `supabase/functions/_shared/sugge
 
 | Claim | Grade |
 | --- | --- |
-| Base at start was `7c3f0ad9`. Migration slot `20261211120000` was free and sorts after `20261210120000`. Main later added the weekly digest at `20261212120000`. This branch merges that commit. Both routes stay. | VERIFIED at start, then by the merge. |
+| The migration file is `20261215120000_daily_market_brief.sql`. It sorts after `20261214120000_digest_review_tiers.sql`. It is not required to be the newest file. Main at `156917b5` is merged. The Home page keeps the weekly digest notice and the daily market brief card. | VERIFIED by the merge and `scripts/daily-market-brief.test.ts`. |
 | A blank search key makes zero network calls and returns `not_configured`. | VERIFIED by `scripts/daily-market-brief.test.ts:78`. |
-| Both switches default to false, and the member RPC returns null unless both are on. | VERIFIED at `20261211120000_daily_market_brief.sql:11-12`, `:26`, `:128-129`. |
+| Both switches default to false, and the member RPC returns null unless both are on. | VERIFIED at `20261215120000_daily_market_brief.sql:11-12`, `:26`, `:128-129`. |
 | Staff writes go through `private.is_staff()`, which requires aal2. RLS is forced. Definers use `search_path = ''`. | VERIFIED in this migration and in `20261127120000_staff_aal2_private_files.sql:8-21`. |
 | No cron, no routine, and no schedule secret is set by this PR. | VERIFIED. No workflow file. `config.toml:157` says not to set it. |
 | The model vendor is not named in member or admin UI. | VERIFIED by the client copy test. A built-bundle scan runs when `dist/assets` exists. |
