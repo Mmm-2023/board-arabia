@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
-import { mkdirSync, readFileSync, statSync } from 'node:fs'
+import { mkdtempSync, readFileSync, rmSync, statSync } from 'node:fs'
+import { tmpdir } from 'node:os'
 import path from 'node:path'
 import test from 'node:test'
 import { chromium, type Page } from 'playwright-core'
@@ -102,8 +103,7 @@ test('account menu, routes, and shots at 1440 and 390', { timeout: 240000 }, asy
   process.env.VITE_ANALYTICS_ENABLED = 'false'
   process.env.VITE_TWO_TIER_REGISTER_ENABLED = 'false'
 
-  const shotDir = path.join('/opt/cursor/artifacts', 'account-menu')
-  mkdirSync(shotDir, { recursive: true })
+  const shotDir = mkdtempSync(path.join(tmpdir(), 'ba-account-menu-'))
   const vite = await createServer({
     server: { host: '127.0.0.1', port: 0, hmr: false },
     logLevel: 'error',
@@ -241,6 +241,7 @@ test('account menu, routes, and shots at 1440 and 390', { timeout: 240000 }, asy
   } finally {
     await browser.close()
     await vite.close()
+    rmSync(shotDir, { recursive: true, force: true })
   }
 })
 

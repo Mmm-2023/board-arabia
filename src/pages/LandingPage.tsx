@@ -13,7 +13,7 @@ import { StepDiagram } from '../components/landing/StepDiagram'
 import { StickyApply } from '../components/landing/StickyApply'
 import { LANDING_FEATURES, LANDING_GROUPS } from '../content/landingFeatures'
 import { AUDIENCE_LINE } from '../content/marketing'
-import { FAQ } from '../content/seo'
+import { FAQ, publicHref } from '../content/seo'
 import { LANDING_STRIP_LEAD, LANDING_STRIP_LINK } from '../content/trust'
 import { closingCtaBody } from '../content/twoTierCopy'
 import { DestinationIcon } from '../shell/icons'
@@ -61,7 +61,7 @@ export function LandingPage() {
           data-trust-strip="landing"
         >
           {LANDING_STRIP_LEAD}{' '}
-          <Link to="/security" className="ba-textlink inline-flex min-h-11 items-center">
+          <Link to={publicHref('/security')} className="ba-textlink inline-flex min-h-11 items-center">
             {LANDING_STRIP_LINK}
           </Link>
         </p>
@@ -85,7 +85,7 @@ function HeroConsideration() {
     <div className="mt-4 flex flex-col gap-2 sm:flex-row">
       <Link
         id="hero-apply"
-        to={cta.to}
+        to={publicHref(cta.to)}
         className="ba-primary inline-flex min-h-12 items-center justify-center px-5 text-[0.9375rem] font-semibold"
         data-consideration-cta="public"
         onClick={() => trackApplyClick('hero', cta.label)}
@@ -302,15 +302,15 @@ function MembershipSection() {
           </Reveal>
         ))}
         <p className="mt-2">
-          <Link to="/security" className="ba-textlink inline-flex min-h-11 items-center text-[0.9375rem]">
+          <Link to={publicHref('/security')} className="ba-textlink inline-flex min-h-11 items-center text-[0.9375rem]">
             {LANDING_STRIP_LINK}
           </Link>
         </p>
         <p className="mt-1 flex flex-wrap gap-x-6">
-          <Link to="/for-members" className="ba-textlink inline-flex min-h-11 items-center text-[0.9375rem]">
+          <Link to={publicHref('/for-members')} className="ba-textlink inline-flex min-h-11 items-center text-[0.9375rem]">
             See all member tools
           </Link>
-          <Link to="/for-capital" className="ba-textlink inline-flex min-h-11 items-center text-[0.9375rem]">
+          <Link to={publicHref('/for-capital')} className="ba-textlink inline-flex min-h-11 items-center text-[0.9375rem]">
             How FDI and family offices engage
           </Link>
         </p>
@@ -346,7 +346,7 @@ function ProcessSection() {
         <p className="mt-4 max-w-3xl text-[0.9375rem] leading-relaxed text-[#E8E4F7]">
           Reviewed. Gated. Off the open web. Applications, mandate intros and real estate intros pass admin review. A member introduction needs the other member to accept.
         </p>
-        <Link to="/how-it-works" className="ba-textlink mt-2 inline-flex min-h-11 items-center text-[0.9375rem] text-[#F6F5FB]">
+        <Link to={publicHref('/how-it-works')} className="ba-textlink mt-2 inline-flex min-h-11 items-center text-[0.9375rem] text-[#F6F5FB]">
           Full sequence
         </Link>
       </div>

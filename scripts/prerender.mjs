@@ -62,7 +62,7 @@ function assertPage(route, html) {
   if (!html.includes('application/ld+json')) errors.push('missing json-ld')
   if (/AggregateRating|"@type":"Review"/.test(html)) errors.push('fake review schema')
   if (/calendar\.app\.google/i.test(html)) errors.push('public calendar url')
-  const faqRoutes = new Set(['/', '/how-it-works', '/for-members'])
+  const faqRoutes = new Set(['/', '/how-it-works', '/for-members', '/about'])
   if (faqRoutes.has(route) && !html.includes('FAQPage')) errors.push('missing FAQPage')
   if (!faqRoutes.has(route) && html.includes('FAQPage')) errors.push('unexpected FAQPage')
   if (/ReserveAction|SearchAction/.test(html)) errors.push('unexpected site action')
@@ -121,14 +121,22 @@ function assertPage(route, html) {
   if (!html.includes('property="og:image:width" content="1200"')) errors.push('og width')
   if (!html.includes('property="og:image:height" content="630"')) errors.push('og height')
   if (!html.includes('property="og:image:type" content="image/png"')) errors.push('og type')
-  const homeShare = 'Board Arabia | Where Saudi boardrooms meet international capital'
-  if (route === '/') {
-    if (!html.includes(`<title>${homeShare}</title>`)) errors.push('home title')
-    if (!html.includes(`property="og:title" content="${homeShare}"`)) errors.push('og title')
-    if (!html.includes(`name="twitter:title" content="${homeShare}"`)) errors.push('twitter title')
-  } else if (!html.includes('property="og:title" content="Board Arabia"')) {
-    errors.push('og title')
+  const shareTitles = {
+    '/': 'Board Arabia | Saudi boardrooms meet international capital',
+    '/apply': 'Apply for founding membership | Board Arabia',
+    '/for-members': 'For members: directory, mandates, majlis | Board Arabia',
+    '/for-capital': 'For capital: family offices, FDI, PE, VC | Board Arabia',
+    '/partners': 'Partners: three annual partner seats | Board Arabia',
+    '/how-it-works': 'How Board Arabia works: apply, review, invite',
+    '/about': 'About Board Arabia | Founding 100 membership',
+    '/privacy': 'Privacy notice | Board Arabia',
+    '/security': 'Trust and security | Board Arabia',
+    '/terms': 'Terms of use | Board Arabia',
   }
+  const shareTitle = shareTitles[route]
+  if (title !== shareTitle) errors.push('title')
+  if (!html.includes(`property="og:title" content="${shareTitle}"`)) errors.push('og title')
+  if (!html.includes(`name="twitter:title" content="${shareTitle}"`)) errors.push('twitter title')
   const ogDescription = tagAttr(html, /<meta[^>]*property="og:description"[^>]*>/i)
   const twitterDescription = tagAttr(html, /<meta[^>]*name="twitter:description"[^>]*>/i)
   if (/counterparts/i.test(description) || /counterparts/i.test(ogDescription) || /counterparts/i.test(twitterDescription)) {
@@ -208,7 +216,7 @@ function writeSitemap() {
   const today = new Date().toISOString().slice(0, 10)
   const urls = routes
     .map((route) => {
-      const loc = route === '/' ? 'https://boardarabia.com/' : `https://boardarabia.com${route}`
+      const loc = route === '/' ? 'https://boardarabia.com/' : `https://boardarabia.com${route}/`
       return `  <url><loc>${loc}</loc><lastmod>${today}</lastmod></url>`
     })
     .join('\n')

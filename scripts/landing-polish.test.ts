@@ -33,7 +33,7 @@ function read(rel: string) {
 }
 
 test('home title, og title, and twitter title mirror the live H1', () => {
-  assert.equal(HOME_SHARE_TITLE, 'Board Arabia | Where Saudi boardrooms meet international capital')
+  assert.equal(HOME_SHARE_TITLE, 'Board Arabia | Saudi boardrooms meet international capital')
   assert.equal(MARKETING_PAGES['/'].title, HOME_SHARE_TITLE)
   assert.equal(MARKETING_PAGES['/'].description, OG_DESCRIPTION)
   assert.equal(OG_DESCRIPTION.includes('counterparts'), false)
@@ -41,9 +41,9 @@ test('home title, og title, and twitter title mirror the live H1', () => {
   assert.equal(OG_DESCRIPTION.includes('\u2014'), false)
   assert.equal(OG_DESCRIPTION.includes('\u2013'), false)
   const html = read('index.html')
-  assert.match(html, /<title>Board Arabia \| Where Saudi boardrooms meet international capital<\/title>/)
-  assert.match(html, /property="og:title" content="Board Arabia \| Where Saudi boardrooms meet international capital"/)
-  assert.match(html, /name="twitter:title" content="Board Arabia \| Where Saudi boardrooms meet international capital"/)
+  assert.match(html, /<title>Board Arabia \| Saudi boardrooms meet international capital<\/title>/)
+  assert.match(html, /property="og:title" content="Board Arabia \| Saudi boardrooms meet international capital"/)
+  assert.match(html, /name="twitter:title" content="Board Arabia \| Saudi boardrooms meet international capital"/)
   assert.equal(html.includes('counterparts'), false)
 })
 
@@ -85,9 +85,9 @@ test('organization logo and image are absolute URLs that exist in dist', () => {
     assert.equal(existsSync(path.join(root, 'dist', rel)), true, `dist/${rel}`)
   }
   const home = readFileSync(path.join(root, 'dist', 'index.html'), 'utf8')
-  assert.match(home, /<title>Board Arabia \| Where Saudi boardrooms meet international capital<\/title>/)
-  assert.match(home, /property="og:title" content="Board Arabia \| Where Saudi boardrooms meet international capital"/)
-  assert.match(home, /name="twitter:title" content="Board Arabia \| Where Saudi boardrooms meet international capital"/)
+  assert.match(home, /<title>Board Arabia \| Saudi boardrooms meet international capital<\/title>/)
+  assert.match(home, /property="og:title" content="Board Arabia \| Saudi boardrooms meet international capital"/)
+  assert.match(home, /name="twitter:title" content="Board Arabia \| Saudi boardrooms meet international capital"/)
   assert.match(home, /"logo":"https:\/\/boardarabia\.com\/favicon\.svg"/)
   assert.match(home, /"image":"https:\/\/boardarabia\.com\/og-board-arabia\.png"/)
   const description = home.match(/<meta name="description" content="([^"]*)"/)?.[1] || ''
@@ -118,7 +118,7 @@ test('hero CTA still points at /apply', async () => {
     )
     const hero = (html.match(/<a\b[^>]*>/g) || []).find((tag) => tag.includes('id="hero-apply"'))
     assert.ok(hero, 'hero anchor')
-    assert.match(hero, /href="\/apply"/)
+    assert.match(hero, /href="\/apply\/"/)
     assert.match(html, /Complimentary founding membership, given in exchange for time, judgment and introductions\./)
     assert.match(html, /It is a board network for Saudi and international rooms/)
     assert.match(html, /Opening doors/)

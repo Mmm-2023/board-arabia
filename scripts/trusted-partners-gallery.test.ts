@@ -142,7 +142,7 @@ test('public landing hides the gallery at zero, one real fixture has no Sample, 
     assert.match(one, /Example Capital/)
     assert.match(one, /One line for a fixture partner\./)
     assert.match(one, /alt="Example Capital"/)
-    assert.match(one, /href="\/partners"/)
+    assert.match(one, /href="\/partners\/"/)
     assert.equal(one.includes('Sample'), false)
     assert.equal(one.includes('data-sample'), false)
 
@@ -196,8 +196,8 @@ test('public landing hides the gallery at zero, one real fixture has no Sample, 
         }),
       ),
     )
-    assert.match(samples, /data-sample/)
-    assert.match(samples, />Sample</)
+    assert.match(samples, /data-chip/)
+    assert.match(samples, />Example</)
     const realOnly = renderToStaticMarkup(
       createElement(MemoryRouter, null, createElement(gallery.TrustedPartnersGallery, { partners: [fixture], surface: 'member' })),
     )
@@ -482,11 +482,26 @@ begin
   end if;
   reset role;
 
+  insert into public.trusted_partners (id, is_demo, published, name, blurb, monogram, sort_order, category_slug)
+  values
+    ('c1000001-0000-4000-8000-000000000011', true, true, 'Lane One Example', 'One line.', 'L1', 10, 'investment-banking'),
+    ('c1000001-0000-4000-8000-000000000012', true, true, 'Lane One Later', 'One line.', 'L2', 20, 'investment-banking'),
+    ('c1000001-0000-4000-8000-000000000013', true, true, 'Lane Two Example', 'One line.', 'L3', 11, 'private-equity');
+
   perform set_config('request.jwt.claims', json_build_object('sub', member_id, 'aal', 'aal1', 'role', 'authenticated')::text, true);
   set local role authenticated;
   payload := public.list_trusted_partners();
-  if payload::text not ilike '%Qaf Ledger%' or payload::text not ilike '%"is_demo": true%' then
-    raise exception 'member should see labelled samples: %', payload;
+  if payload::text ilike '%Qaf Ledger%' or payload::text ilike '%Mirsad Advisory%' or payload::text ilike '%Dar Escrow House%' then
+    raise exception 'uncategorised example returned: %', payload;
+  end if;
+  if payload::text ilike '%Lane One Later%' or payload::text not ilike '%Lane One Example%' or payload::text not ilike '%Lane Two Example%' then
+    raise exception 'example filter before a live partner: %', payload;
+  end if;
+  if (
+    select count(*) from jsonb_array_elements(payload) elem
+    where elem ->> 'category_slug' = 'investment-banking' and (elem ->> 'is_demo')::boolean is true
+  ) <> 1 then
+    raise exception 'expected one example in the category: %', payload;
   end if;
   begin
     perform public.staff_save_trusted_partner(null, 'Example Capital', 'One line.', 'EC', false, null, null, null);
@@ -556,6 +571,26 @@ begin
   payload := public.list_trusted_partners();
   if payload::text ilike '%Qaf Ledger%' or payload::text not ilike '%"is_demo": false%' then
     raise exception 'member still sees a sample beside a real row: %', payload;
+  end if;
+  if payload::text not ilike '%Lane One Example%' or payload::text not ilike '%Lane Two Example%' then
+    raise exception 'a partner with no category hid other categories: %', payload;
+  end if;
+  reset role;
+  insert into public.trusted_partners (
+    id, is_demo, published, name, blurb, monogram, sort_order, category_slug, sponsor_user_id
+  ) values (
+    'c1000001-0000-4000-8000-000000000014',
+    false, true, 'Live Lane One', 'A published partner.', 'LL', 30, 'investment-banking', sponsor_id
+  );
+  perform set_config('request.jwt.claims', json_build_object('sub', member_id, 'aal', 'aal2', 'role', 'authenticated')::text, true);
+  set local role authenticated;
+  payload := public.list_trusted_partners();
+  if payload::text ilike '%Lane One Example%'
+     or payload::text ilike '%Lane One Later%'
+     or payload::text not ilike '%Lane Two Example%'
+     or payload::text not ilike '%Live Lane One%'
+     or payload::text ilike '%Qaf Ledger%' then
+    raise exception 'category swap failed: %', payload;
   end if;
   payload := public.list_sponsor_showcase();
   if payload::text not ilike '%Example Capital%' or payload::text ilike '%example.com%' or payload::text ilike '%Example Member%' then

@@ -1,5 +1,5 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom'
-import { slashlessPath } from './trailingSlash'
+import { slashlessPath } from './slashlessPath'
 
 /** Strip a trailing slash before child routes render. The path stays on this origin. */
 export function TrailingSlash() {

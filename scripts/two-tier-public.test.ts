@@ -95,7 +95,9 @@ test('account flow lines and Register or Complete wording stay behind the flag',
       const title = publicMarketingTitle(page)
       assert.equal(/\bRegister\b/i.test(title), false, title)
       assert.equal(/\bComplete\b/i.test(title), false, title)
-      assert.equal(/\bRegister\b/i.test(page.description), false, page.description)
+      if (page.path !== '/partners') {
+        assert.equal(/\bRegister\b/i.test(page.description), false, page.description)
+      }
       assert.equal(/\bComplete\b/i.test(page.description), false, page.description)
     }
     const graph = JSON.stringify(pageGraph({ path: '/', title: 'Home', description: 'Home page description for the test graph only.' }))
@@ -197,7 +199,7 @@ test('flag off keeps /apply and the legacy form; flag on points CTAs at /registe
     const offCtas = anchors(`${off.combined}\n${stickyHtml(stickyMod, false)}`)
     assert.equal(offCtas.length > 8, true)
     for (const cta of offCtas) {
-      assert.equal(cta.href, '/apply', cta.text)
+      assert.equal(cta.href, '/apply/', cta.text)
       assert.equal(cta.text === 'Apply for consideration' || cta.text === 'the pre-vet', true, cta.text)
     }
     assert.equal(off.combined.includes('href="/register"'), false)

@@ -1,15 +1,15 @@
+import { LEGAL_PENDING, legalField } from '../config/legal.ts'
 import { ACCOUNT_FLOW_APPLY_ANSWER } from './twoTierCopy.ts'
-import { DATA_SECURE_LINE } from './trust.ts'
 import { isTwoTierRegisterEnabled, publicConsiderationCta } from '../lib/twoTierRegister.ts'
 
 export const SITE_ORIGIN = 'https://boardarabia.com'
 
 export const OG_TITLE = 'Board Arabia'
 
-export const HOME_SHARE_TITLE = 'Board Arabia | Where Saudi boardrooms meet international capital'
+export const HOME_SHARE_TITLE = 'Board Arabia | Saudi boardrooms meet international capital'
 
 export const OG_DESCRIPTION =
-  'A selective founding membership for Chairpersons, Board members, and C-suite executives connecting Saudi Arabia’s boardrooms with international capital. Access to capital, business relationships, and opening doors in trusted rooms.'
+  'Board Arabia is a selective founding membership linking Saudi Chairpersons, board members and C-suite executives with international capital.'
 
 export const OG_IMAGE = `${SITE_ORIGIN}/og-board-arabia.png`
 
@@ -55,47 +55,48 @@ export const MARKETING_PAGES: Record<MarketingPath, MarketingPage> = {
   },
   '/for-members': {
     path: '/for-members',
-    title: 'Member tools: directory, mandates, majlis | Board Arabia',
+    title: 'For members: directory, mandates, majlis | Board Arabia',
     description:
-      'Board Arabia members use a private directory, mandates and intros our admin team reviews, availability controls, founding badge, majlis our admin team reviews, invite vouchers, Vision 2030 tags, and deal rooms.',
+      'What Board Arabia members get: a private directory, reviewed intros and mandates, majlis events, deal rooms and Vision 2030 tags.',
     faq: true,
   },
   '/for-capital': {
     path: '/for-capital',
-    title: 'For capital: FDI, family offices, PE & VC | Board Arabia',
+    title: 'For capital: family offices, FDI, PE, VC | Board Arabia',
     description:
-      'Family offices, FDI, PE, and VC engage Board Arabia members through mandates our admin team reviews. No open scrape of the directory. Apply for consideration remains the public gate.',
+      'Family offices, FDI, PE and VC reach Board Arabia members through mandates our admin team reviews. No open directory, no cold outreach.',
   },
   '/partners': {
     path: '/partners',
-    title: 'Partners: 3 annual seats | Board Arabia',
+    title: 'Partners: three annual partner seats | Board Arabia',
     description:
-      'Board Arabia offers three annual partner seats, prioritising finance and deal-rail categories. Partner interest is by form. There is no public calendar.',
+      'Board Arabia offers three annual partner seats, led by finance and deal-execution firms. Register partner interest through the form.',
   },
   '/how-it-works': {
     path: '/how-it-works',
     title: 'How Board Arabia works: apply, review, invite',
     description:
-      'Apply with credentials, personal review, then a private invite by email if accepted. No open calendar. After admission, members use the Board Arabia dashboard.',
+      'Apply with credentials, receive a personal review, then a private email invite if accepted. Members then use the Board Arabia dashboard.',
     faq: true,
   },
   '/apply': {
     path: '/apply',
-    title: 'Apply for consideration | Board Arabia',
+    title: 'Apply for founding membership | Board Arabia',
     description:
-      'Submit credentials for Board Arabia founding membership review. LinkedIn, titles, companies, turnover or family-office AUM, and optional investable capacity. A private invite email follows if accepted. There is no public calendar.',
+      'Apply to Board Arabia with your credentials. Every application gets a personal review, and a private invite follows by email if accepted.',
   },
   '/about': {
     path: '/about',
-    title: 'About Board Arabia | Founding membership',
+    title: 'About Board Arabia | Founding 100 membership',
     description:
-      'Board Arabia is a founding membership for chairpersons and NEDs: fifty places in Saudi Arabia and fifty international. Admission is by review, not by open signup.',
+      'Board Arabia is a founding membership for Chairpersons and board members: 50 places in Saudi Arabia, 50 international. Admission is by review.',
+    faq: true,
   },
   '/privacy': {
     path: '/privacy',
-    title: 'Privacy | Board Arabia',
+    title: 'Privacy notice | Board Arabia',
     description:
-      'Privacy notice for Board Arabia: what the pre-vet collects, how site analytics works after consent, how long data is kept, and how to ask for access or deletion. No public directory and no public calendar.',
+      'How Board Arabia collects, uses, stores and deletes your data, how analytics consent works, and how to ask for access or deletion.',
   },
   '/account-deletion': {
     path: '/account-deletion',
@@ -105,15 +106,15 @@ export const MARKETING_PAGES: Record<MarketingPath, MarketingPage> = {
   },
   '/security': {
     path: '/security',
-    title: 'Trust and privacy | Board Arabia',
+    title: 'Trust and security | Board Arabia',
     description:
-      `How Board Arabia protects applications, member records and uploaded files: a members-only directory, private storage, and two-step sign-in for admin. ${DATA_SECURE_LINE}`,
+      'How Board Arabia protects applications and member data: members-only directory, private storage, encryption and two-step sign-in.',
   },
   '/terms': {
     path: '/terms',
-    title: 'Terms | Board Arabia',
+    title: 'Terms of use | Board Arabia',
     description:
-      'These Board Arabia pages are informational. They do not reserve a Founding 100 place, price a seat, or open a public calendar. Admission follows a personal review.',
+      'The terms for using Board Arabia: admission by personal review, member conduct, partners, events, AI tools and liability.',
   },
 }
 
@@ -205,10 +206,57 @@ export const HOW_IT_WORKS_FAQ: FaqItem[] = [
   },
 ]
 
+const ABOUT_FAQ: FaqItem[] = [
+  {
+    question: 'What is Board Arabia?',
+    answer:
+      "Board Arabia is a selective founding membership for Chairpersons, board members and C-suite executives, connecting Saudi Arabia's boardrooms with international capital.",
+  },
+  {
+    question: 'Who can join?',
+    answer:
+      'Chairpersons, board members and C-suite executives. The Founding 100 has 50 places for Saudi Arabia and the GCC and 50 for international members.',
+  },
+  {
+    question: 'How do I join?',
+    answer:
+      'Apply at boardarabia.com/apply/. Each application gets a personal review. If accepted, you receive a private invite by email. There is no open signup or public calendar.',
+  },
+  {
+    question: 'How do investors engage members?',
+    answer:
+      'Family offices, FDI, PE and VC engage members through mandates our admin team reviews. The member directory is private.',
+  },
+  {
+    question: 'How do I contact Board Arabia?',
+    answer: '',
+  },
+]
+
+/** Configured contact mailbox, or null when the legal env is unset. Never a hardcoded address. */
+export function publishedContactEmail(): string | null {
+  const value = legalField('contactEmail').trim()
+  if (!value || value === LEGAL_PENDING.en || !value.includes('@')) return null
+  return value
+}
+
+function contactAnswer(): string {
+  const email = publishedContactEmail()
+  if (!email) return 'Use the contact email published for Board Arabia.'
+  return `Email ${email}.`
+}
+
+function aboutFaqItems(): FaqItem[] {
+  return ABOUT_FAQ.map((item) =>
+    item.question === 'How do I contact Board Arabia?' ? { ...item, answer: contactAnswer() } : item,
+  )
+}
+
 export function faqFor(path: string): FaqItem[] | null {
   if (path === '/') return FAQ
   if (path === '/how-it-works') return HOW_IT_WORKS_FAQ
   if (path === '/for-members') return MEMBERS_FAQ
+  if (path === '/about') return aboutFaqItems()
   return null
 }
 
@@ -236,41 +284,48 @@ export function publicMarketingTitle(page: MarketingPage, enabled = isTwoTierReg
 
 export function canonicalUrl(path: string) {
   if (path === '/' || path === '') return `${SITE_ORIGIN}/`
-  return `${SITE_ORIGIN}${path.startsWith('/') ? path : `/${path}`}`
+  const clean = path.startsWith('/') ? path : `/${path}`
+  const withSlash = clean.endsWith('/') ? clean : `${clean}/`
+  return `${SITE_ORIGIN}${withSlash}`
+}
+
+/** Public marketing href. Directory routes keep the trailing slash GitHub Pages serves. */
+export function publicHref(to: string): string {
+  if (!to.startsWith('/') || to.startsWith('//')) return to
+  const cut = to.search(/[?#]/)
+  const path = cut === -1 ? to : to.slice(0, cut)
+  const suffix = cut === -1 ? '' : to.slice(cut)
+  if (path === '/' || path === '') return `/${suffix}`
+  const bare = path.endsWith('/') ? path.slice(0, -1) : path
+  if (!(MARKETING_PATHS as readonly string[]).includes(bare)) return to
+  return `${bare}/${suffix}`
 }
 
 export function pageGraph(page: MarketingPage) {
   const url = canonicalUrl(page.path)
+  const contact = publishedContactEmail()
+  const organization: Record<string, unknown> = {
+    '@type': 'Organization',
+    '@id': `${SITE_ORIGIN}/#organization`,
+    name: 'Board Arabia',
+    url: `${SITE_ORIGIN}/`,
+    logo: `${SITE_ORIGIN}/favicon.svg`,
+    image: OG_IMAGE,
+    description:
+      "A selective founding membership connecting Saudi Arabia's Chairpersons, board members and C-suite executives with international capital.",
+    areaServed: ['Saudi Arabia', 'GCC', 'International'],
+  }
+  if (contact) {
+    organization.email = contact
+    organization.contactPoint = {
+      '@type': 'ContactPoint',
+      contactType: 'customer support',
+      email: contact,
+      availableLanguage: 'en',
+    }
+  }
   const graph: Record<string, unknown>[] = [
-    {
-      '@type': 'Organization',
-      '@id': `${SITE_ORIGIN}/#organization`,
-      name: 'Board Arabia',
-      url: `${SITE_ORIGIN}/`,
-      logo: `${SITE_ORIGIN}/favicon.svg`,
-      image: OG_IMAGE,
-      description:
-        'A selective founding membership for Chairpersons, Board members, and C-suite executives connecting Saudi Arabia’s boardrooms with international counterparts.',
-      email: 'partners@boardarabia.com',
-      areaServed: ['Saudi Arabia', 'GCC', 'International'],
-      knowsAbout: [
-        'Chairperson',
-        'Board member',
-        'C-suite executive',
-        'founding membership',
-        'Founding 100',
-        'family office',
-        'FDI',
-        'Vision 2030',
-        'private directory',
-        'mandate inbox',
-        'Saudi Arabia',
-        'Gulf Cooperation Council (GCC)',
-        'private equity',
-        'venture capital',
-        'ecosystem partner',
-      ],
-    },
+    organization,
     {
       '@type': 'WebSite',
       '@id': `${SITE_ORIGIN}/#website`,

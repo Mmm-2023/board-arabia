@@ -218,8 +218,8 @@ export default function App() {
         <Route path="*" element={<RedirectKeep />} />
       </Route>
       {/* Legacy book/verify routes redirect. Public calendar CTA removed. */}
-      <Route path="/book" element={<Navigate to="/apply" replace />} />
-      <Route path="/verify" element={<Navigate to="/apply" replace />} />
+      <Route path="/book" element={<Navigate to="/apply/" replace />} />
+      <Route path="/verify" element={<Navigate to="/apply/" replace />} />
       <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>

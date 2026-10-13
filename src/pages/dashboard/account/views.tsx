@@ -28,7 +28,7 @@ export function LockPanel({ body }: { body: string }) {
         <Link to="/dashboard/membership" className={primary}>
           {LOCK_COPY.button}
         </Link>
-        <Link to="/for-members" className="inline-flex min-h-11 items-center text-[0.95rem] text-ink underline">
+        <Link to="/for-members/" className="inline-flex min-h-11 items-center text-[0.95rem] text-ink underline">
           {LOCK_COPY.secondary}
         </Link>
       </div>

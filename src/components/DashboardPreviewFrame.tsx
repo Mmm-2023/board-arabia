@@ -5,6 +5,7 @@ import { lockBlurClass } from '../lib/previewLock'
 import { previewIntro, type LandingDeal } from '../lib/landingPreview'
 import { MEMBER_DESTINATIONS } from '../shell/destinations'
 import { ExampleMark } from './ExampleMark'
+import { publicHref } from '../content/seo'
 import { publicConsiderationCta } from '../lib/twoTierRegister'
 import { trackApplyClick, trackLoginClick } from '../lib/tracking/browser'
 
@@ -22,7 +23,7 @@ function PreviewLockPanel() {
       </p>
       <div className="mt-5 flex flex-col items-stretch justify-center gap-3 sm:flex-row">
         <Link
-          to={cta.to}
+          to={publicHref(cta.to)}
           className="ba-primary inline-flex min-h-11 items-center justify-center px-6 text-[0.78rem] font-semibold tracking-[0.08em] uppercase"
           data-consideration-cta="public"
           onClick={() => trackApplyClick('section-preview', cta.label)}

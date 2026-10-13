@@ -5,7 +5,7 @@ import { partnerLogoPublicUrl, withLogoVersion } from '../lib/partnerLogo'
 import { adviserGalleryRows, partnerGalleryRows, publicGalleryPartners, visibleMemberPartners } from '../lib/trustedPartners'
 import { usePartnerCategories } from '../lib/usePartnerCategories'
 import { supabase } from '../lib/supabase'
-import { SampleMark } from './SampleMark'
+import { ExampleMark } from './ExampleMark'
 import { DisplayHeading, Eyebrow } from './Type'
 
 type LoadState =
@@ -112,7 +112,7 @@ export function TrustedPartnersGallery({
                 <li key={partner.id} className="ba-card px-3 py-3" data-partner-name={partner.name}>
                   <div className="flex items-start justify-between gap-3">
                     <PartnerLogo name={partner.name} monogram={partner.monogram} logoPath={partner.logo_path} />
-                    {surface === 'member' && partner.is_demo && !real ? <SampleMark /> : null}
+                    {surface === 'member' && partner.is_demo && !real ? <ExampleMark /> : null}
                   </div>
                   <h3 className="mt-3 font-display text-[1.05rem] font-semibold tracking-[-0.03em]">{partner.name}</h3>
                   <p className="ba-quiet mt-1 text-[0.875rem] leading-relaxed">{partner.blurb}</p>
@@ -121,8 +121,8 @@ export function TrustedPartnersGallery({
             </ul>
 
             <Link
-              to="/partners"
-              data-partner-cta="/partners"
+              to="/partners/"
+              data-partner-cta="/partners/"
               className="ba-secondary mt-4 inline-flex min-h-11 items-center justify-center px-5 text-[0.9375rem] font-semibold"
             >
               Partner with us
