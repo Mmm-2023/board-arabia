@@ -47,7 +47,7 @@ The Apple app id also needs the Associated Domains capability when a signed buil
 
 ## Not done
 
-No migration. No Edge deploy. No store upload. No signing material in git. Home was not captured on an Android emulator here. The iOS simulator shot is produced by the app build workflow on the macOS runner.
+No migration. No Edge deploy. No store upload. No signing material in git. Home was not captured on an Android emulator here. `handoff/app-2-deep-links/ios-home.png` is Home on the iOS simulator from the macOS CI job (workflow run 38471390614, artifact `ios-home-screenshot`). The headline "Where Saudi boardrooms meet international capital" is on screen.
 
 ## Secrets grade
 
