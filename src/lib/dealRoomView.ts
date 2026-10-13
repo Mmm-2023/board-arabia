@@ -48,6 +48,7 @@ export type StaffDealRoom = {
   openedBy: OpenedBy
   acceptedCount: number
   invitedCount: number
+  documentCount: number
 }
 
 export type SubjectOption = {
@@ -346,6 +347,7 @@ function presentStaffDealRoom(raw: unknown): StaffDealRoom | null {
     openedBy,
     acceptedCount,
     invitedCount,
+    documentCount: countOf(row.document_count),
   }
 }
 
@@ -360,6 +362,11 @@ function blankToNull(value: string | null): string | null {
   if (value == null) return null
   const trimmed = value.trim()
   return trimmed ? trimmed : null
+}
+
+function countOf(value: unknown): number {
+  if (typeof value !== 'number' || !Number.isInteger(value) || value < 0 || value > 100000) return 0
+  return value
 }
 
 function roomStatus(value: unknown): RoomStatus | null {

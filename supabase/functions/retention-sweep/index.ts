@@ -2,6 +2,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1'
 import { corsHeaders, jsonResponse, sendEmail } from '../_shared/mail.ts'
 import { emailLink, idleAccountReminderMail } from '../_shared/membership_copy.ts'
 import { retentionDaysOrDefault } from '../_shared/ai_tools.ts'
+import { DEAL_ROOM_BUCKET, dealRoomStoragePathOk } from '../_shared/deal_room_documents.ts'
 import {
   ddDeckPathOk,
   orphanPurgeEnabled,
@@ -32,6 +33,11 @@ type Plan = {
   staff_access_log?: string[]
 }
 
+type RoomPlan = {
+  document_ids?: unknown
+  storage_paths?: unknown
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders(req) })
   if (req.method !== 'POST') return jsonResponse(req, { error: 'Method not allowed' }, 405)
@@ -51,6 +57,10 @@ Deno.serve(async (req) => {
     return jsonResponse(req, { error: 'Retention sweep failed.' }, 500)
   }
   const plan = data as Plan
+  const roomRetention = await admin.rpc('deal_room_document_retention', { p_apply: !dry })
+  const roomPlan =
+    roomRetention.data && typeof roomRetention.data === 'object' ? (roomRetention.data as RoomPlan) : {}
+  const roomFailed = Boolean(roomRetention.error)
   const reminders = arrayOf(plan.reminders)
   let remindersSent = 0
   let reminderFailed = false
@@ -67,6 +77,8 @@ Deno.serve(async (req) => {
   const ddFiles = dry
     ? { removed: 0, failed: false, removedPaths: [] as string[] }
     : await purgeDueDiligenceFiles(admin, arrayOf(plan.dd_files))
+  const roomPaths = arrayOf(roomPlan.storage_paths)
+  const roomFiles = dry ? { removed: 0, failed: false } : await purgeDealRoomFiles(admin, roomPaths)
   const orphans = await runOrphanPass(admin, {
     retentionDays: retentionDaysOrDefault(plan.ai_tool_retention_days),
     purge: purgeOrphans,
@@ -92,6 +104,8 @@ Deno.serve(async (req) => {
     dd_reports: arrayOf(plan.dd_reports).length,
     dd_files: dry ? arrayOf(plan.dd_files).length : ddFiles.removed,
     staff_access_13m: arrayOf(plan.staff_access_log).length,
+    deal_room_documents: arrayOf(roomPlan.document_ids).length,
+    deal_room_files: dry ? roomPaths.length : roomFiles.removed,
   }
 
   await admin.from('retention_runs').insert({ dry_run: dry, counts })
@@ -114,9 +128,11 @@ Deno.serve(async (req) => {
       dd_reports: arrayOf(plan.dd_reports),
       dd_files: arrayOf(plan.dd_files),
       staff_access_log: arrayOf(plan.staff_access_log),
+      deal_room_documents: arrayOf(roomPlan.document_ids),
+      deal_room_files: roomPaths,
     }
   }
-  if (reminderFailed || posthog.failed || aiFiles.failed || ddFiles.failed || orphans.failed) {
+  if (reminderFailed || posthog.failed || aiFiles.failed || ddFiles.failed || orphans.failed || roomFailed || roomFiles.failed) {
     return jsonResponse(req, body, 500)
   }
   return jsonResponse(req, body)
@@ -203,6 +219,33 @@ async function purgeAiToolFiles(
       continue
     }
     const cleared = await admin.from('ai_tool_file_purge').delete().eq('storage_path', path)
+    if (cleared.error) failed = true
+    else removed += 1
+  }
+  return { removed, failed }
+}
+
+/**
+ * Redeploy retention-sweep with the deal room document migration.
+ * Files leave the deal-room-documents bucket. SQL deletes the rows.
+ */
+async function purgeDealRoomFiles(
+  admin: ReturnType<typeof createClient>,
+  paths: string[],
+): Promise<{ removed: number; failed: boolean }> {
+  let removed = 0
+  let failed = false
+  for (const path of paths) {
+    if (!dealRoomStoragePathOk(path)) {
+      failed = true
+      continue
+    }
+    const { error } = await admin.storage.from(DEAL_ROOM_BUCKET).remove([path])
+    if (error) {
+      failed = true
+      continue
+    }
+    const cleared = await admin.from('room_document_file_purge').delete().eq('storage_path', path)
     if (cleared.error) failed = true
     else removed += 1
   }

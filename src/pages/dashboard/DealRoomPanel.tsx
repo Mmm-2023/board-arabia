@@ -14,6 +14,12 @@ import {
 } from '../../lib/dealRoomView'
 import { ConfirmDialog } from '../../shell/ConfirmDialog'
 import { ErrorBanner, FilteredZero } from '../../shell/ViewState'
+import {
+  DealRoomDocuments,
+  type DealDocumentItem,
+  type DealDocumentLog,
+  type DealDocumentView,
+} from './DealRoomDocuments'
 
 const fieldClass =
   'mt-2 w-full min-h-11 border border-ink/15 bg-white px-4 py-3 text-[1rem] text-ink outline-none focus:border-brass'
@@ -41,6 +47,7 @@ export function DealRoomPanel({
   onArchive,
   onAccept,
   onDecline,
+  files,
 }: {
   room: MemberDealRoom
   mandates: SubjectOption[]
@@ -59,6 +66,22 @@ export function DealRoomPanel({
   onArchive: () => void
   onAccept: () => void
   onDecline: () => void
+  files?: {
+    documents: DealDocumentItem[]
+    events: DealDocumentLog[]
+    view: DealDocumentView | null
+    error: string
+    onUpload: (file: File) => void
+    onView: (id: string) => void
+    onDownload: (id: string) => void
+    onSetDownload: (id: string, allowed: boolean) => void
+    onSetFileExpiry: (id: string, expiresAt: string | null) => void
+    onSetMemberExpiry: (memberId: string, expiresAt: string | null) => void
+    onRevoke: (memberId: string) => void
+    onDelete: (id: string) => void
+    onShare: (id: string) => void
+    onCloseView: () => void
+  }
 }) {
   const powers = roomPowers(room)
   const subject = linkedSubject(room, mandates, opportunities)
@@ -191,6 +214,29 @@ export function DealRoomPanel({
           ))}
         </ul>
       </section>
+
+      {room.myInviteStatus === 'accepted' ? (
+        <DealRoomDocuments
+          roomOpen={room.status === 'open'}
+          isOwner={room.myRole === 'owner'}
+          documents={files?.documents ?? []}
+          events={files?.events ?? []}
+          view={files?.view ?? null}
+          participants={room.participants.map((person) => ({ memberId: person.memberId, fullName: person.fullName }))}
+          busy={busy}
+          error={files?.error ?? ''}
+          onUpload={files?.onUpload}
+          onView={files?.onView}
+          onDownload={files?.onDownload}
+          onSetDownload={files?.onSetDownload}
+          onSetFileExpiry={files?.onSetFileExpiry}
+          onSetMemberExpiry={files?.onSetMemberExpiry}
+          onRevoke={files?.onRevoke}
+          onDelete={files?.onDelete}
+          onShare={files?.onShare}
+          onCloseView={files?.onCloseView}
+        />
+      ) : null}
 
       {powers.invite ? (
         <section aria-label="Invite" data-deal-invite="" className="mt-8 max-w-xl">
