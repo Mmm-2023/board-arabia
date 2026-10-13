@@ -10,14 +10,17 @@ import {
 
 const PHONE = /[0-9][0-9 ()+.-]{6,}[0-9]/
 
+export type DigestNote = { text: string }
+
 export type WeeklyDigestModel = DigestCopyInput & {
   mailReady: false
+  notes: DigestNote[]
 }
 
 export type DigestIssueStatus = 'draft' | 'approved' | 'withdrawn'
 
 export type DigestAuditRow = {
-  action: 'created' | 'approved' | 'withdrawn'
+  action: 'created' | 'approved' | 'withdrawn' | 'edited'
   createdAt: string
 }
 
@@ -25,6 +28,7 @@ export type DigestIssueModel = {
   sendEnabled: boolean
   mailReady: false
   status: DigestIssueStatus | null
+  audience: string[]
   preview: WeeklyDigestModel
   log: DigestAuditRow[]
   source: 'issue' | 'live'
@@ -42,10 +46,12 @@ function person(raw: unknown): DigestCopyPerson | null {
   const row = raw as Record<string, unknown>
   const fullName = clean(row.full_name ?? row.fullName, 200)
   if (!fullName) return null
+  const id = typeof row.id === 'string' && /^[0-9a-fA-F-]{36}$/.test(row.id) ? row.id : ''
   return {
     fullName,
     headline: clean(row.headline, 160),
     company: clean(row.company, 200),
+    ...(id ? { id } : {}),
   }
 }
 
@@ -55,12 +61,14 @@ function mandate(raw: unknown): DigestCopyMandate | null {
   const oneLiner = clean(row.one_liner ?? row.oneLiner, 280)
   const sector = clean(row.sector, 120)
   if (!oneLiner || !sector) return null
+  const stage = clean(row.stage, 40)
   return {
     sector,
     dealType: clean(row.deal_type ?? row.dealType, 80),
     ticketBand: clean(row.ticket_band ?? row.ticketBand, 40),
     geography: clean(row.geography, 40),
     oneLiner,
+    ...(stage ? { stage } : {}),
   }
 }
 
@@ -94,6 +102,13 @@ function intro(raw: unknown, example = false): DigestCopyIntro | null {
   }
 }
 
+function note(raw: unknown): DigestNote | null {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null
+  const text = clean((raw as Record<string, unknown>).text, 500)
+  if (!text) return null
+  return { text }
+}
+
 function list<T>(value: unknown, map: (row: unknown) => T | null): T[] {
   if (!Array.isArray(value)) return []
   return value.flatMap((row) => {
@@ -111,6 +126,7 @@ export function presentWeeklyDigest(raw: unknown): WeeklyDigestModel | null {
     newMandates: list(row.new_mandates ?? row.newMandates, mandate),
     upcomingEvents: list(row.upcoming_events ?? row.upcomingEvents, eventRow),
     introductions: list(row.suggestions ?? row.introductions, intro),
+    notes: list(row.notes, note),
   }
 }
 
@@ -125,7 +141,7 @@ function audit(value: unknown): DigestAuditRow[] {
   for (const item of value) {
     if (!item || typeof item !== 'object' || Array.isArray(item)) continue
     const row = item as Record<string, unknown>
-    if (row.action !== 'created' && row.action !== 'approved' && row.action !== 'withdrawn') continue
+    if (row.action !== 'created' && row.action !== 'approved' && row.action !== 'withdrawn' && row.action !== 'edited') continue
     if (typeof row.created_at !== 'string' && typeof row.createdAt !== 'string') continue
     rows.push({
       action: row.action,
@@ -143,6 +159,23 @@ function previewFromPayload(payload: unknown, sampleIntros: boolean): WeeklyDige
   return {
     ...base,
     introductions: sample.length > 0 ? sample : [DIGEST_PREVIEW_INTRO],
+    notes: base.notes,
+  }
+}
+
+export function presentDigestSources(raw: unknown): {
+  members: WeeklyDigestModel['newMembers']
+  mandates: WeeklyDigestModel['newMandates']
+  events: WeeklyDigestModel['upcomingEvents']
+} {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+    return { members: [], mandates: [], events: [] }
+  }
+  const row = raw as Record<string, unknown>
+  return {
+    members: list(row.members, person),
+    mandates: list(row.mandates, mandate),
+    events: list(row.events, eventRow),
   }
 }
 
@@ -153,6 +186,7 @@ export function emptyDigest(): WeeklyDigestModel {
     newMandates: [],
     upcomingEvents: [],
     introductions: [],
+    notes: [],
   }
 }
 
@@ -169,6 +203,7 @@ export function presentDigestIssue(raw: unknown): DigestIssueModel | null {
     mailReady: false,
     status,
     source: issue ? 'issue' : 'live',
+    audience: Array.isArray(issue?.audience) ? issue.audience.filter((item) => typeof item === 'string') : [],
     preview: previewFromPayload(payload, true),
     log: issue ? audit(issue.log) : [],
   }
@@ -179,12 +214,14 @@ export function digestIsEmpty(model: WeeklyDigestModel): boolean {
     model.newMembers.length === 0 &&
     model.newMandates.length === 0 &&
     model.upcomingEvents.length === 0 &&
-    model.introductions.length === 0
+    model.introductions.length === 0 &&
+    (model.notes?.length ?? 0) === 0
   )
 }
 
 export function digestAuditLabel(action: DigestAuditRow['action']): string {
   if (action === 'created') return 'Prepared'
   if (action === 'approved') return 'Approved'
+  if (action === 'edited') return 'Edited'
   return 'Withdrawn'
 }

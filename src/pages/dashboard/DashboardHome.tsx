@@ -28,7 +28,7 @@ import { ErrorBanner, HomeSkeleton } from '../../shell/ViewState'
 import { MEMBER_VIEWS } from '../../shell/viewCopy'
 import { useDashboardStatus, useMember } from './context'
 import { AdmitShareCard } from './AdmitShareCard'
-import { HomeSnapshotView } from './HomeSnapshotView'
+import { HomeSnapshotView, type DigestHomeNotice } from './HomeSnapshotView'
 import { IntroSuggestions } from './IntroSuggestions'
 import { ProfileCompletenessPrompt } from './ProfileCompletenessPrompt'
 import { suggestionPortrait } from './suggestionPortrait'
@@ -100,7 +100,29 @@ export function DashboardHome() {
   const [suggestBusy, setSuggestBusy] = useState<string | null>(null)
   const [suggestErrorId, setSuggestErrorId] = useState<string | null>(null)
   const [suggestError, setSuggestError] = useState('')
+  const [digestNotice, setDigestNotice] = useState<DigestHomeNotice | null>(null)
   useNoIndex('Home | Board Arabia')
+
+  useEffect(() => {
+    let cancelled = false
+    void supabase.rpc('my_digest_notices').then(({ data }) => {
+      if (cancelled) return
+      const row = Array.isArray(data) ? data[0] : null
+      if (!row || typeof row !== 'object' || Array.isArray(row)) {
+        setDigestNotice(null)
+        return
+      }
+      const notice = row as { title?: unknown; href?: unknown }
+      if (typeof notice.title !== 'string' || typeof notice.href !== 'string') {
+        setDigestNotice(null)
+        return
+      }
+      setDigestNotice({ title: notice.title, href: notice.href })
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   useEffect(() => {
     if (!membershipLine(member.tier, member.founding_number)) return
@@ -379,6 +401,7 @@ export function DashboardHome() {
         }
         figuresAsOf={sources.figuresAsOf}
         userId={userId}
+        digestNotice={digestNotice}
         hasSuggestions={suggestions.length > 0}
         promptShowing={promptShowing}
         profilePrompt={

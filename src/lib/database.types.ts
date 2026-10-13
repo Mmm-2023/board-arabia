@@ -1461,6 +1461,26 @@ export type Database = {
         Args: { p_action: string }
         Returns: Json
       }
+      staff_save_digest_draft: {
+        Args: { p_payload: Json; p_audience: string[] }
+        Returns: Json
+      }
+      staff_digest_sources: {
+        Args: Record<string, never>
+        Returns: Json
+      }
+      staff_digest_mail_plan: {
+        Args: { p_issue_id: string }
+        Returns: Json
+      }
+      my_digest_notices: {
+        Args: Record<string, never>
+        Returns: Json
+      }
+      mark_my_digest_notice_read: {
+        Args: Record<string, never>
+        Returns: Json
+      }
     }
     Enums: Record<string, never>
     CompositeTypes: Record<string, never>
