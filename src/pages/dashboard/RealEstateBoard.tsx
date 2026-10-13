@@ -29,7 +29,7 @@ export type RealEstateTab = 'opportunities' | 'partners' | 'roles'
 
 const TABS = [
   { id: 'opportunities', label: 'Opportunities' },
-  { id: 'partners', label: 'Real estate firms' },
+  { id: 'partners', label: 'Firms' },
   { id: 'roles', label: 'Board roles' },
 ] as const
 
@@ -146,37 +146,46 @@ export function RealEstateBoard({
 
   return (
     <div className="max-w-3xl">
-      <h1 className="font-display text-[2.2rem] font-bold tracking-[-0.03em]">Real estate</h1>
-      <p className="mt-3 max-w-xl text-[1rem] leading-relaxed text-ink/60">
-        {activeTab === 'partners' ? copy.partnersIntro : activeTab === 'roles' ? copy.rolesIntro : copy.intro}
-      </p>
-      <div role="tablist" aria-label="Real estate" className="mt-6 inline-flex flex-wrap gap-2" onKeyDown={onTabKey}>
-        {TABS.map((item) => {
-          const selected = activeTab === item.id
-          const tabId = tabDomId(item.id)
-          const panelId = `re-panel-${item.id}`
-          return (
-            <button
-              key={item.id}
-              type="button"
-              role="tab"
-              id={tabId}
-              aria-selected={selected}
-              aria-controls={panelId}
-              tabIndex={selected ? 0 : -1}
-              data-re-tab={item.id}
-              className={`min-h-11 rounded-full px-4 text-[0.8125rem] font-semibold ${
-                selected
-                  ? 'bg-[var(--ba-lavender-mist)] text-ink'
-                  : 'border border-[var(--ba-line)] bg-white text-ink/70'
-              }`}
-              onClick={() => selectTab(item.id)}
-            >
-              {item.label}
-            </button>
-          )
-        })}
-      </div>
+      <header>
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <h1 className="font-display text-[2.2rem] font-bold tracking-[-0.03em]">Real estate</h1>
+          <div
+            role="tablist"
+            aria-label="Real estate"
+            aria-orientation="horizontal"
+            data-re-segment=""
+            className="grid w-full grid-cols-3 overflow-hidden rounded-md border border-[var(--ba-line)] bg-white md:w-[22.5rem] md:shrink-0"
+            onKeyDown={onTabKey}
+          >
+            {TABS.map((item, index) => {
+              const selected = activeTab === item.id
+              const tabId = tabDomId(item.id)
+              const panelId = `re-panel-${item.id}`
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  role="tab"
+                  id={tabId}
+                  aria-selected={selected}
+                  aria-controls={panelId}
+                  tabIndex={selected ? 0 : -1}
+                  data-re-tab={item.id}
+                  className={`flex h-11 min-h-11 min-w-0 items-center justify-center px-1 text-center text-[0.8125rem] font-semibold whitespace-nowrap focus-visible:relative focus-visible:z-10 focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[var(--ba-copper)] ${
+                    index > 0 ? 'border-s border-[var(--ba-line)]' : ''
+                  } ${selected ? 'bg-[var(--ba-indigo)] text-white' : 'bg-white text-ink'}`}
+                  onClick={() => selectTab(item.id)}
+                >
+                  {item.label}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+        <p className="mt-3 max-w-xl text-[1rem] leading-relaxed text-ink/60">
+          {activeTab === 'partners' ? copy.partnersIntro : activeTab === 'roles' ? copy.rolesIntro : copy.intro}
+        </p>
+      </header>
       {activeTab === 'roles' ? (
         <div className="mt-6">
           <RealEstateRoles

@@ -2,7 +2,7 @@ import { useEffect, useId, useRef, useState, type ReactNode } from 'react'
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { BrandLockup } from '../components/BrandLockup'
 import type { Destination, SecondaryLink, ShellTone } from './destinations'
-import { dealsBadgeLabel, phoneDestinations, shellSectionTitle } from './destinations'
+import { accountPathActive, dealsBadgeLabel, phoneDestinations, shellSectionTitle } from './destinations'
 import { DestinationIcon } from './icons'
 
 type RoleSwitch = { label: string; to: string }
@@ -74,15 +74,7 @@ export function AppShell({
   const moreDestinationActive = phone.more.some(
     (item) => (item.end ? location.pathname === item.to : location.pathname === item.to || location.pathname.startsWith(`${item.to}/`)),
   )
-  const accountRoute =
-    location.pathname === '/dashboard/profile' ||
-    location.pathname.startsWith('/dashboard/profile/') ||
-    location.pathname === '/dashboard/help' ||
-    location.pathname.startsWith('/dashboard/help/') ||
-    location.pathname === '/dashboard/partnership' ||
-    location.pathname.startsWith('/dashboard/partnership/') ||
-    location.pathname === '/dashboard/sponsorship' ||
-    location.pathname.startsWith('/dashboard/sponsorship/')
+  const accountRoute = accountPathActive(location.pathname, secondary)
   const moreCurrent = moreOpen || secondaryActive || moreDestinationActive
   const displayName = accountName.trim() || accountLabel
   const lockedHubs = new Set(lockedDestinationIds)
@@ -168,8 +160,9 @@ export function AppShell({
     <ul>
       {secondary.map((item) => (
         <li key={item.to}>
-          <NavLink
+            <NavLink
             to={item.to}
+            data-account-row={item.id}
             className={({ isActive }) =>
               `flex min-h-11 w-full items-center px-3 text-[0.95rem] ${
                 isActive ? styles.navActive : styles.navIdle
@@ -185,6 +178,7 @@ export function AppShell({
         <li>
           <Link
             to={roleSwitch.to}
+            data-account-row="switch"
             className={`flex min-h-11 w-full items-center px-3 text-[0.95rem] ${styles.navIdle}`}
             onClick={closeAccount}
           >
@@ -258,7 +252,7 @@ export function AppShell({
               </ul>
             </nav>
             {member ? (
-              <div className={`mt-auto border-t px-3 py-4 ${styles.border}`}>
+              <div className={`mt-auto border-t px-3 py-4 ${styles.border}`} data-account-entry="sidebar">
                 <div className="flex items-center gap-3 px-2">
                   <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[var(--ba-indigo)] text-[0.75rem] text-[var(--ba-porcelain)]">
                     {markAt(36)}
@@ -274,6 +268,7 @@ export function AppShell({
                       <NavLink
                         to={item.to}
                         data-nav="account"
+                        data-account-row={item.id}
                         className={({ isActive }) =>
                           `flex min-h-11 items-center px-3 text-[0.95rem] ${
                             isActive ? styles.sidebarActive : styles.sidebarIdle
@@ -288,6 +283,7 @@ export function AppShell({
                 {roleSwitch ? (
                   <Link
                     to={roleSwitch.to}
+                    data-account-row="switch"
                     className={`flex min-h-11 items-center px-3 text-[0.95rem] ${styles.sidebarIdle}`}
                   >
                     {roleSwitch.label}
@@ -376,7 +372,10 @@ export function AppShell({
                   <button
                     ref={accountButton}
                     type="button"
-                    className={`inline-flex min-h-11 items-center gap-2 rounded-full ps-2 pe-1 ${
+                    data-account-control="header"
+                    data-account-route={accountRoute ? 'yes' : 'no'}
+                    data-account-path={location.pathname}
+                    className={`inline-flex min-h-11 min-w-11 items-center justify-center rounded-full ${
                       accountRoute ? 'ring-2 ring-[var(--ba-indigo)]' : ''
                     }`}
                     aria-label="Account"
@@ -384,9 +383,6 @@ export function AppShell({
                     aria-controls="shell-account"
                     onClick={() => setAccountOpen((value) => !value)}
                   >
-                    <span className="hidden text-[0.8125rem] font-semibold text-[var(--ba-indigo)] lg:inline">
-                      Account
-                    </span>
                     <span className="inline-flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-[var(--ba-indigo)] text-[0.75rem] text-[var(--ba-porcelain)]">
                       {markAt(36)}
                     </span>
