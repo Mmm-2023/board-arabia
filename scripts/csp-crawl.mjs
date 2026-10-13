@@ -324,7 +324,7 @@ async function main() {
   if (!sitemap.includes('https://boardarabia.com/security')) fail('sitemap is missing /security')
   const securityHtml = fs.readFileSync(path.join(dist, 'security/index.html'), 'utf8')
   if (!securityHtml.includes('Trust and privacy')) fail('prerendered /security is missing its title')
-  if (!securityHtml.includes('href="/security"')) fail('footer link is missing on /security')
+  if (!securityHtml.includes('href="/security/"')) fail('footer link is missing on /security')
 
   const supabaseOrigin = policy.match(/https:\/\/[a-z0-9-]+\.supabase\.co/)?.[0]
   if (!supabaseOrigin) fail('CSP has no Supabase origin')
