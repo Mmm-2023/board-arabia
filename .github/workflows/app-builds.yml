@@ -162,15 +162,14 @@ jobs:
           emulator-boot-timeout: 600
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
           script: |
-            set -euo pipefail
             adb install -r -t "$GITHUB_WORKSPACE/apk/app-debug.apk"
             adb logcat -c || true
             adb shell input keyevent KEYCODE_WAKEUP || true
             adb shell am start -n com.boardarabia.app/.MainActivity
-            sleep 30
+            sleep 45
             mkdir -p "$GITHUB_WORKSPACE/emulator-shot"
-            adb exec-out screencap -p > "$GITHUB_WORKSPACE/emulator-shot/android-home.png"
             adb logcat -d > "$GITHUB_WORKSPACE/emulator-shot/logcat.txt"
+            adb exec-out screencap -p > "$GITHUB_WORKSPACE/emulator-shot/android-home.png"
             grep -E "Fatal signal|libwebviewchromium|Renderer process|Capacitor:|CrRendererMain|signal 5" "$GITHUB_WORKSPACE/emulator-shot/logcat.txt" > "$GITHUB_WORKSPACE/emulator-shot/logcat-webview.txt" || true
       - uses: actions/upload-artifact@v7
         if: always()
