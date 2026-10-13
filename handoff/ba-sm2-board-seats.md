@@ -1,6 +1,6 @@
 # SM-2 Member board seats, applications, and the poster shortlist
 
-Undrafted PR against main. Member posting, put yourself forward, and the poster shortlist. Matching nudges stay for SM-3.
+Undrafted PR: https://github.com/Mmm-2023/board-arabia/pull/184 against main. Member posting, put yourself forward, and the poster shortlist. Matching nudges stay for SM-3.
 
 ## Secrets grade
 
