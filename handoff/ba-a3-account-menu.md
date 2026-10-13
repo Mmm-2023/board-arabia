@@ -33,7 +33,13 @@ Digest uses "Back to Home" (`/dashboard`). Privacy, two-step, membership, and th
 
 ## Shots
 
-Fixture account `member@example.com`. Both widths. Files under `/opt/cursor/artifacts/account-menu/`:
+Fixture account `member@example.com`. Both widths. The six review shots are committed under `handoff/ba-a3-account-menu/`:
+
+- `menu-1440.png`, `menu-390.png` (open account menu)
+- `privacy-1440.png`, `privacy-390.png` (Your privacy, with the Delete account link)
+- `partner-menu-1440.png`, `partner-menu-390.png` (partner seat, Partnership first)
+
+The wider set captured for the same fixture session:
 
 - `chrome-1440.png`, `chrome-390.png` (avatar only, no header Account label)
 - `menu-1440.png`, `menu-390.png`
