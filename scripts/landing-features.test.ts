@@ -185,11 +185,18 @@ test('landing feature copy locks', async () => {
 test('security card bodies match the trust page strings', async () => {
   const byId = new Map(LANDING_FEATURES.map((feature) => [feature.id, feature.body]))
   assert.equal(byId.get('two-step'), SIGNING_IN[2])
-  assert.equal(byId.get('frankfurt'), WHERE_DATA_LIVES[0])
+  assert.equal(byId.get('secure'), WHERE_DATA_LIVES[0])
+  assert.equal(
+    WHERE_DATA_LIVES[0],
+    'All your data is secure and fully encrypted, in transit and at rest.',
+  )
   assert.equal(byId.get('encrypted'), WHERE_DATA_LIVES[1])
+  assert.equal(byId.has('frankfurt'), false)
   const html = await renderLanding()
+  assert.match(html, /Secure and encrypted/)
+  assert.match(html, /All your data is secure and fully encrypted, in transit and at rest/)
   assert.match(html, /encrypted in transit and at rest/)
-  assert.match(html, /Frankfurt/)
+  assert.equal(/\bFrankfurt\b|\bGermany\b/.test(html), false)
 })
 
 test('AI scope line is exact and each AI card names AI', async () => {

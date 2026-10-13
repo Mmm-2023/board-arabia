@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { readFileSync } from 'node:fs'
+import { readdirSync, readFileSync, statSync } from 'node:fs'
 import path from 'node:path'
 import test from 'node:test'
 import { createServer } from 'vite'
@@ -17,7 +17,9 @@ import {
   registerStrip,
   TRUST_COPY,
   UPLOAD_HANDLING,
+  DATA_SECURE_LINE,
 } from '../src/content/trust.ts'
+import { MARKETING_PATHS } from '../src/content/seo.ts'
 import {
   contentSecurityPolicy,
   inlineScriptBodies,
@@ -43,6 +45,9 @@ const BANNED = [
   'nca compliant',
   'never leaves saudi arabia',
   'never leaves frankfurt',
+  'frankfurt',
+  'germany',
+  'european union',
   'legally reviewed',
   'approved by counsel',
   'only you can see your files',
@@ -95,7 +100,9 @@ test('trust copy passes the do-not-say list and names no company', () => {
   assert.match(copy, /Two-step sign-in with an authenticator app is required for admin/)
   assert.match(copy, /unless you choose to share it with admin/)
   assert.match(copy, /a specialist AI provider/)
+  assert.match(copy, new RegExp(DATA_SECURE_LINE.replace(/[.]/g, '\\.')))
   assert.equal(copy.includes('We name that provider'), false)
+  assert.equal(/\bFrankfurt\b|\bGermany\b|European Union/.test(copy), false)
   assert.match(ISO_FOOTNOTE, /does not hold an ISO 27001 or SOC 2 certification/)
 })
 
@@ -145,6 +152,62 @@ test('/security prerender output omits the DD 30-day line and keeps the allowed 
     const registerSource = read('src/pages/apply/RegisterScreen.tsx')
     assert.match(registerSource, /registerStrip\(isTwoTierRegisterEnabled\(\)\)/)
     assert.match(registerSource, /data-trust-strip="register"/)
+  } finally {
+    await vite.close()
+  }
+})
+
+const LEGAL_PUBLIC_PATHS = new Set(['/privacy', '/terms'])
+const LOCATION_WORDS = /\b(Frankfurt|Germany)\b/
+
+function walkSources(dir: string, out: string[] = []) {
+  for (const name of readdirSync(dir)) {
+    const full = path.join(dir, name)
+    if (statSync(full).isDirectory()) walkSources(full, out)
+    else if (name.endsWith('.ts') || name.endsWith('.tsx') || name.endsWith('.html')) out.push(full)
+  }
+  return out
+}
+
+test('public pages outside the legal pages do not say Frankfurt or Germany', async () => {
+  const hits: string[] = []
+  for (const rel of ['src/pages', 'src/components', 'src/content']) {
+    for (const file of walkSources(path.join(root, rel))) {
+      const relative = path.relative(root, file)
+      if (relative.startsWith(`src/content/legal${path.sep}`) || relative === 'src/content/privacyNotice.ts') continue
+      if (LOCATION_WORDS.test(readFileSync(file, 'utf8'))) hits.push(relative)
+    }
+  }
+  if (LOCATION_WORDS.test(read('index.html'))) hits.push('index.html')
+  assert.deepEqual(hits, [])
+
+  process.env.VITE_SUPABASE_URL ||= 'https://example.supabase.co'
+  process.env.VITE_SUPABASE_ANON_KEY ||= 'example-anon-key'
+  const vite = await createServer({
+    server: { middlewareMode: true, hmr: false },
+    appType: 'custom',
+    logLevel: 'error',
+  })
+  try {
+    const { render } = await vite.ssrLoadModule('/src/entry-ssr.tsx')
+    for (const route of MARKETING_PATHS) {
+      if (LEGAL_PUBLIC_PATHS.has(route)) continue
+      const page = render(route)
+      assert.equal(LOCATION_WORDS.test(`${page.body}\n${page.description}`), false, route)
+    }
+    const landing = render('/')
+    const security = render('/security')
+    assert.match(landing.body, /data-feature="secure"/)
+    assert.match(landing.body, /Secure and encrypted/)
+    assert.match(landing.body, /All your data is secure and fully encrypted, in transit and at rest\./)
+    assert.match(security.body, /How your data is protected/)
+    assert.match(security.body, /All your data is secure and fully encrypted, in transit and at rest\./)
+    assert.match(security.description, /All your data is secure and fully encrypted, in transit and at rest\./)
+    assert.equal(LOCATION_WORDS.test(landing.description), false)
+    assert.equal(LOCATION_WORDS.test(security.description), false)
+    const privacy = render('/privacy')
+    assert.match(privacy.body, /Frankfurt/)
+    assert.match(privacy.body, /Germany/)
   } finally {
     await vite.close()
   }
