@@ -18,6 +18,7 @@ const routes = [
   '/how-it-works',
   '/about',
   '/privacy',
+  '/account-deletion',
   '/security',
   '/terms',
 ]

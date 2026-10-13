@@ -396,6 +396,46 @@ begin
     where member_id = p_user_id;
   end if;
 
+  if pg_catalog.to_regclass('public.member_notifications') is not null then
+    if exists (
+      select 1
+      from information_schema.columns
+      where table_schema = 'public'
+        and table_name = 'member_notifications'
+        and column_name = 'member_id'
+    ) then
+      execute 'delete from public.member_notifications where member_id = $1' using p_user_id;
+    elsif exists (
+      select 1
+      from information_schema.columns
+      where table_schema = 'public'
+        and table_name = 'member_notifications'
+        and column_name = 'user_id'
+    ) then
+      execute 'delete from public.member_notifications where user_id = $1' using p_user_id;
+    end if;
+  end if;
+
+  if pg_catalog.to_regclass('public.member_notification_prefs') is not null then
+    if exists (
+      select 1
+      from information_schema.columns
+      where table_schema = 'public'
+        and table_name = 'member_notification_prefs'
+        and column_name = 'member_id'
+    ) then
+      execute 'delete from public.member_notification_prefs where member_id = $1' using p_user_id;
+    elsif exists (
+      select 1
+      from information_schema.columns
+      where table_schema = 'public'
+        and table_name = 'member_notification_prefs'
+        and column_name = 'user_id'
+    ) then
+      execute 'delete from public.member_notification_prefs where user_id = $1' using p_user_id;
+    end if;
+  end if;
+
   if pg_catalog.to_regclass('public.notifications') is not null
      and exists (
        select 1
@@ -416,15 +456,27 @@ begin
          and table_name = 'messages'
          and column_name = 'sender_id'
      )
-     and exists (
-       select 1
-       from information_schema.columns
-       where table_schema = 'public'
-         and table_name = 'messages'
-         and column_name = 'recipient_id'
-     )
   then
-    execute 'delete from public.messages where sender_id = $1 or recipient_id = $1' using p_user_id;
+    execute 'delete from public.messages where sender_id = $1' using p_user_id;
+    if exists (
+      select 1
+      from information_schema.columns
+      where table_schema = 'public'
+        and table_name = 'messages'
+        and column_name = 'recipient_id'
+    ) then
+      if exists (
+        select 1
+        from information_schema.columns
+        where table_schema = 'public'
+          and table_name = 'messages'
+          and column_name = 'recipient_id'
+          and is_nullable = 'NO'
+      ) then
+        execute 'alter table public.messages alter column recipient_id drop not null';
+      end if;
+      execute 'update public.messages set recipient_id = null where recipient_id = $1' using p_user_id;
+    end if;
   end if;
 
   update public.profiles

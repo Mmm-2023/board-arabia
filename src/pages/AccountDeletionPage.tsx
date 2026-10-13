@@ -27,7 +27,7 @@ export function AccountDeletionPage() {
           <li>Directory listing</li>
           <li>Introductions</li>
           <li>Notifications</li>
-          <li>Messages, when the account has any</li>
+          <li>Messages you sent</li>
         </ul>
         <h2 className="mt-10 font-display text-[1.55rem] font-semibold tracking-[-0.03em] text-ink">What is kept</h2>
         <p className="mt-3 text-[1.05rem] leading-relaxed text-ink/75">
@@ -45,7 +45,7 @@ export function AccountDeletionPage() {
           </>
         ) : null}
         <p className="mt-8">
-          <Link to="/privacy" className="border-b border-brass text-ink">
+          <Link to="/privacy/" className="border-b border-brass text-ink">
             Privacy Notice
           </Link>
         </p>

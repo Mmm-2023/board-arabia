@@ -413,7 +413,7 @@ export const PRIVACY_EN: LegalDocument = {
         ],
         [
           "Member data, including profile, intros, \"Deal started\" tags, mandates and event records",
-          "For your membership, then deleted or anonymised within 24 months of exit"
+          "Removed when you delete your account. Your sign-in is anonymised, not deleted. Legal records and consent logs are kept. Anything still held is deleted or anonymised within 24 months of exit"
         ],
         [
           "AI tool uploads and their output",
@@ -451,7 +451,7 @@ export const PRIVACY_EN: LegalDocument = {
       "kind": "clause",
       "id": "c-9-2",
       "number": "9.2",
-      "text": "From Account, you can delete an account that has not become a full member. This destroys the credentials and the sign-in. It does not remove a full member record, which follows the table above."
+      "text": "From Your privacy, any member can delete their account, including a full membership, after a code. This removes the profile, directory card, introductions, notifications and messages you sent. A member sign-in is anonymised, not deleted. Legal records and consent logs are kept. An account that has not become a member still has its sign-in deleted."
     },
     {
       "kind": "h2",

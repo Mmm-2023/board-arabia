@@ -72,6 +72,9 @@ test('public deletion page reads the legal contact and renders nothing when unse
   const privacy = read('src/pages/PrivacyPage.tsx')
   assert.match(page, /legalField\('contactEmail'\)/)
   assert.match(privacy, /to="\/account-deletion"/)
+  assert.match(page, /to="\/privacy\/"/)
+  assert.match(read('scripts/prerender.mjs'), /'\/account-deletion'/)
+  assert.match(read('public/sitemap.xml'), /https:\/\/boardarabia.com\/account-deletion/)
   assert.equal(page.includes('\u2014'), false)
   assert.equal(page.includes('\u2013'), false)
   assert.equal(/the desk/i.test(page), false)
@@ -368,6 +371,25 @@ begin
     raise exception 'candidate delete notified admin';
   end if;
 
+  create table public.member_notifications (
+    id uuid primary key default gen_random_uuid(),
+    member_id uuid not null
+  );
+  create table public.member_notification_prefs (
+    member_id uuid primary key
+  );
+  insert into public.member_notifications (member_id) values (ad1.member_id);
+  insert into public.member_notification_prefs (member_id) values (ad1.member_id);
+  create table public.messages (
+    id uuid primary key default gen_random_uuid(),
+    sender_id uuid,
+    recipient_id uuid,
+    body text
+  );
+  insert into public.messages (sender_id, recipient_id, body) values
+    (ad1.member_id, other_id, 'sent by member'),
+    (other_id, ad1.member_id, 'sent to member');
+
   issued := public.issue_account_delete_code(member_id, code_hash, now() + interval '10 minutes');
   if issued is distinct from 'ok' then
     raise exception 'member issue returned %', issued;
@@ -404,6 +426,27 @@ begin
   end if;
   if exists (select 1 from auth.users where id = member_id and position('@' in coalesce(email, '')) > 0) then
     raise exception 'auth email still has an address';
+  end if;
+
+  if (select count(*) from public.member_notifications) <> 0
+     or (select count(*) from public.member_notification_prefs) <> 0
+  then
+    raise exception 'notification rows remain';
+  end if;
+  if exists (select 1 from public.messages m where m.sender_id = ad1.member_id) then
+    raise exception 'sent message remains';
+  end if;
+  if (select count(*) from public.messages) <> 1 then
+    raise exception 'incoming message was removed';
+  end if;
+  if not exists (
+    select 1
+    from public.messages m
+    where m.body = 'sent to member'
+      and m.recipient_id is null
+      and m.sender_id = other_id
+  ) then
+    raise exception 'incoming message was not anonymised';
   end if;
 
   select count(*) into intro_left from public.member_intros where requester_id = member_id or target_id = member_id;

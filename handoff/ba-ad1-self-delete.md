@@ -21,11 +21,11 @@ Leave Board Arabia is the same screen. Admin gets an in-app notice, not a new em
 - Profile and directory card, including the avatar path
 - Directory listing (status suspended, directory hidden, partner card off)
 - Introductions
-- Notifications (`digest_notices`)
-- Messages, when a `public.messages` table exists
-- Sign-in address is replaced and sessions are cleared when those tables exist
+- Notifications (`digest_notices`, `member_notifications`, `member_notification_prefs`)
+- Messages the member sent
+- The member sign-in is anonymised, not deleted. Sessions are cleared when those tables exist.
 
-A consideration account that is not a member still goes through `prepare_candidate_delete`, which removes the sign-in.
+Messages other people sent stay, with the recipient reference cleared. A consideration account that is not a member still goes through `prepare_candidate_delete`, which deletes that sign-in.
 
 ## Kept
 
@@ -35,13 +35,9 @@ A consideration account that is not a member still goes through `prepare_candida
 - Staff access log, tier audits, intro audits, and AI tool consent rows, with the user reference cleared
 - A legal hold skips that anonymising and keeps the references
 
-## Locked files
+## Approved exceptions
 
-Not edited: `src/content/legal/*`, `scripts/prerender.mjs`, `.github/workflows/pages.yml`.
-
-`src/content/legal/privacy.en.ts` still says a full member record is not removed from Account. That file is locked, so the public Privacy Notice was not rewritten. The new page is linked under the notice.
-
-`/account-deletion` is a real route and is in the marketing SEO map. It is not in the prerender route list, because that list lives in the locked `scripts/prerender.mjs`. A direct visit uses the existing GitHub Pages fallback. It is not a static prerender and it is not in the sitemap.
+`scripts/prerender.mjs` adds only the `/account-deletion` route. `public/sitemap.xml` adds only that URL. `src/content/legal/privacy.en.ts` updates the member retention line and clause 9.2. A member sign-in is anonymised, not deleted. `.github/workflows/pages.yml` was not edited.
 
 ## Secrets
 
