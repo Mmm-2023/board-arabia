@@ -16,7 +16,10 @@ export function dealRoomStoragePathOk(path: string): boolean {
   return STORAGE_PATH.test(path) && !path.includes('..')
 }
 
-/** Due only after the room has been closed or archived for 30 days. */
+/**
+ * Due only after the room has been closed or archived for 30 days.
+ * Nothing in the running app calls this. Wire it when retention is switched back on.
+ */
 export function dealRoomDocumentDue(
   input: { status: string; closedAt: string | null },
   now: Date,

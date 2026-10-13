@@ -378,6 +378,11 @@ set
   file_size_limit = excluded.file_size_limit,
   allowed_mime_types = excluded.allowed_mime_types;
 
+-- Storage upsert, replace, and delete read the object row before they write it.
+-- This select policy is that read. Staff pass it only when the uploader shared
+-- the file. Members have no select, insert, update, or delete policy, so they
+-- cannot list, upsert, or delete the bucket. The Edge function writes with
+-- the service role.
 drop policy if exists deal_room_documents_storage_select_member on storage.objects;
 drop policy if exists deal_room_documents_storage_select_shared_staff on storage.objects;
 create policy deal_room_documents_storage_select_shared_staff
