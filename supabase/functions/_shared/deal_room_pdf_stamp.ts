@@ -46,12 +46,18 @@ export async function countDocumentPages(
   }
 }
 
+/** PDF, PNG, and JPEG. PNG and JPEG are wrapped into a stamped PDF, the same file a view shows. */
+export function documentStampSupported(mime: string): mime is DocumentMime {
+  return mime === 'application/pdf' || mime === 'image/png' || mime === 'image/jpeg'
+}
+
 export async function stampDocument(
   lib: StampLib,
   bytes: Uint8Array,
-  mime: DocumentMime,
+  mime: string,
   line: string,
-): Promise<{ ok: true; bytes: Uint8Array } | { ok: false; error: 'too_many_pages' | 'invalid_file' }> {
+): Promise<{ ok: true; bytes: Uint8Array } | { ok: false; error: 'too_many_pages' | 'invalid_file' | 'unstampable' }> {
+  if (!documentStampSupported(mime)) return { ok: false, error: 'unstampable' }
   try {
     const pdf = mime === 'application/pdf' ? await lib.PDFDocument.load(bytes) : await wrapImage(lib, bytes, mime)
     const pages = pdf.getPageCount()
