@@ -71,6 +71,7 @@ export async function loadHomeSources(input: { userId: string; sponsor: boolean 
       blurb: row.blurb,
       logo_path: row.logo_path,
       is_partner: row.is_partner,
+      category_slug: row.category_slug,
     })),
   )
   if (!directoryRows || !mandateRows || !roomRows || !partnerRows) partialError = true

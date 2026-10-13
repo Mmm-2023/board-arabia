@@ -412,7 +412,10 @@ export function HomeSnapshotView({
                           >
                             <PartnerLogo name={partner.name} monogram={partner.monogram} logoPath={partner.logo_path} />
                             <span className="min-w-0 flex-1">
-                              <span className="block text-[1rem] text-ink">{partner.name}</span>
+                              <span className="flex items-start justify-between gap-3">
+                                <span className="block text-[1rem] text-ink">{partner.name}</span>
+                                {partner.example ? <ExampleMark /> : null}
+                              </span>
                               {partner.blurb ? (
                                 <span className="mt-1 block text-[0.92rem] text-ink/70">{partner.blurb}</span>
                               ) : null}
