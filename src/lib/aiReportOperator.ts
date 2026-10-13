@@ -32,8 +32,7 @@ export function readAiReportOperatorPreview(): AiReportOperator | null | undefin
 export function operatorCredit(row: AiReportOperator | null): string | null {
   if (!row) return null
   const entity = row.entity.trim()
-  const cr = row.cr.trim()
-  if (!entity || !cr) return null
+  if (!entity) return null
   return 'Provided by Board Arabia'
 }
 

@@ -18,7 +18,7 @@ export async function loadAiReportOperator(): Promise<AiReportOperator | null> {
     if (error || !data) return null
     const entity = data.entity.trim()
     const cr = data.cr.trim()
-    if (!entity || !cr) return null
+    if (!entity) return null
     return { entity, cr }
   } catch {
     return null

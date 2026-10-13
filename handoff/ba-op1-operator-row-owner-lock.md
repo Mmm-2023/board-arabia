@@ -21,7 +21,7 @@ Secrets grade: VERIFIED. The diff has no API keys, service-role keys, tokens, pa
 
 Two owners demoting or removing each other take the same row locks before they count. The second transaction sees the first change and cannot leave zero owners. The pinned owner check is unchanged.
 
-The registration value is the empty string, which the brief allows. The column stays not null so existing readers can trim it. While that field is empty, the current loader omits the "Provided by Board Arabia" sentence. That loader was not edited.
+The registration value is the empty string, which the brief allows. The column stays not null so existing readers can trim it. An empty registration still shows "Provided by Board Arabia" and does not add a registration clause. A blank entity still omits the sentence.
 
 ## Checks
 
