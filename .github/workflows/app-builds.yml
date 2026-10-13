@@ -2,7 +2,7 @@ name: App test builds
 
 on:
   pull_request:
-    branches: [main, cursor/app-1-capacitor-shell-88cd]
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -132,4 +132,48 @@ jobs:
         with:
           name: ios-home-screenshot
           path: ${{ runner.temp }}/ios-home.png
+          if-no-files-found: error
+
+  android-emulator-home:
+    name: Android emulator Home
+    runs-on: ubuntu-latest
+    needs: android-debug-apk
+    timeout-minutes: 45
+    steps:
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+          ls -l /dev/kvm
+      - uses: actions/download-artifact@v7
+        with:
+          name: android-debug-apk
+          path: apk
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          cores: 2
+          ram-size: 2048
+          disable-animations: true
+          emulator-boot-timeout: 600
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
+          script: |
+            set -euo pipefail
+            adb install -r -t "$GITHUB_WORKSPACE/apk/app-debug.apk"
+            adb logcat -c || true
+            adb shell input keyevent KEYCODE_WAKEUP || true
+            adb shell am start -n com.boardarabia.app/.MainActivity
+            sleep 30
+            mkdir -p "$GITHUB_WORKSPACE/emulator-shot"
+            adb exec-out screencap -p > "$GITHUB_WORKSPACE/emulator-shot/android-home.png"
+            adb logcat -d > "$GITHUB_WORKSPACE/emulator-shot/logcat.txt"
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: android-home-screenshot
+          path: emulator-shot/
           if-no-files-found: error

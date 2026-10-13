@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
+import { spawnSync } from 'node:child_process'
+import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import test from 'node:test'
@@ -138,9 +139,30 @@ test('well-known files use env vars and never a literal team id or fingerprint',
   assert.equal(/[0-9A-F]{2}(?::[0-9A-F]{2}){31}/.test(source), false)
 
   const pages = read('.github/workflows/pages.yml')
-  assert.equal(pages.includes('APPLE_TEAM_ID'), false)
-  assert.equal(pages.includes('ANDROID_APP_LINK_SHA256'), false)
+  assert.match(pages, /APPLE_TEAM_ID: \$\{\{ vars\.APPLE_TEAM_ID \}\}/)
+  assert.match(pages, /ANDROID_APP_LINK_SHA256: \$\{\{ vars\.ANDROID_APP_LINK_SHA256 \}\}/)
+  assert.equal(/[A-Z0-9]{10}\.com\.boardarabia\.app/.test(pages), false)
+  assert.equal(/[0-9A-F]{2}(?::[0-9A-F]{2}){31}/.test(pages), false)
   assert.match(read('package.json'), /scripts\/write-well-known\.mjs/)
+})
+
+test('unset well-known vars skip the files and the script exits 0', () => {
+  const dir = mkdtempSync(path.join(tmpdir(), 'ba-well-known-empty-'))
+  try {
+    assert.deepEqual(writeWellKnown(dir, {}), [])
+    assert.deepEqual(writeWellKnown(dir, { APPLE_TEAM_ID: '   ', ANDROID_APP_LINK_SHA256: ' ' }), [])
+    assert.equal(existsSync(path.join(dir, '.well-known')), false)
+    const result = spawnSync(process.execPath, ['scripts/write-well-known.mjs', dir], {
+      cwd: root,
+      env: { ...process.env, APPLE_TEAM_ID: '', ANDROID_APP_LINK_SHA256: '' },
+      encoding: 'utf8',
+    })
+    assert.equal(result.status, 0)
+    assert.match(result.stdout, /skipped/)
+    assert.equal(existsSync(path.join(dir, '.well-known')), false)
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
 })
 
 test('the native shell registers links, back, external browser, and the brand bar', () => {

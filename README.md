@@ -74,7 +74,7 @@ Open Android Studio with `npx cap open android` and run a debug build on an emul
 
 Auth emails stay on `https://boardarabia.com`. On a phone with the app installed, those https links open the app (universal links on iOS, app links on Android). The `com.boardarabia.app` scheme does the same. Other websites open in the system browser. The Android back button walks history, then leaves the app. The status bar uses the brand indigo.
 
-The Pages build writes `/.well-known/apple-app-site-association` and `/.well-known/assetlinks.json` only when these Actions variables are set: `APPLE_TEAM_ID` and `ANDROID_APP_LINK_SHA256`. They are not in the Pages workflow yet. Do not put the values in git.
+The Pages build passes `APPLE_TEAM_ID` and `ANDROID_APP_LINK_SHA256` through from Actions variables. It writes `/.well-known/apple-app-site-association` and `/.well-known/assetlinks.json` only when those variables are set, and skips them without failing when they are empty. Do not put the values in git.
 
 Open Xcode with `npx cap open ios` and run the App scheme on a simulator. The CI simulator build is unsigned and does not need a signing team.
 

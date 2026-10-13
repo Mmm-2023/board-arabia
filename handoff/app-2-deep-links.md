@@ -1,6 +1,6 @@
 # APP-2 handoff: deep links and the WebView crash
 
-Base: `cursor/app-1-capacitor-shell-88cd`. No migration. No Edge. Locked Pages files were not edited (`prerender.mjs`, `check-pages-artifact.mjs`, `pages.yml`, `public-nammco.mjs`, `src/content/legal/*`, `/apply`).
+Base: `main`. No migration. No Edge. `pages.yml` gained only the two Actions variable lines for `APPLE_TEAM_ID` and `ANDROID_APP_LINK_SHA256`. The other locked Pages files were not edited.
 
 ## WebView crash
 
@@ -38,7 +38,7 @@ Covered by `scripts/app-links.test.ts`: magic link query, recovery hash, OAuth `
 
 ## What the owner sets later
 
-Names only. No values belong in git. `pages.yml` was not edited. The Pages build already runs `scripts/write-well-known.mjs` and writes nothing until these Actions variables are passed into that job:
+Names only. No values belong in git. The Pages build reads these Actions variables and writes nothing when they are empty:
 
 - `APPLE_TEAM_ID` (10 letters or digits)
 - `ANDROID_APP_LINK_SHA256` (one or more certificate fingerprints, colon form or 64 hex digits)
