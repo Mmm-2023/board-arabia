@@ -158,7 +158,7 @@ test('directory search and filters combine', () => {
   assert.equal(filterDirectory(rows, { ...EMPTY_DIRECTORY_FILTERS, query: 'at_capacity' }).length, 0)
   assert.equal(filterDirectory(rows, { ...EMPTY_DIRECTORY_FILTERS, query: 'capacity' })[0]?.full_name, 'Maha Al-Rawnaq')
   assert.equal(
-    filterDirectory(rows, { query: 'open', seat: 'intl', sector: 'Mining', availability: 'open' }).length,
+    filterDirectory(rows, { query: 'open', seat: 'intl', sector: 'Mining', city: null, availability: 'open' }).length,
     1,
   )
   assert.deepEqual(directorySectorOptions(rows).slice(0, 2), ['Energy transition', 'Health'])
@@ -212,7 +212,17 @@ test('profile tag migration keeps own-row writes and the sample directory', () =
   assert.equal(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i.test(migration), false)
   assert.equal(/https?:\/\//i.test(migration), false)
   assert.equal(/eyJ|sk_live|service_role_key|BEGIN PRIVATE KEY/i.test(migration), false)
-  for (const tag of SECTOR_TAGS) assert.ok(migration.includes(`'${tag}'`), tag)
+  const originalSectors = [
+    'Energy transition',
+    'Health',
+    'Tourism',
+    'Financial services',
+    'Logistics',
+    'Mining',
+    'Digital infrastructure',
+    'Food security',
+  ]
+  for (const tag of originalSectors) assert.ok(migration.includes(`'${tag}'`), tag)
   for (const theme of VISION_2030_THEMES) assert.ok(migration.includes(`'${theme}'`), theme)
   const updates = migration.split('update public.directory_entries').slice(1)
   assert.equal(updates.length, SAMPLE_DIRECTORY_TAGS.length)

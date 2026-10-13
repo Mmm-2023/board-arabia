@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Link, useLocation, useSearchParams } from 'react-router-dom'
+import { ABOUT_CONTACT_WARNING, ABOUT_HELPER, ABOUT_MAX, aboutHasContact, aboutLengthError } from '../../lib/about'
+import { CITIES, profileCityState, resolveProfileCity, type CityKey } from '../../lib/cities'
 import { DefaultPicturePicker } from '../../components/DefaultPicturePicker'
 import { SponsorBadge } from '../../components/SponsorBadge'
 import { DEFAULT_PICTURE_NOTE, normalizeAvatarStyle, type AvatarStyle } from '../../lib/avatarStyle'
@@ -38,7 +40,9 @@ export function ProfilePage({ preview }: { preview?: { src: string | null } }) {
   const [fullName, setFullName] = useState(profile?.full_name ?? '')
   const [headline, setHeadline] = useState(profile?.headline ?? '')
   const [company, setCompany] = useState(profile?.company ?? '')
-  const [location, setLocation] = useState(profile?.location ?? '')
+  const initialCity = profileCityState(profile)
+  const [cityKey, setCityKey] = useState<CityKey | ''>(initialCity.key)
+  const [otherCity, setOtherCity] = useState(initialCity.other)
   const [linkedin, setLinkedin] = useState(profile?.linkedin_url ?? '')
   const [phone, setPhone] = useState(profile?.phone ?? '')
   const [calendar, setCalendar] = useState(profile?.calendar_url ?? '')
@@ -229,8 +233,18 @@ export function ProfilePage({ preview }: { preview?: { src: string | null } }) {
       setProfileError('Calendar needs a full https link, or leave it blank.')
       return
     }
-    if (fullName.trim().length > 200 || bio.trim().length > 2000) {
-      setProfileError('Shorten the name or the bio.')
+    if (fullName.trim().length > 200) {
+      setProfileError('Shorten the name.')
+      return
+    }
+    const aboutError = aboutLengthError(bio)
+    if (aboutError) {
+      setProfileError(aboutError)
+      return
+    }
+    const city = resolveProfileCity(cityKey, otherCity)
+    if (!city.ok) {
+      setProfileError(city.error)
       return
     }
 
@@ -238,7 +252,8 @@ export function ProfilePage({ preview }: { preview?: { src: string | null } }) {
       full_name: emptyToNull(fullName),
       headline: emptyToNull(headline),
       company: emptyToNull(company),
-      location: emptyToNull(location),
+      location: city.location,
+      city_key: city.city_key,
       linkedin_url: linkedinUrl || null,
       phone: emptyToNull(phone),
       bio: emptyToNull(bio),
@@ -252,13 +267,22 @@ export function ProfilePage({ preview }: { preview?: { src: string | null } }) {
 
     setSavingProfile(true)
     let saved = await supabase.from('profiles').update(withTags).eq('user_id', userId)
-    if (saved.error && schemaMissing(saved.error.message) && 'calendar_url' in withTags) {
+    if (saved.error && schemaMissing(saved.error.message) && 'city_key' in withTags) {
+      const { city_key: droppedCity, ...rest } = withTags
+      void droppedCity
+      saved = await supabase.from('profiles').update(rest).eq('user_id', userId)
+      if (saved.error && schemaMissing(saved.error.message) && 'calendar_url' in rest) {
+        delete rest.calendar_url
+        saved = await supabase.from('profiles').update(rest).eq('user_id', userId)
+      }
+    } else if (saved.error && schemaMissing(saved.error.message) && 'calendar_url' in withTags) {
       const rest = { ...withTags }
       delete rest.calendar_url
       saved = await supabase.from('profiles').update(rest).eq('user_id', userId)
     }
     if (saved.error && tagsReady && schemaMissing(saved.error.message)) {
-      const rest = { ...base }
+      const { city_key: droppedCity, ...rest } = base
+      void droppedCity
       delete rest.calendar_url
       saved = await supabase.from('profiles').update(rest).eq('user_id', userId)
       setSavingProfile(false)
@@ -414,7 +438,39 @@ export function ProfilePage({ preview }: { preview?: { src: string | null } }) {
         <Field id="profile-name" label="Name" value={fullName} onChange={setFullName} autoComplete="name" />
         <Field label="Headline" value={headline} onChange={setHeadline} />
         <Field label="Company" value={company} onChange={setCompany} autoComplete="organization" />
-        <Field label="Location" value={location} onChange={setLocation} autoComplete="address-level2" />
+        <div id="profile-city-block">
+          <label className="block" htmlFor="profile-city">
+            <span className="text-[0.72rem] font-semibold tracking-[0.08em] text-ink/45 uppercase">City</span>
+            <select
+              id="profile-city"
+              value={cityKey}
+              onChange={(event) => setCityKey(event.target.value as CityKey | '')}
+              autoComplete="address-level2"
+              className={`${fieldClass} min-h-12`}
+            >
+              <option value="">Choose a city</option>
+              {CITIES.map((city) => (
+                <option key={city.key} value={city.key}>
+                  {city.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          {cityKey === 'other' ? (
+            <label className="mt-5 block" htmlFor="profile-city-other">
+              <span className="text-[0.72rem] font-semibold tracking-[0.08em] text-ink/45 uppercase">City name</span>
+              <input
+                id="profile-city-other"
+                value={otherCity}
+                onChange={(event) => setOtherCity(event.target.value)}
+                maxLength={120}
+                autoComplete="address-level2"
+                placeholder="Type a city"
+                className={`${fieldClass} min-h-12`}
+              />
+            </label>
+          ) : null}
+        </div>
         <div id="profile-tags" className="scroll-mt-24 space-y-5">
         {tagStatus === 'loading' ? (
           <div aria-busy="true" aria-label="Loading availability and tags" className="space-y-3">
@@ -484,18 +540,24 @@ export function ProfilePage({ preview }: { preview?: { src: string | null } }) {
         <p className="-mt-2 text-[0.92rem] leading-relaxed text-ink/55">
           Optional. Shared only after an introduction is accepted.
         </p>
-        <label className="block">
-          <span className="text-[0.72rem] font-semibold tracking-[0.08em] text-ink/45 uppercase">
-            Short note
-          </span>
+        <label className="block" htmlFor="profile-about">
+          <span className="text-[0.72rem] font-semibold tracking-[0.08em] text-ink/45 uppercase">About</span>
           <textarea
+            id="profile-about"
             value={bio}
             onChange={(event) => setBio(event.target.value)}
             rows={4}
-            maxLength={2000}
+            maxLength={ABOUT_MAX}
             className={fieldClass}
           />
         </label>
+        <p className="-mt-2 text-[0.92rem] leading-relaxed text-ink/55">{ABOUT_HELPER}</p>
+        <p className="-mt-2 text-[0.85rem] text-ink/45">{bio.trim().length} / {ABOUT_MAX}</p>
+        {aboutHasContact(bio) ? (
+          <p className="-mt-2 text-[0.92rem] text-ink/70" role="status">
+            {ABOUT_CONTACT_WARNING}
+          </p>
+        ) : null}
         <div>
           <label className="flex min-h-11 cursor-pointer items-center gap-3 text-[0.98rem] leading-relaxed text-ink">
             <input

@@ -1,10 +1,12 @@
 import { useEffect, useId, useState } from 'react'
+import { AboutText } from '../../components/AboutText'
 import { ExampleMark } from '../../components/ExampleMark'
 import { SponsorBadge } from '../../components/SponsorBadge'
 import {
   DIRECTORY_AVAILABILITY_OPTIONS,
   DIRECTORY_SEAT_OPTIONS,
   EMPTY_DIRECTORY_FILTERS,
+  directoryCityOptions,
   directoryFiltersActive,
   directorySectorOptions,
   filterDirectory,
@@ -56,6 +58,7 @@ export function DirectoryBoard({
   const visible = filterDirectory(orderDirectoryCards(cards, selfId), filters)
   const active = directoryFiltersActive(filters)
   const sectorOptions = directorySectorOptions(cards)
+  const cityOptions = directoryCityOptions(cards)
   const copy = MEMBER_VIEWS.directory
 
   function renderGroups() {
@@ -73,6 +76,14 @@ export function DirectoryBoard({
           options={chipOptions(sectorOptions)}
           onPick={(sector) => setFilters({ ...filters, sector })}
         />
+        {cityOptions.length > 0 ? (
+          <FilterRow
+            label="City"
+            value={filters.city}
+            options={cityOptions}
+            onPick={(city) => setFilters({ ...filters, city })}
+          />
+        ) : null}
         <FilterRow
           label="Availability"
           value={filters.availability}
@@ -188,6 +199,7 @@ function DirectoryPerson({
   const firm = card.company ? <Field label="Firm" value={card.company} /> : null
   const vision = card.vision_themes.length > 0 ? <Field label="Vision 2030" value={card.vision_themes.join(', ')} /> : null
   const city = card.location ? <Field label="City" value={card.location} /> : null
+  const aboutText = (card.about ?? '').trim()
   const action = (
     <DirectoryIntroAction
       sample={card.is_demo}
@@ -240,6 +252,11 @@ function DirectoryPerson({
                 {city}
               </dl>
             ) : null}
+            {aboutText ? (
+              <div className="mt-3">
+                <AboutText value={aboutText} />
+              </div>
+            ) : null}
             {action}
           </div>
         ) : null}
@@ -261,6 +278,11 @@ function DirectoryPerson({
           {city}
           {firm}
         </dl>
+        {aboutText ? (
+          <div className="mt-3">
+            <AboutText value={aboutText} />
+          </div>
+        ) : null}
         {action}
       </div>
     </article>
