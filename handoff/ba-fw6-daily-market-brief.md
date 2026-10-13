@@ -77,7 +77,7 @@ The existing per-member market entry brief and `supabase/functions/_shared/sugge
 
 | Claim | Grade |
 | --- | --- |
-| Base is `7c3f0ad9`. Migration slot `20261211120000` was free on that main and sorts after `20261210120000`. | VERIFIED at start by `git rev-parse` and `git ls-tree`. |
+| Base at start was `7c3f0ad9`. Migration slot `20261211120000` was free and sorts after `20261210120000`. Main later added the weekly digest at `20261212120000`. This branch merges that commit. Both routes stay. | VERIFIED at start, then by the merge. |
 | A blank search key makes zero network calls and returns `not_configured`. | VERIFIED by `scripts/daily-market-brief.test.ts:78`. |
 | Both switches default to false, and the member RPC returns null unless both are on. | VERIFIED at `20261211120000_daily_market_brief.sql:11-12`, `:26`, `:128-129`. |
 | Staff writes go through `private.is_staff()`, which requires aal2. RLS is forced. Definers use `search_path = ''`. | VERIFIED in this migration and in `20261127120000_staff_aal2_private_files.sql:8-21`. |

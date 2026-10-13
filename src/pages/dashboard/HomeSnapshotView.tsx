@@ -78,6 +78,22 @@ export function HomeSnapshotView({
         </div>
       </section>
 
+      <section aria-label="This week" className="mt-5" data-home-digest="">
+        <div className={`${styles.panel} px-4 py-3`}>
+          <h2 className="text-[0.72rem] font-semibold tracking-[0.14em] text-ink/40 uppercase">This week</h2>
+          <p className={`mt-2 text-[0.95rem] ${styles.muted}`}>
+            New members, new mandates, upcoming Majlis, and your introductions.
+          </p>
+          <Link
+            to="/dashboard/digest"
+            data-tap="digest"
+            className="mt-3 inline-flex min-h-11 min-w-11 items-center text-[0.75rem] font-semibold tracking-[0.08em] text-brass uppercase"
+          >
+            Open
+          </Link>
+        </div>
+      </section>
+
       {hasExample && !exampleSeen ? (
         <div className="mt-4 border border-dashed border-[var(--ba-indigo)] bg-white px-4 py-3" role="status">
           <p className="text-[0.8125rem] leading-relaxed text-ink/80">
@@ -85,7 +101,8 @@ export function HomeSnapshotView({
           </p>
           <button
             type="button"
-            className="mt-2 inline-flex min-h-11 items-center text-[0.8125rem] font-semibold text-[var(--ba-indigo)]"
+            data-tap="got-it"
+            className="mt-2 inline-flex min-h-11 min-w-11 items-center text-[0.8125rem] font-semibold text-[var(--ba-indigo)]"
             onClick={() => {
               writeExampleSeen(userId)
               setExampleSeen(true)
@@ -110,7 +127,8 @@ export function HomeSnapshotView({
                   <p className={`mt-1 text-[0.95rem] ${styles.muted}`}>{item.body}</p>
                   <Link
                     to={item.to}
-                    className="mt-3 inline-flex min-h-11 items-center text-[0.75rem] font-semibold tracking-[0.08em] text-brass uppercase"
+                    data-tap="details"
+                    className="mt-3 inline-flex min-h-11 min-w-11 items-center text-[0.75rem] font-semibold tracking-[0.08em] text-brass uppercase"
                   >
                     {item.cta}
                   </Link>
@@ -186,7 +204,8 @@ export function HomeSnapshotView({
                       <p className={`mt-1 text-[0.95rem] ${styles.muted}`}>{item.body}</p>
                       <Link
                         to={item.to}
-                        className="mt-3 inline-flex min-h-11 items-center text-[0.75rem] font-semibold tracking-[0.08em] text-brass uppercase"
+                        data-tap="details"
+                        className="mt-3 inline-flex min-h-11 min-w-11 items-center text-[0.75rem] font-semibold tracking-[0.08em] text-brass uppercase"
                       >
                         Details
                       </Link>
@@ -205,7 +224,8 @@ export function HomeSnapshotView({
                   <p className={`mt-1 text-[0.95rem] ${styles.muted}`}>{model.majlis.body}</p>
                   <Link
                     to={model.majlis.to}
-                    className="mt-3 inline-flex min-h-11 items-center text-[0.75rem] font-semibold tracking-[0.08em] text-brass uppercase"
+                    data-tap="details"
+                    className="mt-3 inline-flex min-h-11 min-w-11 items-center text-[0.75rem] font-semibold tracking-[0.08em] text-brass uppercase"
                   >
                     Details
                   </Link>
@@ -469,7 +489,8 @@ export function HomeSnapshotView({
                     <p className="mt-1 text-[0.85rem] text-ink/45">{formatActivityWhen(event.happenedAt)}</p>
                     <Link
                       to={event.href}
-                      className="mt-2 inline-flex min-h-11 items-center text-[0.75rem] font-semibold tracking-[0.08em] text-brass uppercase"
+                      data-tap="details"
+                      className="mt-2 inline-flex min-h-11 min-w-11 items-center text-[0.75rem] font-semibold tracking-[0.08em] text-brass uppercase"
                     >
                       Details
                     </Link>
@@ -520,7 +541,8 @@ function TeaserGroup({
         <h3 className="text-[0.72rem] font-semibold tracking-[0.12em] text-ink/40 uppercase">{title}</h3>
         <Link
           to={to}
-          className="inline-flex min-h-11 items-center text-[0.75rem] font-semibold tracking-[0.08em] text-brass uppercase"
+          data-tap="open"
+          className="inline-flex min-h-11 min-w-11 items-center text-[0.75rem] font-semibold tracking-[0.08em] text-brass uppercase"
         >
           Open
         </Link>

@@ -402,6 +402,7 @@ test('the pf3 migration bans search_path public and keeps directory rules', () =
   const migration = readFileSync(migrationPath, 'utf8')
   const names = readdirSync(path.join(root, 'supabase/migrations')).filter((name) => name.endsWith('.sql')).sort()
   assert.ok(names.includes(migrationName))
+  assert.ok((names.at(-1) ?? '') >= migrationName)
   assert.ok(names.indexOf(migrationName) > names.indexOf('20261209120000_application_answers_at_admission.sql'))
   assert.equal(/search_path\s*=\s*public/i.test(migration), false)
   assert.match(migration, /set search_path = ''/)
@@ -464,6 +465,9 @@ begin
   if not exists (select 1 from pg_roles where rolname = 'service_role') then
     create role service_role nologin;
   end if;
+exception
+  when unique_violation then
+    null;
 end
 $roles$;
 alter role service_role bypassrls;
