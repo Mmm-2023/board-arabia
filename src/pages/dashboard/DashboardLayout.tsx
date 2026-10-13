@@ -68,8 +68,21 @@ async function withCalendar(
 ): Promise<{ profile: ProfileRow | null; error: boolean }> {
   if (!loaded.profile) return loaded
   const calendar = await supabase.from('profiles').select('calendar_url').eq('user_id', userId).maybeSingle()
-  if (calendar.error || !calendar.data) return loaded
-  return { profile: { ...loaded.profile, calendar_url: calendar.data.calendar_url }, error: false }
+  const withUrl =
+    calendar.error || !calendar.data
+      ? loaded
+      : { profile: { ...loaded.profile, calendar_url: calendar.data.calendar_url }, error: false as const }
+  return withCity(userId, withUrl)
+}
+
+async function withCity(
+  userId: string,
+  loaded: { profile: ProfileRow | null; error: boolean },
+): Promise<{ profile: ProfileRow | null; error: boolean }> {
+  if (!loaded.profile) return loaded
+  const city = await supabase.from('profiles').select('city_key').eq('user_id', userId).maybeSingle()
+  if (city.error || !city.data) return loaded
+  return { profile: { ...loaded.profile, city_key: city.data.city_key }, error: false }
 }
 
 export function DashboardLayout() {

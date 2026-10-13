@@ -1,5 +1,6 @@
 /** Weekly intro suggestions and once-only nudges. Pure planning. No secrets. */
 
+import { cityKeyFromLocation, cityLabel, cityToken, isFixedCityKey } from './cities.ts'
 import { boardMail } from './mail.ts'
 
 export const INTROS_SCHEDULE_SECRET = 'INTROS_SCHEDULE_SECRET'
@@ -21,7 +22,9 @@ export type PlanMember = {
   fullName: string
   sectorTags: string[]
   visionThemes: string[]
+  /** Location display text. Same-city uses cityKey when both keys are fixed. */
   region: string
+  cityKey?: string
   sample: boolean
   directoryHidden: boolean
 }
@@ -315,7 +318,7 @@ function rankedCandidates(
       if (blocked.has(pairKey(member.id, other.id))) return []
       const sectors = shared(member.sectorTags, other.sectorTags)
       const themes = shared(member.visionThemes, other.visionThemes)
-      const region = sameRegion(member.region, other.region) ? other.region.trim() : ''
+      const region = sameCityLabel(member, other)
       const reason = suggestionReason({ sectors, themes, region })
       if (!reason || reason.includes('@')) return []
       const score = sectors.length * 3 + themes.length * 2 + (region ? 2 : 0)
@@ -440,10 +443,18 @@ function shared(left: readonly string[], right: readonly string[]): string[] {
   return out
 }
 
-function sameRegion(left: string, right: string): boolean {
-  const a = left.trim().toLowerCase()
-  const b = right.trim().toLowerCase()
-  return a.length > 0 && a === b
+function sameCityLabel(left: PlanMember, right: PlanMember): string {
+  const leftKey = (left.cityKey ?? '').trim()
+  const rightKey = (right.cityKey ?? '').trim()
+  if (isFixedCityKey(leftKey) && isFixedCityKey(rightKey)) {
+    return leftKey === rightKey ? cityLabel(leftKey) : ''
+  }
+  const a = cityToken(left.region)
+  const b = cityToken(right.region)
+  if (!a || a !== b) return ''
+  const mapped = cityKeyFromLocation(right.region)
+  if (mapped && mapped !== 'other') return cityLabel(mapped)
+  return right.region.trim()
 }
 
 function ageMs(iso: string, now: Date): number {
