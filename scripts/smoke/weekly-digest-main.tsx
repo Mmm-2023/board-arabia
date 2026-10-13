@@ -16,31 +16,31 @@ const view = new URLSearchParams(window.location.search).get('view') || 'full'
 
 const full: WeeklyDigestModel = {
   mailReady: false,
-  newMembers: [{ fullName: 'Layla Al Diriyah', headline: 'Director', company: 'Diriyah Works' }],
+  newMembers: [{ fullName: 'Example Member B', headline: 'Director', company: 'Example Company B' }],
   newMandates: [
     {
       sector: 'Energy',
       dealType: 'Growth equity',
       ticketBand: 'Mid band',
       geography: 'KSA',
-      oneLiner: 'A clear regional mandate for members.',
+      oneLiner: 'A clear example mandate for members.',
     },
   ],
   upcomingEvents: [
     {
-      title: 'Riyadh gathering',
+      title: 'Example gathering',
       when: '16 Oct 2026, 18:00',
       region: 'Riyadh',
-      hostName: 'Huda Al Harbi',
+      hostName: 'Example Member A',
       venueAddress: null,
     },
   ],
   introductions: [
     {
-      fullName: 'Noura Al Wahat',
+      fullName: 'Example Member C',
       headline: 'Board director',
-      company: 'Wahat Counsel',
-      reason: 'Both are in Riyadh.',
+      company: 'Example Company C',
+      reason: 'Both are in the example city.',
     },
   ],
 }
@@ -63,10 +63,11 @@ const issue: DigestIssueModel = {
     ...full,
     introductions: [
       {
-        fullName: 'Preview member',
+        fullName: 'Example Member A',
         headline: 'Board director',
-        company: 'Preview Works',
-        reason: 'A sample introduction for this preview.',
+        company: 'Example Company A',
+        reason: 'Example introduction for this preview.',
+        example: true,
       },
     ],
   },
@@ -74,7 +75,7 @@ const issue: DigestIssueModel = {
 
 const homeModel: HomeModel = {
   identity: {
-    name: 'Huda Al Harbi',
+    name: 'Example Member A',
     avatarStyle: 'female',
     photoUrl: null,
     badge: 'Founding',
@@ -105,7 +106,7 @@ const homeModel: HomeModel = {
     directory: [
       {
         id: 'dir-layla',
-        name: 'Layla Al Diriyah',
+        name: 'Example Member B',
         headline: 'Director',
         seat: 'Saudi Arabia',
         example: true,
@@ -133,7 +134,7 @@ function MemberShell({ path, children }: { path: string; children: ReactNode }) 
         roleSwitch={null}
         onSignOut={() => undefined}
         accountLabel="Account"
-        accountName="Huda Al Harbi"
+        accountName="Example Member A"
       >
         <div data-preview="">{children}</div>
       </AppShell>
@@ -179,7 +180,23 @@ function screen() {
       </MemberShell>
     )
   }
-  if (view === 'admin') {
+  if (view === 'prepare' || view === 'preview' || view === 'approved' || view === 'withdrawn' || view === 'admin') {
+    const status = view === 'prepare' ? null : view === 'approved' ? 'approved' : view === 'withdrawn' ? 'withdrawn' : 'draft'
+    const log =
+      status === null
+        ? []
+        : status === 'draft'
+          ? [{ action: 'created' as const, createdAt: '2026-10-13T09:15:00.000Z' }]
+          : status === 'approved'
+            ? [
+                { action: 'created' as const, createdAt: '2026-10-13T09:15:00.000Z' },
+                { action: 'approved' as const, createdAt: '2026-10-13T09:20:00.000Z' },
+              ]
+            : [
+                { action: 'created' as const, createdAt: '2026-10-13T09:15:00.000Z' },
+                { action: 'approved' as const, createdAt: '2026-10-13T09:20:00.000Z' },
+                { action: 'withdrawn' as const, createdAt: '2026-10-13T09:25:00.000Z' },
+              ]
     return (
       <MemoryRouter initialEntries={['/admin/email']}>
         <AppShell
@@ -209,7 +226,7 @@ function screen() {
               ]}
             />
             <DigestIssuePanelView
-              model={issue}
+              model={{ ...issue, status, log, source: status ? 'issue' : 'live' }}
               state="ready"
               onPrepare={() => undefined}
               onApprove={() => undefined}
@@ -224,7 +241,7 @@ function screen() {
   if (view === 'home') {
     return (
       <MemberShell path="/dashboard">
-        <HomeSnapshotView model={homeModel} seatCaption="Founding seat" seatValue="Saudi Arabia" userId="huda-tap" />
+        <HomeSnapshotView model={homeModel} seatCaption="Founding seat" seatValue="Saudi Arabia" userId="example-a" />
       </MemberShell>
     )
   }

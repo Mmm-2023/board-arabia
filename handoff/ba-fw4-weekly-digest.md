@@ -1,6 +1,6 @@
 # BA FW4 handoff: weekly digest, admin approval, sending parked
 
-Base at start: `6da30503` (later than `ac016d95`). The digest migration is `supabase/migrations/20261212120000_weekly_digest.sql`. That name sorts after `20261211120000`. No Edge deploy. No schedule. No mailbox.
+Base at start: `6da30503` (later than `ac016d95`). The digest migration is `supabase/migrations/20261212120000_weekly_digest.sql`. No Edge deploy. No schedule. No mailbox.
 
 Secrets grade: VERIFIED. The diff has no API keys, service-role keys, live tokens, staff names, or mailbox addresses. Test fixtures use `example.com` only.
 
@@ -32,7 +32,7 @@ Members do not read `digest_issues`. A draft is not a member page. The in-app di
 - New members. `private.digest_member_visible` and `private.digest_build_payload` (migration `:128` and `:190`). Same visibility as `public.list_directory()` in `supabase/migrations/20261207120000_sponsor_directory_opt_in.sql:121`: not hidden, not demo, not `private.sample_subject`, invited or active, seats ksa, intl, or sponsor. A sponsor still only sees cards that opted in, via `private.caller_sees_member_card`. "New" is `members.created_at` in the current ISO week. Display name, headline, company, and avatar style only. VERIFIED.
 - New mandates. Published, not demo, not sample, `created_at` in the current ISO week. Card fields only: sector, deal type, ticket band, geography, stage, one liner. No company name, contact, amount, or narrative. There is no separate published-at column on `public.mandates` (`20260929120000_demo_seed_thresholds_redaction.sql:565`). VERIFIED.
 - Upcoming Majlis. Published, not cancelled, `starts_at` in the future. Title, Riyadh time, region, host display name. Venue address uses the same cases as `private.majlis_events_member_rows` in `20261202120000_majlis_rsvp_calendar.sql:363`. A sponsor seat gets no events, matching that reader (`seat <> 'sponsor'`). VERIFIED.
-- Introductions. The caller's current-week rows only, with the same hidden, demo, sample, and sponsor-card filters as `public.list_my_intro_suggestions()` in `20261207120000_sponsor_directory_opt_in.sql:273`. Staff prepare does not read `intro_suggestions`. The admin preview uses the fixture "Preview member". VERIFIED.
+- Introductions. The caller's current-week rows only, with the same hidden, demo, sample, and sponsor-card filters as `public.list_my_intro_suggestions()` in `20261207120000_sponsor_directory_opt_in.sql:273`. Staff prepare does not read `intro_suggestions`. The admin preview uses the fixture "Example Member A" and the Example mark. VERIFIED.
 - Home activity is untouched. `list_member_home_activity` is not called.
 
 ## Sending stays off
@@ -90,9 +90,13 @@ LEGAL CHANGE. The new sentences are: "Weekly email", "You asked to receive the w
 
 ## Apply list
 
-1. Apply `supabase/migrations/20261212120000_weekly_digest.sql` after `20261211120000`.
+Main's real latest migration on file is `20261209120000_application_answers_at_admission.sql`. The PF-3 slot (`20261210120000`) and the FW5 slot (`20261209140000`) are already applied live. Apply `20261212120000` via MCP.
+
+1. Apply `supabase/migrations/20261212120000_weekly_digest.sql` via MCP.
 2. Do not deploy an Edge function. The letter template is `supabase/functions/_shared/weekly_digest_copy.ts` for a later brief.
 3. Do not connect a mailbox and do not add a schedule. A later brief has to require `digest_issue_sendable` before any send.
+
+A host hidden from the directory is shown as Board Arabia (`supabase/migrations/20261212120000_weekly_digest.sql` host_name case). Sample introductions carry the Example mark.
 
 ## Not done
 

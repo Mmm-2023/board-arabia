@@ -1,6 +1,7 @@
 -- Weekly digest. An admin prepares each issue and approves it before a future letter can go out.
 -- Sending stays off. This file does not send mail, does not call a mailbox, and does not schedule anything.
--- Apply after 20261211120000. This file is 20261212120000.
+-- Apply after 20261209120000. PF-3 (20261210120000) and FW5 (20261209140000) are already applied live.
+-- This file is 20261212120000.
 -- Factory does not apply migrations.
 
 alter table public.members
@@ -256,7 +257,10 @@ begin
         'title', private.digest_plain(e.title, 160),
         'starts_at', private.digest_when(e.starts_at),
         'region', private.digest_plain(e.region, 80),
-        'host_name', coalesce(nullif(private.digest_plain(host_profile.full_name, 200), ''), 'Board Arabia'),
+        'host_name', case
+          when coalesce(host_member.directory_hidden, false) then 'Board Arabia'
+          else coalesce(nullif(private.digest_plain(host_profile.full_name, 200), ''), 'Board Arabia')
+        end,
         'venue_address', case
           when e.venue_visibility = 'members_always'
             then nullif(private.digest_plain(e.venue_address, 200), '')
@@ -264,6 +268,7 @@ begin
         end
       ) as payload
     from public.majlis_events e
+    left join public.members host_member on host_member.user_id = e.host_member_id
     left join public.profiles host_profile on host_profile.user_id = e.host_member_id
     where e.status = 'published'
       and e.cancelled_at is null
@@ -397,10 +402,10 @@ set search_path = ''
 as $fn$
   select pg_catalog.jsonb_build_array(
     pg_catalog.jsonb_build_object(
-      'full_name', 'Preview member',
+      'full_name', 'Example Member A',
       'headline', 'Board director',
-      'company', 'Preview Works',
-      'reason', 'A sample introduction for this preview.'
+      'company', 'Example Company A',
+      'reason', 'Example introduction for this preview.'
     )
   );
 $fn$;

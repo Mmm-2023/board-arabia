@@ -138,6 +138,11 @@ begin
       b_id, 'Past gathering', 'A members gathering.', 'Riyadh', array['Capital'],
       now() - interval '3 days', now() - interval '3 days' + interval '2 hours',
       20, 'Hall', 'Open hall', 'members_always', 'published', staff_id, now() - interval '4 days'
+    ),
+    (
+      h_id, 'Hidden host gathering', 'A members gathering.', 'Riyadh', array['Capital'],
+      now() + interval '5 days', now() + interval '5 days 2 hours',
+      20, 'Hall', 'Open hall', 'members_always', 'published', staff_id, now()
     );
   perform set_config('request.jwt.claims', '{}', false);
 
@@ -218,7 +223,9 @@ begin
      or digest->'upcoming_events'->0->>'venue_address' is distinct from 'Open hall'
      or digest->'upcoming_events'->1->>'title' is distinct from 'Private gathering'
      or digest->'upcoming_events'->1->>'venue_address' is not null
-     or jsonb_array_length(digest->'upcoming_events') <> 2 then
+     or digest->'upcoming_events'->2->>'title' is distinct from 'Hidden host gathering'
+     or digest->'upcoming_events'->2->>'host_name' is distinct from 'Board Arabia'
+     or jsonb_array_length(digest->'upcoming_events') <> 3 then
     raise exception 'events %', digest->'upcoming_events';
   end if;
 
@@ -304,7 +311,7 @@ begin
     raise exception 'draft state %', issue;
   end if;
   if (issue->'issue'->'payload')::text ilike '%both are in riyadh%'
-     or issue->'issue'->'payload'->'preview_intros'->0->>'full_name' is distinct from 'Preview member' then
+     or issue->'issue'->'payload'->'preview_intros'->0->>'full_name' is distinct from 'Example Member A' then
     raise exception 'staff saw a real introduction %', issue->'issue'->'payload';
   end if;
   if issue->'issue'->'payload'->'upcoming_events'->0->>'venue_address' is distinct from 'Open hall' then

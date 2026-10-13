@@ -164,7 +164,7 @@ export function DigestIssuePanelView({
             <div className="mt-4">
               <WeeklyDigestView
                 digest={model.preview}
-                introNote="Sample introduction for this preview. Not a member record."
+                introNote="Example. Not a member record."
               />
             </div>
           </div>

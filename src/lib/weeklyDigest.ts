@@ -80,7 +80,7 @@ function eventRow(raw: unknown): DigestCopyEvent | null {
   }
 }
 
-function intro(raw: unknown): DigestCopyIntro | null {
+function intro(raw: unknown, example = false): DigestCopyIntro | null {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null
   const row = raw as Record<string, unknown>
   const fullName = clean(row.full_name ?? row.fullName, 200)
@@ -90,6 +90,7 @@ function intro(raw: unknown): DigestCopyIntro | null {
     headline: clean(row.headline, 160),
     company: clean(row.company, 200),
     reason: clean(row.reason, 200),
+    example: example || row.example === true,
   }
 }
 
@@ -138,7 +139,7 @@ function previewFromPayload(payload: unknown, sampleIntros: boolean): WeeklyDige
   const base = presentWeeklyDigest(payload) ?? emptyDigest()
   if (!sampleIntros) return base
   const raw = payload && typeof payload === 'object' && !Array.isArray(payload) ? (payload as Record<string, unknown>) : {}
-  const sample = list(raw.preview_intros, intro)
+  const sample = list(raw.preview_intros, (row) => intro(row, true))
   return {
     ...base,
     introductions: sample.length > 0 ? sample : [DIGEST_PREVIEW_INTRO],

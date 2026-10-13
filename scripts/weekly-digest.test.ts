@@ -131,7 +131,7 @@ test('digest files do not import sendEmail and no workflow schedules a digest', 
 test('the letter stays unsent and the guard refuses a non-approved issue', () => {
   const letter = weeklyDigestMail(
     {
-      newMembers: [{ fullName: 'Layla Al Diriyah', headline: 'Director', company: 'Diriyah Works' }],
+      newMembers: [{ fullName: 'Example Member B', headline: 'Director', company: 'Example Company B' }],
       newMandates: [
         {
           sector: 'Energy',
@@ -146,16 +146,16 @@ test('the letter stays unsent and the guard refuses a non-approved issue', () =>
           title: 'Riyadh gathering',
           when: '16 Oct 2026, 18:00',
           region: 'Riyadh',
-          hostName: 'Huda Al Harbi',
+          hostName: 'Example Member A',
           venueAddress: null,
         },
       ],
       introductions: [
         {
-          fullName: 'Preview member',
+          fullName: 'Example Member A',
           headline: 'Board director',
-          company: 'Preview Works',
-          reason: 'A sample introduction for this preview.',
+          company: 'Example Company A',
+          reason: 'Example introduction for this preview.',
         },
       ],
     },
@@ -191,7 +191,7 @@ test('presented digest drops contact fields and keeps only the caller introducti
   const presented = presentWeeklyDigest({
     mail_ready: true,
     new_members: [
-      { full_name: 'Layla Al Diriyah', headline: 'Director', company: 'Diriyah Works', email: 'layla@example.com' },
+      { full_name: 'Example Member B', headline: 'Director', company: 'Example Company B', email: 'member.b@example.com' },
       { full_name: 'hidden@example.com', headline: 'Director', company: 'Hidden Co' },
     ],
     new_mandates: [
@@ -210,19 +210,19 @@ test('presented digest drops contact fields and keeps only the caller introducti
         title: 'Riyadh gathering',
         starts_at: '2026-10-16T15:00:00.000Z',
         region: 'Riyadh',
-        host_name: 'Huda Al Harbi',
+        host_name: 'Example Member A',
         venue_address: '0501234567',
       },
     ],
-    suggestions: [{ full_name: 'Noura Al Wahat', headline: 'Director', company: 'Wahat Counsel', reason: 'Both are in Riyadh.' }],
-    preview_intros: [{ full_name: 'Preview member', headline: 'Board director', company: 'Preview Works', reason: 'Sample.' }],
+    suggestions: [{ full_name: 'Example Member C', headline: 'Director', company: 'Example Company C', reason: 'Both are in the example city.' }],
+    preview_intros: [{ full_name: 'Example Member A', headline: 'Board director', company: 'Example Company A', reason: 'Example.' }],
   })
   assert.ok(presented)
   assert.equal(presented?.mailReady, false)
   assert.equal(JSON.stringify(presented).includes('@'), false)
   assert.equal(/[0-9][0-9 ()+.-]{6,}[0-9]/.test(JSON.stringify(presented)), false)
-  assert.equal(presented?.newMembers[0]?.fullName, 'Layla Al Diriyah')
-  assert.equal(presented?.introductions.some((row) => row.fullName === 'Preview member'), false)
+  assert.equal(presented?.newMembers[0]?.fullName, 'Example Member B')
+  assert.equal(presented?.introductions.some((row) => row.fullName === 'Example Member A'), false)
   assert.equal(presented?.upcomingEvents[0]?.venueAddress, null)
   assert.equal(presented?.upcomingEvents[0]?.when, '16 Oct 2026, 18:00')
 
@@ -233,13 +233,13 @@ test('presented digest drops contact fields and keeps only the caller introducti
     issue: {
       status: 'draft',
       payload: {
-        new_members: [{ full_name: 'Layla Al Diriyah', headline: 'Director', company: 'Diriyah Works' }],
+        new_members: [{ full_name: 'Example Member B', headline: 'Director', company: 'Example Company B' }],
         preview_intros: [
           {
-            full_name: 'Preview member',
+            full_name: 'Example Member A',
             headline: 'Board director',
-            company: 'Preview Works',
-            reason: 'A sample introduction for this preview.',
+            company: 'Example Company A',
+            reason: 'Example introduction for this preview.',
           },
         ],
         suggestions: [{ full_name: 'Real Member', headline: 'Director', company: 'Real Co', reason: 'Private.' }],
@@ -250,7 +250,8 @@ test('presented digest drops contact fields and keeps only the caller introducti
   assert.equal(issue?.sendEnabled, false)
   assert.equal(issue?.mailReady, false)
   assert.equal(issue?.status, 'draft')
-  assert.equal(issue?.preview.introductions[0]?.fullName, 'Preview member')
+  assert.equal(issue?.preview.introductions[0]?.fullName, 'Example Member A')
+  assert.equal(issue?.preview.introductions[0]?.example, true)
   assert.equal(JSON.stringify(issue?.preview.introductions).includes('Real Member'), false)
 })
 
@@ -331,22 +332,24 @@ test('home tap targets are at least 44px at 390 and digest shots exist', async (
     args: ['--no-sandbox', '--disable-dev-shm-usage'],
   })
   try {
-    const shots: Array<[string, number, number]> = [
-      ['full', 1280, 900],
-      ['full', 390, 844],
-      ['empty', 1280, 900],
-      ['empty', 390, 844],
-      ['privacy', 1280, 900],
-      ['privacy', 390, 844],
-      ['admin', 1280, 1100],
-      ['admin', 390, 844],
-      ['home', 1280, 900],
-      ['home', 390, 844],
+    const shots: Array<[string, string, number, number]> = [
+      ['member', 'full', 1280, 900],
+      ['member', 'full', 390, 844],
+      ['home-link', 'home', 1280, 900],
+      ['home-link', 'home', 390, 844],
+      ['admin-prepare', 'prepare', 1280, 1100],
+      ['admin-prepare', 'prepare', 390, 844],
+      ['admin-preview', 'preview', 1280, 1100],
+      ['admin-preview', 'preview', 390, 844],
+      ['admin-approved', 'approved', 1280, 1100],
+      ['admin-approved', 'approved', 390, 844],
+      ['admin-withdrawn', 'withdrawn', 1280, 1100],
+      ['admin-withdrawn', 'withdrawn', 390, 844],
     ]
-    for (const [name, width, height] of shots) {
+    for (const [name, viewName, width, height] of shots) {
       const page = await browser.newPage({ viewport: { width, height } })
-      await page.goto(`${origin}/scripts/smoke/weekly-digest.html?view=${name}`, { waitUntil: 'networkidle' })
-      if (name === 'home' && width === 390) {
+      await page.goto(`${origin}/scripts/smoke/weekly-digest.html?view=${viewName}`, { waitUntil: 'networkidle' })
+      if (viewName === 'home' && width === 390) {
         const boxes = await page.locator('[data-tap]').evaluateAll((nodes) =>
           nodes.map((node) => {
             const rect = node.getBoundingClientRect()
@@ -365,20 +368,23 @@ test('home tap targets are at least 44px at 390 and digest shots exist', async (
           assert.ok(hit.height >= 44, `${tap} height ${hit.height}`)
         }
       }
-      if (name === 'admin') {
+      if (viewName === 'preview') {
         const text = await page.locator('[data-preview]').innerText()
         assert.match(text, /22 Sept 2026, 14:49/)
         assert.match(text, /Sending is off\. Email is not connected\./)
         assert.match(text, /Member note/)
         assert.equal(text.includes('member@example.com'), false)
-        assert.match(text, /Preview member/)
-        assert.match(text, /Sample introduction for this preview/)
+        assert.match(text, /Example Member A/)
+        assert.match(text, /Example\. Not a member record\./)
       }
-      if (name === 'empty') {
-        assert.match(await page.locator('[data-digest="empty"]').innerText(), /Nothing new this week/)
+      if (viewName === 'prepare') {
+        assert.equal(await page.locator('[data-issue-status]').getAttribute('data-issue-status'), 'none')
       }
-      if (name === 'privacy') {
-        assert.equal(await page.locator('[data-digest-email]').getAttribute('data-digest-email'), 'off')
+      if (viewName === 'approved') {
+        assert.equal(await page.locator('[data-issue-status]').getAttribute('data-issue-status'), 'approved')
+      }
+      if (viewName === 'withdrawn') {
+        assert.equal(await page.locator('[data-issue-status]').getAttribute('data-issue-status'), 'withdrawn')
       }
       const file = path.join(shotDir, `digest-${name}-${width}.png`)
       await page.screenshot({ path: file, fullPage: true })

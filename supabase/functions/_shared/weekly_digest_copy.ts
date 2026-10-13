@@ -28,6 +28,7 @@ export type DigestCopyIntro = {
   headline: string
   company: string
   reason: string
+  example?: boolean
 }
 
 export type DigestCopyInput = {
@@ -45,10 +46,11 @@ export type WeeklyDigestMail = {
 }
 
 export const DIGEST_PREVIEW_INTRO: DigestCopyIntro = {
-  fullName: 'Preview member',
+  fullName: 'Example Member A',
   headline: 'Board director',
-  company: 'Preview Works',
-  reason: 'A sample introduction for this preview.',
+  company: 'Example Company A',
+  reason: 'Example introduction for this preview.',
+  example: true,
 }
 
 /** A future sender must refuse anything that is not an approved issue with the switch on and mail ready. */

@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { ExampleMark } from '../ExampleMark'
 import { digestIsEmpty, type WeeklyDigestModel } from '../../lib/weeklyDigest'
 import { toneClasses } from '../../shell/ViewState'
 
@@ -84,7 +85,10 @@ export function WeeklyDigestView({
           <ul className="mt-3 flex flex-col gap-3">
             {digest.introductions.map((intro) => (
               <li key={`${intro.fullName}-${intro.reason}`} className={`${styles.panel} px-4 py-3`}>
-                <p className="font-display text-[1.15rem] font-semibold tracking-[-0.03em]">{intro.fullName}</p>
+                <div className="flex items-start justify-between gap-3">
+                  <p className="font-display text-[1.15rem] font-semibold tracking-[-0.03em]">{intro.fullName}</p>
+                  {intro.example ? <ExampleMark /> : null}
+                </div>
                 {intro.headline ? <p className="mt-1 text-[0.95rem] text-ink/70">{intro.headline}</p> : null}
                 {intro.company ? <p className="mt-1 text-[0.85rem] text-ink/50">{intro.company}</p> : null}
                 {intro.reason ? <p className="mt-2 text-[0.95rem] text-ink/75">{intro.reason}</p> : null}
