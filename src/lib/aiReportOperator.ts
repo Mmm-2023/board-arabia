@@ -2,8 +2,9 @@
  * Logged-in AI report operator credit.
  * A signed-in client still loads the operator row.
  * The stored name and registration number are not shown.
- * When a row is present the credit is "Provided by Board Arabia".
- * If that read fails, the Provided by sentence is omitted.
+ * The credit requires only the entity name.
+ * An empty registration field still renders "Provided by Board Arabia", with no registration clause.
+ * A blank entity, or a failed read, omits the Provided by sentence.
  */
 
 export type AiReportOperator = {
