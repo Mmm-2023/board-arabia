@@ -6,8 +6,30 @@ import json
 import os
 import socket
 import struct
+import subprocess
 import sys
 import urllib.request
+
+
+def adb(*args: str) -> str:
+    result = subprocess.run(['adb', *args], check=True, stdout=subprocess.PIPE)
+    return result.stdout.replace(b'\0', b' ').decode()
+
+
+def forward_devtools() -> None:
+    pid = adb('shell', 'pidof', '-s', 'com.boardarabia.app').strip()
+    if not pid:
+        raise SystemExit('the app process was not found')
+    needle = f'webview_devtools_remote_{pid}'
+    socket_name = ''
+    for token in adb('shell', 'cat', '/proc/net/unix').split():
+        if needle in token:
+            socket_name = token.lstrip('@')
+            break
+    if not socket_name:
+        raise SystemExit('WebView devtools socket was not found')
+    subprocess.run(['adb', 'forward', '--remove', 'tcp:9222'], check=False, stdout=subprocess.DEVNULL)
+    subprocess.run(['adb', 'forward', 'tcp:9222', f'localabstract:{socket_name}'], check=True)
 
 
 def connect(ws_url: str) -> socket.socket:
@@ -57,6 +79,7 @@ def main() -> None:
     target = sys.argv[1]
     if not target.startswith('https://localhost/'):
         raise SystemExit('target must be an https://localhost path')
+    forward_devtools()
     pages = json.load(urllib.request.urlopen('http://127.0.0.1:9222/json', timeout=15))
     page = next(item for item in pages if item.get('type') == 'page' and item.get('webSocketDebuggerUrl'))
     print(page.get('url', ''))
