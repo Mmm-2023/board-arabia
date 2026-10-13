@@ -6,6 +6,7 @@ import {
   digestAuditLabel,
   presentDigestIssue,
   presentDigestSources,
+  validateDigestForSave,
   type DigestIssueModel,
   type WeeklyDigestModel,
 } from '../../lib/weeklyDigest'
@@ -13,6 +14,17 @@ import { weeklyDigestMail } from '../../../supabase/functions/_shared/weekly_dig
 import { supabase } from '../../lib/supabase'
 
 const SITE = 'https://boardarabia.com'
+
+function digestSaveNotice(message: string | undefined): string {
+  const text = message ?? ''
+  if (text.includes('digest_news_count')) return 'News sections need 2 to 4 items.'
+  if (text.includes('digest_news_invalid')) return 'A news item needs a headline, 2 to 3 sentences, and a source.'
+  if (text.includes('digest_link_invalid')) return 'Links must use http or https. LinkedIn links must use linkedin.com.'
+  if (text.includes('digest_diary')) return 'A diary date needs a source.'
+  if (text.includes('digest_platform')) return 'Platform notes are limited to 3 lines.'
+  if (text.includes('digest_partner')) return 'Partner content needs 2 to 3 sentences and one link.'
+  return 'Could not update this issue.'
+}
 
 const actionClass =
   'inline-flex min-h-11 min-w-11 items-center border border-pearl/25 px-3 text-[0.75rem] font-semibold tracking-[0.08em] text-pearl uppercase disabled:opacity-40'
@@ -71,6 +83,11 @@ export function DigestIssuePanel() {
 
   async function saveDraft() {
     if (!draft) return false
+    const problem = validateDigestForSave(draft)
+    if (problem) {
+      setNotice(problem)
+      return false
+    }
     setBusy(true)
     setNotice('')
     const { data, error } = await supabase.rpc('staff_save_digest_draft', {
@@ -80,7 +97,7 @@ export function DigestIssuePanel() {
     setBusy(false)
     const next = error ? null : presentDigestIssue(data)
     if (!next) {
-      setNotice('Could not update this issue.')
+      setNotice(digestSaveNotice(error?.message))
       return false
     }
     applyModel(next)
@@ -164,18 +181,7 @@ export function DigestIssuePanelView({
 }) {
   const status = model?.status ?? null
   const shown = status === 'draft' && draft ? draft : model?.preview ?? null
-  const letter = shown
-    ? weeklyDigestMail(
-        {
-          newMembers: shown.newMembers,
-          newMandates: shown.newMandates,
-          upcomingEvents: shown.upcomingEvents,
-          introductions: shown.introductions,
-          notes: shown.notes,
-        },
-        SITE,
-      )
-    : null
+  const letter = shown ? weeklyDigestMail(shown, SITE) : null
 
   return (
     <section className="mt-10 border-t border-pearl/10 pt-8" aria-label="This week" data-digest-admin="">
