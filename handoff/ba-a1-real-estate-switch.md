@@ -12,7 +12,7 @@ The third navigation level on Real estate is no longer a second row of pills. It
 | One bordered group, three equal columns, 44px targets, no pill radius on the segments. | `src/pages/dashboard/RealEstateBoard.tsx:149` | same test, plus `assertOneRow` in the browser test | VERIFIED |
 | Arrow keys still move the selection and move focus. Focus outline is at least 2px. | `src/pages/dashboard/RealEstateBoard.tsx:116` | `each segment sets the real estate view and arrows keep one row at 390` | VERIFIED |
 | `?view=partners` and `?view=roles` are unchanged. Absent view is opportunities. `firms` and `board-roles` do not select a segment. | `src/pages/dashboard/RealEstatePage.tsx:52` (not edited) | deep link render test and the browser route test | VERIFIED |
-| Clicking Firms sets `?view=partners`. Board roles sets `?view=roles`. Opportunities clears `view`. Path stays `/dashboard/deals/real-estate`. | `src/pages/dashboard/RealEstatePage.tsx:53` | browser route test | VERIFIED |
+| Clicking Firms sets `?view=partners`. Board roles sets `?view=roles`. Opportunities clears `view`. The deals section link stays `/dashboard/deals/real-estate`. | `src/pages/dashboard/RealEstatePage.tsx:53` | browser test on the fixture shell, plus the deep link render of the real page | VERIFIED |
 | Old `/dashboard/real-estate?view=partners` still lands on `/dashboard/deals/real-estate?view=partners` and the firms panel. | `src/shell/redirects.ts:8` (not edited) | browser route test | VERIFIED |
 | Deals section tabs and destinations are untouched. | `src/pages/dashboard/DealsLayout.tsx:13`, `src/shell/SectionTabs.tsx`, `src/shell/destinations.ts` | source pins in the switch test | VERIFIED |
 | At 390 the segment is one row (box height 46, each target at least 44) and does not clip the labels. Exactly one `[data-section-tabs]` pill row. | browser test `assertOneRow` | same | VERIFIED |
@@ -34,7 +34,7 @@ After, same harness:
 - `re-switch-after-partners-1280.png`, `re-switch-after-partners-390.png`
 - `re-switch-after-roles-1280.png`, `re-switch-after-roles-390.png`
 
-Route destinations from the browser test (the real `/dashboard/deals/real-estate` route):
+Browser shots from the fixture shell (same board and Deals tabs). The real route markup is the deep link render test:
 
 - `re-switch-route-opportunities-1280.png`, `re-switch-route-opportunities-390.png`
 - `re-switch-route-partners-1280.png`, `re-switch-route-partners-390.png`
@@ -42,7 +42,7 @@ Route destinations from the browser test (the real `/dashboard/deals/real-estate
 
 ## Tests run here
 
-`node --experimental-strip-types --test scripts/re-switch.test.ts`: 3 passed, including the Chrome route test.
+`node --experimental-strip-types --test scripts/re-switch.test.ts`: 3 passed. The Chrome test drives the fixture shell so it does not wait on a signed-in dashboard. The deep link test renders the real route.
 
 Also passed: `scripts/re-opportunities-ui.test.ts`, `scripts/re-appetite.test.ts`, `scripts/re-board-roles.test.ts`, `scripts/member-nav-redirects.test.ts`, `scripts/shell-destinations.test.ts`, `scripts/public-names.test.ts`, and the partner wording copy gate. The partner page render passed when the example env file was loaded. The built-asset partner check needs `dist/` from the CI build.
 

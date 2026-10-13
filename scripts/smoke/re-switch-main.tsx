@@ -81,6 +81,11 @@ function FixtureBoard() {
     else if (next === 'roles') nextParams.set('view', 'roles')
     else nextParams.delete('view')
     setParams(nextParams, { replace: true })
+    const url = new URL(window.location.href)
+    if (next === 'partners') url.searchParams.set('view', 'partners')
+    else if (next === 'roles') url.searchParams.set('view', 'roles')
+    else url.searchParams.delete('view')
+    window.history.replaceState(null, '', url)
   }
   return (
     <RealEstateBoard
