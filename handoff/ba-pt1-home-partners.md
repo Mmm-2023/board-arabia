@@ -23,7 +23,7 @@ Trusted advisers are unchanged: a real row that is not a partner seat still rend
 
 ## Migration
 
-`supabase/migrations/20261226120000_home_partner_examples.sql` replaces `private.list_trusted_partners_impl`. It does not have to be the newest file. Grants are the SEC-C set: revoke from public, anon, authenticated, and service_role, then execute for anon and authenticated only. `search_path` is empty. Not applied. No `db push`. Hosted state after a later apply: UNKNOWN until the operator applies it.
+`supabase/migrations/20261226120000_home_partner_examples.sql` replaces `private.list_trusted_partners_impl`. It does not have to be the newest file. Grants are the SEC-C set: revoke from public, anon, authenticated, and service_role, then execute for anon and authenticated only. `search_path` is empty. A local replay of the gallery filter and of the SEC-C grant check passed. Not applied. No `db push`. Hosted state after a later apply: UNKNOWN until the operator applies it.
 
 ## Shots
 
