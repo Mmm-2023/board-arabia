@@ -15,6 +15,7 @@ import { RePartnerIntroQueue } from './RePartnerIntroQueue'
 import { RePartnersPanel } from './RePartnersPanel'
 import { ReReadinessPanel } from './ReReadinessPanel'
 import type { ReOpportunityCard, RePartnerCard } from '../../lib/reRedaction'
+import { staffHeadcount } from '../../lib/staffRoster'
 import { sponsorSeatHolders } from '../../lib/sponsorSeat'
 import { useAdmin } from './context'
 import { PrivateWorkCountsPanel } from '../../components/mfa/PrivateWorkCountsPanel'
@@ -94,7 +95,7 @@ export function StaffDesk({ children, closing }: { children?: ReactNode; closing
   const capacityAlerts = alertsFor(room.capacity)
   const attention = pending.length + failedMail.length + awaiting.length + capacityAlerts.length > 0
   const admitted = room.platform ? seatLine(room.platform) : null
-  const admins = room.staffRows.filter((row) => row.role !== 'master').length
+  const staffCount = staffHeadcount(room.staffRows)
   const sponsors = sponsorSeatHolders(room.members).length
   const recent = room.events.slice(0, 5)
 
@@ -242,14 +243,16 @@ export function StaffDesk({ children, closing }: { children?: ReactNode; closing
           </article>
           <article className={`${styles.panel} px-4 py-4`}>
             <p className={`text-[0.72rem] font-semibold tracking-[0.12em] uppercase ${styles.quiet}`}>
-              Admins
+              Staff
             </p>
             {room.panelFailed.staff && room.staffRows.length === 0 ? (
               <div className="mt-2">
                 <PanelNotice />
               </div>
             ) : (
-              <p className="mt-2 font-display text-[1.6rem] font-semibold">{admins}</p>
+              <p className="mt-2 font-display text-[1.6rem] font-semibold" data-staff-count={staffCount}>
+                {staffCount}
+              </p>
             )}
             {room.panelFailed.staff && room.staffRows.length > 0 ? (
               <div className="mt-2">
@@ -289,7 +292,7 @@ export function StaffDesk({ children, closing }: { children?: ReactNode; closing
           </li>
           <li>
             <Link to="/admin/people" className="inline-flex min-h-11 items-center text-pearl/75">
-              Invite admin
+              Add staff
             </Link>
           </li>
           <li>

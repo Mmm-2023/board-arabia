@@ -27,6 +27,8 @@ test('email_events staff grant is select for authenticated and not anon', () => 
 })
 
 test('one failing admin query keeps the other panels', async () => {
+  process.env.VITE_SUPABASE_URL = 'https://example.supabase.co'
+  process.env.VITE_SUPABASE_ANON_KEY = 'example-anon-key'
   const capacity: FoundingCapacity = { ksa: 4, intl: 3, ksa_cap: 50, intl_cap: 50, total_cap: 100 }
   const platform: PlatformStats = {
     investment: 5000000,
@@ -100,7 +102,8 @@ test('one failing admin query keeps the other panels', async () => {
     assert.equal(emailPanel.includes('permission denied'), false)
     assert.match(html, /Pending applications[\s\S]{0,240}>2</)
     assert.match(html, /Founding admitted[\s\S]{0,240}>7 \/ 100</)
-    assert.match(html, /Admins[\s\S]{0,240}>1</)
+    assert.match(html, /data-staff-count="1"/)
+    assert.match(html, />Staff</)
     assert.equal(html.includes("Couldn't refresh"), false)
     assert.equal(html.includes('permission denied'), false)
     assert.equal((html.match(/This panel couldn(?:'|&#x27;)t load/g) || []).length, 1)

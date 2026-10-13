@@ -908,7 +908,17 @@ export type Database = {
           email: string
           role: string
           created_at: string
+          user_id: string
+          display_name: string | null
         }[]
+      }
+      staff_set_role: {
+        Args: { p_user: string; p_role: string }
+        Returns: Json
+      }
+      staff_remove: {
+        Args: { p_user: string }
+        Returns: Json
       }
       set_member_tiers: {
         Args: {

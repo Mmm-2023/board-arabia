@@ -651,6 +651,8 @@ export type StaffDirectoryRow = {
   email: string
   role: string
   created_at: string
+  user_id?: string
+  display_name?: string | null
 }
 
 export async function staffGetOwnDisplayName(): Promise<string> {
@@ -674,11 +676,29 @@ export async function staffSetOwnDisplayName(
   return saved
 }
 
+export async function staffSetRole(
+  userId: string,
+  role: 'staff' | 'master',
+): Promise<{ error?: string }> {
+  const { staffChangeMessage } = await import('./staffRoster')
+  const { error } = await supabase.rpc('staff_set_role', { p_user: userId, p_role: role })
+  if (error) return { error: staffChangeMessage(error.message) }
+  return {}
+}
+
+export async function staffRemove(userId: string): Promise<{ error?: string }> {
+  const { staffChangeMessage } = await import('./staffRoster')
+  const { error } = await supabase.rpc('staff_remove', { p_user: userId })
+  if (error) return { error: staffChangeMessage(error.message) }
+  return {}
+}
+
 export async function inviteMaster(input?: {
   email?: string
   seat?: FoundingSeat
   admitMember?: boolean
   role?: 'master'
+  purpose?: 'staff' | 'member'
 }): Promise<{
   error?: string
   message?: string
@@ -689,6 +709,7 @@ export async function inviteMaster(input?: {
   if (input?.email) payload.email = input.email.trim()
   if (input?.seat) payload.seat = input.seat
   if (input && input.admitMember === false) payload.admit_member = false
+  if (input?.purpose === 'staff' || input?.purpose === 'member') payload.purpose = input.purpose
   if (input?.role === 'master') payload.role = 'master'
   try {
     const res = await fetch(`${functionsBase}/invite-master`, {

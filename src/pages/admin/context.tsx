@@ -78,7 +78,13 @@ export type AdminRoom = {
   onReject: (id: string) => Promise<void>
   runInvite: (
     kind: string,
-    input?: { email?: string; seat?: FoundingSeat; admitMember?: boolean; role?: 'master' },
+    input?: {
+      email?: string
+      seat?: FoundingSeat
+      admitMember?: boolean
+      role?: 'master'
+      purpose?: 'staff' | 'member'
+    },
   ) => Promise<void>
   onMemberStatus: (row: MemberAdminRow, action: 'suspend' | 'restore') => Promise<void>
   onSaveCapacity: (userId: string) => Promise<void>
@@ -367,7 +373,13 @@ function useAdminState(): AdminRoom {
 
   async function runInvite(
     kind: string,
-    input?: { email?: string; seat?: FoundingSeat; admitMember?: boolean; role?: 'master' },
+    input?: {
+      email?: string
+      seat?: FoundingSeat
+      admitMember?: boolean
+      role?: 'master'
+      purpose?: 'staff' | 'member'
+    },
   ) {
     setUpdatingId(kind)
     setActionNote('')

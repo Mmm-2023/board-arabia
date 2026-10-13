@@ -161,7 +161,8 @@ test('access log row renders the staff name and role', async () => {
     const labels = await vite.ssrLoadModule('/src/pages/admin/accessLogLabels.ts')
     const mod = await vite.ssrLoadModule('/src/pages/admin/StaffAccessLogPage.tsx')
     assert.equal(labels.accessActorLabel('Example Admin', 'Admin'), 'Example Admin, Admin')
-    assert.equal(labels.accessActorLabel('   ', 'Master'), 'Master')
+    assert.equal(labels.accessActorLabel('   ', 'Master'), 'Owner')
+    assert.equal(labels.accessActorLabel('   ', 'Owner'), 'Owner')
     assert.equal(labels.accessActorLabel('person@example.com', 'Admin'), 'Admin')
     const html = renderToStaticMarkup(
       createElement(mod.StaffAccessLogView, {
