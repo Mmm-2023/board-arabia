@@ -152,12 +152,21 @@ alter table storage.objects enable row level security;
 alter table storage.objects force row level security;
 grant select on storage.objects to authenticated;
 
-create table public.staff_read_probe (
-  id integer generated always as identity primary key,
-  table_name text,
-  row_id uuid
+create table public.staff_access_log (
+  id uuid primary key default gen_random_uuid(),
+  staff_user_id uuid not null,
+  member_id uuid,
+  object_type text not null,
+  object_id uuid,
+  action text not null default 'read',
+  created_at timestamptz not null default now(),
+  constraint staff_access_log_action_check check (action = 'read'),
+  constraint staff_access_log_object_type_check check (char_length(btrim(object_type)) between 1 and 80)
 );
-grant select on public.staff_read_probe to authenticated;
+alter table public.staff_access_log enable row level security;
+alter table public.staff_access_log force row level security;
+revoke all on table public.staff_access_log from public, anon, authenticated;
+grant select on table public.staff_access_log to authenticated;
 
 create or replace function private.is_staff()
 returns boolean
@@ -203,14 +212,32 @@ begin
 end;
 $$;
 
-create or replace function private.note_staff_shared_read(p_table text, p_row_id uuid)
-returns void
+create policy staff_access_log_select_staff
+  on public.staff_access_log
+  for select
+  to authenticated
+  using (private.is_staff());
+
+create or replace function private.log_staff_access(
+  p_staff uuid,
+  p_member uuid,
+  p_object_type text,
+  p_object_id uuid,
+  p_action text
+) returns void
 language plpgsql
 security definer
 set search_path = public
 as $$
 begin
-  insert into public.staff_read_probe (table_name, row_id) values (p_table, p_row_id);
+  if p_staff is null or p_object_type is null or btrim(p_object_type) = '' then
+    return;
+  end if;
+  if p_action is distinct from 'read' then
+    return;
+  end if;
+  insert into public.staff_access_log (staff_user_id, member_id, object_type, object_id, action)
+  values (p_staff, p_member, left(btrim(p_object_type), 80), p_object_id, 'read');
 end;
 $$;
 
@@ -382,7 +409,7 @@ begin
   if n <> 0 then perform pg_temp.fail('staff aal1 metadata'); end if;
   select count(*) into n from storage.objects where bucket_id = 'deal-room-documents';
   if n <> 0 then perform pg_temp.fail('staff aal1 storage'); end if;
-  select count(*) into probe from public.staff_read_probe;
+  select count(*) into probe from public.staff_access_log;
   if probe <> 0 then perform pg_temp.fail('staff aal1 hook'); end if;
 
   perform pg_temp.assume('${STAFF}', 'aal2', 'authenticated');
@@ -390,7 +417,7 @@ begin
   if n <> 0 then perform pg_temp.fail('staff aal2 sees rows'); end if;
   select count(*) into n from storage.objects where bucket_id = 'deal-room-documents';
   if n <> 0 then perform pg_temp.fail('staff aal2 unshared storage'); end if;
-  select count(*) into probe from public.staff_read_probe;
+  select count(*) into probe from public.staff_access_log;
   if probe <> 0 then perform pg_temp.fail('staff aal2 unshared hook'); end if;
 
   perform pg_temp.service();
@@ -399,7 +426,12 @@ begin
   perform pg_temp.assume('${STAFF}', 'aal2', 'authenticated');
   select count(*) into n from storage.objects where bucket_id = 'deal-room-documents';
   if n <> 1 then perform pg_temp.fail('staff shared storage ' || n::text); end if;
-  select count(*) into probe from public.staff_read_probe where table_name = 'room_documents' and row_id = '${DOC}';
+  select count(*) into probe from public.staff_access_log
+  where object_type = 'room_documents'
+    and object_id = '${DOC}'
+    and member_id = '${OWNER}'
+    and staff_user_id = '${STAFF}'
+    and action = 'read';
   if probe < 1 then perform pg_temp.fail('staff shared hook'); end if;
   select count(*) into n from public.room_documents;
   if n <> 0 then perform pg_temp.fail('staff still sees rows'); end if;
@@ -445,6 +477,54 @@ begin
     perform pg_temp.fail('open row deleted');
   end if;
   if not (plan -> 'storage_paths') ? '${OLD_PATH}' then perform pg_temp.fail('apply hid path'); end if;
+
+  insert into auth.users (id, email) values
+    ('fefefefe-fefe-4fef-8fef-fefefefefefe', 'other.owner@example.com');
+  insert into public.members (user_id, status, seat, email) values
+    ('fefefefe-fefe-4fef-8fef-fefefefefefe', 'active', 'ksa', 'other.owner@example.com');
+  insert into public.rooms (id, opened_by, status, name, purpose, summary, owner_member_id, created_at) values
+    ('abababab-abab-4aba-8aba-abababababab', 'member', 'open', 'Other room', 'A purpose', 'A purpose', 'fefefefe-fefe-4fef-8fef-fefefefefefe', now());
+  insert into public.room_participants (id, room_id, member_id, role, invite_status, created_at) values
+    ('10000000-0000-4000-8000-000000000007', 'abababab-abab-4aba-8aba-abababababab', 'fefefefe-fefe-4fef-8fef-fefefefefefe', 'owner', 'accepted', now()),
+    ('10000000-0000-4000-8000-000000000008', 'abababab-abab-4aba-8aba-abababababab', '${MEMBER}', 'member', 'accepted', now());
+  insert into public.room_documents (
+    id, room_id, uploaded_by, storage_path, file_name, mime, size_bytes, page_count
+  ) values (
+    'bcbcbcbc-bcbc-4bcb-8bcb-bcbcbcbcbcbc',
+    'abababab-abab-4aba-8aba-abababababab',
+    'fefefefe-fefe-4fef-8fef-fefefefefefe',
+    'abababab-abab-4aba-8aba-abababababab/bcbcbcbc-bcbc-4bcb-8bcb-bcbcbcbcbcbc/source',
+    'Other pack.pdf',
+    'application/pdf',
+    800,
+    1
+  );
+  insert into public.room_document_member_access (room_id, document_id, member_id, revoked_at) values
+    ('abababab-abab-4aba-8aba-abababababab', 'bcbcbcbc-bcbc-4bcb-8bcb-bcbcbcbcbcbc', '${MEMBER}', now());
+
+  begin
+    perform public.set_room_document_expiry(
+      '${OWNER}',
+      '${ROOM}',
+      'bcbcbcbc-bcbc-4bcb-8bcb-bcbcbcbcbcbc',
+      '${MEMBER}',
+      now() + interval '1 day'
+    );
+    perform pg_temp.fail('cross room expiry');
+  exception when others then
+    if sqlerrm not like '%not_found%' then
+      raise;
+    end if;
+  end;
+  if exists (
+    select 1
+    from public.room_document_member_access
+    where document_id = 'bcbcbcbc-bcbc-4bcb-8bcb-bcbcbcbcbcbc'
+      and member_id = '${MEMBER}'
+      and revoked_at is null
+  ) then
+    perform pg_temp.fail('cross room cleared revoke');
+  end if;
 
   perform public.close_any_deal_room('${STAFF}', 'aal2', '${ROOM}');
   select r.closed_at into closed_at from public.rooms r where r.id = '${ROOM}';

@@ -249,6 +249,51 @@ $$;
 revoke all on function private.actor_owns_room(uuid, uuid) from public, anon;
 grant execute on function private.actor_owns_room(uuid, uuid) to authenticated;
 
+-- Replaces the Security 3 body. Adds deal room files. Member is the uploader.
+create or replace function private.note_staff_shared_read(p_table text, p_row_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_member uuid;
+begin
+  if p_table is null or p_row_id is null then
+    return;
+  end if;
+  if not private.is_staff() then
+    return;
+  end if;
+  if p_table = 'due_diligence_reports' then
+    select r.member_id into v_member from public.due_diligence_reports r where r.id = p_row_id;
+  elsif p_table = 'due_diligence_decks' then
+    select d.member_id into v_member from public.due_diligence_decks d where d.id = p_row_id;
+  elsif p_table = 'due_diligence_jobs' then
+    select j.member_id into v_member from public.due_diligence_jobs j where j.id = p_row_id;
+  elsif p_table = 'ai_tool_jobs' then
+    select j.member_id into v_member from public.ai_tool_jobs j where j.id = p_row_id;
+  elsif p_table = 'ai_tool_outputs' then
+    select o.member_id into v_member from public.ai_tool_outputs o where o.id = p_row_id;
+  elsif p_table = 'ai_tool_notes' then
+    select n.member_id into v_member from public.ai_tool_notes n where n.id = p_row_id;
+  elsif p_table = 'room_documents' then
+    select d.uploaded_by into v_member from public.room_documents d where d.id = p_row_id;
+  else
+    return;
+  end if;
+  if v_member is null then
+    return;
+  end if;
+  perform private.log_staff_access(auth.uid(), v_member, p_table, p_row_id, 'read');
+end;
+$$;
+
+comment on function private.note_staff_shared_read(text, uuid) is
+  'Writes one staff_access_log row when aal2 staff read a member-shared due diligence, AI, or deal room file.';
+
+revoke all on function private.note_staff_shared_read(text, uuid) from public, anon, authenticated;
+
 create or replace function private.room_document_staff_may_read_path(p_name text)
 returns boolean
 language plpgsql
@@ -699,7 +744,8 @@ begin
     update public.room_document_member_access
     set expires_at = p_expires_at,
         revoked_at = case when p_expires_at is null then revoked_at else null end
-    where document_id = p_document_id
+    where room_id = p_room_id
+      and document_id = p_document_id
       and member_id = p_member_id;
     if not found then
       insert into public.room_document_member_access (room_id, document_id, member_id, expires_at)
@@ -939,7 +985,7 @@ revoke all on function public.deal_room_document_retention(boolean) from public,
 grant execute on function public.deal_room_document_retention(boolean) to service_role;
 
 comment on function public.deal_room_document_retention(boolean) is
-  'Lists deal room files whose room closed_at is older than 30 days. p_apply true deletes those rows and keeps the storage paths for the retention-sweep Edge function. Open rooms are not listed.';
+  'Lists deal room files whose room closed_at is older than 30 days. p_apply true deletes those rows and keeps the storage paths for a future sweep. Open rooms are not listed. The retention sweep does not call this yet.';
 
 -- Close and archive set closed_at. The trigger also stamps and revokes if a later path forgets.
 create or replace function public.manage_member_deal_room(

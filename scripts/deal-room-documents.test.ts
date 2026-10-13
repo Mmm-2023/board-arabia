@@ -11,10 +11,12 @@ import {
   DEAL_ROOM_CLOSED_RETENTION_DAYS,
   DEAL_ROOM_MAX_BYTES,
   DEAL_ROOM_SIGNED_URL_SECONDS,
+  DEAL_ROOM_UPLOAD_OVERHEAD,
   dealRoomDocumentDue,
   dealRoomStoragePathOk,
   sanitiseFileName,
   sniffDocument,
+  uploadDeclaredTooLarge,
   watermarkLine,
 } from '../supabase/functions/_shared/deal_room_documents.ts'
 import { handleDealRoomDocuments, type DocumentDeps } from '../supabase/functions/_shared/deal_room_documents_http.ts'
@@ -156,6 +158,28 @@ test('download signs for 60 seconds only when the switch is on', async () => {
   assert.equal(signed[0], 60)
   assert.equal(typeof body.url, 'string')
   assert.equal(calls.some((call) => call.name === 'record_room_document_event' && call.args.p_action === 'download'), true)
+})
+
+test('upload rejects a declared body over 20 MB before reading it', async () => {
+  const calls: { name: string; args: Record<string, unknown> }[] = []
+  const tooBig = String(DEAL_ROOM_MAX_BYTES + DEAL_ROOM_UPLOAD_OVERHEAD + 1)
+  assert.equal(uploadDeclaredTooLarge(tooBig), true)
+  assert.equal(uploadDeclaredTooLarge(String(DEAL_ROOM_MAX_BYTES + DEAL_ROOM_UPLOAD_OVERHEAD)), false)
+  assert.equal(uploadDeclaredTooLarge(null), false)
+  const response = await handleDealRoomDocuments(
+    new Request('https://example.com/functions/v1/deal-room-documents', {
+      method: 'POST',
+      headers: {
+        'content-type': 'multipart/form-data; boundary=bound',
+        'content-length': tooBig,
+      },
+      body: '--bound--',
+    }),
+    fakeDeps(calls),
+  )
+  assert.equal(response.status, 400)
+  assert.equal(((await response.json()) as { error?: string }).error, 'This file is too large.')
+  assert.equal(calls.length, 0)
 })
 
 test('upload rejects svg and oversize before insert, and hides the storage path', async () => {

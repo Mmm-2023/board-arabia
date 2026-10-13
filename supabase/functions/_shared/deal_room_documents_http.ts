@@ -9,6 +9,7 @@ import {
   DEAL_ROOM_SIGNED_URL_SECONDS,
   sanitiseFileName,
   sniffDocument,
+  uploadDeclaredTooLarge,
   watermarkLine,
   type DocumentMime,
 } from './deal_room_documents.ts'
@@ -56,6 +57,9 @@ const EVENT_KEYS = ['id', 'document_id', 'file_name', 'member_name', 'action', '
 export async function handleDealRoomDocuments(req: Request, deps: DocumentDeps): Promise<Response> {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders(req) })
   if (req.method !== 'POST') return jsonResponse(req, { error: 'Method not allowed' }, 405)
+  if (uploadDeclaredTooLarge(req.headers.get('content-length'))) {
+    return jsonResponse(req, { error: 'This file is too large.' }, 400)
+  }
 
   const opened = await deps.open(req)
   if ('error' in opened) {

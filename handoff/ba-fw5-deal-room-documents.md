@@ -12,7 +12,9 @@ Accepted room participants can upload a PDF, PNG, or JPEG (20 MB, 40 pages). The
 
 A view is stamped on the server with the requesting member's own name and email, the date and time in Asia/Riyadh, and the first 8 characters of the room id. The stamp is read from `room_document_viewer_identity` for that caller. The response does not take a name or email from the client. Copy on the panel: "Viewing is watermarked and logged." The UI does not say screenshots are blocked.
 
-Download defaults off. While it is off the API does not create a signed URL and the panel has no save button. When the owner or the uploader turns it on, download returns a signed URL with a 60 second TTL. View returns the stamped bytes. It does not return a storage URL.
+Download defaults off. While it is off the API does not create a signed URL and the panel has no save button. When the owner or the uploader turns it on, download returns a signed URL with a 60 second TTL. That URL is the stored file. The brief watermarks views and asks for a signed URL on download. It does not ask for a watermark on the downloaded copy, so the download is not stamped. View returns the stamped bytes and no storage URL.
+
+An uploader who is later removed can still delete or share the file they uploaded (`supabase/migrations/20261209140000_deal_room_documents.sql:864` and `:912`). The owner can also delete it. A removed person cannot view it.
 
 The owner sets a file expiry or a member expiry, and can revoke a member. Expired access returns "Access expired". Invited, declined, removed, and non-participants get no metadata and no file.
 
@@ -44,15 +46,15 @@ RLS is forced on every new table. VERIFIED.
 - `room_document_events` at `:94`
 - `room_document_file_purge` at `:96`
 
-Staff file read goes through `private.is_staff()`. VERIFIED at `:261`, inside `private.room_document_staff_may_read_path`, which the storage select policy calls at `:394`. That helper returns false before the audit hook when the caller is not staff at aal2. The service-role staff RPCs `close_any_deal_room` (`:1078`) and `list_all_deal_rooms` (`:1120`) use `private.actor_is_staff(p_actor)` plus `p_aal = 'aal2'` (`:1075`, `:1117`). Those run as service_role, so `private.is_staff()` would see no session user. `actor_is_staff` is the service-role form of the same staff check.
+Staff file read goes through `private.is_staff()` inside `private.room_document_staff_may_read_path`, and that helper calls `private.note_staff_shared_read`. VERIFIED. This migration replaces `note_staff_shared_read` (`:253-288`) with `search_path = ''`. The `room_documents` branch (`:280-281`) sets the member to `uploaded_by` and then calls `private.log_staff_access` (`:288`). The Security 3 body returned early for this table and wrote nothing. The service-role staff RPCs `close_any_deal_room` and `list_all_deal_rooms` still use `private.actor_is_staff(p_actor)` plus `p_aal = 'aal2'`, because those run as service_role and `private.is_staff()` would see no session user.
 
-Every SECURITY DEFINER function in this migration sets `search_path = ''`. VERIFIED by reading each function header. There are 26. None set `search_path` to `public`. The one invoker function, `private.deal_room_document_retention_interval` (`:114-115`), also sets `search_path = ''`.
+This migration file has 26 `SECURITY DEFINER` functions, all with `search_path = ''`. VERIFIED by counting the headers. The earlier handoff said 26 before `note_staff_shared_read` was in the file. That count was one high: the file then had 25. This review adds the replaced staff-read function, so the file now has 26. None set `search_path` to `public`. The one invoker function, `private.deal_room_document_retention_interval` (`:114-115`), also sets `search_path = ''`.
 
-There is a storage SELECT policy for upsert and delete. VERIFIED. Storage upsert, replace, and delete read the object row before they write it. That read is `deal_room_documents_storage_select_shared_staff` at `:388-395`. Members have no select, insert, update, or delete policy on this bucket (`:381-386`), so they cannot list, upsert, or delete it. The Edge function uploads and deletes with the service role (`supabase/functions/deal-room-documents/index.ts:13-32`).
+There is a storage SELECT policy for upsert and delete. VERIFIED. Storage upsert, replace, and delete read the object row before they write it. That read is `deal_room_documents_storage_select_shared_staff` at `:433-440`. Members have no select, insert, update, or delete policy on this bucket (`:426-430`), so they cannot list, upsert, or delete it. The Edge function uploads and deletes with the service role (`supabase/functions/deal-room-documents/index.ts:13-32`).
 
-Only signed URLs are issued, and the bucket is not public. VERIFIED. The bucket insert sets `public` to false at `supabase/migrations/20261209140000_deal_room_documents.sql:371`, and the conflict update sets it false again at `:377`. The only client storage URL is `createSignedUrl` at `supabase/functions/deal-room-documents/index.ts:35`. The handler calls it only after `download_allowed` is true (`supabase/functions/_shared/deal_room_documents_http.ts:192-195`) and passes 60 seconds (`:195`, constant at `supabase/functions/_shared/deal_room_documents.ts:6`). There is no `getPublicUrl`. A view returns stamped bytes (`deal_room_documents_http.ts:172-178`), not a storage URL.
+Only signed URLs are issued, and the bucket is not public. VERIFIED. The bucket insert sets `public` to false at `supabase/migrations/20261209140000_deal_room_documents.sql:416`, and the conflict update sets it false again at `:422`. The only client storage URL is `createSignedUrl` at `supabase/functions/deal-room-documents/index.ts:35`. The handler calls it only after `download_allowed` is true (`supabase/functions/_shared/deal_room_documents_http.ts:196-199`) and passes 60 seconds (`:199`, constant at `supabase/functions/_shared/deal_room_documents.ts:6`). There is no `getPublicUrl`. A view returns stamped bytes (`deal_room_documents_http.ts:176-182`), not a storage URL. An upload whose `Content-Length` is over 20 MB plus 64 KB of multipart overhead is refused before the body is read (`deal_room_documents_http.ts:60-62`).
 
-Access is limited to accepted participants of that room. VERIFIED. `list_room_documents` requires `invite_status = 'accepted'` on that `room_id` (`:434-439`) and raises `not_participant` otherwise. `private.room_document_hold` hides the file unless the actor is an accepted participant of the document's room (`:201-203`). Upload uses `private.room_document_actor_accepted` (`:410`). Every Edge RPC passes `p_actor: gate.caller.userId` (first use at `supabase/functions/_shared/deal_room_documents_http.ts:110`). The client cannot name another member.
+Access is limited to accepted participants of that room. VERIFIED. `list_room_documents` requires `invite_status = 'accepted'` on that `room_id` (`:481-486`) and raises `not_participant` otherwise. `private.room_document_hold` hides the file unless the actor is an accepted participant of the document's room (`:201-203`). Upload uses `private.room_document_actor_accepted` (`:442`, check at `:455`). Per-file expiry updates require `room_id = p_room_id` (`:747-749`), so the owner of one room cannot change expiry or clear a revoke in another room. Every Edge RPC passes `p_actor: gate.caller.userId` (first use at `supabase/functions/_shared/deal_room_documents_http.ts:114`). The client cannot name another member.
 
 ## CSP
 
@@ -69,8 +71,8 @@ VERIFIED. `blob:` was added to `frame-src` only.
 Exact version: `pdf-lib@1.17.1`.
 
 - Edge import: `supabase/functions/deal-room-documents/index.ts:2` (`pdf-lib@1.17.1` on esm.sh).
-- Dev dependency range: `package.json:26` (`^1.17.1`).
-- Installed tarball: `package-lock.json:1957` (`1.17.1`).
+- Dev dependency pin: `package.json:26` (`1.17.1`, no caret).
+- Installed tarball: `package-lock.json` `node_modules/pdf-lib` version `1.17.1`. The lockfile otherwise matches main, including the `libc` fields on unrelated optional packages.
 
 `npm audit` counts, high and critical included:
 
@@ -80,6 +82,18 @@ Exact version: `pdf-lib@1.17.1`.
 | After (this branch, pdf-lib 1.17.1) | 0 | 0 | 0 | 0 | 0 | 0 |
 
 pdf-lib adds no high or critical findings. It adds no findings at any severity. VERIFIED by `npm audit --json` on both lockfiles.
+
+## Smoke for the operator
+
+Use two test members in one open test room. Do not call retention-sweep. Do not call suggest-intros. Do not send email. Do not call PostHog.
+
+1. Member A uploads a small PDF.
+2. Member B views it in the room. The stamp shows B's own name and email, the Asia/Riyadh time, and the room reference. It does not show A's email.
+3. With download off, B has no save button and the download action is refused. No signed URL is returned.
+4. A or B turns download on. B then receives a signed URL that lasts 60 seconds. The file at that URL is the stored original, not a watermarked copy.
+5. A sets an expiry for B. B then sees "Access expired" and cannot view or download.
+6. A opens the access log. It shows the file name, B's display name, the action, and the time. It does not show an email.
+7. Staff at aal2, before the share, sees the document count on the Rooms board and cannot open the file. After A shares that file with admin, a staff read writes one `staff_access_log` row with object type `room_documents` and member id A.
 
 ## Checks before this review commit
 

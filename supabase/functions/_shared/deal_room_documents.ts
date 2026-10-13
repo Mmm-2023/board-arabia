@@ -3,6 +3,8 @@
 export const DEAL_ROOM_BUCKET = 'deal-room-documents'
 export const DEAL_ROOM_PAGE_CAP = 40
 export const DEAL_ROOM_MAX_BYTES = 20 * 1024 * 1024
+/** Multipart boundaries and part headers above the file itself. */
+export const DEAL_ROOM_UPLOAD_OVERHEAD = 64 * 1024
 export const DEAL_ROOM_SIGNED_URL_SECONDS = 60
 export const DEAL_ROOM_CLOSED_RETENTION_DAYS = 30
 
@@ -11,6 +13,14 @@ const STORAGE_PATH =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\/source$/i
 
 export type DocumentMime = 'application/pdf' | 'image/png' | 'image/jpeg'
+
+/** True when the declared request size is past the file cap plus multipart overhead. */
+export function uploadDeclaredTooLarge(contentLength: string | null): boolean {
+  if (contentLength == null || contentLength.trim() === '') return false
+  const declared = Number(contentLength)
+  if (!Number.isFinite(declared)) return false
+  return declared > DEAL_ROOM_MAX_BYTES + DEAL_ROOM_UPLOAD_OVERHEAD
+}
 
 export function dealRoomStoragePathOk(path: string): boolean {
   return STORAGE_PATH.test(path) && !path.includes('..')
