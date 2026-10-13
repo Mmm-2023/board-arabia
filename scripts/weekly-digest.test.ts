@@ -418,6 +418,7 @@ test('home tap targets are at least 44px at 390 and digest shots exist', async (
       const page = await browser.newPage({ viewport: { width, height } })
       await page.goto(`${origin}/scripts/smoke/weekly-digest.html?view=${viewName}`, { waitUntil: 'networkidle' })
       if (viewName === 'home' && width === 390) {
+        await page.locator('[data-home-more] summary').click()
         const boxes = await page.locator('[data-tap]').evaluateAll((nodes) =>
           nodes.map((node) => {
             const rect = node.getBoundingClientRect()

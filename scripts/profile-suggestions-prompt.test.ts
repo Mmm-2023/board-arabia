@@ -203,38 +203,32 @@ function quietHome() {
   return assembleHome(input)
 }
 
-test('nothing needs you stays beside an empty suggestions week', async () => {
+test('home keeps one next action and does not render suggestion cards', async () => {
   const vite = await createServer({ server: { middlewareMode: true }, appType: 'custom', logLevel: 'error' })
   try {
     const home = await vite.ssrLoadModule('/src/pages/dashboard/HomeSnapshotView.tsx')
     const model = quietHome()
-    const weekly = createElement('p', null, NO_SUGGESTIONS_THIS_WEEK)
-    const view = (props: { hasSuggestions: boolean; promptShowing: boolean; suggestionsSlot: ReactNode; profilePrompt?: ReactNode }) =>
-      render(createElement(home.HomeSnapshotView, { model, ...props }))
+    const quiet = render(createElement(home.HomeSnapshotView, { model, needsYou: [] }))
+    assert.equal(quiet.includes('data-home-needs'), false)
+    assert.equal(quiet.includes('Nothing needs you right now'), false)
+    assert.equal(quiet.includes(NO_SUGGESTIONS_THIS_WEEK), false)
+    assert.equal(quiet.includes(PROFILE_PROMPT_LINE), false)
+    assert.equal((quiet.match(/data-home-cta=/g) || []).length, 1)
+    assert.match(quiet, />Explore deals</)
 
-    const withRow = view({
-      hasSuggestions: true,
-      promptShowing: false,
-      suggestionsSlot: createElement('p', null, 'Example suggestion'),
-    })
-    assert.equal(withRow.includes('Nothing needs you right now'), false)
-
-    const withPrompt = view({
-      hasSuggestions: false,
-      promptShowing: true,
-      suggestionsSlot: weekly,
-      profilePrompt: createElement('p', null, PROFILE_PROMPT_LINE),
-    })
-    assert.equal(withPrompt.includes('Nothing needs you right now'), false)
-    assert.match(withPrompt, /Intro suggestions depend on them/)
-
-    const quiet = view({
-      hasSuggestions: false,
-      promptShowing: false,
-      suggestionsSlot: weekly,
-    })
-    assert.match(quiet, /Nothing needs you right now/)
-    assert.match(quiet, /No suggested introductions this week\./)
+    const withLink = render(createElement(home.HomeSnapshotView, {
+      model,
+      needsYou: [{
+        id: 'suggestions',
+        label: '2 suggested introductions for you',
+        action: 'Suggested introductions',
+        to: '/dashboard/people/intros',
+      }],
+    }))
+    assert.match(withLink, /2 suggested introductions for you/)
+    assert.match(withLink, /href="\/dashboard\/people\/intros"/)
+    assert.equal(withLink.includes(NO_SUGGESTIONS_THIS_WEEK), false)
+    assert.equal(withLink.includes('IntroSuggestions'), false)
   } finally {
     await vite.close()
   }
@@ -329,30 +323,19 @@ async function captureMember(
   try {
     await page.goto(`${origin}/dashboard`, { waitUntil: 'domcontentloaded' })
     if (tags === 'empty') {
-      await page.getByText(PROFILE_PROMPT_LINE).waitFor()
-      await page.getByText(ADD_SECTORS_AND_THEMES).waitFor()
+      await page.getByText('Your profile is 3 steps from complete').waitFor()
+      assert.equal(await page.getByText(PROFILE_PROMPT_LINE).count(), 0)
+      assert.equal(await page.getByText(ADD_SECTORS_AND_THEMES).count(), 0)
       assert.equal(await page.getByText(NO_SUGGESTIONS_THIS_WEEK).count(), 0)
-      const empty = page.locator('[data-suggestion-empty="needs-tags"]')
-      assert.equal(await empty.getByRole('link').count(), 1)
+      assert.equal(await page.locator('[data-profile-prompt]').count(), 0)
+      assert.equal(await page.locator('[data-needs-action="profile"]').getAttribute('href'), '/dashboard/profile#profile-tags')
       await saveShot(
         page,
-        'section[aria-label="Next actions"]',
+        '[data-home-needs]',
         path.join(shotDir, homeShot),
         width,
-        '[data-suggestion-empty="needs-tags"] a',
+        '[data-needs-action="profile"]',
       )
-      if (width === 1280) {
-        await page.getByRole('button', { name: 'Dismiss' }).click()
-        await page.locator('[data-profile-prompt]').waitFor({ state: 'hidden' })
-        const stored = await page.evaluate(
-          (key) => localStorage.getItem(key),
-          profilePromptStorageKey(EXAMPLE_MEMBER),
-        )
-        assert.equal(stored, '1')
-        await page.reload({ waitUntil: 'domcontentloaded' })
-        await page.getByText(ADD_SECTORS_AND_THEMES).waitFor()
-        assert.equal(await page.locator('[data-profile-prompt]').count(), 0)
-      }
       if (introsShot) {
         await page.goto(`${origin}/dashboard/people/intros`, { waitUntil: 'domcontentloaded' })
         await page.getByRole('heading', { name: 'Intros' }).waitFor()
@@ -363,8 +346,8 @@ async function captureMember(
       }
       if (profileShot) {
         await page.goto(`${origin}/dashboard`, { waitUntil: 'domcontentloaded' })
-        await page.getByText(ADD_SECTORS_AND_THEMES).waitFor()
-        await page.locator('[data-suggestion-empty="needs-tags"] a').click()
+        await page.getByText('Your profile is 3 steps from complete').waitFor()
+        await page.locator('[data-needs-action="profile"]').click()
         await page.waitForURL((url) => url.pathname === '/dashboard/profile')
         await page.getByRole('heading', { name: 'Your details' }).waitFor()
         await page.getByText('Sector', { exact: true }).waitFor()
@@ -380,16 +363,18 @@ async function captureMember(
           })
           await page.screenshot({ path: path.join(shotDir, profileShot) })
         } else {
-          await page.locator('form').filter({ hasText: 'Location' }).screenshot({ path: path.join(shotDir, profileShot) })
+          await page.locator('form').filter({ hasText: 'City' }).screenshot({ path: path.join(shotDir, profileShot) })
         }
       }
       return
     }
-    await page.getByText(NO_SUGGESTIONS_THIS_WEEK).waitFor()
+    await page.getByRole('link', { name: 'Explore deals' }).waitFor()
+    assert.equal(await page.getByText(NO_SUGGESTIONS_THIS_WEEK).count(), 0)
     assert.equal(await page.getByText(PROFILE_PROMPT_LINE).count(), 0)
     assert.equal(await page.getByText(ADD_SECTORS_AND_THEMES).count(), 0)
     assert.equal(await page.locator('[data-profile-prompt]').count(), 0)
-    await saveShot(page, '[data-suggestion-empty="complete"]', path.join(shotDir, homeShot), width)
+    assert.equal(await page.locator('[data-needs-action="profile"]').count(), 0)
+    await saveShot(page, '[data-home-next]', path.join(shotDir, homeShot), width)
   } finally {
     await context.close()
   }
