@@ -329,6 +329,20 @@ test('member and admin digest shots at 1440 and 390', async (t) => {
       assert.match(rootText, /Majlis and dates for the diary/)
       assert.match(rootText, /Partner spot/)
       if (viewName === 'sections') {
+        assert.match(rootText, /example\.com\/review/)
+        assert.match(rootText, /example\.com\/diary/)
+        assert.match(rootText, /example\.com\/partner/)
+      } else {
+        const values = await page.locator('[data-digest-editor] input').evaluateAll((nodes) =>
+          nodes.map((node) => (node as HTMLInputElement).value).join('\n'),
+        )
+        assert.match(values, /https:\/\/example\.com\/review/)
+        assert.match(values, /https:\/\/example\.com\/diary/)
+        assert.match(values, /https:\/\/example\.com\/partner/)
+        assert.equal(values.includes('example.org'), false)
+      }
+      assert.equal(rootText.includes('example.org'), false)
+      if (viewName === 'sections') {
         assert.equal(await page.locator('[data-digest-cta]').count(), 1)
         assert.equal(await page.locator('[data-digest-cta]').innerText(), DIGEST_CTA_LABEL)
         assert.match(await page.locator('[data-digest-footer]').innerText(), new RegExp(DIGEST_FOOTER_CREDIT))

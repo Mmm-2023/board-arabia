@@ -27,7 +27,7 @@ function exampleNews(headline: string, lens: string, person: string, linkedin: s
       'The useful change is timing, not a new round.',
     ],
     boardLens: lens,
-    sources: [{ label: 'Example review', url: 'https://example.org/review' }],
+    sources: [{ label: 'example.com/review', url: 'https://example.com/review' }],
     people: [{ name: person, linkedinUrl: linkedin }],
   }
 }
@@ -38,7 +38,7 @@ const partnerInsight: DigestPartnerInsight = {
     'A partner firm notes that boards want a shorter first meeting.',
     'The useful step is a one page brief before the room.',
   ],
-  source: { label: 'Example partner note', url: 'https://example.org/partner' },
+  source: { label: 'example.com/partner', url: 'https://example.com/partner' },
 }
 
 const sectionsDigest: WeeklyDigestModel = {
@@ -92,7 +92,7 @@ const sectionsDigest: WeeklyDigestModel = {
     {
       title: 'Example capital forum',
       when: '20 Oct 2026',
-      sources: [{ label: 'Example diary', url: 'https://example.org/diary' }],
+      sources: [{ label: 'example.com/diary', url: 'https://example.com/diary' }],
     },
   ],
   partnerInsight,

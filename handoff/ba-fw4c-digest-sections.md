@@ -65,4 +65,4 @@ Grade: VERIFIED in `scripts/digest-sections-db.test.ts`. A hidden or demo id pla
 
 `node --experimental-strip-types --test scripts/digest-sections.test.ts scripts/digest-sections-db.test.ts scripts/weekly-digest.test.ts scripts/weekly-digest-db.test.ts` passed locally. The new database test names `20261218120000_digest_sections.sql` and checks that it sorts after `20261214120000_digest_review_tiers.sql`. It does not assume the file is the newest migration.
 
-Shots, 1440 and 390: `/opt/cursor/artifacts/fw4c-digest-sections/digest-member-1440.png`, `digest-member-390.png`, `digest-admin-1440.png`, `digest-admin-390.png`.
+Shots, 1440 and 390, all six sections, example.com links: `/opt/cursor/artifacts/fw4c-digest-sections/digest-member-1440.png`, `digest-member-390.png`, `digest-admin-1440.png`, `digest-admin-390.png`.
