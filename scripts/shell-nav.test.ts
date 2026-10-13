@@ -17,7 +17,7 @@ import {
   staffDestinations,
 } from '../src/shell/destinations.ts'
 import { setTwoTierRegisterForTests } from '../src/lib/twoTierRegister.ts'
-import { slashlessPath } from '../src/shell/trailingSlash.ts'
+import { slashlessPath } from '../src/shell/slashlessPath.ts'
 
 function read(rel: string) {
   return readFileSync(new URL(`../${rel}`, import.meta.url), 'utf8')
