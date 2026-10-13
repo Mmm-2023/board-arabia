@@ -18,6 +18,8 @@ const routes = [
   '/how-it-works',
   '/about',
   '/privacy',
+  '/account-deletion',
+  '/legal',
   '/security',
   '/terms',
 ]
@@ -129,6 +131,8 @@ function assertPage(route, html) {
     '/how-it-works': 'How Board Arabia works: apply, review, invite',
     '/about': 'About Board Arabia | Founding 100 membership',
     '/privacy': 'Privacy notice | Board Arabia',
+    '/account-deletion': 'Delete your account | Board Arabia',
+    '/legal': 'Terms | Board Arabia',
     '/security': 'Trust and security | Board Arabia',
     '/terms': 'Terms of use | Board Arabia',
   }
@@ -214,6 +218,7 @@ function assertAppShells(distDir, shells) {
 function writeSitemap() {
   const today = new Date().toISOString().slice(0, 10)
   const urls = routes
+    .filter((route) => route !== '/legal')
     .map((route) => {
       const loc = route === '/' ? 'https://boardarabia.com/' : `https://boardarabia.com${route}/`
       return `  <url><loc>${loc}</loc><lastmod>${today}</lastmod></url>`
@@ -223,7 +228,7 @@ function writeSitemap() {
   fs.writeFileSync(path.join(dist, 'sitemap.xml'), xml)
 }
 
-function documentFor(shell, rendered) {
+function documentFor(shell, rendered, route) {
   const title = escapeAttr(rendered.title)
   const description = escapeAttr(rendered.description)
   const canonical = escapeAttr(rendered.canonical)
@@ -258,7 +263,7 @@ function documentFor(shell, rendered) {
     )
     .replace(
       /<meta name="robots" content="[^"]*"\s*\/?>/,
-      '<meta name="robots" content="index, follow" />',
+      `<meta name="robots" content="${route === '/legal' ? 'noindex, nofollow' : 'index, follow'}" />`,
     )
     .replace('</head>', `    ${seo}\n  </head>`)
     .replace(/<div id="root">\s*<\/div>/, `<div id="root">${rendered.body}</div>`)
@@ -291,7 +296,7 @@ try {
   const { render } = await vite.ssrLoadModule('/src/entry-ssr.tsx')
   for (const route of routes) {
     const rendered = render(route)
-    const html = documentFor(shell, rendered)
+    const html = documentFor(shell, rendered, route)
     const meta = assertPage(route, html)
     if (seen.has(meta.description)) throw new Error(`${route}: duplicate meta description`)
     seen.add(meta.description)

@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { legalField } from '../../config/legal'
 import { LEAVE_BOARD_PATH } from '../../lib/leaveBoard'
 import { DELETE_ACCOUNT_PATH } from '../../shell/destinations'
 import { AccountBackLink } from '../../pages/dashboard/AccountBackLink'
@@ -196,7 +197,8 @@ export function PrivacyPanelView({
           Close my membership
         </h2>
         <p className={body}>
-          Ask admin to close your membership. Your data is then deleted or anonymised as set out in the Privacy Notice.
+          Leave Board Arabia uses the same delete flow. Admin sees a notice in the app. Your data is then deleted or
+          anonymised as set out in the Privacy Notice.
         </p>
         <Link to={LEAVE_BOARD_PATH} className="mt-3 inline-flex min-h-11 items-center text-[0.95rem] font-semibold underline">
           Leave Board Arabia
@@ -208,8 +210,10 @@ export function PrivacyPanelView({
           Delete account
         </h2>
         <p className={body}>
-          This removes your account, the professional details you added for membership review, and your sign-in. It
-          cannot be undone. A full member record is not removed from this page.
+          This removes your profile, directory card, directory listing, introductions, notifications and event replies.
+          Contact details already shared with another member through an accepted introduction cannot be recalled from
+          that member. Deal room files you uploaded and AI tool uploads are removed on request to {legalField('contactEmail')}, and in any case within 24 months of exit. Legal
+          records and consent logs are kept. It cannot be undone.
         </p>
         <Link
           to={DELETE_ACCOUNT_PATH}

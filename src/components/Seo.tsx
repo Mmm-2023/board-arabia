@@ -40,12 +40,12 @@ export function Seo({ path }: { path: MarketingPath }) {
   const title = publicMarketingTitle(page)
 
   useEffect(() => {
-    const url = canonicalUrl(page.path)
+    const url = page.path === '/legal' ? canonicalUrl('/terms') : canonicalUrl(page.path)
     document.title = title
     document.documentElement.lang = 'en'
     document.documentElement.dir = 'ltr'
     upsertMeta('name', 'description', page.description)
-    upsertMeta('name', 'robots', 'index, follow')
+    upsertMeta('name', 'robots', page.path === '/legal' ? 'noindex, nofollow' : 'index, follow')
     upsertLink('canonical', url)
     upsertMeta('property', 'og:type', 'website')
     upsertMeta('property', 'og:site_name', 'Board Arabia')

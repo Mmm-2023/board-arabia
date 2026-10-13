@@ -21,6 +21,7 @@ import { sponsorSeatHolders } from '../../lib/sponsorSeat'
 import { useAdmin } from './context'
 import { PrivateWorkCountsPanel } from '../../components/mfa/PrivateWorkCountsPanel'
 import { MarketingHomeCard } from './MarketingHomeCard'
+import { AccountClosureNotices } from './AccountClosureNotices'
 import { PartnerInterestAlert, SponsorIntroQueue } from './PartnerInterestPanel'
 
 export function AdminHome({
@@ -47,6 +48,7 @@ export function AdminHome({
         </details>
       }
     >
+      <AccountClosureNotices />
       <PartnerInterestAlert />
       <SponsorIntroQueue />
       <div id="mandate-intro-queue" className="scroll-mt-24">

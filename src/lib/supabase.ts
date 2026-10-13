@@ -181,12 +181,12 @@ export async function submitApplication(payload: {
   }
 }
 
-export async function deleteCandidateAccount(): Promise<{ error?: string }> {
+async function postAccountDelete(body: Record<string, unknown>): Promise<{ error?: string }> {
   try {
     const res = await fetch(`${functionsBase}/delete-candidate-account`, {
       method: 'POST',
       headers: await staffHeaders(),
-      body: JSON.stringify({}),
+      body: JSON.stringify(body),
     })
     const payload = (await res.json().catch(() => ({}))) as { error?: string }
     if (!res.ok) return { error: payload.error || 'Could not delete the account.' }
@@ -194,6 +194,14 @@ export async function deleteCandidateAccount(): Promise<{ error?: string }> {
   } catch (err) {
     return { error: err instanceof Error ? err.message : 'Could not delete the account.' }
   }
+}
+
+export async function sendAccountDeleteCode(): Promise<{ error?: string }> {
+  return postAccountDelete({ action: 'send_code' })
+}
+
+export async function deleteCandidateAccount(code: string): Promise<{ error?: string }> {
+  return postAccountDelete({ action: 'confirm', code })
 }
 
 export async function requestMembership(body: Record<string, unknown>): Promise<{ error?: string; state?: string }> {

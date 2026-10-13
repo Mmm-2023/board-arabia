@@ -32,6 +32,8 @@ export const MARKETING_PATHS = [
   '/how-it-works',
   '/about',
   '/privacy',
+  '/account-deletion',
+  '/legal',
   '/security',
   '/terms',
 ] as const
@@ -96,6 +98,17 @@ export const MARKETING_PAGES: Record<MarketingPath, MarketingPage> = {
     title: 'Privacy notice | Board Arabia',
     description:
       'How Board Arabia collects, uses, stores and deletes your data, how analytics consent works, and how to ask for access or deletion.',
+  },
+  '/account-deletion': {
+    path: '/account-deletion',
+    title: 'Delete your account | Board Arabia',
+    description: `How a Board Arabia member deletes an account from Your privacy, and how to ask for deletion when sign-in is not available. The profile, directory listing, introductions, notifications and event replies are removed. Deal room files and AI tool uploads are removed on request to ${legalField('contactEmail')}, and in any case within 24 months of exit.`,
+  },
+  '/legal': {
+    path: '/legal',
+    title: 'Terms | Board Arabia',
+    description:
+      'This Board Arabia address sends you to the Terms page. Membership, admission and the private network are set out there. The Privacy notice is a separate page.',
   },
   '/security': {
     path: '/security',

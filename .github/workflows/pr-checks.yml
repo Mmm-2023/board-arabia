@@ -29,6 +29,7 @@ jobs:
         env:
           GITHUB_PAGES: 'true'
           VITE_BASE_PATH: /
+          VITE_LEGAL_CONTACT_EMAIL: ${{ vars.VITE_LEGAL_CONTACT_EMAIL }}
         run: node scripts/build-for-csp-crawl.mjs
       - name: Test
         run: |

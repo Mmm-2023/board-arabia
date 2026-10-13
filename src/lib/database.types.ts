@@ -934,6 +934,10 @@ export type Database = {
         Args: Record<string, never>
         Returns: Json
       }
+      list_account_closure_notices: {
+        Args: Record<string, never>
+        Returns: Json
+      }
       marketing_funnel_counts: {
         Args: {
           p_from: string

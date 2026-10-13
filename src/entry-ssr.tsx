@@ -34,7 +34,7 @@ export function render(url: string) {
     body,
     title: page.title,
     description: page.description,
-    canonical: canonicalUrl(path),
+    canonical: path === '/legal' ? canonicalUrl('/terms') : canonicalUrl(path),
     jsonLd: JSON.stringify(pageGraph(page)),
     image: OG_IMAGE,
     imageAlt: OG_IMAGE_ALT,

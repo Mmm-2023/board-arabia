@@ -637,7 +637,8 @@ export function ProfilePage({ preview }: { preview?: { src: string | null } }) {
       <section className="mt-16 border-t border-ink/10 pt-10" aria-label="Leave Board Arabia">
         <h2 className="font-display text-[1.35rem] font-semibold tracking-[-0.03em]">Leave Board Arabia</h2>
         <p className="mt-3 max-w-xl text-[0.98rem] leading-relaxed text-ink/65">
-          Ask our admin team to close this membership. You confirm on the next screen. Your seat stays open until our admin team closes it.
+          This closes your membership. The next screen explains what is deleted and what is kept. You then enter a code.
+          Admin sees a notice in the app.
         </p>
         <Link
           to={LEAVE_BOARD_PATH}
