@@ -163,8 +163,8 @@ test('member grids widen at xl and phone cards expose a More control', () => {
 })
 
 test('admin checkbox rows stay 44 px with a 20 px box', () => {
+  assert.match(read('src/pages/admin/PeoplePage.tsx'), /min-h-11/)
   for (const file of [
-    'src/pages/admin/PeoplePage.tsx',
     'src/pages/admin/SponsorPackagesPanel.tsx',
     'src/pages/admin/RePartnersEditor.tsx',
     'src/pages/admin/MembershipDesk.tsx',

@@ -4,6 +4,8 @@ import { issueCredential, type Issued } from '../_shared/credentials.ts'
 import { buildMasterInvite } from '../_shared/invite_copy.ts'
 import {
   assertMasterCaller,
+  planInvite,
+  requestedPurpose,
   requestedStaffRole,
   writeStaffRole,
   type StaffRoleStore,
@@ -64,6 +66,11 @@ Deno.serve(async (req) => {
   if (askedRole === 'invalid') {
     return jsonResponse(req, { error: 'Role must be staff or master.' }, 400)
   }
+  const purpose = requestedPurpose(body)
+  if (purpose === 'invalid') {
+    return jsonResponse(req, { error: 'Purpose must be staff or member.' }, 400)
+  }
+  const plan = planInvite({ purpose, admitMember })
 
   if (!emailProvided) email = adminNotifyEmail().trim().toLowerCase()
   if (!email) {
@@ -80,12 +87,14 @@ Deno.serve(async (req) => {
   const issued = await issueCredential(admin, email, site)
   if ('error' in issued) return jsonResponse(req, { error: issued.error }, 502)
 
-  const staffWrite = await writeStaffRole(staffRoleStore(admin), {
-    callerRole: gate.role,
-    requestedRole: askedRole,
-    userId: issued.userId,
-    email,
-  })
+  const staffWrite = plan.writeStaff
+    ? await writeStaffRole(staffRoleStore(admin), {
+        callerRole: gate.role,
+        requestedRole: askedRole,
+        userId: issued.userId,
+        email,
+      })
+    : { ok: true as const, role: 'staff' as const, changed: false }
   if (!staffWrite.ok) {
     if (issued.createdNew) await admin.auth.admin.deleteUser(issued.userId)
     if (staffWrite.status !== 500) {
@@ -104,13 +113,18 @@ Deno.serve(async (req) => {
   }
 
   const admission = await admitIfRequested(admin, {
-    admitMember,
+    admitMember: plan.admitMember,
     email,
     seat,
     fullName: displayName(email),
     staffId: user.id,
     userId: issued.userId,
   })
+
+  if (!plan.writeStaff && !admission.memberOk) {
+    if (issued.createdNew) await admin.auth.admin.deleteUser(issued.userId)
+    return jsonResponse(req, { error: admission.memberError || 'Could not invite the member.' }, 400)
+  }
 
   const memberOk = admission.memberOk
   const nextPath = memberOk ? '/dashboard' : '/admin'
@@ -126,7 +140,7 @@ Deno.serve(async (req) => {
     confirmUrl,
     staffLoginUrl,
     memberLoginUrl,
-    staffRole: staffWrite.role,
+    staffRole: plan.writeStaff ? staffWrite.role : 'member',
     issued:
       issued.mode === 'magic_link'
         ? { mode: 'magic_link', otp: issued.otp }
@@ -167,13 +181,19 @@ Deno.serve(async (req) => {
       seat: memberOk ? admission.seat : null,
       has_otp: issued.mode === 'magic_link' && Boolean(issued.otp),
       has_temp_password: issued.mode === 'temp_password',
-      staff_role: staffWrite.role,
+      staff_role: plan.writeStaff ? staffWrite.role : null,
       member: memberOk,
     },
   })
 
   const mailed = sent.status === 'sent'
-  const parts = [staffWrite.role === 'master' ? 'Master staff is ready.' : 'Admin is ready.']
+  const parts = [
+    !plan.writeStaff
+      ? 'Member invite is ready.'
+      : staffWrite.role === 'master'
+        ? 'Owner is ready.'
+        : 'Admin is ready.',
+  ]
   if (memberOk && admission.createdMember) parts.push('Founding seat claimed.')
   if (memberOk && admission.alreadyMember) parts.push('Founding membership was already in place.')
   if (admission.memberError) parts.push(admission.memberError)

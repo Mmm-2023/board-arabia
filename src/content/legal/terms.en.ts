@@ -24,7 +24,7 @@ export const TERMS_EN: LegalDocument = {
       "kind": "clause",
       "id": "c-1-1",
       "number": "1.1",
-      "text": "Board Arabia is operated by [BA ENTITY], commercial registration number [CR], of [ADDRESS] (\"Board Arabia\", \"we\", \"us\")."
+      "text": "Board Arabia is the operator of the Platform, of [ADDRESS] (\"Board Arabia\", \"we\", \"us\")."
     },
     {
       "kind": "clause",
@@ -71,7 +71,7 @@ export const TERMS_EN: LegalDocument = {
       "kind": "clause",
       "id": "c-2-4",
       "number": "2.4",
-      "text": "Browsing the public pages does not admit you, reserve a Founding place or reserve a sponsor seat."
+      "text": "Browsing the public pages does not admit you, reserve a Founding place or reserve a partner seat."
     },
     {
       "kind": "h2",
@@ -117,7 +117,7 @@ export const TERMS_EN: LegalDocument = {
       "kind": "clause",
       "id": "c-4-1",
       "number": "4.1",
-      "text": "The Platform has three tiers: Founding, Member and Sponsor. The benefits of each tier are those described in your acceptance email, membership offer or sponsorship package."
+      "text": "The Platform has three tiers: Founding, Member and Partner. The benefits of each tier are those described in your acceptance email, membership offer or partnership package."
     },
     {
       "kind": "clause",
@@ -158,7 +158,7 @@ export const TERMS_EN: LegalDocument = {
       "kind": "clause",
       "id": "c-5-1",
       "number": "5.1",
-      "text": "Member directory. Signed in members can see member profiles. A sponsor sees a member's card only if that member chooses to show it. Profiles show the details described in the Privacy Notice. Email and phone details are not shown in the directory."
+      "text": "Member directory. Signed in members can see member profiles. A partner sees a member's card only if that member chooses to show it. Profiles show the details described in the Privacy Notice. Email and phone details are not shown in the directory."
     },
     {
       "kind": "clause",
@@ -194,7 +194,7 @@ export const TERMS_EN: LegalDocument = {
       "kind": "clause",
       "id": "c-5-7",
       "number": "5.7",
-      "text": "Majlis and events. We may run a majlis with events, which may be hosted or presented by sponsors. See section 12."
+      "text": "Majlis and events. We may run a majlis with events, which may be hosted or presented by partners. See section 12."
     },
     {
       "kind": "clause",
@@ -229,7 +229,7 @@ export const TERMS_EN: LegalDocument = {
       "kind": "clause",
       "id": "c-6-3",
       "number": "6.3",
-      "text": "Intro credits give a sponsor the right to request introductions. They do not guarantee that any introduction is accepted."
+      "text": "Intro credits give a partner the right to request introductions. They do not guarantee that any introduction is accepted."
     },
     {
       "kind": "h2",
@@ -416,7 +416,7 @@ export const TERMS_EN: LegalDocument = {
       "kind": "clause",
       "id": "c-11-2",
       "number": "11.2",
-      "text": "Fees for the Member and Sponsor tiers, sponsor packages and intro credits are set out in your membership offer, sponsorship package or invoice. No price shown on the public pages is an offer."
+      "text": "Fees for the Member and Partner tiers, partner packages and intro credits are set out in your membership offer, partnership package or invoice. No price shown on the public pages is an offer."
     },
     {
       "kind": "clause",
@@ -434,7 +434,7 @@ export const TERMS_EN: LegalDocument = {
       "kind": "clause",
       "id": "c-11-5",
       "number": "11.5",
-      "text": "Sponsor packages may include intro credits and other allowances, such as majlis slots or room credits, as stated in the package. A credit is used as stated in the package. Credits have no cash value. They cannot be transferred or exchanged. Unused credits expire at the end of the sponsorship term."
+      "text": "Partner packages may include intro credits and other allowances, such as majlis slots or room credits, as stated in the package. A credit is used as stated in the package. Credits have no cash value. They cannot be transferred or exchanged. Unused credits expire at the end of the partnership term."
     },
     {
       "kind": "clause",
@@ -469,7 +469,7 @@ export const TERMS_EN: LegalDocument = {
       "kind": "clause",
       "id": "c-12-3",
       "number": "12.3",
-      "text": "Events may be sponsored, hosted or presented by a sponsor. That does not mean we endorse the sponsor or its products."
+      "text": "Events may be supported, hosted or presented by a partner. That does not mean we endorse the partner or its products."
     },
     {
       "kind": "clause",
@@ -492,31 +492,31 @@ export const TERMS_EN: LegalDocument = {
     {
       "kind": "h2",
       "id": "s-13",
-      "text": "13. Sponsors"
+      "text": "13. Partners"
     },
     {
       "kind": "clause",
       "id": "c-13-1",
       "number": "13.1",
-      "text": "Sponsors are members who support the Platform under a sponsorship package."
+      "text": "Partners are members who support the Platform under a partnership package."
     },
     {
       "kind": "clause",
       "id": "c-13-2",
       "number": "13.2",
-      "text": "Sponsors may be shown to members as sponsors, for example with \"Presented by\" wording on events. Sponsorship is not an endorsement by us of the sponsor, its products or its advice."
+      "text": "Partners may be shown to members as partners, for example with \"Presented by\" wording on events. Partnership is not an endorsement by us of the partner, its products or its advice."
     },
     {
       "kind": "clause",
       "id": "c-13-3",
       "number": "13.3",
-      "text": "Sponsors must follow these Terms like any member. They must not use intro credits, events or the directory for mass marketing or to solicit the public."
+      "text": "Partners must follow these Terms like any member. They must not use intro credits, events or the directory for mass marketing or to solicit the public."
     },
     {
       "kind": "clause",
       "id": "c-13-4",
       "number": "13.4",
-      "text": "Any sponsor-specific terms in the sponsorship package apply in addition to these Terms. If they conflict, the sponsorship package prevails for that point."
+      "text": "Any partner-specific terms in the partnership package apply in addition to these Terms. If they conflict, the partnership package prevails for that point."
     },
     {
       "kind": "h2",
@@ -585,13 +585,13 @@ export const TERMS_EN: LegalDocument = {
       "kind": "clause",
       "id": "c-16-2",
       "number": "16.2",
-      "text": "To the extent Saudi law allows, we give no promise that the Platform will be uninterrupted, error free or secure, or that any information on it from members, sponsors, AI tools or public sources is accurate, complete or current."
+      "text": "To the extent Saudi law allows, we give no promise that the Platform will be uninterrupted, error free or secure, or that any information on it from members, partners, AI tools or public sources is accurate, complete or current."
     },
     {
       "kind": "clause",
       "id": "c-16-3",
       "number": "16.3",
-      "text": "We do not vet members beyond our admission review. Admission is not an endorsement of any member, sponsor, business or statement."
+      "text": "We do not vet members beyond our admission review. Admission is not an endorsement of any member, partner, business or statement."
     },
     {
       "kind": "h2",
@@ -602,7 +602,7 @@ export const TERMS_EN: LegalDocument = {
       "kind": "clause",
       "id": "c-17-1",
       "number": "17.1",
-      "text": "To the extent permitted by Saudi law, we are not liable for any loss arising from:\n(a) any deal, investment or dealing between members, or with sponsors or third parties;\n(b) any content supplied by members or sponsors, including mandates and deal room files;\n(c) use of or reliance on any AI output; or\n(d) any indirect loss, loss of profit, loss of opportunity or loss of reputation."
+      "text": "To the extent permitted by Saudi law, we are not liable for any loss arising from:\n(a) any deal, investment or dealing between members, or with partners or third parties;\n(b) any content supplied by members or partners, including mandates and deal room files;\n(c) use of or reliance on any AI output; or\n(d) any indirect loss, loss of profit, loss of opportunity or loss of reputation."
     },
     {
       "kind": "clause",
@@ -625,7 +625,7 @@ export const TERMS_EN: LegalDocument = {
       "kind": "clause",
       "id": "c-18-1",
       "number": "18.1",
-      "text": "You agree to compensate us for any loss, claim, penalty or reasonable cost, including reasonable legal fees, that we suffer because:\n(a) you break these Terms or the law;\n(b) your content infringes someone's rights or breaks a confidentiality duty; or\n(c) of any deal or dispute between you and another member, sponsor or third party."
+      "text": "You agree to compensate us for any loss, claim, penalty or reasonable cost, including reasonable legal fees, that we suffer because:\n(a) you break these Terms or the law;\n(b) your content infringes someone's rights or breaks a confidentiality duty; or\n(c) of any deal or dispute between you and another member, partner or third party."
     },
     {
       "kind": "clause",
@@ -716,7 +716,7 @@ export const TERMS_EN: LegalDocument = {
       "kind": "clause",
       "id": "c-23-1",
       "number": "23.1",
-      "text": "These Terms, the Privacy Notice, the tool notices and any membership offer or sponsorship package form the whole agreement between you and us about the Platform."
+      "text": "These Terms, the Privacy Notice, the tool notices and any membership offer or partnership package form the whole agreement between you and us about the Platform."
     },
     {
       "kind": "clause",

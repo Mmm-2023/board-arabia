@@ -20,11 +20,11 @@ const migrationPath = path.join(migrationsDir, migrationName)
 const privacyBefore =
   'Other members and sponsors. Signed-in members and sponsors can see directory profiles. Contact details are shared only with the two parties, and only after an intro is accepted. Members you add to a deal room can see what is shared there. Members can see mandate details once unlocked.'
 const privacyAfter =
-  "Other members and sponsors. Signed-in members can see directory profiles. A sponsor sees a member's card only if that member chooses to show it. Contact details are shared only with the two parties, and only after an intro is accepted. Members you add to a deal room can see what is shared there. Members can see mandate details once unlocked."
+  "Other members and partners. Signed-in members can see directory profiles. A partner sees a member's card only if that member chooses to show it. Contact details are shared only with the two parties, and only after an intro is accepted. Members you add to a deal room can see what is shared there. Members can see mandate details once unlocked."
 const termsBefore =
   'Member directory. Signed in members and sponsors can see member profiles. Profiles show the details described in the Privacy Notice. Email and phone details are not shown in the directory.'
 const termsAfter =
-  "Member directory. Signed in members can see member profiles. A sponsor sees a member's card only if that member chooses to show it. Profiles show the details described in the Privacy Notice. Email and phone details are not shown in the directory."
+  "Member directory. Signed in members can see member profiles. A partner sees a member's card only if that member chooses to show it. Profiles show the details described in the Privacy Notice. Email and phone details are not shown in the directory."
 const partnersBefore =
   'A partner does not receive the directory and does not message members around our admin team.'
 const partnersAfter =
@@ -90,16 +90,20 @@ test('opt-in definers set an empty search_path', () => {
   }
 })
 
-test('legal copy says a sponsor sees a card only when the member chooses', () => {
+test('legal copy says a partner sees a card only when the member chooses', () => {
   assert.equal(clause(PRIVACY_EN, 'c-5-1'), privacyAfter)
   assert.equal(clause(TERMS_EN, 'c-5-1'), termsAfter)
   assert.notEqual(clause(PRIVACY_EN, 'c-5-1'), privacyBefore)
   assert.notEqual(clause(TERMS_EN, 'c-5-1'), termsBefore)
   assert.equal(
     clause(PRIVACY_EN, 'c-3-10'),
-    'Sponsors and payments. Sponsorship package, intro credits and other allowances used, invoices and payment records. We do not take card details on the public pages.',
+    'Partners and payments. Partnership package, intro credits and other allowances used, invoices and payment records. We do not take card details on the public pages.',
   )
-  assert.match(clause(PRIVACY_EN, 'c-1-1'), /\[BA ENTITY\], commercial registration number \[CR\]/)
+  const operator = clause(PRIVACY_EN, 'c-1-1')
+  assert.match(operator, /Board Arabia is the operator of the Platform/)
+  assert.match(operator, /Board Arabia is the controller of the personal data/)
+  assert.equal(operator.includes('[BA ENTITY]'), false)
+  assert.equal(operator.includes('commercial registration number'), false)
   const partnersSource = readFileSync(path.join(root, 'src/pages/PartnersPage.tsx'), 'utf8')
   assert.equal(partnersSource.includes(partnersAfter), true)
   assert.equal(partnersSource.includes(partnersBefore), false)

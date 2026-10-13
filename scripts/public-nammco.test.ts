@@ -8,8 +8,6 @@ import { MemoryRouter } from 'react-router-dom'
 import { createServer } from 'vite'
 import {
   FOOTER_NAMMCO_CREDIT,
-  LEGAL_ENTITY_CR,
-  LEGAL_ENTITY_LINE,
   allowsLegalEntityLine,
   strayPublicNammco,
 } from './public-nammco.mjs'
@@ -22,10 +20,8 @@ test('public-nammco exports match the legal allowlist', () => {
   const fileUrl = new URL('./public-nammco.mjs', import.meta.url)
   const bytes = readFileSync(fileUrl)
   const hash = createHash('sha256').update(bytes).digest('hex')
-  assert.equal(hash, 'b238d15f9eec077b11b3d308796274545e5f055d74ccfbcbbab6ba393f3f9245')
+  assert.equal(hash, 'b7e00f240b14414f42608c76fd0022f676c18bc9bbf0ab68cc39c5b352a580e5')
   assert.equal(FOOTER_NAMMCO_CREDIT, 'powered by nammco')
-  assert.equal(LEGAL_ENTITY_LINE, 'NAMMCO Holding Co.')
-  assert.equal(LEGAL_ENTITY_CR, '7043252647')
   const source = bytes.toString('utf8')
   const listed = source.match(/const LEGAL_HTML = new Set\((\[[^\]]*\])\)/)
   assert.ok(listed)
@@ -76,12 +72,11 @@ test('prerender and the Pages artifact gate share the narrow allowlist', () => {
   assert.equal(/grep[^\n]*nammco/.test(pages), false)
   assert.equal(/grep[^\n]*nammco/.test(gate), false)
   assert.match(gate, /calendar\\\.app\\\.google/)
-  assert.match(pages, new RegExp(`VITE_LEGAL_BA_ENTITY: '${LEGAL_ENTITY_LINE.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}'`))
-  assert.match(pages, new RegExp(`VITE_LEGAL_CR: '${LEGAL_ENTITY_CR}'`))
+  assert.equal(pages.includes('VITE_LEGAL_BA_ENTITY'), false)
+  assert.equal(pages.includes('VITE_LEGAL_CR'), false)
 })
 
-test('the entity line is allowed only on privacy, terms, and the legal-pages chunk', () => {
-  const entity = `${LEGAL_ENTITY_LINE}, commercial registration number ${LEGAL_ENTITY_CR}`
+test('the footer credit is the only nammco phrase, including on legal pages', () => {
   const footer = `Board Arabia. ${FOOTER_NAMMCO_CREDIT}`
   assert.equal(allowsLegalEntityLine('privacy/index.html'), true)
   assert.equal(allowsLegalEntityLine('dist/privacy/index.html'), true)
@@ -95,25 +90,23 @@ test('the entity line is allowed only on privacy, terms, and the legal-pages chu
   assert.equal(allowsLegalEntityLine('assets/legal-pages.js'), false)
 
   for (const file of ['privacy/index.html', 'terms/index.html', 'assets/legal-pages-Abc123.js']) {
-    assert.equal(strayPublicNammco(`${footer}\n${entity}`, file), false, file)
+    assert.equal(strayPublicNammco(footer, file), false, file)
     assert.equal(strayPublicNammco(FOOTER_NAMMCO_CREDIT, file), false, file)
+    assert.equal(strayPublicNammco(`${footer}\nnammco`, file), true, file)
   }
 
   const blockedFiles = ['index.html', 'apply/index.html', 'for-members/index.html', 'assets/index-Abc123.js', 'assets/Footer-Abc123.js']
   for (const file of blockedFiles) {
-    assert.equal(strayPublicNammco(entity, file), true, file)
-    assert.equal(strayPublicNammco(LEGAL_ENTITY_LINE, file), true, file)
-    assert.equal(strayPublicNammco(LEGAL_ENTITY_CR, file), true, file)
+    assert.equal(strayPublicNammco('nammco', file), true, file)
     assert.equal(strayPublicNammco(footer, file), false, file)
   }
 
   for (const file of ['privacy/index.html', 'terms/index.html']) {
-    assert.equal(strayPublicNammco(`${entity}\nvisit nammco`, file), true, file)
-    assert.equal(strayPublicNammco(`${entity}\nNAMMCO`, file), true, file)
-    assert.equal(strayPublicNammco(`${entity}\nNammco`, file), true, file)
-    assert.equal(strayPublicNammco(`${entity}\npowered by NAMMCO`, file), true, file)
-    assert.equal(strayPublicNammco(`${entity}\nnammco.com`, file), true, file)
-    assert.equal(strayPublicNammco(`X${LEGAL_ENTITY_LINE}`, file), true, file)
+    assert.equal(strayPublicNammco(`${footer}\nvisit nammco`, file), true, file)
+    assert.equal(strayPublicNammco(`${footer}\nNAMMCO`, file), true, file)
+    assert.equal(strayPublicNammco(`${footer}\nNammco`, file), true, file)
+    assert.equal(strayPublicNammco(`${footer}\npowered by NAMMCO`, file), true, file)
+    assert.equal(strayPublicNammco(`${footer}\nnammco.com`, file), true, file)
   }
 })
 

@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { createHash } from 'node:crypto'
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import path from 'node:path'
 import { describe, test } from 'node:test'
@@ -22,12 +23,11 @@ import { englishPath } from '../src/lib/englishPath.ts'
 import { PRIVACY_EN } from '../src/content/legal/privacy.en.ts'
 import { legalPlainText, resolveLegalDocument } from '../src/content/legal/resolve.ts'
 import { TERMS_EN } from '../src/content/legal/terms.en.ts'
-import { FOOTER_NAMMCO_CREDIT, LEGAL_ENTITY_CR, LEGAL_ENTITY_LINE, strayPublicNammco } from './public-nammco.mjs'
+import { publicEntityHits } from './no-public-entity.test.ts'
+import { FOOTER_NAMMCO_CREDIT, strayPublicNammco } from './public-nammco.mjs'
 const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..')
 
 const ALLOWED_BRACKETS = new Set([
-  '[BA ENTITY]',
-  '[CR]',
   '[ADDRESS]',
   '[CONTACT EMAIL]',
   '[DPO CONTACT]',
@@ -119,15 +119,16 @@ test('legal config defaults, links, and the 30 day flag', () => {
     .filter((file) => file.endsWith('.ts') || file.endsWith('.tsx'))
     .filter((file) => readFileSync(file, 'utf8').includes('VITE_LEGAL_'))
     .map((file) => path.relative(root, file))
-  assert.deepEqual(hits.sort(), ['src/config/legal.ts', 'src/config/legalPageIdentity.ts'].sort())
+  assert.deepEqual(hits.sort(), ['src/config/legal.ts'])
   const identity = read('src/config/legalPageIdentity.ts')
-  assert.match(identity, /VITE_LEGAL_BA_ENTITY/)
-  assert.match(identity, /VITE_LEGAL_CR/)
+  assert.equal(identity.includes('VITE_LEGAL_BA_ENTITY'), false)
+  assert.equal(identity.includes('VITE_LEGAL_CR'), false)
+  assert.equal(identity.includes('import.meta.env'), false)
   assert.equal(identity.includes('VITE_LEGAL_ADDRESS'), false)
   assert.equal(identity.includes('VITE_LEGAL_CONTACT_EMAIL'), false)
   assert.equal(identity.includes('VITE_LEGAL_DPO_CONTACT'), false)
   assert.equal(identity.includes('VITE_LEGAL_AI_PROVIDER'), false)
-  assert.equal(/NAMMCO|7043252647/i.test(identity), false)
+  assert.deepEqual(publicEntityHits(identity), [])
   const example = read('.env.example')
   for (const name of [
     'VITE_LEGAL_BA_ENTITY',
@@ -196,7 +197,9 @@ test('rendered legal copy has no drafting brackets and both retention states', (
     const filled = legalPlainText(resolveLegalDocument(PRIVACY_EN, 'en', false))
     assert.equal(filled.includes('partners@example.com'), false)
     assert.match(filled, /service@example\.com/)
-    assert.match(filled, /Example Entity/)
+    assert.equal(filled.includes('Example Entity'), false)
+    assert.match(filled, /Board Arabia is the operator of the Platform/)
+    assert.match(filled, /Board Arabia is the controller of the personal data/)
     assert.equal(filled.includes('[PARTNERS EMAIL]'), false)
     assert.equal(filled.includes('[SERVICE EMAIL]'), false)
   } finally {
@@ -356,14 +359,10 @@ test('an unset address reads as registered address, and a set address stays of',
 })
 
 test('privacy and terms render the entity line and marketing routes keep only the footer credit', async () => {
-  const previousEntity = process.env.VITE_LEGAL_BA_ENTITY
-  const previousCr = process.env.VITE_LEGAL_CR
   delete process.env.VITE_LEGAL_ADDRESS
   delete process.env.VITE_LEGAL_CONTACT_EMAIL
   delete process.env.VITE_LEGAL_DPO_CONTACT
   delete process.env.VITE_LEGAL_AI_PROVIDER
-  process.env.VITE_LEGAL_BA_ENTITY = LEGAL_ENTITY_LINE
-  process.env.VITE_LEGAL_CR = LEGAL_ENTITY_CR
   process.env.VITE_SUPABASE_URL ||= 'https://example.supabase.co'
   process.env.VITE_SUPABASE_ANON_KEY ||= 'example-anon-key'
   const vite = await createServer({
@@ -389,15 +388,14 @@ test('privacy and terms render the entity line and marketing routes keep only th
       const html = pageHtml(mod[name], route)
       assert.match(html, new RegExp(`>${FOOTER_NAMMCO_CREDIT}<`))
       assert.equal(strayPublicNammco(html, artifact), false, route)
+      assert.deepEqual(publicEntityHits(html), [], route)
+      assert.equal(/\bCR\s*\d{10}\b/.test(html), false, route)
+      assert.equal(/\bsponsor(?:s|ship|ships|ed)?\b/i.test(html), false, route)
       if (route === '/privacy' || route === '/terms') {
-        assert.match(html, /NAMMCO Holding Co\./)
-        assert.match(html, /7043252647/)
+        assert.match(html, /Board Arabia is the operator of the Platform/)
         assert.match(html, /To be confirmed/)
         assert.equal(html.includes('Ask the desk'), false)
         assert.equal(/the desk/i.test(html), false)
-      } else {
-        assert.equal(html.includes(LEGAL_ENTITY_LINE), false, route)
-        assert.equal(html.includes(LEGAL_ENTITY_CR), false, route)
       }
     }
     const privacy = pageHtml((await vite.ssrLoadModule('/src/pages/PrivacyPage.tsx')).PrivacyPage, '/privacy')
@@ -415,11 +413,32 @@ test('privacy and terms render the entity line and marketing routes keep only th
     assert.match(privacy, /Ask admin/)
     assert.match(terms, /Ask admin/)
   } finally {
-    if (previousEntity === undefined) delete process.env.VITE_LEGAL_BA_ENTITY
-    else process.env.VITE_LEGAL_BA_ENTITY = previousEntity
-    if (previousCr === undefined) delete process.env.VITE_LEGAL_CR
-    else process.env.VITE_LEGAL_CR = previousCr
     await vite.close()
   }
+})
+
+test('AI provider lines and resolve.ts stay byte-identical to main', () => {
+  const terms = read('src/content/legal/terms.en.ts')
+  const privacy = read('src/content/legal/privacy.en.ts')
+  const resolve = read('src/content/legal/resolve.ts')
+  for (const line of [
+    'Uploaded files are processed by our AI provider, [AI PROVIDER], as described in the Privacy Notice. Uploads are kept for 30 days and then deleted automatically. You can delete them earlier at any time.',
+    'For AI uploads, this includes sending them to our AI provider to produce your output.',
+    'We do not use your uploads to train AI models, and we require our AI provider not to do so.',
+  ]) {
+    assert.equal(terms.includes(line), true, line)
+  }
+  for (const line of [
+    '(c) [AI PROVIDER], for AI tools; and',
+    'AI uploads are processed by [AI PROVIDER] at its hosting location.',
+  ]) {
+    assert.equal(privacy.includes(line), true, line)
+  }
+  assert.equal(resolve.includes("'[AI PROVIDER]': 'aiProvider',"), true)
+  const bytes = readFileSync(path.join(root, 'src/content/legal/resolve.ts'))
+  assert.equal(
+    createHash('sha256').update(bytes).digest('hex'),
+    'f5740b538295e39e5be8344201e2dd6bc90b7c3c3ad7eabf26e6a7e4ed61fe9c',
+  )
 })
 })

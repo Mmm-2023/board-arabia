@@ -6,11 +6,13 @@ import { useNoIndex } from '../../lib/usePageTitle'
 import { FormSkeleton, toneClasses } from '../../shell/ViewState'
 import { UtmBuilder } from '../../components/UtmBuilder'
 import { AiToolSettingsPanel } from './AiToolSettingsPanel'
+import { DailyMarketBriefPanel } from './DailyMarketBriefPanel'
 import { IntroAllowancePanel } from './IntroAllowancePanel'
 import { PartnerInterestPanel } from './PartnerInterestPanel'
 import { SponsorPackagesPanel } from './SponsorPackagesPanel'
 import { TrustedPartnersPanel } from './TrustedPartnersPanel'
 import { STAFF_VIEWS } from '../../shell/viewCopy'
+import { StaffRosterPanel } from './StaffRosterPanel'
 import { useAdmin } from './context'
 
 export function SettingsPage() {
@@ -38,11 +40,13 @@ export function SettingsPage() {
       <h1 className="font-display text-[2rem] font-semibold tracking-[-0.03em]">Settings</h1>
       <p className="mt-3 text-[0.98rem] leading-relaxed text-stone/70">{STAFF_VIEWS.settings.optional}</p>
 
+      <StaffRosterPanel />
       <TrustedPartnersPanel />
       <PartnerInterestPanel />
       <SponsorPackagesPanel />
       <IntroAllowancePanel />
       <AiToolSettingsPanel />
+      <DailyMarketBriefPanel />
 
       <section className={`${styles.panel} mt-8 px-5 py-5`}>
         <h2 className={`text-[0.72rem] font-semibold tracking-[0.12em] uppercase ${styles.quiet}`}>

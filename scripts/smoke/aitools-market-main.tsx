@@ -14,7 +14,7 @@ import { MEMBER_ACCOUNT, MEMBER_DESTINATIONS, STAFF_DESTINATIONS, STAFF_SECONDAR
 import { MARKET_SEARCH_FIXTURE } from '../fixtures/market-brief-search.ts'
 import './home.css'
 
-previewAiReportOperator({ entity: 'NAMMCO Holding Co.', cr: '7043252647' })
+previewAiReportOperator({ entity: 'Board Arabia', cr: 'on file' })
 
 const slots: LegalSlots = {
   entity: '',

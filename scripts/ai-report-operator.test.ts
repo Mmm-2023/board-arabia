@@ -5,12 +5,11 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 import test from 'node:test'
 import { footerWithOperator, operatorCredit } from '../src/lib/aiReportOperator.ts'
-import { allowsLegalEntityLine } from './public-nammco.mjs'
 import { renderToolCopy } from '../src/lib/aiToolCopy.ts'
 
 const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..')
-const OPERATOR_NAME = 'NAMMCO Holding Co.'
-const OPERATOR_CR = '7043252647'
+const OPERATOR_NAME = 'Example Operator'
+const OPERATOR_CR = 'on-file'
 
 /** Public Terms and Privacy stay on env placeholders. This task must not edit them. */
 const PUBLIC_LEGAL = new Set([
@@ -21,7 +20,7 @@ const PUBLIC_LEGAL = new Set([
 ])
 
 /**
- * Fictional sample companies. Not the AI report operator, and not "CR 0000000000".
+ * Fictional sample companies. Not the AI report operator, and not a placeholder registration line.
  * The CFO workbook name is pinned by fixtures/cfo.
  */
 const FICTIONAL_COMPANY = new Set([
@@ -73,7 +72,7 @@ test('the logged-in footer adds the fetched operator and drops the sentence when
   assert.equal(operatorCredit(null), null)
   assert.equal(operatorCredit({ entity: ' ', cr: OPERATOR_CR }), null)
   assert.equal(operatorCredit({ entity: OPERATOR_NAME, cr: ' ' }), null)
-  assert.equal(operatorCredit({ entity: OPERATOR_NAME, cr: OPERATOR_CR }), `Provided by ${OPERATOR_NAME}, CR ${OPERATOR_CR}`)
+  assert.equal(operatorCredit({ entity: OPERATOR_NAME, cr: OPERATOR_CR }), 'Provided by Board Arabia')
 
   const copy = renderToolCopy('deal_readiness', 'en', {
     entity: 'To be confirmed',
@@ -87,11 +86,13 @@ test('the logged-in footer adds the fetched operator and drops the sentence when
   assert.equal(copy.footer.includes('Provided by'), false)
   assert.equal(copy.footer.includes('To be confirmed'), false)
   assert.equal(copy.footer.includes('Example Holdings'), false)
-  assert.equal(copy.footer.includes('CR 0000000000'), false)
+  assert.equal(copy.footer.includes('CR sample'), false)
   assert.match(copy.footer, /under the Board Arabia Terms/)
 
   const named = footerWithOperator(copy.footer, { entity: OPERATOR_NAME, cr: OPERATOR_CR })
-  assert.match(named, /Provided by NAMMCO Holding Co\., CR 7043252647, under the Board Arabia Terms/)
+  assert.match(named, /Provided by Board Arabia, under the Board Arabia Terms/)
+  assert.equal(named.includes(OPERATOR_NAME), false)
+  assert.equal(named.includes(OPERATOR_CR), false)
   assert.equal(footerWithOperator(copy.footer, null), copy.footer)
   assert.equal(footerWithOperator(named, { entity: OPERATOR_NAME, cr: OPERATOR_CR }), named)
 
@@ -105,7 +106,10 @@ test('the logged-in footer adds the fetched operator and drops the sentence when
     date: '06 Oct 2026',
   })
   assert.equal(cfo.footer.includes('Provided by'), false)
-  assert.match(footerWithOperator(cfo.footer, { entity: OPERATOR_NAME, cr: OPERATOR_CR }), /CR 7043252647/)
+  const cfoNamed = footerWithOperator(cfo.footer, { entity: OPERATOR_NAME, cr: OPERATOR_CR })
+  assert.match(cfoNamed, /Provided by Board Arabia/)
+  assert.equal(cfoNamed.includes(OPERATOR_CR), false)
+  assert.equal(cfoNamed.includes(OPERATOR_NAME), false)
 })
 
 test('the operator placeholder is gone from src and edge, and the seed is only in the migration', () => {
@@ -121,15 +125,16 @@ test('the operator placeholder is gone from src and edge, and the seed is only i
   for (const file of files) {
     const text = readFileSync(file, 'utf8')
     const name = rel(file)
-    if (/nammco holding co/i.test(text) || text.includes(OPERATOR_CR)) {
-      if (/nammco holding co/i.test(text)) nameLiteral.push(name)
+    const namesHolding = /nammco/i.test(text) && /holding/i.test(text)
+    if (namesHolding || text.includes(OPERATOR_CR)) {
+      if (namesHolding) nameLiteral.push(name)
       if (text.includes(OPERATOR_CR)) crLiteral.push(name)
     }
     if (text.includes('OPERATOR_NAME_CODES') || text.includes('78, 65, 77, 77, 67, 79') || text.includes('fromCharCode(78')) {
       codeSites.push(name)
     }
-    if (text.includes('CR 0000000000')) {
-      if (PUBLIC_LEGAL.has(name)) publicPlaceholder.push(`${name}: CR 0000000000`)
+    if (text.includes('CR sample')) {
+      if (PUBLIC_LEGAL.has(name)) publicPlaceholder.push(`${name}: CR sample`)
       else placeholderCr.push(name)
     }
     if (text.includes('Example Holdings')) {
@@ -147,8 +152,8 @@ test('the operator placeholder is gone from src and edge, and the seed is only i
 
   const migration = readFileSync(path.join(root, 'supabase/migrations/20261126120000_ai_report_operator.sql'), 'utf8')
   assert.match(migration, /insert into public\.ai_report_operator/)
-  assert.match(migration, /'NAMMCO Holding Co\.'/)
-  assert.match(migration, /'7043252647'/)
+  assert.match(migration, /\bentity\b/)
+  assert.match(migration, /\bcr\b/)
   assert.match(migration, /enable row level security/)
   assert.match(migration, /force row level security/)
   assert.match(migration, /revoke all on table public\.ai_report_operator from public, anon, authenticated/)
@@ -174,7 +179,7 @@ test('the operator placeholder is gone from src and edge, and the seed is only i
     const text = readFileSync(path.join(root, file), 'utf8')
     assert.equal(text.includes('useAiReportOperator'), false, file)
     assert.equal(text.includes('ai_report_operator'), false, file)
-    assert.equal(/nammco holding/i.test(text), false, file)
+    assert.equal(/nammco/i.test(text) && /holding/i.test(text), false, file)
     assert.equal(text.includes(OPERATOR_CR), false, file)
   }
 
@@ -186,13 +191,13 @@ test('the operator placeholder is gone from src and edge, and the seed is only i
   assert.match(apply, /path="\/apply"/)
 })
 
-test('the built site keeps the operator name and CR on the legal pages only', () => {
+test('the built site has no operator name and no registration number', () => {
   const dist = path.join(root, 'dist')
   if (!existsSync(dist)) {
     execFileSync('npx', ['vite', 'build'], { cwd: root, stdio: 'inherit' })
   }
   assert.equal(existsSync(dist), true)
-  const name = /nammco holding co\.?/i
+  const name = /nammco[\s\S]{0,12}holding/i
   const codes = ['78,65,77,77,67,79', '78, 65, 77, 77, 67, 79']
   const encoded = [
     Buffer.from(OPERATOR_NAME).toString('base64'),
@@ -210,8 +215,6 @@ test('the built site keeps the operator name and CR on the legal pages only', ()
     if (encoded.some((value) => text.includes(value))) reasons.push('base64')
     if (!reasons.length) continue
     const relative = rel(file)
-    const identityOnly = reasons.every((reason) => reason === 'name' || reason === 'cr')
-    if (identityOnly && allowsLegalEntityLine(relative)) continue
     hits.push(`${relative}: ${reasons.join(', ')}`)
   }
   assert.deepEqual(hits, [])
@@ -277,7 +280,7 @@ declare
 begin
   select count(*) into found
   from public.ai_report_operator
-  where entity = 'NAMMCO Holding Co.' and cr = '7043252647';
+  where id = 1;
   if found <> 1 then
     raise exception 'authenticated_member_missing_row';
   end if;

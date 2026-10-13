@@ -1,7 +1,8 @@
 /**
  * Logged-in AI report operator credit.
- * The name and commercial registration are not stored here.
- * A signed-in client loads them from public.ai_report_operator.
+ * A signed-in client still loads the operator row.
+ * The stored name and registration number are not shown.
+ * When a row is present the credit is "Provided by Board Arabia".
  * If that read fails, the Provided by sentence is omitted.
  */
 
@@ -33,7 +34,7 @@ export function operatorCredit(row: AiReportOperator | null): string | null {
   const entity = row.entity.trim()
   const cr = row.cr.trim()
   if (!entity || !cr) return null
-  return `Provided by ${entity}, CR ${cr}`
+  return 'Provided by Board Arabia'
 }
 
 const FOOTER_ACT = 'Verify with licensed advisers before you act, under the Board Arabia Terms'

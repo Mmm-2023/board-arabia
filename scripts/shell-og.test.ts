@@ -89,6 +89,7 @@ const ADDED_SHELLS = [
   '/book',
   '/verify',
   '/apply/verify',
+  '/admin/intros',
 ]
 
 function fixtureShell() {
@@ -160,7 +161,7 @@ test('each shell kind has one generic share card and no banned wording', () => {
   assert.equal(shells.find((item) => item.path === '/register')?.kind, 'public-utility')
   assert.equal(shells.find((item) => item.path === '/book')?.kind, 'public-utility')
   assert.equal(shells.find((item) => item.path === '/verify')?.kind, 'public-utility')
-  const banned = [/nammco/i, /7043252647/, /\u2014/]
+  const banned = [/nammco/i, /\b\d{10}\b/, /\u2014/]
   for (const entry of shells) {
     for (const pattern of banned) {
       assert.equal(pattern.test(entry.title), false, entry.path)
@@ -284,6 +285,9 @@ test('fixed shells answer 200 on a Pages static server and unknown paths stay 40
     const missing = await request(port, '/no-such-page')
     assert.equal(missing.status, 404)
     assert.match(missing.body, /data-ba-spa-fallback/)
+    const unknown = await request(port, '/nonexistent-xyz')
+    assert.equal(unknown.status, 404)
+    assert.match(unknown.body, /data-ba-spa-fallback/)
     const idSamples = [
       '/dashboard/ai/due-diligence/11111111-1111-4111-8111-111111111111',
       '/dashboard/ai/cfo-check/11111111-1111-4111-8111-111111111111',

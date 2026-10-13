@@ -908,7 +908,17 @@ export type Database = {
           email: string
           role: string
           created_at: string
+          user_id: string
+          display_name: string | null
         }[]
+      }
+      staff_set_role: {
+        Args: { p_user: string; p_role: string }
+        Returns: Json
+      }
+      staff_remove: {
+        Args: { p_user: string }
+        Returns: Json
       }
       set_member_tiers: {
         Args: {
@@ -1436,6 +1446,35 @@ export type Database = {
       staff_list_access_log: {
         Args: { p_member_id: string }
         Returns: Json
+      }
+      market_brief_for_member: {
+        Args: Record<string, never>
+        Returns: Json
+      }
+      market_brief_admin_state: {
+        Args: Record<string, never>
+        Returns: Json
+      }
+      market_brief_save_settings: {
+        Args: {
+          p_enabled: boolean
+          p_members_visible: boolean
+        }
+        Returns: undefined
+      }
+      market_brief_save_outlet: {
+        Args: {
+          p_id: string | null
+          p_name: string
+          p_domain: string
+          p_path_prefix: string | null
+          p_enabled: boolean
+        }
+        Returns: string
+      }
+      market_brief_reorder_outlets: {
+        Args: { p_ids: string[] }
+        Returns: undefined
       }
       my_weekly_digest: {
         Args: Record<string, never>

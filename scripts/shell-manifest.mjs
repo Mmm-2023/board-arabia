@@ -81,6 +81,7 @@ const FIXED_SHELLS = [
   ['/dashboard/privacy', 'member'],
   ['/dashboard/digest', 'member'],
   ['/dashboard/digest/unsubscribe', 'member'],
+  ['/dashboard/market-brief', 'member'],
   ['/admin/ai', 'admin'],
   ['/admin/marketing', 'admin'],
   ['/admin/access', 'admin'],
@@ -89,6 +90,8 @@ const FIXED_SHELLS = [
   ['/book', 'public-utility'],
   ['/verify', 'public-utility'],
   ['/apply/verify', 'public-utility'],
+  // Old /admin/intros bookmarks. Pages answers 200 and React hops.
+  ['/admin/intros', 'admin'],
 ]
 
 /** ID routes stay on the GitHub Pages 404 bounce. No query alias. */
@@ -159,7 +162,7 @@ export function appShells(options = {}) {
     seen.add(entry.path)
     if (entry.title !== 'Board Arabia') throw new Error(`${entry.path} share title`)
     if (entry.description.includes('\u2014')) throw new Error(`${entry.path} em dash in share text`)
-    if (/nammco/i.test(entry.description) || entry.description.includes('7043252647')) {
+    if (/nammco/i.test(entry.description) || /\b\d{10}\b/.test(entry.description)) {
       throw new Error(`${entry.path} banned share text`)
     }
   }
