@@ -74,7 +74,9 @@ test('public deletion page reads the legal contact and renders nothing when unse
   assert.match(privacy, /to="\/account-deletion"/)
   assert.match(page, /to="\/privacy\/"/)
   assert.match(read('scripts/prerender.mjs'), /'\/account-deletion'/)
-  assert.match(read('public/sitemap.xml'), /https:\/\/boardarabia.com\/account-deletion/)
+  assert.match(read('scripts/prerender.mjs'), /'\/legal'/)
+  assert.match(read('public/sitemap.xml'), /https:\/\/boardarabia.com\/account-deletion\//)
+  assert.match(read('public/sitemap.xml'), /https:\/\/boardarabia.com\/legal\//)
   assert.equal(page.includes('\u2014'), false)
   assert.equal(page.includes('\u2013'), false)
   assert.equal(/the desk/i.test(page), false)
@@ -371,15 +373,11 @@ begin
     raise exception 'candidate delete notified admin';
   end if;
 
-  create table public.member_notifications (
-    id uuid primary key default gen_random_uuid(),
-    member_id uuid not null
-  );
-  create table public.member_notification_prefs (
-    member_id uuid primary key
-  );
-  insert into public.member_notifications (member_id) values (ad1.member_id);
-  insert into public.member_notification_prefs (member_id) values (ad1.member_id);
+  perform set_config('ba.member_notification_write', 'on', true);
+  insert into public.member_notifications (member_id, kind, title, body)
+  values (ad1.member_id, 'message', 'A note', '');
+  insert into public.member_notification_prefs (member_id)
+  values (ad1.member_id);
   create table public.messages (
     id uuid primary key default gen_random_uuid(),
     sender_id uuid,

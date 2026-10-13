@@ -413,7 +413,7 @@ export const PRIVACY_EN: LegalDocument = {
         ],
         [
           "Member data, including profile, intros, \"Deal started\" tags, mandates and event records",
-          "Removed when you delete your account. Your sign-in is anonymised, not deleted. Legal records and consent logs are kept. Anything still held is deleted or anonymised within 24 months of exit"
+          "The profile, directory listing, introductions, notifications and messages you sent are removed when you delete your account. The sign-in is anonymised, not deleted. Consent logs are kept for 13 months, with the user reference removed unless a legal hold applies. Anything still held is deleted or anonymised within 24 months of exit, unless a legal hold applies."
         ],
         [
           "AI tool uploads and their output",
@@ -451,7 +451,7 @@ export const PRIVACY_EN: LegalDocument = {
       "kind": "clause",
       "id": "c-9-2",
       "number": "9.2",
-      "text": "From Your privacy, any member can delete their account, including a full membership, after a code. This removes the profile, directory card, introductions, notifications and messages you sent. A member sign-in is anonymised, not deleted. Legal records and consent logs are kept. An account that has not become a member still has its sign-in deleted."
+      "text": "From Your privacy, any member can delete their account, including a full membership, after a code. This removes the profile, directory card, directory listing, introductions, notifications and messages you sent. The member sign-in is anonymised, not deleted. Consent logs are kept for 13 months with the user reference removed, unless a legal hold applies. The application record is kept with personal details replaced and the user reference removed, unless a legal hold applies. Invoices and payment records are kept for the period Saudi law requires. An account that has not become a member still has its sign-in deleted."
     },
     {
       "kind": "h2",

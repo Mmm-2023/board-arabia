@@ -33,6 +33,7 @@ export const MARKETING_PATHS = [
   '/about',
   '/privacy',
   '/account-deletion',
+  '/legal',
   '/security',
   '/terms',
 ] as const
@@ -103,6 +104,12 @@ export const MARKETING_PAGES: Record<MarketingPath, MarketingPage> = {
     title: 'Delete your account | Board Arabia',
     description:
       'How a Board Arabia member deletes an account from Your privacy, and how to ask for deletion when sign-in is not available. The profile, directory card, intros, notifications and messages are removed. Legal records and consent logs are kept.',
+  },
+  '/legal': {
+    path: '/legal',
+    title: 'Terms | Board Arabia',
+    description:
+      'This Board Arabia address sends you to the Terms page. Membership, admission and the private network are set out there. The Privacy notice is a separate page.',
   },
   '/security': {
     path: '/security',

@@ -80,7 +80,7 @@ export const PRIVACY_NOTICE_EN: PrivacyNotice = {
       paragraphs: [
         'An account that opens for consideration and never submits a membership request is deleted at 120 days. One reminder is sent at 90 days. A sign-up that never confirms its email is deleted after 7 days.',
         'Rejected, declined, withdrawn, or closed requests, and legacy applications, are deleted 12 months after the decision.',
-        'When you delete your account, your profile is removed and your sign-in is anonymised, not deleted. Legal records and consent logs are kept. A legal hold keeps the account reference. Other member data is deleted or anonymised within 24 months of exit, unless a legal hold applies.',
+        'When you delete your account, the profile, directory listing, introductions, notifications and messages you sent are removed. The sign-in is anonymised, not deleted. Consent logs are kept for 13 months with the user reference removed. The application record is kept with personal details replaced and the user reference removed. A legal hold keeps that user reference. Other member data still held is deleted or anonymised within 24 months of exit, unless a legal hold applies.',
         'Analytics events are kept for 13 months maximum. The consent log is kept for 13 months. The marketing stats cache is kept for 24 hours.',
       ],
     },
@@ -88,7 +88,7 @@ export const PRIVACY_NOTICE_EN: PrivacyNotice = {
       heading: 'Your rights',
       paragraphs: [
         'You can ask to be informed, to access your data, to obtain a copy, to correct it, and to have it destroyed. You can withdraw consent at any time. You can complain to SDAIA (the Saudi Data and AI Authority).',
-        'From Your privacy, you can delete your account, including a full membership. Confirming that deletion with a code removes the profile. Your sign-in is anonymised, not deleted. Legal records and consent logs are kept.',
+        'From Your privacy, you can delete your account, including a full membership, after a code. This removes the profile, directory listing, introductions, notifications and messages you sent. The sign-in is anonymised, not deleted. Consent logs are kept for 13 months. The application record is kept with personal details replaced. A legal hold keeps the user reference.',
         `To exercise these rights, write to the privacy contact in the first section once it is published. Until then the contact remains ${PLACEHOLDER_CONFIRM}.`,
       ],
     },

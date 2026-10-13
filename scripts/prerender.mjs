@@ -19,6 +19,7 @@ const routes = [
   '/about',
   '/privacy',
   '/account-deletion',
+  '/legal',
   '/security',
   '/terms',
 ]
@@ -130,6 +131,8 @@ function assertPage(route, html) {
     '/how-it-works': 'How Board Arabia works: apply, review, invite',
     '/about': 'About Board Arabia | Founding 100 membership',
     '/privacy': 'Privacy notice | Board Arabia',
+    '/account-deletion': 'Delete your account | Board Arabia',
+    '/legal': 'Terms | Board Arabia',
     '/security': 'Trust and security | Board Arabia',
     '/terms': 'Terms of use | Board Arabia',
   }

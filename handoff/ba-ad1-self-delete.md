@@ -37,7 +37,7 @@ Messages other people sent stay, with the recipient reference cleared. A conside
 
 ## Approved exceptions
 
-`scripts/prerender.mjs` adds only the `/account-deletion` route. `public/sitemap.xml` adds only that URL. `src/content/legal/privacy.en.ts` updates the member retention line and clause 9.2. A member sign-in is anonymised, not deleted. `.github/workflows/pages.yml` was not edited.
+`scripts/prerender.mjs` adds `/account-deletion` and `/legal`. `/legal` redirects to `/terms/`. Sitemap URLs use the trailing slash, matching the rest of the sitemap. `src/content/legal/privacy.en.ts` states what self-delete removes, that the member sign-in is anonymised, and the existing 13 month and 24 month periods. `.github/workflows/pages.yml` was not edited.
 
 ## Secrets
 
