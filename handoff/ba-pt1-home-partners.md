@@ -34,4 +34,4 @@ Trusted advisers are unchanged: a real row that is not a partner seat still rend
 | Five Example rows | `home-partners-examples-1440.png` | `home-partners-examples-390.png` |
 | Bank example replaced | `home-partners-bank-1440.png` | `home-partners-bank-390.png` |
 
-Files are in `/opt/cursor/artifacts/pt1-home-partners/`. The four shots show See less, the Partners heading, and the rows above. VERIFIED by reading each image.
+The four shots are in `handoff/ba-pt1-home-partners/`. Each shows See less, the Partners heading, and the rows above. Regenerated from this head. VERIFIED by reading each image.
