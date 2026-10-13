@@ -1434,6 +1434,30 @@ export type Database = {
         Args: { p_member_id: string }
         Returns: Json
       }
+      my_weekly_digest: {
+        Args: Record<string, never>
+        Returns: Json
+      }
+      own_digest_preference: {
+        Args: Record<string, never>
+        Returns: Json
+      }
+      set_digest_email_opt_in: {
+        Args: { p_opt_in: boolean }
+        Returns: Json
+      }
+      staff_digest_issue: {
+        Args: Record<string, never>
+        Returns: Json
+      }
+      staff_create_digest_draft: {
+        Args: Record<string, never>
+        Returns: Json
+      }
+      staff_decide_digest_issue: {
+        Args: { p_action: string }
+        Returns: Json
+      }
     }
     Enums: Record<string, never>
     CompositeTypes: Record<string, never>
