@@ -250,6 +250,8 @@ test('Face ID usage, the Android biometric permission, and main-only PR checks a
   assert.match(workflow, /native\/biometric-shot\/lock/)
   assert.match(workflow, /schemeapproval\.plist/)
   assert.match(workflow, /PlistBuddy/)
+  assert.match(workflow, /android-webview-navigate\.py/)
+  assert.match(read('scripts/android-webview-navigate.py'), /https:\/\/localhost\//)
   assert.equal(workflow.includes('secrets.'), false)
   assert.equal(/eyJ[A-Za-z0-9_-]{10,}/.test(workflow), false)
 
