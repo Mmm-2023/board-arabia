@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { MarketingLayout } from '../components/MarketingLayout'
+import { publicHref } from '../content/seo'
 import {
   COOKIES_AND_ANALYTICS,
   DD_RETENTION_LINE,
@@ -64,7 +65,7 @@ export function SecurityPage() {
           </h2>
           <p className="mt-3 text-[1.05rem] leading-relaxed text-ink/75">
             Data we no longer need is deleted on a published schedule. See our{' '}
-            <Link to="/privacy" className="border-b border-brass text-ink">
+            <Link to={publicHref('/privacy')} className="border-b border-brass text-ink">
               Privacy Notice
             </Link>
             .

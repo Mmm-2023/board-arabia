@@ -5,6 +5,7 @@ import { Nav } from '../components/Nav'
 import { Seo } from '../components/Seo'
 import { WhoRunsTheDesk } from '../components/WhoRunsTheDesk'
 import { REVIEW_SLA } from '../content/marketing'
+import { publicHref } from '../content/seo'
 import { parseUsdInput, PLATFORM_TOTALS_NOTE } from '../lib/capacity'
 import { track } from '../lib/analytics'
 import { lookupMemberInvite, submitApplication } from '../lib/supabase'
@@ -239,7 +240,7 @@ export function ApplyPage() {
           </p>
           <p className="mt-4 text-[0.95rem] leading-relaxed text-ink/80">
             We record which link brought you here to understand how people find Board Arabia.{' '}
-            <Link to="/privacy" className="inline-flex min-h-11 items-center border-b border-brass text-ink">
+            <Link to={publicHref('/privacy')} className="inline-flex min-h-11 items-center border-b border-brass text-ink">
               Privacy
             </Link>
           </p>
@@ -398,7 +399,7 @@ export function ApplyPage() {
             </button>
             <p className="text-[0.875rem] leading-relaxed text-ink/65" data-trust-strip="apply">
               {APPLY_STRIP}{' '}
-              <Link to="/privacy" className="border-b border-brass text-ink">
+              <Link to={publicHref('/privacy')} className="border-b border-brass text-ink">
                 {APPLY_STRIP_LINK}
               </Link>
             </p>

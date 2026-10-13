@@ -142,7 +142,7 @@ test('public landing hides the gallery at zero, one real fixture has no Sample, 
     assert.match(one, /Example Capital/)
     assert.match(one, /One line for a fixture partner\./)
     assert.match(one, /alt="Example Capital"/)
-    assert.match(one, /href="\/partners"/)
+    assert.match(one, /href="\/partners\/"/)
     assert.equal(one.includes('Sample'), false)
     assert.equal(one.includes('data-sample'), false)
 

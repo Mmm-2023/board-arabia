@@ -1,6 +1,7 @@
 import { useState, type FormEvent, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { TurnstileField } from '../../components/TurnstileField'
+import { publicHref } from '../../content/seo'
 import { registerStrip } from '../../content/trust'
 import { isTwoTierRegisterEnabled } from '../../lib/twoTierRegister'
 
@@ -177,12 +178,12 @@ export function RegisterScreen({
                 required
               />
               <span>
-                I agree to the <Link to="/terms" className="underline">Terms</Link> and <Link to="/privacy" className="underline">Privacy notice</Link>.
+                I agree to the <Link to={publicHref('/terms')} className="underline">Terms</Link> and <Link to={publicHref('/privacy')} className="underline">Privacy notice</Link>.
               </span>
             </label>
             <p className="text-[0.92rem] leading-relaxed text-ink/60">
               We record which link brought you here to understand how people find Board Arabia.{' '}
-              <Link to="/privacy" className="underline">Privacy</Link>
+              <Link to={publicHref('/privacy')} className="underline">Privacy</Link>
             </p>
             {security === 'preview' ? (
               <p className="min-h-16 border border-[var(--ba-line)] bg-white px-3 py-3 text-[0.95rem]" data-turnstile="preview">

@@ -140,7 +140,7 @@ test('public not found has one heading and the three public links', async () => 
     assert.match(html, /Page not found/)
     assert.match(html, /This address is not a Board Arabia page\./)
     assert.match(html, /href="\/"/)
-    assert.match(html, /href="\/apply"/)
+    assert.match(html, /href="\/apply\/"/)
     assert.match(html, /href="\/login"/)
     assert.equal(html.includes('href="/admin"'), false)
     assert.equal(html.includes('href="/dashboard"'), false)

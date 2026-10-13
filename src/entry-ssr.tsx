@@ -4,14 +4,11 @@ import App from './App'
 import {
   canonicalUrl,
   MARKETING_PAGES,
-  OG_DESCRIPTION,
   OG_IMAGE,
   OG_IMAGE_ALT,
   OG_IMAGE_HEIGHT,
   OG_IMAGE_TYPE,
   OG_IMAGE_WIDTH,
-  OG_TITLE,
-  HOME_SHARE_TITLE,
   pageGraph,
   publicMarketingTitle,
   type MarketingPath,
@@ -44,7 +41,7 @@ export function render(url: string) {
     imageWidth: OG_IMAGE_WIDTH,
     imageHeight: OG_IMAGE_HEIGHT,
     imageType: OG_IMAGE_TYPE,
-    ogTitle: path === '/' ? HOME_SHARE_TITLE : OG_TITLE,
-    ogDescription: OG_DESCRIPTION,
+    ogTitle: page.title,
+    ogDescription: page.description,
   }
 }
