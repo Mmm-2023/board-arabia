@@ -20,8 +20,12 @@ export const PRIVATE_BY_DESIGN = [
   'We do not sell personal data.',
 ] as const
 
+/** Public security line. No city, country, or region. */
+export const DATA_SECURE_LINE =
+  'All your data is secure and fully encrypted, in transit and at rest.'
+
 export const WHERE_DATA_LIVES = [
-  'Your account, application and member data are stored in Frankfurt, Germany, in the European Union.',
+  DATA_SECURE_LINE,
   'Data is encrypted in transit and at rest by our hosting provider.',
   'AI tools send the content you choose to analyse to a specialist AI provider for processing.',
 ] as const
@@ -60,12 +64,12 @@ export const ISO_FOOTNOTE =
   'Board Arabia does not hold an ISO 27001 or SOC 2 certification of its own. Our hosting provider is independently audited.'
 
 export const LANDING_STRIP_LEAD =
-  'Private by design. Members only, stored in Frankfurt, encrypted in transit and at rest.'
+  `Private by design. Members only. ${DATA_SECURE_LINE}`
 
 export const LANDING_STRIP_LINK = 'How we protect your data'
 
 export const APPLY_STRIP =
-  'Your application is seen only by Board Arabia admin. It is stored in Frankfurt, encrypted, and never shown publicly.'
+  `Your application is seen only by Board Arabia admin. ${DATA_SECURE_LINE} It is never shown publicly.`
 
 export const APPLY_STRIP_LINK = 'Privacy Notice'
 
@@ -83,7 +87,7 @@ export const AI_UPLOAD_HINT =
 export const UPLOAD_HANDLING_SUMMARY = 'How is this handled?'
 
 export const UPLOAD_HANDLING =
-  'Your file is stored in Frankfurt and sent to a specialist AI provider only to produce your result. It is not shown to other members.'
+  `${DATA_SECURE_LINE} Your file is sent to a specialist AI provider only to produce your result. It is not shown to other members.`
 
 export const DD_PRIVATE_LINE =
   'Only your account can open this deck, unless you choose to share it with admin.'

@@ -7,6 +7,19 @@ import {
   respondDealRoom,
   searchDealDirectory,
 } from '../../lib/dealRoomApi'
+import {
+  deleteRoomDocument,
+  downloadRoomDocument,
+  listRoomDocuments,
+  revokeRoomDocumentMember,
+  setRoomDocumentDownload,
+  setRoomDocumentExpiry,
+  shareRoomDocument,
+  uploadRoomDocument,
+  viewRoomDocument,
+  type RoomDocumentEvent,
+  type RoomDocumentRow,
+} from '../../lib/dealRoomDocumentApi'
 import { fetchMandates, fetchReOpportunities } from '../../lib/demoFetch'
 import {
   blockingParticipantIds,
@@ -24,6 +37,7 @@ import { CardSkeleton, ErrorBanner, PermissionState } from '../../shell/ViewStat
 import { MEMBER_VIEWS } from '../../shell/viewCopy'
 import { useMember } from './context'
 import { DealRoomPanel } from './DealRoomPanel'
+import type { DealDocumentView } from './DealRoomDocuments'
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -50,6 +64,11 @@ export function DealRoomPage() {
   const [actionError, setActionError] = useState('')
   const [busy, setBusy] = useState(false)
   const [searchTick, setSearchTick] = useState(0)
+  const [documents, setDocuments] = useState<RoomDocumentRow[]>([])
+  const [events, setEvents] = useState<RoomDocumentEvent[]>([])
+  const [fileView, setFileView] = useState<DealDocumentView | null>(null)
+  const [fileError, setFileError] = useState('')
+  const [fileTick, setFileTick] = useState(0)
   useNoIndex('Room | Board Arabia')
 
   useEffect(() => {
@@ -73,6 +92,25 @@ export function DealRoomPage() {
   }, [attempt])
 
   const room = list.status === 'ready' ? list.rooms.find((item) => item.id === roomId) ?? null : null
+
+  useEffect(() => {
+    if (!room || room.myInviteStatus !== 'accepted') return
+    let cancelled = false
+    void listRoomDocuments(room.id).then((result) => {
+      if (cancelled) return
+      if (result.status === 'ok') {
+        setDocuments(result.data.documents)
+        setEvents(result.data.events)
+        return
+      }
+      setDocuments([])
+      setEvents([])
+      setFileError(result.message)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [room, fileTick])
 
   useEffect(() => {
     if (!room || room.myRole !== 'owner' || room.status !== 'open') return
@@ -159,6 +197,22 @@ export function DealRoomPage() {
     )
   }
 
+  async function fileAction(task: Promise<{ status: string; message?: string }>) {
+    setBusy(true)
+    setFileError('')
+    const result = await task
+    setBusy(false)
+    if (result.status !== 'ok') {
+      setFileError(result.message || DEAL_COPY.saveError)
+      return
+    }
+    setFileView((current) => {
+      revokeBlob(current?.src)
+      return null
+    })
+    setFileTick((value) => value + 1)
+  }
+
   async function run(task: Promise<{ status: string; message?: string }>) {
     setBusy(true)
     setActionError('')
@@ -236,8 +290,117 @@ export function DealRoomPage() {
       onDecline={() => {
         void run(respondDealRoom(room.id, 'decline'))
       }}
+      files={{
+        documents: documents.map((doc) => ({
+          id: doc.id,
+          fileName: doc.fileName,
+          downloadAllowed: doc.downloadAllowed,
+          expiresAt: doc.expiresAt,
+          sharedWithAdmin: doc.sharedWithAdmin,
+          uploadedByMe: doc.uploadedByMe,
+          expired: doc.expired,
+        })),
+        events: events.map((event) => ({
+          id: event.id,
+          fileName: event.fileName,
+          memberName: event.memberName,
+          action: event.action,
+          at: event.at,
+        })),
+        view: fileView,
+        error: fileError,
+        onUpload: (file) => {
+          setBusy(true)
+          setFileError('')
+          void uploadRoomDocument(room.id, file).then((result) => {
+            setBusy(false)
+            if (result.status !== 'ok') {
+              setFileError(result.message)
+              return
+            }
+            setFileTick((value) => value + 1)
+          })
+        },
+        onView: (id) => {
+          setBusy(true)
+          setFileError('')
+          void viewRoomDocument(id).then((result) => {
+            setBusy(false)
+            if (result.status !== 'ok' || !result.data.fileBase64) {
+              setFileView(null)
+              setFileError(result.status === 'ok' ? "Couldn't open this file. Retry." : result.message)
+              return
+            }
+            const src = pdfBlobUrl(result.data.fileBase64)
+            if (!src) {
+              setFileError("Couldn't open this file. Retry.")
+              return
+            }
+            setFileView((current) => {
+              revokeBlob(current?.src)
+              return {
+                fileName: result.data.fileName,
+                stamp: result.data.stamp,
+                src,
+                downloadAllowed: result.data.downloadAllowed,
+              }
+            })
+          })
+        },
+        onDownload: (id) => {
+          setBusy(true)
+          setFileError('')
+          void downloadRoomDocument(id).then((result) => {
+            setBusy(false)
+            if (result.status !== 'ok' || !result.data.url) {
+              setFileError(result.status === 'ok' ? 'Downloads are turned off for this file.' : result.message)
+              return
+            }
+            window.open(result.data.url, '_blank', 'noopener')
+          })
+        },
+        onSetDownload: (id, allowed) => {
+          void fileAction(setRoomDocumentDownload(id, allowed))
+        },
+        onSetFileExpiry: (id, expiresAt) => {
+          void fileAction(setRoomDocumentExpiry({ roomId: room.id, documentId: id, expiresAt }))
+        },
+        onSetMemberExpiry: (memberId, expiresAt) => {
+          void fileAction(setRoomDocumentExpiry({ roomId: room.id, memberId, expiresAt }))
+        },
+        onRevoke: (memberId) => {
+          void fileAction(revokeRoomDocumentMember(room.id, memberId))
+        },
+        onDelete: (id) => {
+          void fileAction(deleteRoomDocument(id))
+        },
+        onShare: (id) => {
+          void fileAction(shareRoomDocument(id))
+        },
+        onCloseView: () => {
+          setFileView((current) => {
+            revokeBlob(current?.src)
+            return null
+          })
+        },
+      }}
     />
   )
+}
+
+function pdfBlobUrl(fileBase64: string): string {
+  try {
+    const binary = atob(fileBase64)
+    const bytes = new Uint8Array(binary.length)
+    for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index)
+    return URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' }))
+  } catch {
+    return ''
+  }
+}
+
+function revokeBlob(src: string | undefined) {
+  if (src?.startsWith('blob:')) URL.revokeObjectURL(src)
 }
 
 function Back() {

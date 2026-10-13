@@ -34,6 +34,13 @@ function source(rel: string) {
   return readFileSync(path.join(root, rel), 'utf8')
 }
 
+function sectorNames(sql: string) {
+  const marker = 'create or replace function private.profile_sector_tags()'
+  const body = sql.split(marker)[1]?.split('$$;')[0] ?? ''
+  const array = body.split('array[')[1]?.split(']')[0] ?? ''
+  return [...array.matchAll(/'([^']+)'/g)].map((match) => match[1])
+}
+
 function card(raw: Record<string, unknown>) {
   const parsed = presentDirectoryCard({
     id: 'a1000001-0000-4000-8000-000000000001',
@@ -158,7 +165,7 @@ test('directory search and filters combine', () => {
   assert.equal(filterDirectory(rows, { ...EMPTY_DIRECTORY_FILTERS, query: 'at_capacity' }).length, 0)
   assert.equal(filterDirectory(rows, { ...EMPTY_DIRECTORY_FILTERS, query: 'capacity' })[0]?.full_name, 'Maha Al-Rawnaq')
   assert.equal(
-    filterDirectory(rows, { query: 'open', seat: 'intl', sector: 'Mining', availability: 'open' }).length,
+    filterDirectory(rows, { query: 'open', seat: 'intl', sector: 'Mining', city: null, availability: 'open' }).length,
     1,
   )
   assert.deepEqual(directorySectorOptions(rows).slice(0, 2), ['Energy transition', 'Health'])
@@ -212,7 +219,10 @@ test('profile tag migration keeps own-row writes and the sample directory', () =
   assert.equal(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i.test(migration), false)
   assert.equal(/https?:\/\//i.test(migration), false)
   assert.equal(/eyJ|sk_live|service_role_key|BEGIN PRIVATE KEY/i.test(migration), false)
-  for (const tag of SECTOR_TAGS) assert.ok(migration.includes(`'${tag}'`), tag)
+  const historical = sectorNames(migration)
+  assert.equal(historical.length, 8)
+  for (const tag of historical) assert.ok((SECTOR_TAGS as readonly string[]).includes(tag), tag)
+  assert.deepEqual(sectorNames(source('supabase/migrations/20261210120000_sectors_city_about.sql')), [...SECTOR_TAGS])
   for (const theme of VISION_2030_THEMES) assert.ok(migration.includes(`'${theme}'`), theme)
   const updates = migration.split('update public.directory_entries').slice(1)
   assert.equal(updates.length, SAMPLE_DIRECTORY_TAGS.length)

@@ -1,6 +1,7 @@
 /** Safe projections for directory, rooms, and trusted partners. */
 
 import { normalizeAvatarStyle, type AvatarStyle } from './avatarStyle.ts'
+import { cityKeyFromLocation, cityLabel, isCityKey } from './cities.ts'
 import { isPartnerLogoPath } from './partnerLogo.ts'
 import { isAvailability, normalizeTags, SECTOR_TAGS, VISION_2030_THEMES, type Availability } from './profileTags.ts'
 
@@ -11,6 +12,8 @@ export type DirectoryCard = {
   headline: string
   company: string
   location: string
+  city_key?: string
+  about?: string
   sector: string
   sectors: string[]
   vision_themes: string[]
@@ -78,13 +81,18 @@ export function presentDirectoryCard(raw: unknown): DirectoryCard | null {
   const legacy = text(row.sector, 120)
   const legacyOk = (SECTOR_TAGS as readonly string[]).includes(legacy) ? legacy : ''
   const sectors = fromList.length > 0 ? fromList : legacyOk ? [legacyOk] : []
+  const location = cityName(text(row.location, 120))
+  const explicitKey = text(row.city_key, 40)
+  const cityKey = isCityKey(explicitKey) ? explicitKey : cityKeyFromLocation(location) ?? ''
   return {
     id,
     is_demo: row.is_demo === true,
     full_name: fullName,
     headline: text(row.headline, 160),
     company: text(row.company, 200),
-    location: cityName(text(row.location, 120)),
+    location: location || (cityKey && cityKey !== 'other' ? cityLabel(cityKey) : ''),
+    city_key: cityKey,
+    about: text(row.about, 400),
     sector: sectors[0] ?? '',
     sectors,
     vision_themes: normalizeTags(row.vision_themes, VISION_2030_THEMES),

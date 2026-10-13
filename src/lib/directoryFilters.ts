@@ -1,3 +1,4 @@
+import { CITIES, cityKeyFromLocation, isCityKey } from './cities.ts'
 import type { DirectoryCard } from './demoRows.ts'
 import { seatLabel } from './demoRows.ts'
 import { optionsInCatalog, uniqueValues } from './filterOptions.ts'
@@ -12,6 +13,7 @@ export type DirectoryFilters = {
   query: string
   seat: DirectoryCard['seat'] | null
   sector: string | null
+  city: string | null
   availability: Availability | null
 }
 
@@ -19,6 +21,7 @@ export const EMPTY_DIRECTORY_FILTERS: DirectoryFilters = {
   query: '',
   seat: null,
   sector: null,
+  city: null,
   availability: null,
 }
 
@@ -28,7 +31,31 @@ export const DIRECTORY_SEAT_OPTIONS = [
 ] as const
 
 export function directoryFiltersActive(filters: DirectoryFilters) {
-  return filters.query.trim() !== '' || filters.seat != null || filters.sector != null || filters.availability != null
+  return (
+    filters.query.trim() !== '' ||
+    filters.seat != null ||
+    filters.sector != null ||
+    filters.city != null ||
+    filters.availability != null
+  )
+}
+
+export function directoryCityKey(card: Pick<DirectoryCard, 'location' | 'city_key'>): string {
+  const explicit = (card.city_key ?? '').trim()
+  if (isCityKey(explicit)) return explicit
+  return cityKeyFromLocation(card.location) ?? ''
+}
+
+export function directoryCityOptions(cards: readonly Pick<DirectoryCard, 'location' | 'city_key'>[]) {
+  const present: string[] = []
+  for (const card of cards) {
+    const key = directoryCityKey(card)
+    if (key && !present.includes(key)) present.push(key)
+  }
+  return CITIES.filter((city) => present.includes(city.key)).map((city) => ({
+    value: city.key,
+    label: city.label,
+  }))
 }
 
 export function directorySectorOptions(cards: readonly Pick<DirectoryCard, 'sector' | 'sectors'>[]) {
@@ -48,6 +75,7 @@ export function filterDirectory(cards: readonly DirectoryCard[], filters: Direct
     if (filters.seat && card.seat !== filters.seat) return false
     const sectors = card.sectors.length > 0 ? card.sectors : card.sector ? [card.sector] : []
     if (filters.sector && !sectors.includes(filters.sector)) return false
+    if (filters.city && directoryCityKey(card) !== filters.city) return false
     if (filters.availability && card.availability !== filters.availability) return false
     if (terms.length === 0) return true
     const haystack = [

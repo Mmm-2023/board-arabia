@@ -255,6 +255,7 @@ export type Database = {
           headline: string | null
           company: string | null
           location: string | null
+          city_key: string | null
           linkedin_url: string | null
           bio: string | null
           phone: string | null
@@ -278,6 +279,7 @@ export type Database = {
           headline?: string | null
           company?: string | null
           location?: string | null
+          city_key?: string | null
           linkedin_url?: string | null
           bio?: string | null
           phone?: string | null
@@ -301,6 +303,7 @@ export type Database = {
           headline?: string | null
           company?: string | null
           location?: string | null
+          city_key?: string | null
           linkedin_url?: string | null
           bio?: string | null
           phone?: string | null

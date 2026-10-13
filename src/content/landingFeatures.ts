@@ -186,10 +186,10 @@ export const LANDING_FEATURES: LandingFeature[] = [
     route: '/dashboard/two-step',
   },
   {
-    id: 'frankfurt',
+    id: 'secure',
     group: 'security',
     icon: 'settings',
-    title: 'Stored in Frankfurt',
+    title: 'Secure and encrypted',
     body: WHERE_DATA_LIVES[0],
     route: '/security',
   },

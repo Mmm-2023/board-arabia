@@ -19,6 +19,14 @@ export const SECTOR_TAGS = [
   'Mining',
   'Digital infrastructure',
   'Food security',
+  'Real estate',
+  'Industrials and manufacturing',
+  'Technology and telecom',
+  'Consumer and retail',
+  'Construction and infrastructure',
+  'Education',
+  'Media and entertainment',
+  'Utilities and water',
 ] as const
 
 export const VISION_2030_THEMES = [
