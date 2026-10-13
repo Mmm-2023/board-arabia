@@ -19,7 +19,7 @@ Only `scripts/prerender.mjs`:
 
 ## Email
 
-`PARTNER_EMAIL()` in `src/content/marketing.ts` and Organization JSON-LD in `src/content/seo.ts` call `legalField('contactEmail')`. No mailbox literal. The Pages build does not set `VITE_LEGAL_CONTACT_EMAIL`, so prerender omits `email` and `contactPoint`. README uses "the contact email in the legal config". The sign-in placeholder is `you@example.com`.
+`PARTNER_EMAIL()` in `src/content/marketing.ts`, Organization JSON-LD, and the public footer read `legalField('contactEmail')`. No mailbox literal. The Pages build sets `VITE_LEGAL_CONTACT_EMAIL` from the Actions variable of the same name. When that variable is unset, prerender omits `email`, `contactPoint`, and the footer line. README uses "the contact email in the legal config". The sign-in placeholder is `you@example.com`.
 
 ## Not redone
 
