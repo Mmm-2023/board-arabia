@@ -6,6 +6,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { appShells } from './shell-manifest.mjs'
+import { stampDistCsp } from './stamp-csp.mjs'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const SITE = 'https://boardarabia.com'
@@ -41,8 +42,14 @@ export function stubFile(routePath) {
   return path.join('ar', routePath.slice(1), 'index.html')
 }
 
+/** Same-origin English path. The canonical link stays the absolute English URL. */
+export function refreshTarget(routePath) {
+  return routePath === '/' ? '/' : routePath
+}
+
 export function stubHtml(routePath) {
   const target = englishUrl(routePath)
+  const refresh = refreshTarget(routePath)
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -50,7 +57,7 @@ export function stubHtml(routePath) {
 <title>Board Arabia</title>
 <meta name="robots" content="noindex, nofollow">
 <link rel="canonical" href="${target}">
-<meta http-equiv="refresh" content="0; url=${target}">
+<meta http-equiv="refresh" content="0; url=${refresh}">
 </head>
 <body>
 <p><a href="${target}">Continue</a></p>
@@ -97,7 +104,9 @@ function writeStubs() {
     fs.mkdirSync(path.dirname(file), { recursive: true })
     fs.writeFileSync(file, html)
   }
+  const stamped = stampDistCsp(dist)
   console.log(`wrote ${routes.length} English redirect stubs under /ar`)
+  console.log(`stamped CSP on ${stamped.files} HTML files (${stamped.hashes} inline script hashes)`)
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) writeStubs()
