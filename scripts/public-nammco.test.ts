@@ -72,8 +72,8 @@ test('prerender and the Pages artifact gate share the narrow allowlist', () => {
   assert.equal(/grep[^\n]*nammco/.test(pages), false)
   assert.equal(/grep[^\n]*nammco/.test(gate), false)
   assert.match(gate, /calendar\\\.app\\\.google/)
-  assert.match(pages, /VITE_LEGAL_BA_ENTITY:/)
-  assert.match(pages, /VITE_LEGAL_CR:/)
+  assert.equal(pages.includes('VITE_LEGAL_BA_ENTITY'), false)
+  assert.equal(pages.includes('VITE_LEGAL_CR'), false)
 })
 
 test('the footer credit is the only nammco phrase, including on legal pages', () => {
