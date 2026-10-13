@@ -89,6 +89,8 @@ const FIXED_SHELLS = [
   ['/book', 'public-utility'],
   ['/verify', 'public-utility'],
   ['/apply/verify', 'public-utility'],
+  // Old /admin/intros bookmarks. Pages answers 200 and React hops.
+  ['/admin/intros', 'admin'],
 ]
 
 /** ID routes stay on the GitHub Pages 404 bounce. No query alias. */
