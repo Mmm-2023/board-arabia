@@ -85,6 +85,9 @@ test('review migration keeps mail off and does not depend on live stamps', () =>
   assert.match(sql, /'mail_ready', false/)
   assert.match(sql, /'sendable', false/)
   assert.match(sql, /force row level security/)
+  const noticesPolicy = sql.split('create policy digest_notices_staff')[1]?.split('create or replace function')[0] ?? ''
+  assert.match(noticesPolicy, /to authenticated/)
+  assert.equal(/\bto public\b/.test(noticesPolicy), false)
   assert.match(sql, /revoke all on function public\.my_digest_notices\(\) from public, anon/)
   assert.match(sql, /revoke all on function public\.staff_save_digest_draft\(jsonb, text\[\]\) from public, anon/)
   assert.equal(/grant execute on function public\.staff_digest_mail_plan\(uuid\) to anon/.test(sql), false)

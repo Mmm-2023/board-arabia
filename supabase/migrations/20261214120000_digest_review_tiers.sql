@@ -45,7 +45,7 @@ drop policy if exists digest_notices_staff on public.digest_notices;
 create policy digest_notices_staff
   on public.digest_notices
   for all
-  to public
+  to authenticated
   using (private.is_staff())
   with check (private.is_staff());
 

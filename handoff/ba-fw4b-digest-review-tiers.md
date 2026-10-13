@@ -26,7 +26,7 @@ The audience ids are the membership catalog, not a new list and not package name
 | Home notice "This week's update is ready" links to `/dashboard/digest` | `public.my_digest_notices()`, `src/pages/dashboard/HomeSnapshotView.tsx`, `src/pages/dashboard/DashboardHome.tsx` | VERIFIED |
 | Opening This week marks that member's notices read | `public.mark_my_digest_notice_read()`, `src/pages/dashboard/DigestPage.tsx` | VERIFIED |
 | Withdraw deletes the notice rows and the page is empty again | `private.deliver_digest_notices()` | VERIFIED |
-| There was no notification table. `public.digest_notices` is the new per-member read table. RLS is forced. No grants. | migration `digest_notices` | VERIFIED |
+| There was no notification table. `public.digest_notices` is the new per-member read table. RLS is forced. The staff policy is `to authenticated`. No grants. | migration `digest_notices` | VERIFIED |
 
 A partner in the audience still receives no Majlis rows. Other members stay behind `private.caller_sees_member_card`, so a partner sees a card only when that member opted in. Grade for that rule staying as it was: VERIFIED in the database test.
 
