@@ -437,8 +437,8 @@ begin
   if position('@' in plan::text) > 0 then
     raise exception 'mail plan returned an address %', plan;
   end if;
-  if (plan->>'recipient_count')::integer <> 4 then
-    raise exception 'recipient count %', plan;
+  if (plan->>'recipient_count')::integer <> 1 then
+    raise exception 'eligible recipient count %', plan;
   end if;
   set role postgres;
   if (select updated_by from public.digest_issues where id = issue_id) is distinct from staff_id
