@@ -37,6 +37,15 @@ Deno.serve(async (req) => {
     contactEmail: Deno.env.get('PUBLIC_CONTACT_EMAIL') ?? '',
     siteOrigin: publicSite(),
     functionsOrigin: supabaseUrl,
+    streamEnv: {
+      RESEND_API_KEY: Deno.env.get('RESEND_API_KEY') ?? '',
+      EMAIL_FROM: Deno.env.get('EMAIL_FROM') ?? '',
+      RESEND_API_KEY_NEWS: Deno.env.get('RESEND_API_KEY_NEWS') ?? '',
+      EMAIL_FROM_NEWS: Deno.env.get('EMAIL_FROM_NEWS') ?? '',
+      RESEND_API_KEY_MAIL: Deno.env.get('RESEND_API_KEY_MAIL') ?? '',
+      EMAIL_FROM_MAIL: Deno.env.get('EMAIL_FROM_MAIL') ?? '',
+    },
+    unsubMailto: Deno.env.get('EMAIL_UNSUB_MAILTO') ?? '',
     now: () => Date.now(),
     sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
     fetchImpl: (url, init) => fetch(url, init),
@@ -88,6 +97,25 @@ Deno.serve(async (req) => {
       })
       return !error && data?.ok === true
     },
+    rateCheck: async (campaignId) => {
+      const { data, error } = await admin.rpc('email_campaign_rates', { p_campaign_id: campaignId })
+      if (error || !data || typeof data !== 'object') return null
+      const row = data as { delivered?: unknown; complaints?: unknown; bounces?: unknown }
+      return {
+        delivered: numberOrZero(row.delivered),
+        complaints: numberOrZero(row.complaints),
+        bounces: numberOrZero(row.bounces),
+      }
+    },
+    applyPause: async (campaignId, reason) => {
+      await admin.rpc('email_apply_pause', { p_campaign_id: campaignId, p_reason: reason })
+    },
   })
   return jsonResponse(req, result.body, result.status)
 })
+
+function numberOrZero(value: unknown): number {
+  const parsed = typeof value === 'number' ? value : Number(value)
+  if (!Number.isFinite(parsed) || parsed < 0) return 0
+  return Math.floor(parsed)
+}

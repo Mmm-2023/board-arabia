@@ -50,7 +50,7 @@ test('master off and a missing key do not call the provider', async () => {
     batchSize: 50,
     pauseMs: 1500,
     apiKey: 'test-key',
-    fromMailbox: 'news@example.com',
+    fromMailbox: 'letters@mail.boardarabia.com',
     replyTo: contact,
     fetchImpl,
   })
@@ -63,7 +63,7 @@ test('master off and a missing key do not call the provider', async () => {
     batchSize: 50,
     pauseMs: 1500,
     apiKey: '',
-    fromMailbox: 'news@example.com',
+    fromMailbox: 'letters@mail.boardarabia.com',
     replyTo: contact,
     fetchImpl,
   })
@@ -83,7 +83,7 @@ test('master off and a missing key do not call the provider', async () => {
   assert.equal(called, 0)
 })
 
-test('non-essential mail carries per-type unsubscribe headers and essential mail does not', async () => {
+test('transactional mail has tracking off and no List-Unsubscribe header', async () => {
   const { calls, wrapped } = callsOf(async () => Response.json({ id: 'msg_1' }))
   const welcome = notice('welcome', 3)
   const security = notice('security_deletion', 4, true)
@@ -93,7 +93,7 @@ test('non-essential mail carries per-type unsubscribe headers and essential mail
     batchSize: 50,
     pauseMs: 0,
     apiKey: 'test-key',
-    fromMailbox: 'news@example.com',
+    fromMailbox: 'letters@mail.boardarabia.com',
     replyTo: contact,
     fetchImpl: wrapped,
   })
@@ -109,11 +109,10 @@ test('non-essential mail carries per-type unsubscribe headers and essential mail
   }>
   const first = posted[0]
   const second = posted[1]
-  assert.equal(first.from, '"Board Arabia" <news@example.com>')
+  assert.equal(first.from, '"Board Arabia" <letters@mail.boardarabia.com>')
   assert.equal(first.reply_to, contact)
-  assert.match(first.headers?.['List-Unsubscribe'] || '', /email-unsubscribe\?t=welcome-3/)
-  assert.match(first.headers?.['List-Unsubscribe'] || '', new RegExp(`mailto:${contact.replace('.', '\\.')}\\?subject=unsubscribe`))
-  assert.equal(first.headers?.['List-Unsubscribe-Post'], 'List-Unsubscribe=One-Click')
+  assert.equal(first.headers, undefined)
+  assert.equal(JSON.stringify(first).includes('List-Unsubscribe'), false)
   assert.equal(first.open_tracking, false)
   assert.equal(first.click_tracking, false)
   assert.equal(second.open_tracking, false)
@@ -176,7 +175,7 @@ test('batches pause and a 429 waits before a retry', async () => {
     batchSize: 2,
     pauseMs: 1500,
     apiKey: 'test-key',
-    fromMailbox: 'news@example.com',
+    fromMailbox: 'letters@mail.boardarabia.com',
     replyTo: contact,
     fetchImpl,
     sleep: async (ms) => {
@@ -200,8 +199,8 @@ test('the mail stream does not fall back to the newsletter key', () => {
   assert.equal(mail.fromMailbox, '')
   const ready = noticeStreamConfig({
     RESEND_API_KEY_MAIL: 'mail-key',
-    EMAIL_FROM_MAIL: 'letters@example.com',
+    EMAIL_FROM_MAIL: 'letters@mail.boardarabia.com',
   })
   assert.equal(ready.apiKey, 'mail-key')
-  assert.equal(ready.fromMailbox, 'letters@example.com')
+  assert.equal(ready.fromMailbox, 'letters@mail.boardarabia.com')
 })

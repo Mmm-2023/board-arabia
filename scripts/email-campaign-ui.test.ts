@@ -328,7 +328,7 @@ function sendHarness(state: { current: SendGate }, role: SendDeps['role'] = 'mas
     userId: ownerId,
     staffAddress: 'owner.one@example.com',
     apiKey: 'test-key',
-    fromAddress: 'news@example.com',
+    fromAddress: 'news@news.boardarabia.com',
     contactEmail: 'contact@example.com',
     siteOrigin: 'https://example.com',
     functionsOrigin: 'https://example.com',

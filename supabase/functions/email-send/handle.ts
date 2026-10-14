@@ -6,8 +6,11 @@ import {
   deliverBatches,
   httpsOrigin,
   memberLinks,
+  resolveMailStream,
   type BatchResult,
+  type PauseRates,
   type PreparedSend,
+  type StreamEnv,
 } from '../_shared/bulk_mail.ts'
 
 export type SendMode = 'test' | 'live'
@@ -65,6 +68,10 @@ export type SendDeps = {
   contactEmail: string
   siteOrigin: string
   functionsOrigin: string
+  streamEnv?: StreamEnv
+  unsubMailto?: string
+  rateCheck?: (campaignId: string) => Promise<PauseRates | null>
+  applyPause?: (campaignId: string, reason: 'complaint_rate' | 'bounce_rate') => Promise<void>
   now: () => number
   sleep: (ms: number) => Promise<void>
   fetchImpl: Parameters<typeof deliverBatches>[0]['fetchImpl']
@@ -95,13 +102,26 @@ export function parseSendBody(raw: unknown): { campaignId: string; mode: SendMod
   return { campaignId: body.campaign_id, mode: body.mode }
 }
 
-function configured(deps: SendDeps): { fromMailbox: string; contact: string; site: string; functions: string } | null {
-  const fromMailbox = cleanMailbox(deps.fromAddress)
+function configured(deps: SendDeps): {
+  fromMailbox: string
+  apiKey: string
+  contact: string
+  site: string
+  functions: string
+  unsubMailto: string
+} | null {
+  const resolved = resolveMailStream('news', deps.streamEnv ?? {
+    RESEND_API_KEY: deps.apiKey,
+    EMAIL_FROM: deps.fromAddress,
+  })
+  const fromMailbox = resolved.fromMailbox
+  const apiKey = resolved.apiKey
   const contact = cleanMailbox(deps.contactEmail)
   const site = httpsOrigin(deps.siteOrigin)
   const functions = httpsOrigin(deps.functionsOrigin)
-  if (!deps.apiKey.trim() || !fromMailbox || !contact || !site || !functions) return null
-  return { fromMailbox, contact, site, functions }
+  const unsubMailto = cleanMailbox(deps.unsubMailto || '')
+  if (!apiKey || !fromMailbox || !contact || !site || !functions) return null
+  return { fromMailbox, apiKey, contact, site, functions, unsubMailto }
 }
 
 export async function handleEmailSend(raw: unknown, deps: SendDeps): Promise<SendResult> {
@@ -195,11 +215,13 @@ export async function handleEmailSend(raw: unknown, deps: SendDeps): Promise<Sen
         unsubscribeUrl: links.unsubscribeUrl,
         preferencesUrl: links.preferencesUrl,
         oneClickUrl: links.oneClickUrl,
+        unsubMailto: settings.unsubMailto,
         test: parsed.mode === 'test',
       }),
     })
   }
 
+  let paused = false
   const results: BatchResult[] = queued.length === 0
     ? []
     : await deliverBatches({
@@ -209,10 +231,17 @@ export async function handleEmailSend(raw: unknown, deps: SendDeps): Promise<Sen
       prepared: queued,
       batchSize: parsed.mode === 'test' ? 1 : gate.batch_size,
       pauseMs: parsed.mode === 'test' ? 0 : gate.batch_pause_ms,
-      apiKey: deps.apiKey,
+      apiKey: settings.apiKey,
       now: deps.now,
       sleep: deps.sleep,
       fetchImpl: deps.fetchImpl,
+      rateCheck: parsed.mode === 'live' && deps.rateCheck
+        ? () => deps.rateCheck!(parsed.campaignId)
+        : undefined,
+      onPause: async (reason) => {
+        paused = true
+        if (deps.applyPause) await deps.applyPause(parsed.campaignId, reason)
+      },
       keep: async (item) => {
         if (parsed.mode !== 'live') return true
         if (!(await deps.isSuppressed(item.hash))) return true
@@ -264,7 +293,7 @@ export async function handleEmailSend(raw: unknown, deps: SendDeps): Promise<Sen
     }
   }
 
-  if (parsed.mode === 'live') {
+  if (parsed.mode === 'live' && !paused) {
     await deps.setProgress(parsed.campaignId, failed > 0 ? 'sending' : 'sent')
   }
   if (parsed.mode === 'test' && deps.role === 'master' && sent > 0 && failed === 0 && deps.markTest) {
@@ -276,7 +305,8 @@ export async function handleEmailSend(raw: unknown, deps: SendDeps): Promise<Sen
 }
 
 /** Single release rule. The owner is the caller user id, matched to test_sent_by. */
-export function liveReleaseAllowed(gate: SendGate, ownerId: string): 'ok' | 'master_off' | 'not_tested' {
+export function liveReleaseAllowed(gate: SendGate, ownerId: string): 'ok' | 'master_off' | 'not_tested' | 'paused' {
+  if (gate.status === 'paused') return 'paused'
   if (gate.master_enabled !== true) return 'master_off'
   if (gate.status !== 'test_sent' && gate.status !== 'sending') return 'not_tested'
   if (!ownerId || gate.test_sent_by !== ownerId) return 'not_tested'
