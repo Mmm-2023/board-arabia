@@ -42,7 +42,7 @@ Any edit that changes the stored version returns the letter to `approved` and cl
 
 ## Member choices
 
-Weekly email stays on for a new member at admit. The consent source is `admit_default` (`:70`). If `applications.news_invitations_opt_in` is already true, admit writes News and invitations on with source `apply_form` (`:98`). Nothing in this change sets that column. The sign-up box is waiting on the owner. `src/pages/ApplyPage.tsx` and `supabase/functions/submit-application/index.ts` match main. An existing weekly preference is left as it is.
+Weekly email stays on for a new member at admit, from the consent core. This migration does not add an application column and does not read one at admit. The sign-up box is waiting on the owner. `src/pages/ApplyPage.tsx` and `supabase/functions/submit-application/index.ts` match main. An existing weekly preference is left as it is.
 
 Your privacy keeps Weekly email and adds News and invitations (`src/components/privacy/PrivacyPanelView.tsx:143`). "Not connected yet" stays while `delivery_connected` is false, which follows the master switch (`src/pages/dashboard/PrivacyPanelPage.tsx:19`).
 
@@ -60,4 +60,4 @@ Your privacy keeps Weekly email and adds News and invitations (`src/components/p
 ## Tests
 
 - `scripts/email-campaign-ui.test.ts`: route, copy, release rules, owner-only master switch, `email-send` name, shots
-- `scripts/email-campaign-ui-db.test.ts`: existing member stays off, ticked box logs `apply_form`, owner test and master switch, edit resets the test, account address is resolved at runtime, newsletter events show, the transactional mail log does not
+- `scripts/email-campaign-ui-db.test.ts`: existing member stays off, a new admit stays weekly on and news off, owner test and master switch, edit resets the test, account address is resolved at runtime, newsletter events show, the transactional mail log does not

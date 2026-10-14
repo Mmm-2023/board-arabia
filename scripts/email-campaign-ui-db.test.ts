@@ -10,7 +10,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const migrationsDir = path.join(root, 'supabase/migrations')
 const migrationName = '20261223120000_email_campaign_ui.sql'
 
-test('campaign release gate, apply tick, and existing members', { timeout: 300_000 }, () => {
+test('campaign release gate keeps existing members and does not read an application tick', { timeout: 300_000 }, () => {
   const names = readdirSync(migrationsDir).filter((name) => name.endsWith('.sql')).sort()
   assert.equal(names.includes(migrationName), true)
   assert.equal(names.includes('20261222120000_cs1_demo_seed_topup.sql'), true)
@@ -91,8 +91,8 @@ begin
     raise exception 'existing member was flipped % % %', weekly_on, pref, consent_n;
   end if;
 
-  insert into public.applications (email, status, full_name, news_invitations_opt_in)
-  values ('applicant.news@example.com', 'verified', 'News Example', true)
+  insert into public.applications (email, status, full_name)
+  values ('applicant.news@example.com', 'verified', 'News Example')
   returning id into app_news;
   insert into public.members (
     user_id, application_id, email, seat, status, invited_by, digest_email_opt_in, tiers, is_demo
@@ -103,23 +103,23 @@ begin
   select n.opted_in into news_on
   from public.email_preferences n
   where n.user_id = news_id and n.category = 'news_invitations';
-  if weekly_on is distinct from true or news_on is distinct from true then
-    raise exception 'ticked admit did not opt in % %', weekly_on, news_on;
+  if weekly_on is distinct from true or news_on is distinct from false then
+    raise exception 'admit defaults were wrong % %', weekly_on, news_on;
   end if;
   if not exists (
     select 1 from public.email_consent_log
     where user_id = news_id and category = 'weekly_digest' and action = 'opt_in'
       and source = 'admit_default' and notice_version is not null and created_at is not null
-  ) or not exists (
+  ) or exists (
     select 1 from public.email_consent_log
-    where user_id = news_id and category = 'news_invitations' and action = 'opt_in'
-      and source = 'apply_form' and notice_version is not null and created_at is not null
+    where user_id = news_id and source = 'apply_form'
   ) then
-    raise exception 'ticked admit consent was wrong';
+    raise exception 'admit consent was wrong';
   end if;
+  perform private.email_save_preference(news_id, 'news_invitations', true, 'privacy_panel', 'opt_in');
 
-  insert into public.applications (email, status, full_name, news_invitations_opt_in)
-  values ('applicant.plain@example.com', 'verified', 'Plain Example', false)
+  insert into public.applications (email, status, full_name)
+  values ('applicant.plain@example.com', 'verified', 'Plain Example')
   returning id into app_plain;
   insert into public.members (
     user_id, application_id, email, seat, status, invited_by, digest_email_opt_in, tiers, is_demo

@@ -1,16 +1,11 @@
--- Campaign screen support for letters, the apply-form tick, and the release gate.
+-- Campaign screen support for letters and the release gate.
 -- Does not send mail. Does not schedule anything. Does not call a network.
 -- The master switch stays off. Nothing in this file turns it on.
 -- A test of the stored letter is recorded only after the screen calls email-send.
 -- The owner address is read from the caller account at runtime. It is not stored.
+-- The sign-up consent prompt is not in this file. It is waiting on the owner.
 -- Apply after 20261220120000_email_core.sql. 20261222120000 is already used.
 -- Factory does not apply migrations.
-
-alter table public.applications
-  add column if not exists news_invitations_opt_in boolean not null default false;
-
-comment on column public.applications.news_invitations_opt_in is
-  'Unticked on the apply form. True only when the applicant ticks the box. Read at admit. Does not send mail.';
 
 alter table public.email_campaigns
   add column if not exists tested_version text,
@@ -66,82 +61,6 @@ revoke all on function private.email_campaign_version(text, text, uuid, text, te
 
 comment on function private.email_campaign_version(text, text, uuid, text, text, text, text, text[]) is
   'Hash of one stored letter. Used to see whether a test still matches. Does not send mail.';
-
-create or replace function private.email_apply_admit_defaults(p_user_id uuid)
-returns void
-language plpgsql
-security definer
-set search_path = ''
-as $fn$
-declare
-  cat record;
-  opted boolean;
-  act text;
-  src text;
-  news_ticked boolean := false;
-begin
-  if p_user_id is null then
-    return;
-  end if;
-  if not exists (select 1 from public.members m where m.user_id = p_user_id) then
-    return;
-  end if;
-  if exists (
-    select 1
-    from public.email_preferences p
-    where p.user_id = p_user_id
-      and p.category = 'weekly_digest'
-  ) then
-    return;
-  end if;
-
-  select coalesce(a.news_invitations_opt_in, false) into news_ticked
-  from public.members m
-  left join public.applications a on a.id = m.application_id
-  where m.user_id = p_user_id;
-
-  for cat in
-    select c.key, c.requires_opt_in
-    from public.email_categories c
-    order by c.key
-  loop
-    if cat.key = 'news_invitations' and coalesce(news_ticked, false) then
-      opted := true;
-      act := 'opt_in';
-      src := 'apply_form';
-    else
-      opted := not cat.requires_opt_in;
-      act := case when opted then 'opt_in' else 'opt_out' end;
-      src := 'admit_default';
-    end if;
-    insert into public.email_preferences (user_id, category, opted_in, updated_at)
-    values (p_user_id, cat.key, opted, pg_catalog.now());
-    insert into public.email_consent_log (
-      user_id, email_hash, category, action, source, notice_version
-    )
-    select
-      p_user_id,
-      private.email_address_hash(m.email),
-      cat.key,
-      act,
-      src,
-      'email-ui-1'
-    from public.members m
-    where m.user_id = p_user_id
-      and private.email_address_hash(m.email) is not null;
-    if cat.key = 'weekly_digest' and opted then
-      update public.members
-      set digest_email_opt_in = true
-      where user_id = p_user_id;
-    end if;
-  end loop;
-end;
-$fn$;
-
-revoke all on function private.email_apply_admit_defaults(uuid) from public, anon, authenticated;
-
-comment on function private.email_apply_admit_defaults(uuid) is
-  'At admit, turn Weekly email on and log source admit_default. A ticked apply form turns News and invitations on and logs source apply_form. If a weekly preference already exists, do nothing.';
 
 create or replace function public.my_email_preferences()
 returns jsonb

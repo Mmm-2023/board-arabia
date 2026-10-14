@@ -23,7 +23,6 @@ export type Database = {
           fo_aum: string | null
           investable_capacity_usd: number | null
           include_in_public_aggregates: boolean
-          news_invitations_opt_in: boolean
           companies: string
           job_titles: string
           linkedin_url: string | null
@@ -66,7 +65,6 @@ export type Database = {
           fo_aum?: string | null
           investable_capacity_usd?: number | null
           include_in_public_aggregates?: boolean
-          news_invitations_opt_in?: boolean
           companies: string
           job_titles: string
           linkedin_url?: string | null
@@ -109,7 +107,6 @@ export type Database = {
           fo_aum?: string | null
           investable_capacity_usd?: number | null
           include_in_public_aggregates?: boolean
-          news_invitations_opt_in?: boolean
           companies?: string
           job_titles?: string
           linkedin_url?: string | null
