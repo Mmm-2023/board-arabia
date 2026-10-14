@@ -3,6 +3,8 @@ import { Navigate, Route, Routes } from 'react-router-dom'
 import { AnalyticsRoot } from './components/AnalyticsRoot'
 import { EnglishOnlyQuery } from './components/EnglishOnly'
 import { AboutPage } from './pages/AboutPage'
+import { AccountDeletionPage } from './pages/AccountDeletionPage'
+import { LegalRedirectPage } from './pages/LegalRedirectPage'
 import { ApplyPage } from './pages/ApplyPage'
 import { RegisterPage } from './pages/RegisterPage'
 import { VerifyPage } from './pages/VerifyPage'
@@ -20,6 +22,11 @@ import { TermsPage } from './pages/TermsPage'
 import { AdminIntrosRedirect } from './shell/adminIntrosRedirect'
 import { RedirectKeep } from './shell/RedirectKeep'
 import { ShellNotFound } from './shell/ShellNotFound'
+import { NativeShell } from './shell/NativeShell'
+import { BiometricGate } from './shell/BiometricGate'
+import { BiometricShot } from './shell/BiometricShot'
+import { PushBridge } from './shell/PushBridge'
+import { PushShot } from './shell/PushShot'
 import { TrailingSlash } from './shell/TrailingSlash'
 
 const AdminLayout = lazy(() => import('./pages/admin/AdminLayout').then((m) => ({ default: m.AdminLayout })))
@@ -80,6 +87,15 @@ const PeopleIndexRedirect = lazy(() =>
 const RealEstatePage = lazy(() =>
   import('./pages/dashboard/RealEstatePage').then((m) => ({ default: m.RealEstatePage })),
 )
+const BoardSeatsPage = lazy(() =>
+  import('./pages/dashboard/BoardSeatsPage').then((m) => ({ default: m.BoardSeatsPage })),
+)
+const BoardSeatDetailPage = lazy(() =>
+  import('./pages/dashboard/BoardSeatsPage').then((m) => ({ default: m.BoardSeatDetailPage })),
+)
+const PostBoardSeatPage = lazy(() =>
+  import('./pages/dashboard/BoardSeatsPage').then((m) => ({ default: m.PostBoardSeatPage })),
+)
 const CreateRoomPage = lazy(() =>
   import('./pages/dashboard/CreateRoomPage').then((m) => ({ default: m.CreateRoomPage })),
 )
@@ -109,6 +125,9 @@ const PartnerShowcase = lazy(() =>
 export default function App() {
   return (
     <><EnglishOnlyQuery />
+    <NativeShell />
+    <PushBridge />
+    <BiometricGate />
     <AnalyticsRoot />
     <Suspense fallback={<p role="status">Loading</p>}>
     <Routes>
@@ -125,8 +144,13 @@ export default function App() {
       <Route path="/how-it-works" element={<HowItWorksPage />} />
       <Route path="/about" element={<AboutPage />} />
       <Route path="/privacy" element={<PrivacyPage />} />
+      <Route path="/account-deletion" element={<AccountDeletionPage />} />
+      <Route path="/legal" element={<LegalRedirectPage />} />
       <Route path="/terms" element={<TermsPage />} />
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/native/biometric-shot/settings" element={<BiometricShot screen="settings" />} />
+      <Route path="/native/biometric-shot/lock" element={<BiometricShot screen="lock" />} />
+      <Route path="/native/push-shot/settings" element={<PushShot />} />
       <Route path="/login/staff" element={<LoginPage />} />
       <Route path="/auth/confirm" element={<AuthConfirmPage />} />
       <Route path="/auth/reset" element={<AuthConfirmPage />} />
@@ -163,6 +187,9 @@ export default function App() {
           <Route index element={<DealsIndexRedirect />} />
           <Route path="mandates" element={<MandatesPage />} />
           <Route path="real-estate" element={<RealEstatePage />} />
+          <Route path="board-seats" element={<BoardSeatsPage />} />
+          <Route path="board-seats/new" element={<PostBoardSeatPage />} />
+          <Route path="board-seats/:seatId" element={<BoardSeatDetailPage />} />
           <Route path="rooms" element={<RoomsPage />} />
           <Route path="rooms/new" element={<CreateRoomPage />} />
           <Route path="rooms/:roomId" element={<DealRoomPage />} />
@@ -216,8 +243,8 @@ export default function App() {
         <Route path="*" element={<RedirectKeep />} />
       </Route>
       {/* Legacy book/verify routes redirect. Public calendar CTA removed. */}
-      <Route path="/book" element={<Navigate to="/apply" replace />} />
-      <Route path="/verify" element={<Navigate to="/apply" replace />} />
+      <Route path="/book" element={<Navigate to="/apply/" replace />} />
+      <Route path="/verify" element={<Navigate to="/apply/" replace />} />
       <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>

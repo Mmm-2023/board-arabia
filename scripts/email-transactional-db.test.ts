@@ -95,7 +95,7 @@ begin
      is distinct from false then
     raise exception 'new member news was flipped on';
   end if;
-  if (select count(*) from public.email_consent_log where user_id = fresh_id and source = 'admit') <> 2 then
+  if (select count(*) from public.email_consent_log where user_id = fresh_id and source = 'admit_default') <> 2 then
     raise exception 'admit consent count changed';
   end if;
 

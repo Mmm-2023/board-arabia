@@ -15,7 +15,10 @@ const LEGACY_MIGRATIONS = new Set([
 /** Already applied. Uses reserved .test mail. Listed by filename. Not rewritten. */
 const DEMO_TEST_HOST_MIGRATION = '20260929120000_demo_seed_thresholds_redaction.sql'
 
-const HOST_EXCEPTIONS = new Set([...LEGACY_MIGRATIONS, DEMO_TEST_HOST_MIGRATION])
+/** Directory check allows only this host. Mandate contacts in the same file use example.com. */
+const CS1_DEMO_SEED_MIGRATION = '20261222120000_cs1_demo_seed_topup.sql'
+
+const HOST_EXCEPTIONS = new Set([...LEGACY_MIGRATIONS, DEMO_TEST_HOST_MIGRATION, CS1_DEMO_SEED_MIGRATION])
 
 const emailRe = /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g
 const jwtRe = /eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/g

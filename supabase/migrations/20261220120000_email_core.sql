@@ -395,7 +395,7 @@ begin
       private.email_address_hash(m.email),
       cat.key,
       act,
-      'admit',
+      'admit_default',
       'email-core-1'
     from public.members m
     where m.user_id = p_user_id
@@ -412,7 +412,7 @@ $fn$;
 revoke all on function private.email_apply_admit_defaults(uuid) from public, anon, authenticated;
 
 comment on function private.email_apply_admit_defaults(uuid) is
-  'At admit, turn Weekly email on and leave News and invitations off. Write one consent row for each, with source admit. If a weekly preference already exists, do nothing.';
+  'At admit, turn Weekly email on and leave News and invitations off. Write one consent row for each, with source admit_default. If a weekly preference already exists, do nothing.';
 
 create or replace function private.email_on_member_admit()
 returns trigger

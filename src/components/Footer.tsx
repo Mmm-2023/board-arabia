@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import { BrandLockup } from './BrandLockup'
 import { MEMBER_LOGIN } from '../content/marketing'
 import { CONSENT_COPY } from '../content/privacyNotice'
+import { publicHref } from '../content/seo'
 import { publicConsiderationCta } from '../lib/twoTierRegister'
 import { ANALYTICS_CONFIG } from '../lib/tracking/flags'
 import { trackApplyClick, trackLoginClick } from '../lib/tracking/browser'
@@ -39,7 +40,7 @@ export function Footer() {
             {links.map((item) => (
               <li key={item.label}>
                 <Link
-                  to={item.to}
+                  to={publicHref(item.to)}
                   className="ba-footer-link"
                   data-consideration-cta={item.consideration ? 'public' : undefined}
                   onClick={() => {

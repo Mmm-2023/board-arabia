@@ -97,7 +97,7 @@ test('every definer pins an empty search_path and backfill does not flip weekly'
     sql.indexOf('function private.email_on_member_admit'),
   )
   assert.match(admit, /category = 'weekly_digest'/)
-  assert.match(admit, /'admit'/)
+  assert.match(admit, /'admit_default'/)
   assert.match(admit, /digest_email_opt_in = true/)
   assert.match(admit, /email_consent_log/)
   assert.match(admit, /not cat\.requires_opt_in/)

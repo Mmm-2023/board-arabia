@@ -171,10 +171,10 @@ begin
   where n.user_id = admit_id and n.category = 'news_invitations';
   select count(*) into consent_n
   from public.email_consent_log
-  where user_id = admit_id and source = 'admit';
+  where user_id = admit_id and source = 'admit_default';
   select min(created_at) into admit_at
   from public.email_consent_log
-  where user_id = admit_id and source = 'admit';
+  where user_id = admit_id and source = 'admit_default';
   if weekly_on is distinct from true or pref is distinct from true or news_on is distinct from false then
     raise exception 'admit trigger did not set the defaults % % %', weekly_on, pref, news_on;
   end if;
@@ -183,10 +183,10 @@ begin
   end if;
   if not exists (
     select 1 from public.email_consent_log
-    where user_id = admit_id and category = 'weekly_digest' and action = 'opt_in' and source = 'admit'
+    where user_id = admit_id and category = 'weekly_digest' and action = 'opt_in' and source = 'admit_default'
   ) or not exists (
     select 1 from public.email_consent_log
-    where user_id = admit_id and category = 'news_invitations' and action = 'opt_out' and source = 'admit'
+    where user_id = admit_id and category = 'news_invitations' and action = 'opt_out' and source = 'admit_default'
   ) then
     raise exception 'admit consent actions were wrong';
   end if;
@@ -202,7 +202,7 @@ begin
   select m.digest_email_opt_in into weekly_on from public.members m where m.user_id = sponsor_id;
   select count(*) into consent_n
   from public.email_consent_log
-  where user_id = sponsor_id and source = 'admit';
+  where user_id = sponsor_id and source = 'admit_default';
   if weekly_on is distinct from true or consent_n <> 2 then
     raise exception 'partner seat admit did not record defaults % %', weekly_on, consent_n;
   end if;
@@ -230,7 +230,7 @@ begin
   where n.user_id = founder_id and n.category = 'news_invitations';
   select count(*) into consent_n
   from public.email_consent_log
-  where user_id = founder_id and source = 'admit' and created_at is not null;
+  where user_id = founder_id and source = 'admit_default' and created_at is not null;
   if weekly_on is distinct from true or news_on is distinct from false or consent_n <> 2 then
     raise exception 'founding admit did not record defaults % % %', weekly_on, news_on, consent_n;
   end if;

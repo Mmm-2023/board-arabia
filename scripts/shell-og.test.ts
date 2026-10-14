@@ -90,6 +90,8 @@ const ADDED_SHELLS = [
   '/verify',
   '/apply/verify',
   '/admin/intros',
+  '/dashboard/deals/board-seats',
+  '/dashboard/deals/board-seats/new',
 ]
 
 function fixtureShell() {
@@ -103,7 +105,7 @@ function fixtureShell() {
       content="A selective founding membership for Chairpersons, Board members, and C-suite executives connecting Saudi Arabia boardrooms with international capital."
     />
     <meta property="og:site_name" content="Board Arabia" />
-    <meta property="og:title" content="Board Arabia | Where Saudi boardrooms meet international capital" />
+    <meta property="og:title" content="Board Arabia | Saudi boardrooms meet international capital" />
     <meta property="og:description" content="A selective founding membership for Chairpersons, Board members, and C-suite executives." />
     <meta property="og:image" content="https://boardarabia.com/og-board-arabia.png" />
     <meta property="og:image:width" content="1200" />
@@ -111,10 +113,10 @@ function fixtureShell() {
     <meta property="og:image:type" content="image/png" />
     <meta property="og:image:alt" content="Board Arabia stacked wordmark and Najdi diamond mark on Night Indigo" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Board Arabia | Where Saudi boardrooms meet international capital" />
+    <meta name="twitter:title" content="Board Arabia | Saudi boardrooms meet international capital" />
     <meta name="twitter:description" content="A selective founding membership for Chairpersons, Board members, and C-suite executives." />
     <meta name="twitter:image" content="https://boardarabia.com/og-board-arabia.png" />
-    <title>Board Arabia | Where Saudi boardrooms meet international capital</title>
+    <title>Board Arabia | Saudi boardrooms meet international capital</title>
   </head>
   <body><div id="root"></div></body>
 </html>`
@@ -180,7 +182,7 @@ test('shell documents keep noindex and replace the home share tags', () => {
     const relative = shellArtifactPath(entry)
     assert.deepEqual(shellProblems(html, entry, relative), [], entry.path)
     assert.equal(strayPublicNammco(html, relative), false, entry.path)
-    assert.equal(html.includes('Where Saudi boardrooms meet international capital'), false, entry.path)
+    assert.equal(html.includes('Saudi boardrooms meet international capital'), false, entry.path)
     assert.equal((html.match(/property="og:image"/g) || []).length, 1, entry.path)
     assert.match(html, /content="noindex, nofollow"/)
   }

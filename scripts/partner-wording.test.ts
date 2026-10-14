@@ -380,7 +380,7 @@ test('public /partners and /for-capital send Apply to /apply and Log in to /logi
       createElement(MemoryRouter, { initialEntries: ['/for-capital'] }, createElement(capital.ForCapitalPage)),
     )
     for (const html of [partnersHtml, capitalHtml]) {
-      assert.match(html, /href="\/apply"/)
+      assert.match(html, /href="\/apply\/"/)
       assert.match(html, /href="\/login"/)
       assert.match(html, />\s*Log in\s*</)
       assert.match(html, />\s*Apply for consideration\s*</)

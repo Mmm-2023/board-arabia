@@ -32,6 +32,7 @@ test('hub sub-tab hrefs stay on the existing routes', () => {
     [
       ['Mandates', '/dashboard/deals/mandates'],
       ['Real estate', '/dashboard/deals/real-estate'],
+      ['Board seats', '/dashboard/deals/board-seats'],
       ['Deal rooms', '/dashboard/deals/rooms'],
     ],
   )
@@ -91,6 +92,7 @@ test('active sub-tab is a link with aria-current and a 44px target', async () =>
     assert.equal(html.includes('role="tablist"'), false)
     assert.match(html, /<a aria-current="page"[^>]*href="\/dashboard\/deals\/mandates"/)
     assert.match(html, /href="\/dashboard\/deals\/real-estate"/)
+    assert.match(html, /href="\/dashboard\/deals\/board-seats"/)
     assert.match(html, /href="\/dashboard\/deals\/rooms"/)
     assert.equal((html.match(/aria-current="page"/g) || []).length, 1)
     assert.match(html, /min-h-11/)

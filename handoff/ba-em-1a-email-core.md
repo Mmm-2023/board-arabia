@@ -67,7 +67,7 @@ Weekly email is on for a new member. News and invitations is off. The column def
 
 Both seat claims set `invited_by`. The after-insert trigger at `:434` calls `private.email_apply_admit_defaults` (`:355`) only when that inviter is set and the row is not a demo.
 
-The helper reads `email_categories.requires_opt_in` (`:22`). Weekly email is false, so the preference is on, the action is `opt_in`, and the weekly column is set true (`:403`). News and invitations is true, so the preference is off and the action is `opt_out`. Each category gets one `email_consent_log` row with source `admit`, notice version `email-core-1`, and `created_at` defaulting to now (`:390`).
+The helper reads `email_categories.requires_opt_in` (`:22`). Weekly email is false, so the preference is on, the action is `opt_in`, and the weekly column is set true (`:403`). News and invitations is true, so the preference is off and the action is `opt_out`. Each category gets one `email_consent_log` row with source `admit_default`, notice version `email-core-1`, and `created_at` defaulting to now (`:390`).
 
 There is no member row at bare sign-up. The consent row is written when the seat claim inserts the member, which is the admit step for a sign-up and for a partner seat.
 
@@ -82,7 +82,7 @@ Postgres proof in `scripts/email-core-db.test.ts`:
 - A member stored off and a member stored on keep those column values after backfill. Preferences match the columns. Consent count for them is 0.
 - Changing the off member's column and running backfill again leaves the stored preference off.
 - Calling the admit helper on those two members writes nothing and does not change the columns.
-- A new insert with an inviter, the partner seat claim, and the founding seat claim each set weekly on, news off, and two consent rows with source `admit` and a timestamp.
+- A new insert with an inviter, the partner seat claim, and the founding seat claim each set weekly on, news off, and two consent rows with source `admit_default` and a timestamp.
 
 ## Audience and the master switch
 

@@ -719,7 +719,7 @@ begin
       private.email_address_hash(m.email),
       cat.key,
       act,
-      'admit',
+      'admit_default',
       'email-core-1'
     from public.members m
     where m.user_id = p_user_id
@@ -768,7 +768,7 @@ $fn$;
 revoke all on function private.email_apply_admit_defaults(uuid) from public, anon, authenticated;
 
 comment on function private.email_apply_admit_defaults(uuid) is
-  'Weekly email on and news off for a new member, logged with source admit. Transactional notices default on and are logged with source service_default. A member who already has a weekly preference is left as they are.';
+  'Weekly email on and news off for a new member, logged with source admit_default. Transactional notices default on and are logged with source service_default. A member who already has a weekly preference is left as they are.';
 
 create or replace function public.my_email_preferences()
 returns jsonb
@@ -1115,3 +1115,88 @@ $fn$;
 
 revoke all on function public.email_consent_retention(boolean) from public, anon, authenticated;
 grant execute on function public.email_consent_retention(boolean) to service_role;
+
+create or replace function public.prepare_candidate_delete(p_user_id uuid)
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $fn$
+declare
+  cand public.candidates%rowtype;
+  analytics text;
+begin
+  if auth.role() is distinct from 'service_role' then
+    raise exception 'forbidden' using errcode = '42501';
+  end if;
+
+  if exists (select 1 from public.members m where m.user_id = p_user_id) then
+    return pg_catalog.jsonb_build_object('status', 'member');
+  end if;
+
+  if exists (select 1 from public.staff_users s where s.user_id = p_user_id) then
+    return pg_catalog.jsonb_build_object('status', 'staff');
+  end if;
+
+  select * into cand from public.candidates where user_id = p_user_id for update;
+  if cand.user_id is null then
+    return pg_catalog.jsonb_build_object('status', 'missing');
+  end if;
+
+  if cand.email_verified_at is null
+     and cand.request_state = 'open'
+     and cand.invite_token_id is not null
+  then
+    perform private.return_applied_invite(cand.invite_token_id);
+  end if;
+
+  perform private.enqueue_member_notice(
+    'security_deletion',
+    p_user_id,
+    p_user_id,
+    pg_catalog.jsonb_build_object('user_id', p_user_id)
+  );
+
+  analytics := cand.analytics_id;
+  if analytics is not null and pg_catalog.strpos(analytics, '@') = 0 then
+    insert into public.retention_posthog_queue (analytics_id)
+    values (analytics)
+    on conflict (analytics_id) do nothing;
+  end if;
+
+  delete from public.candidate_events where candidate_user_id = p_user_id;
+  delete from public.candidate_notes where candidate_user_id = p_user_id;
+  delete from auth.users where id = p_user_id;
+
+  return pg_catalog.jsonb_build_object('status', 'ok', 'analytics_id', analytics);
+end;
+$fn$;
+
+revoke all on function public.prepare_candidate_delete(uuid) from public, anon, authenticated;
+grant execute on function public.prepare_candidate_delete(uuid) to service_role;
+
+create or replace function private.notice_on_member_close()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $fn$
+begin
+  if old.anonymised_at is null and new.anonymised_at is not null then
+    perform private.enqueue_member_notice(
+      'security_deletion',
+      old.user_id,
+      old.user_id,
+      pg_catalog.jsonb_build_object('user_id', old.user_id)
+    );
+  end if;
+  return new;
+end;
+$fn$;
+
+revoke all on function private.notice_on_member_close() from public, anon, authenticated;
+
+drop trigger if exists members_notice_close_bu on public.members;
+create trigger members_notice_close_bu
+  before update of anonymised_at on public.members
+  for each row execute function private.notice_on_member_close();

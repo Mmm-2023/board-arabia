@@ -11,7 +11,6 @@ import { formatPublicUsd } from './capacity.ts'
 import { DEMO_THRESHOLD_DEFAULTS, demoRowsVisible } from './demoThreshold.ts'
 import { displayPlatformMoney } from './platformFloors.ts'
 import { seatLine, type PlatformStats } from './platformStats.ts'
-import { visibleMemberPartners } from './trustedPartners.ts'
 
 export type MembershipBadge = 'Founding' | 'Member'
 export type HomeCtaId = 'profile' | 'intro' | 'majlis' | 'mandate' | 'invite'
@@ -80,6 +79,7 @@ export type PartnerBrief = {
   blurb?: string
   logo_path?: string | null
   is_partner?: boolean
+  category_slug?: string | null
 }
 
 export type HomeActivity = {
@@ -136,6 +136,7 @@ export type HomeModel = {
       logo_path: string | null
       example: boolean
       is_partner: boolean
+      category_slug: string | null
     }[]
   }
   teasers: {
@@ -535,7 +536,8 @@ export function assembleHome(input: AssembleInput): HomeModel {
   const roomRows = input.rooms
     ? uniqueById(applyDemoThreshold(input.rooms, DEMO_THRESHOLD_DEFAULTS.rooms))
     : []
-  const partnerRows = input.partners ? uniqueById(visibleMemberPartners(input.partners)) : []
+  // Home keeps an example until a live partner shares its category. Advisers stay real rows.
+  const partnerRows = input.partners ? uniqueById(input.partners) : []
 
   return {
     identity: {
@@ -574,6 +576,7 @@ export function assembleHome(input: AssembleInput): HomeModel {
         logo_path: partner.logo_path ?? null,
         example: partner.is_demo,
         is_partner: partner.is_partner === true,
+        category_slug: partner.category_slug ?? null,
       })),
     },
     teasers: {

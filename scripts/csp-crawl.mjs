@@ -324,7 +324,7 @@ async function main() {
   if (!sitemap.includes('https://boardarabia.com/security')) fail('sitemap is missing /security')
   const securityHtml = fs.readFileSync(path.join(dist, 'security/index.html'), 'utf8')
   if (!securityHtml.includes('Trust and privacy')) fail('prerendered /security is missing its title')
-  if (!securityHtml.includes('href="/security"')) fail('footer link is missing on /security')
+  if (!securityHtml.includes('href="/security/"')) fail('footer link is missing on /security')
 
   const supabaseOrigin = policy.match(/https:\/\/[a-z0-9-]+\.supabase\.co/)?.[0]
   if (!supabaseOrigin) fail('CSP has no Supabase origin')
@@ -421,7 +421,7 @@ async function main() {
     await publicPage.page.goto(`${origin}/`, { waitUntil: 'load' })
     await publicPage.page.locator('[data-trust-strip="landing"]').waitFor()
     const landingHref = await publicPage.page.locator('[data-trust-strip="landing"] a').getAttribute('href')
-    if (landingHref !== '/security') fail(`landing strip href is ${landingHref}`)
+    if (landingHref !== '/security/') fail(`landing strip href is ${landingHref}`)
     await shots(publicPage.page, 'landing-strip', '[data-trust-strip="landing"]')
     await collect(publicPage.page, 'flow:landing-strip')
 
@@ -437,11 +437,11 @@ async function main() {
     await publicPage.page.goto(`${origin}/`, { waitUntil: 'load' })
     await waitForHydration(publicPage.page)
     const heroApply = publicPage.page.locator('#hero-apply')
-    if ((await heroApply.getAttribute('href')) !== '/apply') {
-      fail('landing Apply for consideration does not go to /apply')
+    if ((await heroApply.getAttribute('href')) !== '/apply/') {
+      fail('landing Apply for consideration does not go to /apply/')
     }
     await heroApply.click()
-    await publicPage.page.waitForURL(/\/apply$/)
+    await publicPage.page.waitForURL(/\/apply\/?$/)
     await waitForHydration(publicPage.page)
     console.log(`Clicked Apply for consideration. Landed on ${publicPage.page.url()}`)
     await publicPage.page.locator('h1').waitFor()

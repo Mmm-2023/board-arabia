@@ -1,8 +1,11 @@
 import assert from 'node:assert/strict'
-import { readdirSync, readFileSync } from 'node:fs'
+import { mkdirSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import path from 'node:path'
 import test from 'node:test'
 import { fileURLToPath } from 'node:url'
+import { chromium } from 'playwright-core'
+import { createServer } from 'vite'
+import { CHROME_SKIP, resolveChromePath } from './chrome-path.ts'
 import { MEMBER_NOTICE_TYPES, memberNoticeMail, PRIVACY_PATH } from '../supabase/functions/_shared/member_notice_copy.ts'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
@@ -79,7 +82,9 @@ test('hooks queue notices and do not name the provider', () => {
   assert.match(read('supabase/functions/_shared/deal_room.ts'), /typeKey: 'invite'/)
   assert.match(read('supabase/functions/majlis-reminders/index.ts'), /stableNoticeRef/)
   assert.match(read('supabase/functions/_shared/majlis_notify.ts'), /event_reminder/)
-  assert.match(read('supabase/functions/delete-candidate-account/index.ts'), /security_deletion/)
+  assert.match(read('supabase/functions/delete-candidate-account/index.ts'), /confirm_account_delete/)
+  assert.match(read(`supabase/migrations/${migrationName}`), /security_deletion/)
+  assert.match(read(`supabase/migrations/${migrationName}`), /members_notice_close_bu/)
   assert.match(read('supabase/functions/retention-sweep/index.ts'), /security_deletion/)
   assert.match(read('src/pages/dashboard/TwoStepPage.tsx'), /record-security-notice/)
   assert.match(read('src/pages/admin/NewsletterReadySetting.tsx'), /newsletter_ready/)
@@ -148,4 +153,149 @@ test('each notice template keeps the footer rules and the privacy link', () => {
     site,
     unsubscribeUrl: 'https://example.com/functions/v1/email-unsubscribe?t=message',
   }).subject.includes('New message'), true)
+})
+
+function noticeSessionToken() {
+  const encode = (value: unknown) => Buffer.from(JSON.stringify(value)).toString('base64url')
+  return `${encode({ alg: 'none', typ: 'JWT' })}.${encode({
+    sub: '22222222-2222-4222-8222-222222222222',
+    aud: 'authenticated',
+    exp: 2000000000,
+    iat: 1700000000,
+    role: 'authenticated',
+    aal: 'aal2',
+    session_id: '00000000-0000-4000-8000-000000000001',
+  })}.sig`
+}
+
+test('email notification settings at 1440 and 390', { timeout: 120_000 }, async (t) => {
+  const chrome = resolveChromePath()
+  if (!chrome) {
+    t.skip(CHROME_SKIP)
+    return
+  }
+  process.env.VITE_SUPABASE_URL = 'https://example.supabase.co'
+  process.env.VITE_SUPABASE_ANON_KEY = 'example-anon-key'
+  process.env.VITE_ANALYTICS_ENABLED = 'false'
+  const shotDir = path.join('/opt/cursor/artifacts', 'em-1d-notices')
+  mkdirSync(shotDir, { recursive: true })
+  const vite = await createServer({ server: { host: '127.0.0.1', port: 0, hmr: false }, logLevel: 'error' })
+  await vite.listen()
+  const address = vite.httpServer?.address()
+  const port = address && typeof address === 'object' ? address.port : 0
+  const origin = `http://127.0.0.1:${port}`
+  const browser = await chromium.launch({ executablePath: chrome, args: ['--no-sandbox', '--disable-dev-shm-usage'] })
+  try {
+    const page = await browser.newPage()
+    await page.route('**/*supabase.co/**', async (route) => {
+      const url = route.request().url()
+      const json = (body: unknown) =>
+        route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body) })
+      if (route.request().method() === 'OPTIONS') {
+        await route.fulfill({ status: 204 })
+        return
+      }
+      if (url.includes('/auth/v1/user')) {
+        await json({
+          id: '22222222-2222-4222-8222-222222222222',
+          aud: 'authenticated',
+          role: 'authenticated',
+          email: 'member@example.com',
+        })
+        return
+      }
+      if (url.includes('/rest/v1/rpc/my_email_preferences')) {
+        await json({
+          weekly_digest: false,
+          news_invitations: false,
+          master_enabled: false,
+          essential_always_on: true,
+          notices: {
+            welcome: true,
+            message_new: false,
+            intro_suggested: true,
+            invite: false,
+            event_reminder: true,
+            mandate_update: false,
+          },
+        })
+        return
+      }
+      if (url.includes('/rest/v1/rpc/own_directory_visibility')) {
+        await json({ directory_hidden: false, show_card_to_sponsors: false })
+        return
+      }
+      if (url.includes('/rest/v1/rpc/own_digest_preference')) {
+        await json({ digest_email_opt_in: false })
+        return
+      }
+      if (url.includes('/rest/v1/staff_users')) {
+        await route.fulfill({ status: 406, contentType: 'application/json', body: JSON.stringify({ code: 'PGRST116', message: '0 rows' }) })
+        return
+      }
+      if (url.includes('/rest/v1/members')) {
+        await json({
+          user_id: '22222222-2222-4222-8222-222222222222',
+          email: 'member@example.com',
+          seat: 'ksa',
+          status: 'active',
+          must_set_password: false,
+          invites_remaining: 2,
+          invites_granted: 2,
+          founding_number: 1,
+          tier: 'founding',
+        })
+        return
+      }
+      if (url.includes('/rest/v1/profiles')) {
+        await json({
+          user_id: '22222222-2222-4222-8222-222222222222',
+          full_name: 'Example Member',
+          headline: 'Chair',
+          company: 'Example Co',
+          location: 'Riyadh',
+          linkedin_url: 'https://example.com/in/member',
+          bio: 'Example profile.',
+          avatar_path: null,
+          avatar_style: 'male',
+        })
+        return
+      }
+      await json([])
+    })
+    await page.goto(`${origin}/login`, { waitUntil: 'domcontentloaded' })
+    await page.evaluate((access) => {
+      localStorage.setItem(
+        'sb-example-auth-token',
+        JSON.stringify({
+          access_token: access,
+          refresh_token: 'refresh-example',
+          expires_in: 3600,
+          expires_at: 2000000000,
+          token_type: 'bearer',
+          user: {
+            id: '22222222-2222-4222-8222-222222222222',
+            aud: 'authenticated',
+            role: 'authenticated',
+            email: 'member@example.com',
+          },
+        }),
+      )
+    }, noticeSessionToken())
+    for (const width of [1440, 390]) {
+      await page.setViewportSize({ width, height: width === 390 ? 844 : 900 })
+      await page.goto(`${origin}/dashboard/privacy`, { waitUntil: 'networkidle' })
+      await page.getByRole('heading', { name: 'Email notifications' }).waitFor()
+      await page.locator('[data-email-notices]').scrollIntoViewIfNeeded()
+      await page.screenshot({ path: path.join(shotDir, `notices-${width}.png`), fullPage: true })
+      const text = await page.locator('[data-email-notices]').innerText()
+      assert.match(text, /not connected yet/)
+      assert.match(text, /Coming soon/)
+      assert.match(text, /Account security emails: always on/)
+      assert.ok(statSync(path.join(shotDir, `notices-${width}.png`)).size > 1000)
+    }
+  } finally {
+    await browser.close()
+    await vite.close()
+  }
 })

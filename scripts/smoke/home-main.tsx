@@ -262,10 +262,57 @@ const empty = shell(
   'empty',
 )
 
+const partnerExamples: AssembleInput['partners'] = [
+  { id: 'ex-law', is_demo: true, name: 'Qaf Counsel', monogram: 'QC', blurb: 'Law firm.', category_slug: 'law-firm' },
+  { id: 'ex-audit', is_demo: true, name: 'Mirsad Audit', monogram: 'MA', blurb: 'Accounting and audit firm.', category_slug: 'accounting-audit' },
+  { id: 'ex-bank', is_demo: true, name: 'Dar Clearing', monogram: 'DC', blurb: 'Bank.', category_slug: 'bank' },
+  { id: 'ex-search', is_demo: true, name: 'Nahla Search', monogram: 'NS', blurb: 'Executive search firm.', category_slug: 'executive-search' },
+  { id: 'ex-cover', is_demo: true, name: 'Safa Cover', monogram: 'SC', blurb: 'Insurer and advisory firm.', category_slug: 'insurer-advisory' },
+]
+
+const partnersExamples = shell(
+  {
+    ...shared,
+    name: 'Example Member',
+    photoUrl: null,
+    partners: partnerExamples,
+    gatherings: [],
+    money: [],
+    activityStatus: 'empty',
+  },
+  'partners-examples',
+)
+
+const partnersBank = shell(
+  {
+    ...shared,
+    name: 'Example Member',
+    photoUrl: null,
+    partners: [
+      ...partnerExamples,
+      {
+        id: 'live-bank',
+        is_demo: false,
+        is_partner: true,
+        name: 'Harbour Clearing',
+        monogram: 'HC',
+        blurb: 'A published bank partner.',
+        category_slug: 'bank',
+      },
+    ],
+    gatherings: [],
+    money: [],
+    activityStatus: 'empty',
+  },
+  'partners-bank',
+)
+
 const states: Record<string, ReturnType<typeof shell>> = {
   populated,
   demo,
   empty,
+  'partners-examples': partnersExamples,
+  'partners-bank': partnersBank,
 }
 
 const state = new URLSearchParams(window.location.search).get('state') || 'populated'

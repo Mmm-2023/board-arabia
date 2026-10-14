@@ -1,0 +1,22 @@
+# Board Arabia
+
+> Board Arabia is a selective founding membership that connects Saudi Arabia's Chairpersons, board members and C-suite executives with international capital. English-language site.
+
+Board Arabia has a Founding 100: 50 places for Saudi Arabia and the GCC, and 50 for international members. Admission is by personal review, not open signup. Accepted applicants receive a private invite by email. There is no public calendar and no public member directory.
+
+Members use a private directory, introductions and mandates reviewed by the admin team, majlis events, deal rooms and Vision 2030 tags. Family offices, FDI, private equity and venture capital engage members only through reviewed mandates. Board Arabia also has three annual partner seats, led by finance and deal-execution firms.
+
+Contact: the contact email in the legal config.
+
+## Pages
+- [About](https://boardarabia.com/about/): what Board Arabia is and who it is for
+- [How it works](https://boardarabia.com/how-it-works/): apply, review, invite
+- [For members](https://boardarabia.com/for-members/): member tools and benefits
+- [For capital](https://boardarabia.com/for-capital/): how investors engage members
+- [Partners](https://boardarabia.com/partners/): three annual partner seats
+- [Apply](https://boardarabia.com/apply/): apply for founding membership
+
+## Policies
+- [Trust and security](https://boardarabia.com/security/)
+- [Privacy notice](https://boardarabia.com/privacy/)
+- [Terms of use](https://boardarabia.com/terms/)
