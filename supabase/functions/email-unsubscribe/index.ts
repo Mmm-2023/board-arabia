@@ -2,9 +2,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1'
 import { publicSite } from '../_shared/mail.ts'
 import { sha256Hex } from '../_shared/bulk_mail.ts'
 import { bumpKeyedLimit } from '../_shared/rate_limit.ts'
-import { handleUnsubscribe } from './handle.ts'
-
-const HOUR_MS = 60 * 60 * 1000
+import { handleUnsubscribe, limitUnsubscribe } from './handle.ts'
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { status: 204 })
@@ -24,11 +22,12 @@ Deno.serve(async (req) => {
     url: req.url,
     body,
     siteOrigin: publicSite(),
-    limit: async () => {
-      const byToken = await bumpKeyedLimit(admin, 'email_unsub_limits', tokenKey, HOUR_MS, 10)
-      if (byToken !== 'ok') return byToken
-      return bumpKeyedLimit(admin, 'email_unsub_limits', ipKey, HOUR_MS, 30)
-    },
+    limit: () => limitUnsubscribe({
+      method: req.method,
+      tokenKey,
+      ipKey,
+      hit: (key, windowMs, max) => bumpKeyedLimit(admin, 'email_unsub_limits', key, windowMs, max),
+    }),
     unsubscribe: async (value) => {
       const { error } = await admin.rpc('email_unsubscribe', {
         p_token: value,

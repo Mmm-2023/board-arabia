@@ -27,6 +27,9 @@ export type SendGate = {
   issue_status: string | null
   issue_mail_ready: boolean
   issue_send_enabled: boolean
+  content_hash: string | null
+  test_content_hash: string | null
+  test_by_owner: boolean
 }
 
 export type SendRecipient = {
@@ -70,6 +73,7 @@ export type SendDeps = {
   isSuppressed: (emailHash: string) => Promise<boolean>
   logSend: (row: LogSendInput) => Promise<LogSendResult>
   setProgress: (campaignId: string, status: 'sending' | 'sent') => Promise<boolean>
+  markTest?: (campaignId: string) => Promise<boolean>
 }
 
 export type SendResult = {
@@ -108,9 +112,7 @@ export async function handleEmailSend(raw: unknown, deps: SendDeps): Promise<Sen
   const gate = await deps.loadGate(parsed.campaignId)
   if (!gate || !gate.found) return fail(404, 'not_found')
   if (parsed.mode === 'live' && gate.master_enabled !== true) return fail(409, 'master_off')
-  if (parsed.mode === 'live' && gate.status !== 'approved' && gate.status !== 'sending') {
-    return fail(409, 'not_approved')
-  }
+  if (parsed.mode === 'live' && !liveReleaseAllowed(gate)) return fail(409, 'not_tested')
   if (parsed.mode === 'live' && gate.kind === 'digest') {
     const sendable = digestIssueSendable({
       status: gate.issue_status || '',
@@ -125,7 +127,7 @@ export async function handleEmailSend(raw: unknown, deps: SendDeps): Promise<Sen
 
   if (parsed.mode === 'live') {
     const started = await deps.setProgress(parsed.campaignId, 'sending')
-    if (!started) return fail(409, 'not_approved')
+    if (!started) return fail(409, 'not_tested')
   }
 
   const staff = cleanMailbox(deps.staffAddress)
@@ -200,6 +202,7 @@ export async function handleEmailSend(raw: unknown, deps: SendDeps): Promise<Sen
     ? []
     : await deliverBatches({
       campaignId: parsed.campaignId,
+      mode: parsed.mode,
       prepared: queued,
       batchSize: parsed.mode === 'test' ? 1 : gate.batch_size,
       pauseMs: parsed.mode === 'test' ? 0 : gate.batch_pause_ms,
@@ -261,6 +264,18 @@ export async function handleEmailSend(raw: unknown, deps: SendDeps): Promise<Sen
   if (parsed.mode === 'live') {
     await deps.setProgress(parsed.campaignId, failed > 0 ? 'sending' : 'sent')
   }
+  if (parsed.mode === 'test' && deps.role === 'master' && sent > 0 && failed === 0 && deps.markTest) {
+    const stamped = await deps.markTest(parsed.campaignId)
+    if (!stamped) return fail(500, 'test_not_recorded')
+  }
 
   return { status: 200, body: { ok: true, mode: parsed.mode, sent, skipped, failed } }
+}
+
+/** Live send needs an owner test of this exact subject, preheader, body and tiers. */
+export function liveReleaseAllowed(gate: SendGate): boolean {
+  if (gate.status !== 'test_sent' && gate.status !== 'sending') return false
+  if (gate.test_by_owner !== true) return false
+  if (!gate.content_hash || gate.content_hash !== gate.test_content_hash) return false
+  return true
 }

@@ -61,10 +61,14 @@ export async function addressHash(email: string): Promise<string> {
   return sha256Hex(email.trim().toLowerCase())
 }
 
-export function listUnsubscribeValue(pageUrl: string, contactEmail: string): string {
-  const parts = [`<${pageUrl}>`]
-  if (contactEmail) parts.push(`<mailto:${contactEmail}>`)
-  return parts.join(', ')
+export function listUnsubscribeValue(pageUrl: string): string {
+  return `<${pageUrl}>`
+}
+
+/** Mode plus a hash of the send ids actually posted, so a test and a later live send do not share a key. */
+export async function batchIdempotencyKey(mode: 'test' | 'live', sendIds: string[]): Promise<string> {
+  const digest = await sha256Hex([...sendIds].sort().join(','))
+  return `${mode}:${digest}`
 }
 
 export function buildOutbound(input: {
@@ -97,7 +101,7 @@ export function buildOutbound(input: {
     html: letter.html,
     reply_to: input.contactEmail,
     headers: {
-      'List-Unsubscribe': listUnsubscribeValue(input.oneClickUrl, input.contactEmail),
+      'List-Unsubscribe': listUnsubscribeValue(input.oneClickUrl),
       'List-Unsubscribe-Post': ONE_CLICK_BODY,
     },
   }
@@ -173,6 +177,7 @@ function messageIds(body: unknown, count: number): string[] {
 
 export async function deliverBatches(input: {
   campaignId: string
+  mode: 'test' | 'live'
   prepared: PreparedSend[]
   batchSize: number
   pauseMs: number
@@ -190,7 +195,6 @@ export async function deliverBatches(input: {
   for (let index = 0; index < input.prepared.length; index += size) {
     const chunk = input.prepared.slice(index, index + size)
     const batchNo = Math.floor(index / size) + 1
-    const idempotencyKey = `${input.campaignId}:${batchNo}`
     if (posted > 0 && input.pauseMs > 0) await input.sleep(input.pauseMs)
     const kept: PreparedSend[] = []
     for (const item of chunk) {
@@ -198,6 +202,7 @@ export async function deliverBatches(input: {
       kept.push(item)
     }
     if (kept.length === 0) continue
+    const idempotencyKey = await batchIdempotencyKey(input.mode, kept.map((item) => item.sendId))
     let status = 0
     let ids = kept.map(() => '')
     let ok = false

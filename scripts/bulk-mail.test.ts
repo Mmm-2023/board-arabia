@@ -3,7 +3,7 @@ import { readdirSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 import test from 'node:test'
 import { fileURLToPath } from 'node:url'
-import { addressHash, buildOutbound, BULK_BATCH_URL, deliverBatches, type PreparedSend } from '../supabase/functions/_shared/bulk_mail.ts'
+import { addressHash, batchIdempotencyKey, buildOutbound, BULK_BATCH_URL, deliverBatches, type PreparedSend } from '../supabase/functions/_shared/bulk_mail.ts'
 import { FOOTER_CREDIT, renderBulkLetter } from '../supabase/functions/_shared/bulk_mail_copy.ts'
 import { handleEmailSend, type SendDeps, type SendGate } from '../supabase/functions/email-send/handle.ts'
 import { strayPublicNammco } from './public-nammco.mjs'
@@ -12,6 +12,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const migrationName = '20261221120000_newsletter_events.sql'
 const campaignId = '11111111-1111-4111-8111-111111111111'
 const staffId = '22222222-2222-4222-8222-222222222222'
+const releasedHash = 'ab'.repeat(32)
 
 function read(rel: string) {
   return readFileSync(path.join(root, rel), 'utf8')
@@ -20,7 +21,7 @@ function read(rel: string) {
 function gate(overrides: Partial<SendGate> = {}): SendGate {
   return {
     found: true,
-    status: 'approved',
+    status: 'test_sent',
     kind: 'campaign',
     category: 'news_invitations',
     subject: 'A note for members',
@@ -33,6 +34,9 @@ function gate(overrides: Partial<SendGate> = {}): SendGate {
     issue_status: null,
     issue_mail_ready: false,
     issue_send_enabled: false,
+    content_hash: releasedHash,
+    test_content_hash: releasedHash,
+    test_by_owner: true,
     ...overrides,
   }
 }
@@ -152,7 +156,11 @@ test('headers are present and the batch key, size and pause are honoured', async
   assert.deepEqual(sleeps, [40, 40])
   assert.deepEqual(
     fetches.map((call) => call.headers['Idempotency-Key']),
-    [`${campaignId}:1`, `${campaignId}:2`, `${campaignId}:3`],
+    await Promise.all([
+      batchIdempotencyKey('live', ['send-1', 'send-2']),
+      batchIdempotencyKey('live', ['send-3', 'send-4']),
+      batchIdempotencyKey('live', ['send-5']),
+    ]),
   )
   assert.equal(fetches.every((call) => call.url === BULK_BATCH_URL), true)
   assert.equal(fetches.every((call) => call.headers.Authorization === 'Bearer test-key'), true)
@@ -162,7 +170,7 @@ test('headers are present and the batch key, size and pause are honoured', async
   assert.equal(first.headers['List-Unsubscribe-Post'], 'List-Unsubscribe=One-Click')
   assert.match(
     first.headers['List-Unsubscribe'],
-    /^<https:\/\/example\.com\/functions\/v1\/email-unsubscribe\?t=tok-1>, <mailto:contact@example\.com>$/,
+    /^<https:\/\/example\.com\/functions\/v1\/email-unsubscribe\?t=tok-1>$/,
   )
   assert.match(first.text, /Unsubscribe: https:\/\/example\.com\/email\/unsubscribe\?t=tok-1/)
   assert.match(first.text, /Manage email preferences: https:\/\/example\.com\/dashboard\/privacy/)
@@ -193,6 +201,7 @@ test('a 429 waits for the rate-limit header and retries the same batch', async (
   const keys: string[] = []
   const results = await deliverBatches({
     campaignId,
+    mode: 'live',
     prepared,
     batchSize: 50,
     pauseMs: 1500,
@@ -212,9 +221,142 @@ test('a 429 waits for the rate-limit header and retries the same batch', async (
   })
   assert.equal(calls, 2)
   assert.deepEqual(sleeps, [2000])
-  assert.deepEqual(keys, [`${campaignId}:1`, `${campaignId}:1`])
+  const expectedKey = await batchIdempotencyKey('live', ['send-1'])
+  assert.deepEqual(keys, [expectedKey, expectedKey])
   assert.equal(results[0].ok, true)
   assert.equal(results[0].rows[0].providerId, 'msg_ok')
+})
+
+function onePrepared(sendId: string): PreparedSend {
+  return {
+    sendId,
+    userId: '33333333-3333-4333-8333-000000000001',
+    hash: 'ab',
+    message: buildOutbound({
+      fromMailbox: 'news@example.com',
+      contactEmail: 'contact@example.com',
+      to: 'member.1@example.com',
+      subject: 'Hello',
+      preheader: '',
+      bodyText: 'Hello',
+      bodyHtml: '<p>Hello</p>',
+      unsubscribeUrl: 'https://example.com/email/unsubscribe?t=tok',
+      preferencesUrl: 'https://example.com/dashboard/privacy',
+      oneClickUrl: 'https://example.com/functions/v1/email-unsubscribe?t=tok',
+      test: false,
+    }),
+  }
+}
+
+async function postedKeys(mode: 'test' | 'live', rows: PreparedSend[]): Promise<string[]> {
+  const seen: string[] = []
+  await deliverBatches({
+    campaignId,
+    mode,
+    prepared: rows,
+    batchSize: 2,
+    pauseMs: 0,
+    apiKey: 'test-key',
+    now: () => 0,
+    sleep: async () => {},
+    fetchImpl: async (_url, init) => {
+      seen.push(init.headers['Idempotency-Key'])
+      const count = JSON.parse(init.body).length
+      return {
+        status: 200,
+        headers: { get: () => null },
+        json: async () => ({ data: Array.from({ length: count }, () => ({ id: 'msg' })) }),
+      }
+    },
+  })
+  return seen
+}
+
+test('a test send and a later live send do not share an idempotency key, and a resume does', async () => {
+  const rows = [onePrepared('send-a'), onePrepared('send-b'), onePrepared('send-c')]
+  const live = await postedKeys('live', rows)
+  const testRun = await postedKeys('test', rows)
+  const resume = await postedKeys('live', [onePrepared('send-c')])
+  const retry = await postedKeys('live', [onePrepared('send-c')])
+  assert.equal(live.length, 2)
+  assert.equal(testRun.length, 2)
+  assert.notEqual(testRun[0], live[0])
+  assert.equal(testRun[0].startsWith('test:'), true)
+  assert.equal(live[0].startsWith('live:'), true)
+  assert.equal(resume[0], live[1])
+  assert.equal(retry[0], resume[0])
+  assert.notEqual(resume[0], live[0])
+})
+
+test('live send is refused until the owner has tested this version', async () => {
+  const open = gate({
+    status: 'approved',
+    content_hash: releasedHash,
+    test_content_hash: null,
+    test_by_owner: false,
+  })
+  const untouched = harness({ loadGate: async () => open })
+  const noTest = await handleEmailSend({ campaign_id: campaignId, mode: 'live' }, untouched.deps)
+  assert.equal(noTest.status, 409)
+  assert.equal(noTest.body.error, 'not_tested')
+  assert.equal(untouched.fetches.length, 0)
+
+  let stamped = 0
+  const admin = harness({
+    role: 'staff',
+    loadGate: async () => open,
+    markTest: async () => {
+      stamped += 1
+      return true
+    },
+  })
+  const adminTest = await handleEmailSend({ campaign_id: campaignId, mode: 'test' }, admin.deps)
+  assert.equal(adminTest.status, 200)
+  assert.equal(stamped, 0)
+  admin.deps.role = 'master'
+  const afterAdmin = await handleEmailSend({ campaign_id: campaignId, mode: 'live' }, admin.deps)
+  assert.equal(afterAdmin.status, 409)
+  assert.equal(afterAdmin.body.error, 'not_tested')
+
+  const edited = gate({
+    status: 'approved',
+    content_hash: 'cd'.repeat(32),
+    test_content_hash: null,
+    test_by_owner: false,
+  })
+  const afterEdit = harness({ loadGate: async () => edited })
+  const editedLive = await handleEmailSend({ campaign_id: campaignId, mode: 'live' }, afterEdit.deps)
+  assert.equal(editedLive.status, 409)
+  assert.equal(editedLive.body.error, 'not_tested')
+  assert.equal(afterEdit.fetches.length, 0)
+
+  const state = {
+    current: gate({
+      status: 'approved',
+      content_hash: releasedHash,
+      test_content_hash: null,
+      test_by_owner: false,
+    }),
+  }
+  const owner = harness({
+    role: 'master',
+    loadGate: async () => state.current,
+    markTest: async () => {
+      state.current = {
+        ...state.current,
+        status: 'test_sent',
+        test_content_hash: releasedHash,
+        test_by_owner: true,
+      }
+      return true
+    },
+  })
+  const ownerTest = await handleEmailSend({ campaign_id: campaignId, mode: 'test' }, owner.deps)
+  assert.equal(ownerTest.status, 200)
+  assert.equal(state.current.status, 'test_sent')
+  const released = await handleEmailSend({ campaign_id: campaignId, mode: 'live' }, owner.deps)
+  assert.equal(released.status, 200)
+  assert.equal(released.body.sent, 1)
 })
 
 test('letter copy stays plain', () => {
@@ -257,6 +399,7 @@ test('the send migration is named, forced, and does not assume it is newest', ()
   assert.match(sql, /create index if not exists email_consent_log_category_idx/)
   assert.match(sql, /create index if not exists email_campaigns_category_idx/)
   assert.match(sql, /create index if not exists email_sends_user_idx/)
+  assert.match(sql, /create index if not exists email_sends_campaign_idx/)
   assert.match(sql, /'delivered'/)
   assert.match(sql, /'opened'/)
   assert.match(sql, /'clicked'/)
@@ -265,7 +408,9 @@ test('the send migration is named, forced, and does not assume it is newest', ()
   assert.match(sql, /set search_path = ''/)
   const grants = sql.replace(/--.*$/gm, '').split(';').filter((statement) => /^\s*grant\b/i.test(statement))
   assert.equal(grants.some((statement) => /\bto\s+anon\b/i.test(statement)), false)
-  assert.equal(grants.some((statement) => /\bto\s+authenticated\b/i.test(statement)), false)
+  const authenticatedGrants = grants.filter((statement) => /\bto\s+authenticated\b/i.test(statement))
+  assert.equal(authenticatedGrants.length, 1)
+  assert.match(authenticatedGrants[0], /staff_upsert_campaign/)
   const chunks = sql.split(/create or replace function /i).slice(1)
   assert.ok(chunks.length >= 8)
   for (const chunk of chunks) {

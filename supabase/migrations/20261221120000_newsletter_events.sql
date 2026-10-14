@@ -38,6 +38,21 @@ create index if not exists email_campaigns_category_idx
 create index if not exists email_sends_user_idx
   on public.email_sends (user_id);
 
+create index if not exists email_sends_campaign_idx
+  on public.email_sends (campaign_id);
+
+alter table public.email_campaigns
+  add column if not exists content_hash text,
+  add column if not exists test_sent_by uuid,
+  add column if not exists test_sent_at timestamptz,
+  add column if not exists test_content_hash text;
+
+alter table public.email_campaigns drop constraint if exists email_campaigns_content_hash_check;
+alter table public.email_campaigns add constraint email_campaigns_content_hash_check check (
+  (content_hash is null or content_hash ~ '^[0-9a-f]{64}$')
+  and (test_content_hash is null or test_content_hash ~ '^[0-9a-f]{64}$')
+);
+
 create table if not exists public.newsletter_events (
   id uuid primary key default gen_random_uuid(),
   send_id uuid not null references public.email_sends (id) on delete cascade,
@@ -45,6 +60,7 @@ create table if not exists public.newsletter_events (
   event text not null,
   url text,
   occurred_at timestamptz not null,
+  svix_id text,
   created_at timestamptz not null default pg_catalog.now(),
   constraint newsletter_events_message_len check (char_length(message_id) between 1 and 200),
   constraint newsletter_events_event_check check (
@@ -64,6 +80,13 @@ create table if not exists public.newsletter_events (
       char_length(url) <= 2000
       and url ~* '^https?://'
     )
+  ),
+  constraint newsletter_events_svix_check check (
+    svix_id is null
+    or (
+      char_length(svix_id) between 1 and 200
+      and svix_id !~ '[[:cntrl:][:space:]]'
+    )
   )
 );
 
@@ -78,6 +101,10 @@ create unique index if not exists newsletter_events_once
 
 create index if not exists newsletter_events_send_idx
   on public.newsletter_events (send_id, occurred_at);
+
+create unique index if not exists newsletter_events_svix_idx
+  on public.newsletter_events (svix_id)
+  where svix_id is not null;
 
 alter table public.newsletter_events enable row level security;
 alter table public.newsletter_events force row level security;
@@ -107,7 +134,8 @@ create or replace function private.email_record_event(
   p_type text,
   p_email_hash text,
   p_url text default null,
-  p_occurred_at timestamptz default null
+  p_occurred_at timestamptz default null,
+  p_svix_id text default null
 ) returns void
 language plpgsql
 security definer
@@ -126,6 +154,7 @@ declare
   v_reason text;
   v_rank integer;
   v_next_rank integer;
+  v_svix text;
 begin
   if p_message_id is null
      or pg_catalog.btrim(p_message_id) = ''
@@ -179,10 +208,21 @@ begin
     v_url := p_url;
   end if;
   v_at := coalesce(p_occurred_at, pg_catalog.now());
+  v_svix := null;
+  if p_svix_id is not null
+     and char_length(p_svix_id) between 1 and 200
+     and p_svix_id !~ '[[:cntrl:][:space:]]' then
+    v_svix := p_svix_id;
+  end if;
+  if v_svix is not null and exists (
+    select 1 from public.newsletter_events e where e.svix_id = v_svix
+  ) then
+    return;
+  end if;
 
   if v_event is not null then
-    insert into public.newsletter_events (send_id, message_id, event, url, occurred_at)
-    select v_id, p_message_id, v_event, v_url, v_at
+    insert into public.newsletter_events (send_id, message_id, event, url, occurred_at, svix_id)
+    select v_id, p_message_id, v_event, v_url, v_at, v_svix
     where not exists (
       select 1
       from public.newsletter_events e
@@ -190,6 +230,10 @@ begin
         and e.event = v_event
         and e.occurred_at = v_at
         and e.url is not distinct from v_url
+    )
+    and (
+      v_svix is null
+      or not exists (select 1 from public.newsletter_events e where e.svix_id = v_svix)
     );
   end if;
 
@@ -253,11 +297,11 @@ begin
 end;
 $fn$;
 
-revoke all on function private.email_record_event(text, text, text, text, timestamptz) from public;
-revoke all on function private.email_record_event(text, text, text, text, timestamptz) from anon, authenticated;
-grant execute on function private.email_record_event(text, text, text, text, timestamptz) to service_role;
+revoke all on function private.email_record_event(text, text, text, text, timestamptz, text) from public;
+revoke all on function private.email_record_event(text, text, text, text, timestamptz, text) from anon, authenticated;
+grant execute on function private.email_record_event(text, text, text, text, timestamptz, text) to service_role;
 
-comment on function private.email_record_event(text, text, text, text, timestamptz) is
+comment on function private.email_record_event(text, text, text, text, timestamptz, text) is
   'Stores one provider event and moves the send status forward. A hard bounce or complaint suppresses that address hash. A click may store a URL. Does not send mail.';
 
 create or replace function public.email_record_event(
@@ -265,22 +309,25 @@ create or replace function public.email_record_event(
   p_type text,
   p_email_hash text,
   p_url text default null,
-  p_occurred_at timestamptz default null
+  p_occurred_at timestamptz default null,
+  p_svix_id text default null
 ) returns void
 language plpgsql
 security definer
 set search_path = ''
 as $fn$
 begin
-  perform private.email_record_event(p_message_id, p_type, p_email_hash, p_url, p_occurred_at);
+  perform private.email_record_event(
+    p_message_id, p_type, p_email_hash, p_url, p_occurred_at, p_svix_id
+  );
 end;
 $fn$;
 
-revoke all on function public.email_record_event(text, text, text, text, timestamptz) from public;
-revoke all on function public.email_record_event(text, text, text, text, timestamptz) from anon, authenticated;
-grant execute on function public.email_record_event(text, text, text, text, timestamptz) to service_role;
+revoke all on function public.email_record_event(text, text, text, text, timestamptz, text) from public;
+revoke all on function public.email_record_event(text, text, text, text, timestamptz, text) from anon, authenticated;
+grant execute on function public.email_record_event(text, text, text, text, timestamptz, text) to service_role;
 
-comment on function public.email_record_event(text, text, text, text, timestamptz) is
+comment on function public.email_record_event(text, text, text, text, timestamptz, text) is
   'Service role wrapper for private.email_record_event. Does not send mail.';
 
 create or replace function private.email_is_suppressed(p_email_hash text)
@@ -387,7 +434,15 @@ begin
     'batch_pause_ms', coalesce(v_pause, 1500),
     'issue_status', v_issue_status,
     'issue_mail_ready', coalesce(v_mail_ready, 'false') = 'true',
-    'issue_send_enabled', coalesce(v_send, false)
+    'issue_send_enabled', coalesce(v_send, false),
+    'content_hash', v_campaign.content_hash,
+    'test_content_hash', v_campaign.test_content_hash,
+    'test_by_owner', exists (
+      select 1
+      from public.staff_users s
+      where s.user_id = v_campaign.test_sent_by
+        and s.role = 'master'
+    )
   );
 end;
 $fn$;
@@ -596,7 +651,18 @@ begin
   if v_status is null then
     return pg_catalog.jsonb_build_object('ok', false);
   end if;
-  if p_status = 'sending' and v_status not in ('approved', 'sending') then
+  if p_status = 'sending' and v_status not in ('test_sent', 'sending') then
+    return pg_catalog.jsonb_build_object('ok', false, 'status', v_status);
+  end if;
+  if p_status = 'sending' and not exists (
+    select 1
+    from public.email_campaigns c
+    join public.staff_users s on s.user_id = c.test_sent_by and s.role = 'master'
+    where c.id = p_campaign_id
+      and c.content_hash is not null
+      and c.test_content_hash is not null
+      and c.content_hash = c.test_content_hash
+  ) then
     return pg_catalog.jsonb_build_object('ok', false, 'status', v_status);
   end if;
   if p_status = 'sent' and v_status not in ('sending', 'sent') then
@@ -629,4 +695,222 @@ revoke all on function public.email_set_campaign_progress(uuid, text) from anon,
 grant execute on function public.email_set_campaign_progress(uuid, text) to service_role;
 
 comment on function public.email_set_campaign_progress(uuid, text) is
-  'Moves a campaign from approved to sending, or from sending to sent. Service role only. Does not send mail.';
+  'Moves a tested campaign to sending, or from sending to sent. The owner test must still match. Service role only. Does not send mail.';
+
+create or replace function private.email_content_hash(
+  p_subject text,
+  p_preheader text,
+  p_body_text text,
+  p_body_html text,
+  p_tiers text[]
+) returns text
+language sql
+stable
+security definer
+set search_path = ''
+as $fn$
+  select encode(
+    extensions.digest(
+      convert_to(
+        coalesce(p_subject, '') || E'\n' ||
+        coalesce(p_preheader, '') || E'\n' ||
+        coalesce(p_body_text, '') || E'\n' ||
+        coalesce(p_body_html, '') || E'\n' ||
+        coalesce((
+          select string_agg(tier, ',' order by tier)
+          from unnest(coalesce(p_tiers, array[]::text[])) as tier
+        ), ''),
+        'UTF8'
+      ),
+      'sha256'
+    ),
+    'hex'
+  );
+$fn$;
+
+revoke all on function private.email_content_hash(text, text, text, text, text[]) from public;
+revoke all on function private.email_content_hash(text, text, text, text, text[]) from anon, authenticated;
+
+update public.email_campaigns
+set content_hash = private.email_content_hash(
+  subject, preheader, body_text, body_html_sanitised, audience_tiers
+)
+where content_hash is null;
+
+create or replace function public.staff_upsert_campaign(
+  p_id uuid,
+  p_kind text,
+  p_category text,
+  p_subject text,
+  p_preheader text,
+  p_body_text text,
+  p_body_html text,
+  p_audience text[],
+  p_digest_issue_id uuid
+) returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $fn$
+declare
+  v_id uuid;
+  v_status text;
+  v_requires boolean;
+  v_audience text[];
+  v_subject text;
+  v_preheader text;
+  v_body text;
+  v_html text;
+  v_hash text;
+begin
+  if not private.is_staff() then
+    raise exception 'not_allowed' using errcode = '42501';
+  end if;
+  if p_kind not in ('digest', 'campaign') then
+    raise exception 'not_allowed' using errcode = '22023';
+  end if;
+  select c.requires_opt_in into v_requires
+  from public.email_categories c
+  where c.key = p_category;
+  if not found then
+    raise exception 'not_allowed' using errcode = '22023';
+  end if;
+  if p_kind = 'campaign' and v_requires is not true then
+    raise exception 'not_allowed' using errcode = '22023';
+  end if;
+  if p_kind = 'digest' and p_category is distinct from 'weekly_digest' then
+    raise exception 'not_allowed' using errcode = '22023';
+  end if;
+  if p_kind = 'digest' and (
+    p_digest_issue_id is null
+    or not exists (select 1 from public.digest_issues i where i.id = p_digest_issue_id)
+  ) then
+    raise exception 'not_allowed' using errcode = '22023';
+  end if;
+  if p_kind = 'campaign' and p_digest_issue_id is not null then
+    raise exception 'not_allowed' using errcode = '22023';
+  end if;
+
+  v_audience := private.normalize_membership_tiers(coalesce(p_audience, array[]::text[]));
+  if coalesce(pg_catalog.cardinality(v_audience), 0) > 0
+     and not private.membership_tiers_valid(v_audience) then
+    raise exception 'invalid_tier' using errcode = '22023';
+  end if;
+
+  v_subject := coalesce(private.digest_plain(p_subject, 180), '');
+  v_preheader := coalesce(private.digest_plain(p_preheader, 180), '');
+  v_body := coalesce(private.digest_plain(p_body_text, 8000), '');
+  perform private.email_assert_links(v_subject);
+  perform private.email_assert_links(v_preheader);
+  perform private.email_assert_links(v_body);
+  v_html := private.email_sanitise_html(p_body_html);
+  v_hash := private.email_content_hash(v_subject, v_preheader, v_body, v_html, v_audience);
+
+  if p_id is null then
+    insert into public.email_campaigns (
+      kind, digest_issue_id, category, subject, preheader, body_text,
+      body_html_sanitised, audience_tiers, status, created_by, content_hash
+    ) values (
+      p_kind, p_digest_issue_id, p_category, v_subject, v_preheader, v_body,
+      v_html, v_audience, 'draft', auth.uid(), v_hash
+    )
+    returning id into v_id;
+    v_status := 'draft';
+  else
+    select c.status into v_status
+    from public.email_campaigns c
+    where c.id = p_id
+    for update;
+    if v_status is null then
+      raise exception 'not_found' using errcode = 'P0002';
+    end if;
+    if v_status not in ('draft', 'approved', 'test_sent') then
+      raise exception 'not_allowed' using errcode = '42501';
+    end if;
+    v_status := case when v_status = 'draft' then 'draft' else 'approved' end;
+    update public.email_campaigns
+    set kind = p_kind,
+        digest_issue_id = p_digest_issue_id,
+        category = p_category,
+        subject = v_subject,
+        preheader = v_preheader,
+        body_text = v_body,
+        body_html_sanitised = v_html,
+        audience_tiers = v_audience,
+        status = v_status,
+        content_hash = v_hash,
+        test_sent_by = null,
+        test_sent_at = null,
+        test_content_hash = null
+    where id = p_id;
+    v_id := p_id;
+  end if;
+
+  return pg_catalog.jsonb_build_object('id', v_id, 'status', v_status);
+end;
+$fn$;
+
+revoke all on function public.staff_upsert_campaign(uuid, text, text, text, text, text, text, text[], uuid) from public;
+revoke all on function public.staff_upsert_campaign(uuid, text, text, text, text, text, text, text[], uuid) from anon;
+grant execute on function public.staff_upsert_campaign(uuid, text, text, text, text, text, text, text[], uuid) to authenticated;
+
+comment on function public.staff_upsert_campaign(uuid, text, text, text, text, text, text, text[], uuid) is
+  'Admin saves a draft, or edits an approved campaign. An edit clears the owner test and returns the campaign to approved. Does not send mail.';
+
+create or replace function private.email_mark_owner_test(p_campaign_id uuid, p_actor uuid)
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $fn$
+declare
+  v_status text;
+  v_hash text;
+begin
+  if p_actor is null or not exists (
+    select 1 from public.staff_users s
+    where s.user_id = p_actor and s.role = 'master'
+  ) then
+    return pg_catalog.jsonb_build_object('ok', false);
+  end if;
+  select c.status,
+         private.email_content_hash(
+           c.subject, c.preheader, c.body_text, c.body_html_sanitised, c.audience_tiers
+         )
+    into v_status, v_hash
+  from public.email_campaigns c
+  where c.id = p_campaign_id
+  for update;
+  if v_status is null or v_status not in ('approved', 'test_sent') then
+    return pg_catalog.jsonb_build_object('ok', false);
+  end if;
+  update public.email_campaigns
+  set status = 'test_sent',
+      content_hash = v_hash,
+      test_sent_by = p_actor,
+      test_sent_at = pg_catalog.now(),
+      test_content_hash = v_hash
+  where id = p_campaign_id;
+  return pg_catalog.jsonb_build_object('ok', true, 'status', 'test_sent');
+end;
+$fn$;
+
+revoke all on function private.email_mark_owner_test(uuid, uuid) from public;
+revoke all on function private.email_mark_owner_test(uuid, uuid) from anon, authenticated;
+grant execute on function private.email_mark_owner_test(uuid, uuid) to service_role;
+
+create or replace function public.email_mark_owner_test(p_campaign_id uuid, p_actor uuid)
+returns jsonb
+language sql
+security definer
+set search_path = ''
+as $fn$
+  select private.email_mark_owner_test(p_campaign_id, p_actor);
+$fn$;
+
+revoke all on function public.email_mark_owner_test(uuid, uuid) from public;
+revoke all on function public.email_mark_owner_test(uuid, uuid) from anon, authenticated;
+grant execute on function public.email_mark_owner_test(uuid, uuid) to service_role;
+
+comment on function public.email_mark_owner_test(uuid, uuid) is
+  'Records a successful owner test of the current content. An admin test does not count. Does not send mail.';

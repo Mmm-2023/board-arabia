@@ -30,6 +30,7 @@ Deno.serve(async (req) => {
         p_email_hash: event.emailHash,
         p_url: event.url,
         p_occurred_at: event.occurredAt,
+        p_svix_id: event.svixId,
       })
       if (error) throw new Error('event_not_stored')
     },

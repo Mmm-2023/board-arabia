@@ -3,6 +3,21 @@ import { httpsOrigin } from '../_shared/bulk_mail.ts'
 import { ONE_CLICK_BODY } from '../_shared/bulk_mail_copy.ts'
 
 const TOKEN_MAX = 400
+export const UNSUB_WINDOW_MS = 60 * 60 * 1000
+export const UNSUB_TOKEN_MAX = 10
+export const UNSUB_IP_MAX = 30
+
+/** POST is limited per token. GET is limited per address. Mailbox providers share an egress address. */
+export async function limitUnsubscribe(input: {
+  method: string
+  tokenKey: string
+  ipKey: string
+  hit: (key: string, windowMs: number, max: number) => Promise<'ok' | 'limited' | 'error'>
+}): Promise<'ok' | 'limited' | 'error'> {
+  if (input.method === 'POST') return input.hit(input.tokenKey, UNSUB_WINDOW_MS, UNSUB_TOKEN_MAX)
+  if (input.method === 'GET') return input.hit(input.ipKey, UNSUB_WINDOW_MS, UNSUB_IP_MAX)
+  return 'ok'
+}
 
 export type UnsubscribeResult = {
   status: number

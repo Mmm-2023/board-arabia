@@ -80,6 +80,13 @@ Deno.serve(async (req) => {
       })
       return !error && data?.ok === true
     },
+    markTest: async (campaignId) => {
+      const { data, error } = await admin.rpc('email_mark_owner_test', {
+        p_campaign_id: campaignId,
+        p_actor: gate.user.id,
+      })
+      return !error && data?.ok === true
+    },
   })
   return jsonResponse(req, result.body, result.status)
 })

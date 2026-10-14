@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { ONE_CLICK_BODY } from '../supabase/functions/_shared/bulk_mail_copy.ts'
-import { handleUnsubscribe } from '../supabase/functions/email-unsubscribe/handle.ts'
+import { nextRateHit } from '../supabase/functions/_shared/rate_limit.ts'
+import { handleUnsubscribe, limitUnsubscribe } from '../supabase/functions/email-unsubscribe/handle.ts'
 
 async function call(input: { method: string; token?: string; body?: string; limit?: 'ok' | 'limited' | 'error'; site?: string }) {
   const calls: string[] = []
@@ -45,4 +46,56 @@ test('GET does not unsubscribe and a limited POST does not either', async () => 
   const broken = await call({ method: 'POST', token: 'good-token', body: ONE_CLICK_BODY, limit: 'error' })
   assert.equal(broken.result.status, 429)
   assert.deepEqual(broken.calls, [])
+})
+
+test('fifty one-click posts from one address with different tokens all succeed', async () => {
+  const windows = new Map<string, { windowStartMs: number; hitCount: number }>()
+  const now = 1_700_000_000_000
+  const seen: string[] = []
+  let unsubscribed = 0
+  async function hit(key: string, windowMs: number, max: number): Promise<'ok' | 'limited' | 'error'> {
+    seen.push(key)
+    const next = nextRateHit(windows.get(key) ?? null, now, windowMs, max)
+    windows.set(key, { windowStartMs: next.windowStartMs, hitCount: next.hitCount })
+    return next.limited ? 'limited' : 'ok'
+  }
+  for (let index = 0; index < 50; index += 1) {
+    const token = `token-${index}`
+    const result = await handleUnsubscribe({
+      method: 'POST',
+      url: `https://example.com/functions/v1/email-unsubscribe?t=${token}`,
+      body: ONE_CLICK_BODY,
+      siteOrigin: 'https://example.com',
+      limit: () => limitUnsubscribe({
+        method: 'POST',
+        tokenKey: `unsub:${token}`,
+        ipKey: 'unsub-ip:same',
+        hit,
+      }),
+      unsubscribe: async () => {
+        unsubscribed += 1
+      },
+    })
+    assert.equal(result.status, 200, token)
+    assert.equal(result.body, '')
+  }
+  assert.equal(unsubscribed, 50)
+  assert.equal(seen.some((key) => key.startsWith('unsub-ip:')), false)
+  const limited = await handleUnsubscribe({
+    method: 'GET',
+    url: 'https://example.com/functions/v1/email-unsubscribe?t=token-0',
+    body: '',
+    siteOrigin: 'https://example.com',
+    limit: () => limitUnsubscribe({
+      method: 'GET',
+      tokenKey: 'unsub:token-0',
+      ipKey: 'unsub-ip:same',
+      hit: async () => 'limited',
+    }),
+    unsubscribe: async () => {
+      unsubscribed += 1
+    },
+  })
+  assert.equal(limited.status, 429)
+  assert.equal(unsubscribed, 50)
 })

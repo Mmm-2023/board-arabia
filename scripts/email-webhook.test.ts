@@ -70,6 +70,14 @@ test('a valid signature stores opened, clicked, delivered, bounced and complaine
   const clicked = await post(cases[1])
   assert.equal(clicked.calls[0].url, 'https://example.com/story')
   assert.equal(clicked.calls[0].occurredAt, '2026-10-14T08:02:00.000Z')
+  assert.equal(clicked.calls[0].svixId, 'msg_1')
+  const undated = JSON.stringify({
+    type: 'email.delivered',
+    data: { email_id: 'msg-provider-1', to: ['member.one@example.com'] },
+  })
+  const missingTime = await post(undated)
+  assert.equal(missingTime.calls[0].occurredAt, null)
+  assert.equal(missingTime.calls[0].svixId, 'msg_1')
   const soft = await post(payload('email.bounced', { bounce: { type: 'Transient' } }))
   assert.equal(soft.calls[0].type, 'soft_bounce')
   assert.equal(soft.calls[0].url, null)

@@ -58,6 +58,12 @@ declare
   master boolean;
   forced boolean;
   consent_n integer;
+  owner_id uuid := gen_random_uuid();
+  admin_id uuid := gen_random_uuid();
+  release_status text;
+  progress jsonb;
+  marked jsonb;
+  edited jsonb;
 begin
   if private.email_address_hash('member.events@example.com') is distinct from '${hashed}' then
     raise exception 'address hash does not match';
@@ -169,10 +175,10 @@ begin
   if has_table_privilege('anon', 'public.newsletter_events', 'SELECT')
      or has_table_privilege('authenticated', 'public.newsletter_events', 'SELECT')
      or has_table_privilege('service_role', 'public.newsletter_events', 'INSERT')
-     or has_function_privilege('anon', 'public.email_record_event(text, text, text, text, timestamptz)', 'EXECUTE')
-     or has_function_privilege('authenticated', 'public.email_record_event(text, text, text, text, timestamptz)', 'EXECUTE')
+     or has_function_privilege('anon', 'public.email_record_event(text, text, text, text, timestamptz, text)', 'EXECUTE')
+     or has_function_privilege('authenticated', 'public.email_record_event(text, text, text, text, timestamptz, text)', 'EXECUTE')
      or has_function_privilege('anon', 'public.email_recipients(uuid)', 'EXECUTE')
-     or has_function_privilege('service_role', 'public.email_record_event(text, text, text, text, timestamptz)', 'EXECUTE') is not true then
+     or has_function_privilege('service_role', 'public.email_record_event(text, text, text, text, timestamptz, text)', 'EXECUTE') is not true then
     raise exception 'event grants are wrong';
   end if;
 
@@ -195,9 +201,79 @@ begin
   if not exists (select 1 from pg_indexes where schemaname = 'public' and indexname = 'email_preferences_category_idx')
      or not exists (select 1 from pg_indexes where schemaname = 'public' and indexname = 'email_consent_log_category_idx')
      or not exists (select 1 from pg_indexes where schemaname = 'public' and indexname = 'email_campaigns_category_idx')
-     or not exists (select 1 from pg_indexes where schemaname = 'public' and indexname = 'email_sends_user_idx') then
+     or not exists (select 1 from pg_indexes where schemaname = 'public' and indexname = 'email_sends_user_idx')
+     or not exists (select 1 from pg_indexes where schemaname = 'public' and indexname = 'email_sends_campaign_idx') then
     raise exception 'a foreign key index is missing';
   end if;
+
+  perform private.email_record_event('msg-open', 'opened', hashed, null, null, 'svix-replay');
+  perform private.email_record_event('msg-open', 'opened', hashed, null, null, 'svix-replay');
+  select count(*) into event_n from public.newsletter_events where svix_id = 'svix-replay';
+  if event_n <> 1 then
+    raise exception 'svix replay stored % rows', event_n;
+  end if;
+
+  insert into auth.users (id, email) values
+    (owner_id, 'owner.events@example.com'),
+    (admin_id, 'admin.events@example.com');
+  insert into public.staff_users (user_id, email, role) values
+    (owner_id, 'owner.events@example.com', 'master'),
+    (admin_id, 'admin.events@example.com', 'staff');
+  set role service_role;
+  progress := public.email_set_campaign_progress(campaign_id, 'sending');
+  if progress->>'ok' is distinct from 'false' then
+    raise exception 'live started with no test %', progress;
+  end if;
+  marked := public.email_mark_owner_test(campaign_id, admin_id);
+  if marked->>'ok' is distinct from 'false' then
+    raise exception 'admin test was accepted %', marked;
+  end if;
+  progress := public.email_set_campaign_progress(campaign_id, 'sending');
+  if progress->>'ok' is distinct from 'false' then
+    raise exception 'live started after an admin test %', progress;
+  end if;
+  marked := public.email_mark_owner_test(campaign_id, owner_id);
+  if marked->>'ok' is distinct from 'true' then
+    raise exception 'owner test was refused %', marked;
+  end if;
+  set role postgres;
+  select c.status into release_status from public.email_campaigns c where c.id = campaign_id;
+  if release_status is distinct from 'test_sent' then
+    raise exception 'owner test did not stamp %', release_status;
+  end if;
+  set role postgres;
+  perform set_config(
+    'request.jwt.claims',
+    json_build_object('sub', owner_id, 'aal', 'aal2', 'role', 'authenticated')::text,
+    false
+  );
+  set role authenticated;
+  edited := public.staff_upsert_campaign(
+    campaign_id, 'campaign', 'news_invitations', 'Hello edited', '', 'Hello', '<p>Hello</p>',
+    array['founding']::text[], null
+  );
+  if edited->>'status' is distinct from 'approved' then
+    raise exception 'edit did not return to approved %', edited;
+  end if;
+  set role postgres;
+  if exists (
+    select 1 from public.email_campaigns c
+    where c.id = campaign_id
+      and (c.test_sent_by is not null or c.test_sent_at is not null or c.test_content_hash is not null)
+  ) then
+    raise exception 'edit left the owner test in place';
+  end if;
+  set role service_role;
+  progress := public.email_set_campaign_progress(campaign_id, 'sending');
+  if progress->>'ok' is distinct from 'false' then
+    raise exception 'live started after an edit %', progress;
+  end if;
+  marked := public.email_mark_owner_test(campaign_id, owner_id);
+  progress := public.email_set_campaign_progress(campaign_id, 'sending');
+  if marked->>'ok' is distinct from 'true' or progress->>'ok' is distinct from 'true' then
+    raise exception 'live after an owner test failed % %', marked, progress;
+  end if;
+  set role postgres;
 
   if exists (
     select 1

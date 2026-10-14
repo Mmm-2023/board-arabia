@@ -7,6 +7,7 @@ export type ProviderCall = {
   emailHash: string
   url: string | null
   occurredAt: string | null
+  svixId: string | null
 }
 
 function recordOf(value: unknown): Record<string, unknown> {
@@ -124,6 +125,7 @@ export async function handleWebhook(input: {
         emailHash: await addressHash(address),
         url: event.type === 'clicked' ? event.url : null,
         occurredAt: event.occurredAt,
+        svixId: input.headers.id,
       })
       wrote += 1
     }
