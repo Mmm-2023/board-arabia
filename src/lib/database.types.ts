@@ -1746,10 +1746,6 @@ export type Database = {
         Args: { p_id: string }
         Returns: Json
       }
-      staff_record_campaign_test: {
-        Args: { p_id: string }
-        Returns: Json
-      }
     }
     Enums: Record<string, never>
     CompositeTypes: Record<string, never>

@@ -10,31 +10,13 @@ Nothing in this change was applied to the live database. No `db push`, no Edge d
 
 ## Apply list
 
-Apply `20261223120000_email_campaign_ui.sql` only, after `20261220120000_email_core.sql`. `20261222120000` is already used and is not this change. Leave the master switch off.
-
-Apply that migration before any later deploy of `submit-application`. This change does not deploy the function. Do not set Edge secrets. Do not turn sending on.
+Apply `20261223120000_email_campaign_ui.sql` after `20261221120000_newsletter_events.sql`. Leave the master switch off. Do not deploy Edge and do not set secrets.
 
 ## Release gate
 
-Release is owner-only. It stays closed until all of these are true:
+`public.staff_email_release_gate` is read-only. It is open only when the caller is the owner, the master switch is on, the status is `test_sent` or `sending`, `test_sent_by` is that caller, and `content_hash` equals `test_content_hash`. The screen uses that `ready` flag. This file does not replace `staff_upsert_campaign`. An edit still clears `test_sent_by`, `test_sent_at`, and `test_content_hash`, and refreshes `content_hash`. A live send after that edit is refused.
 
-- The letter is approved (`approved_at` is set and the stored status is `test_sent`).
-- The master switch is on.
-- A test of this exact stored version was recorded by the owner, and the stored hash matches the address on the owner's account at the moment of release.
-- There is at least one eligible member.
-
-Any edit that changes the stored version returns the letter to `approved` and clears the test. A new test is required. The owner address is read from `auth.users` at runtime. It is not written into the screen payload and it is not a literal in code.
-
-| Piece | Where |
-| --- | --- |
-| Version hash | `supabase/migrations/20261223120000_email_campaign_ui.sql:30` |
-| Edit resets `test_sent` to `approved` | `:189` (`staff_upsert_campaign`) |
-| Release gate, account hash | `:311`, account read `:368` |
-| Owner test record | `:407`, account read `:450` |
-| Screen payload, no address | `:600` |
-| Typed count | `src/pages/admin/EmailCampaignView.tsx:23` |
-| `email-send` call | `src/lib/emailSend.ts:9` |
-| Test then live | `src/pages/admin/EmailCampaignPanel.tsx:134` and `:163` |
+The typed count is on the screen (`src/pages/admin/EmailCampaignView.tsx`). The send call is `src/lib/emailSend.ts`. Test and release are `src/pages/admin/EmailCampaignPanel.tsx`.
 
 ## Newsletter events
 

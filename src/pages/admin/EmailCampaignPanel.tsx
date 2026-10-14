@@ -132,19 +132,9 @@ export function EmailCampaignPanel() {
     setBusy(true)
     setNotice('')
     const sent = await requestCampaignSend(draft.id, 'test')
-    if (!sent.ok) {
-      setBusy(false)
-      setNotice(sent.message)
-      return
-    }
-    const { error } = await supabase.rpc('staff_record_campaign_test', { p_id: draft.id })
     setBusy(false)
-    if (error) {
-      setNotice('The test call returned, but the letter was not marked.')
-      return
-    }
     setNotice(sent.message)
-    await reload()
+    if (sent.ok) await reload()
   }
 
   async function release() {

@@ -56,6 +56,7 @@ declare
   app_news uuid;
   app_plain uuid;
   letter_id uuid;
+  send_id uuid;
   weekly_on boolean;
   news_on boolean;
   pref boolean;
@@ -154,10 +155,6 @@ begin
   if result->>'status' is distinct from 'approved' then
     raise exception 'letter was not approved %', result;
   end if;
-  result := public.staff_record_campaign_test(letter_id);
-  if result->>'qualifies' is distinct from 'false' or result->>'status' is distinct from 'approved' then
-    raise exception 'staff test qualified %', result;
-  end if;
   begin
     perform public.staff_set_email_master(true);
     raise exception 'staff changed the master switch';
@@ -167,6 +164,15 @@ begin
         raise exception 'master error %', sqlerrm;
       end if;
   end;
+  set role service_role;
+  result := public.email_mark_owner_test(letter_id, staff_id);
+  if result->>'ok' is distinct from 'false' then
+    raise exception 'staff test was stamped %', result;
+  end if;
+  result := public.email_mark_owner_test(letter_id, owner_id);
+  if result->>'ok' is distinct from 'true' or result->>'status' is distinct from 'test_sent' then
+    raise exception 'owner test was not stamped %', result;
+  end if;
   set role postgres;
 
   perform set_config(
@@ -176,45 +182,79 @@ begin
   );
   set role authenticated;
   result := public.staff_email_release_gate(letter_id);
-  if result->>'ready' is distinct from 'false' or result->>'is_owner' is distinct from 'true' then
-    raise exception 'gate opened before the owner test %', result;
-  end if;
-  result := public.staff_record_campaign_test(letter_id);
-  if result->>'qualifies' is distinct from 'true' or result->>'status' is distinct from 'test_sent' then
-    raise exception 'owner test did not qualify %', result;
-  end if;
-  result := public.staff_email_release_gate(letter_id);
   if result->>'ready' is distinct from 'false' or result->>'master_enabled' is distinct from 'false' then
     raise exception 'gate opened while the master switch is off %', result;
   end if;
   perform public.staff_set_email_master(true);
   result := public.staff_email_release_gate(letter_id);
-  if result->>'ready' is distinct from 'true' or (result->>'eligible')::integer < 1 then
+  if result->>'ready' is distinct from 'true'
+     or result->>'version_matches' is distinct from 'true'
+     or result->>'test_sent' is distinct from 'true' then
     raise exception 'owner release stayed closed %', result;
   end if;
   if position('@' in result::text) > 0 then
     raise exception 'release gate returned an address';
   end if;
-  result := public.staff_email_screen();
-  if position('@' in result::text) > 0 then
-    raise exception 'screen returned an address';
+  set role service_role;
+  result := public.email_set_campaign_progress(letter_id, 'sending', owner_id);
+  if result->>'ok' is distinct from 'true' then
+    raise exception 'live progress was refused after the owner test %', result;
   end if;
   set role postgres;
 
-  create table public.newsletter_events (
-    id uuid primary key default gen_random_uuid(),
-    campaign_id uuid,
-    event text not null,
-    url text,
-    created_at timestamptz not null default now()
+  set role authenticated;
+  result := public.staff_upsert_campaign(
+    null, 'campaign', 'news_invitations', 'Second', 'Preview', 'Hello members.',
+    '<p>Hello</p>', array['founding']::text[], null
   );
-  insert into public.newsletter_events (campaign_id, event, url)
-  values (letter_id, 'email.opened', 'https://example.com/letters');
+  letter_id := (result->>'id')::uuid;
+  perform public.staff_approve_campaign(letter_id);
+  set role service_role;
+  perform public.email_mark_owner_test(letter_id, owner_id);
+  set role authenticated;
+  result := public.staff_upsert_campaign(
+    letter_id, 'campaign', 'news_invitations', 'Second edited', 'Preview', 'Hello members.',
+    '<p>Hello</p>', array['founding']::text[], null
+  );
+  if result->>'status' is distinct from 'approved' then
+    raise exception 'edit did not reset the test %', result;
+  end if;
+  set role postgres;
+  if exists (
+    select 1 from public.email_campaigns c
+    where c.id = letter_id
+      and (
+        c.test_sent_by is not null
+        or c.test_sent_at is not null
+        or c.test_content_hash is not null
+        or c.content_hash is null
+        or c.status is distinct from 'approved'
+      )
+  ) then
+    raise exception 'edit did not clear the owner test';
+  end if;
+  set role authenticated;
+  result := public.staff_email_release_gate(letter_id);
+  if result->>'ready' is distinct from 'false' then
+    raise exception 'screen gate stayed open after the edit %', result;
+  end if;
+  set role service_role;
+  result := public.email_set_campaign_progress(letter_id, 'sending', owner_id);
+  if result->>'ok' is distinct from 'false' then
+    raise exception 'live send stayed open after the edit %', result;
+  end if;
+  set role postgres;
+
+  insert into public.email_sends (campaign_id, email_hash, status, is_test)
+  values (letter_id, repeat('ab', 32), 'sent', false)
+  returning id into send_id;
+  insert into public.newsletter_events (send_id, message_id, event, url, occurred_at)
+  values (send_id, 'msg-1', 'clicked', 'https://example.com/letters', now());
   insert into public.email_events (kind, recipient, subject, status)
   values ('decoy_webhook', 'member@example.com', 'Do not show', 'sent');
   set role authenticated;
   result := public.staff_email_screen();
-  if position('email.opened' in result::text) = 0
+  if position('clicked' in result::text) = 0
      or position('https://example.com/letters' in result::text) = 0 then
     raise exception 'screen missed newsletter events %', result;
   end if;
@@ -223,43 +263,6 @@ begin
     raise exception 'screen read the transactional mail log %', result;
   end if;
   set role postgres;
-
-  select private.email_address_hash(u.email) into owner_hash
-  from auth.users u where u.id = owner_id;
-  select s.email_hash into send_hash
-  from public.email_sends s
-  where s.campaign_id = letter_id and s.is_test and s.email_hash = owner_hash
-  limit 1;
-  if send_hash is distinct from owner_hash then
-    raise exception 'owner test was not stored against the account';
-  end if;
-
-  update auth.users set email = 'owner.moved@example.com' where id = owner_id;
-  set role authenticated;
-  result := public.staff_email_release_gate(letter_id);
-  if result->>'ready' is distinct from 'false' then
-    raise exception 'gate stayed open after the account address changed %', result;
-  end if;
-  set role postgres;
-  update auth.users set email = 'owner.one@example.com' where id = owner_id;
-
-  set role authenticated;
-  result := public.staff_upsert_campaign(
-    letter_id, 'campaign', 'news_invitations', 'Hello edited', 'Preview', 'Hello members.',
-    '<p>Hello</p>', array['founding']::text[], null
-  );
-  if result->>'status' is distinct from 'approved' then
-    raise exception 'edit did not reset the test %', result;
-  end if;
-  result := public.staff_email_release_gate(letter_id);
-  if result->>'ready' is distinct from 'false' or result->>'test_sent' is distinct from 'false' then
-    raise exception 'release stayed open after the edit %', result;
-  end if;
-  set role postgres;
-  select c.status into status from public.email_campaigns c where c.id = letter_id;
-  if status is distinct from 'approved' then
-    raise exception 'stored status stayed %', status;
-  end if;
 
   perform set_config(
     'request.jwt.claims',

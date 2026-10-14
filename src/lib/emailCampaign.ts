@@ -23,6 +23,7 @@ export const AUDIENCE_REASON_LABELS = [
 export type AudienceCounts = Record<(typeof AUDIENCE_REASON_LABELS)[number][0], number>
 
 export type ReleaseGate = {
+  ready: boolean
   isOwner: boolean
   masterEnabled: boolean
   approved: boolean
@@ -135,11 +136,12 @@ function countsFrom(value: unknown): AudienceCounts {
   return counts
 }
 
-function gateFrom(value: unknown, isOwner: boolean, masterEnabled: boolean): ReleaseGate {
+function gateFrom(value: unknown): ReleaseGate {
   const row = value && typeof value === 'object' ? (value as Record<string, unknown>) : {}
   return {
-    isOwner: row.is_owner === true && isOwner,
-    masterEnabled: row.master_enabled === true && masterEnabled,
+    ready: row.ready === true,
+    isOwner: row.is_owner === true,
+    masterEnabled: row.master_enabled === true,
     approved: row.approved === true,
     testSentByOwner: row.test_sent === true,
     versionMatches: row.version_matches === true,
@@ -207,7 +209,7 @@ export function presentEmailScreen(value: unknown): EmailScreen | null {
       status,
       digestIssueId: typeof campaign.digest_issue_id === 'string' ? campaign.digest_issue_id : null,
       audience: countsFrom(campaign.audience),
-      release: gateFrom(campaign.release, isOwner, masterEnabled),
+      release: gateFrom(campaign.release),
       log: logFrom(campaign.log),
     })
   }
@@ -215,14 +217,7 @@ export function presentEmailScreen(value: unknown): EmailScreen | null {
 }
 
 export function releaseReady(gate: ReleaseGate): boolean {
-  return (
-    gate.isOwner &&
-    gate.masterEnabled &&
-    gate.approved &&
-    gate.testSentByOwner &&
-    gate.versionMatches &&
-    gate.eligible > 0
-  )
+  return gate.ready
 }
 
 export function releaseBlockers(gate: ReleaseGate): string[] {

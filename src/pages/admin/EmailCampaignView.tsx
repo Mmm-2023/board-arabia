@@ -68,6 +68,7 @@ export function EmailCampaignView({
   onRetry: () => void
 }) {
   const gate: ReleaseGate = selected?.release ?? {
+    ready: false,
     isOwner: screen?.isOwner === true,
     masterEnabled: screen?.masterEnabled === true,
     approved: draft.status === 'approved' || draft.status === 'test_sent',

@@ -8,6 +8,7 @@ import { MemoryRouter } from 'react-router-dom'
 import { chromium } from 'playwright-core'
 import { createServer } from 'vite'
 import { resolveChromePath } from './chrome-path.ts'
+import { handleEmailSend, type SendDeps, type SendGate } from '../supabase/functions/email-send/handle.ts'
 
 const root = path.resolve(new URL('..', import.meta.url).pathname)
 
@@ -34,7 +35,11 @@ test('campaign migration stays off, names the file, and does not schedule a send
   assert.equal(/pg_cron|cron\.schedule|pg_net|net\.http/i.test(sql), false)
   assert.equal(/master_enabled\s*=\s*true/.test(sql), false)
   assert.equal(/news_invitations_opt_in|apply_form/.test(sql), false)
-  assert.match(sql, /auth\.users/)
+  assert.equal(/function public\.staff_upsert_campaign/.test(sql), false)
+  assert.match(sql, /c\.test_sent_by/)
+  assert.match(sql, /c\.content_hash/)
+  assert.match(sql, /c\.test_content_hash/)
+  assert.match(sql, /auth\.uid\(\)/)
   assert.match(sql, /set search_path = ''/)
   assert.match(sql, /if not private\.is_staff\(\)/)
   assert.match(sql, /private\.is_owner\(\)/)
@@ -52,64 +57,18 @@ test('release stays closed until the owner test, the master switch, and approval
     logLevel: 'error',
   })
   const mod = await vite.ssrLoadModule('/src/lib/emailCampaign.ts')
-  const { confirmMatches, releaseBlockers, releaseReady } = mod
-  const closed = {
-    isOwner: false,
+  const { confirmMatches, releaseReady } = mod
+  const open: ReleaseGate = {
+    ready: false,
+    isOwner: true,
     masterEnabled: false,
-    approved: false,
+    approved: true,
     testSentByOwner: false,
     versionMatches: false,
-    eligible: 0,
-  }
-  assert.equal(releaseReady(closed), false)
-  assert.equal(releaseReady({ ...closed, isOwner: true, masterEnabled: true, approved: true, eligible: 4 }), false)
-  assert.equal(
-    releaseReady({
-      isOwner: true,
-      masterEnabled: true,
-      approved: true,
-      testSentByOwner: true,
-      versionMatches: false,
-      eligible: 4,
-    }),
-    false,
-  )
-  assert.equal(
-    releaseReady({
-      isOwner: true,
-      masterEnabled: false,
-      approved: true,
-      testSentByOwner: true,
-      versionMatches: true,
-      eligible: 4,
-    }),
-    false,
-  )
-  assert.equal(
-    releaseReady({
-      isOwner: false,
-      masterEnabled: true,
-      approved: true,
-      testSentByOwner: true,
-      versionMatches: true,
-      eligible: 4,
-    }),
-    false,
-  )
-  const open = {
-    isOwner: true,
-    masterEnabled: true,
-    approved: true,
-    testSentByOwner: true,
-    versionMatches: true,
     eligible: 4,
   }
-  assert.equal(releaseReady(open), true)
-  assert.equal(releaseReady({ ...open, eligible: 0 }), false)
-  assert.deepEqual(releaseBlockers({ ...open, masterEnabled: false, testSentByOwner: false, versionMatches: false }), [
-    'The master switch is off.',
-    'Release stays off until a test of this version has gone to the owner account.',
-  ])
+  assert.equal(releaseReady(open), false)
+  assert.equal(releaseReady({ ...open, ready: true }), true)
   assert.equal(confirmMatches('4', 4), true)
   assert.equal(confirmMatches(' 4 ', 4), true)
   assert.equal(confirmMatches('04', 4), false)
@@ -128,7 +87,7 @@ test('the screen calls email-send by name and the confirm page waits for the cli
   assert.match(send, /'test' \| 'live'/)
   assert.match(panel, /requestCampaignSend\(draft\.id, 'test'\)/)
   assert.match(panel, /requestCampaignSend\(draft\.id, 'live'\)/)
-  assert.match(panel, /staff_record_campaign_test/)
+  assert.equal(/staff_record_campaign_test/.test(panel), false)
   assert.match(panel, /staff_email_release_gate/)
   assert.equal(/@example\.com|RESEND_|sk_live/.test(panel + send + page), false)
   assert.equal(page.includes('useEffect'), false)
@@ -164,6 +123,7 @@ test('release control renders closed and open, and the master switch is owner on
   const viewMod = await vite.ssrLoadModule('/src/pages/admin/EmailCampaignView.tsx')
   const EmailCampaignView = viewMod.EmailCampaignView
   const gateOff = {
+    ready: false,
     isOwner: true,
     masterEnabled: false,
     approved: true,
@@ -242,6 +202,7 @@ test('release control renders closed and open, and the master switch is owner on
         ...letter,
         status: 'test_sent',
         release: {
+          ready: true,
           isOwner: true,
           masterEnabled: true,
           approved: true,
@@ -254,6 +215,7 @@ test('release control renders closed and open, and the master switch is owner on
         ...letter,
         status: 'test_sent',
         release: {
+          ready: true,
           isOwner: true,
           masterEnabled: true,
           approved: true,
@@ -274,6 +236,111 @@ test('release control renders closed and open, and the master switch is owner on
   assert.match(owner, /Send test to me/)
   assert.equal(owner.includes('@'), false)
   await vite.close()
+})
+
+const ownerId = '22222222-2222-4222-8222-222222222222'
+const campaignId = '11111111-1111-4111-8111-111111111111'
+const sameHash = 'ab'.repeat(32)
+
+function sendGate(overrides: Partial<SendGate> = {}): SendGate {
+  return {
+    found: true,
+    status: 'approved',
+    kind: 'campaign',
+    category: 'news_invitations',
+    subject: 'A note for members',
+    preheader: 'This week',
+    body_text: 'Hello from Board Arabia.',
+    body_html: '<p>Hello from Board Arabia.</p>',
+    master_enabled: true,
+    batch_size: 50,
+    batch_pause_ms: 0,
+    issue_status: null,
+    issue_mail_ready: false,
+    issue_send_enabled: false,
+    content_hash: sameHash,
+    test_content_hash: null,
+    test_sent_by: null,
+    ...overrides,
+  }
+}
+
+function sendHarness(state: { current: SendGate }, role: SendDeps['role'] = 'master') {
+  const fetches: string[] = []
+  const deps: SendDeps = {
+    role,
+    userId: ownerId,
+    staffAddress: 'owner.one@example.com',
+    apiKey: 'test-key',
+    fromAddress: 'news@example.com',
+    contactEmail: 'contact@example.com',
+    siteOrigin: 'https://example.com',
+    functionsOrigin: 'https://example.com',
+    now: () => 1_700_000_000_000,
+    sleep: async () => undefined,
+    fetchImpl: async (_url, init) => {
+      fetches.push(init.body)
+      const count = JSON.parse(init.body).length
+      return {
+        status: 200,
+        headers: { get: () => null },
+        json: async () => ({ data: Array.from({ length: count }, () => ({ id: 'msg_1' })) }),
+      }
+    },
+    loadGate: async () => state.current,
+    loadRecipients: async () => [
+      {
+        userId: '33333333-3333-4333-8333-000000000001',
+        address: 'member.1@example.com',
+        unsubscribeToken: 'tok-1',
+      },
+    ],
+    isSuppressed: async () => false,
+    logSend: async (row) => ({ ok: true, id: `send-${fetches.length + 1}`, status: row.status, send: true }),
+    setProgress: async (_id, status) => {
+      state.current = { ...state.current, status }
+      return true
+    },
+    markTest: async () => {
+      state.current = {
+        ...state.current,
+        status: 'test_sent',
+        test_content_hash: state.current.content_hash,
+        test_sent_by: ownerId,
+      }
+      return true
+    },
+  }
+  return { deps, fetches }
+}
+
+test('the email-send handler accepts an owner test and then release, and an edit blocks the live send', async () => {
+  const state = { current: sendGate() }
+  const owner = sendHarness(state)
+  const tested = await handleEmailSend({ campaign_id: campaignId, mode: 'test' }, owner.deps)
+  assert.equal(tested.status, 200)
+  assert.equal(tested.body.ok, true)
+  assert.equal(state.current.status, 'test_sent')
+  assert.equal(state.current.test_sent_by, ownerId)
+  assert.equal(state.current.test_content_hash, state.current.content_hash)
+  const released = await handleEmailSend({ campaign_id: campaignId, mode: 'live' }, owner.deps)
+  assert.equal(released.status, 200)
+  assert.equal(released.body.sent, 1)
+  assert.ok(owner.fetches.length > 0)
+
+  const edited = sendHarness({
+    current: sendGate({
+      status: 'approved',
+      content_hash: 'cd'.repeat(32),
+      test_content_hash: null,
+      test_sent_by: null,
+      master_enabled: true,
+    }),
+  })
+  const blocked = await handleEmailSend({ campaign_id: campaignId, mode: 'live' }, edited.deps)
+  assert.equal(blocked.status, 409)
+  assert.equal(blocked.body.error, 'not_tested')
+  assert.equal(edited.fetches.length, 0)
 })
 
 test('campaign, preference, and unsubscribe shots at 1440 and 390', { timeout: 180000 }, async (t) => {

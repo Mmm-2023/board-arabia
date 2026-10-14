@@ -52,6 +52,7 @@ function letter(status: CampaignSummary['status'], gate: CampaignSummary['releas
 }
 
 const blocked = letter('approved', {
+  ready: false,
   isOwner: true,
   masterEnabled: false,
   approved: true,
@@ -61,6 +62,7 @@ const blocked = letter('approved', {
 })
 
 const open = letter('test_sent', {
+  ready: true,
   isOwner: true,
   masterEnabled: true,
   approved: true,
