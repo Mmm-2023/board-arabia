@@ -42,7 +42,7 @@ test('staff aal1 passes staffApiDecision and the named migration drops only aal2
   assert.ok(names.indexOf(migrationName) > names.indexOf('20261228120000_push_registration.sql'))
   const covered = names.filter((name) => name <= migrationName)
   assert.equal(covered.at(-1), migrationName)
-  assert.equal(covered.includes('20261223120000_email_campaign_ui.sql'), false)
+  assert.equal(covered.includes('20261223120000_email_campaign_ui.sql'), true)
   assert.equal(covered.includes('20261229120000_email_transactional.sql'), false)
 
   const sql = readFileSync(path.join(migrationsDir, migrationName), 'utf8')
