@@ -902,13 +902,40 @@ export type Database = {
         Row: {
           member_id: string
           board_seat_nudges: boolean
+          push_enabled: boolean
         }
         Insert: {
           member_id: string
           board_seat_nudges?: boolean
+          push_enabled?: boolean
         }
         Update: {
           board_seat_nudges?: boolean
+          push_enabled?: boolean
+        }
+        Relationships: []
+      }
+      member_push_tokens: {
+        Row: {
+          member_id: string
+          platform: 'ios' | 'android'
+          token: string
+          created_at: string
+          last_seen_at: string
+          revoked_at: string | null
+        }
+        Insert: {
+          member_id: string
+          platform: 'ios' | 'android'
+          token: string
+          created_at?: string
+          last_seen_at?: string
+          revoked_at?: string | null
+        }
+        Update: {
+          platform?: 'ios' | 'android'
+          last_seen_at?: string
+          revoked_at?: string | null
         }
         Relationships: []
       }
@@ -1659,6 +1686,22 @@ export type Database = {
       }
       open_board_seat_introduction: {
         Args: { p_intro_id: string }
+        Returns: Json
+      }
+      set_push_notifications: {
+        Args: { p_enabled: boolean }
+        Returns: Json
+      }
+      own_push_preference: {
+        Args: Record<string, never>
+        Returns: Json
+      }
+      register_push_token: {
+        Args: { p_platform: string; p_token: string }
+        Returns: Json
+      }
+      revoke_my_push_tokens: {
+        Args: Record<string, never>
         Returns: Json
       }
     }

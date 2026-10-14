@@ -64,7 +64,24 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
+	<key>NSFaceIDUsageDescription</key>
+	<string>Board Arabia uses Face ID to unlock the app.</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.boardarabia.app</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.boardarabia.app</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

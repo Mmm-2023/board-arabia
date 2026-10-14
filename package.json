@@ -5,15 +5,19 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "node scripts/with-public-legal-env.mjs tsc -b && node scripts/with-public-legal-env.mjs vite build && node scripts/with-public-legal-env.mjs node scripts/prerender.mjs && node scripts/write-ar-redirects.mjs",
+    "build": "node scripts/with-public-legal-env.mjs tsc -b && node scripts/with-public-legal-env.mjs vite build && node scripts/with-public-legal-env.mjs node scripts/prerender.mjs && node scripts/write-ar-redirects.mjs && node scripts/write-well-known.mjs",
     "build:app": "node scripts/build-app.mjs",
     "lint": "oxlint",
     "preview": "vite preview"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.3",
+    "@capacitor/app": "^8.1.2",
+    "@capacitor/browser": "^8.0.5",
     "@capacitor/core": "^8.5.3",
     "@capacitor/ios": "^8.5.3",
+    "@capacitor/push-notifications": "8.0.2",
+    "@capgo/capacitor-native-biometric": "8.6.7",
     "@supabase/supabase-js": "^2.117.2",
     "motion": "^13.4.0",
     "react": "^19.2.8",

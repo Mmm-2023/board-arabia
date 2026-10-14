@@ -3,6 +3,8 @@ import { legalField } from '../../config/legal'
 import { LEAVE_BOARD_PATH } from '../../lib/leaveBoard'
 import { DELETE_ACCOUNT_PATH } from '../../shell/destinations'
 import { AccountBackLink } from '../../pages/dashboard/AccountBackLink'
+import { BiometricUnlockSetting } from './BiometricUnlockSetting'
+import { PushNotificationSetting } from './PushNotificationSetting'
 
 const section = 'border-t border-ink/10 pt-8'
 const heading = 'font-display text-[1.35rem] font-semibold tracking-[-0.02em]'
@@ -23,6 +25,13 @@ export function PrivacyPanelView({
   onDownload,
   digestOptIn = false,
   onDigestOptIn,
+  biometricAvailable = false,
+  biometricEnabled = false,
+  onBiometricEnabled,
+  pushAvailable = false,
+  pushEnabled = false,
+  pushProblem = '',
+  onPushEnabled,
 }: {
   hidden: boolean
   showSponsors: boolean
@@ -36,6 +45,13 @@ export function PrivacyPanelView({
   onDownload: () => void
   digestOptIn?: boolean
   onDigestOptIn?: (optIn: boolean) => void
+  biometricAvailable?: boolean
+  biometricEnabled?: boolean
+  onBiometricEnabled?: (enabled: boolean) => void
+  pushAvailable?: boolean
+  pushEnabled?: boolean
+  pushProblem?: string
+  onPushEnabled?: (enabled: boolean) => void
 }) {
   return (
     <div className="max-w-xl" data-screen="your-privacy" data-directory={hidden ? 'hidden' : 'visible'}>
@@ -132,6 +148,19 @@ export function PrivacyPanelView({
         </p>
       </section>
 
+      {pushAvailable ? (
+        <section className={section} aria-labelledby="privacy-push">
+          <p className="text-[0.72rem] font-semibold tracking-[0.14em] text-brass uppercase">Notifications</p>
+          <div className="mt-4">
+            <PushNotificationSetting
+              enabled={pushEnabled}
+              problem={pushProblem}
+              onEnabled={(next) => onPushEnabled?.(next)}
+            />
+          </div>
+        </section>
+      ) : null}
+
       <section className={section} aria-labelledby="privacy-two-step">
         <h2 id="privacy-two-step" className={heading}>
           Two-step sign-in
@@ -143,6 +172,12 @@ export function PrivacyPanelView({
           is {twoStepOn ? 'on' : 'off'}.
         </p>
       </section>
+
+      {biometricAvailable ? (
+        <section className={section} aria-labelledby="privacy-biometric">
+          <BiometricUnlockSetting enabled={biometricEnabled} onEnabled={(next) => onBiometricEnabled?.(next)} />
+        </section>
+      ) : null}
 
       <section className={section} aria-labelledby="privacy-files">
         <h2 id="privacy-files" className={heading}>
@@ -210,7 +245,7 @@ export function PrivacyPanelView({
           Delete account
         </h2>
         <p className={body}>
-          This removes your profile, directory card, directory listing, introductions, notifications and event replies.
+          This removes your profile, directory card, directory listing, introductions, notifications, push registration and event replies.
           Contact details already shared with another member through an accepted introduction cannot be recalled from
           that member. Deal room files you uploaded and AI tool uploads are removed on request to {legalField('contactEmail')}, and in any case within 24 months of exit. Legal
           records and consent logs are kept. It cannot be undone.
