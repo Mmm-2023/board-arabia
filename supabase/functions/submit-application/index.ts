@@ -55,6 +55,7 @@ Deno.serve(async (req) => {
   const includeInPublic = typeof body.include_in_public_aggregates === 'boolean'
     ? body.include_in_public_aggregates
     : true
+  const newsOptIn = body.news_invitations_opt_in === true
   const linkedinUrl = clean(body.linkedin_url, MAX_FIELD.linkedin_url)
   const jobTitles = clean(body.job_titles, MAX_FIELD.job_titles)
   const companies = clean(body.companies, MAX_FIELD.companies)
@@ -100,6 +101,7 @@ Deno.serve(async (req) => {
       fo_aum: foAum,
       investable_capacity_usd: investable.value,
       include_in_public_aggregates: includeInPublic,
+      news_invitations_opt_in: newsOptIn,
       linkedin_url: linkedinUrl,
       job_titles: jobTitles,
       companies,

@@ -23,6 +23,7 @@ export type Database = {
           fo_aum: string | null
           investable_capacity_usd: number | null
           include_in_public_aggregates: boolean
+          news_invitations_opt_in: boolean
           companies: string
           job_titles: string
           linkedin_url: string | null
@@ -65,6 +66,7 @@ export type Database = {
           fo_aum?: string | null
           investable_capacity_usd?: number | null
           include_in_public_aggregates?: boolean
+          news_invitations_opt_in?: boolean
           companies: string
           job_titles: string
           linkedin_url?: string | null
@@ -107,6 +109,7 @@ export type Database = {
           fo_aum?: string | null
           investable_capacity_usd?: number | null
           include_in_public_aggregates?: boolean
+          news_invitations_opt_in?: boolean
           companies?: string
           job_titles?: string
           linkedin_url?: string | null
@@ -1660,6 +1663,52 @@ export type Database = {
       }
       revoke_my_push_tokens: {
         Args: Record<string, never>
+        Returns: Json
+      }
+      my_email_preferences: {
+        Args: Record<string, never>
+        Returns: Json
+      }
+      set_email_preference: {
+        Args: { p_category: string; p_opt_in: boolean }
+        Returns: Json
+      }
+      email_unsubscribe: {
+        Args: { p_token: string; p_source: string }
+        Returns: Json
+      }
+      staff_upsert_campaign: {
+        Args: {
+          p_id: string | null
+          p_kind: string
+          p_category: string
+          p_subject: string
+          p_preheader: string
+          p_body_text: string
+          p_body_html: string
+          p_audience: string[]
+          p_digest_issue_id: string | null
+        }
+        Returns: Json
+      }
+      staff_approve_campaign: {
+        Args: { p_id: string }
+        Returns: Json
+      }
+      staff_set_email_master: {
+        Args: { p_enabled: boolean }
+        Returns: Json
+      }
+      staff_email_screen: {
+        Args: Record<string, never>
+        Returns: Json
+      }
+      staff_email_release_gate: {
+        Args: { p_id: string }
+        Returns: Json
+      }
+      staff_record_campaign_test: {
+        Args: { p_id: string }
         Returns: Json
       }
     }

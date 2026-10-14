@@ -85,6 +85,7 @@ const ADDED_SHELLS = [
   '/admin/marketing',
   '/admin/access',
   '/register',
+  '/email/unsubscribe',
   '/register/verify',
   '/book',
   '/verify',

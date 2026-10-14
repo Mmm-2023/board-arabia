@@ -3,6 +3,7 @@ import { formatUkDateTime } from '../../lib/ukDate'
 import type { EmailEventAdminRow } from '../../lib/supabase'
 import { useNoIndex } from '../../lib/usePageTitle'
 import { CardSkeleton, EmptyState } from '../../shell/ViewState'
+import { EmailCampaignPanel } from './EmailCampaignPanel'
 import { DigestIssuePanel } from './DigestIssuePanel'
 import { PanelNotice } from './bits'
 import { useAdmin } from './context'
@@ -54,6 +55,7 @@ export function EmailPage() {
           <EmptyState tone="staff" message="No email events yet." />
         </div>
       ) : null}
+      <EmailCampaignPanel />
       <EmailEventList events={room.events} />
       <DigestIssuePanel />
     </div>

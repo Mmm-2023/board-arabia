@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { DigestDraftEditor, digestPayloadFromModel, type DigestPickLists } from '../../components/digest/DigestDraftEditor'
 import { WeeklyDigestView } from '../../components/digest/WeeklyDigestView'
 import { formatUkDateTime } from '../../lib/ukDate'
@@ -242,6 +243,11 @@ export function DigestIssuePanelView({
             >
               Withdraw
             </button>
+            {status === 'approved' ? (
+              <Link to="/admin/email#email-campaign" className={actionClass}>
+                Email this digest
+              </Link>
+            ) : null}
           </div>
           {status === 'draft' && draft && onDraftChange ? (
             <>

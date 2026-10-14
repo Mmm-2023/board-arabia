@@ -48,6 +48,9 @@ const MembershipDetailPage = lazy(() =>
 )
 const CapacityPage = lazy(() => import('./pages/admin/CapacityPage').then((m) => ({ default: m.CapacityPage })))
 const EmailPage = lazy(() => import('./pages/admin/EmailPage').then((m) => ({ default: m.EmailPage })))
+const EmailUnsubscribePage = lazy(() =>
+  import('./pages/EmailUnsubscribePage').then((m) => ({ default: m.EmailUnsubscribePage })),
+)
 const AdminMajlisPage = lazy(() => import('./pages/admin/MajlisPage').then((m) => ({ default: m.AdminMajlisPage })))
 const StaffRoomsPage = lazy(() => import('./pages/admin/StaffRoomsPage').then((m) => ({ default: m.StaffRoomsPage })))
 const AdminIntrosPage = lazy(() => import('./pages/admin/AdminIntrosPage').then((m) => ({ default: m.AdminIntrosPage })))
@@ -135,6 +138,7 @@ export default function App() {
       <Route path="/how-it-works" element={<HowItWorksPage />} />
       <Route path="/about" element={<AboutPage />} />
       <Route path="/privacy" element={<PrivacyPage />} />
+      <Route path="/email/unsubscribe" element={<EmailUnsubscribePage />} />
       <Route path="/account-deletion" element={<AccountDeletionPage />} />
       <Route path="/legal" element={<LegalRedirectPage />} />
       <Route path="/terms" element={<TermsPage />} />

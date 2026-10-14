@@ -86,6 +86,7 @@ const FIXED_SHELLS = [
   ['/admin/marketing', 'admin'],
   ['/admin/access', 'admin'],
   ['/register', 'public-utility'],
+  ['/email/unsubscribe', 'public-utility'],
   ['/register/verify', 'public-utility'],
   ['/book', 'public-utility'],
   ['/verify', 'public-utility'],

@@ -15,6 +15,8 @@ export function PrivacyPanelPage() {
   const [hidden, setHidden] = useState(false)
   const [showSponsors, setShowSponsors] = useState(false)
   const [digestOptIn, setDigestOptIn] = useState(false)
+  const [newsOptIn, setNewsOptIn] = useState(false)
+  const [deliveryConnected, setDeliveryConnected] = useState(false)
   const [twoStepOn, setTwoStepOn] = useState(false)
   const [downloadState, setDownloadState] = useState<'idle' | 'ready' | 'limited' | 'error'>('idle')
   const [busy, setBusy] = useState(false)
@@ -33,10 +35,12 @@ export function PrivacyPanelPage() {
       if (row.directory_hidden === true) setHidden(true)
       if (row.show_card_to_sponsors === true) setShowSponsors(true)
     })
-    void supabase.rpc('own_digest_preference').then(({ data }) => {
+    void supabase.rpc('my_email_preferences').then(({ data }) => {
       if (cancelled || !data || typeof data !== 'object' || Array.isArray(data)) return
-      const row = data as { digest_email_opt_in?: boolean }
-      if (row.digest_email_opt_in === true) setDigestOptIn(true)
+      const row = data as { weekly_digest?: boolean; news_invitations?: boolean; delivery_connected?: boolean }
+      setDigestOptIn(row.weekly_digest === true)
+      setNewsOptIn(row.news_invitations === true)
+      setDeliveryConnected(row.delivery_connected === true)
     })
     void listTotpFactors().then((factors) => {
       if (!cancelled) setTwoStepOn(factors.some((factor) => factor.status === 'verified'))
@@ -154,6 +158,13 @@ export function PrivacyPanelPage() {
     if (error) setDigestOptIn(previous)
   }
 
+  async function onNews(next: boolean) {
+    const previous = newsOptIn
+    setNewsOptIn(next)
+    const { error } = await supabase.rpc('set_email_preference', { p_category: 'news_invitations', p_opt_in: next })
+    if (error) setNewsOptIn(previous)
+  }
+
   async function onDownload() {
     setBusy(true)
     setDownloadState('idle')
@@ -190,6 +201,9 @@ export function PrivacyPanelPage() {
       onDownload={() => void onDownload()}
       digestOptIn={digestOptIn}
       onDigestOptIn={(next) => void onDigest(next)}
+      newsOptIn={newsOptIn}
+      onNewsOptIn={(next) => void onNews(next)}
+      deliveryConnected={deliveryConnected}
       biometricAvailable={biometricAvailable}
       biometricEnabled={biometricEnabled}
       onBiometricEnabled={(next) => void onBiometric(next)}
