@@ -1,0 +1,217 @@
+name: App test builds
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: app-builds-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  android-debug-apk:
+    name: Android debug APK
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Install
+        run: npm ci
+      - name: Build web assets at /
+        run: |
+          cp .env.example .env
+          npm run build:app
+      - name: Sync Android
+        run: npx cap sync android
+      - name: Install Android SDK 36
+        run: |
+          set -euo pipefail
+          sdkroot="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
+          if [ -z "$sdkroot" ]; then
+            echo "Android SDK is not installed on this runner"
+            exit 1
+          fi
+          export ANDROID_HOME="$sdkroot"
+          if command -v sdkmanager >/dev/null 2>&1; then
+            sm=sdkmanager
+          elif [ -x "$sdkroot/cmdline-tools/latest/bin/sdkmanager" ]; then
+            sm="$sdkroot/cmdline-tools/latest/bin/sdkmanager"
+          else
+            sm="$(find "$sdkroot" -type f -name sdkmanager | head -n 1)"
+          fi
+          if [ -z "$sm" ]; then
+            echo "sdkmanager was not found"
+            exit 1
+          fi
+          yes | "$sm" --licenses >/dev/null || true
+          "$sm" "platforms;android-36" "build-tools;36.0.0"
+      - name: Assemble debug APK
+        working-directory: android
+        run: ./gradlew assembleDebug --no-daemon
+      - uses: actions/upload-artifact@v7
+        with:
+          name: android-debug-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+
+  ios-simulator:
+    name: iOS simulator
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install
+        run: npm ci
+      - name: Build web assets at /
+        run: |
+          cp .env.example .env
+          npm run build:app
+      - name: Sync iOS
+        run: npx cap sync ios
+      - name: Build unsigned simulator app
+        working-directory: ios/App
+        run: |
+          xcodebuild \
+            -project App.xcodeproj \
+            -scheme App \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath "$RUNNER_TEMP/DerivedData" \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            build
+      - name: Pack the simulator app
+        run: |
+          ditto -c -k --keepParent \
+            "$RUNNER_TEMP/DerivedData/Build/Products/Debug-iphonesimulator/App.app" \
+            "$RUNNER_TEMP/BoardArabia-ios-simulator.zip"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ios-simulator-app
+          path: ${{ runner.temp }}/BoardArabia-ios-simulator.zip
+          if-no-files-found: error
+      - name: Screenshot Home on the iOS simulator
+        run: |
+          set -euo pipefail
+          app="$RUNNER_TEMP/DerivedData/Build/Products/Debug-iphonesimulator/App.app"
+          entitlements="$(mktemp)"
+          printf '%s\n' '<?xml version="1.0" encoding="UTF-8"?>' '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">' '<plist version="1.0"><dict></dict></plist>' > "$entitlements"
+          codesign --force --deep --sign - --entitlements "$entitlements" "$app"
+          udid="$(
+            xcrun simctl list devices available |
+              sed -n 's/.*iPhone.*(\([0-9A-F-]\{36\}\)).*/\1/p' |
+              head -n 1
+          )"
+          if [ -z "$udid" ]; then
+            echo "No iPhone simulator is available"
+            exit 1
+          fi
+          xcrun simctl shutdown "$udid" || true
+          approval="$HOME/Library/Developer/CoreSimulator/Devices/$udid/data/Library/Preferences/com.apple.launchservices.schemeapproval.plist"
+          mkdir -p "$(dirname "$approval")"
+          rm -f "$approval"
+          /usr/libexec/PlistBuddy -c "Add :com.apple.CoreSimulator.CoreSimulatorBridge-->com.boardarabia.app string com.boardarabia.app" "$approval"
+          xcrun simctl boot "$udid"
+          xcrun simctl bootstatus "$udid" -b
+          open -a Simulator || true
+          xcrun simctl install "$udid" "$app"
+          xcrun simctl launch "$udid" com.boardarabia.app
+          sleep 15
+          xcrun simctl io "$udid" screenshot "$RUNNER_TEMP/ios-home.png"
+          xcrun simctl openurl "$udid" "com.boardarabia.app://native/biometric-shot/settings"
+          sleep 2
+          osascript -e 'tell application "Simulator" to activate' -e 'delay 1' -e 'tell application "System Events" to keystroke return' || true
+          sleep 12
+          xcrun simctl io "$udid" screenshot "$RUNNER_TEMP/ios-biometric-settings.png"
+          xcrun simctl openurl "$udid" "com.boardarabia.app://native/biometric-shot/lock"
+          sleep 2
+          osascript -e 'tell application "Simulator" to activate' -e 'delay 1' -e 'tell application "System Events" to keystroke return' || true
+          sleep 12
+          xcrun simctl io "$udid" screenshot "$RUNNER_TEMP/ios-biometric-lock.png"
+          xcrun simctl openurl "$udid" "com.boardarabia.app://native/push-shot/settings"
+          sleep 2
+          osascript -e 'tell application "Simulator" to activate' -e 'delay 1' -e 'tell application "System Events" to keystroke return' || true
+          sleep 12
+          xcrun simctl io "$udid" screenshot "$RUNNER_TEMP/ios-push-settings.png"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ios-home-screenshot
+          path: ${{ runner.temp }}/ios-home.png
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ios-biometric-screenshots
+          path: |
+            ${{ runner.temp }}/ios-biometric-settings.png
+            ${{ runner.temp }}/ios-biometric-lock.png
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ios-push-screenshot
+          path: ${{ runner.temp }}/ios-push-settings.png
+          if-no-files-found: error
+
+  android-emulator-home:
+    name: Android emulator Home
+    runs-on: ubuntu-latest
+    needs: android-debug-apk
+    timeout-minutes: 45
+    steps:
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+          ls -l /dev/kvm
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v7
+        with:
+          name: android-debug-apk
+          path: apk
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          cores: 2
+          ram-size: 2048
+          disable-animations: true
+          emulator-boot-timeout: 600
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
+          script: |
+            adb install -r -t "$GITHUB_WORKSPACE/apk/app-debug.apk"
+            adb logcat -c || true
+            adb shell input keyevent KEYCODE_WAKEUP || true
+            adb shell am start -n com.boardarabia.app/.MainActivity
+            sleep 45
+            mkdir -p "$GITHUB_WORKSPACE/emulator-shot"
+            adb logcat -d > "$GITHUB_WORKSPACE/emulator-shot/logcat.txt"
+            adb exec-out screencap -p > "$GITHUB_WORKSPACE/emulator-shot/android-home.png"
+            python3 "$GITHUB_WORKSPACE/scripts/android-webview-navigate.py" https://localhost/native/biometric-shot/settings && sleep 12 && adb exec-out screencap -p > "$GITHUB_WORKSPACE/emulator-shot/android-biometric-settings.png"
+            python3 "$GITHUB_WORKSPACE/scripts/android-webview-navigate.py" https://localhost/native/biometric-shot/lock && sleep 12 && adb exec-out screencap -p > "$GITHUB_WORKSPACE/emulator-shot/android-biometric-lock.png"
+            python3 "$GITHUB_WORKSPACE/scripts/android-webview-navigate.py" https://localhost/native/push-shot/settings && sleep 12 && adb exec-out screencap -p > "$GITHUB_WORKSPACE/emulator-shot/android-push-settings.png"
+            adb logcat -d > "$GITHUB_WORKSPACE/emulator-shot/logcat-after-biometric.txt"
+            grep -E "Fatal signal|libwebviewchromium|Renderer process|Capacitor:|CrRendererMain|signal 5" "$GITHUB_WORKSPACE/emulator-shot/logcat.txt" > "$GITHUB_WORKSPACE/emulator-shot/logcat-webview.txt" || true
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: android-home-screenshot
+          path: emulator-shot/
+          if-no-files-found: error

@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { CtaBand } from '../components/CtaBand'
 import { MarketingLayout } from '../components/MarketingLayout'
+import { publicHref } from '../content/seo'
 import { publicConsiderationCta } from '../lib/twoTierRegister'
 import { trackApplyClick } from '../lib/tracking/browser'
 
@@ -134,7 +135,7 @@ export function ForCapitalPage() {
               message around that gate.
             </p>
             <p>
-              <Link to="/for-members#intros" className="border-b border-brass text-ink">
+              <Link to={publicHref('/for-members#intros')} className="border-b border-brass text-ink">
                 How introductions work
               </Link>
             </p>
@@ -170,7 +171,7 @@ export function ForCapitalPage() {
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
             <CapitalConsideration />
             <Link
-              to="/partners"
+              to={publicHref('/partners')}
               className="inline-flex items-center justify-center border border-ink/20 px-7 py-3.5 text-[0.78rem] font-semibold tracking-[0.08em] text-ink uppercase"
             >
               Partner with us
@@ -193,7 +194,7 @@ function CapitalConsideration() {
   const cta = publicConsiderationCta()
   return (
     <Link
-      to={cta.to}
+      to={publicHref(cta.to)}
       className="ba-primary inline-flex items-center justify-center px-7 py-3.5 text-[0.78rem] font-semibold tracking-[0.08em] uppercase"
       data-consideration-cta="public"
       onClick={() => trackApplyClick('section-for-capital', cta.label)}

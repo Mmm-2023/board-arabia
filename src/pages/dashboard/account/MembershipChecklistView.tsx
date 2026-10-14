@@ -118,7 +118,7 @@ export function MembershipChecklistView({
           <span>
             I agree that our admin team may review these details to decide on my membership. If I am approved, admitted
             members can see my name, headline, company and city in the Directory.{' '}
-            <Link to="/privacy" className="underline">Privacy</Link> and <Link to="/terms" className="underline">Terms</Link>.
+            <Link to="/privacy/" className="underline">Privacy</Link> and <Link to="/terms/" className="underline">Terms</Link>.
           </span>
         </label>
         {error ? (

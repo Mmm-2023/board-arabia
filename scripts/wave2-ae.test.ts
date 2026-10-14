@@ -6,11 +6,10 @@ import { createElement, type FormEvent } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { MemoryRouter } from 'react-router-dom'
 import { createServer } from 'vite'
-import { cleanDeskNote } from '../supabase/functions/_shared/desk_note.ts'
 import { AUDIENCE_LINE } from '../src/content/marketing.ts'
 import type { HistoryItem } from '../src/lib/dueDiligence.ts'
 import { assembleHome, profileMatchNudge, type AssembleInput } from '../src/lib/homeSnapshot.ts'
-import { LEAVE_DESK_REQUEST, LEAVE_BOARD_PATH } from '../src/lib/leaveBoard.ts'
+import { LEAVE_BOARD_PATH } from '../src/lib/leaveBoard.ts'
 import { earlierRunsLabel, groupPriorNotes } from '../src/lib/priorNotes.ts'
 import { FORMING_TOTALS } from '../src/lib/platformFloors.ts'
 import { readinessLines } from '../src/lib/reOpportunityView.ts'
@@ -146,13 +145,11 @@ test('landing H1 is the promise and Who runs the desk names Michael without a ne
   assert.match(read('src/pages/ApplyPage.tsx'), /WhoRunsTheDesk/)
 })
 
-test('leave sends a desk note and does not add a member tab', () => {
-  const cleaned = cleanDeskNote(LEAVE_DESK_REQUEST)
-  assert.equal(cleaned.ok, true)
+test('leave uses the delete flow and does not add a member tab', () => {
   assert.equal(LEAVE_BOARD_PATH, '/dashboard/profile/leave')
   assert.match(read('src/pages/dashboard/ProfilePage.tsx'), /Leave Board Arabia/)
-  assert.match(read('src/pages/dashboard/LeaveBoardArabia.tsx'), /Send request to admin/)
-  assert.match(read('src/pages/dashboard/LeaveBoardArabia.tsx'), /sendDeskNote/)
+  assert.match(read('src/pages/dashboard/LeaveBoardArabia.tsx'), /DeleteAccountScreen/)
+  assert.equal(read('src/pages/dashboard/LeaveBoardArabia.tsx').includes('sendDeskNote'), false)
   assert.equal(read('src/pages/dashboard/LeaveBoardArabia.tsx').includes('deleteCandidateAccount'), false)
   assert.match(read('src/pages/dashboard/account/DeleteAccountScreen.tsx'), /deleteCandidateAccount/)
   assert.deepEqual(

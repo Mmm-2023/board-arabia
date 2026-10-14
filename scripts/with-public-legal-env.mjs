@@ -1,4 +1,11 @@
 import { spawnSync } from 'node:child_process'
+import { pagesContactEmailError } from './pages-contact-email.mjs'
+
+const contactError = pagesContactEmailError(process.env)
+if (contactError) {
+  console.error(contactError)
+  process.exit(1)
+}
 
 const [command, ...args] = process.argv.slice(2)
 if (!command) {

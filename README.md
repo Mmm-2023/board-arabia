@@ -14,7 +14,7 @@ English only. No public calendar, no member names or photographs, no fee schedul
 | `/apply` | Pre-vet form. CTA language is “Apply for consideration”. |
 | `/for-members` | All nine tools, including mandate inbox and deal rooms, plus a dashboard preview |
 | `/for-capital` | How FDI, family offices, PE, and VC reach members: mandate inbox and deal rooms, admin-gated |
-| `/partners` | Three annual Founding Ecosystem Partner seats, fifteen finance categories, interest via `mailto:partners@boardarabia.com` (not stored) |
+| `/partners` | Three annual Founding Ecosystem Partner seats, fifteen finance categories, interest via the contact email in the legal config (not stored) |
 | `/how-it-works` | Pre-vet → personal review (no fixed SLA) → Accept → private booking email → admit |
 | `/about` | Short founding note |
 | `/privacy`, `/terms` | What the site collects, and what the pages do not promise |
@@ -58,6 +58,35 @@ npm run dev
 ```
 
 `.env.example` already contains the locked anon URL/key for local and preview builds.
+
+## Run the app locally
+
+The iOS and Android projects are a Capacitor shell around this site. The app id is `com.boardarabia.app`. The display name is Board Arabia. `npm run build:app` writes the Vite output with base path `/` and does not run the Pages prerender. `npm run build` and the Pages workflow stay as they are.
+
+```bash
+cp .env.example .env
+npm install
+npm run build:app
+npx cap sync
+```
+
+Open Android Studio with `npx cap open android` and run a debug build on an emulator or a device. Android creates the debug keystore on that machine. Do not commit a keystore, certificate, or provisioning profile.
+
+Auth emails stay on `https://boardarabia.com`. On a phone with the app installed, those https links open the app (universal links on iOS, app links on Android). The `com.boardarabia.app` scheme does the same. Other websites open in the system browser. The Android back button walks history, then leaves the app. The status bar uses the brand indigo.
+
+The Pages build passes `APPLE_TEAM_ID` and `ANDROID_APP_LINK_SHA256` through from Actions variables. It writes `/.well-known/apple-app-site-association` and `/.well-known/assetlinks.json` only when those variables are set, and skips them without failing when they are empty. Do not put the values in git.
+
+Open Xcode with `npx cap open ios` and run the App scheme on a simulator. The CI simulator build is unsigned and does not need a signing team.
+
+Push registration is opt-in from Notifications on the native app. The website hides that control. Nothing is sent and nothing is scheduled. `android/app/google-services.json` is gitignored. It is not in this repo. A later Actions secret named `ANDROID_GOOGLE_SERVICES_JSON` supplies that file when sending is connected. Do not commit it.
+
+Icons and the splash screen come from the existing mark in `public/favicon.svg` (copied to `assets/logo.svg`). After the native projects exist, regenerate them with:
+
+```bash
+npx @capacitor/assets generate --ios --android --iconBackgroundColor '#1C1343' --iconBackgroundColorDark '#1C1343' --splashBackgroundColor '#1C1343' --splashBackgroundColorDark '#1C1343'
+```
+
+That command updates only the iOS and Android projects. It does not change the website manifest.
 
 ## Visitor flow (no login)
 

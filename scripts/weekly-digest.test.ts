@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
-import { existsSync, mkdirSync, readdirSync, readFileSync } from 'node:fs'
+import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
 import path from 'node:path'
 import test from 'node:test'
 import { createElement, isValidElement } from 'react'
@@ -373,8 +374,7 @@ test('home tap targets are at least 44px at 390 and digest shots exist', async (
     t.skip('Chrome is not installed')
     return
   }
-  const shotDir = path.join('/opt/cursor/artifacts', 'weekly-digest')
-  mkdirSync(shotDir, { recursive: true })
+  const shotDir = mkdtempSync(path.join(tmpdir(), 'ba-weekly-digest-'))
   const vite = await createServer({
     server: { host: '127.0.0.1', port: 0, hmr: false },
     logLevel: 'error',
@@ -493,6 +493,7 @@ test('home tap targets are at least 44px at 390 and digest shots exist', async (
   } finally {
     await browser.close()
     await vite.close()
+    rmSync(shotDir, { recursive: true, force: true })
   }
 })
 

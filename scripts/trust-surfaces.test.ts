@@ -118,8 +118,8 @@ test('/security prerender output omits the DD 30-day line and keeps the allowed 
     const { render } = await vite.ssrLoadModule('/src/entry-ssr.tsx')
     const security = render('/security').body
     assert.match(security, new RegExp(SECURITY_H1))
-    assert.match(security, /href="\/security"/)
-    assert.match(security, /href="\/privacy"/)
+    assert.match(security, /href="\/security\/"/)
+    assert.match(security, /href="\/privacy\/"/)
     assert.match(security, /href="\/dashboard\/privacy"/)
     assert.match(security, /AI tool uploads and their results are deleted automatically after 30 days/)
     assert.equal(security.includes(DD_RETENTION_LINE), false)
@@ -135,14 +135,14 @@ test('/security prerender output omits the DD 30-day line and keeps the allowed 
     assert.equal(landing.includes('throughout'), false)
     assert.equal(read('src/pages/LandingPage.tsx').includes('throughout'), false)
     assert.equal(read('src/content/trust.ts').includes('throughout'), false)
-    assert.match(landing, new RegExp(`href="/security"[^>]*>${LANDING_STRIP_LINK}`))
+    assert.match(landing, new RegExp(`href="/security/"[^>]*>${LANDING_STRIP_LINK}`))
     const closing = landing.indexOf('id="closing"')
     const strip = landing.indexOf('data-trust-strip="landing"')
     assert.equal(strip > -1 && closing > strip, true)
 
     const apply = render('/apply').body
     assert.match(apply, /data-trust-strip="apply"/)
-    assert.match(apply, new RegExp(`${APPLY_STRIP}[\\s\\S]{0,200}href="/privacy"`))
+    assert.match(apply, new RegExp(`${APPLY_STRIP}[\\s\\S]{0,200}href="/privacy/"`))
     const submit = apply.indexOf('Submit for consideration')
     const applyStrip = apply.indexOf('data-trust-strip="apply"')
     assert.equal(submit > -1 && applyStrip > submit, true)
@@ -202,7 +202,10 @@ test('public pages outside the legal pages do not say Frankfurt or Germany', asy
     assert.match(landing.body, /All your data is secure and fully encrypted, in transit and at rest\./)
     assert.match(security.body, /How your data is protected/)
     assert.match(security.body, /All your data is secure and fully encrypted, in transit and at rest\./)
-    assert.match(security.description, /All your data is secure and fully encrypted, in transit and at rest\./)
+    assert.equal(
+      security.description,
+      'How Board Arabia protects applications and member data: members-only directory, private storage, encryption and two-step sign-in.',
+    )
     assert.equal(LOCATION_WORDS.test(landing.description), false)
     assert.equal(LOCATION_WORDS.test(security.description), false)
     const privacy = render('/privacy')

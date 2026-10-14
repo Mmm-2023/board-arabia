@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { publicHref } from '../content/seo'
 import { CONSENT_COPY } from '../content/privacyNotice'
 import { ANALYTICS_CONFIG } from '../lib/tracking/flags'
 import { shouldAsk } from '../lib/tracking/consent'
@@ -51,7 +52,7 @@ export function ConsentBanner() {
           <button type="button" className="ba-consent-choice" onClick={() => void choose('reject')}>
             {CONSENT_COPY.reject}
           </button>
-          <Link className="ba-consent-notice" to="/privacy">
+          <Link className="ba-consent-notice" to={publicHref('/privacy')}>
             {CONSENT_COPY.notice}
           </Link>
         </div>

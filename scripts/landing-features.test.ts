@@ -220,7 +220,7 @@ test('landing CTAs and section links stay on their routes', async () => {
   const html = await renderLanding()
   const hero = (html.match(/<a\b[^>]*>/g) || []).find((tag) => tag.includes('id="hero-apply"'))
   assert.ok(hero)
-  assert.match(hero, /href="\/apply"/)
+  assert.match(hero, /href="\/apply\/"/)
   assert.match(hero, /ba-primary/)
   const anchors = html.match(/<a\b[^>]*>[\s\S]*?<\/a>/g) || []
   const login = anchors.filter((anchor) => anchor.replace(/<[^>]+>/g, '').trim() === 'Log in')
@@ -229,9 +229,9 @@ test('landing CTAs and section links stay on their routes', async () => {
     assert.equal(anchor.includes('ba-primary'), false, anchor)
     assert.match(anchor, /ba-login|ba-secondary|ba-textlink|ba-footer-link/)
   }
-  assert.match(html, /href="\/for-members"[^>]*>See all member tools/)
-  assert.match(html, /href="\/for-capital"[^>]*>How FDI and family offices engage/)
-  assert.match(html, /href="\/security"[^>]*>How we protect your data/)
+  assert.match(html, /href="\/for-members\/"[^>]*>See all member tools/)
+  assert.match(html, /href="\/for-capital\/"[^>]*>How FDI and family offices engage/)
+  assert.match(html, /href="\/security\/"[^>]*>How we protect your data/)
   assert.equal(html.includes('id="partners"'), false)
   assert.equal(html.includes('Three seats a year'), false)
   assert.match(html, /Features and tools/)

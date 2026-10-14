@@ -872,6 +872,73 @@ export type Database = {
         }
         Relationships: []
       }
+      member_notifications: {
+        Row: {
+          id: string
+          member_id: string
+          kind: 'board_seat_match' | 'board_seat_applicant' | 'message' | 'tracker_reminder'
+          ref_id: string | null
+          title: string
+          body: string
+          created_at: string
+          read_at: string | null
+        }
+        Insert: {
+          id?: string
+          member_id: string
+          kind: 'board_seat_match' | 'board_seat_applicant' | 'message' | 'tracker_reminder'
+          ref_id?: string | null
+          title: string
+          body?: string
+          created_at?: string
+          read_at?: string | null
+        }
+        Update: {
+          read_at?: string | null
+        }
+        Relationships: []
+      }
+      member_notification_prefs: {
+        Row: {
+          member_id: string
+          board_seat_nudges: boolean
+          push_enabled: boolean
+        }
+        Insert: {
+          member_id: string
+          board_seat_nudges?: boolean
+          push_enabled?: boolean
+        }
+        Update: {
+          board_seat_nudges?: boolean
+          push_enabled?: boolean
+        }
+        Relationships: []
+      }
+      member_push_tokens: {
+        Row: {
+          member_id: string
+          platform: 'ios' | 'android'
+          token: string
+          created_at: string
+          last_seen_at: string
+          revoked_at: string | null
+        }
+        Insert: {
+          member_id: string
+          platform: 'ios' | 'android'
+          token: string
+          created_at?: string
+          last_seen_at?: string
+          revoked_at?: string | null
+        }
+        Update: {
+          platform?: 'ios' | 'android'
+          last_seen_at?: string
+          revoked_at?: string | null
+        }
+        Relationships: []
+      }
       majlis_roster: {
         Row: {
           id: string
@@ -891,6 +958,10 @@ export type Database = {
     }
     Functions: {
       founding_capacity: {
+        Args: Record<string, never>
+        Returns: Json
+      }
+      list_account_closure_notices: {
         Args: Record<string, never>
         Returns: Json
       }
@@ -1517,6 +1588,77 @@ export type Database = {
         Returns: Json
       }
       mark_my_digest_notice_read: {
+        Args: Record<string, never>
+        Returns: Json
+      }
+      staff_create_board_seat: {
+        Args: {
+          p_seat_kind: string
+          p_title: string
+          p_sector: string
+          p_capacity: string
+          p_sector_tags: string[]
+          p_regions: string[]
+          p_organisation_name: string
+          p_terms: string
+          p_contact_name: string
+          p_contact_email: string
+          p_contact_phone: string
+          p_narrative: string
+        }
+        Returns: Json
+      }
+      staff_edit_board_seat: {
+        Args: {
+          p_id: string
+          p_seat_kind: string
+          p_title: string
+          p_sector: string
+          p_capacity: string
+          p_sector_tags: string[]
+          p_regions: string[]
+          p_organisation_name: string
+          p_terms: string
+          p_contact_name: string
+          p_contact_email: string
+          p_contact_phone: string
+          p_narrative: string
+        }
+        Returns: Json
+      }
+      staff_publish_board_seat: {
+        Args: { p_id: string }
+        Returns: Json
+      }
+      staff_close_board_seat: {
+        Args: { p_id: string }
+        Returns: Json
+      }
+      staff_list_board_seats: {
+        Args: Record<string, never>
+        Returns: Json
+      }
+      staff_list_board_seat_applicants: {
+        Args: { p_role_id: string }
+        Returns: Json
+      }
+      my_unread_notification: {
+        Args: Record<string, never>
+        Returns: Json
+      }
+      set_push_notifications: {
+        Args: { p_enabled: boolean }
+        Returns: Json
+      }
+      own_push_preference: {
+        Args: Record<string, never>
+        Returns: Json
+      }
+      register_push_token: {
+        Args: { p_platform: string; p_token: string }
+        Returns: Json
+      }
+      revoke_my_push_tokens: {
         Args: Record<string, never>
         Returns: Json
       }

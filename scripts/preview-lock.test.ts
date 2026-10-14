@@ -259,7 +259,7 @@ test('locked preview overlay is labelled, focusable, and not a keyboard trap', a
     assert.match(locked, /See live deals as a member/)
     assert.match(locked, /Apply for consideration/)
     assert.match(locked, /Sign in/)
-    assert.match(locked, /href="\/apply"/)
+    assert.match(locked, /href="\/apply\/"/)
     assert.match(locked, /href="\/login"/)
     assert.equal(locked.includes('/login/staff'), false)
     assert.equal(locked.includes('/login?next=/dashboard'), false)

@@ -3,6 +3,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 /** The real client exposes sign-out on `auth`, not on the client root. */
 type SignOutClient = {
   auth: Pick<SupabaseClient['auth'], 'signOut'>
+  rpc?: (name: 'revoke_my_push_tokens') => PromiseLike<unknown>
 }
 
 type TokenStore = {
@@ -53,6 +54,11 @@ export async function endAuthSession(
   client: SignOutClient,
   stores: Array<TokenStore | null | undefined> = browserTokenStores(),
 ): Promise<void> {
+  try {
+    if (typeof client.rpc === 'function') await client.rpc('revoke_my_push_tokens')
+  } catch {
+    // A failed revoke still continues into sign-out.
+  }
   try {
     const globalResult = await client.auth.signOut({ scope: 'global' })
     if (globalResult.error) await client.auth.signOut({ scope: 'local' })

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { BrandLockup } from './BrandLockup'
 import { MEMBER_LOGIN, NAV_LINKS } from '../content/marketing'
+import { publicHref } from '../content/seo'
 import { publicConsiderationCta } from '../lib/twoTierRegister'
 import { trackApplyClick, trackLoginClick } from '../lib/tracking/browser'
 
@@ -59,7 +60,7 @@ export function Nav({
             return (
               <Link
                 key={item.to}
-                to={item.to}
+                to={publicHref(item.to)}
                 aria-current={active ? 'page' : undefined}
                 className={`${linkClass}${active ? ' is-active' : ''}`}
               >
@@ -78,7 +79,7 @@ export function Nav({
             Log in
           </Link>
           <Link
-            to={to}
+            to={publicHref(to)}
             className="ba-primary ba-header-apply"
             data-consideration-cta={to === consideration.to ? 'public' : undefined}
             onClick={() => {
@@ -111,14 +112,14 @@ export function Nav({
           <ul className="mx-auto flex max-w-7xl flex-col px-5 py-2 md:px-10">
             {NAV_LINKS.map((item) => (
               <li key={item.to}>
-                <Link to={item.to} className="ba-menu-link">
+                <Link to={publicHref(item.to)} className="ba-menu-link">
                   {item.label}
                 </Link>
               </li>
             ))}
             <li className="pt-2">
               <Link
-                to={to}
+                to={publicHref(to)}
                 className="ba-primary ba-menu-apply"
                 data-consideration-cta={to === consideration.to ? 'public' : undefined}
                 onClick={() => {

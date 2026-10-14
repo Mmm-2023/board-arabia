@@ -38,7 +38,7 @@ export function DigestPage() {
       <p className="text-[0.72rem] font-semibold tracking-[0.14em] text-brass uppercase">Home</p>
       <h1 className="mt-3 font-display text-[2rem] font-semibold tracking-[-0.03em]">This week</h1>
       <p className="mt-2 max-w-xl text-[0.95rem] leading-relaxed text-ink/70">
-        New members, new mandates, upcoming Majlis, and your introductions.
+        The weekly briefing for members.
       </p>
       {state === 'loading' ? (
         <p className="mt-6 text-[0.95rem] text-ink/60" role="status">
