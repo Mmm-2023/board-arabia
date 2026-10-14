@@ -48,6 +48,7 @@ Deno.serve(async (req) => {
       EMAIL_FROM_NEWS: Deno.env.get('EMAIL_FROM_NEWS') ?? '',
       RESEND_API_KEY_MAIL: Deno.env.get('RESEND_API_KEY_MAIL') ?? '',
       EMAIL_FROM_MAIL: Deno.env.get('EMAIL_FROM_MAIL') ?? '',
+      EMAIL_SENDING_PARENT: Deno.env.get('EMAIL_SENDING_PARENT') ?? '',
     },
     unsubMailto: Deno.env.get('EMAIL_UNSUB_MAILTO') ?? '',
     now: () => Date.now(),

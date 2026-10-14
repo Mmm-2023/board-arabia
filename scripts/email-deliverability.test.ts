@@ -19,8 +19,9 @@ import { resolveChromePath } from './chrome-path.ts'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const migrationName = '20270101120000_email_deliverability.sql'
-const newsFrom = 'news@news.boardarabia.com'
-const mailFrom = 'letters@mail.boardarabia.com'
+const parent = 'boardarabia.test'
+const newsFrom = 'news@news.boardarabia.test'
+const mailFrom = 'letters@mail.boardarabia.test'
 const campaignId = '11111111-1111-4111-8111-111111111111'
 const staffId = '22222222-2222-4222-8222-222222222222'
 
@@ -74,12 +75,14 @@ function prepared(sendId: string, from = newsFrom, streamHeaders = true): Prepar
 }
 
 test('the From guard allows only a subdomain of the sending parent', () => {
-  assert.equal(sendingFromAllowed(newsFrom), true)
-  assert.equal(sendingFromAllowed(mailFrom), true)
-  assert.equal(sendingFromAllowed('news@boardarabia.com'), false)
-  assert.equal(sendingFromAllowed('news@example.com'), false)
-  assert.equal(sendingFromAllowed('news@notboardarabia.com'), false)
-  assert.equal(sendingFromAllowed('news@boardarabia.com.evil.com'), false)
+  assert.equal(sendingFromAllowed(newsFrom, parent), true)
+  assert.equal(sendingFromAllowed(mailFrom, parent), true)
+  assert.equal(sendingFromAllowed('news@boardarabia.test', parent), false)
+  assert.equal(sendingFromAllowed('news@example.com', parent), false)
+  assert.equal(sendingFromAllowed('news@notboardarabia.test', parent), false)
+  assert.equal(sendingFromAllowed('news@boardarabia.test.evil.test', parent), false)
+  assert.equal(sendingFromAllowed(newsFrom, ''), false)
+  assert.equal(resolveMailStream('news', { EMAIL_FROM: newsFrom, RESEND_API_KEY: 'key' }).fromMailbox, '')
   const account = read('supabase/functions/_shared/mail.ts')
   assert.equal(account.includes('bulk_mail'), false)
   assert.equal(account.includes('sendingFromAllowed'), false)
@@ -90,17 +93,23 @@ test('news and mail streams come from config and fail closed', () => {
     RESEND_API_KEY_NEWS: 'news-key',
     EMAIL_FROM_NEWS: newsFrom,
     RESEND_API_KEY: 'old-key',
-    EMAIL_FROM: 'old@news.boardarabia.com',
+    EMAIL_FROM: 'old@news.boardarabia.test',
+    EMAIL_SENDING_PARENT: parent,
   })
   assert.equal(news.apiKey, 'news-key')
   assert.equal(news.fromMailbox, newsFrom)
   const fallback = resolveMailStream('news', {
     RESEND_API_KEY: 'old-key',
-    EMAIL_FROM: 'old@news.boardarabia.com',
+    EMAIL_FROM: 'old@news.boardarabia.test',
+    EMAIL_SENDING_PARENT: parent,
   })
   assert.equal(fallback.apiKey, 'old-key')
-  assert.equal(fallback.fromMailbox, 'old@news.boardarabia.com')
-  const root = resolveMailStream('news', { EMAIL_FROM: 'news@boardarabia.com', RESEND_API_KEY: 'old-key' })
+  assert.equal(fallback.fromMailbox, 'old@news.boardarabia.test')
+  const root = resolveMailStream('news', {
+    EMAIL_FROM: 'news@boardarabia.test',
+    RESEND_API_KEY: 'old-key',
+    EMAIL_SENDING_PARENT: parent,
+  })
   assert.equal(root.fromMailbox, '')
   const mail = resolveMailStream('mail', {
     RESEND_API_KEY: 'news-key',
@@ -113,6 +122,7 @@ test('news and mail streams come from config and fail closed', () => {
   const ready = resolveMailStream('mail', {
     RESEND_API_KEY_MAIL: 'mail-key',
     EMAIL_FROM_MAIL: mailFrom,
+    EMAIL_SENDING_PARENT: parent,
   })
   assert.equal(ready.apiKey, 'mail-key')
   assert.equal(ready.fromMailbox, mailFrom)
@@ -164,6 +174,7 @@ test('newsletter headers stay RFC 8058 and transactional mail drops them', async
     batchSize: 1,
     pauseMs: 0,
     apiKey: 'test-key',
+    sendingParent: parent,
     now: () => 0,
     sleep: async () => undefined,
     fetchImpl: async (_url, init) => {
@@ -186,6 +197,7 @@ test('newsletter headers stay RFC 8058 and transactional mail drops them', async
     batchSize: 1,
     pauseMs: 0,
     apiKey: 'test-key',
+    sendingParent: parent,
     now: () => 0,
     sleep: async () => undefined,
     fetchImpl: async (_url, init) => {
@@ -209,6 +221,7 @@ test('Reply-To is required and may be the root inbox', async () => {
         userId: staffId,
         staffAddress: 'staff.one@example.com',
         apiKey: 'test-key',
+        sendingParent: parent,
         fromAddress: newsFrom,
         contactEmail: '',
         siteOrigin: 'https://example.com',
@@ -248,6 +261,7 @@ test('Reply-To is required and may be the root inbox', async () => {
     batchSize: 1,
     pauseMs: 0,
     apiKey: 'test-key',
+    sendingParent: parent,
     now: () => 0,
     sleep: async () => undefined,
     fetchImpl: async () => {
@@ -270,10 +284,11 @@ test('a root From is refused before the provider is called', async () => {
   const results = await deliverBatches({
     campaignId,
     mode: 'live',
-    prepared: [prepared('send-root', 'news@boardarabia.com')],
+    prepared: [prepared('send-root', 'news@boardarabia.test')],
     batchSize: 1,
     pauseMs: 0,
     apiKey: 'test-key',
+    sendingParent: parent,
     now: () => 0,
     sleep: async () => undefined,
     fetchImpl: async () => {
@@ -293,6 +308,7 @@ test('a live send fails closed when the news stream is missing and skips a later
     userId: staffId,
     staffAddress: 'staff.one@example.com',
     apiKey: 'test-key',
+    sendingParent: parent,
     fromAddress: newsFrom,
     contactEmail: 'contact@example.com',
     siteOrigin: 'https://example.com',
@@ -320,7 +336,7 @@ test('a live send fails closed when the news stream is missing and skips a later
   const rootFrom = await handleEmailSend({ campaign_id: campaignId, mode: 'live' }, {
     ...deps,
     streamEnv: undefined,
-    fromAddress: 'news@boardarabia.com',
+    fromAddress: 'news@boardarabia.test',
   })
   assert.equal(rootFrom.status, 503)
 
@@ -337,6 +353,52 @@ test('a live send fails closed when the news stream is missing and skips a later
   assert.equal(JSON.parse(fetches[0])[0].from, `"Board Arabia" <${newsFrom}>`)
 })
 
+test('a rate-check error keeps the campaign sending', async () => {
+  const fetches: string[] = []
+  const progress: string[] = []
+  let checks = 0
+  const deps: SendDeps = {
+    role: 'master',
+    userId: staffId,
+    staffAddress: 'staff.one@example.com',
+    apiKey: 'test-key',
+    sendingParent: parent,
+    fromAddress: newsFrom,
+    contactEmail: 'contact@example.com',
+    siteOrigin: 'https://example.com',
+    functionsOrigin: 'https://example.com',
+    now: () => 0,
+    sleep: async () => undefined,
+    fetchImpl: async (_url, init) => {
+      fetches.push(init.body)
+      return { status: 200, headers: { get: () => null }, json: async () => ({ data: [{ id: `msg_${fetches.length}` }] }) }
+    },
+    loadGate: async () => gate(),
+    loadRecipients: async () => [1, 2].map((index) => ({
+      userId: `33333333-3333-4333-8333-${String(index).padStart(12, '0')}`,
+      address: `member.${index}@example.com`,
+      unsubscribeToken: `tok-${index}`,
+    })),
+    isSuppressed: async () => false,
+    logSend: async (row) => ({ ok: true, id: `send-${row.status}-${fetches.length}`, status: row.status, send: true }),
+    setProgress: async (_id, status) => {
+      progress.push(status)
+      return true
+    },
+    rateCheck: async () => {
+      checks += 1
+      if (checks === 1) return { delivered: 40, complaints: 0, bounces: 0 }
+      return null
+    },
+  }
+  const result = await handleEmailSend({ campaign_id: campaignId, mode: 'live' }, deps)
+  assert.equal(result.status, 200)
+  assert.equal(fetches.length, 1)
+  assert.equal(result.body.sent, 1)
+  assert.equal((result.body.failed || 0) > 0, true)
+  assert.deepEqual(progress, ['sending', 'sending'])
+})
+
 test('auto-pause stops the next batch at the complaint threshold', async () => {
   let calls = 0
   const reasons: string[] = []
@@ -347,6 +409,7 @@ test('auto-pause stops the next batch at the complaint threshold', async () => {
     batchSize: 1,
     pauseMs: 25,
     apiKey: 'test-key',
+    sendingParent: parent,
     now: () => 0,
     sleep: async () => undefined,
     rateCheck: async () => {

@@ -56,6 +56,7 @@ export async function deliverMemberNotices(input: {
   apiKey: string
   fromMailbox: string
   replyTo: string
+  sendingParent?: string
   fetchImpl?: typeof fetch
   sleep?: (ms: number) => Promise<void>
 }): Promise<NoticeSendResult> {
@@ -94,6 +95,7 @@ export async function deliverMemberNotices(input: {
     batchSize: input.batchSize,
     pauseMs: input.pauseMs,
     apiKey: input.apiKey,
+    sendingParent: input.sendingParent,
     stream: MEMBER_NOTICE_STREAM,
     now: () => Date.now(),
     sleep,

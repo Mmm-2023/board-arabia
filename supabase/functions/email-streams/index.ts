@@ -15,10 +15,12 @@ Deno.serve(async (req) => {
     EMAIL_FROM: Deno.env.get('EMAIL_FROM') ?? '',
     RESEND_API_KEY_NEWS: Deno.env.get('RESEND_API_KEY_NEWS') ?? '',
     EMAIL_FROM_NEWS: Deno.env.get('EMAIL_FROM_NEWS') ?? '',
+    EMAIL_SENDING_PARENT: Deno.env.get('EMAIL_SENDING_PARENT') ?? '',
   })
   const mail = resolveMailStream('mail', {
     RESEND_API_KEY_MAIL: Deno.env.get('RESEND_API_KEY_MAIL') ?? '',
     EMAIL_FROM_MAIL: Deno.env.get('EMAIL_FROM_MAIL') ?? '',
+    EMAIL_SENDING_PARENT: Deno.env.get('EMAIL_SENDING_PARENT') ?? '',
   })
   return jsonResponse(req, {
     news_from: news.fromMailbox,

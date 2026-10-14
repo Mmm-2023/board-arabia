@@ -50,8 +50,9 @@ test('master off and a missing key do not call the provider', async () => {
     batchSize: 50,
     pauseMs: 1500,
     apiKey: 'test-key',
-    fromMailbox: 'letters@mail.boardarabia.com',
+    fromMailbox: 'letters@mail.boardarabia.test',
     replyTo: contact,
+    sendingParent: 'boardarabia.test',
     fetchImpl,
   })
   assert.equal(off.blocked, 'master_off')
@@ -63,8 +64,9 @@ test('master off and a missing key do not call the provider', async () => {
     batchSize: 50,
     pauseMs: 1500,
     apiKey: '',
-    fromMailbox: 'letters@mail.boardarabia.com',
+    fromMailbox: 'letters@mail.boardarabia.test',
     replyTo: contact,
+    sendingParent: 'boardarabia.test',
     fetchImpl,
   })
   assert.equal(closed.blocked, 'not_configured')
@@ -77,6 +79,7 @@ test('master off and a missing key do not call the provider', async () => {
     apiKey: 'test-key',
     fromMailbox: '',
     replyTo: contact,
+    sendingParent: 'boardarabia.test',
     fetchImpl,
   })
   assert.equal(noFrom.blocked, 'not_configured')
@@ -93,8 +96,9 @@ test('transactional mail has tracking off and no List-Unsubscribe header', async
     batchSize: 50,
     pauseMs: 0,
     apiKey: 'test-key',
-    fromMailbox: 'letters@mail.boardarabia.com',
+    fromMailbox: 'letters@mail.boardarabia.test',
     replyTo: contact,
+    sendingParent: 'boardarabia.test',
     fetchImpl: wrapped,
   })
   assert.equal(result.sent, 2)
@@ -109,7 +113,7 @@ test('transactional mail has tracking off and no List-Unsubscribe header', async
   }>
   const first = posted[0]
   const second = posted[1]
-  assert.equal(first.from, '"Board Arabia" <letters@mail.boardarabia.com>')
+  assert.equal(first.from, '"Board Arabia" <letters@mail.boardarabia.test>')
   assert.equal(first.reply_to, contact)
   assert.equal(first.headers, undefined)
   assert.equal(JSON.stringify(first).includes('List-Unsubscribe'), false)
@@ -175,8 +179,9 @@ test('batches pause and a 429 waits before a retry', async () => {
     batchSize: 2,
     pauseMs: 1500,
     apiKey: 'test-key',
-    fromMailbox: 'letters@mail.boardarabia.com',
+    fromMailbox: 'letters@mail.boardarabia.test',
     replyTo: contact,
+    sendingParent: 'boardarabia.test',
     fetchImpl,
     sleep: async (ms) => {
       pauses.push(ms)
@@ -199,8 +204,9 @@ test('the mail stream does not fall back to the newsletter key', () => {
   assert.equal(mail.fromMailbox, '')
   const ready = noticeStreamConfig({
     RESEND_API_KEY_MAIL: 'mail-key',
-    EMAIL_FROM_MAIL: 'letters@mail.boardarabia.com',
+    EMAIL_FROM_MAIL: 'letters@mail.boardarabia.test',
+    EMAIL_SENDING_PARENT: 'boardarabia.test',
   })
   assert.equal(ready.apiKey, 'mail-key')
-  assert.equal(ready.fromMailbox, 'letters@mail.boardarabia.com')
+  assert.equal(ready.fromMailbox, 'letters@mail.boardarabia.test')
 })

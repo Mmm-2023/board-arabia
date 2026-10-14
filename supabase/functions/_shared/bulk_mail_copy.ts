@@ -28,14 +28,18 @@ export function renderBulkLetter(input: {
   bodyHtml: string
   unsubscribeUrl: string
   preferencesUrl: string
+  contact?: string
   test: boolean
 }): BulkLetter {
   const subject = input.test ? `${TEST_SUBJECT_PREFIX} ${input.subject}`.trim() : input.subject
+  const contact = (input.contact || '').trim()
+  const questions = contact ? `Questions: ${contact}` : ''
   const text = [
     input.bodyText.trim(),
     '',
     `${UNSUBSCRIBE_LABEL}: ${input.unsubscribeUrl}`,
     `${PREFERENCES_LABEL}: ${input.preferencesUrl}`,
+    ...(questions ? [questions] : []),
     '',
     FOOTER_CREDIT,
   ].join('\n')
@@ -49,6 +53,7 @@ export function renderBulkLetter(input: {
     body,
     `<p><a href="${escapeHtml(input.unsubscribeUrl)}">${UNSUBSCRIBE_LABEL}</a></p>`,
     `<p><a href="${escapeHtml(input.preferencesUrl)}">${PREFERENCES_LABEL}</a></p>`,
+    questions ? `<p>${escapeHtml(questions)}</p>` : '',
     `<p>${FOOTER_CREDIT}</p>`,
   ].join('\n')
   return { subject, text, html }

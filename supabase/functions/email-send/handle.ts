@@ -76,6 +76,7 @@ export type SendDeps = {
   siteOrigin: string
   functionsOrigin: string
   streamEnv?: StreamEnv
+  sendingParent?: string
   unsubMailto?: string
   rateCheck?: (campaignId: string) => Promise<PauseRates | null>
   applyPause?: (campaignId: string, reason: 'complaint_rate' | 'bounce_rate') => Promise<void>
@@ -109,6 +110,7 @@ function newsEnv(deps: SendDeps): StreamEnv {
     EMAIL_FROM_NEWS_TRACKED: deps.trackedFrom || stream?.EMAIL_FROM_NEWS_TRACKED,
     RESEND_API_KEY_MAIL: stream?.RESEND_API_KEY_MAIL,
     EMAIL_FROM_MAIL: stream?.EMAIL_FROM_MAIL,
+    EMAIL_SENDING_PARENT: stream?.EMAIL_SENDING_PARENT || deps.sendingParent,
   }
 }
 
@@ -132,9 +134,11 @@ function configured(deps: SendDeps): {
   functions: string
   unsubMailto: string
 } | null {
-  const resolved = resolveMailStream('news', deps.streamEnv ?? {
+  const resolved = resolveMailStream('news', {
     RESEND_API_KEY: deps.apiKey,
     EMAIL_FROM: deps.fromAddress,
+    ...deps.streamEnv,
+    EMAIL_SENDING_PARENT: deps.streamEnv?.EMAIL_SENDING_PARENT || deps.sendingParent || '',
   })
   const fromMailbox = resolved.fromMailbox
   const apiKey = resolved.apiKey
@@ -264,6 +268,7 @@ export async function handleEmailSend(raw: unknown, deps: SendDeps): Promise<Sen
       batchSize: parsed.mode === 'test' ? 1 : gate.batch_size,
       pauseMs: parsed.mode === 'test' ? 0 : gate.batch_pause_ms,
       apiKey,
+      sendingParent: deps.streamEnv?.EMAIL_SENDING_PARENT || deps.sendingParent,
       now: deps.now,
       sleep: deps.sleep,
       fetchImpl: deps.fetchImpl,

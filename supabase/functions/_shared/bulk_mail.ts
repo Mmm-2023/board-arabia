@@ -6,9 +6,6 @@ export const BULK_BATCH_URL = 'https://api.resend.com/emails/batch'
 /** Newsletter uses news. Transactional and security use mail. Names come from config. */
 export type MailStream = 'news' | 'mail'
 
-/** Sending From must be a subdomain. The apex itself is refused. */
-export const SENDING_PARENT = 'boardarabia.com'
-
 export type StreamEnv = {
   RESEND_API_KEY?: string
   EMAIL_FROM?: string
@@ -18,6 +15,15 @@ export type StreamEnv = {
   EMAIL_FROM_MAIL?: string
   RESEND_API_KEY_NEWS_TRACKED?: string
   EMAIL_FROM_NEWS_TRACKED?: string
+  EMAIL_SENDING_PARENT?: string
+}
+
+/** Empty when EMAIL_SENDING_PARENT is unset. The guard then refuses every From. */
+export function sendingParent(value: string | undefined): string {
+  const parent = (value || '').trim().toLowerCase().replace(/\.$/, '')
+  if (!/^[a-z0-9.-]+\.[a-z]{2,}$/.test(parent)) return ''
+  if (parent.includes('..')) return ''
+  return parent
 }
 
 /** Tracked news only when the member opted in and both tracked env values are set. Otherwise the untracked news sender. */
@@ -25,7 +31,7 @@ export function resolveNewsCopy(env: StreamEnv, measure: boolean): { apiKey: str
   const plain = resolveMailStream('news', env)
   if (!measure) return { ...plain, tracked: false }
   const apiKey = (env.RESEND_API_KEY_NEWS_TRACKED || '').trim()
-  const fromMailbox = guardedMailbox(env.EMAIL_FROM_NEWS_TRACKED || '')
+  const fromMailbox = guardedMailbox(env.EMAIL_FROM_NEWS_TRACKED || '', sendingParent(env.EMAIL_SENDING_PARENT))
   if (!apiKey || !fromMailbox) return { ...plain, tracked: false }
   return { apiKey, fromMailbox, tracked: true }
 }
@@ -35,24 +41,26 @@ export function applyNewsTracking(message: OutboundMessage, tracked: boolean): O
   return { ...message, open_tracking: false, click_tracking: false }
 }
 
-/** News may fall back to the original names. Mail does not. A root or foreign From is blank. */
+/** News may fall back to the original names. Mail does not. A root, foreign, or unconfigured parent blanks the From. */
 export function resolveMailStream(stream: MailStream, env: StreamEnv): { apiKey: string; fromMailbox: string } {
+  const parent = sendingParent(env.EMAIL_SENDING_PARENT)
   if (stream === 'mail') {
     return {
       apiKey: (env.RESEND_API_KEY_MAIL || '').trim(),
-      fromMailbox: guardedMailbox(env.EMAIL_FROM_MAIL || ''),
+      fromMailbox: guardedMailbox(env.EMAIL_FROM_MAIL || '', parent),
     }
   }
   return {
     apiKey: (env.RESEND_API_KEY_NEWS || env.RESEND_API_KEY || '').trim(),
-    fromMailbox: guardedMailbox(env.EMAIL_FROM_NEWS || env.EMAIL_FROM || ''),
+    fromMailbox: guardedMailbox(env.EMAIL_FROM_NEWS || env.EMAIL_FROM || '', parent),
   }
 }
 
-export function sendingFromAllowed(mailbox: string): boolean {
+export function sendingFromAllowed(mailbox: string, parentValue: string | undefined): boolean {
+  const parent = sendingParent(parentValue)
   const domain = emailDomain(cleanMailbox(mailbox))
-  if (!domain || domain === SENDING_PARENT) return false
-  return domain.endsWith(`.${SENDING_PARENT}`)
+  if (!domain || !parent || domain === parent) return false
+  return domain.endsWith(`.${parent}`)
 }
 
 /** Reply-To may be the root inbox. It is not a From address, so the subdomain guard does not apply. */
@@ -60,9 +68,9 @@ export function replyMailbox(value: string): string {
   return cleanMailbox(value)
 }
 
-function guardedMailbox(value: string): string {
+function guardedMailbox(value: string, parent: string): string {
   const mailbox = cleanMailbox(value)
-  return sendingFromAllowed(mailbox) ? mailbox : ''
+  return sendingFromAllowed(mailbox, parent) ? mailbox : ''
 }
 
 export type PauseRates = {
@@ -179,6 +187,7 @@ export function buildOutbound(input: {
     bodyHtml: input.bodyHtml,
     unsubscribeUrl: input.unsubscribeUrl,
     preferencesUrl: input.preferencesUrl,
+    contact: input.contactEmail,
     test: input.test,
   })
   return {
@@ -292,6 +301,7 @@ export async function deliverBatches(input: {
   maxAttempts?: number
   rateCheck?: () => Promise<PauseRates | null>
   onPause?: (reason: 'complaint_rate' | 'bounce_rate') => Promise<void>
+  sendingParent?: string
 }): Promise<BatchResult[]> {
   const stream = input.stream ?? 'news'
   const size = Math.min(MAX_BATCH, Math.max(1, Math.floor(input.batchSize) || 1))
@@ -299,19 +309,36 @@ export async function deliverBatches(input: {
   const results: BatchResult[] = []
   let posted = 0
   let stopped = false
-  const honourRates = async (): Promise<boolean> => {
-    if (!input.rateCheck) return false
+  const honourRates = async (): Promise<'ok' | 'pause' | 'error'> => {
+    if (!input.rateCheck) return 'ok'
     const rates = await input.rateCheck()
-    if (!rates) return true
+    if (!rates) return 'error'
     const decision = pauseDecision(rates)
-    if (!decision.pause) return false
+    if (!decision.pause) return 'ok'
     if (input.onPause) await input.onPause(decision.reason)
-    return true
+    return 'pause'
+  }
+  const failRemainder = (fromIndex: number, batchNo: number) => {
+    const rest = input.prepared.slice(fromIndex)
+    if (rest.length === 0) return
+    results.push({
+      batchNo,
+      idempotencyKey: 'rate_check',
+      ok: false,
+      status: 503,
+      rows: rest.map((item) => ({ sendId: item.sendId, providerId: '' })),
+    })
   }
   for (let index = 0; index < input.prepared.length; index += size) {
     const chunk = input.prepared.slice(index, index + size)
     const batchNo = Math.floor(index / size) + 1
-    if (await honourRates()) {
+    const rate = await honourRates()
+    if (rate === 'error') {
+      failRemainder(index, batchNo)
+      stopped = true
+      break
+    }
+    if (rate === 'pause') {
       stopped = true
       break
     }
@@ -322,7 +349,7 @@ export async function deliverBatches(input: {
       kept.push(item)
     }
     if (kept.length === 0) continue
-    if (kept.some((item) => !sendingFromAllowed(cleanMailbox(item.message.from)) || !replyMailbox(item.message.reply_to))) {
+    if (kept.some((item) => !sendingFromAllowed(cleanMailbox(item.message.from), input.sendingParent) || !replyMailbox(item.message.reply_to))) {
       results.push({
         batchNo,
         idempotencyKey: 'refused',
@@ -367,6 +394,9 @@ export async function deliverBatches(input: {
       rows: kept.map((item, row) => ({ sendId: item.sendId, providerId: ok ? ids[row] || '' : '' })),
     })
   }
-  if (!stopped && posted > 0) await honourRates()
+  if (!stopped && posted > 0) {
+    const rate = await honourRates()
+    if (rate === 'error') stopped = true
+  }
   return results
 }

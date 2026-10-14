@@ -58,7 +58,8 @@ function harness(overrides: Partial<SendDeps> = {}) {
     userId: staffId,
     staffAddress: 'staff.one@example.com',
     apiKey: 'test-key',
-    fromAddress: 'news@news.boardarabia.com',
+    fromAddress: 'news@news.boardarabia.test',
+    sendingParent: 'boardarabia.test',
     contactEmail: 'contact@example.com',
     siteOrigin: 'https://example.com',
     functionsOrigin: 'https://example.com',
@@ -165,7 +166,7 @@ test('headers are present and the batch key, size and pause are honoured', async
   assert.equal(fetches.every((call) => call.url === BULK_BATCH_URL), true)
   assert.equal(fetches.every((call) => call.headers.Authorization === 'Bearer test-key'), true)
   const first = JSON.parse(fetches[0].body)[0]
-  assert.equal(first.from, '"Board Arabia" <news@news.boardarabia.com>')
+  assert.equal(first.from, '"Board Arabia" <news@news.boardarabia.test>')
   assert.equal(first.reply_to, 'contact@example.com')
   assert.equal(first.headers['List-Unsubscribe-Post'], 'List-Unsubscribe=One-Click')
   assert.match(
@@ -183,7 +184,7 @@ test('a 429 waits for the rate-limit header and retries the same batch', async (
     userId: '33333333-3333-4333-8333-000000000001',
     hash: 'ab',
     message: buildOutbound({
-      fromMailbox: 'news@news.boardarabia.com',
+      fromMailbox: 'news@news.boardarabia.test',
       contactEmail: 'contact@example.com',
       to: 'member.1@example.com',
       subject: 'Hello',
@@ -206,6 +207,7 @@ test('a 429 waits for the rate-limit header and retries the same batch', async (
     batchSize: 50,
     pauseMs: 1500,
     apiKey: 'test-key',
+    sendingParent: 'boardarabia.test',
     now: () => 1_700_000_000_000,
     sleep: async (ms) => {
       sleeps.push(ms)
@@ -233,7 +235,7 @@ function onePrepared(sendId: string): PreparedSend {
     userId: '33333333-3333-4333-8333-000000000001',
     hash: 'ab',
     message: buildOutbound({
-      fromMailbox: 'news@news.boardarabia.com',
+      fromMailbox: 'news@news.boardarabia.test',
       contactEmail: 'contact@example.com',
       to: 'member.1@example.com',
       subject: 'Hello',
@@ -257,6 +259,7 @@ async function postedKeys(mode: 'test' | 'live', rows: PreparedSend[]): Promise<
     batchSize: 2,
     pauseMs: 0,
     apiKey: 'test-key',
+    sendingParent: 'boardarabia.test',
     now: () => 0,
     sleep: async () => {},
     fetchImpl: async (_url, init) => {
