@@ -42,9 +42,7 @@ Any edit that changes the stored version returns the letter to `approved` and cl
 
 ## Member choices
 
-Weekly email stays on for a new member at admit. The consent source is `admit_default` (`:70`). A ticked apply-form box becomes `news_invitations` opted in, with source `apply_form` (`:98`). Unticked stays off and does not write `apply_form`. An existing weekly preference is left as it is.
-
-The apply box is unticked by default (`src/pages/ApplyPage.tsx:372`). The sentence is a placeholder: "Send me news and invitations from Board Arabia. You can turn this off at any time." (`src/lib/emailCampaign.ts:267`). The `/apply` route line is unchanged.
+Weekly email stays on for a new member at admit. The consent source is `admit_default` (`:70`). If `applications.news_invitations_opt_in` is already true, admit writes News and invitations on with source `apply_form` (`:98`). Nothing in this change sets that column. The sign-up box is waiting on the owner. `src/pages/ApplyPage.tsx` and `supabase/functions/submit-application/index.ts` match main. An existing weekly preference is left as it is.
 
 Your privacy keeps Weekly email and adds News and invitations (`src/components/privacy/PrivacyPanelView.tsx:143`). "Not connected yet" stays while `delivery_connected` is false, which follows the master switch (`src/pages/dashboard/PrivacyPanelPage.tsx:19`).
 

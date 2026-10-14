@@ -264,8 +264,5 @@ export function tierChoices(): Array<{ id: string; label: string }> {
   return DIGEST_AUDIENCE_OPTIONS.map((id) => ({ id, label: digestAudienceLabel(id) }))
 }
 
-export const NEWS_OPT_IN_COPY =
-  'Send me news and invitations from Board Arabia. You can turn this off at any time.'
-
 export const UNSUBSCRIBE_BUTTON = 'Unsubscribe'
 export const UNSUBSCRIBE_DONE = 'You are unsubscribed. You can turn emails back on in Your privacy.'

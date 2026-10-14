@@ -148,7 +148,6 @@ export async function submitApplication(payload: {
   fo_aum?: string | null
   investable_capacity_usd?: number | null
   include_in_public_aggregates?: boolean
-  news_invitations_opt_in?: boolean
   linkedin_url: string
   job_titles: string
   companies: string

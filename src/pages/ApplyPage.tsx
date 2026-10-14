@@ -8,7 +8,6 @@ import { REVIEW_SLA } from '../content/marketing'
 import { publicHref } from '../content/seo'
 import { parseUsdInput, PLATFORM_TOTALS_NOTE } from '../lib/capacity'
 import { track } from '../lib/analytics'
-import { NEWS_OPT_IN_COPY } from '../lib/emailCampaign'
 import { lookupMemberInvite, submitApplication } from '../lib/supabase'
 import { APPLY_STRIP, APPLY_STRIP_LINK } from '../content/trust'
 import { readSubmitAttribution } from '../lib/tracking/touch'
@@ -21,7 +20,6 @@ type FormState = {
   foAum: string
   investable: string
   includeInPublic: boolean
-  newsInvitations: boolean
   linkedinUrl: string
   jobTitles: string
   companies: string
@@ -35,7 +33,6 @@ const empty: FormState = {
   foAum: '',
   investable: '',
   includeInPublic: false,
-  newsInvitations: false,
   linkedinUrl: '',
   jobTitles: '',
   companies: '',
@@ -155,7 +152,6 @@ export function ApplyPage() {
       fo_aum: foAum || null,
       investable_capacity_usd: investable,
       include_in_public_aggregates: form.includeInPublic,
-      news_invitations_opt_in: form.newsInvitations,
       linkedin_url: linkedinUrl,
       job_titles: jobTitles,
       companies,
@@ -360,17 +356,6 @@ export function ApplyPage() {
               </label>
               <p className="text-[0.95rem] leading-relaxed text-[var(--ba-muted)]">{PLATFORM_TOTALS_NOTE}</p>
             </div>
-            <label className="flex min-h-11 items-start gap-3 text-[0.98rem] leading-relaxed text-ink" data-news-opt-in={form.newsInvitations ? 'on' : 'off'}>
-              <input
-                id="news_invitations_opt_in"
-                name="news_invitations_opt_in"
-                type="checkbox"
-                checked={form.newsInvitations}
-                onChange={(event) => setField('newsInvitations', event.target.checked)}
-                className="mt-1 size-6 shrink-0"
-              />
-              <span>{NEWS_OPT_IN_COPY}</span>
-            </label>
             <Field
               id="linkedin_url"
               label="LinkedIn URL"
