@@ -212,6 +212,48 @@ begin
     raise exception 'master switch stayed on';
   end if;
 
+  perform private.enqueue_member_notice(
+    'security_deletion', fresh_id, fresh_id, jsonb_build_object('user_id', fresh_id)
+  );
+  if (
+    select o.address_snapshot
+    from public.email_outbox o
+    where o.type_key = 'security_deletion' and o.user_id = fresh_id
+  ) is distinct from 'fresh.member@example.com' then
+    raise exception 'deletion notice did not keep the address snapshot';
+  end if;
+  if exists (
+    select 1 from public.email_outbox o
+    where o.type_key = 'security_deletion'
+      and o.user_id = fresh_id
+      and o.payload::text like '%@%'
+  ) then
+    raise exception 'payload stored an address';
+  end if;
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'email_sends_user_id_fkey'
+      and conrelid = 'public.email_sends'::regclass
+  ) then
+    raise exception 'email send member link was dropped';
+  end if;
+
+  for row_count in 1..5 loop
+    perform private.enqueue_member_notice(
+      'security_two_step', kept_id, gen_random_uuid(), jsonb_build_object('user_id', kept_id)
+    );
+  end loop;
+  perform set_config('request.jwt.claims', json_build_object('role', 'service_role')::text, false);
+  set role service_role;
+  if public.service_two_step_notice_ref(kept_id) is not null then
+    raise exception 'two-step notices were not limited';
+  end if;
+  if public.service_two_step_notice_ref(fresh_id) is null then
+    raise exception 'a quiet member was limited';
+  end if;
+  set role postgres;
+
   select c.relforcerowsecurity into forced
   from pg_class c
   join pg_namespace n on n.oid = c.relnamespace

@@ -3,7 +3,6 @@ import { issueCredential, type Issued } from '../_shared/credentials.ts'
 import { requireStaff } from '../_shared/require_staff.ts'
 import { SPONSOR_CAP, sponsorSeatAllowed } from '../_shared/sponsor_seat.ts'
 import { deliverAdmitShare } from '../_shared/admit_share.ts'
-import { enqueueMemberNotice } from '../_shared/member_notice.ts'
 import { sponsorInviteMail } from '../_shared/transactional_copy.ts'
 import { corsHeaders, jsonResponse, logEmailEvent, publicSite, sendEmail } from './mail.ts'
 
@@ -75,13 +74,6 @@ Deno.serve(async (req) => {
     if (issued.createdNew) await admin.auth.admin.deleteUser(issued.userId)
     return jsonResponse(req, claimFailure(claimError.message), claimStatus(claimError.message))
   }
-
-  await enqueueMemberNotice({
-    typeKey: 'invite',
-    userId: issued.userId,
-    refId: issued.userId,
-    payload: { user_id: issued.userId },
-  })
 
   const loginUrl = `${site}/login?next=/dashboard&otp_type=${issued.mode === 'magic_link' ? issued.otpType : 'invite'}`
   const confirmUrl =

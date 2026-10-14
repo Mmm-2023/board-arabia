@@ -21,7 +21,6 @@ const hooked = [
   'supabase/functions/_shared/candidate_admin.ts',
   'supabase/functions/suggest-intros/index.ts',
   'supabase/functions/send-member-invite/index.ts',
-  'supabase/functions/invite-sponsor/index.ts',
   'supabase/functions/_shared/deal_room.ts',
   'supabase/functions/_shared/deal_room_http.ts',
   'supabase/functions/majlis-reminders/index.ts',
@@ -78,7 +77,7 @@ test('hooks queue notices and do not name the provider', () => {
   assert.match(read('supabase/functions/_shared/candidate_flow.ts'), /enqueueNotice/)
   assert.match(read('supabase/functions/suggest-intros/index.ts'), /intro_suggested/)
   assert.match(read('supabase/functions/send-member-invite/index.ts'), /typeKey: 'invite'/)
-  assert.match(read('supabase/functions/invite-sponsor/index.ts'), /typeKey: 'invite'/)
+  assert.equal(read('supabase/functions/invite-sponsor/index.ts').includes('enqueueMemberNotice'), false)
   assert.match(read('supabase/functions/_shared/deal_room.ts'), /typeKey: 'invite'/)
   assert.match(read('supabase/functions/majlis-reminders/index.ts'), /stableNoticeRef/)
   assert.match(read('supabase/functions/_shared/majlis_notify.ts'), /event_reminder/)
@@ -87,6 +86,10 @@ test('hooks queue notices and do not name the provider', () => {
   assert.match(read(`supabase/migrations/${migrationName}`), /members_notice_close_bu/)
   assert.match(read('supabase/functions/retention-sweep/index.ts'), /security_deletion/)
   assert.match(read('src/pages/dashboard/TwoStepPage.tsx'), /record-security-notice/)
+  assert.equal(read('src/pages/dashboard/TwoStepPage.tsx').includes('ref_id'), false)
+  assert.equal(read('supabase/functions/record-security-notice/index.ts').includes('ref_id'), false)
+  assert.match(read('supabase/functions/record-security-notice/index.ts'), /service_two_step_notice_ref/)
+  assert.match(read('supabase/functions/_shared/member_notice.ts'), /AbortSignal\.timeout\(3000\)/)
   assert.match(read('src/pages/admin/NewsletterReadySetting.tsx'), /newsletter_ready/)
   assert.match(read('src/components/privacy/PrivacyPanelView.tsx'), /Email notifications/)
   assert.match(read('src/components/privacy/PrivacyPanelView.tsx'), /Coming soon/)

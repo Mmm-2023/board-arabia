@@ -24,7 +24,7 @@ VERIFIED for this diff. A scan of the branch against main found no API key value
 
 ## What members can turn off
 
-New categories are seeded in `supabase/migrations/20261229120000_email_transactional.sql`. Essential types have `member_can_disable = false`. `public.set_email_preference` rejects them with `22023` (`:808`). `message_new` is seeded and shown as Coming soon. There is no messages table, so there is no hook.
+New categories are seeded in `supabase/migrations/20261229120000_email_transactional.sql`. Essential types have `member_can_disable = false`. `public.set_email_preference` rejects them with `22023` (`:903`). `message_new` is seeded and shown as Coming soon. There is no messages table, so there is no hook.
 
 | Type | Hook |
 | --- | --- |
@@ -34,17 +34,17 @@ New categories are seeded in `supabase/migrations/20261229120000_email_transacti
 | intro_suggested | `supabase/functions/suggest-intros/index.ts:135` inside the existing send callback. The existing letter stays. |
 | invite, member | `supabase/functions/send-member-invite/index.ts:155` when the recipient is already a member. The existing letter stays. |
 | invite, deal room | `supabase/functions/_shared/deal_room.ts:290`. The existing letter stays. |
-| invite, partner | `supabase/functions/invite-sponsor/index.ts:79` after the seat claim. The existing letter stays. Staff owner invite is left on the current sender. |
+| invite, partner | Held. `supabase/functions/invite-sponsor/index.ts` matches main. No notice is queued there. Staff owner invite stays on the current sender. |
 | event_reminder | `supabase/functions/majlis-reminders/index.ts:41` passes a stable ref into `supabase/functions/_shared/majlis_notify.ts:145`. No schedule was added. The existing reminder workflows were not edited. |
-| mandate_update | `public.staff_decide_mandate_intro` redefined at `supabase/migrations/20261229120000_email_transactional.sql:959`. Same signature `(uuid, text)` and the same authenticated grant. |
-| newsletter_ready | `public.staff_decide_digest_issue` redefined at `supabase/migrations/20261229120000_email_transactional.sql:1031` for owners on approve. Same signature `(text)` and the same authenticated grant. The staff switch is `src/pages/admin/NewsletterReadySetting.tsx:44`. |
+| mandate_update | `public.staff_decide_mandate_intro` redefined at `supabase/migrations/20261229120000_email_transactional.sql:1007`. Same signature `(uuid, text)` and the same authenticated grant. |
+| newsletter_ready | `public.staff_decide_digest_issue` redefined at `supabase/migrations/20261229120000_email_transactional.sql:1079` for owners on approve. Same signature `(text)` and the same authenticated grant. The staff switch is `src/pages/admin/NewsletterReadySetting.tsx:44`. |
 | security_signin | Type and template only (`supabase/functions/_shared/member_notice_copy.ts:63`). Password reset and magic link stay on the current sender. No cutover. |
-| security_two_step | `src/pages/dashboard/TwoStepPage.tsx:60` and `:72` call `record-security-notice`. The function queues at `supabase/functions/record-security-notice/index.ts:23`. |
-| security_deletion, candidate | `public.prepare_candidate_delete` redefined at `supabase/migrations/20261229120000_email_transactional.sql:1153`, after the code matches and before `auth.users` is removed. Same signature `(uuid)` and the same service-role grant. The Edge caller is `supabase/functions/delete-candidate-account/index.ts:39`. |
-| security_deletion, member close | Trigger `members_notice_close_bu` at `supabase/migrations/20261229120000_email_transactional.sql:1200`, before the address is replaced. |
+| security_two_step | `src/pages/dashboard/TwoStepPage.tsx:60` and `:72` call `record-security-notice` with an empty body. The server mints the reference in `public.service_two_step_notice_ref` and stops after five notices in an hour. The queue call is `supabase/functions/record-security-notice/index.ts:20`. |
+| security_deletion, candidate | `public.prepare_candidate_delete` redefined at `supabase/migrations/20261229120000_email_transactional.sql:1201`, after the code matches and before `auth.users` is removed. The outbox row stores `address_snapshot` at that moment. Same signature `(uuid)` and the same service-role grant. The Edge caller is `supabase/functions/delete-candidate-account/index.ts:39`. |
+| security_deletion, member close | Trigger `members_notice_close_bu` at `supabase/migrations/20261229120000_email_transactional.sql:1248`, before the address is replaced. The same snapshot is stored. |
 | security_deletion, retention | `supabase/functions/retention-sweep/index.ts:56` queues the doomed accounts before `retention_sweep_plan` applies. The existing retention workflow was not edited. |
 
-`private.enqueue_member_notice` is at `:368`. It has no client grant. Edge calls `public.service_enqueue_member_notice` (`:454`), which is service role only.
+`private.enqueue_member_notice` is at `:369`. It has no client grant. Edge calls `public.service_enqueue_member_notice`, which is service role only. The queue call times out after 3 seconds and fails open, so the existing letter still goes out. `email_sends.user_id` still references `members` and is set null when that member is removed.
 
 ## Settings
 

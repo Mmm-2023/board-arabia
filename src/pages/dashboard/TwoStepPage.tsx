@@ -74,7 +74,7 @@ export function TwoStepPage() {
 
   async function recordTwoStepNotice() {
     try {
-      await supabase.functions.invoke('record-security-notice', { body: { ref_id: crypto.randomUUID() } })
+      await supabase.functions.invoke('record-security-notice', { body: {} })
     } catch {
       // The sign-in change is already saved.
     }

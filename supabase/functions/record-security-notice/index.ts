@@ -11,14 +11,11 @@ Deno.serve(async (req) => {
   const gate = await requireUser(req)
   if ('error' in gate) return jsonResponse(req, { error: gate.error }, gate.status)
 
-  let ref = ''
-  try {
-    const body = await req.json()
-    ref = typeof body?.ref_id === 'string' ? body.ref_id.trim() : ''
-  } catch {
-    ref = ''
+  const minted = await gate.admin.rpc('service_two_step_notice_ref', { p_user: gate.user.id })
+  const ref = typeof minted.data === 'string' ? minted.data : ''
+  if (minted.error || !UUID.test(ref)) {
+    return jsonResponse(req, { error: 'Too many changes. Try again later.' }, 429)
   }
-  if (!UUID.test(ref)) return jsonResponse(req, { error: 'Could not record the notice.' }, 400)
 
   await enqueueMemberNotice({
     typeKey: 'security_two_step',

@@ -39,9 +39,10 @@ export async function enqueueMemberNotice(notice: MemberNoticeInput): Promise<vo
         p_ref: notice.refId,
         p_payload: payload,
       }),
+      signal: AbortSignal.timeout(3000),
     })
   } catch {
-    // The existing letter still goes out. The same ref can be queued again.
+    // Fail open. The existing letter still goes out. The same ref can be queued again.
   }
 }
 

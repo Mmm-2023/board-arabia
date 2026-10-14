@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
+import { enqueueMemberNotice } from '../supabase/functions/_shared/member_notice.ts'
 import { memberNoticeMail } from '../supabase/functions/_shared/member_notice_copy.ts'
 import { deliverMemberNotices, MEMBER_NOTICE_PROVIDER_URL, type NoticeToSend } from '../supabase/functions/_shared/member_notice_send.ts'
 
@@ -111,6 +112,42 @@ test('non-essential mail carries per-type unsubscribe headers and essential mail
   assert.match(security.text, /cannot be turned off/)
   assert.equal(calls[0].headers.get('Idempotency-Key'), `${welcome.typeKey}:${welcome.refId}:${welcome.userId}`)
   assert.equal(calls[1].headers.get('Idempotency-Key'), `${security.typeKey}:${security.refId}:${security.userId}`)
+})
+
+test('a queue timeout fails open so the existing letter can still go out', async () => {
+  const previousUrl = process.env.SUPABASE_URL
+  const previousKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+  const previousTimeout = AbortSignal.timeout
+  process.env.SUPABASE_URL = 'https://example.supabase.co'
+  process.env.SUPABASE_SERVICE_ROLE_KEY = 'service-role-example'
+  const original = globalThis.fetch
+  let waitedMs = 0
+  AbortSignal.timeout = (ms: number) => {
+    waitedMs = ms
+    const controller = new AbortController()
+    controller.abort()
+    return controller.signal
+  }
+  globalThis.fetch = async (_input, init) => {
+    if (init?.signal?.aborted) throw new DOMException('The operation was aborted', 'AbortError')
+    throw new Error('the queue call should have been aborted')
+  }
+  try {
+    await enqueueMemberNotice({
+      typeKey: 'welcome',
+      userId: '11111111-1111-4111-8111-111111111111',
+      refId: '22222222-2222-4222-8222-222222222222',
+      payload: { user_id: '11111111-1111-4111-8111-111111111111' },
+    })
+    assert.equal(waitedMs, 3000)
+  } finally {
+    globalThis.fetch = original
+    AbortSignal.timeout = previousTimeout
+    if (previousUrl === undefined) delete process.env.SUPABASE_URL
+    else process.env.SUPABASE_URL = previousUrl
+    if (previousKey === undefined) delete process.env.SUPABASE_SERVICE_ROLE_KEY
+    else process.env.SUPABASE_SERVICE_ROLE_KEY = previousKey
+  }
 })
 
 test('batches pause and a 429 waits before a retry', async () => {

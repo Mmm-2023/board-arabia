@@ -68,9 +68,6 @@ alter table public.email_sends
     or (type_key is not null and ref_id is not null and campaign_id is null)
   );
 
-alter table public.email_sends
-  drop constraint if exists email_sends_user_id_fkey;
-
 create unique index if not exists email_sends_notice_once
   on public.email_sends (type_key, ref_id, user_id)
   where type_key is not null and ref_id is not null and user_id is not null;
@@ -87,9 +84,13 @@ create table if not exists public.email_outbox (
   user_id uuid not null,
   ref_id uuid not null,
   payload jsonb not null default '{}'::jsonb,
+  address_snapshot text,
   status text not null default 'pending',
   skip_reason text,
   created_at timestamptz not null default pg_catalog.now(),
+  constraint email_outbox_snapshot_len check (
+    address_snapshot is null or char_length(address_snapshot) between 3 and 320
+  ),
   constraint email_outbox_status_check check (status in ('pending', 'skipped', 'sent', 'failed')),
   constraint email_outbox_payload_object check (pg_catalog.jsonb_typeof(payload) = 'object'),
   constraint email_outbox_skip_len check (skip_reason is null or char_length(skip_reason) <= 80),
@@ -97,7 +98,7 @@ create table if not exists public.email_outbox (
 );
 
 comment on table public.email_outbox is
-  'Ids only. No copy and no addresses. Drained only by an explicit call. No schedule.';
+  'Payload holds ids only. An account deletion notice also stores the address snapshot taken when it was queued. Drained only by an explicit call. No schedule.';
 
 create index if not exists email_outbox_pending_idx
   on public.email_outbox (created_at)
@@ -384,6 +385,8 @@ declare
   v_payload jsonb;
   v_status text;
   v_skip text;
+  v_snapshot text;
+  v_send_user uuid;
 begin
   if p_user is null or p_ref is null or p_type is null then
     return null;
@@ -405,9 +408,15 @@ begin
     when coalesce(v_ok, false) then null
     else pg_catalog.left(coalesce(v_reason, 'skipped'), 80)
   end;
+  v_snapshot := case
+    when p_type = 'security_deletion' then private.notice_address(p_user)
+    else null
+  end;
 
-  insert into public.email_outbox (type_key, user_id, ref_id, payload, status, skip_reason)
-  values (p_type, p_user, p_ref, v_payload, v_status, v_skip)
+  insert into public.email_outbox (
+    type_key, user_id, ref_id, payload, address_snapshot, status, skip_reason
+  )
+  values (p_type, p_user, p_ref, v_payload, v_snapshot, v_status, v_skip)
   on conflict (type_key, ref_id, user_id) do nothing
   returning id into v_id;
 
@@ -423,13 +432,19 @@ begin
   select c.kind into v_kind
   from public.email_categories c
   where c.key = p_type;
-  v_hash := private.email_address_hash(private.notice_address(p_user));
+  v_hash := private.email_address_hash(coalesce(v_snapshot, private.notice_address(p_user)));
+  v_send_user := null;
+  if exists (
+    select 1 from public.members m where m.user_id = p_user
+  ) then
+    v_send_user := p_user;
+  end if;
   if v_hash is not null then
     insert into public.email_sends (
       campaign_id, user_id, email_hash, status, skip_reason, kind, type_key, ref_id
     ) values (
       null,
-      p_user,
+      v_send_user,
       v_hash,
       case when v_status = 'pending' then 'queued' else 'skipped' end,
       v_skip,
@@ -529,7 +544,7 @@ begin
   end if;
 
   for row in
-    select o.id, o.type_key, o.user_id, o.ref_id
+    select o.id, o.type_key, o.user_id, o.ref_id, o.address_snapshot
     from public.email_outbox o
     where o.status = 'pending'
     order by o.created_at
@@ -556,7 +571,7 @@ begin
     select c.kind into v_kind
     from public.email_categories c
     where c.key = row.type_key;
-    v_address := private.notice_address(row.user_id);
+    v_address := coalesce(private.notice_address(row.user_id), row.address_snapshot);
     outbox_id := row.id;
     type_key := row.type_key;
     user_id := row.user_id;
@@ -674,6 +689,39 @@ grant execute on function public.service_notice_settings() to service_role;
 
 comment on function public.service_notice_settings() is
   'Service role only. Returns the switch, batch size, and pause. No addresses. Does not send mail.';
+
+create or replace function public.service_two_step_notice_ref(p_user uuid)
+returns uuid
+language plpgsql
+security definer
+set search_path = ''
+as $fn$
+declare
+  recent integer;
+begin
+  if auth.role() is distinct from 'service_role' then
+    raise exception 'not_allowed' using errcode = '42501';
+  end if;
+  if p_user is null then
+    return null;
+  end if;
+  select count(*) into recent
+  from public.email_outbox o
+  where o.type_key = 'security_two_step'
+    and o.user_id = p_user
+    and o.created_at > pg_catalog.now() - interval '1 hour';
+  if coalesce(recent, 0) >= 5 then
+    return null;
+  end if;
+  return gen_random_uuid();
+end;
+$fn$;
+
+revoke all on function public.service_two_step_notice_ref(uuid) from public, anon, authenticated;
+grant execute on function public.service_two_step_notice_ref(uuid) to service_role;
+
+comment on function public.service_two_step_notice_ref(uuid) is
+  'Service role only. Mints a reference for a two-step notice, or null after five in an hour. Does not send mail.';
 
 create or replace function private.email_apply_admit_defaults(p_user_id uuid)
 returns void
