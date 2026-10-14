@@ -38,7 +38,7 @@ Deno.serve(async (req) => {
     newsFrom: Deno.env.get('EMAIL_FROM_NEWS') ?? '',
     trackedApiKey: Deno.env.get('RESEND_API_KEY_NEWS_TRACKED') ?? '',
     trackedFrom: Deno.env.get('EMAIL_FROM_NEWS_TRACKED') ?? '',
-    contactEmail: Deno.env.get('PUBLIC_CONTACT_EMAIL') ?? '',
+    contactEmail: Deno.env.get('EMAIL_REPLY_TO') ?? '',
     siteOrigin: publicSite(),
     functionsOrigin: supabaseUrl,
     streamEnv: {

@@ -52,7 +52,8 @@ Deno.serve(async (req) => {
   })
   const apiKey = stream.apiKey
   const fromMailbox = stream.fromMailbox
-  const replyTo = Deno.env.get('PUBLIC_CONTACT_EMAIL')?.trim() || ''
+  const replyTo = Deno.env.get('EMAIL_REPLY_TO')?.trim() || ''
+  const contactEmail = Deno.env.get('PUBLIC_CONTACT_EMAIL')?.trim() || ''
   if (!apiKey || !fromMailbox || !replyTo) {
     return jsonResponse(req, { ok: false, blocked: 'not_configured' }, 503)
   }
@@ -74,7 +75,7 @@ Deno.serve(async (req) => {
     try {
       mail = memberNoticeMail({
         typeKey: row.type_key,
-        contactEmail: replyTo,
+        contactEmail,
         site: publicSite(),
         unsubscribeUrl,
       })

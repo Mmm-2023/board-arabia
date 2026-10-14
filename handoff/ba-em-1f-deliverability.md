@@ -15,7 +15,18 @@ Nothing here was applied to the live database. No `db push`, no Edge deploy, no 
    - `email-unsubscribe`
    - `member-notice-send`
    - `email-streams` (new, read-only From addresses, staff JWT)
-3. No new secret values. Names only, set in the Edge secret store when sending is approved: `RESEND_API_KEY_NEWS`, `EMAIL_FROM_NEWS`, `RESEND_API_KEY_MAIL`, `EMAIL_FROM_MAIL`. The original `RESEND_API_KEY` and `EMAIL_FROM` remain a fallback for news only. `EMAIL_UNSUB_MAILTO` stays unset, so the mailto header stays off. `PUBLIC_CONTACT_EMAIL` is still the reply address.
+3. No new secret values. Names only, set in the Edge secret store when sending is approved. The original `RESEND_API_KEY` and `EMAIL_FROM` remain a fallback for news only. `EMAIL_UNSUB_MAILTO` stays unset, so the mailto header stays off. `PUBLIC_CONTACT_EMAIL` is still the questions line in a notice. Reply-To on the news and mail streams is `EMAIL_REPLY_TO`. Workspace invites still send from `GMAIL_FROM`, and that path already sets Reply-To.
+
+New env names read by this change:
+
+- `EMAIL_FROM_NEWS`
+- `RESEND_API_KEY_NEWS`
+- `EMAIL_FROM_MAIL`
+- `RESEND_API_KEY_MAIL`
+- `EMAIL_REPLY_TO`
+- `EMAIL_UNSUB_MAILTO`
+
+Already on main, and still read here: `EMAIL_FROM`, `RESEND_API_KEY`, `EMAIL_FROM_NEWS_TRACKED`, `RESEND_API_KEY_NEWS_TRACKED`, `GMAIL_FROM`, `PUBLIC_CONTACT_EMAIL`.
 
 Leave the master switch off.
 
@@ -25,7 +36,7 @@ VERIFIED for this diff. No API key value, webhook secret, service-role key, toke
 
 - `RESEND_API_KEY`, `RESEND_API_KEY_NEWS`, `RESEND_API_KEY_MAIL`: UNKNOWN. Names only.
 - `RESEND_WEBHOOK_SECRET`: UNKNOWN. Not changed here.
-- `EMAIL_FROM`, `EMAIL_FROM_NEWS`, `EMAIL_FROM_MAIL`, `EMAIL_UNSUB_MAILTO`, `PUBLIC_CONTACT_EMAIL`: UNKNOWN. Read from the Edge environment at send time.
+- `EMAIL_FROM`, `EMAIL_FROM_NEWS`, `EMAIL_FROM_MAIL`, `EMAIL_FROM_NEWS_TRACKED`, `EMAIL_REPLY_TO`, `EMAIL_UNSUB_MAILTO`, `PUBLIC_CONTACT_EMAIL`, `GMAIL_FROM`: UNKNOWN. Read from the Edge environment at send time. No mailbox literal was added.
 
 ## What changed
 

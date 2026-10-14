@@ -55,6 +55,11 @@ export function sendingFromAllowed(mailbox: string): boolean {
   return domain.endsWith(`.${SENDING_PARENT}`)
 }
 
+/** Reply-To may be the root inbox. It is not a From address, so the subdomain guard does not apply. */
+export function replyMailbox(value: string): string {
+  return cleanMailbox(value)
+}
+
 function guardedMailbox(value: string): string {
   const mailbox = cleanMailbox(value)
   return sendingFromAllowed(mailbox) ? mailbox : ''
@@ -317,7 +322,7 @@ export async function deliverBatches(input: {
       kept.push(item)
     }
     if (kept.length === 0) continue
-    if (kept.some((item) => !sendingFromAllowed(cleanMailbox(item.message.from)))) {
+    if (kept.some((item) => !sendingFromAllowed(cleanMailbox(item.message.from)) || !replyMailbox(item.message.reply_to))) {
       results.push({
         batchNo,
         idempotencyKey: 'refused',

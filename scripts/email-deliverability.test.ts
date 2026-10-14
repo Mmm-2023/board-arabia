@@ -198,6 +198,72 @@ test('newsletter headers stay RFC 8058 and transactional mail drops them', async
   assert.match(newsPosted.headers['List-Unsubscribe'], /^<https:\/\/example\.com\/functions\/v1\/email-unsubscribe\?t=tok>$/)
 })
 
+test('Reply-To is required and may be the root inbox', async () => {
+  const { deps, fetches } = (() => {
+    const calls: string[] = []
+    return {
+      fetches: calls,
+      deps: {
+        role: 'master' as const,
+        userId: staffId,
+        staffAddress: 'staff.one@example.com',
+        apiKey: 'test-key',
+        fromAddress: newsFrom,
+        contactEmail: '',
+        siteOrigin: 'https://example.com',
+        functionsOrigin: 'https://example.com',
+        now: () => 0,
+        sleep: async () => undefined,
+        fetchImpl: async (_url: string, init: { body: string }) => {
+          calls.push(init.body)
+          return { status: 200, headers: { get: () => null }, json: async () => ({ data: [{ id: 'msg' }] }) }
+        },
+        loadGate: async () => gate(),
+        loadRecipients: async () => [
+          { userId: '33333333-3333-4333-8333-000000000001', address: 'member.1@example.com', unsubscribeToken: 'tok-1' },
+        ],
+        isSuppressed: async () => false,
+        logSend: async (row: { status: string }) => ({ ok: true, id: 'send-1', status: row.status, send: true }),
+        setProgress: async () => true,
+      },
+    }
+  })()
+  const missing = await handleEmailSend({ campaign_id: campaignId, mode: 'live' }, deps)
+  assert.equal(missing.status, 503)
+  assert.equal(fetches.length, 0)
+  const sent = await handleEmailSend({ campaign_id: campaignId, mode: 'live' }, {
+    ...deps,
+    contactEmail: 'hello@example.com',
+  })
+  assert.equal(sent.status, 200)
+  assert.equal(JSON.parse(fetches[0])[0].reply_to, 'hello@example.com')
+  const bare = prepared('send-bare')
+  bare.message.reply_to = ''
+  let called = 0
+  const refused = await deliverBatches({
+    campaignId,
+    mode: 'live',
+    prepared: [bare],
+    batchSize: 1,
+    pauseMs: 0,
+    apiKey: 'test-key',
+    now: () => 0,
+    sleep: async () => undefined,
+    fetchImpl: async () => {
+      called += 1
+      return { status: 200, headers: { get: () => null }, json: async () => ({ data: [{ id: 'msg' }] }) }
+    },
+  })
+  assert.equal(called, 0)
+  assert.equal(refused[0].status, 503)
+  assert.match(read('supabase/functions/email-send/index.ts'), /EMAIL_REPLY_TO/)
+  assert.match(read('supabase/functions/member-notice-send/index.ts'), /EMAIL_REPLY_TO/)
+  assert.equal(read('supabase/functions/_shared/bulk_mail.ts').includes('hello@'), false)
+  assert.equal(read('supabase/functions/email-send/index.ts').includes('hello@'), false)
+  assert.match(read('supabase/functions/_shared/mail.ts'), /GMAIL_FROM/)
+  assert.match(read('supabase/functions/_shared/mail.ts'), /Reply-To/)
+})
+
 test('a root From is refused before the provider is called', async () => {
   let called = 0
   const results = await deliverBatches({
