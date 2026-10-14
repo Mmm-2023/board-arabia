@@ -4,9 +4,6 @@ export const PREFERENCES_LABEL = 'Manage email preferences'
 export const FOOTER_CREDIT = 'powered by nammco'
 export const TEST_SUBJECT_PREFIX = 'Test:'
 export const ONE_CLICK_BODY = 'List-Unsubscribe=One-Click'
-
-/** Keeps this anchor out of domain click tracking, which rewrites other HTML links. */
-export const UNTRACKED_LINK_ATTR = 'clicktracking="off"'
 export const TRY_AGAIN = 'Try again later.'
 
 export type BulkLetter = {
@@ -50,7 +47,7 @@ export function renderBulkLetter(input: {
   const html = [
     hidden,
     body,
-    `<p><a ${UNTRACKED_LINK_ATTR} href="${escapeHtml(input.unsubscribeUrl)}">${UNSUBSCRIBE_LABEL}</a></p>`,
+    `<p><a href="${escapeHtml(input.unsubscribeUrl)}">${UNSUBSCRIBE_LABEL}</a></p>`,
     `<p><a href="${escapeHtml(input.preferencesUrl)}">${PREFERENCES_LABEL}</a></p>`,
     `<p>${FOOTER_CREDIT}</p>`,
   ].join('\n')

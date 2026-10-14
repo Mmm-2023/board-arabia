@@ -77,10 +77,6 @@ set search_path = ''
 as $fn$
 declare
   v text;
-  v_query text;
-  v_pair text;
-  v_key text;
-  v_kept text := '';
   v_host text;
   v_rest text;
 begin
@@ -88,35 +84,14 @@ begin
     return null;
   end if;
   v := pg_catalog.split_part(pg_catalog.btrim(p_url), '#', 1);
-  v_query := '';
-  if position('?' in v) > 0 then
-    v_query := pg_catalog.substring(v, position('?' in v) + 1);
-    v := pg_catalog.split_part(v, '?', 1);
-  end if;
+  v := pg_catalog.split_part(v, '?', 1);
   v := pg_catalog.regexp_replace(v, '/+$', '');
   v_host := substring(v from '^https?://[^/]+');
   if v_host is null or v_host = '' then
     return null;
   end if;
   v_rest := pg_catalog.substring(v, pg_catalog.char_length(v_host) + 1);
-  v := pg_catalog.lower(v_host) || coalesce(v_rest, '');
-  if v_query <> '' then
-    foreach v_pair in array pg_catalog.string_to_array(v_query, '&')
-    loop
-      v_key := pg_catalog.lower(pg_catalog.split_part(v_pair, '=', 1));
-      if v_key ~ '^(utm_|mc_|fbclid$|gclid$|yclid$|ref$)' then
-        continue;
-      end if;
-      if v_kept <> '' then
-        v_kept := v_kept || '&';
-      end if;
-      v_kept := v_kept || v_pair;
-    end loop;
-  end if;
-  if v_kept <> '' then
-    return v || '?' || v_kept;
-  end if;
-  return v;
+  return pg_catalog.lower(v_host) || coalesce(v_rest, '');
 end;
 $fn$;
 
@@ -327,6 +302,7 @@ begin
         and not private.newsletter_unsub_url(e.url)
         and private.newsletter_link_key(e.url) is not null
       group by private.newsletter_link_key(e.url)
+      having count(distinct e.send_id) >= 5
       order by count(*) desc, private.newsletter_link_key(e.url)
       limit 10
     ) grouped
@@ -416,3 +392,27 @@ grant execute on function public.staff_newsletter_trend() to authenticated;
 
 comment on function public.staff_newsletter_trend() is
   'Last 12 sent weekly issues, oldest first. Open rate, click rate, bounces, and unsubscribes. Cells under 5 are <5. Does not read account mail. Does not send mail.';
+
+create or replace function public.newsletter_events_retention()
+returns integer
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  removed integer;
+begin
+  delete from public.newsletter_events e
+  where e.occurred_at < pg_catalog.now() - interval '24 months';
+  get diagnostics removed = row_count;
+  return coalesce(removed, 0);
+end;
+$$;
+
+revoke all on function public.newsletter_events_retention() from public;
+revoke all on function public.newsletter_events_retention() from public, anon;
+revoke all on function public.newsletter_events_retention() from anon, authenticated, service_role;
+grant execute on function public.newsletter_events_retention() to service_role;
+
+comment on function public.newsletter_events_retention() is
+  'Deletes newsletter measurement rows older than 24 months. Called by the existing retention sweep. Does not read account mail. Does not send mail. Not scheduled here.';

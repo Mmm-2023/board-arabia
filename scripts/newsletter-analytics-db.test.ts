@@ -85,6 +85,8 @@ declare
   definer boolean;
   pinned boolean;
   account_mail integer;
+  removed integer;
+  kept integer;
 begin
   insert into auth.users (id, email) values (staff_id, 'admin.stats@example.com'), (member_id, 'member.reader@example.com');
   insert into public.staff_users (user_id, email, role) values (staff_id, 'admin.stats@example.com', 'staff');
@@ -314,14 +316,13 @@ begin
      or stats->'tiers'->1->'counts'->>'unsubscribes' is distinct from '<5' then
     raise exception 'tier counts %', stats->'tiers';
   end if;
-  if jsonb_array_length(stats->'links') <> 3
+  if jsonb_array_length(stats->'links') <> 2
      or stats->'links'->0->>'url' is distinct from 'https://example.com/story'
      or stats->'links'->0->>'unique' is distinct from '6'
      or stats->'links'->0->>'total' is distinct from '12'
      or stats->'links'->1->>'url' is distinct from 'https://example.com/other'
-     or stats->'links'->2->>'url' is distinct from 'https://example.com/small'
-     or stats->'links'->2->>'unique' is distinct from '<5'
-     or stats->'links'->2->>'total' is distinct from '<5' then
+     or stats::text like '%example.com/small%'
+     or stats::text like '%?%' then
     raise exception 'links %', stats->'links';
   end if;
   if stats::text like '%/email/unsubscribe%' or stats::text like '%@%'
@@ -346,6 +347,26 @@ begin
     raise exception 'trend %', trend->'issues';
   end if;
 
+  insert into public.newsletter_events (send_id, message_id, event, occurred_at)
+  select s.id, 'old-measure', 'opened', pg_catalog.now() - interval '25 months'
+  from public.email_sends s
+  where s.campaign_id = campaign_a and s.is_test = false
+  limit 1;
+  insert into public.newsletter_events (send_id, message_id, event, occurred_at)
+  select s.id, 'kept-measure', 'opened', pg_catalog.now()
+  from public.email_sends s
+  where s.campaign_id = campaign_a and s.is_test = false
+  limit 1;
+  set role service_role;
+  removed := public.newsletter_events_retention();
+  set role postgres;
+  select count(*) into kept from public.newsletter_events where message_id = 'kept-measure';
+  if removed < 1
+     or exists (select 1 from public.newsletter_events where message_id = 'old-measure')
+     or kept <> 1 then
+    raise exception 'retention did not keep the recent row % %', removed, kept;
+  end if;
+
   perform set_config(
     'request.jwt.claims',
     json_build_object('sub', member_id, 'aal', 'aal2', 'role', 'authenticated')::text,
@@ -368,6 +389,15 @@ begin
     when insufficient_privilege then
       if sqlerrm not like '%not_allowed%' then
         raise exception 'member trend error %', sqlerrm;
+      end if;
+  end;
+  begin
+    perform public.newsletter_events_retention();
+    raise exception 'member deleted measurement rows';
+  exception
+    when insufficient_privilege then
+      if sqlerrm like '%not_allowed%' then
+        raise exception 'member reached the retention body';
       end if;
   end;
   set role postgres;

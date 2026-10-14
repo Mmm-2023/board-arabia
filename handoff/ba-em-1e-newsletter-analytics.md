@@ -37,7 +37,9 @@ An unsubscribe is counted for the latest live send of that category at or before
 
 ## Unsubscribe links stay untracked
 
-`supabase/functions/_shared/bulk_mail_copy.ts:9` sets `clicktracking="off"` on the unsubscribe anchor (`:53`). The preferences link does not get that attribute. `List-Unsubscribe` stays the raw https token URL. `scripts/newsletter-analytics.test.ts` checks both.
+The body unsubscribe link is a normal link. Domain click tracking is not switched off per link. `List-Unsubscribe` stays the raw https token URL. Unsubscribe URLs are left out of the click counts and out of the top links. A link with fewer than 5 unique clicks is omitted, and displayed URLs have no query string.
+
+`public.newsletter_events_retention()` deletes measurement rows older than 24 months. The existing retention sweep calls it, and a dry run does not. No new schedule was added.
 
 ## LEGAL CHANGE
 
@@ -45,7 +47,7 @@ An unsubscribe is counted for the latest live send of that category at or before
 
 Clause 3.15 (`:153`):
 
-"Newsletter measurement. Newsletter emails include open and click measurement. We use it only for aggregate statistics. We do not show who opened or clicked. Opens are approximate, because some mail apps download images automatically. You can turn these emails off in Your privacy. The unsubscribe link is not measured."
+"Newsletter measurement. Newsletter emails include open and click measurement. We use it only for aggregate statistics. We do not show who opened or clicked. Opens are approximate, because some mail apps download images automatically. You can turn these emails off in Your privacy. Unsubscribe clicks are not included in these statistics."
 
 Retention table row (`:448`):
 

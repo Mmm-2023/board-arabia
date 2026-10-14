@@ -154,7 +154,7 @@ export const PRIVACY_EN: LegalDocument = {
       "kind": "clause",
       "id": "c-3-15",
       "number": "3.15",
-      "text": "Newsletter measurement. Newsletter emails include open and click measurement. We use it only for aggregate statistics. We do not show who opened or clicked. Opens are approximate, because some mail apps download images automatically. You can turn these emails off in Your privacy. The unsubscribe link is not measured."
+      "text": "Newsletter measurement. Newsletter emails include open and click measurement. We use it only for aggregate statistics. We do not show who opened or clicked. Opens are approximate, because some mail apps download images automatically. You can turn these emails off in Your privacy. Unsubscribe clicks are not included in these statistics."
     },
     {
       "kind": "h2",

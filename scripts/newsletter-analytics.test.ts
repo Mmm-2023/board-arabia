@@ -4,7 +4,7 @@ import path from 'node:path'
 import test from 'node:test'
 import { fileURLToPath } from 'node:url'
 import { buildOutbound } from '../supabase/functions/_shared/bulk_mail.ts'
-import { UNTRACKED_LINK_ATTR, renderBulkLetter } from '../supabase/functions/_shared/bulk_mail_copy.ts'
+import { renderBulkLetter } from '../supabase/functions/_shared/bulk_mail_copy.ts'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const migrationName = '20261231120000_newsletter_analytics.sql'
@@ -37,13 +37,20 @@ test('newsletter analytics migration is named and does not assume it is newest',
   assert.match(sql, /grant execute on function public\.staff_newsletter_trend\(\) to authenticated;/)
   assert.equal(/grant execute on function public\.staff_newsletter_stats\(uuid\) to anon/.test(sql), false)
   assert.match(sql, /p_value < 5 then '<5'/)
+  assert.match(sql, /having count\(distinct e\.send_id\) >= 5/)
+  assert.match(sql, /split_part\(v, '\?', 1\)/)
+  assert.equal(sql.includes("return v || '?'"), false)
   assert.match(sql, /limit 10/)
   assert.match(sql, /'opens', 'approximate'/)
   assert.match(sql, /newsletter_unsub_url/)
+  assert.match(sql, /newsletter_events_retention/)
+  assert.match(sql, /interval '24 months'/)
+  assert.match(sql, /grant execute on function public\.newsletter_events_retention\(\) to service_role/)
+  assert.equal(/grant execute on function public\.newsletter_events_retention\(\) to anon/.test(sql), false)
   assert.equal(/grant\s+(select|insert|update|delete|all)\s+on\s+(table\s+)?public\.newsletter_events/i.test(sql), false)
 })
 
-test('unsubscribe link and list-unsubscribe header stay untracked', () => {
+test('unsubscribe clicks stay out of the stats and the header stays a raw url', () => {
   const unsubscribeUrl = 'https://example.com/email/unsubscribe?t=tok'
   const oneClickUrl = 'https://example.com/functions/v1/email-unsubscribe?t=tok'
   const preferencesUrl = 'https://example.com/dashboard/privacy'
@@ -71,18 +78,25 @@ test('unsubscribe link and list-unsubscribe header stay untracked', () => {
   })
   assert.equal(message.headers['List-Unsubscribe'], `<${oneClickUrl}>`)
   assert.equal(message.headers['List-Unsubscribe'].includes('links.'), false)
-  assert.equal(letter.html.includes(`<a ${UNTRACKED_LINK_ATTR} href="${unsubscribeUrl}">`), true)
+  assert.equal(letter.html.includes(`href="${unsubscribeUrl}"`), true)
+  assert.equal(letter.html.includes('clicktracking'), false)
   assert.equal(letter.text.includes(`Unsubscribe: ${unsubscribeUrl}`), true)
   assert.equal(letter.html.includes(`<a href="${preferencesUrl}">`), true)
-  assert.equal(letter.html.includes(`<a ${UNTRACKED_LINK_ATTR} href="${preferencesUrl}">`), false)
   assert.equal(letter.html.includes(`href="https://links.`), false)
+  const sweep = read('supabase/functions/retention-sweep/index.ts')
+  const workflow = read('.github/workflows/retention-sweep.yml')
+  assert.match(sweep, /newsletter_events_retention/)
+  assert.match(sweep, /if \(!dry\)/)
+  assert.equal(workflow.includes('schedule:'), false)
+  assert.equal(workflow.includes('cron:'), false)
 })
 
 test('privacy notice states aggregate newsletter measurement', () => {
   const privacy = read('src/content/legal/privacy.en.ts')
   assert.match(privacy, /Newsletter emails include open and click measurement/)
   assert.match(privacy, /only for aggregate statistics/)
-  assert.match(privacy, /turn these emails off in Your privacy/)
+  assert.match(privacy, /Unsubscribe clicks are not included in these statistics\./)
+  assert.equal(privacy.includes('The unsubscribe link is not measured'), false)
   assert.match(privacy, /Newsletter open and click records/)
   assert.match(privacy, /Removed on request to \[CONTACT EMAIL\], and in any case within 24 months/)
   assert.equal(privacy.includes('\u2014') || privacy.includes('\u2013'), false)
