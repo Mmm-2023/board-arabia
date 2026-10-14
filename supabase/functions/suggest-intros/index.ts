@@ -1,5 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1'
 import { gmailCredentialsPresent, jsonResponse, logEmailEvent, publicSite, sendEmail } from '../_shared/mail.ts'
+import { enqueueMemberNotice } from '../_shared/member_notice.ts'
 import {
   INTROS_SCHEDULE_HEADER,
   INTROS_SCHEDULE_SECRET,
@@ -131,6 +132,12 @@ Deno.serve(async (req) => {
       await admin.from('member_intros').update({ [column]: null }).eq('id', introId)
     },
     send: async (nudge, mail) => {
+      await enqueueMemberNotice({
+        typeKey: 'intro_suggested',
+        userId: nudge.memberId,
+        refId: nudge.introId,
+        payload: { intro_id: nudge.introId },
+      })
       const sent = await sendEmail({ to: nudge.email, subject: mail.subject, html: mail.html, text: mail.text })
       if (sent.status === 'sent' || sent.status === 'error') {
         await logEmailEvent(admin, {

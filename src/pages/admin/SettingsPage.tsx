@@ -7,6 +7,7 @@ import { FormSkeleton, toneClasses } from '../../shell/ViewState'
 import { UtmBuilder } from '../../components/UtmBuilder'
 import { AiToolSettingsPanel } from './AiToolSettingsPanel'
 import { DailyMarketBriefPanel } from './DailyMarketBriefPanel'
+import { NewsletterReadySetting } from './NewsletterReadySetting'
 import { IntroAllowancePanel } from './IntroAllowancePanel'
 import { PartnerInterestPanel } from './PartnerInterestPanel'
 import { SponsorPackagesPanel } from './SponsorPackagesPanel'
@@ -47,6 +48,7 @@ export function SettingsPage() {
       <IntroAllowancePanel />
       <AiToolSettingsPanel />
       <DailyMarketBriefPanel />
+      <NewsletterReadySetting />
 
       <section className={`${styles.panel} mt-8 px-5 py-5`}>
         <h2 className={`text-[0.72rem] font-semibold tracking-[0.12em] uppercase ${styles.quiet}`}>

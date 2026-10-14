@@ -434,7 +434,23 @@ test('campaign, preference, and unsubscribe shots at 1440 and 390', { timeout: 1
     ]
     for (const [name, viewName, width, height] of shots) {
       const page = await browser.newPage({ viewport: { width, height } })
+      const pageErrors: string[] = []
+      page.on('pageerror', (error) => pageErrors.push(error.message))
       await page.goto(`${origin}/scripts/smoke/email-campaign.html?view=${viewName}`, { waitUntil: 'networkidle' })
+      if (viewName === 'release-off' || viewName === 'release-on') {
+        const release = page.locator('[data-release]')
+        try {
+          await release.waitFor({ state: 'attached', timeout: 5000 })
+        } catch {
+          await page.reload({ waitUntil: 'networkidle' })
+          try {
+            await release.waitFor({ state: 'attached', timeout: 5000 })
+          } catch {
+            const text = await page.locator('body').innerText().catch(() => '')
+            assert.fail(`${viewName} did not render. ${pageErrors.join(' | ')} ${text.slice(0, 500)}`)
+          }
+        }
+      }
       if (viewName === 'release-off') {
         assert.equal(await page.locator('[data-release]').getAttribute('data-release'), 'disabled')
         assert.equal(await page.getByRole('button', { name: 'Release', exact: true }).isDisabled(), true)

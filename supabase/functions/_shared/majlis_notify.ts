@@ -1,5 +1,6 @@
 import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1'
 import { logEmailEvent, publicSite, sendEmail, type SendResult } from './mail.ts'
+import { enqueueMemberNotice } from './member_notice.ts'
 import {
   eventCancelledLetter,
   eventUpdatedLetter,
@@ -138,7 +139,16 @@ export async function mailReminder(
   to: string,
   event: MajlisMailEvent,
   kind: 't7' | 't1',
+  notice?: { userId: string; refId: string; eventId: string },
 ) {
+  if (notice?.userId && notice.refId && notice.eventId) {
+    await enqueueMemberNotice({
+      typeKey: 'event_reminder',
+      userId: notice.userId,
+      refId: notice.refId,
+      payload: { event_id: notice.eventId },
+    })
+  }
   const letter = reminderLetter(publicSite(), event, kind)
   return deliver(admin, {
     to,

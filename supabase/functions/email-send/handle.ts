@@ -205,6 +205,7 @@ export async function handleEmailSend(raw: unknown, deps: SendDeps): Promise<Sen
     : await deliverBatches({
       campaignId: parsed.campaignId,
       mode: parsed.mode,
+      stream: 'news',
       prepared: queued,
       batchSize: parsed.mode === 'test' ? 1 : gate.batch_size,
       pauseMs: parsed.mode === 'test' ? 0 : gate.batch_pause_ms,

@@ -1,5 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1'
 import { corsHeaders, jsonResponse, sendEmail } from '../_shared/mail.ts'
+import { enqueueMemberNotice } from '../_shared/member_notice.ts'
 import { emailLink, idleAccountReminderMail } from '../_shared/membership_copy.ts'
 import { retentionDaysOrDefault } from '../_shared/ai_tools.ts'
 import {
@@ -45,6 +46,22 @@ Deno.serve(async (req) => {
   // That is the normal retention sweep, not a dry run. Orphans are listed unless orphanPurgeEnabled is true.
   const dry = new URL(req.url).searchParams.get('dry_run') === '1'
   const purgeOrphans = orphanPurgeEnabled(req.url)
+
+  if (!dry) {
+    const preview = await admin.rpc('retention_sweep_plan', { p_apply: false })
+    if (preview.data && typeof preview.data === 'object') {
+      const ahead = preview.data as Plan
+      const doomed = [...arrayOf(ahead.unverified), ...arrayOf(ahead.never_submitted), ...arrayOf(ahead.decided)]
+      for (const userId of doomed) {
+        await enqueueMemberNotice({
+          typeKey: 'security_deletion',
+          userId,
+          refId: userId,
+          payload: { user_id: userId },
+        })
+      }
+    }
+  }
 
   const { data, error } = await admin.rpc('retention_sweep_plan', { p_apply: !dry })
   if (error || !data || typeof data !== 'object') {

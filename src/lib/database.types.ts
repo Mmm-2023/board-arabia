@@ -1712,6 +1712,10 @@ export type Database = {
         Args: { p_category: string; p_opt_in: boolean }
         Returns: Json
       }
+      own_staff_notice_preference: {
+        Args: Record<string, never>
+        Returns: Json
+      }
       email_unsubscribe: {
         Args: { p_token: string; p_source: string }
         Returns: Json

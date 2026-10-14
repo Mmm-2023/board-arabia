@@ -11,6 +11,7 @@ import {
 } from './candidate_flow.ts'
 import { disposableDomain, domainSuffixes, emailDomain } from './email_domains.ts'
 import { publicSite, sendEmail } from './mail.ts'
+import { enqueueMemberNotice } from './member_notice.ts'
 import { bumpKeyedLimit } from './rate_limit.ts'
 
 type Admin = SupabaseClient
@@ -197,6 +198,7 @@ function verifyDeps(admin: Admin): VerifyDeps {
         detail,
       })
     },
+    enqueueNotice: enqueueMemberNotice,
   }
 }
 

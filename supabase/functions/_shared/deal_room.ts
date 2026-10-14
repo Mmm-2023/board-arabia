@@ -6,6 +6,7 @@
  */
 
 import { boardMail, publicSite, sendEmail, type SendResult } from './mail.ts'
+import { enqueueMemberNotice } from './member_notice.ts'
 
 export const DEAL_ROOM_FUNCTIONS = [
   'deal-room-create',
@@ -193,6 +194,8 @@ export type DealRoomInviteJob = {
   roomName: string
   purpose: string
   ownerName: string
+  inviteeId?: string
+  roomId?: string
 }
 
 export type DealRoomInviteOutcome = {
@@ -282,6 +285,14 @@ export async function sendDealRoomInvite(
   if (!MAILBOX.test(to) || to.length > 320) {
     log('deal_room_invite warning: invitee mailbox missing')
     return { status: 'skipped', detail: 'invitee mailbox missing' }
+  }
+  if (job.inviteeId && job.roomId) {
+    await enqueueMemberNotice({
+      typeKey: 'invite',
+      userId: job.inviteeId,
+      refId: job.roomId,
+      payload: { room_id: job.roomId, invitee_id: job.inviteeId },
+    })
   }
   try {
     const message = dealRoomInviteMail({ ...job, to })

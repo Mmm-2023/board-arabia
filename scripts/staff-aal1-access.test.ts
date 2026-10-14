@@ -42,8 +42,11 @@ test('staff aal1 passes staffApiDecision and the named migration drops only aal2
   assert.ok(names.indexOf(migrationName) > names.indexOf('20261228120000_push_registration.sql'))
   const covered = names.filter((name) => name <= migrationName)
   assert.equal(covered.at(-1), migrationName)
-  assert.equal(covered.includes('20261223120000_email_campaign_ui.sql'), false)
-  assert.equal(covered.includes('20261229120000_email_transactional.sql'), false)
+  // Both email migrations landed before this file. Slot 30 does not own them.
+  assert.ok(names.includes('20261223120000_email_campaign_ui.sql'))
+  assert.ok(names.indexOf('20261223120000_email_campaign_ui.sql') < names.indexOf(migrationName))
+  assert.ok(names.includes('20261229120000_email_transactional.sql'))
+  assert.ok(names.indexOf('20261229120000_email_transactional.sql') < names.indexOf(migrationName))
 
   const sql = readFileSync(path.join(migrationsDir, migrationName), 'utf8')
   assert.equal(sql.includes("'aal2'"), false)
