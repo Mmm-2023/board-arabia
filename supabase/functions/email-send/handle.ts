@@ -29,7 +29,7 @@ export type SendGate = {
   issue_send_enabled: boolean
   content_hash: string | null
   test_content_hash: string | null
-  test_by_owner: boolean
+  test_sent_by: string | null
 }
 
 export type SendRecipient = {
@@ -111,8 +111,10 @@ export async function handleEmailSend(raw: unknown, deps: SendDeps): Promise<Sen
 
   const gate = await deps.loadGate(parsed.campaignId)
   if (!gate || !gate.found) return fail(404, 'not_found')
-  if (parsed.mode === 'live' && gate.master_enabled !== true) return fail(409, 'master_off')
-  if (parsed.mode === 'live' && !liveReleaseAllowed(gate)) return fail(409, 'not_tested')
+  if (parsed.mode === 'live') {
+    const release = liveReleaseAllowed(gate, deps.userId)
+    if (release !== 'ok') return fail(409, release)
+  }
   if (parsed.mode === 'live' && gate.kind === 'digest') {
     const sendable = digestIssueSendable({
       status: gate.issue_status || '',
@@ -272,10 +274,11 @@ export async function handleEmailSend(raw: unknown, deps: SendDeps): Promise<Sen
   return { status: 200, body: { ok: true, mode: parsed.mode, sent, skipped, failed } }
 }
 
-/** Live send needs an owner test of this exact subject, preheader, body and tiers. */
-export function liveReleaseAllowed(gate: SendGate): boolean {
-  if (gate.status !== 'test_sent' && gate.status !== 'sending') return false
-  if (gate.test_by_owner !== true) return false
-  if (!gate.content_hash || gate.content_hash !== gate.test_content_hash) return false
-  return true
+/** Single release rule. The owner is the caller user id, matched to test_sent_by. */
+export function liveReleaseAllowed(gate: SendGate, ownerId: string): 'ok' | 'master_off' | 'not_tested' {
+  if (gate.master_enabled !== true) return 'master_off'
+  if (gate.status !== 'test_sent' && gate.status !== 'sending') return 'not_tested'
+  if (!ownerId || gate.test_sent_by !== ownerId) return 'not_tested'
+  if (!gate.content_hash || gate.content_hash !== gate.test_content_hash) return 'not_tested'
+  return 'ok'
 }

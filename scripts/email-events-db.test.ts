@@ -220,7 +220,7 @@ begin
     (owner_id, 'owner.events@example.com', 'master'),
     (admin_id, 'admin.events@example.com', 'staff');
   set role service_role;
-  progress := public.email_set_campaign_progress(campaign_id, 'sending');
+  progress := public.email_set_campaign_progress(campaign_id, 'sending', owner_id);
   if progress->>'ok' is distinct from 'false' then
     raise exception 'live started with no test %', progress;
   end if;
@@ -228,7 +228,7 @@ begin
   if marked->>'ok' is distinct from 'false' then
     raise exception 'admin test was accepted %', marked;
   end if;
-  progress := public.email_set_campaign_progress(campaign_id, 'sending');
+  progress := public.email_set_campaign_progress(campaign_id, 'sending', owner_id);
   if progress->>'ok' is distinct from 'false' then
     raise exception 'live started after an admin test %', progress;
   end if;
@@ -263,17 +263,24 @@ begin
   ) then
     raise exception 'edit left the owner test in place';
   end if;
+  set role postgres;
+  update public.email_settings set master_enabled = true where id;
   set role service_role;
-  progress := public.email_set_campaign_progress(campaign_id, 'sending');
+  progress := public.email_set_campaign_progress(campaign_id, 'sending', owner_id);
   if progress->>'ok' is distinct from 'false' then
     raise exception 'live started after an edit %', progress;
   end if;
   marked := public.email_mark_owner_test(campaign_id, owner_id);
-  progress := public.email_set_campaign_progress(campaign_id, 'sending');
-  if marked->>'ok' is distinct from 'true' or progress->>'ok' is distinct from 'true' then
-    raise exception 'live after an owner test failed % %', marked, progress;
+  progress := public.email_set_campaign_progress(campaign_id, 'sending', admin_id);
+  if marked->>'ok' is distinct from 'true' or progress->>'ok' is distinct from 'false' then
+    raise exception 'a different user id was accepted % %', marked, progress;
+  end if;
+  progress := public.email_set_campaign_progress(campaign_id, 'sending', owner_id);
+  if progress->>'ok' is distinct from 'true' then
+    raise exception 'live after an owner test failed %', progress;
   end if;
   set role postgres;
+  update public.email_settings set master_enabled = false where id;
 
   if exists (
     select 1

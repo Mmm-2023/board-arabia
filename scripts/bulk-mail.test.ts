@@ -36,7 +36,7 @@ function gate(overrides: Partial<SendGate> = {}): SendGate {
     issue_send_enabled: false,
     content_hash: releasedHash,
     test_content_hash: releasedHash,
-    test_by_owner: true,
+    test_sent_by: staffId,
     ...overrides,
   }
 }
@@ -293,7 +293,7 @@ test('live send is refused until the owner has tested this version', async () =>
     status: 'approved',
     content_hash: releasedHash,
     test_content_hash: null,
-    test_by_owner: false,
+    test_sent_by: null,
   })
   const untouched = harness({ loadGate: async () => open })
   const noTest = await handleEmailSend({ campaign_id: campaignId, mode: 'live' }, untouched.deps)
@@ -318,11 +318,23 @@ test('live send is refused until the owner has tested this version', async () =>
   assert.equal(afterAdmin.status, 409)
   assert.equal(afterAdmin.body.error, 'not_tested')
 
+  const otherOwner = gate({
+    status: 'test_sent',
+    content_hash: releasedHash,
+    test_content_hash: releasedHash,
+    test_sent_by: '99999999-9999-4999-8999-999999999999',
+  })
+  const wrongOwner = harness({ loadGate: async () => otherOwner })
+  const wrong = await handleEmailSend({ campaign_id: campaignId, mode: 'live' }, wrongOwner.deps)
+  assert.equal(wrong.status, 409)
+  assert.equal(wrong.body.error, 'not_tested')
+  assert.equal(wrongOwner.fetches.length, 0)
+
   const edited = gate({
     status: 'approved',
     content_hash: 'cd'.repeat(32),
     test_content_hash: null,
-    test_by_owner: false,
+    test_sent_by: null,
   })
   const afterEdit = harness({ loadGate: async () => edited })
   const editedLive = await handleEmailSend({ campaign_id: campaignId, mode: 'live' }, afterEdit.deps)
@@ -335,7 +347,7 @@ test('live send is refused until the owner has tested this version', async () =>
       status: 'approved',
       content_hash: releasedHash,
       test_content_hash: null,
-      test_by_owner: false,
+      test_sent_by: null,
     }),
   }
   const owner = harness({
@@ -346,7 +358,7 @@ test('live send is refused until the owner has tested this version', async () =>
         ...state.current,
         status: 'test_sent',
         test_content_hash: releasedHash,
-        test_by_owner: true,
+        test_sent_by: staffId,
       }
       return true
     },

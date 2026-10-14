@@ -77,6 +77,7 @@ Deno.serve(async (req) => {
       const { data, error } = await admin.rpc('email_set_campaign_progress', {
         p_campaign_id: campaignId,
         p_status: status,
+        p_actor: gate.user.id,
       })
       return !error && data?.ok === true
     },

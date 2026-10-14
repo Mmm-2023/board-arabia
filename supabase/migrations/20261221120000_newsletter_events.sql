@@ -437,12 +437,7 @@ begin
     'issue_send_enabled', coalesce(v_send, false),
     'content_hash', v_campaign.content_hash,
     'test_content_hash', v_campaign.test_content_hash,
-    'test_by_owner', exists (
-      select 1
-      from public.staff_users s
-      where s.user_id = v_campaign.test_sent_by
-        and s.role = 'master'
-    )
+    'test_sent_by', v_campaign.test_sent_by
   );
 end;
 $fn$;
@@ -632,7 +627,8 @@ comment on function public.email_log_send(uuid, uuid, text, boolean, text, text,
 
 create or replace function private.email_set_campaign_progress(
   p_campaign_id uuid,
-  p_status text
+  p_status text,
+  p_actor uuid
 ) returns jsonb
 language plpgsql
 security definer
@@ -656,12 +652,28 @@ begin
   end if;
   if p_status = 'sending' and not exists (
     select 1
-    from public.email_campaigns c
-    join public.staff_users s on s.user_id = c.test_sent_by and s.role = 'master'
-    where c.id = p_campaign_id
-      and c.content_hash is not null
-      and c.test_content_hash is not null
-      and c.content_hash = c.test_content_hash
+    from public.email_settings s
+    where s.id and s.master_enabled
+  ) then
+    return pg_catalog.jsonb_build_object('ok', false, 'status', v_status);
+  end if;
+  if p_status = 'sending' and (
+    p_actor is null
+    or not exists (
+      select 1
+      from public.staff_users s
+      where s.user_id = p_actor
+        and s.role = 'master'
+    )
+    or not exists (
+      select 1
+      from public.email_campaigns c
+      where c.id = p_campaign_id
+        and c.test_sent_by = p_actor
+        and c.content_hash is not null
+        and c.test_content_hash is not null
+        and c.content_hash = c.test_content_hash
+    )
   ) then
     return pg_catalog.jsonb_build_object('ok', false, 'status', v_status);
   end if;
@@ -675,26 +687,27 @@ begin
 end;
 $fn$;
 
-revoke all on function private.email_set_campaign_progress(uuid, text) from public;
-revoke all on function private.email_set_campaign_progress(uuid, text) from anon, authenticated;
-grant execute on function private.email_set_campaign_progress(uuid, text) to service_role;
+revoke all on function private.email_set_campaign_progress(uuid, text, uuid) from public;
+revoke all on function private.email_set_campaign_progress(uuid, text, uuid) from anon, authenticated;
+grant execute on function private.email_set_campaign_progress(uuid, text, uuid) to service_role;
 
 create or replace function public.email_set_campaign_progress(
   p_campaign_id uuid,
-  p_status text
+  p_status text,
+  p_actor uuid
 ) returns jsonb
 language sql
 security definer
 set search_path = ''
 as $fn$
-  select private.email_set_campaign_progress(p_campaign_id, p_status);
+  select private.email_set_campaign_progress(p_campaign_id, p_status, p_actor);
 $fn$;
 
-revoke all on function public.email_set_campaign_progress(uuid, text) from public;
-revoke all on function public.email_set_campaign_progress(uuid, text) from anon, authenticated;
-grant execute on function public.email_set_campaign_progress(uuid, text) to service_role;
+revoke all on function public.email_set_campaign_progress(uuid, text, uuid) from public;
+revoke all on function public.email_set_campaign_progress(uuid, text, uuid) from anon, authenticated;
+grant execute on function public.email_set_campaign_progress(uuid, text, uuid) to service_role;
 
-comment on function public.email_set_campaign_progress(uuid, text) is
+comment on function public.email_set_campaign_progress(uuid, text, uuid) is
   'Moves a tested campaign to sending, or from sending to sent. The owner test must still match. Service role only. Does not send mail.';
 
 create or replace function private.email_content_hash(
@@ -751,7 +764,7 @@ create or replace function public.staff_upsert_campaign(
 language plpgsql
 security definer
 set search_path = ''
-as $fn$
+as $$
 declare
   v_id uuid;
   v_status text;
@@ -848,10 +861,9 @@ begin
 
   return pg_catalog.jsonb_build_object('id', v_id, 'status', v_status);
 end;
-$fn$;
+$$;
 
-revoke all on function public.staff_upsert_campaign(uuid, text, text, text, text, text, text, text[], uuid) from public;
-revoke all on function public.staff_upsert_campaign(uuid, text, text, text, text, text, text, text[], uuid) from anon;
+revoke all on function public.staff_upsert_campaign(uuid, text, text, text, text, text, text, text[], uuid) from public, anon;
 grant execute on function public.staff_upsert_campaign(uuid, text, text, text, text, text, text, text[], uuid) to authenticated;
 
 comment on function public.staff_upsert_campaign(uuid, text, text, text, text, text, text, text[], uuid) is
