@@ -124,17 +124,9 @@ begin
   end if;
 
   perform set_config('request.jwt.claims', json_build_object('sub', staff_a, 'aal', 'aal1', 'role', 'authenticated')::text, false);
-  set role authenticated;
-  begin
-    perform public.staff_set_own_display_name('Example Admin');
-    raise exception 'aal1 staff set a name';
-  exception
-    when insufficient_privilege then
-      if sqlerrm not ilike '%not_allowed%' then
-        raise exception 'aal1 error %', sqlerrm;
-      end if;
-  end;
-  set role postgres;
+  if private.is_staff() is not true then
+    raise exception 'aal1 staff failed is_staff';
+  end if;
 
   perform set_config('request.jwt.claims', json_build_object('sub', member_id, 'aal', 'aal2', 'role', 'authenticated')::text, false);
   set role authenticated;

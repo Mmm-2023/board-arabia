@@ -29,11 +29,11 @@ function render(node: ReactNode) {
   return renderToStaticMarkup(createElement(MemoryRouter, null, node))
 }
 
-test('two-step prompt shows on home only and returns after 14 days', () => {
+test('the member home nudge stays off, including after 14 days', () => {
   const now = 1_700_000_000_000
   assert.equal(
     homeMemberPrompt({ pathname: '/dashboard', verifiedFactor: false, dismissedAt: null, now }),
-    true,
+    false,
   )
   assert.equal(
     homeMemberPrompt({ pathname: '/dashboard/deals/mandates', verifiedFactor: false, dismissedAt: null, now }),
@@ -49,11 +49,11 @@ test('two-step prompt shows on home only and returns after 14 days', () => {
   )
   assert.equal(
     homeMemberPrompt({ pathname: '/dashboard', verifiedFactor: false, dismissedAt: now - 15 * DAY, now }),
-    true,
+    false,
   )
   assert.equal(
     homeMemberPrompt({ pathname: '/dashboard', verifiedFactor: false, dismissedAt: now - PROMPT_RETURN_MS, now }),
-    true,
+    false,
   )
   assert.equal(
     homeMemberPrompt({ pathname: '/dashboard', verifiedFactor: true, dismissedAt: null, now }),
@@ -68,7 +68,7 @@ test('two-step prompt shows on home only and returns after 14 days', () => {
   )
   assert.equal(
     homeMemberPrompt({ pathname: '/dashboard', verifiedFactor: false, dismissedAt: legacy.at, now: now + 15 * DAY }),
-    true,
+    false,
   )
   const stored = readPromptDismissal({
     userId: 'example-member',
@@ -96,12 +96,8 @@ test('home prompt is absent on mandates and two-step', async () => {
     const now = 1_700_000_000_000
     const props = { verifiedFactor: false, dismissedAt: null, now, onDismiss: () => {} }
     const home = render(createElement(screens.MemberHomePrompt, { ...props, pathname: '/dashboard' }))
-    assert.match(home, /Protect your seat: turn on two-step sign-in\./)
-    assert.match(home, /href="\/dashboard\/two-step"/)
-    assert.match(home, />Turn on</)
-    assert.match(home, />Not now</)
-    assert.match(home, /min-h-11/)
-    assert.equal(home.includes('<h2'), false)
+    assert.equal(home.includes('Protect your seat'), false)
+    assert.equal(home.includes('data-mfa-prompt'), false)
     for (const pathname of ['/dashboard/deals/mandates', '/dashboard/two-step']) {
       const html = render(createElement(screens.MemberHomePrompt, { ...props, pathname }))
       assert.equal(html.includes('Protect your seat'), false, pathname)
@@ -352,7 +348,8 @@ test('sign-in, home prompt, and code screen render in the browser', async (t) =>
       )
     }, sessionToken('aal1'))
     await page.goto(`${origin}/dashboard`, { waitUntil: 'networkidle' })
-    await page.getByText('Protect your seat: turn on two-step sign-in.').waitFor()
+    await page.getByRole('heading', { name: 'Example Member' }).waitFor()
+    assert.equal(await page.getByText('Protect your seat: turn on two-step sign-in.').count(), 0)
     const titleTop = await page.evaluate(() => {
       const heading = document.querySelector('h1')
       return heading instanceof HTMLElement ? heading.getBoundingClientRect().top : 999
@@ -404,10 +401,8 @@ test('sign-in, home prompt, and code screen render in the browser', async (t) =>
       )
     }, sessionToken('aal1'))
     await challenge.goto(`${origin}/login/staff`, { waitUntil: 'networkidle' })
-    await challenge.getByRole('heading', { name: 'Enter your code' }).waitFor()
-    await challenge.getByRole('button', { name: 'Sign out' }).click()
-    await challenge.waitForURL((url) => url.pathname === '/login/staff')
-    await challenge.getByRole('heading', { name: 'Staff sign in' }).waitFor()
+    await challenge.waitForURL((url) => url.pathname === '/dashboard')
+    assert.equal(await challenge.getByRole('heading', { name: 'Enter your code' }).count(), 0)
     await challengeContext.close()
   } finally {
     await browser.close()

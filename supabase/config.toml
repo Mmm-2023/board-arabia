@@ -122,7 +122,7 @@ verify_jwt = true
 [functions.review-membership]
 verify_jwt = true
 
-# Staff resend for an application. Callers send a staff user JWT. requireStaff checks aal2.
+# Staff resend for an application. Callers send a staff user JWT. requireStaff checks the staff row.
 [functions.notify-application]
 verify_jwt = true
 

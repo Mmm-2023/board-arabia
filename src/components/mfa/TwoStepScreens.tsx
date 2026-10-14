@@ -54,7 +54,7 @@ export function TwoStepEnrolScreen({
       </p>
       {forced ? (
         <p className={`mt-3 text-[0.95rem] leading-relaxed ${light ? 'text-ink/70' : 'text-stone/70'}`}>
-          Admin sign-in needs an authenticator app before the admin area opens.
+          An authenticator app is optional. You can turn it on or remove it on this page.
         </p>
       ) : null}
       {verified.length > 0 ? (

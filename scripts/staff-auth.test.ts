@@ -47,16 +47,12 @@ test('missing user is 401 and a staff row is allowed', () => {
     role: 'master',
   })
   assert.deepEqual(staffApiDecision({ userId: 'staff-1', role: 'staff', aal: 'aal1' }), {
-    allow: false,
-    status: 403,
-    error: 'mfa_required',
-    code: 'mfa_required',
+    allow: true,
+    role: 'staff',
   })
   assert.deepEqual(staffApiDecision({ userId: 'master-1', role: 'master' }), {
-    allow: false,
-    status: 403,
-    error: 'mfa_required',
-    code: 'mfa_required',
+    allow: true,
+    role: 'master',
   })
 })
 
