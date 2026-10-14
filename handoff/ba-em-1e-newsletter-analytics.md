@@ -74,6 +74,10 @@ Release on step 6 stays disabled while sending is off. Opens on Results are labe
 ## Tests
 
 - `scripts/newsletter-analytics.test.ts`: named migration, not assumed newest, forced row level security, staff gate, mask, top 10, no account-mail table name, untracked unsubscribe, privacy lines, mock not wired.
-- `scripts/newsletter-analytics-db.test.ts`: local Postgres. Aggregation, mask, tier split, normalised links, unsubscribe URL excluded, later letter does not take an earlier unsubscribe, last 12 issues, staff only, anon and service_role have no execute.
+- `scripts/newsletter-analytics-db.test.ts`: local Postgres. Aggregation, mask, tier split, normalised links, unsubscribe URL excluded, later letter does not take an earlier unsubscribe, last 12 issues, staff only, anon and service_role have no execute. `measure_opens` is rejected as a campaign audience.
+
+## Redeploy
+
+After applying `20261231120000_newsletter_analytics.sql`: `email-send`, `retention-sweep`, `email-webhook`, `email-unsubscribe`, and `member-notice-send`. The last three import `_shared/bulk_mail.ts`. No new schedule. The master switch stays off.
 - `scripts/email-desk-mock.test.ts`: the shots above.
 - `scripts/security-view-access.test.ts` lists `staff_newsletter_stats` and `staff_newsletter_trend`.
