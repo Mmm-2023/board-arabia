@@ -216,3 +216,11 @@ verify_jwt = false
 # GET does not unsubscribe. POST with the one-click body does.
 [functions.email-unsubscribe]
 verify_jwt = false
+
+# Drains pending member notices. Service role or staff. No schedule.
+[functions.member-notice-send]
+verify_jwt = true
+
+# Records a two-step sign-in change for the signed-in member. No schedule.
+[functions.record-security-notice]
+verify_jwt = true

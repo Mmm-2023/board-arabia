@@ -8,6 +8,7 @@ import {
   sendDedicatedAdmitShare,
   shareSeat,
 } from '../_shared/admit_li_share.ts'
+import { enqueueMemberNotice } from '../_shared/member_notice.ts'
 import { admitMail } from '../_shared/transactional_copy.ts'
 import { corsHeaders, jsonResponse, logEmailEvent, publicSite, sendEmail } from './mail.ts'
 
@@ -130,6 +131,13 @@ Deno.serve(async (req) => {
     if (issued.createdNew) await admin.auth.admin.deleteUser(issued.userId)
     return jsonResponse(req, claimFailure(claimError.message), claimStatus(claimError.message))
   }
+
+  await enqueueMemberNotice({
+    typeKey: 'welcome',
+    userId: issued.userId,
+    refId: app.id,
+    payload: { application_id: app.id },
+  })
 
   const seatLabel = seat === 'ksa' ? 'Saudi Arabia' : 'International'
   const loginUrl = `${site}/login?next=/dashboard&otp_type=${issued.mode === 'magic_link' ? issued.otpType : 'invite'}`

@@ -1,4 +1,5 @@
 import { jsonResponse } from '../_shared/mail.ts'
+import { stableNoticeRef } from '../_shared/member_notice.ts'
 import { mailReminder } from '../_shared/majlis_notify.ts'
 import type { MajlisMailEvent } from '../_shared/majlis_mail.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1'
@@ -37,7 +38,12 @@ Deno.serve(async (req) => {
       p_kind: row.kind,
     })
     if (claimError || claimed !== true) continue
-    const sent = await mailReminder(admin, row.email, row, row.kind)
+    const refId = await stableNoticeRef(row.rsvp_id, row.kind)
+    const sent = await mailReminder(admin, row.email, row, row.kind, {
+      userId: row.member_id,
+      refId,
+      eventId: row.id,
+    })
     if (sent.status !== 'sent') {
       failed += 1
       await admin.rpc('majlis_release_reminder', { p_rsvp: row.rsvp_id, p_kind: row.kind })

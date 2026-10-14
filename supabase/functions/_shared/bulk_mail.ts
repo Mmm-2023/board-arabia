@@ -1,6 +1,32 @@
 import { FROM_NAME, ONE_CLICK_BODY, renderBulkLetter } from './bulk_mail_copy.ts'
 
 export const BULK_BATCH_URL = 'https://api.resend.com/emails/batch'
+
+/** Newsletter uses news. Transactional and security use mail. The mail stream is filled in later. */
+export type MailStream = 'news' | 'mail'
+
+export type StreamEnv = {
+  RESEND_API_KEY?: string
+  EMAIL_FROM?: string
+  RESEND_API_KEY_NEWS?: string
+  EMAIL_FROM_NEWS?: string
+  RESEND_API_KEY_MAIL?: string
+  EMAIL_FROM_MAIL?: string
+}
+
+/** News may fall back to the original names. Mail does not. */
+export function resolveMailStream(stream: MailStream, env: StreamEnv): { apiKey: string; fromMailbox: string } {
+  if (stream === 'mail') {
+    return {
+      apiKey: (env.RESEND_API_KEY_MAIL || '').trim(),
+      fromMailbox: cleanMailbox(env.EMAIL_FROM_MAIL || ''),
+    }
+  }
+  return {
+    apiKey: (env.RESEND_API_KEY_NEWS || env.RESEND_API_KEY || '').trim(),
+    fromMailbox: cleanMailbox(env.EMAIL_FROM_NEWS || env.EMAIL_FROM || ''),
+  }
+}
 const MAX_BATCH = 100
 const MAX_BACKOFF_MS = 30_000
 const DEFAULT_ATTEMPTS = 4
@@ -17,7 +43,9 @@ export type OutboundMessage = {
   text: string
   html: string
   reply_to: string
-  headers: OutboundHeaders
+  headers?: OutboundHeaders
+  open_tracking?: false
+  click_tracking?: false
 }
 
 export type PreparedSend = {
@@ -175,6 +203,11 @@ function messageIds(body: unknown, count: number): string[] {
   return ids.slice(0, count)
 }
 
+function postedMessage(message: OutboundMessage, stream: MailStream): OutboundMessage {
+  if (stream !== 'mail') return message
+  return { ...message, open_tracking: false, click_tracking: false }
+}
+
 export async function deliverBatches(input: {
   campaignId: string
   mode: 'test' | 'live'
@@ -182,12 +215,14 @@ export async function deliverBatches(input: {
   batchSize: number
   pauseMs: number
   apiKey: string
+  stream?: MailStream
   now: () => number
   sleep: (ms: number) => Promise<void>
   fetchImpl: FetchLike
   keep?: (item: PreparedSend) => Promise<boolean>
   maxAttempts?: number
 }): Promise<BatchResult[]> {
+  const stream = input.stream ?? 'news'
   const size = Math.min(MAX_BATCH, Math.max(1, Math.floor(input.batchSize) || 1))
   const attempts = input.maxAttempts ?? DEFAULT_ATTEMPTS
   const results: BatchResult[] = []
@@ -214,7 +249,7 @@ export async function deliverBatches(input: {
           'Content-Type': 'application/json',
           'Idempotency-Key': idempotencyKey,
         },
-        body: JSON.stringify(kept.map((item) => item.message)),
+        body: JSON.stringify(kept.map((item) => postedMessage(item.message, stream))),
       })
       status = response.status
       if (status === 429 && attempt < attempts) {

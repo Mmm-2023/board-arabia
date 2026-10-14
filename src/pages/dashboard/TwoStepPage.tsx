@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { enrollTotp, listTotpFactors, readAssurance, removeTotpFactor, verifyTotp } from '../../lib/mfa'
+import { supabase } from '../../lib/supabase'
 import { useNoIndex } from '../../lib/usePageTitle'
 import { TwoStepEnrolScreen } from '../../components/mfa/TwoStepScreens'
 import { AccountBackLink } from './AccountBackLink'
@@ -56,6 +57,7 @@ export function TwoStepPage() {
     setCode('')
     setFactors(await listTotpFactors())
     await readAssurance()
+    await recordTwoStepNotice()
   }
 
   async function onRemove(id: string) {
@@ -63,7 +65,19 @@ export function TwoStepPage() {
     const result = await removeTotpFactor(id)
     setFactors(await listTotpFactors())
     setBusy(false)
-    if (!result.ok) setError(result.error)
+    if (!result.ok) {
+      setError(result.error)
+      return
+    }
+    await recordTwoStepNotice()
+  }
+
+  async function recordTwoStepNotice() {
+    try {
+      await supabase.functions.invoke('record-security-notice', { body: {} })
+    } catch {
+      // The sign-in change is already saved.
+    }
   }
 
   if (!ready) {

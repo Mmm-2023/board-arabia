@@ -495,6 +495,7 @@ test('due diligence start is the only caller of the local auth helper', () => {
     'supabase/functions/majlis-ics/index.ts',
     'supabase/functions/majlis-rsvp/index.ts',
     'supabase/functions/notify-desk-intro/index.ts',
+    'supabase/functions/record-security-notice/index.ts',
     'supabase/functions/request-membership/index.ts',
   ])
   assert.deepEqual(importers("from '../_shared/due_diligence_user.ts'"), [

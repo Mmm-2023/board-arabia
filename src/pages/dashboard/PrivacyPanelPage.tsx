@@ -17,6 +17,8 @@ export function PrivacyPanelPage() {
   const [digestOptIn, setDigestOptIn] = useState(false)
   const [newsOptIn, setNewsOptIn] = useState(false)
   const [deliveryConnected, setDeliveryConnected] = useState(false)
+  const [noticeOptIn, setNoticeOptIn] = useState<Record<string, boolean>>({})
+  const [noticesConnected, setNoticesConnected] = useState(false)
   const [twoStepOn, setTwoStepOn] = useState(false)
   const [downloadState, setDownloadState] = useState<'idle' | 'ready' | 'limited' | 'error'>('idle')
   const [busy, setBusy] = useState(false)
@@ -37,10 +39,17 @@ export function PrivacyPanelPage() {
     })
     void supabase.rpc('my_email_preferences').then(({ data }) => {
       if (cancelled || !data || typeof data !== 'object' || Array.isArray(data)) return
-      const row = data as { weekly_digest?: boolean; news_invitations?: boolean; delivery_connected?: boolean }
+      const row = data as {
+        weekly_digest?: boolean
+        news_invitations?: boolean
+        delivery_connected?: boolean
+        notices?: Record<string, boolean>
+      }
       setDigestOptIn(row.weekly_digest === true)
       setNewsOptIn(row.news_invitations === true)
       setDeliveryConnected(row.delivery_connected === true)
+      setNoticesConnected(row.delivery_connected === true)
+      if (row.notices && typeof row.notices === 'object' && !Array.isArray(row.notices)) setNoticeOptIn(row.notices)
     })
     void listTotpFactors().then((factors) => {
       if (!cancelled) setTwoStepOn(factors.some((factor) => factor.status === 'verified'))
@@ -165,6 +174,14 @@ export function PrivacyPanelPage() {
     if (error) setNewsOptIn(previous)
   }
 
+  async function onNotice(key: string, next: boolean) {
+    if (key === 'message_new') return
+    const previous = noticeOptIn[key] === true
+    setNoticeOptIn((current) => ({ ...current, [key]: next }))
+    const { error } = await supabase.rpc('set_email_preference', { p_category: key, p_opt_in: next })
+    if (error) setNoticeOptIn((current) => ({ ...current, [key]: previous }))
+  }
+
   async function onDownload() {
     setBusy(true)
     setDownloadState('idle')
@@ -204,6 +221,9 @@ export function PrivacyPanelPage() {
       newsOptIn={newsOptIn}
       onNewsOptIn={(next) => void onNews(next)}
       deliveryConnected={deliveryConnected}
+      noticeOptIn={noticeOptIn}
+      noticesConnected={noticesConnected}
+      onNoticeOptIn={(key, next) => void onNotice(key, next)}
       biometricAvailable={biometricAvailable}
       biometricEnabled={biometricEnabled}
       onBiometricEnabled={(next) => void onBiometric(next)}
