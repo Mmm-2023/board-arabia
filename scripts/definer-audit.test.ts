@@ -178,7 +178,8 @@ begin
       and has_function_privilege('anon', p.oid, 'execute')
   ) listed;
   -- Public wrappers stay on the anon list. The private impls are the
-  -- security definer bodies those wrappers call. Nothing else may be added.
+  -- security definer bodies those wrappers call. The one-click unsubscribe
+  -- RPC is the only extra anon function. The list stays closed.
   if anon_found is distinct from array[
     'private.landing_platform_totals_impl()',
     'private.list_landing_preview_deals_impl()',
@@ -186,6 +187,7 @@ begin
     'private.list_trusted_partners_impl()',
     'private.lookup_member_invite_impl(p_token text)',
     'private.submit_partner_interest_impl(p_name text, p_firm text, p_category text, p_note text)',
+    'public.email_unsubscribe(p_token text, p_source text)',
     'public.landing_platform_totals()',
     'public.list_landing_preview_deals()',
     'public.list_partner_categories()',

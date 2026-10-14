@@ -185,6 +185,7 @@ test('every staff_* function checks staff and is not executable by anon', () => 
   const sql = files.map((file) => readFileSync(path.join(migrationsDir, file), 'utf8')).join('\n')
   const names = [
     'staff_set_avatar_style',
+    'staff_set_email_master',
     'staff_set_member_capacity',
     'staff_list_all_intros',
     'staff_list_desk_intros',
@@ -202,9 +203,12 @@ test('every staff_* function checks staff and is not executable by anon', () => 
     'staff_list_mandates',
     'staff_create_digest_draft',
     'staff_create_mandate',
+    'staff_approve_campaign',
+    'staff_cancel_campaign',
     'staff_decide_digest_issue',
     'staff_digest_issue',
     'staff_digest_mail_plan',
+    'staff_email_audience',
     'staff_digest_sources',
     'staff_save_digest_draft',
     'staff_list_mandate_matches',
@@ -232,6 +236,7 @@ test('every staff_* function checks staff and is not executable by anon', () => 
     'staff_assign_sponsor_package',
     'staff_list_sponsor_catalog',
     'staff_sponsor_handovers',
+    'staff_upsert_campaign',
     'staff_save_sponsor_package',
     'staff_set_majlis_presented_by',
     'staff_private_work_counts',
