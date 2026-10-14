@@ -5,6 +5,9 @@ const config: CapacitorConfig = {
   appName: 'Board Arabia',
   webDir: 'dist',
   plugins: {
+    PushNotifications: {
+      presentationOptions: ['alert', 'sound'],
+    },
     SystemBars: {
       // Light icons on the brand indigo bar.
       style: 'DARK',

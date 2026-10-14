@@ -8,6 +8,8 @@ import { supabase } from '../../lib/supabase'
 import { useNoIndex } from '../../lib/usePageTitle'
 import { BIOMETRIC_PREF_EVENT, readUnlockState, showBiometricSetting } from '../../shell/biometricLock'
 import { deviceSupportsBiometrics, disableNativeUnlock, enableNativeUnlock, nativeVault } from '../../shell/nativeBiometric'
+import { askPushPermission, registerDevicePush, unregisterDevicePush } from '../../shell/nativePush'
+import { PUSH_REGISTRATION_FAILED, pushEnabledFromPreference, shouldAskPushPermission, showPushSetting } from '../../shell/pushRegistration'
 
 export function PrivacyPanelPage() {
   const [hidden, setHidden] = useState(false)
@@ -18,6 +20,9 @@ export function PrivacyPanelPage() {
   const [busy, setBusy] = useState(false)
   const [biometricAvailable, setBiometricAvailable] = useState(false)
   const [biometricEnabled, setBiometricEnabled] = useState(false)
+  const [pushAvailable, setPushAvailable] = useState(false)
+  const [pushEnabled, setPushEnabled] = useState(false)
+  const [pushProblem, setPushProblem] = useState('')
   useNoIndex('Your privacy | Board Arabia')
 
   useEffect(() => {
@@ -56,6 +61,58 @@ export function PrivacyPanelPage() {
       cancelled = true
     }
   }, [])
+
+  useEffect(() => {
+    if (!showPushSetting(Capacitor.isNativePlatform())) return
+    let cancelled = false
+    setPushAvailable(true)
+    void supabase.rpc('own_push_preference').then(({ data }) => {
+      if (!cancelled) setPushEnabled(pushEnabledFromPreference(data))
+    })
+    function onFailed() {
+      setPushEnabled(false)
+      setPushProblem('This device could not register. Nothing was sent.')
+      void supabase.rpc('set_push_notifications', { p_enabled: false })
+    }
+    window.addEventListener(PUSH_REGISTRATION_FAILED, onFailed)
+    return () => {
+      cancelled = true
+      window.removeEventListener(PUSH_REGISTRATION_FAILED, onFailed)
+    }
+  }, [])
+
+  async function onPush(next: boolean) {
+    setPushProblem('')
+    const native = Capacitor.isNativePlatform()
+    if (!showPushSetting(native)) return
+    if (!shouldAskPushPermission(native, next)) {
+      const { error } = await supabase.rpc('set_push_notifications', { p_enabled: false })
+      if (error) {
+        setPushProblem('Could not save this choice. Retry.')
+        return
+      }
+      await unregisterDevicePush()
+      setPushEnabled(false)
+      return
+    }
+    const granted = await askPushPermission()
+    if (!granted) {
+      setPushProblem('Permission was not granted. Push stays off.')
+      return
+    }
+    const { error } = await supabase.rpc('set_push_notifications', { p_enabled: true })
+    if (error) {
+      setPushProblem('Could not save this choice. Retry.')
+      return
+    }
+    setPushEnabled(true)
+    const registered = await registerDevicePush()
+    if (!registered) {
+      await supabase.rpc('set_push_notifications', { p_enabled: false })
+      setPushEnabled(false)
+      setPushProblem('This device could not register. Nothing was sent.')
+    }
+  }
 
   async function onBiometric(next: boolean) {
     if (!next) {
@@ -136,6 +193,10 @@ export function PrivacyPanelPage() {
       biometricAvailable={biometricAvailable}
       biometricEnabled={biometricEnabled}
       onBiometricEnabled={(next) => void onBiometric(next)}
+      pushAvailable={pushAvailable}
+      pushEnabled={pushEnabled}
+      pushProblem={pushProblem}
+      onPushEnabled={(next) => void onPush(next)}
     />
   )
 }

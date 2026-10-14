@@ -47,6 +47,7 @@ export function DeleteAccountView({
             <li>Your directory listing</li>
             <li>Your introductions</li>
             <li>Your notifications</li>
+            <li>Your push notification registration</li>
             <li>Your event replies</li>
           </ul>
           <h2 className="mt-8 font-display text-[1.35rem] font-semibold tracking-[-0.02em]">What is kept</h2>
