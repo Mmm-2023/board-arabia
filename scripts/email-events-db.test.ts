@@ -82,8 +82,11 @@ begin
   ) values (
     'campaign', 'news_invitations', 'Hello', 'Hello', '<p>Hello</p>', array['founding']::text[], 'approved', member_id
   ) returning id into campaign_id;
-  insert into public.email_sends (campaign_id, user_id, email_hash, status, provider_message_id)
-  values (campaign_id, member_id, hashed, 'sent', 'msg-open');
+  insert into public.email_sends (campaign_id, user_id, email_hash, status, provider_message_id, measure)
+  values (campaign_id, member_id, hashed, 'sent', 'msg-open', true);
+  insert into public.email_preferences (user_id, category, opted_in)
+  values (member_id, 'measure_opens', true)
+  on conflict (user_id, category) do update set opted_in = true;
 
   perform private.email_record_event('msg-open', 'opened', hashed, null, '2026-10-14 08:00:00+00');
   perform private.email_record_event('msg-open', 'clicked', hashed, 'https://example.com/story', '2026-10-14 08:01:00+00');

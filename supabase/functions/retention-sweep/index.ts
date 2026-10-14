@@ -88,6 +88,7 @@ Deno.serve(async (req) => {
     retentionDays: retentionDaysOrDefault(plan.ai_tool_retention_days),
     purge: purgeOrphans,
   })
+  const newsletterEvents = dry ? 0 : await purgeOldNewsletterEvents(admin)
   const counts = {
     unverified_7d: arrayOf(plan.unverified).length,
     never_submitted_120d: arrayOf(plan.never_submitted).length,
@@ -109,6 +110,7 @@ Deno.serve(async (req) => {
     dd_reports: arrayOf(plan.dd_reports).length,
     dd_files: dry ? arrayOf(plan.dd_files).length : ddFiles.removed,
     staff_access_13m: arrayOf(plan.staff_access_log).length,
+    newsletter_events_24m: newsletterEvents,
   }
 
   await admin.from('retention_runs').insert({ dry_run: dry, counts })
@@ -203,6 +205,12 @@ async function flushPosthog(admin: ReturnType<typeof createClient>) {
  * Redeploy retention-sweep after the AI tools migration.
  * Files are removed with the Storage API. SQL does not delete storage.objects.
  */
+async function purgeOldNewsletterEvents(admin: ReturnType<typeof createClient>): Promise<number> {
+  const { data, error } = await admin.rpc('newsletter_events_retention')
+  if (error || typeof data !== 'number') return 0
+  return data
+}
+
 async function purgeAiToolFiles(
   admin: ReturnType<typeof createClient>,
   paths: string[],

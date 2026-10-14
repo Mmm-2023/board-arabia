@@ -12,6 +12,23 @@ export type StreamEnv = {
   EMAIL_FROM_NEWS?: string
   RESEND_API_KEY_MAIL?: string
   EMAIL_FROM_MAIL?: string
+  RESEND_API_KEY_NEWS_TRACKED?: string
+  EMAIL_FROM_NEWS_TRACKED?: string
+}
+
+/** Tracked news only when the member opted in and both tracked env values are set. Otherwise the untracked news sender. */
+export function resolveNewsCopy(env: StreamEnv, measure: boolean): { apiKey: string; fromMailbox: string; tracked: boolean } {
+  const plain = resolveMailStream('news', env)
+  if (!measure) return { ...plain, tracked: false }
+  const apiKey = (env.RESEND_API_KEY_NEWS_TRACKED || '').trim()
+  const fromMailbox = cleanMailbox(env.EMAIL_FROM_NEWS_TRACKED || '')
+  if (!apiKey || !fromMailbox) return { ...plain, tracked: false }
+  return { apiKey, fromMailbox, tracked: true }
+}
+
+export function applyNewsTracking(message: OutboundMessage, tracked: boolean): OutboundMessage {
+  if (tracked) return message
+  return { ...message, open_tracking: false, click_tracking: false }
 }
 
 /** News may fall back to the original names. Mail does not. */
@@ -53,6 +70,7 @@ export type PreparedSend = {
   userId: string
   hash: string
   message: OutboundMessage
+  apiKey?: string
 }
 
 export function cleanMailbox(value: string): string {
