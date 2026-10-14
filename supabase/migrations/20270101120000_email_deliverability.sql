@@ -237,6 +237,9 @@ as $fn$
 declare
   v_paused boolean;
 begin
+  if not private.is_staff() then
+    raise exception 'not_allowed' using errcode = '42501';
+  end if;
   if not private.is_owner() then
     raise exception 'not_allowed' using errcode = '42501';
   end if;
