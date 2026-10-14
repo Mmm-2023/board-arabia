@@ -72,6 +72,7 @@ export const MEMBER_SECTIONS: Readonly<Record<string, readonly SectionLink[]>> =
   deals: [
     { id: 'mandates', label: 'Mandates', to: '/dashboard/deals/mandates', end: true },
     { id: 'real-estate', label: 'Real estate', to: '/dashboard/deals/real-estate', end: true },
+    { id: 'board-seats', label: 'Board seats', to: '/dashboard/deals/board-seats', end: false },
     { id: 'deal-rooms', label: 'Deal rooms', to: '/dashboard/deals/rooms', end: false },
   ],
   people: [
@@ -151,6 +152,7 @@ export const STAFF_SECTIONS: Readonly<Record<string, readonly SectionLink[]>> = 
 const DEALS_SECTIONS = [
   '/dashboard/deals/mandates',
   '/dashboard/deals/real-estate',
+  '/dashboard/deals/board-seats',
   '/dashboard/deals/rooms',
 ] as const
 
