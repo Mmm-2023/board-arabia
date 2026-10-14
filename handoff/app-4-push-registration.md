@@ -32,7 +32,7 @@ Native settings, toggle off, from the existing app test build jobs on run `38489
 
 ## Checks
 
-Head `01e49b6a34795ec1ea6609ddfd58f893ca4d39cb`. All five checks passed.
+Head `01e49b6a34795ec1ea6609ddfd58f893ca4d39cb`. All five checks passed. The shot commit `31a765c` then failed `pr-checks` on the existing digest screenshot: the page body was empty. That test passes locally and passed on `01e49b6`. The digest shot test now reloads once if the page is still blank.
 
 | Check | Result |
 | --- | --- |

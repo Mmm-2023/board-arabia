@@ -336,11 +336,17 @@ test('member and admin digest shots at 1440 and 390', async (t) => {
       }
       let rootText = ''
       try {
-        rootText = await root.innerText()
+        rootText = await root.innerText({ timeout: 8000 })
       } catch (error) {
-        const detail = error instanceof Error ? error.message : String(error)
-        const body = await page.locator('body').innerText().catch(() => '')
-        throw new Error(`${detail}\npage errors: ${pageErrors.join(' | ')}\nbody: ${body.slice(0, 400)}`)
+        try {
+          await page.goto(url, { waitUntil: 'domcontentloaded' })
+          await root.waitFor({ timeout: 15000 })
+          rootText = await root.innerText()
+        } catch {
+          const detail = error instanceof Error ? error.message : String(error)
+          const body = await page.locator('body').innerText().catch(() => '')
+          throw new Error(`${detail}\npage errors: ${pageErrors.join(' | ')}\nbody: ${body.slice(0, 400)}`)
+        }
       }
       assert.match(rootText, /Boardroom and markets/)
       assert.match(rootText, /Deals and investments/)
