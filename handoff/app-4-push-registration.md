@@ -25,7 +25,22 @@ Web, toggle hidden, captured in the browser:
 - `handoff/app-4-push-registration/web-privacy-1440.png`
 - `handoff/app-4-push-registration/web-privacy-390.png`
 
-iOS simulator and Android emulator shots come from the existing app test build jobs (`ios-push-screenshot` and `android-home-screenshot`). They open `/native/push-shot/settings`.
+Native settings, toggle off, from the existing app test build jobs on run `38489749334`. They open `/native/push-shot/settings`.
+
+- `handoff/app-4-push-registration/ios-push-settings.png` (artifact `ios-push-screenshot`)
+- `handoff/app-4-push-registration/android-push-settings.png` (artifact `android-home-screenshot`)
+
+## Checks
+
+Head `01e49b6a34795ec1ea6609ddfd58f893ca4d39cb`. All five checks passed.
+
+| Check | Result |
+| --- | --- |
+| pr-checks | pass |
+| crawl | pass |
+| Android debug APK | pass |
+| iOS simulator | pass |
+| Android emulator Home | pass |
 
 ## What the owner sets later
 
