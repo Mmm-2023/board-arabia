@@ -42,7 +42,7 @@ export const DD_RETENTION_LINE = 'Due diligence uploads are deleted automaticall
 export const SIGNING_IN = [
   'Sign-up asks you to confirm your email and is protected against automated abuse.',
   'Admin access is limited to named staff and checked on our servers, not only in the browser.',
-  'Two-step sign-in with an authenticator app is required for admin and available to every member.',
+  'Two-step sign-in with an authenticator app is optional for admin and for every member.',
 ] as const
 
 export const KEEPING_IT_RUNNING =

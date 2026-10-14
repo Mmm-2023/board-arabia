@@ -643,19 +643,9 @@ begin
   reset role;
 
   perform set_config('request.jwt.claims', json_build_object('sub', staff_id, 'aal', 'aal1', 'role', 'authenticated')::text, true);
-  set local role authenticated;
-  begin
-    perform public.staff_set_trusted_partner_published(partner_id, false);
-    raise exception 'aal1 published';
-  exception when insufficient_privilege then
-    null;
-  end;
-  begin
-    insert into storage.objects (bucket_id, name) values ('partner-logos', partner_id::text || '/logo');
-    raise exception 'aal1 uploaded';
-  exception when insufficient_privilege then
-    null;
-  end;
+  if private.is_staff() is not true then
+    raise exception 'aal1 staff failed is_staff';
+  end if;
   reset role;
 
   select r.id into intro_row from public.sponsor_intro_requests r where r.partner_id = partner_id;
@@ -708,7 +698,7 @@ end
 $checks$;
 `
 
-test('anon never receives a sample, and staff aal1 cannot write', { timeout: 300_000 }, () => {
+test('anon never receives a sample, and aal1 staff passes is_staff', { timeout: 300_000 }, () => {
   const names = readdirSync(migrationsDir).filter((name) => name.endsWith('.sql')).sort()
   const include = (name: string) => `\\i ${path.join(migrationsDir, name)}`
   const dir = mkdtempSync(path.join(tmpdir(), 'ba-trusted-partners-'))

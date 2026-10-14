@@ -234,17 +234,9 @@ begin
     json_build_object('sub', staff_id, 'aal', 'aal1', 'role', 'authenticated')::text,
     false
   );
-  set role authenticated;
-  begin
-    perform public.staff_create_digest_draft();
-    raise exception 'aal1 staff prepared an issue';
-  exception
-    when insufficient_privilege then
-      if sqlerrm not like '%not_allowed%' then
-        raise exception 'aal1 error %', sqlerrm;
-      end if;
-  end;
-  set role postgres;
+  if private.is_staff() is not true then
+    raise exception 'aal1 staff failed is_staff';
+  end if;
 
   perform set_config(
     'request.jwt.claims',

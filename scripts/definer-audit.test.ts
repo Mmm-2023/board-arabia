@@ -254,15 +254,10 @@ begin
     false
   );
   set role authenticated;
-  begin
-    perform public.read_dd_retention_copy();
-    raise exception 'aal1 staff was allowed';
-  exception
-    when insufficient_privilege then
-      if sqlerrm not like '%not_allowed%' then
-        raise exception 'aal1 staff error: %', sqlerrm;
-      end if;
-  end;
+  flag := public.read_dd_retention_copy();
+  if flag is distinct from true then
+    raise exception 'aal1 staff read failed';
+  end if;
 
   set role postgres;
   perform set_config(

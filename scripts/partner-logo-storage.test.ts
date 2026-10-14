@@ -374,24 +374,15 @@ begin
 
   perform set_config('request.jwt.claims', json_build_object('sub', staff_id, 'aal', 'aal1', 'role', 'authenticated')::text, true);
   set local role authenticated;
-  select count(*) into seen from storage.objects where bucket_id = 'partner-logos';
-  if seen <> 0 then
-    raise exception 'staff aal1 listed partner logos';
+  if private.is_staff() is not true then
+    raise exception 'aal1 staff failed is_staff';
   end if;
-  delete from storage.objects where bucket_id = 'partner-logos';
-  if found then
-    raise exception 'staff aal1 deleted a logo';
+  select count(*) into seen from storage.objects
+  where bucket_id = 'partner-logos' and name = partner_id::text || '/logo';
+  if seen <> 1 then
+    raise exception 'staff aal1 missed the logo';
   end if;
-  begin
-    insert into storage.objects (bucket_id, name) values ('partner-logos', partner_id::text || '/logo');
-    raise exception 'staff aal1 uploaded';
-  exception when insufficient_privilege then
-    null;
-  end;
   reset role;
-  if (select count(*) from storage.objects where name = partner_id::text || '/logo') <> 1 then
-    raise exception 'aal1 delete removed a logo';
-  end if;
 
   perform set_config('request.jwt.claims', json_build_object('sub', staff_id, 'aal', 'aal2', 'role', 'authenticated')::text, true);
   set local role authenticated;

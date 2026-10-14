@@ -21,8 +21,7 @@ export type StaffRoleResult =
   | { ok: false; status: 400 | 403 | 500; error: string }
   | { ok: true; role: StaffRoleName; changed: boolean }
 
-/** requireStaff (aal2) runs first. A master at aal1 never reaches a write.
- * A staff row at aal2 is still refused here.
+/** requireStaff runs first. A staff row is still refused here. Only a master can write.
  */
 export function gateInviteMaster(input: {
   userId: string | null

@@ -193,16 +193,9 @@ begin
   end if;
 
   perform set_config('request.jwt.claims', json_build_object('sub', staff_id, 'role', 'authenticated', 'aal', 'aal1')::text, true);
-  set role authenticated;
-  begin
-    perform public.set_member_tiers(member_id, array['member', 'sponsor']::text[]);
-    raise exception 'aal1 was allowed to change tiers';
-  exception
-    when others then
-      if position('not_allowed' in sqlerrm) = 0 then
-        raise;
-      end if;
-  end;
+  if private.is_staff() is not true then
+    raise exception 'aal1 staff failed is_staff';
+  end if;
 
   set role postgres;
   perform set_config('request.jwt.claims', json_build_object('sub', member_id, 'role', 'authenticated', 'aal', 'aal2')::text, true);
