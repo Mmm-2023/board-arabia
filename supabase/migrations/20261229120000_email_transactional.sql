@@ -914,7 +914,7 @@ create or replace function public.staff_decide_mandate_intro(
 language plpgsql
 security definer
 set search_path = ''
-as $fn$
+as $$
 declare
   next_status text;
   v_member uuid;
@@ -965,7 +965,7 @@ begin
 
   return pg_catalog.jsonb_build_object('ok', true, 'status', next_status);
 end;
-$fn$;
+$$;
 
 revoke all on function public.staff_decide_mandate_intro(uuid, text) from public, anon;
 grant execute on function public.staff_decide_mandate_intro(uuid, text) to authenticated;
@@ -975,7 +975,7 @@ returns jsonb
 language plpgsql
 security definer
 set search_path = ''
-as $fn$
+as $$
 declare
   v_year integer;
   v_week integer;
@@ -1050,7 +1050,7 @@ begin
 
   return private.digest_issue_state();
 end;
-$fn$;
+$$;
 
 revoke all on function public.staff_decide_digest_issue(text) from public, anon;
 grant execute on function public.staff_decide_digest_issue(text) to authenticated;
