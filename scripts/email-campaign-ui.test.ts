@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import { existsSync, mkdirSync, readFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
 import path from 'node:path'
 import test from 'node:test'
 import { createElement } from 'react'
@@ -409,6 +410,8 @@ test('campaign, preference, and unsubscribe shots at 1440 and 390', { timeout: 1
   mkdirSync(shotDir, { recursive: true })
   const vite = await createServer({
     server: { host: '127.0.0.1', port: 0, hmr: false },
+    cacheDir: path.join(tmpdir(), `ba-campaign-vite-${process.pid}`),
+    optimizeDeps: { holdUntilCrawlEnd: false },
     logLevel: 'error',
   })
   await vite.listen()
@@ -436,15 +439,18 @@ test('campaign, preference, and unsubscribe shots at 1440 and 390', { timeout: 1
       const page = await browser.newPage({ viewport: { width, height } })
       const pageErrors: string[] = []
       page.on('pageerror', (error) => pageErrors.push(error.message))
-      await page.goto(`${origin}/scripts/smoke/email-campaign.html?view=${viewName}`, { waitUntil: 'networkidle' })
+      page.on('console', (msg) => {
+        if (msg.type() === 'error') pageErrors.push(msg.text())
+      })
+      await page.goto(`${origin}/scripts/smoke/email-campaign.html?view=${viewName}`, { waitUntil: 'domcontentloaded' })
       if (viewName === 'release-off' || viewName === 'release-on') {
         const release = page.locator('[data-release]')
         try {
-          await release.waitFor({ state: 'attached', timeout: 5000 })
+          await release.waitFor({ state: 'attached', timeout: 30000 })
         } catch {
-          await page.reload({ waitUntil: 'networkidle' })
+          await page.reload({ waitUntil: 'domcontentloaded' })
           try {
-            await release.waitFor({ state: 'attached', timeout: 5000 })
+            await release.waitFor({ state: 'attached', timeout: 30000 })
           } catch {
             const text = await page.locator('body').innerText().catch(() => '')
             assert.fail(`${viewName} did not render. ${pageErrors.join(' | ')} ${text.slice(0, 500)}`)

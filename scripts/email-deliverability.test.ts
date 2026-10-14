@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import { existsSync, mkdirSync, readFileSync, readdirSync } from 'node:fs'
+import { tmpdir } from 'node:os'
 import path from 'node:path'
 import test from 'node:test'
 import { fileURLToPath } from 'node:url'
@@ -405,6 +406,8 @@ test('the admin email screen shows the pause banner and read-only stream address
   mkdirSync(shotDir, { recursive: true })
   const vite = await createServer({
     server: { host: '127.0.0.1', port: 0, hmr: false },
+    cacheDir: path.join(tmpdir(), `ba-deliver-vite-${process.pid}`),
+    optimizeDeps: { holdUntilCrawlEnd: false },
     logLevel: 'error',
   })
   await vite.listen()
