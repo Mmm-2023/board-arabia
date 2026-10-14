@@ -8,14 +8,23 @@ export function EmailUnsubscribePage() {
   const [params] = useSearchParams()
   const token = params.get('t') ?? ''
   const [done, setDone] = useState(false)
+  const [error, setError] = useState(false)
   const [busy, setBusy] = useState(false)
   useNoIndex('Unsubscribe | Board Arabia')
 
   async function confirm() {
     if (!token || busy || done) return
     setBusy(true)
-    await supabase.rpc('email_unsubscribe', { p_token: token, p_source: 'unsubscribe_link' })
+    setError(false)
+    const { error: failed } = await supabase.rpc('email_unsubscribe', {
+      p_token: token,
+      p_source: 'unsubscribe_link',
+    })
     setBusy(false)
+    if (failed) {
+      setError(true)
+      return
+    }
     setDone(true)
   }
 
@@ -23,6 +32,7 @@ export function EmailUnsubscribePage() {
     <UnsubscribeConfirm
       tokenPresent={token.length > 0}
       done={done}
+      error={error}
       busy={busy}
       onConfirm={() => void confirm()}
     />

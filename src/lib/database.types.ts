@@ -1724,7 +1724,7 @@ export type Database = {
           p_subject: string
           p_preheader: string
           p_body_text: string
-          p_body_html: string
+          p_body_html: string | null
           p_audience: string[]
           p_digest_issue_id: string | null
         }
@@ -1743,7 +1743,7 @@ export type Database = {
         Returns: Json
       }
       staff_email_release_gate: {
-        Args: { p_id: string }
+        Args: { p_campaign_id: string }
         Returns: Json
       }
     }

@@ -63,6 +63,8 @@ declare
   consent_n integer;
   result jsonb;
   master boolean;
+  stored_html text;
+  markup_id uuid;
   hashed text;
   owner_hash text;
   send_hash text;
@@ -181,12 +183,22 @@ begin
     false
   );
   set role authenticated;
-  result := public.staff_email_release_gate(letter_id);
+  if not exists (
+    select 1
+    from pg_catalog.pg_proc p
+    join pg_catalog.pg_namespace n on n.oid = p.pronamespace
+    where n.nspname = 'public'
+      and p.proname = 'staff_email_release_gate'
+      and p.proargnames = array['p_campaign_id']::text[]
+  ) then
+    raise exception 'staff_email_release_gate argument name is not p_campaign_id';
+  end if;
+  result := public.staff_email_release_gate(p_campaign_id => letter_id);
   if result->>'ready' is distinct from 'false' or result->>'master_enabled' is distinct from 'false' then
     raise exception 'gate opened while the master switch is off %', result;
   end if;
   perform public.staff_set_email_master(true);
-  result := public.staff_email_release_gate(letter_id);
+  result := public.staff_email_release_gate(p_campaign_id => letter_id);
   if result->>'ready' is distinct from 'true'
      or result->>'version_matches' is distinct from 'true'
      or result->>'test_sent' is distinct from 'true' then
@@ -234,7 +246,7 @@ begin
     raise exception 'edit did not clear the owner test';
   end if;
   set role authenticated;
-  result := public.staff_email_release_gate(letter_id);
+  result := public.staff_email_release_gate(p_campaign_id => letter_id);
   if result->>'ready' is distinct from 'false' then
     raise exception 'screen gate stayed open after the edit %', result;
   end if;
@@ -244,6 +256,32 @@ begin
     raise exception 'live send stayed open after the edit %', result;
   end if;
   set role postgres;
+
+  set role authenticated;
+  result := public.staff_upsert_campaign(
+    null, 'campaign', 'news_invitations', 'Markup', 'Preview', 'Hello <b>members</b>.',
+    null, array['founding']::text[], null
+  );
+  markup_id := (result->>'id')::uuid;
+  set role postgres;
+  select c.body_html_sanitised into stored_html
+  from public.email_campaigns c
+  where c.id = markup_id;
+  if stored_html is distinct from '<p>Hello &lt;b&gt;members&lt;/b&gt;.</p>' then
+    raise exception 'null html was not escaped %', stored_html;
+  end if;
+  set role authenticated;
+  result := public.staff_upsert_campaign(
+    markup_id, 'campaign', 'news_invitations', 'Markup', 'Preview', 'Hello <b>members</b>.',
+    '<p>Hello</p>', array['founding']::text[], null
+  );
+  set role postgres;
+  select c.body_html_sanitised into stored_html
+  from public.email_campaigns c
+  where c.id = markup_id;
+  if stored_html is distinct from '<p>Hello</p>' then
+    raise exception 'supplied html was rewritten %', stored_html;
+  end if;
 
   insert into public.email_sends (campaign_id, email_hash, status, is_test)
   values (letter_id, repeat('ab', 32), 'sent', false)

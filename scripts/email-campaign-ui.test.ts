@@ -35,7 +35,13 @@ test('campaign migration stays off, names the file, and does not schedule a send
   assert.equal(/pg_cron|cron\.schedule|pg_net|net\.http/i.test(sql), false)
   assert.equal(/master_enabled\s*=\s*true/.test(sql), false)
   assert.equal(/news_invitations_opt_in|apply_form/.test(sql), false)
-  assert.equal(/function public\.staff_upsert_campaign/.test(sql), false)
+  assert.match(sql, /function private\.email_plain_html/)
+  assert.match(sql, /when p_body_html is null then private\.email_plain_html\(v_body\)/)
+  assert.match(sql, /function public\.staff_upsert_campaign/)
+  assert.match(sql, /test_sent_by = null/)
+  assert.match(sql, /test_sent_at = null/)
+  assert.match(sql, /test_content_hash = null/)
+  assert.match(sql, /content_hash = v_hash/)
   assert.match(sql, /c\.test_sent_by/)
   assert.match(sql, /c\.content_hash/)
   assert.match(sql, /c\.test_content_hash/)
@@ -88,7 +94,10 @@ test('the screen calls email-send by name and the confirm page waits for the cli
   assert.match(panel, /requestCampaignSend\(draft\.id, 'test'\)/)
   assert.match(panel, /requestCampaignSend\(draft\.id, 'live'\)/)
   assert.equal(/staff_record_campaign_test/.test(panel), false)
-  assert.match(panel, /staff_email_release_gate/)
+  assert.match(panel, /staff_email_release_gate',\s*\{\s*p_campaign_id:\s*draft\.id\s*\}/)
+  assert.equal(/staff_email_release_gate',\s*\{\s*p_id:/.test(panel), false)
+  assert.match(panel, /p_body_html:\s*null/)
+  assert.equal(/p_body_html:\s*next\.bodyText/.test(panel), false)
   assert.equal(/@example\.com|RESEND_|sk_live/.test(panel + send + page), false)
   assert.equal(page.includes('useEffect'), false)
   const confirmAt = page.indexOf('async function confirm')
@@ -107,11 +116,58 @@ test('the screen calls email-send by name and the confirm page waits for the cli
   assert.equal(page.toLowerCase().includes('the desk'), false)
   assert.equal(/\b(resend|gmail|google)\b/i.test(page), false)
   const unsub = read('src/pages/EmailUnsubscribeView.tsx')
+  const copy = read('src/lib/emailCampaign.ts')
   assert.match(unsub, /You are unsubscribed\. You can turn emails back on in/)
   assert.match(unsub, /href="\/dashboard\/privacy"|to="\/dashboard\/privacy"/)
-  assert.match(read('src/lib/emailCampaign.ts'), /You are unsubscribed\. You can turn emails back on in Your privacy\./)
+  assert.match(unsub, /UNSUBSCRIBE_RETRY/)
+  assert.match(copy, /You are unsubscribed\. You can turn emails back on in Your privacy\./)
+  assert.match(copy, /Could not unsubscribe\. Retry\./)
+  const failedAt = page.indexOf('if (failed)')
+  const doneAt = page.indexOf('setDone(true)')
+  assert.ok(failedAt > 0 && doneAt > failedAt)
+  assert.match(page.slice(failedAt, doneAt), /setError\(true\)/)
+  assert.match(page.slice(failedAt, doneAt), /return/)
   assert.equal(unsub.includes('supabase'), false)
   assert.equal(unsub.includes('useEffect'), false)
+})
+
+test('the release call uses the SQL argument name', () => {
+  const sql = read(`supabase/migrations/${migrationName}`)
+  const panel = read('src/pages/admin/EmailCampaignPanel.tsx')
+  const types = read('src/lib/database.types.ts')
+  const signature = sql.match(/function public\.staff_email_release_gate\(([a-z0-9_]+) uuid\)/)
+  assert.ok(signature)
+  const arg = signature[1]
+  assert.equal(arg, 'p_campaign_id')
+  assert.match(panel, new RegExp(`staff_email_release_gate', \\{ ${arg}: draft\\.id \\}`))
+  const gateTypes = types.slice(types.indexOf('staff_email_release_gate:'))
+  assert.match(gateTypes, new RegExp(`Args: \\{ ${arg}: string \\}`))
+  assert.equal(new RegExp(`staff_email_release_gate', \\{ p_id:`).test(panel), false)
+})
+
+test('an unsubscribe error shows a retry and never the success sentence', async () => {
+  const vite = await createServer({
+    server: { middlewareMode: true, hmr: false },
+    appType: 'custom',
+    logLevel: 'error',
+  })
+  const viewMod = await vite.ssrLoadModule('/src/pages/EmailUnsubscribeView.tsx')
+  const UnsubscribeConfirm = viewMod.UnsubscribeConfirm
+  const props = { tokenPresent: true, onConfirm: () => undefined }
+  const failed = renderToStaticMarkup(
+    createElement(MemoryRouter, null, createElement(UnsubscribeConfirm, { ...props, done: true, error: true })),
+  )
+  assert.match(failed, /data-unsubscribe="error"/)
+  assert.match(failed, /Could not unsubscribe\. Retry\./)
+  assert.match(failed, />Unsubscribe</)
+  assert.equal(/You are unsubscribed/.test(failed), false)
+  const confirm = renderToStaticMarkup(
+    createElement(MemoryRouter, null, createElement(UnsubscribeConfirm, { ...props, done: false, error: false })),
+  )
+  assert.match(confirm, /data-unsubscribe="confirm"/)
+  assert.match(confirm, />Unsubscribe</)
+  assert.equal(/You are unsubscribed/.test(confirm), false)
+  await vite.close()
 })
 
 test('release control renders closed and open, and the master switch is owner only', async () => {
@@ -373,6 +429,8 @@ test('campaign, preference, and unsubscribe shots at 1440 and 390', { timeout: 1
       ['preferences', 'preferences', 390, 844],
       ['unsubscribe', 'unsubscribe', 1440, 900],
       ['unsubscribe', 'unsubscribe', 390, 844],
+      ['unsubscribe-error', 'unsubscribe-error', 1440, 900],
+      ['unsubscribe-error', 'unsubscribe-error', 390, 844],
     ]
     for (const [name, viewName, width, height] of shots) {
       const page = await browser.newPage({ viewport: { width, height } })
@@ -395,14 +453,14 @@ test('campaign, preference, and unsubscribe shots at 1440 and 390', { timeout: 1
         assert.match(text, /not connected yet/)
         assert.equal(await page.locator('[data-news-email]').getAttribute('data-news-email'), 'off')
       }
-      if (viewName === 'unsubscribe') {
-        assert.equal(await page.locator('[data-unsubscribe]').getAttribute('data-unsubscribe'), 'confirm')
+      if (viewName === 'unsubscribe' || viewName === 'unsubscribe-error') {
+        const state = viewName === 'unsubscribe-error' ? 'error' : 'confirm'
+        const text = await page.locator('main').innerText()
+        assert.equal(await page.locator('[data-unsubscribe]').getAttribute('data-unsubscribe'), state)
         assert.equal(await page.getByRole('button', { name: 'Unsubscribe' }).isDisabled(), false)
-        const calls = await page.evaluate(() => document.querySelectorAll('[data-unsubscribe="done"]').length)
-        assert.equal(calls, 0)
-        await page.getByRole('button', { name: 'Unsubscribe' }).click()
-        assert.equal(await page.locator('[data-unsubscribe]').getAttribute('data-unsubscribe'), 'done')
-        assert.match(await page.locator('main').innerText(), /You are unsubscribed/)
+        assert.equal(/You are unsubscribed/.test(text), false)
+        if (state === 'error') assert.match(text, /Could not unsubscribe\. Retry\./)
+        if (state === 'confirm') assert.match(text, /This stops Board Arabia email for this link/)
       }
       const file = path.join(shotDir, `${name}-${width}.png`)
       await page.screenshot({ path: file, fullPage: true })

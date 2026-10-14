@@ -98,7 +98,7 @@ export function EmailCampaignPanel() {
       p_subject: next.subject,
       p_preheader: next.preheader,
       p_body_text: next.bodyText,
-      p_body_html: next.bodyText,
+      p_body_html: null,
       p_audience: next.tiers,
       p_digest_issue_id: next.digestIssueId,
     })
@@ -143,7 +143,7 @@ export function EmailCampaignPanel() {
     if (!releaseReady(gate) || !confirmMatches(confirmText, gate.eligible)) return
     setBusy(true)
     setNotice('')
-    const { data, error } = await supabase.rpc('staff_email_release_gate', { p_id: draft.id })
+    const { data, error } = await supabase.rpc('staff_email_release_gate', { p_campaign_id: draft.id })
     const fresh = data && typeof data === 'object' ? (data as { ready?: unknown }) : null
     if (error || fresh?.ready !== true) {
       setBusy(false)

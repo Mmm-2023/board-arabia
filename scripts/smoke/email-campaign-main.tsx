@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react'
+import { type ReactNode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { MemoryRouter } from 'react-router-dom'
 import { PrivacyPanelView } from '../../src/components/privacy/PrivacyPanelView'
@@ -159,14 +159,14 @@ function preferences() {
   )
 }
 
-function UnsubscribeShot() {
-  const [done, setDone] = useState(false)
+function UnsubscribeShot({ error = false }: { error?: boolean }) {
   return (
     <MemoryRouter initialEntries={['/email/unsubscribe?t=example']}>
       <UnsubscribeConfirm
         tokenPresent
-        done={done}
-        onConfirm={() => setDone(true)}
+        done={false}
+        error={error}
+        onConfirm={() => undefined}
       />
     </MemoryRouter>
   )
@@ -178,6 +178,7 @@ if (root) {
     view === 'release-on' ? campaign('on')
     : view === 'preferences' ? preferences()
     : view === 'unsubscribe' ? <UnsubscribeShot />
+    : view === 'unsubscribe-error' ? <UnsubscribeShot error />
     : campaign('off'),
   )
 }

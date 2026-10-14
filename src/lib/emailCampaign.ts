@@ -261,3 +261,4 @@ export function tierChoices(): Array<{ id: string; label: string }> {
 
 export const UNSUBSCRIBE_BUTTON = 'Unsubscribe'
 export const UNSUBSCRIBE_DONE = 'You are unsubscribed. You can turn emails back on in Your privacy.'
+export const UNSUBSCRIBE_RETRY = 'Could not unsubscribe. Retry.'
