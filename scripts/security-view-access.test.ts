@@ -209,6 +209,8 @@ test('every staff_* function checks staff and is not executable by anon', () => 
     'staff_digest_issue',
     'staff_digest_mail_plan',
     'staff_email_audience',
+    'staff_email_release_gate',
+    'staff_email_screen',
     'staff_digest_sources',
     'staff_save_digest_draft',
     'staff_list_mandate_matches',
