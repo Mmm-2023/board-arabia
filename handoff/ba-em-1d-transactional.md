@@ -8,7 +8,7 @@ Nothing here was applied to the live database. No `db push`, no Edge deploy, no 
 
 ## Apply list
 
-1. Apply `20261229120000_email_transactional.sql` only. Slot `20261229120000` was free on main before this commit. Slots 21 and 23 stay unused. Slots 22, 24, 25, 26, 27 and 28 are already used.
+1. Apply `20261229120000_email_transactional.sql` only. That filename is still the only file on slot 29, and it sorts before `20261230120000_staff_aal1_access.sql`. The later staff migration does not use slot 29. `scripts/staff-aal1-access.test.ts` used to assert this filename was absent, because the slot was reserved while that pull request was open. It now checks that this file, and `20261223120000_email_campaign_ui.sql`, sort before the staff access migration. `20261221120000` and `20261223120000` are already on main. Slots 22, 24, 25, 26, 27 and 28 are already used.
 2. Deploy the Edge function `member-notice-send`. It runs only when admin or the service role calls it. There is no schedule.
 3. No new secrets. Transactional mail reads `RESEND_API_KEY_MAIL` and `EMAIL_FROM_MAIL` when that stream is configured. It does not fall back to the newsletter names. `PUBLIC_CONTACT_EMAIL` is the reply address. None of these are set here.
 
