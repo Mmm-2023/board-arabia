@@ -13,8 +13,8 @@ const migrationName = '20270101120000_email_deliverability.sql'
 test('pause thresholds, permanent suppression, and owner resume', { timeout: 300_000 }, () => {
   const names = readdirSync(migrationsDir).filter((name) => name.endsWith('.sql')).sort()
   assert.equal(names.includes(migrationName), true)
-  assert.ok(names.indexOf(migrationName) > names.indexOf('20261230120000_staff_aal1_access.sql'))
-  assert.equal(names.includes('20261231120000_newsletter_analytics.sql'), false)
+  assert.ok(names.indexOf(migrationName) > names.indexOf('20261231120000_newsletter_analytics.sql'))
+  assert.equal(names.filter((name) => name.startsWith('20261231120000')).length, 1)
   const include = (name: string) => `\\i ${path.join(migrationsDir, name)}`
   const dir = mkdtempSync(path.join(tmpdir(), 'ba-email-pause-'))
   const script = path.join(dir, 'run.sql')

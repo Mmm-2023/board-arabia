@@ -1,8 +1,8 @@
 # EM-1f handoff: deliverability
 
-Base: `main` after transactional notices. One migration, `supabase/migrations/20270101120000_email_deliverability.sql`. Sending stays off. The master switch default is unchanged. No cron, no `pg_net`, and no workflow schedule was added. No second-factor check was added.
+Base: `main` after the newsletter analytics pull request. One migration, `supabase/migrations/20270101120000_email_deliverability.sql`. Sending stays off. The master switch default is unchanged. No cron, no `pg_net`, and no workflow schedule was added. No second-factor check was added.
 
-This change does not add the tracked news sender names or the `20261231120000` migration. Those stay with the open analytics pull request. The news stream still falls back to the original key and From names. A later merge can keep per-recipient tracked copies, because open and click flags are left unset on newsletter messages and the batch sender still accepts an optional per-message key.
+The tracked news sender names and `20261231120000_newsletter_analytics.sql` stay as they landed on main. This change does not add a second copy. A tracked From that is the apex, or any other domain, falls back to the untracked news stream. Untracked newsletter copies still turn measurement off. The batch sender still groups by key.
 
 Nothing here was applied to the live database. No `db push`, no Edge deploy, no secret set, no merge.
 

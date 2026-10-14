@@ -303,7 +303,8 @@ test('auto-pause stops the next batch at the complaint threshold', async () => {
 test('the deliverability migration stays off, has no cron, and does not require a second factor', () => {
   const names = readdirSync(path.join(root, 'supabase/migrations')).filter((name) => name.endsWith('.sql'))
   assert.equal(names.filter((name) => name.startsWith('20270101120000')).length, 1)
-  assert.equal(names.includes('20261231120000_newsletter_analytics.sql'), false)
+  assert.equal(names.filter((name) => name.startsWith('20261231120000')).length, 1)
+  assert.ok(names.indexOf(migrationName) > names.indexOf('20261231120000_newsletter_analytics.sql'))
   const sql = read(`supabase/migrations/${migrationName}`)
   assert.equal(sql.includes('\u2014'), false)
   assert.equal(sql.includes('\u2013'), false)
@@ -323,7 +324,7 @@ test('the deliverability migration stays off, has no cron, and does not require 
   const streams = read('supabase/functions/email-streams/index.ts')
   assert.equal(streams.includes('RESEND_API_KEY_NEWS_TRACKED'), false)
   assert.match(read('supabase/config.toml'), /\[functions\.email-streams\]\s+verify_jwt = true/)
-  assert.equal(read('supabase/functions/email-send/index.ts').includes('RESEND_API_KEY_NEWS_TRACKED'), false)
+  assert.match(read('supabase/functions/email-send/index.ts'), /RESEND_API_KEY_NEWS_TRACKED/)
 })
 
 test('the admin email screen shows the pause banner and read-only stream addresses', { timeout: 120000 }, async (t) => {

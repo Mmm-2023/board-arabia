@@ -54,6 +54,8 @@ export function PrivacyPanelView({
   onDigestOptIn,
   newsOptIn = false,
   onNewsOptIn,
+  measureOptIn = false,
+  onMeasureOptIn,
   deliveryConnected = false,
   noticeOptIn = {},
   noticesConnected = false,
@@ -80,6 +82,8 @@ export function PrivacyPanelView({
   onDigestOptIn?: (optIn: boolean) => void
   newsOptIn?: boolean
   onNewsOptIn?: (optIn: boolean) => void
+  measureOptIn?: boolean
+  onMeasureOptIn?: (optIn: boolean) => void
   deliveryConnected?: boolean
   noticeOptIn?: Record<string, boolean>
   noticesConnected?: boolean
@@ -212,6 +216,38 @@ export function PrivacyPanelView({
           {deliveryConnected
             ? 'You can turn this off at any time.'
             : 'This choice is saved. Nothing is sent now.'}
+        </p>
+      </section>
+
+      <section className={section} aria-labelledby="privacy-measure" data-measure-email={measureOptIn ? 'on' : 'off'}>
+        <h2 id="privacy-measure" className={heading}>
+          Measure opens and clicks
+        </h2>
+        <p className={body}>
+          {measureOptIn
+            ? 'On. We measure opens and clicks for aggregate statistics only. Opens are approximate.'
+            : 'Off. We do not measure whether a newsletter is opened or which links are clicked.'}
+        </p>
+        <div className="mt-4 flex flex-wrap gap-2" role="group" aria-label="Measure opens and clicks">
+          <button
+            type="button"
+            className={`${choice} ${measureOptIn ? 'border-ink/20 text-ink/70' : 'ba-primary border-transparent'}`}
+            aria-pressed={!measureOptIn}
+            onClick={() => onMeasureOptIn?.(false)}
+          >
+            Off
+          </button>
+          <button
+            type="button"
+            className={`${choice} ${measureOptIn ? 'ba-primary border-transparent' : 'border-ink/20 text-ink/70'}`}
+            aria-pressed={measureOptIn}
+            onClick={() => onMeasureOptIn?.(true)}
+          >
+            On
+          </button>
+        </div>
+        <p className="mt-3 max-w-xl text-[0.95rem] leading-relaxed text-ink/65">
+          Off unless you turn it on. You can stop measurement at any time. Unsubscribe clicks are not included.
         </p>
       </section>
 
