@@ -154,7 +154,7 @@ export const PRIVACY_EN: LegalDocument = {
       "kind": "clause",
       "id": "c-3-15",
       "number": "3.15",
-      "text": "Newsletter measurement. Newsletter emails include open and click measurement. We use it only for aggregate statistics. We do not show who opened or clicked. Opens are approximate, because some mail apps download images automatically. You can turn these emails off in Your privacy. Unsubscribe clicks are not included in these statistics."
+      "text": "Newsletter measurement. If you agree to receive our newsletter, we measure whether it is opened and which links are clicked, using a small image and tracked links in the email. We do this only with your consent and only to produce aggregate statistics, such as open and click rates. We do not show staff or other members who opened or clicked. Opens are approximate, because some mail apps download images automatically. You can stop measurement or the newsletter at any time in Your privacy. Unsubscribe clicks are not included in these statistics."
     },
     {
       "kind": "h2",
@@ -447,7 +447,7 @@ export const PRIVACY_EN: LegalDocument = {
         ],
         [
           "Newsletter open and click records",
-          "Removed on request to [CONTACT EMAIL], and in any case within 24 months"
+          "Removed on request to [CONTACT EMAIL], and in any case within 13 months"
         ]
       ]
     },

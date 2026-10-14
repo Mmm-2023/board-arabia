@@ -283,9 +283,12 @@ begin
     raise exception 'supplied html was rewritten %', stored_html;
   end if;
 
-  insert into public.email_sends (campaign_id, email_hash, status, is_test)
-  values (letter_id, repeat('ab', 32), 'sent', false)
+  insert into public.email_sends (campaign_id, user_id, email_hash, status, is_test, measure)
+  values (letter_id, news_id, repeat('ab', 32), 'sent', false, true)
   returning id into send_id;
+  insert into public.email_preferences (user_id, category, opted_in)
+  values (news_id, 'measure_opens', true)
+  on conflict (user_id, category) do update set opted_in = true;
   insert into public.newsletter_events (send_id, message_id, event, url, occurred_at)
   values (send_id, 'msg-1', 'clicked', 'https://example.com/letters', now());
   insert into public.email_events (kind, recipient, subject, status)

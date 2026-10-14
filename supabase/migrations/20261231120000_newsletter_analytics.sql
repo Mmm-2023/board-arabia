@@ -11,6 +11,12 @@
 alter table public.newsletter_events enable row level security;
 alter table public.newsletter_events force row level security;
 
+alter table public.email_sends
+  add column if not exists measure boolean not null default false;
+
+comment on column public.email_sends.measure is
+  'True only when this send used the tracked news sender because the member had turned measurement on. Default false.';
+
 create index if not exists newsletter_events_event_send_idx
   on public.newsletter_events (event, send_id);
 
@@ -167,6 +173,7 @@ as $fn$
     from public.email_sends s
     join public.email_campaigns c on c.id = s.campaign_id
     where s.is_test = false
+      and s.measure
       and s.status in ('sent', 'delivered', 'opened', 'clicked', 'bounced', 'complained')
   ),
   hits as (
@@ -238,6 +245,7 @@ begin
   from public.email_sends s
   where s.campaign_id = p_campaign_id
     and s.is_test = false
+    and s.measure
     and s.status in ('sent', 'delivered', 'opened', 'clicked', 'bounced', 'complained');
 
   for v_tier in
@@ -310,6 +318,7 @@ begin
 
   return pg_catalog.jsonb_build_object(
     'opens', 'approximate',
+    'measured_only', true,
     'counts', private.newsletter_metric_text(v_sends, private.newsletter_unsub_count(p_campaign_id)),
     'tiers', v_tiers,
     'links', coalesce(v_links, '[]'::jsonb)
@@ -364,6 +373,7 @@ begin
     from public.email_sends s
     where s.campaign_id = v_row.id
       and s.is_test = false
+      and s.measure
       and s.status in ('sent', 'delivered', 'opened', 'clicked', 'bounced', 'complained');
 
     v_metrics := private.newsletter_metric_text(v_ids, private.newsletter_unsub_count(v_row.id));
@@ -380,6 +390,7 @@ begin
 
   return pg_catalog.jsonb_build_object(
     'opens', 'approximate',
+    'measured_only', true,
     'issues', v_issues
   );
 end;
@@ -403,7 +414,7 @@ declare
   removed integer;
 begin
   delete from public.newsletter_events e
-  where e.occurred_at < pg_catalog.now() - interval '24 months';
+  where e.occurred_at < pg_catalog.now() - interval '13 months';
   get diagnostics removed = row_count;
   return coalesce(removed, 0);
 end;
@@ -415,4 +426,229 @@ revoke all on function public.newsletter_events_retention() from anon, authentic
 grant execute on function public.newsletter_events_retention() to service_role;
 
 comment on function public.newsletter_events_retention() is
-  'Deletes newsletter measurement rows older than 24 months. Called by the existing retention sweep. Does not read account mail. Does not send mail. Not scheduled here.';
+  'Deletes newsletter measurement rows older than 13 months. Called by the existing retention sweep. Does not read account mail. Does not send mail. Not scheduled here.';
+
+alter table public.email_categories
+  drop constraint if exists email_categories_kind_check;
+alter table public.email_categories
+  add constraint email_categories_kind_check
+  check (kind in ('bulk', 'transactional', 'essential', 'measurement'));
+
+insert into public.email_categories (key, label, requires_opt_in, kind, member_can_disable)
+values ('measure_opens', 'Measure opens and clicks', true, 'measurement', true)
+on conflict (key) do update
+set label = excluded.label,
+    requires_opt_in = excluded.requires_opt_in,
+    kind = excluded.kind,
+    member_can_disable = excluded.member_can_disable;
+
+create or replace function public.my_email_preferences()
+returns jsonb
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $fn$
+declare
+  weekly_col boolean;
+  weekly_pref boolean;
+  news_pref boolean;
+  measure_pref boolean;
+  v_master boolean;
+  v_notices jsonb;
+begin
+  if auth.uid() is null then
+    raise exception 'not_allowed' using errcode = '42501';
+  end if;
+  select m.digest_email_opt_in into weekly_col
+  from public.members m
+  where m.user_id = auth.uid()
+    and m.status in ('invited', 'active');
+  if not found then
+    raise exception 'not_allowed' using errcode = '42501';
+  end if;
+  select p.opted_in into weekly_pref
+  from public.email_preferences p
+  where p.user_id = auth.uid() and p.category = 'weekly_digest';
+  select p.opted_in into news_pref
+  from public.email_preferences p
+  where p.user_id = auth.uid() and p.category = 'news_invitations';
+  select p.opted_in into measure_pref
+  from public.email_preferences p
+  where p.user_id = auth.uid() and p.category = 'measure_opens';
+  select s.master_enabled into v_master
+  from public.email_settings s
+  where s.id;
+  select coalesce(pg_catalog.jsonb_object_agg(c.key, coalesce(p.opted_in, false)), '{}'::jsonb)
+    into v_notices
+  from public.email_categories c
+  left join public.email_preferences p
+    on p.category = c.key
+   and p.user_id = auth.uid()
+  where c.kind = 'transactional'
+    and c.key <> 'newsletter_ready';
+  return pg_catalog.jsonb_build_object(
+    'weekly_digest', coalesce(weekly_pref, weekly_col, false),
+    'news_invitations', coalesce(news_pref, false),
+    'measure_opens', coalesce(measure_pref, false),
+    'delivery_connected', coalesce(v_master, false),
+    'notices', coalesce(v_notices, '{}'::jsonb),
+    'essential_always_on', true
+  );
+end;
+$fn$;
+
+revoke all on function public.my_email_preferences() from public;
+revoke all on function public.my_email_preferences() from public, anon;
+revoke all on function public.my_email_preferences() from anon, authenticated, service_role;
+grant execute on function public.my_email_preferences() to authenticated;
+
+drop function if exists public.email_recipients(uuid);
+drop function if exists private.email_recipients(uuid);
+
+create or replace function private.email_recipients(p_campaign_id uuid)
+returns table (user_id uuid, address text, unsubscribe_token text, measure boolean)
+language plpgsql
+volatile
+security definer
+set search_path = ''
+as $fn$
+declare
+  v_category text;
+  v_audience text[];
+begin
+  select c.category, c.audience_tiers into v_category, v_audience
+  from public.email_campaigns c
+  where c.id = p_campaign_id;
+  if v_category is null then
+    return;
+  end if;
+  return query
+  select
+    m.user_id,
+    m.email,
+    private.email_unsub_token(m.user_id, v_category),
+    coalesce(pref.opted_in, false)
+  from public.members m
+  left join public.email_preferences pref
+    on pref.user_id = m.user_id
+   and pref.category = 'measure_opens'
+  where m.tiers && coalesce(v_audience, array[]::text[])
+    and private.email_member_reason(m.user_id, v_category) = 'eligible'
+    and not exists (
+      select 1
+      from public.email_suppressions s
+      where s.email_hash = private.email_address_hash(m.email)
+    );
+end;
+$fn$;
+
+revoke all on function private.email_recipients(uuid) from public;
+revoke all on function private.email_recipients(uuid) from anon, authenticated, service_role;
+grant execute on function private.email_recipients(uuid) to service_role;
+
+create or replace function public.email_recipients(p_campaign_id uuid)
+returns table (user_id uuid, address text, unsubscribe_token text, measure boolean)
+language sql
+security definer
+set search_path = ''
+as $fn$
+  select r.user_id, r.address, r.unsubscribe_token, r.measure
+  from private.email_recipients(p_campaign_id) r;
+$fn$;
+
+revoke all on function public.email_recipients(uuid) from public;
+revoke all on function public.email_recipients(uuid) from public, anon;
+revoke all on function public.email_recipients(uuid) from anon, authenticated, service_role;
+grant execute on function public.email_recipients(uuid) to service_role;
+
+comment on function public.email_recipients(uuid) is
+  'Eligible recipients. measure is true only when that member turned measurement on. Service role only. Does not send mail.';
+
+create or replace function public.email_set_send_measure(p_send_id uuid, p_measure boolean)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $fn$
+begin
+  update public.email_sends
+  set measure = coalesce(p_measure, false)
+  where id = p_send_id
+    and is_test = false;
+end;
+$fn$;
+
+revoke all on function public.email_set_send_measure(uuid, boolean) from public;
+revoke all on function public.email_set_send_measure(uuid, boolean) from public, anon;
+revoke all on function public.email_set_send_measure(uuid, boolean) from anon, authenticated, service_role;
+grant execute on function public.email_set_send_measure(uuid, boolean) to service_role;
+
+comment on function public.email_set_send_measure(uuid, boolean) is
+  'Stamps whether this live send used the tracked sender. Service role only. Does not send mail.';
+
+create or replace function private.newsletter_event_allowed()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $fn$
+begin
+  if new.event in ('opened', 'clicked') then
+    if not exists (
+      select 1
+      from public.email_sends s
+      join public.email_preferences p
+        on p.user_id = s.user_id
+       and p.category = 'measure_opens'
+       and p.opted_in
+      where s.id = new.send_id
+        and s.measure
+    ) then
+      return null;
+    end if;
+  end if;
+  return new;
+end;
+$fn$;
+
+revoke all on function private.newsletter_event_allowed() from public;
+revoke all on function private.newsletter_event_allowed() from anon, authenticated, service_role;
+
+drop trigger if exists newsletter_events_consent on public.newsletter_events;
+create trigger newsletter_events_consent
+  before insert on public.newsletter_events
+  for each row
+  execute function private.newsletter_event_allowed();
+
+create or replace function private.email_sends_measure_status()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $fn$
+begin
+  if new.status in ('opened', 'clicked') and (
+    not new.measure
+    or not exists (
+      select 1
+      from public.email_preferences p
+      where p.user_id = new.user_id
+        and p.category = 'measure_opens'
+        and p.opted_in
+    )
+  ) then
+    new.status := old.status;
+  end if;
+  return new;
+end;
+$fn$;
+
+revoke all on function private.email_sends_measure_status() from public;
+revoke all on function private.email_sends_measure_status() from anon, authenticated, service_role;
+
+drop trigger if exists email_sends_measure_status on public.email_sends;
+create trigger email_sends_measure_status
+  before update on public.email_sends
+  for each row
+  execute function private.email_sends_measure_status();

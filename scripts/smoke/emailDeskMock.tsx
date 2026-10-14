@@ -401,7 +401,7 @@ function Results() {
   return (
     <div className="mt-6" data-results="">
       <p className="text-[0.85rem] text-pearl/55">Week 41, 12 Oct 2026. Weekly email.</p>
-      <p className="mt-2 text-[0.95rem] text-pearl/75">Opens are approximate. Some mail apps download images on their own.</p>
+      <p className="mt-2 text-[0.95rem] text-pearl/75">These figures count only members who turned measurement on. Opens are approximate. Some mail apps download images on their own.</p>
       <dl className="mt-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Stat label="Sent" value="240" />
         <Stat label="Delivered" value="228" />

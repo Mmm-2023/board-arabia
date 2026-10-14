@@ -34,6 +34,10 @@ Deno.serve(async (req) => {
     staffAddress: typeof staff?.email === 'string' ? staff.email : '',
     apiKey: Deno.env.get('RESEND_API_KEY') ?? '',
     fromAddress: Deno.env.get('EMAIL_FROM') ?? '',
+    newsApiKey: Deno.env.get('RESEND_API_KEY_NEWS') ?? '',
+    newsFrom: Deno.env.get('EMAIL_FROM_NEWS') ?? '',
+    trackedApiKey: Deno.env.get('RESEND_API_KEY_NEWS_TRACKED') ?? '',
+    trackedFrom: Deno.env.get('EMAIL_FROM_NEWS_TRACKED') ?? '',
     contactEmail: Deno.env.get('PUBLIC_CONTACT_EMAIL') ?? '',
     siteOrigin: publicSite(),
     functionsOrigin: supabaseUrl,
@@ -48,10 +52,11 @@ Deno.serve(async (req) => {
     loadRecipients: async (campaignId) => {
       const { data, error } = await admin.rpc('email_recipients', { p_campaign_id: campaignId })
       if (error || !Array.isArray(data)) return []
-      return data.map((row: { user_id: string; address: string; unsubscribe_token: string }) => ({
+      return data.map((row: { user_id: string; address: string; unsubscribe_token: string; measure?: boolean }) => ({
         userId: row.user_id,
         address: row.address,
         unsubscribeToken: row.unsubscribe_token,
+        measure: row.measure === true,
       })) as SendRecipient[]
     },
     isSuppressed: async (emailHash) => {
@@ -80,6 +85,9 @@ Deno.serve(async (req) => {
         p_actor: gate.user.id,
       })
       return !error && data?.ok === true
+    },
+    setMeasure: async (sendId, measure) => {
+      await admin.rpc('email_set_send_measure', { p_send_id: sendId, p_measure: measure })
     },
     markTest: async (campaignId) => {
       const { data, error } = await admin.rpc('email_mark_owner_test', {

@@ -3,7 +3,7 @@ import { readFileSync, readdirSync } from 'node:fs'
 import path from 'node:path'
 import test from 'node:test'
 import { fileURLToPath } from 'node:url'
-import { buildOutbound } from '../supabase/functions/_shared/bulk_mail.ts'
+import { buildOutbound, resolveNewsCopy } from '../supabase/functions/_shared/bulk_mail.ts'
 import { renderBulkLetter } from '../supabase/functions/_shared/bulk_mail_copy.ts'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
@@ -44,7 +44,10 @@ test('newsletter analytics migration is named and does not assume it is newest',
   assert.match(sql, /'opens', 'approximate'/)
   assert.match(sql, /newsletter_unsub_url/)
   assert.match(sql, /newsletter_events_retention/)
-  assert.match(sql, /interval '24 months'/)
+  assert.match(sql, /interval '13 months'/)
+  assert.equal(sql.includes('24 months'), false)
+  assert.match(sql, /measure_opens/)
+  assert.match(sql, /and s\.measure/)
   assert.match(sql, /grant execute on function public\.newsletter_events_retention\(\) to service_role/)
   assert.equal(/grant execute on function public\.newsletter_events_retention\(\) to anon/.test(sql), false)
   assert.equal(/grant\s+(select|insert|update|delete|all)\s+on\s+(table\s+)?public\.newsletter_events/i.test(sql), false)
@@ -91,14 +94,36 @@ test('unsubscribe clicks stay out of the stats and the header stays a raw url', 
   assert.equal(workflow.includes('cron:'), false)
 })
 
+test('tracked news sender is used only when measurement is on and the env is set', () => {
+  const plain = {
+    RESEND_API_KEY: 'plain-key',
+    EMAIL_FROM: 'news@example.com',
+    RESEND_API_KEY_NEWS_TRACKED: 'tracked-key',
+    EMAIL_FROM_NEWS_TRACKED: 'tracked@example.com',
+  }
+  const off = resolveNewsCopy(plain, false)
+  assert.equal(off.tracked, false)
+  assert.equal(off.fromMailbox, 'news@example.com')
+  assert.equal(off.apiKey, 'plain-key')
+  const on = resolveNewsCopy(plain, true)
+  assert.equal(on.tracked, true)
+  assert.equal(on.fromMailbox, 'tracked@example.com')
+  assert.equal(on.apiKey, 'tracked-key')
+  const missing = resolveNewsCopy({ RESEND_API_KEY: 'plain-key', EMAIL_FROM: 'news@example.com' }, true)
+  assert.equal(missing.tracked, false)
+  assert.equal(missing.fromMailbox, 'news@example.com')
+  assert.equal(missing.apiKey, 'plain-key')
+})
+
 test('privacy notice states aggregate newsletter measurement', () => {
   const privacy = read('src/content/legal/privacy.en.ts')
-  assert.match(privacy, /Newsletter emails include open and click measurement/)
-  assert.match(privacy, /only for aggregate statistics/)
+  assert.match(privacy, /only with your consent and only to produce aggregate statistics/)
   assert.match(privacy, /Unsubscribe clicks are not included in these statistics\./)
   assert.equal(privacy.includes('The unsubscribe link is not measured'), false)
   assert.match(privacy, /Newsletter open and click records/)
-  assert.match(privacy, /Removed on request to \[CONTACT EMAIL\], and in any case within 24 months/)
+  assert.match(privacy, /Removed on request to \[CONTACT EMAIL\], and in any case within 13 months/)
+  assert.match(privacy, /If you agree to receive our newsletter, we measure whether it is opened and which links are clicked/)
+  assert.equal(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/.test(privacy), false)
   assert.equal(privacy.includes('\u2014') || privacy.includes('\u2013'), false)
   assert.equal(/\bsponsor\b/i.test(privacy), false)
 })

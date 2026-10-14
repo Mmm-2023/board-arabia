@@ -39,7 +39,9 @@ An unsubscribe is counted for the latest live send of that category at or before
 
 The body unsubscribe link is a normal link. Domain click tracking is not switched off per link. `List-Unsubscribe` stays the raw https token URL. Unsubscribe URLs are left out of the click counts and out of the top links. A link with fewer than 5 unique clicks is omitted, and displayed URLs have no query string.
 
-`public.newsletter_events_retention()` deletes measurement rows older than 24 months. The existing retention sweep calls it, and a dry run does not. No new schedule was added.
+`public.newsletter_events_retention()` deletes measurement rows older than 13 months. The existing retention sweep calls it, and a dry run does not. No new schedule was added.
+
+Measurement is off until the member turns on "Measure opens and clicks" in Your privacy. That choice is stored as `measure_opens` and logged with source `privacy_panel`. A live send uses `EMAIL_FROM_NEWS_TRACKED` and `RESEND_API_KEY_NEWS_TRACKED` only when that choice is on and both values are set. Otherwise it uses the untracked news sender and sets open and click tracking off on the message. If the tracked values are missing, everyone gets the untracked sender. Open and click rows are stored only when the send was stamped measured and the member is still opted in. Aggregates include only those sends. This is consent-only because Resend tracking follows the sending domain, so a separate tracked sender is the way to keep a pixel and rewritten links off the copies people did not agree to.
 
 ## LEGAL CHANGE
 
@@ -47,11 +49,13 @@ The body unsubscribe link is a normal link. Domain click tracking is not switche
 
 Clause 3.15 (`:153`):
 
-"Newsletter measurement. Newsletter emails include open and click measurement. We use it only for aggregate statistics. We do not show who opened or clicked. Opens are approximate, because some mail apps download images automatically. You can turn these emails off in Your privacy. Unsubscribe clicks are not included in these statistics."
+"Newsletter measurement. If you agree to receive our newsletter, we measure whether it is opened and which links are clicked, using a small image and tracked links in the email. We do this only with your consent and only to produce aggregate statistics, such as open and click rates. We do not show staff or other members who opened or clicked. Opens are approximate, because some mail apps download images automatically. You can stop measurement or the newsletter at any time in Your privacy. Unsubscribe clicks are not included in these statistics."
 
-Retention table row (`:448`):
+The contact address in the retention row is the `[CONTACT EMAIL]` token. `src/content/legal/resolve.ts` fills that token from `legalField('contactEmail')`. The source has no mailbox literal.
 
-"Newsletter open and click records" / "Removed on request to [CONTACT EMAIL], and in any case within 24 months"
+Retention table row:
+
+"Newsletter open and click records" / "Removed on request to [CONTACT EMAIL], and in any case within 13 months"
 
 There is no newsletter-event row in the retention job. The notice uses the fallback period. The contact address stays the `[CONTACT EMAIL]` placeholder.
 

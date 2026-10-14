@@ -1,13 +1,16 @@
 import { digestIssueSendable } from '../_shared/weekly_digest_copy.ts'
 import {
   addressHash,
+  applyNewsTracking,
   buildOutbound,
   cleanMailbox,
   deliverBatches,
   httpsOrigin,
   memberLinks,
+  resolveNewsCopy,
   type BatchResult,
   type PreparedSend,
+  type StreamEnv,
 } from '../_shared/bulk_mail.ts'
 
 export type SendMode = 'test' | 'live'
@@ -36,6 +39,7 @@ export type SendRecipient = {
   userId: string
   address: string
   unsubscribeToken: string
+  measure?: boolean
 }
 
 export type LogSendInput = {
@@ -62,6 +66,10 @@ export type SendDeps = {
   staffAddress: string
   apiKey: string
   fromAddress: string
+  newsApiKey?: string
+  newsFrom?: string
+  trackedApiKey?: string
+  trackedFrom?: string
   contactEmail: string
   siteOrigin: string
   functionsOrigin: string
@@ -74,6 +82,7 @@ export type SendDeps = {
   logSend: (row: LogSendInput) => Promise<LogSendResult>
   setProgress: (campaignId: string, status: 'sending' | 'sent') => Promise<boolean>
   markTest?: (campaignId: string) => Promise<boolean>
+  setMeasure?: (sendId: string, measure: boolean) => Promise<void>
 }
 
 export type SendResult = {
@@ -82,6 +91,17 @@ export type SendResult = {
 }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+
+function newsEnv(deps: SendDeps): StreamEnv {
+  return {
+    RESEND_API_KEY: deps.apiKey,
+    EMAIL_FROM: deps.fromAddress,
+    RESEND_API_KEY_NEWS: deps.newsApiKey,
+    EMAIL_FROM_NEWS: deps.newsFrom,
+    RESEND_API_KEY_NEWS_TRACKED: deps.trackedApiKey,
+    EMAIL_FROM_NEWS_TRACKED: deps.trackedFrom,
+  }
+}
 
 function fail(status: number, error: string): SendResult {
   return { status, body: { ok: false, error } }
@@ -180,12 +200,15 @@ export async function handleEmailSend(raw: unknown, deps: SendDeps): Promise<Sen
       continue
     }
     hashes.set(opened.id, hash)
+    const sender = resolveNewsCopy(newsEnv(deps), parsed.mode === 'live' && recipient.measure === true)
+    if (deps.setMeasure && parsed.mode === 'live') await deps.setMeasure(opened.id, sender.tracked)
     queued.push({
       sendId: opened.id,
       userId: recipient.userId,
       hash,
-      message: buildOutbound({
-        fromMailbox: settings.fromMailbox,
+      apiKey: sender.apiKey,
+      message: applyNewsTracking(buildOutbound({
+        fromMailbox: sender.fromMailbox,
         contactEmail: settings.contact,
         to: address,
         subject: gate.subject,
@@ -196,20 +219,27 @@ export async function handleEmailSend(raw: unknown, deps: SendDeps): Promise<Sen
         preferencesUrl: links.preferencesUrl,
         oneClickUrl: links.oneClickUrl,
         test: parsed.mode === 'test',
-      }),
+      }), sender.tracked),
     })
   }
 
-  const results: BatchResult[] = queued.length === 0
-    ? []
-    : await deliverBatches({
+  const results: BatchResult[] = []
+  const groups = new Map<string, PreparedSend[]>()
+  for (const item of queued) {
+    const key = item.apiKey || deps.apiKey
+    const list = groups.get(key) ?? []
+    list.push(item)
+    groups.set(key, list)
+  }
+  for (const [apiKey, prepared] of groups) {
+    results.push(...await deliverBatches({
       campaignId: parsed.campaignId,
       mode: parsed.mode,
       stream: 'news',
-      prepared: queued,
+      prepared,
       batchSize: parsed.mode === 'test' ? 1 : gate.batch_size,
       pauseMs: parsed.mode === 'test' ? 0 : gate.batch_pause_ms,
-      apiKey: deps.apiKey,
+      apiKey,
       now: deps.now,
       sleep: deps.sleep,
       fetchImpl: deps.fetchImpl,
@@ -229,7 +259,8 @@ export async function handleEmailSend(raw: unknown, deps: SendDeps): Promise<Sen
         skipped += 1
         return false
       },
-    })
+    }))
+  }
 
   let sent = 0
   for (const result of results) {

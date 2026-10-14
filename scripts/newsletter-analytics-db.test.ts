@@ -50,6 +50,10 @@ create or replace function pg_temp.note_event(
 language plpgsql
 as $$
 begin
+  update public.email_sends
+  set measure = true
+  where id = p_send
+    and is_test = false;
   insert into public.newsletter_events (send_id, message_id, event, url, occurred_at)
   values (
     p_send,
@@ -114,6 +118,10 @@ begin
     insert into public.members (user_id, email, seat, status, tiers)
     values (fid, 'trend.' || i || '@example.com', 'ksa', 'active', array['founding']::text[]);
   end loop;
+  insert into public.email_preferences (user_id, category, opted_in)
+  select x, 'measure_opens', true
+  from unnest(founding_ids || member_ids || trend_ids) as x
+  on conflict (user_id, category) do update set opted_in = true;
 
   insert into public.email_campaigns (
     kind, category, subject, body_text, body_html_sanitised, audience_tiers, status, created_by
@@ -288,6 +296,7 @@ begin
   set role postgres;
 
   if stats->>'opens' is distinct from 'approximate'
+     or stats->>'measured_only' is distinct from 'true'
      or trend->>'opens' is distinct from 'approximate' then
     raise exception 'opens were not labelled approximate % %', stats->>'opens', trend->>'opens';
   end if;
@@ -348,7 +357,7 @@ begin
   end if;
 
   insert into public.newsletter_events (send_id, message_id, event, occurred_at)
-  select s.id, 'old-measure', 'opened', pg_catalog.now() - interval '25 months'
+  select s.id, 'old-measure', 'opened', pg_catalog.now() - interval '14 months'
   from public.email_sends s
   where s.campaign_id = campaign_a and s.is_test = false
   limit 1;
@@ -400,7 +409,23 @@ begin
         raise exception 'member reached the retention body';
       end if;
   end;
+  if public.my_email_preferences()->>'measure_opens' is distinct from 'false' then
+    raise exception 'measurement was on by default';
+  end if;
+  perform public.set_email_preference('measure_opens', true);
+  if public.my_email_preferences()->>'measure_opens' is distinct from 'true' then
+    raise exception 'measurement toggle did not save';
+  end if;
   set role postgres;
+  if not exists (
+    select 1 from public.email_consent_log
+    where user_id = member_id
+      and category = 'measure_opens'
+      and action = 'opt_in'
+      and source = 'privacy_panel'
+  ) then
+    raise exception 'measurement consent was not logged';
+  end if;
   set role anon;
   begin
     perform public.staff_newsletter_stats(campaign_a);

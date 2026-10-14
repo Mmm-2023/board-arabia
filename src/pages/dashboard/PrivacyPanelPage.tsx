@@ -16,6 +16,7 @@ export function PrivacyPanelPage() {
   const [showSponsors, setShowSponsors] = useState(false)
   const [digestOptIn, setDigestOptIn] = useState(false)
   const [newsOptIn, setNewsOptIn] = useState(false)
+  const [measureOptIn, setMeasureOptIn] = useState(false)
   const [deliveryConnected, setDeliveryConnected] = useState(false)
   const [noticeOptIn, setNoticeOptIn] = useState<Record<string, boolean>>({})
   const [noticesConnected, setNoticesConnected] = useState(false)
@@ -42,11 +43,13 @@ export function PrivacyPanelPage() {
       const row = data as {
         weekly_digest?: boolean
         news_invitations?: boolean
+        measure_opens?: boolean
         delivery_connected?: boolean
         notices?: Record<string, boolean>
       }
       setDigestOptIn(row.weekly_digest === true)
       setNewsOptIn(row.news_invitations === true)
+      setMeasureOptIn(row.measure_opens === true)
       setDeliveryConnected(row.delivery_connected === true)
       setNoticesConnected(row.delivery_connected === true)
       if (row.notices && typeof row.notices === 'object' && !Array.isArray(row.notices)) setNoticeOptIn(row.notices)
@@ -167,6 +170,13 @@ export function PrivacyPanelPage() {
     if (error) setDigestOptIn(previous)
   }
 
+  async function onMeasure(next: boolean) {
+    const previous = measureOptIn
+    setMeasureOptIn(next)
+    const { error } = await supabase.rpc('set_email_preference', { p_category: 'measure_opens', p_opt_in: next })
+    if (error) setMeasureOptIn(previous)
+  }
+
   async function onNews(next: boolean) {
     const previous = newsOptIn
     setNewsOptIn(next)
@@ -220,6 +230,8 @@ export function PrivacyPanelPage() {
       onDigestOptIn={(next) => void onDigest(next)}
       newsOptIn={newsOptIn}
       onNewsOptIn={(next) => void onNews(next)}
+      measureOptIn={measureOptIn}
+      onMeasureOptIn={(next) => void onMeasure(next)}
       deliveryConnected={deliveryConnected}
       noticeOptIn={noticeOptIn}
       noticesConnected={noticesConnected}

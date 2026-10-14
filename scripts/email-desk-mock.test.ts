@@ -63,6 +63,7 @@ test('email desk mock shots at 1440 and 390', { timeout: 180_000 }, async (t) =>
         assert.equal(text.toLowerCase().includes('the desk'), false, shot)
         if (shot === 'results') {
           assert.match(text, /Opens are approximate/)
+          assert.match(text, /turned measurement on/)
           assert.match(text, /<5/)
           assert.equal(text.includes('@'), false, shot)
         }
@@ -107,6 +108,20 @@ test('email desk mock shots at 1440 and 390', { timeout: 180_000 }, async (t) =>
         assert.equal(existsSync(file), true)
         await page.close()
       }
+    }
+    for (const width of [1440, 390] as const) {
+      const page = await browser.newPage({ viewport: { width, height: width === 390 ? 844 : 900 } })
+      await page.goto(`${origin}/scripts/smoke/email-desk-mock.html?shot=your-privacy-toggle`, { waitUntil: 'networkidle' })
+      const panel = page.locator('[data-measure-email]')
+      await panel.waitFor()
+      assert.equal(await panel.getAttribute('data-measure-email'), 'off')
+      assert.match(await panel.innerText(), /Measure opens and clicks/i)
+      const file = path.join(shotDir, `your-privacy-toggle-${width}.png`)
+      const height = await page.evaluate(() => document.documentElement.scrollHeight)
+      await page.setViewportSize({ width, height: Math.max(height, width === 390 ? 844 : 900) })
+      await page.screenshot({ path: file, fullPage: false })
+      assert.equal(existsSync(file), true)
+      await page.close()
     }
   } finally {
     await browser.close()
