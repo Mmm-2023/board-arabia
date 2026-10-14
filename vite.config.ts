@@ -27,7 +27,9 @@ export default defineConfig({
       name: 'prioritize-css',
       transformIndexHtml: {
         order: 'post',
-        handler(html) {
+        handler(html, ctx) {
+          const pagePath = `${ctx.path ?? ''} ${ctx.filename ?? ''}`
+          if (pagePath.includes('/scripts/')) return html
           const script = html.match(/<script type="module"[^>]*><\/script>/)?.[0]
           if (!script) return html
           const src = script.match(/src="([^"]+)"/)?.[1]
