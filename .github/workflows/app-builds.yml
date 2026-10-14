@@ -144,6 +144,11 @@ jobs:
           osascript -e 'tell application "Simulator" to activate' -e 'delay 1' -e 'tell application "System Events" to keystroke return' || true
           sleep 12
           xcrun simctl io "$udid" screenshot "$RUNNER_TEMP/ios-biometric-lock.png"
+          xcrun simctl openurl "$udid" "com.boardarabia.app://native/push-shot/settings"
+          sleep 2
+          osascript -e 'tell application "Simulator" to activate' -e 'delay 1' -e 'tell application "System Events" to keystroke return' || true
+          sleep 12
+          xcrun simctl io "$udid" screenshot "$RUNNER_TEMP/ios-push-settings.png"
       - uses: actions/upload-artifact@v7
         with:
           name: ios-home-screenshot
@@ -155,6 +160,11 @@ jobs:
           path: |
             ${{ runner.temp }}/ios-biometric-settings.png
             ${{ runner.temp }}/ios-biometric-lock.png
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ios-push-screenshot
+          path: ${{ runner.temp }}/ios-push-settings.png
           if-no-files-found: error
 
   android-emulator-home:
@@ -196,6 +206,7 @@ jobs:
             adb exec-out screencap -p > "$GITHUB_WORKSPACE/emulator-shot/android-home.png"
             python3 "$GITHUB_WORKSPACE/scripts/android-webview-navigate.py" https://localhost/native/biometric-shot/settings && sleep 12 && adb exec-out screencap -p > "$GITHUB_WORKSPACE/emulator-shot/android-biometric-settings.png"
             python3 "$GITHUB_WORKSPACE/scripts/android-webview-navigate.py" https://localhost/native/biometric-shot/lock && sleep 12 && adb exec-out screencap -p > "$GITHUB_WORKSPACE/emulator-shot/android-biometric-lock.png"
+            python3 "$GITHUB_WORKSPACE/scripts/android-webview-navigate.py" https://localhost/native/push-shot/settings && sleep 12 && adb exec-out screencap -p > "$GITHUB_WORKSPACE/emulator-shot/android-push-settings.png"
             adb logcat -d > "$GITHUB_WORKSPACE/emulator-shot/logcat-after-biometric.txt"
             grep -E "Fatal signal|libwebviewchromium|Renderer process|Capacitor:|CrRendererMain|signal 5" "$GITHUB_WORKSPACE/emulator-shot/logcat.txt" > "$GITHUB_WORKSPACE/emulator-shot/logcat-webview.txt" || true
       - uses: actions/upload-artifact@v7

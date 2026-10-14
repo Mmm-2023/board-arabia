@@ -44,8 +44,14 @@ export function biometricShotAllowed(native: boolean): boolean {
  * Shot screens load as a document so the WebView paints them.
  * Client-side routing left the home page up after a deep link.
  */
+const NATIVE_SHOT_PATHS = new Set([
+  '/native/biometric-shot/settings',
+  '/native/biometric-shot/lock',
+  '/native/push-shot/settings',
+])
+
 export function nativeShotHref(path: string, search: string, hash: string): string | null {
-  if (path !== '/native/biometric-shot/settings' && path !== '/native/biometric-shot/lock') return null
+  if (!NATIVE_SHOT_PATHS.has(path)) return null
   return `${path}${search}${hash}`
 }
 

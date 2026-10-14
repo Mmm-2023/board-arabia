@@ -78,6 +78,8 @@ The Pages build passes `APPLE_TEAM_ID` and `ANDROID_APP_LINK_SHA256` through fro
 
 Open Xcode with `npx cap open ios` and run the App scheme on a simulator. The CI simulator build is unsigned and does not need a signing team.
 
+Push registration is opt-in from Notifications on the native app. The website hides that control. Nothing is sent and nothing is scheduled. `android/app/google-services.json` is gitignored. It is not in this repo. A later Actions secret named `ANDROID_GOOGLE_SERVICES_JSON` supplies that file when sending is connected. Do not commit it.
+
 Icons and the splash screen come from the existing mark in `public/favicon.svg` (copied to `assets/logo.svg`). After the native projects exist, regenerate them with:
 
 ```bash
