@@ -91,6 +91,8 @@ const ADDED_SHELLS = [
   '/verify',
   '/apply/verify',
   '/admin/intros',
+  '/dashboard/deals/board-seats',
+  '/dashboard/deals/board-seats/new',
 ]
 
 function fixtureShell() {

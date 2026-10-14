@@ -1649,6 +1649,48 @@ export type Database = {
         Args: Record<string, never>
         Returns: Json
       }
+      submit_member_board_seat: {
+        Args: {
+          p_seat_kind: string
+          p_title: string
+          p_sector: string
+          p_capacity: string
+          p_sector_tags: string[]
+          p_regions: string[]
+          p_organisation_name: string
+          p_terms: string
+          p_narrative: string
+        }
+        Returns: Json
+      }
+      list_published_board_seats: {
+        Args: Record<string, never>
+        Returns: Json
+      }
+      get_board_seat: {
+        Args: { p_id: string }
+        Returns: Json
+      }
+      apply_to_board_seat: {
+        Args: { p_role_id: string; p_note: string }
+        Returns: Json
+      }
+      my_board_seat_applications: {
+        Args: Record<string, never>
+        Returns: Json
+      }
+      my_posted_board_seats: {
+        Args: Record<string, never>
+        Returns: Json
+      }
+      list_my_board_seat_shortlist: {
+        Args: { p_role_id: string }
+        Returns: Json
+      }
+      open_board_seat_introduction: {
+        Args: { p_intro_id: string }
+        Returns: Json
+      }
       set_push_notifications: {
         Args: { p_enabled: boolean }
         Returns: Json
