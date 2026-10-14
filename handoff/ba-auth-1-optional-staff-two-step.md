@@ -29,6 +29,7 @@ Every Edge function that imports `requireStaff` or `staff_auth`, directly or thr
 - decide-application
 - due-diligence-start
 - due-diligence-status
+- email-send
 - invite-master
 - invite-sponsor
 - majlis-admin-action
@@ -48,6 +49,9 @@ This change is not applied. No `supabase db push`. No Edge deploy. No merge.
 - `npx tsc -b` passed.
 - A staff session at aal1 passes `staffApiDecision` and `private.is_staff()` on local Postgres. The test names the migration file and does not treat it as the newest file in the directory.
 - `/security` shows the optional sentence at 1280 and 390.
+- Pull request: https://github.com/Mmm-2023/board-arabia/pull/189
+- Head `68a27ef` failed crawl with 0 CSP violations. The crawl waited for the heading "Enter your code" after sign-in, and the page was already the member home. A re-run of that job was refused with HTTP 403. The crawl now expects that session to open the dashboard, then the optional two-step page. A local crawl covered 171 checks with 0 violations.
+- `email-send` calls `requireStaff` and has no extra aal check. It is on the redeploy list.
 
 ## Secrets
 

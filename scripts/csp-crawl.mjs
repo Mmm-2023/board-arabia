@@ -497,20 +497,25 @@ async function main() {
     await collect(login.page, 'flow:login')
     await login.context.close()
 
-    const challenge = await open({ session: true, factors: 'verified' })
-    await challenge.page.goto(`${origin}/login`, { waitUntil: 'load' })
+    const signedIn = await open({ session: true, factors: 'verified' })
+    await signedIn.page.goto(`${origin}/login`, { waitUntil: 'load' })
     try {
-      await challenge.page.getByRole('heading', { name: 'Enter your code' }).waitFor()
+      await signedIn.page.waitForURL(/\/dashboard\/?$/)
     } catch (error) {
-      const text = await challenge.page.locator('body').innerText()
-      const keys = await challenge.page.evaluate(() => Object.keys(localStorage))
+      const text = await signedIn.page.locator('body').innerText()
+      const keys = await signedIn.page.evaluate(() => Object.keys(localStorage))
       console.error(`login text:\n${text.slice(0, 1000)}`)
       console.error(`storage keys: ${keys.join(', ')}`)
       throw error
     }
+    if ((await signedIn.page.getByRole('heading', { name: 'Enter your code' }).count()) !== 0) {
+      fail('Sign-in asked for a code')
+    }
+    await signedIn.page.goto(`${origin}/dashboard/two-step`, { waitUntil: 'load' })
+    await signedIn.page.getByRole('heading', { name: 'Two-step sign-in' }).waitFor()
     state.trace = false
-    await collect(challenge.page, 'flow:two-step')
-    await challenge.context.close()
+    await collect(signedIn.page, 'flow:two-step')
+    await signedIn.context.close()
 
     const member = await open({ session: true, factors: 'none' })
     await member.page.goto(`${origin}/dashboard`, { waitUntil: 'load' })
