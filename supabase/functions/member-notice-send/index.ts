@@ -1,7 +1,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1'
 import { corsHeaders, jsonResponse, publicSite } from '../_shared/mail.ts'
 import { memberNoticeMail } from '../_shared/member_notice_copy.ts'
-import { deliverMemberNotices, type NoticeToSend } from '../_shared/member_notice_send.ts'
+import { deliverMemberNotices, noticeStreamConfig, type NoticeToSend } from '../_shared/member_notice_send.ts'
 import { requireStaff } from '../_shared/require_staff.ts'
 
 type ClaimRow = {
@@ -46,8 +46,12 @@ Deno.serve(async (req) => {
     return jsonResponse(req, { ok: true, blocked: 'master_off', sent: 0 })
   }
 
-  const apiKey = Deno.env.get('RESEND_API_KEY')?.trim() || ''
-  const fromMailbox = Deno.env.get('EMAIL_FROM')?.trim() || ''
+  const stream = noticeStreamConfig({
+    RESEND_API_KEY_MAIL: Deno.env.get('RESEND_API_KEY_MAIL') ?? '',
+    EMAIL_FROM_MAIL: Deno.env.get('EMAIL_FROM_MAIL') ?? '',
+  })
+  const apiKey = stream.apiKey
+  const fromMailbox = stream.fromMailbox
   const replyTo = Deno.env.get('PUBLIC_CONTACT_EMAIL')?.trim() || ''
   if (!apiKey || !fromMailbox || !replyTo) {
     return jsonResponse(req, { ok: false, blocked: 'not_configured' }, 503)

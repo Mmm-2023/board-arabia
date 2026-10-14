@@ -21,6 +21,24 @@ export const EMAIL_NOTICE_ROWS = [
   { key: 'mandate_update', label: 'Mandate update' },
 ] as const
 
+function weeklyEmailCopy(optIn: boolean, connected: boolean) {
+  if (!connected) {
+    return optIn
+      ? 'You asked to receive the weekly email. It is not connected yet.'
+      : 'Off. The weekly email is not connected yet.'
+  }
+  return optIn ? 'You receive the weekly email.' : 'Off. You do not receive the weekly email.'
+}
+
+function newsEmailCopy(optIn: boolean, connected: boolean) {
+  if (!connected) {
+    return optIn
+      ? 'You asked to receive news and invitations. It is not connected yet.'
+      : 'Off. News and invitations are not connected yet.'
+  }
+  return optIn ? 'You receive news and invitations.' : 'Off. You do not receive news and invitations.'
+}
+
 export function PrivacyPanelView({
   hidden,
   showSponsors,
@@ -34,6 +52,9 @@ export function PrivacyPanelView({
   onDownload,
   digestOptIn = false,
   onDigestOptIn,
+  newsOptIn = false,
+  onNewsOptIn,
+  deliveryConnected = false,
   noticeOptIn = {},
   noticesConnected = false,
   onNoticeOptIn,
@@ -57,6 +78,9 @@ export function PrivacyPanelView({
   onDownload: () => void
   digestOptIn?: boolean
   onDigestOptIn?: (optIn: boolean) => void
+  newsOptIn?: boolean
+  onNewsOptIn?: (optIn: boolean) => void
+  deliveryConnected?: boolean
   noticeOptIn?: Record<string, boolean>
   noticesConnected?: boolean
   onNoticeOptIn?: (key: string, optIn: boolean) => void
@@ -131,15 +155,11 @@ export function PrivacyPanelView({
         </div>
       </section>
 
-      <section className={section} aria-labelledby="privacy-digest" data-digest-email={digestOptIn ? 'on' : 'off'}>
+      <section className={section} aria-labelledby="privacy-digest" data-digest-email={digestOptIn ? 'on' : 'off'} data-email-connected={deliveryConnected ? 'yes' : 'no'}>
         <h2 id="privacy-digest" className={heading}>
           Weekly email
         </h2>
-        <p className={body}>
-          {digestOptIn
-            ? 'You asked to receive the weekly email. It is not connected yet.'
-            : 'Off. The weekly email is not connected yet.'}
-        </p>
+        <p className={body}>{weeklyEmailCopy(digestOptIn, deliveryConnected)}</p>
         <div className="mt-4 flex flex-wrap gap-2" role="group" aria-label="Weekly email">
           <button
             type="button"
@@ -159,7 +179,39 @@ export function PrivacyPanelView({
           </button>
         </div>
         <p className="mt-3 max-w-xl text-[0.95rem] leading-relaxed text-ink/65">
-          This choice is saved for when weekly email is connected. Nothing is sent now.
+          {deliveryConnected
+            ? 'You can turn this off at any time.'
+            : 'This choice is saved for when weekly email is connected. Nothing is sent now.'}
+        </p>
+      </section>
+
+      <section className={section} aria-labelledby="privacy-news" data-news-email={newsOptIn ? 'on' : 'off'}>
+        <h2 id="privacy-news" className={heading}>
+          News and invitations
+        </h2>
+        <p className={body}>{newsEmailCopy(newsOptIn, deliveryConnected)}</p>
+        <div className="mt-4 flex flex-wrap gap-2" role="group" aria-label="News and invitations">
+          <button
+            type="button"
+            className={`${choice} ${newsOptIn ? 'border-ink/20 text-ink/70' : 'ba-primary border-transparent'}`}
+            aria-pressed={!newsOptIn}
+            onClick={() => onNewsOptIn?.(false)}
+          >
+            Off
+          </button>
+          <button
+            type="button"
+            className={`${choice} ${newsOptIn ? 'ba-primary border-transparent' : 'border-ink/20 text-ink/70'}`}
+            aria-pressed={newsOptIn}
+            onClick={() => onNewsOptIn?.(true)}
+          >
+            On
+          </button>
+        </div>
+        <p className="mt-3 max-w-xl text-[0.95rem] leading-relaxed text-ink/65">
+          {deliveryConnected
+            ? 'You can turn this off at any time.'
+            : 'This choice is saved. Nothing is sent now.'}
         </p>
       </section>
 

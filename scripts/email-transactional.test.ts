@@ -166,7 +166,7 @@ function noticeSessionToken() {
     exp: 2000000000,
     iat: 1700000000,
     role: 'authenticated',
-    aal: 'aal2',
+      aal: 'aal1',
     session_id: '00000000-0000-4000-8000-000000000001',
   })}.sig`
 }
@@ -211,7 +211,7 @@ test('email notification settings at 1440 and 390', { timeout: 120_000 }, async 
         await json({
           weekly_digest: false,
           news_invitations: false,
-          master_enabled: false,
+          delivery_connected: false,
           essential_always_on: true,
           notices: {
             welcome: true,

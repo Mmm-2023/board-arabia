@@ -18,7 +18,7 @@ The only address in the script is `qa@example.com`, stored on the sample member 
 
    `DATABASE_URL` stays on the operator machine. The dashboard SQL editor cannot run the `\set` line, so use psql. Do not commit the connection string.
 4. Sign in as the QA member and open the room named `QA test room (Example)`. To attach the fixed document row, upload a harmless PDF to the storage path the script prints, in bucket `deal-room-documents`, then run the script again. An upload through the app uses a new document id, so the fixed row stays absent until a file is at the printed path. The app upload is still a normal document in the room.
-5. To open `/admin`, add a `public.staff_users` row for that user id with role `staff`, by hand, the same way other staff rows are added. `private.is_staff()` also requires an aal2 session, so enrol a second factor before using `/admin`. Remove the `staff_users` row when the check is done. This is not scripted. Do not add an allowlist in the repo.
+5. To open `/admin`, add a `public.staff_users` row for that user id with role `staff`, by hand, the same way other staff rows are added. `private.is_staff()` checks that row. A second factor is optional. Remove the `staff_users` row when the check is done. This is not scripted. Do not add an allowlist in the repo.
 
 ## What the script writes
 

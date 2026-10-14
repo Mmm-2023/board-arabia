@@ -1,4 +1,14 @@
-export const MEMBER_NOTICE_PROVIDER_URL = 'https://api.resend.com/emails'
+import {
+  deliverBatches,
+  type MailStream,
+  type OutboundMessage,
+  type PreparedSend,
+  resolveMailStream,
+  type StreamEnv,
+} from './bulk_mail.ts'
+import { FROM_NAME } from './bulk_mail_copy.ts'
+
+export const MEMBER_NOTICE_STREAM: MailStream = 'mail'
 
 export type NoticeToSend = {
   outboxId: string
@@ -22,75 +32,29 @@ export type NoticeSendResult = {
   outcomes: Array<{ outboxId: string; status: 'sent' | 'failed' | 'skipped'; reason: string; providerMessageId: string }>
 }
 
-function pauseOf(header: string | null, fallbackMs: number): number {
-  const raw = header?.trim() || ''
-  if (!raw) return fallbackMs
-  const seconds = Number(raw)
-  if (Number.isFinite(seconds) && seconds >= 0) return Math.min(Math.round(seconds * 1000), 10_000)
-  const stamp = Date.parse(raw)
-  if (Number.isFinite(stamp)) return Math.min(Math.max(stamp - Date.now(), 0), 10_000)
-  return fallbackMs
+export function noticeStreamConfig(env: StreamEnv) {
+  return resolveMailStream(MEMBER_NOTICE_STREAM, env)
 }
 
-function listHeaders(notice: NoticeToSend, replyTo: string): Record<string, string> | undefined {
-  if (notice.essential || !notice.unsubscribeUrl) return undefined
-  return {
-    'List-Unsubscribe': `<${notice.unsubscribeUrl}>, <mailto:${replyTo}?subject=unsubscribe>`,
-    'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
-  }
-}
-
-async function postOne(
-  notice: NoticeToSend,
-  input: {
-    apiKey: string
-    fromMailbox: string
-    replyTo: string
-    fetchImpl: typeof fetch
-    sleep: (ms: number) => Promise<void>
-  },
-  calls: { n: number },
-): Promise<{ status: 'sent' | 'failed'; reason: string; providerMessageId: string }> {
-  const headers: Record<string, string> = {
-    Authorization: `Bearer ${input.apiKey}`,
-    'Content-Type': 'application/json',
-    'Idempotency-Key': `${notice.typeKey}:${notice.refId}:${notice.userId}`,
-  }
-  const body = JSON.stringify({
-    from: `Board Arabia <${input.fromMailbox}>`,
+function noticeMessage(notice: NoticeToSend, fromMailbox: string, replyTo: string): OutboundMessage {
+  const message: OutboundMessage = {
+    from: `"${FROM_NAME}" <${fromMailbox}>`,
     to: [notice.address],
-    reply_to: input.replyTo,
+    reply_to: replyTo,
     subject: notice.subject,
     text: notice.text,
     html: notice.html,
-    headers: listHeaders(notice, input.replyTo),
-  })
-  let attempt = 0
-  while (attempt < 3) {
-    attempt += 1
-    calls.n += 1
-    const response = await input.fetchImpl(MEMBER_NOTICE_PROVIDER_URL, { method: 'POST', headers, body })
-    if (response.status === 429) {
-      const wait = pauseOf(response.headers.get('retry-after') || response.headers.get('x-ratelimit-reset'), 1000)
-      await input.sleep(wait)
-      continue
-    }
-    if (response.ok) {
-      let providerMessageId = ''
-      try {
-        const payload = (await response.json()) as { id?: string }
-        providerMessageId = typeof payload.id === 'string' ? payload.id : ''
-      } catch {
-        providerMessageId = ''
-      }
-      return { status: 'sent', reason: '', providerMessageId }
-    }
-    return { status: 'failed', reason: `provider_${response.status}`, providerMessageId: '' }
   }
-  return { status: 'failed', reason: 'provider_429', providerMessageId: '' }
+  if (!notice.essential && notice.unsubscribeUrl) {
+    message.headers = {
+      'List-Unsubscribe': `<${notice.unsubscribeUrl}>, <mailto:${replyTo}?subject=unsubscribe>`,
+      'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+    }
+  }
+  return message
 }
 
-/** Drain one explicit batch. Master off and a missing key do not call the provider. */
+/** Drain one explicit batch through the shared sender. The mail stream has tracking off. */
 export async function deliverMemberNotices(input: {
   notices: NoticeToSend[]
   masterEnabled: boolean
@@ -104,8 +68,6 @@ export async function deliverMemberNotices(input: {
 }): Promise<NoticeSendResult> {
   const fetchImpl = input.fetchImpl ?? fetch
   const sleep = input.sleep ?? ((ms: number) => new Promise((resolve) => setTimeout(resolve, ms)))
-  const batchSize = Math.min(100, Math.max(1, input.batchSize || 50))
-  const pauseMs = Math.max(0, input.pauseMs)
   const outcomes: NoticeSendResult['outcomes'] = []
   if (!input.masterEnabled) {
     for (const notice of input.notices) {
@@ -116,24 +78,57 @@ export async function deliverMemberNotices(input: {
   if (!input.apiKey.trim() || !input.fromMailbox.trim() || !input.replyTo.trim()) {
     return { sent: 0, skipped: 0, failed: 0, calls: 0, blocked: 'not_configured', outcomes }
   }
-  const calls = { n: 0 }
-  let sent = 0
+  const prepared: PreparedSend[] = []
   let skipped = 0
-  let failed = 0
-  for (let index = 0; index < input.notices.length; index += batchSize) {
-    const batch = input.notices.slice(index, index + batchSize)
-    for (const notice of batch) {
-      if (!notice.address.trim()) {
-        skipped += 1
-        outcomes.push({ outboxId: notice.outboxId, status: 'skipped', reason: 'no_address', providerMessageId: '' })
-        continue
-      }
-      const result = await postOne(notice, { ...input, fetchImpl, sleep }, calls)
-      if (result.status === 'sent') sent += 1
-      else failed += 1
-      outcomes.push({ outboxId: notice.outboxId, ...result })
+  for (const notice of input.notices) {
+    if (!notice.address.trim()) {
+      skipped += 1
+      outcomes.push({ outboxId: notice.outboxId, status: 'skipped', reason: 'no_address', providerMessageId: '' })
+      continue
     }
-    if (index + batchSize < input.notices.length) await sleep(pauseMs)
+    prepared.push({
+      sendId: `${notice.typeKey}:${notice.refId}:${notice.userId}`,
+      userId: notice.userId,
+      hash: notice.outboxId,
+      message: noticeMessage(notice, input.fromMailbox, input.replyTo),
+    })
   }
-  return { sent, skipped, failed, calls: calls.n, blocked: '', outcomes }
+  let calls = 0
+  const results = await deliverBatches({
+    campaignId: 'member-notices',
+    mode: 'live',
+    prepared,
+    batchSize: input.batchSize,
+    pauseMs: input.pauseMs,
+    apiKey: input.apiKey,
+    stream: MEMBER_NOTICE_STREAM,
+    now: () => Date.now(),
+    sleep,
+    fetchImpl: async (url, init) => {
+      calls += 1
+      const response = await fetchImpl(url, init)
+      return {
+        status: response.status,
+        headers: { get: (name) => response.headers.get(name) },
+        json: () => response.json(),
+      }
+    },
+  })
+  const bySend = new Map(prepared.map((item) => [item.sendId, item]))
+  let sent = 0
+  let failed = 0
+  for (const batch of results) {
+    for (const row of batch.rows) {
+      const item = bySend.get(row.sendId)
+      const outboxId = item?.hash || ''
+      if (batch.ok) {
+        sent += 1
+        outcomes.push({ outboxId, status: 'sent', reason: '', providerMessageId: row.providerId })
+      } else {
+        failed += 1
+        outcomes.push({ outboxId, status: 'failed', reason: `provider_${batch.status}`, providerMessageId: '' })
+      }
+    }
+  }
+  return { sent, skipped, failed, calls, blocked: '', outcomes }
 }

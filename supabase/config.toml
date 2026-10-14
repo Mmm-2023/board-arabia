@@ -122,7 +122,7 @@ verify_jwt = true
 [functions.review-membership]
 verify_jwt = true
 
-# Staff resend for an application. Callers send a staff user JWT. requireStaff checks aal2.
+# Staff resend for an application. Callers send a staff user JWT. requireStaff checks the staff row.
 [functions.notify-application]
 verify_jwt = true
 
@@ -201,6 +201,21 @@ verify_jwt = true
 # Staff suspend or restore. requireStaff checks the caller JWT.
 [functions.set-member-status]
 verify_jwt = true
+
+# Bulk send. A staff JWT is required. A live send also requires the owner.
+# Nothing in this file schedules or calls this function. The master switch stays off.
+[functions.email-send]
+verify_jwt = true
+
+# Provider events. A missing signing secret rejects every call.
+# verify_jwt stays off. The function stores events and does not send mail.
+[functions.email-webhook]
+verify_jwt = false
+
+# One-click unsubscribe. verify_jwt stays off so a mail client needs no login.
+# GET does not unsubscribe. POST with the one-click body does.
+[functions.email-unsubscribe]
+verify_jwt = false
 
 # Drains pending member notices. Service role or staff. No schedule.
 [functions.member-notice-send]

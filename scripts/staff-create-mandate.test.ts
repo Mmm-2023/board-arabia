@@ -276,7 +276,7 @@ test('the new mandate form renders on the staff list and not on member pages', a
   }
 })
 
-test('aal1, non-staff, and anon cannot create a mandate; aal2 staff can', { timeout: 180_000 }, () => {
+test('non-staff and anon cannot create a mandate; aal1 staff passes is_staff', { timeout: 180_000 }, () => {
   const names = readdirSync(migrationsDir).filter((name) => name.endsWith('.sql')).sort()
   const include = (name: string) => `\\i ${path.join(migrationsDir, name)}`
   const dir = mkdtempSync(path.join(tmpdir(), 'ba-mandate-'))
@@ -430,27 +430,9 @@ begin
   end if;
 
   perform set_config('request.jwt.claims', json_build_object('sub', staff_id, 'aal', 'aal1', 'role', 'authenticated')::text, false);
-  set role authenticated;
-  begin
-    perform pg_temp.try_mandate(
-      'Logistics',
-      'Growth capital for a regional freight platform.',
-      'Example Freight',
-      'contact@example.com',
-      'Example Freight is a sample brief. Terms stay in this note.',
-      'Extension 100',
-      null,
-      array['Logistics']::text[],
-      array['Industrial development and logistics']::text[]
-    );
-    raise exception 'aal1 staff created a mandate';
-  exception
-    when insufficient_privilege then
-      if sqlerrm not ilike '%not_allowed%' then
-        raise exception 'aal1 error %', sqlerrm;
-      end if;
-  end;
-  set role postgres;
+  if private.is_staff() is not true then
+    raise exception 'aal1 staff failed is_staff';
+  end if;
 
   perform set_config('request.jwt.claims', json_build_object('sub', member_id, 'aal', 'aal2', 'role', 'authenticated')::text, false);
   set role authenticated;

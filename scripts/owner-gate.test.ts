@@ -279,8 +279,8 @@ begin
     raise exception 'owner aal2 was not an owner';
   end if;
   perform set_config('request.jwt.claims', json_build_object('sub', owner_id, 'aal', 'aal1', 'role', 'authenticated')::text, false);
-  if private.is_owner() then
-    raise exception 'owner aal1 passed is_owner';
+  if private.is_owner() is not true then
+    raise exception 'owner aal1 was not an owner';
   end if;
   perform set_config('request.jwt.claims', json_build_object('sub', admin_id, 'aal', 'aal2', 'role', 'authenticated')::text, false);
   if private.is_owner() then
@@ -336,17 +336,9 @@ begin
   set role postgres;
 
   perform set_config('request.jwt.claims', json_build_object('sub', owner_id, 'aal', 'aal1', 'role', 'authenticated')::text, false);
-  set role authenticated;
-  begin
-    perform public.staff_set_role(admin_id, 'master');
-    raise exception 'aal1 owner changed staff';
-  exception
-    when insufficient_privilege then
-      if sqlerrm not ilike '%not_allowed%' then
-        raise exception 'aal1 owner error %', sqlerrm;
-      end if;
-  end;
-  set role postgres;
+  if private.is_owner() is not true or private.is_staff() is not true then
+    raise exception 'owner aal1 failed a staff gate';
+  end if;
 
   set role anon;
   begin

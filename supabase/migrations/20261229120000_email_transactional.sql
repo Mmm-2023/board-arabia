@@ -862,7 +862,7 @@ begin
   return pg_catalog.jsonb_build_object(
     'weekly_digest', coalesce(weekly_pref, weekly_col, false),
     'news_invitations', coalesce(news_pref, false),
-    'master_enabled', coalesce(v_master, false),
+    'delivery_connected', coalesce(v_master, false),
     'notices', coalesce(v_notices, '{}'::jsonb),
     'essential_always_on', true
   );

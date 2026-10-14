@@ -16,7 +16,7 @@ export function isLiveMember(status: unknown): boolean {
 }
 
 /** 401 when there is no verified user. 403 when that user is not staff.
- * A staff or master row at aal1 is 403 mfa_required. Password alone is not staff access.
+ * A staff or master row is enough. A second factor is not required.
  */
 export function staffApiDecision(input: {
   userId: string | null
@@ -25,25 +25,23 @@ export function staffApiDecision(input: {
 }):
   | { allow: true; role: StaffRole }
   | { allow: false; status: 401 | 403; error: 'Unauthorized' | 'Not staff' | 'mfa_required'; code?: 'mfa_required' } {
+  void input.aal
   if (!input.userId) return { allow: false, status: 401, error: 'Unauthorized' }
   if (!isStaffRole(input.role)) return { allow: false, status: 403, error: 'Not staff' }
-  if (input.aal !== 'aal2') {
-    return { allow: false, status: 403, error: 'mfa_required', code: 'mfa_required' }
-  }
   return { allow: true, role: input.role }
 }
 
-/** Staff at aal1 must not be treated as a member-only caller. The UI shows the challenge or enrol screen. */
+/** Staff stay staff at any assurance level. Members stay members. */
 export function dealRoomStaffFlag(input: {
   role: unknown
   aal: string | null
 }): 'staff' | 'member' | 'mfa_required' {
+  void input.aal
   if (!isStaffRole(input.role)) return 'member'
-  if (input.aal !== 'aal2') return 'mfa_required'
   return 'staff'
 }
 
-/** A foreign AI or due diligence row. Owners always pass. Staff need aal2 and an explicit share. */
+/** A foreign AI or due diligence row. Owners always pass. Staff need an explicit share. */
 export function foreignRowRead(input: {
   ownerId: string
   callerId: string
@@ -51,9 +49,9 @@ export function foreignRowRead(input: {
   aal: string | null
   shared: boolean
 }): 'owner' | 'shared' | 'mfa_required' | 'hidden' {
+  void input.aal
   if (input.ownerId === input.callerId) return 'owner'
   if (!input.callerIsStaff) return 'hidden'
-  if (input.aal !== 'aal2') return 'mfa_required'
   if (!input.shared) return 'hidden'
   return 'shared'
 }

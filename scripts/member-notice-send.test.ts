@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
+import { BULK_BATCH_URL } from '../supabase/functions/_shared/bulk_mail.ts'
 import { enqueueMemberNotice } from '../supabase/functions/_shared/member_notice.ts'
 import { memberNoticeMail } from '../supabase/functions/_shared/member_notice_copy.ts'
-import { deliverMemberNotices, MEMBER_NOTICE_PROVIDER_URL, type NoticeToSend } from '../supabase/functions/_shared/member_notice_send.ts'
+import { deliverMemberNotices, noticeStreamConfig, type NoticeToSend } from '../supabase/functions/_shared/member_notice_send.ts'
 
 const contact = 'notices@example.com'
 const site = 'https://example.com'
@@ -97,21 +98,31 @@ test('non-essential mail carries per-type unsubscribe headers and essential mail
     fetchImpl: wrapped,
   })
   assert.equal(result.sent, 2)
-  assert.equal(result.calls, 2)
-  assert.equal(calls[0].url, MEMBER_NOTICE_PROVIDER_URL)
-  const first = JSON.parse(calls[0].body) as { headers: Record<string, string>; from: string; reply_to: string }
-  const second = JSON.parse(calls[1].body) as { headers?: Record<string, string> }
-  assert.equal(first.from, 'Board Arabia <news@example.com>')
+  assert.equal(result.calls, 1)
+  assert.equal(calls[0].url, BULK_BATCH_URL)
+  const posted = JSON.parse(calls[0].body) as Array<{
+    headers?: Record<string, string>
+    from: string
+    reply_to: string
+    open_tracking?: boolean
+    click_tracking?: boolean
+  }>
+  const first = posted[0]
+  const second = posted[1]
+  assert.equal(first.from, '"Board Arabia" <news@example.com>')
   assert.equal(first.reply_to, contact)
-  assert.match(first.headers['List-Unsubscribe'], /email-unsubscribe\?t=welcome-3/)
-  assert.match(first.headers['List-Unsubscribe'], new RegExp(`mailto:${contact.replace('.', '\\.')}\\?subject=unsubscribe`))
-  assert.equal(first.headers['List-Unsubscribe-Post'], 'List-Unsubscribe=One-Click')
+  assert.match(first.headers?.['List-Unsubscribe'] || '', /email-unsubscribe\?t=welcome-3/)
+  assert.match(first.headers?.['List-Unsubscribe'] || '', new RegExp(`mailto:${contact.replace('.', '\\.')}\\?subject=unsubscribe`))
+  assert.equal(first.headers?.['List-Unsubscribe-Post'], 'List-Unsubscribe=One-Click')
+  assert.equal(first.open_tracking, false)
+  assert.equal(first.click_tracking, false)
+  assert.equal(second.open_tracking, false)
+  assert.equal(second.click_tracking, false)
+  assert.equal(second.headers, undefined)
   assert.match(welcome.text, /Turn off Welcome emails/)
   assert.match(welcome.text, /\/dashboard\/privacy/)
-  assert.equal(second.headers, undefined)
   assert.match(security.text, /cannot be turned off/)
-  assert.equal(calls[0].headers.get('Idempotency-Key'), `${welcome.typeKey}:${welcome.refId}:${welcome.userId}`)
-  assert.equal(calls[1].headers.get('Idempotency-Key'), `${security.typeKey}:${security.refId}:${security.userId}`)
+  assert.match(calls[0].headers.get('Idempotency-Key') || '', /^live:/)
 })
 
 test('a queue timeout fails open so the existing letter can still go out', async () => {
@@ -156,7 +167,8 @@ test('batches pause and a 429 waits before a retry', async () => {
   const fetchImpl: typeof fetch = async () => {
     hits += 1
     if (hits === 1) return new Response('slow', { status: 429, headers: { 'retry-after': '2' } })
-    return Response.json({ id: `msg_${hits}` })
+    const count = hits === 2 ? 2 : 1
+    return Response.json({ data: Array.from({ length: count }, (_, index) => ({ id: `msg_${hits}_${index}` })) })
   }
   const result = await deliverMemberNotices({
     notices: [notice('invite', 5), notice('invite', 6), notice('event_reminder', 7)],
@@ -173,6 +185,23 @@ test('batches pause and a 429 waits before a retry', async () => {
   })
   assert.equal(result.sent, 3)
   assert.equal(result.failed, 0)
-  assert.equal(result.calls, 4)
+  assert.equal(result.calls, 3)
   assert.deepEqual(pauses, [2000, 1500])
+})
+
+test('the mail stream does not fall back to the newsletter key', () => {
+  const mail = noticeStreamConfig({
+    RESEND_API_KEY: 'news-key',
+    EMAIL_FROM: 'news@example.com',
+    RESEND_API_KEY_MAIL: '',
+    EMAIL_FROM_MAIL: '',
+  })
+  assert.equal(mail.apiKey, '')
+  assert.equal(mail.fromMailbox, '')
+  const ready = noticeStreamConfig({
+    RESEND_API_KEY_MAIL: 'mail-key',
+    EMAIL_FROM_MAIL: 'letters@example.com',
+  })
+  assert.equal(ready.apiKey, 'mail-key')
+  assert.equal(ready.fromMailbox, 'letters@example.com')
 })

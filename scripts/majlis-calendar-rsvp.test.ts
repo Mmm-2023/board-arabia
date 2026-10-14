@@ -76,7 +76,7 @@ test('member routes keep Majlis upcoming, past, and the events redirect', () => 
   assert.match(page, /Google Calendar/)
 })
 
-test('member and aal1 staff cannot create', () => {
+test('a member cannot create, and aal1 staff passes the staff decision', () => {
   const admin = readFileSync(path.join(root, 'supabase/functions/majlis-admin-action/index.ts'), 'utf8')
   const gate = admin.indexOf('requireStaff')
   const create = admin.indexOf("action === 'create'")
@@ -86,8 +86,8 @@ test('member and aal1 staff cannot create', () => {
   assert.equal(staffApiDecision({ userId: HOST, role: null, aal: 'aal2' }).allow, false)
   assert.equal(staffApiDecision({ userId: HOST, role: null, aal: 'aal2' }).status, 403)
   const aal1 = staffApiDecision({ userId: STAFF, role: 'staff', aal: 'aal1' })
-  assert.equal(aal1.allow, false)
-  if (!aal1.allow) assert.equal(aal1.status, 403)
+  assert.equal(aal1.allow, true)
+  if (aal1.allow) assert.equal(aal1.role, 'staff')
   assert.equal(staffApiDecision({ userId: STAFF, role: 'staff', aal: 'aal2' }).allow, true)
 })
 
@@ -390,8 +390,8 @@ begin
   if maybe_n is distinct from 1 then perform pg_temp.fail('staff maybe count'); end if;
 
   perform pg_temp.assume('${STAFF}', 'aal1');
-  select count(*) into n from public.majlis_roster;
-  if n <> 0 then perform pg_temp.fail('aal1 staff saw the roster'); end if;
+  select count(*) into n from public.majlis_roster where event_id = '${EVENT}' and email = 'yes@example.com';
+  if n <> 1 then perform pg_temp.fail('aal1 staff roster lost the email'); end if;
 
   perform pg_temp.assume('${MAYBE}', 'aal1');
   select status into own_status from public.majlis_rsvps where event_id = '${EVENT}';

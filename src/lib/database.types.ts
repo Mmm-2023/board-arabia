@@ -1716,6 +1716,40 @@ export type Database = {
         Args: Record<string, never>
         Returns: Json
       }
+      email_unsubscribe: {
+        Args: { p_token: string; p_source: string }
+        Returns: Json
+      }
+      staff_upsert_campaign: {
+        Args: {
+          p_id: string | null
+          p_kind: string
+          p_category: string
+          p_subject: string
+          p_preheader: string
+          p_body_text: string
+          p_body_html: string | null
+          p_audience: string[]
+          p_digest_issue_id: string | null
+        }
+        Returns: Json
+      }
+      staff_approve_campaign: {
+        Args: { p_id: string }
+        Returns: Json
+      }
+      staff_set_email_master: {
+        Args: { p_enabled: boolean }
+        Returns: Json
+      }
+      staff_email_screen: {
+        Args: Record<string, never>
+        Returns: Json
+      }
+      staff_email_release_gate: {
+        Args: { p_campaign_id: string }
+        Returns: Json
+      }
     }
     Enums: Record<string, never>
     CompositeTypes: Record<string, never>

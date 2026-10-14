@@ -10,7 +10,7 @@ Nothing here was applied to the live database. No `db push`, no Edge deploy, no 
 
 1. Apply `20261229120000_email_transactional.sql` only. Slot `20261229120000` was free on main before this commit. Slots 21 and 23 stay unused. Slots 22, 24, 25, 26, 27 and 28 are already used.
 2. Deploy the Edge function `member-notice-send`. It runs only when admin or the service role calls it. There is no schedule.
-3. No new secrets. `RESEND_API_KEY`, `EMAIL_FROM`, and `PUBLIC_CONTACT_EMAIL` are the same Edge names as the sender plan. They are not in this diff and are not set here.
+3. No new secrets. Transactional mail reads `RESEND_API_KEY_MAIL` and `EMAIL_FROM_MAIL` when that stream is configured. It does not fall back to the newsletter names. `PUBLIC_CONTACT_EMAIL` is the reply address. None of these are set here.
 
 Leave the master switch off.
 
@@ -18,9 +18,9 @@ Leave the master switch off.
 
 VERIFIED for this diff. A scan of the branch against main found no API key value, webhook secret, service-role key, token, project ref, staff name, mailbox, or booking link. Fixtures use example.com. The provider host appears only in the new sender module, which the existing account-mail files do not import.
 
-- `RESEND_API_KEY`: UNKNOWN. Not created in this change. Not stored in the repo.
+- `RESEND_API_KEY` and `RESEND_API_KEY_MAIL`: UNKNOWN. Not created in this change. Not stored in the repo.
 - `RESEND_WEBHOOK_SECRET`: UNKNOWN. Not used by this change.
-- `EMAIL_FROM` and `PUBLIC_CONTACT_EMAIL`: UNKNOWN. Read from the Edge environment at send time. No address literal in the new templates.
+- `EMAIL_FROM`, `EMAIL_FROM_MAIL`, and `PUBLIC_CONTACT_EMAIL`: UNKNOWN. Read from the Edge environment at send time. No address literal in the new templates.
 
 ## What members can turn off
 
@@ -57,6 +57,6 @@ Shots, viewport 1440 and 390:
 
 ## Sender
 
-`supabase/functions/member-notice-send/index.ts` drains the outbox only when called. `verify_jwt` is true. A missing provider key, from address, or contact address fails closed and does not call the provider. Master off skips every pending row and does not call the provider. Batch size and pause come from `email_settings` (50 and 1500). The idempotency key is `type_key:ref_id:user_id`. A 429 waits on the rate-limit header. Non-essential mail has a per-type unsubscribe link and the RFC 8058 headers. Essential mail has neither.
+`supabase/functions/member-notice-send/index.ts` drains the outbox only when called, through the shared sender in `supabase/functions/_shared/bulk_mail.ts` with stream `mail`. Open and click tracking are off on that stream. A missing mail-stream key, from address, or contact address fails closed and does not call the provider. Master off skips every pending row and does not call the provider. Batch size and pause come from `email_settings` (50 and 1500). A 429 waits on the rate-limit header. Non-essential mail has a per-type unsubscribe link and the RFC 8058 headers. Essential mail has neither.
 
 The account-mail module and the files checked by the provider tests do not import this sender.

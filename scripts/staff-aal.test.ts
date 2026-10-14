@@ -36,12 +36,10 @@ test('aal is read from a verified token payload', () => {
   assert.equal(aalFromVerifiedToken('not-a-token'), null)
 })
 
-test('requireStaff decision rejects aal1 and allows aal2', () => {
+test('requireStaff decision allows a staff session at aal1', () => {
   assert.deepEqual(staffApiDecision({ userId: STAFF, role: 'staff', aal: 'aal1' }), {
-    allow: false,
-    status: 403,
-    error: 'mfa_required',
-    code: 'mfa_required',
+    allow: true,
+    role: 'staff',
   })
   assert.deepEqual(staffApiDecision({ userId: STAFF, role: 'master', aal: 'aal2' }), {
     allow: true,
@@ -56,8 +54,8 @@ test('requireStaff decision rejects aal1 and allows aal2', () => {
   assert.ok(userAt > 0 && userAt < aalAt && aalAt < decisionAt)
 })
 
-test('deal room staff flag and HTTP pass aal2 or return mfa_required', async () => {
-  assert.equal(dealRoomStaffFlag({ role: 'staff', aal: 'aal1' }), 'mfa_required')
+test('deal room staff flag treats aal1 staff as staff', async () => {
+  assert.equal(dealRoomStaffFlag({ role: 'staff', aal: 'aal1' }), 'staff')
   assert.equal(dealRoomStaffFlag({ role: 'master', aal: 'aal2' }), 'staff')
   assert.equal(dealRoomStaffFlag({ role: null, aal: 'aal1' }), 'member')
   const session = readFileSync('supabase/functions/_shared/deal_room_session.ts', 'utf8')
@@ -107,10 +105,10 @@ test('deal room staff flag and HTTP pass aal2 or return mfa_required', async () 
   assert.equal(body.code, 'mfa_required')
 })
 
-test('ai tool status hides unshared rows and rejects staff aal1', async () => {
+test('ai tool status hides unshared rows and shows a shared row at aal1', async () => {
   assert.equal(
     foreignRowRead({ ownerId: MEMBER, callerId: STAFF, callerIsStaff: true, aal: 'aal1', shared: true }),
-    'mfa_required',
+    'shared',
   )
   assert.equal(
     foreignRowRead({ ownerId: MEMBER, callerId: STAFF, callerIsStaff: true, aal: 'aal2', shared: false }),
@@ -163,24 +161,21 @@ test('ai tool status hides unshared rows and rejects staff aal1', async () => {
   }
 
   const aal1 = await status('aal1', true)
-  assert.equal(aal1.status, 403)
-  assert.equal((await aal1.json()).code, 'mfa_required')
+  assert.equal(aal1.status, 200)
   const hidden = await status('aal2', false)
   assert.equal(hidden.status, 404)
   const shared = await status('aal2', true)
   assert.equal(shared.status, 200)
 })
 
-test('invite-master stays master-only after aal2 and refuses aal1 before a write', () => {
+test('invite-master stays master-only and allows a master at aal1', () => {
   assert.deepEqual(gateInviteMaster({ userId: STAFF, role: 'master', aal: 'aal2' }), {
     allow: true,
     role: 'master',
   })
   assert.deepEqual(gateInviteMaster({ userId: STAFF, role: 'master', aal: 'aal1' }), {
-    allow: false,
-    status: 403,
-    error: 'mfa_required',
-    code: 'mfa_required',
+    allow: true,
+    role: 'master',
   })
   const staff = gateInviteMaster({ userId: STAFF, role: 'staff', aal: 'aal2' })
   assert.equal(staff.allow, false)
@@ -195,10 +190,10 @@ test('invite-master stays master-only after aal2 and refuses aal1 before a write
 })
 
 test('member prompt, share labels, and aggregate counts stay free of row content', () => {
-  assert.equal(routeHold({ area: 'staff', currentLevel: 'aal1', verifiedFactor: false }), 'enrol')
-  assert.equal(routeHold({ area: 'staff', currentLevel: 'aal1', verifiedFactor: true }), 'challenge')
+  assert.equal(routeHold({ area: 'staff', currentLevel: 'aal1', verifiedFactor: false }), 'clear')
+  assert.equal(routeHold({ area: 'staff', currentLevel: 'aal1', verifiedFactor: true }), 'clear')
   assert.equal(routeHold({ area: 'member', currentLevel: 'aal1', verifiedFactor: false }), 'clear')
-  assert.equal(routeHold({ area: 'member', currentLevel: 'aal1', verifiedFactor: true }), 'challenge')
+  assert.equal(routeHold({ area: 'member', currentLevel: 'aal1', verifiedFactor: true }), 'clear')
   assert.equal(routeHold({ area: 'staff', currentLevel: 'aal2', verifiedFactor: true }), 'clear')
   assert.equal(showMemberPrompt({ verifiedFactor: false, dismissed: false }), true)
   assert.equal(showMemberPrompt({ verifiedFactor: false, dismissed: true }), false)

@@ -1,4 +1,7 @@
-/** Pure two-step sign-in decisions. No network, no secrets. */
+/** Pure two-step sign-in decisions. No network, no secrets.
+ * Sign-in never asks for a code and never holds staff for enrolment.
+ * Two-step stays optional on the Security page.
+ */
 
 export type MfaHold = 'clear' | 'challenge' | 'enrol'
 
@@ -7,8 +10,9 @@ export function routeHold(input: {
   currentLevel: string | null
   verifiedFactor: boolean
 }): MfaHold {
-  if (input.verifiedFactor && input.currentLevel !== 'aal2') return 'challenge'
-  if (input.area === 'staff' && input.currentLevel !== 'aal2') return 'enrol'
+  void input.area
+  void input.currentLevel
+  void input.verifiedFactor
   return 'clear'
 }
 
@@ -19,7 +23,7 @@ export function showMemberPrompt(input: {
   return !input.verifiedFactor && !input.dismissed
 }
 
-/** The line stays away for 14 days after Not now. */
+/** Kept so older dismissal stamps still parse. The home nudge no longer returns. */
 export const PROMPT_RETURN_MS = 14 * 24 * 60 * 60 * 1000
 
 export function isMemberHomePath(pathname: string): boolean {
@@ -32,13 +36,18 @@ export function promptDue(verifiedFactor: boolean, dismissedAt: number | null, n
   return now - dismissedAt >= PROMPT_RETURN_MS
 }
 
+/** The member home nudge is off, including the old 14-day return. */
 export function homeMemberPrompt(input: {
   pathname: string
   verifiedFactor: boolean
   dismissedAt: number | null
   now: number
 }): boolean {
-  return isMemberHomePath(input.pathname) && promptDue(input.verifiedFactor, input.dismissedAt, input.now)
+  void input.pathname
+  void input.verifiedFactor
+  void input.dismissedAt
+  void input.now
+  return false
 }
 
 type PromptStore = { ids: string[]; at: Record<string, number> }
