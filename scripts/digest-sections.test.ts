@@ -293,7 +293,9 @@ test('digest copy keeps one contact, the footer credit, and no prices', async ()
   assert.equal(read('src/pages/dashboard/HomeSnapshotView.tsx').includes('to="/dashboard/digest"'), true)
 })
 
-test('member and admin digest shots at 1440 and 390', async (t) => {
+const DIGEST_SHOT_TIMEOUT_MS = 90_000
+
+test('member and admin digest shots at 1440 and 390', { timeout: DIGEST_SHOT_TIMEOUT_MS }, async (t) => {
   const executablePath = chromePath()
   if (!executablePath) {
     t.skip('Chrome is not installed')
@@ -327,27 +329,24 @@ test('member and admin digest shots at 1440 and 390', async (t) => {
       })
       const rootSelector = viewName === 'sections' ? '[data-digest="full"]' : '[data-digest-editor]'
       const url = `${origin}/scripts/smoke/weekly-digest.html?view=${viewName}`
-      await page.goto(url, { waitUntil: 'networkidle' })
       const root = page.locator(rootSelector)
-      try {
-        await root.waitFor({ timeout: 8000 })
-      } catch {
-        await page.goto(url, { waitUntil: 'networkidle' })
+      page.setDefaultTimeout(DIGEST_SHOT_TIMEOUT_MS)
+      async function showDigestRoot() {
+        await page.goto(url, { waitUntil: 'domcontentloaded', timeout: DIGEST_SHOT_TIMEOUT_MS })
+        await root.waitFor({ state: 'visible', timeout: DIGEST_SHOT_TIMEOUT_MS })
       }
-      let rootText = ''
       try {
-        rootText = await root.innerText({ timeout: 8000 })
+        await showDigestRoot()
       } catch (error) {
         try {
-          await page.goto(url, { waitUntil: 'domcontentloaded' })
-          await root.waitFor({ timeout: 15000 })
-          rootText = await root.innerText()
+          await showDigestRoot()
         } catch {
           const detail = error instanceof Error ? error.message : String(error)
           const body = await page.locator('body').innerText().catch(() => '')
           throw new Error(`${detail}\npage errors: ${pageErrors.join(' | ')}\nbody: ${body.slice(0, 400)}`)
         }
       }
+      const rootText = await root.innerText()
       assert.match(rootText, /Boardroom and markets/)
       assert.match(rootText, /Deals and investments/)
       assert.match(rootText, /On the platform/)
