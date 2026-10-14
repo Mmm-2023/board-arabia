@@ -151,6 +151,12 @@ export const PRIVACY_EN: LegalDocument = {
       "text": "Partner interest. We store the name, firm, category and note you send so our admin team can review it. We never ask for an email or phone. Only admin can read it."
     },
     {
+      "kind": "clause",
+      "id": "c-3-15",
+      "number": "3.15",
+      "text": "Newsletter measurement. Newsletter emails include open and click measurement. We use it only for aggregate statistics. We do not show who opened or clicked. Opens are approximate, because some mail apps download images automatically. You can turn these emails off in Your privacy. The unsubscribe link is not measured."
+    },
+    {
       "kind": "h2",
       "id": "s-4",
       "text": "4. Why we use it and our lawful basis"
@@ -438,6 +444,10 @@ export const PRIVACY_EN: LegalDocument = {
         [
           "Marketing stats cache",
           "24 hours"
+        ],
+        [
+          "Newsletter open and click records",
+          "Removed on request to [CONTACT EMAIL], and in any case within 24 months"
         ]
       ]
     },

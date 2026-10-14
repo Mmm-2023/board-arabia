@@ -1,0 +1,108 @@
+import assert from 'node:assert/strict'
+import { readFileSync, readdirSync } from 'node:fs'
+import path from 'node:path'
+import test from 'node:test'
+import { fileURLToPath } from 'node:url'
+import { buildOutbound } from '../supabase/functions/_shared/bulk_mail.ts'
+import { UNTRACKED_LINK_ATTR, renderBulkLetter } from '../supabase/functions/_shared/bulk_mail_copy.ts'
+
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
+const migrationName = '20261231120000_newsletter_analytics.sql'
+
+function read(rel: string) {
+  return readFileSync(path.join(root, rel), 'utf8')
+}
+
+test('newsletter analytics migration is named and does not assume it is newest', () => {
+  const names = readdirSync(path.join(root, 'supabase/migrations')).filter((name) => name.endsWith('.sql')).sort()
+  assert.equal(names.includes(migrationName), true)
+  assert.ok(names.indexOf(migrationName) > names.indexOf('20261221120000_newsletter_events.sql'))
+  assert.ok(names.indexOf(migrationName) > names.indexOf('20261230120000_staff_aal1_access.sql'))
+  assert.equal(names.filter((name) => name.startsWith('20261231120000')).length, 1)
+  const sql = read(`supabase/migrations/${migrationName}`)
+  assert.equal(sql.includes('\u2014') || sql.includes('\u2013'), false)
+  assert.equal(/\bemail_events\b/i.test(sql), false)
+  assert.equal(/pg_cron|cron\.schedule|pg_net|net\.http/i.test(sql), false)
+  assert.equal(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/.test(sql), false)
+  assert.equal(sql.toLowerCase().includes('the desk'), false)
+  assert.match(sql, /alter table public\.newsletter_events enable row level security/)
+  assert.match(sql, /alter table public\.newsletter_events force row level security/)
+  assert.match(sql, /security definer/)
+  assert.match(sql, /set search_path = ''/)
+  assert.match(sql, /if not private\.is_staff\(\) then/)
+  assert.match(sql, /revoke all on function public\.staff_newsletter_stats\(uuid\) from public;/)
+  assert.match(sql, /revoke all on function public\.staff_newsletter_stats\(uuid\) from public, anon;/)
+  assert.match(sql, /grant execute on function public\.staff_newsletter_stats\(uuid\) to authenticated;/)
+  assert.match(sql, /revoke all on function public\.staff_newsletter_trend\(\) from public;/)
+  assert.match(sql, /grant execute on function public\.staff_newsletter_trend\(\) to authenticated;/)
+  assert.equal(/grant execute on function public\.staff_newsletter_stats\(uuid\) to anon/.test(sql), false)
+  assert.match(sql, /p_value < 5 then '<5'/)
+  assert.match(sql, /limit 10/)
+  assert.match(sql, /'opens', 'approximate'/)
+  assert.match(sql, /newsletter_unsub_url/)
+  assert.equal(/grant\s+(select|insert|update|delete|all)\s+on\s+(table\s+)?public\.newsletter_events/i.test(sql), false)
+})
+
+test('unsubscribe link and list-unsubscribe header stay untracked', () => {
+  const unsubscribeUrl = 'https://example.com/email/unsubscribe?t=tok'
+  const oneClickUrl = 'https://example.com/functions/v1/email-unsubscribe?t=tok'
+  const preferencesUrl = 'https://example.com/dashboard/privacy'
+  const letter = renderBulkLetter({
+    subject: 'A note for members',
+    preheader: '',
+    bodyText: 'Hello from Board Arabia.',
+    bodyHtml: '<p>Hello from Board Arabia.</p><p><a href="https://example.com/briefing">Read</a></p>',
+    unsubscribeUrl,
+    preferencesUrl,
+    test: false,
+  })
+  const message = buildOutbound({
+    fromMailbox: 'news@example.com',
+    contactEmail: 'contact@example.com',
+    to: 'member.one@example.com',
+    subject: 'A note for members',
+    preheader: '',
+    bodyText: 'Hello from Board Arabia.',
+    bodyHtml: '<p>Hello from Board Arabia.</p>',
+    unsubscribeUrl,
+    preferencesUrl,
+    oneClickUrl,
+    test: false,
+  })
+  assert.equal(message.headers['List-Unsubscribe'], `<${oneClickUrl}>`)
+  assert.equal(message.headers['List-Unsubscribe'].includes('links.'), false)
+  assert.equal(letter.html.includes(`<a ${UNTRACKED_LINK_ATTR} href="${unsubscribeUrl}">`), true)
+  assert.equal(letter.text.includes(`Unsubscribe: ${unsubscribeUrl}`), true)
+  assert.equal(letter.html.includes(`<a href="${preferencesUrl}">`), true)
+  assert.equal(letter.html.includes(`<a ${UNTRACKED_LINK_ATTR} href="${preferencesUrl}">`), false)
+  assert.equal(letter.html.includes(`href="https://links.`), false)
+})
+
+test('privacy notice states aggregate newsletter measurement', () => {
+  const privacy = read('src/content/legal/privacy.en.ts')
+  assert.match(privacy, /Newsletter emails include open and click measurement/)
+  assert.match(privacy, /only for aggregate statistics/)
+  assert.match(privacy, /turn these emails off in Your privacy/)
+  assert.match(privacy, /Newsletter open and click records/)
+  assert.match(privacy, /Removed on request to \[CONTACT EMAIL\], and in any case within 24 months/)
+  assert.equal(privacy.includes('\u2014') || privacy.includes('\u2013'), false)
+  assert.equal(/\bsponsor\b/i.test(privacy), false)
+})
+
+test('the email mock is not wired into the live admin page', () => {
+  assert.equal(read('src/pages/admin/EmailPage.tsx').includes('emailDeskMock'), false)
+  assert.equal(read('src/pages/admin/EmailPage.tsx').includes('EmailDeskMock'), false)
+  assert.equal(read('src/App.tsx').includes('emailDeskMock'), false)
+  assert.equal(read('src/App.tsx').includes('EmailDeskMock'), false)
+  const mock = read('scripts/smoke/emailDeskMock.tsx')
+  assert.equal(mock.includes('\u2014') || mock.includes('\u2013'), false)
+  assert.equal(/\bsponsor\b/i.test(mock), false)
+  assert.equal(mock.toLowerCase().includes('the desk'), false)
+  assert.equal(/supabase|fetch\(/.test(mock), false)
+  assert.match(mock, /Weekly roundup/)
+  assert.match(mock, /Contacts/)
+  assert.match(mock, /Opens are approximate/)
+  assert.match(mock, /<5/)
+  assert.match(mock, /example\.com/)
+  assert.equal(/[A-Za-z0-9._%+-]+@(?!example\.com)[A-Za-z0-9.-]+\.[A-Za-z]{2,}/.test(mock), false)
+})
