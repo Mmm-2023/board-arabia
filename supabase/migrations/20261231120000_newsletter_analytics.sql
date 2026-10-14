@@ -652,3 +652,130 @@ create trigger email_sends_measure_status
   before update on public.email_sends
   for each row
   execute function private.email_sends_measure_status();
+
+-- Live staff_upsert_campaign is the body from 20261223120000_email_campaign_ui.sql.
+-- The only change is that a campaign category must be bulk. Measurement is not an audience.
+create or replace function public.staff_upsert_campaign(
+  p_id uuid,
+  p_kind text,
+  p_category text,
+  p_subject text,
+  p_preheader text,
+  p_body_text text,
+  p_body_html text,
+  p_audience text[],
+  p_digest_issue_id uuid
+) returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_id uuid;
+  v_status text;
+  v_requires boolean;
+  v_kind text;
+  v_audience text[];
+  v_subject text;
+  v_preheader text;
+  v_body text;
+  v_html text;
+  v_hash text;
+begin
+  if not private.is_staff() then
+    raise exception 'not_allowed' using errcode = '42501';
+  end if;
+  if p_kind not in ('digest', 'campaign') then
+    raise exception 'not_allowed' using errcode = '22023';
+  end if;
+  select c.requires_opt_in, c.kind into v_requires, v_kind
+  from public.email_categories c
+  where c.key = p_category;
+  if not found or v_kind is distinct from 'bulk' then
+    raise exception 'not_allowed' using errcode = '22023';
+  end if;
+  if p_kind = 'campaign' and v_requires is not true then
+    raise exception 'not_allowed' using errcode = '22023';
+  end if;
+  if p_kind = 'digest' and p_category is distinct from 'weekly_digest' then
+    raise exception 'not_allowed' using errcode = '22023';
+  end if;
+  if p_kind = 'digest' and (
+    p_digest_issue_id is null
+    or not exists (select 1 from public.digest_issues i where i.id = p_digest_issue_id)
+  ) then
+    raise exception 'not_allowed' using errcode = '22023';
+  end if;
+  if p_kind = 'campaign' and p_digest_issue_id is not null then
+    raise exception 'not_allowed' using errcode = '22023';
+  end if;
+
+  v_audience := private.normalize_membership_tiers(coalesce(p_audience, array[]::text[]));
+  if coalesce(pg_catalog.cardinality(v_audience), 0) > 0
+     and not private.membership_tiers_valid(v_audience) then
+    raise exception 'invalid_tier' using errcode = '22023';
+  end if;
+
+  v_subject := coalesce(private.digest_plain(p_subject, 180), '');
+  v_preheader := coalesce(private.digest_plain(p_preheader, 180), '');
+  v_body := coalesce(private.digest_plain(p_body_text, 8000), '');
+  perform private.email_assert_links(v_subject);
+  perform private.email_assert_links(v_preheader);
+  perform private.email_assert_links(v_body);
+  v_html := private.email_sanitise_html(
+    case
+      when p_body_html is null then private.email_plain_html(v_body)
+      else p_body_html
+    end
+  );
+  v_hash := private.email_content_hash(v_subject, v_preheader, v_body, v_html, v_audience);
+
+  if p_id is null then
+    insert into public.email_campaigns (
+      kind, digest_issue_id, category, subject, preheader, body_text,
+      body_html_sanitised, audience_tiers, status, created_by, content_hash
+    ) values (
+      p_kind, p_digest_issue_id, p_category, v_subject, v_preheader, v_body,
+      v_html, v_audience, 'draft', auth.uid(), v_hash
+    )
+    returning id into v_id;
+    v_status := 'draft';
+  else
+    select c.status into v_status
+    from public.email_campaigns c
+    where c.id = p_id
+    for update;
+    if v_status is null then
+      raise exception 'not_found' using errcode = 'P0002';
+    end if;
+    if v_status not in ('draft', 'approved', 'test_sent') then
+      raise exception 'not_allowed' using errcode = '42501';
+    end if;
+    v_status := case when v_status = 'draft' then 'draft' else 'approved' end;
+    update public.email_campaigns
+    set kind = p_kind,
+        digest_issue_id = p_digest_issue_id,
+        category = p_category,
+        subject = v_subject,
+        preheader = v_preheader,
+        body_text = v_body,
+        body_html_sanitised = v_html,
+        audience_tiers = v_audience,
+        status = v_status,
+        content_hash = v_hash,
+        test_sent_by = null,
+        test_sent_at = null,
+        test_content_hash = null
+    where id = p_id;
+    v_id := p_id;
+  end if;
+
+  return pg_catalog.jsonb_build_object('id', v_id, 'status', v_status);
+end;
+$$;
+
+revoke all on function public.staff_upsert_campaign(uuid, text, text, text, text, text, text, text[], uuid) from public, anon;
+grant execute on function public.staff_upsert_campaign(uuid, text, text, text, text, text, text, text[], uuid) to authenticated;
+
+comment on function public.staff_upsert_campaign(uuid, text, text, text, text, text, text, text[], uuid) is
+  'Admin saves a draft, or edits an approved campaign. Only a bulk category can be the audience. Measurement is refused. A null HTML argument is built from the plain text and sanitised. An edit clears the owner test and returns the campaign to approved. Does not send mail.';

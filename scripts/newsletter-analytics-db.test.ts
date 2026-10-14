@@ -285,6 +285,18 @@ begin
   later := public.staff_newsletter_stats(campaign_b);
   trend := public.staff_newsletter_trend();
   begin
+    perform public.staff_upsert_campaign(
+      null, 'campaign', 'measure_opens', 'Hello', '', 'Hello members.',
+      '<p>Hello</p>', array['founding']::text[], null
+    );
+    raise exception 'measure_opens was accepted as an audience';
+  exception
+    when others then
+      if sqlerrm not like '%not_allowed%' then
+        raise exception 'measure_opens error %', sqlerrm;
+      end if;
+  end;
+  begin
     perform public.staff_newsletter_stats(gen_random_uuid());
     raise exception 'missing campaign returned a row';
   exception
