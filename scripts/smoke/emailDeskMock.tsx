@@ -34,12 +34,25 @@ const actionClass =
 const fieldClass = 'mt-2 block w-full border border-pearl/20 bg-ink px-3 py-3 text-[0.95rem] text-pearl'
 const labelClass = 'block text-[0.68rem] font-semibold tracking-[0.08em] text-pearl/45 uppercase'
 
-const CONTACTS = [
-  ['Example Director', 'director.one@example.com', 'Example Company A', 'Asked for news', '2 Oct 2026'],
-  ['Example Chair', 'chair.one@example.com', 'Example Company B', 'Already a member', '2 Oct 2026'],
-  ['Example Member', 'member.one@example.com', 'Example Company C', 'Asked for news', '28 Sep 2026'],
-  ['Example Partner', 'partner.one@example.com', 'Example Company D', 'Asked for news', '28 Sep 2026'],
-  ['Example Advisor', 'advisor.one@example.com', 'Example Company E', 'Stored only', '14 Sep 2026'],
+const CONTACT_ROWS = [
+  ['Example Director', 'director.one@example.com', 'Example Company A', 'October briefing', 'Opted in'],
+  ['Example Chair', 'chair.one@example.com', 'Example Company B', 'October briefing', 'Known contact'],
+  ['Example Member', 'member.one@example.com', 'Example Company C', 'Majlis guests', 'Opted in'],
+  ['Example Partner', 'partner.one@example.com', 'Example Company D', 'Majlis guests', 'Opted in'],
+  ['Example Advisor', 'advisor.one@example.com', 'Example Company E', 'October briefing', 'Known contact'],
+] as const
+
+const PREVIEW_ROWS = [
+  ['Example Director', 'director.one@example.com', 'Example Company A', 'Riyadh'],
+  ['Example Chair', 'chair.one@example.com', 'Example Company B', 'Jeddah'],
+  ['Example Member', 'member.one@example.com', 'Example Company C', 'Riyadh'],
+  ['Example Partner', 'partner.one@example.com', 'Example Company D', 'Dubai'],
+  ['Example Advisor', 'advisor.one@example.com', 'Example Company E', 'Riyadh'],
+  ['Example Treasurer', 'treasurer.one@example.com', 'Example Company F', 'Dammam'],
+  ['Example Secretary', 'secretary.one@example.com', 'Example Company G', 'Riyadh'],
+  ['Example Founder', 'founder.one@example.com', 'Example Company H', 'Abu Dhabi'],
+  ['Example Operator', 'operator.one@example.com', 'Example Company I', 'Riyadh'],
+  ['Example Guest', 'guest.one@example.com', 'Example Company J', 'Jeddah'],
 ] as const
 
 const TREND = [
@@ -508,10 +521,12 @@ function TrendChart() {
 }
 
 function Contacts({ view }: { view: 'list' | 'upload' | 'map' | 'basis' | 'summary' }) {
+  const section = view === 'list' ? 'contacts' : 'import'
   return (
     <div className="mt-6" data-contacts={view}>
-      <p className="text-[0.95rem] text-pearl/70">
-        Placeholder copy, for review. Sample rows use example.com only. This screen does not import and does not send.
+      <ContactNav current={section} />
+      <p className="mt-4 text-[0.95rem] text-pearl/70">
+        Sample rows use example.com only. Non-members can receive a newsletter or a letter. They do not get account mail and they do not get site access. This import does not send.
       </p>
       {view === 'list' ? <ContactList /> : null}
       {view === 'upload' ? <ContactUpload /> : null}
@@ -522,15 +537,50 @@ function Contacts({ view }: { view: 'list' | 'upload' | 'map' | 'basis' | 'summa
   )
 }
 
+function ContactNav({ current }: { current: 'lists' | 'contacts' | 'import' }) {
+  const items = [
+    ['lists', 'Lists'],
+    ['contacts', 'Contacts'],
+    ['import', 'Import'],
+  ] as const
+  return (
+    <div className="flex gap-2 overflow-x-auto" role="tablist" aria-label="Contacts">
+      {items.map(([id, label]) => (
+        <button
+          key={id}
+          type="button"
+          role="tab"
+          aria-selected={current === id}
+          className={`inline-flex min-h-11 shrink-0 items-center border px-3 text-[0.75rem] font-semibold tracking-[0.06em] uppercase ${
+            current === id ? 'border-brass-bright text-brass-bright' : 'border-pearl/15 text-pearl/55'
+          }`}
+        >
+          {label}
+        </button>
+      ))}
+    </div>
+  )
+}
+
 function ContactList() {
   return (
     <div>
       <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-        <h2 className="font-display text-[1.35rem] font-semibold tracking-[-0.03em]">Contacts</h2>
-        <button type="button" className={actionClass}>Upload contacts</button>
+        <h2 className="font-display text-[1.35rem] font-semibold tracking-[-0.03em]">Lists and contacts</h2>
+        <button type="button" className={actionClass}>Import</button>
       </div>
+      <ul className="mt-4 grid gap-2 sm:grid-cols-2">
+        <li className="border border-pearl/10 px-4 py-3">
+          <p className="text-[0.95rem] text-pearl">October briefing</p>
+          <p className="mt-1 text-[0.85rem] text-pearl/55">86 contacts</p>
+        </li>
+        <li className="border border-pearl/10 px-4 py-3">
+          <p className="text-[0.95rem] text-pearl">Majlis guests</p>
+          <p className="mt-1 text-[0.85rem] text-pearl/55">42 contacts</p>
+        </li>
+      </ul>
       <ul className="mt-4 space-y-2">
-        {CONTACTS.map((row) => (
+        {CONTACT_ROWS.map((row) => (
           <li key={row[1]} className="border border-pearl/10 px-4 py-3">
             <p className="text-[0.95rem] text-pearl">{row[0]}</p>
             <p className="mt-1 text-[0.85rem] text-pearl/60">{row[1]}</p>
@@ -546,11 +596,14 @@ function ContactUpload() {
   return (
     <div>
       <h2 className="mt-4 font-display text-[1.35rem] font-semibold tracking-[-0.03em]">Upload</h2>
+      <p className="mt-2 text-[0.9rem] text-pearl/60">CSV or XLSX. Up to 5,000 rows and 5 MB.</p>
       <div className="mt-4 border border-dashed border-pearl/25 px-4 py-8 text-center">
         <p className="text-[0.95rem] text-pearl/80">contacts-example.csv</p>
-        <p className="mt-2 text-[0.85rem] text-pearl/55">240 rows. Columns: email, name, firm, agreed on, notes.</p>
+        <p className="mt-2 text-[0.85rem] text-pearl/55">240 rows, under 5 MB. Columns: name, email, company, city.</p>
       </div>
-      <p className="mt-3 text-[0.9rem] text-pearl/60">Nothing is stored until you confirm a basis. No email is sent.</p>
+      <p className="mt-3 text-[0.9rem] text-pearl/60">
+        Later checks drop a bad address, a role address, a disposable domain, a duplicate, and anyone already suppressed.
+      </p>
       <button type="button" className={`${actionClass} mt-4`}>Map columns</button>
     </div>
   )
@@ -558,15 +611,16 @@ function ContactUpload() {
 
 function ContactMap() {
   const rows = [
-    ['Email address', 'Email'],
-    ['Full name', 'Name'],
-    ['Firm', 'Company'],
-    ['Agreed on', 'Consent date'],
+    ['Name', 'Name'],
+    ['Email', 'Email'],
+    ['Company', 'Company'],
+    ['City', 'Extra'],
     ['Notes', 'Do not import'],
   ]
   return (
     <div>
       <h2 className="mt-4 font-display text-[1.35rem] font-semibold tracking-[-0.03em]">Map columns</h2>
+      <p className="mt-2 text-[0.9rem] text-pearl/60">Name, email and company are required. City is kept as an extra. First 10 rows.</p>
       <ul className="mt-4 space-y-2">
         {rows.map((row) => (
           <li key={row[0]} className="flex min-h-11 flex-wrap items-center justify-between gap-2 border border-pearl/10 px-3 py-2">
@@ -575,6 +629,16 @@ function ContactMap() {
           </li>
         ))}
       </ul>
+      <ol className="mt-4 space-y-2">
+        {PREVIEW_ROWS.map((row, index) => (
+          <li key={row[1]} className="border border-pearl/10 px-3 py-3 text-[0.85rem]">
+            <p className="text-pearl/45">{index + 1}</p>
+            <p className="mt-1 text-pearl">{row[0]}</p>
+            <p className="text-pearl/70">{row[1]}</p>
+            <p className="text-pearl/55">{row[2]} · {row[3]}</p>
+          </li>
+        ))}
+      </ol>
       <button type="button" className={`${actionClass} mt-4`}>Choose a basis</button>
     </div>
   )
@@ -582,47 +646,79 @@ function ContactMap() {
 
 function ContactBasis() {
   return (
-    <fieldset className="mt-4" data-basis="unset">
-      <legend className="font-display text-[1.35rem] font-semibold tracking-[-0.03em]">Why may we email these people?</legend>
-      <p className="mt-2 text-[0.9rem] text-pearl/60">Nothing is selected. Continue stays off until you choose.</p>
-      <div className="mt-4 space-y-2">
-        <BasisOption label="They asked for news and invitations. The file includes the date they agreed." />
-        <BasisOption label="They are already members. Match them, and do not record a new opt-in." />
-        <BasisOption label="Store the rows only. Do not email them." />
-      </div>
-      <label className="mt-4 flex min-h-11 items-start gap-3 text-[0.95rem] text-pearl/80">
-        <input type="checkbox" disabled defaultChecked={false} className="mt-1" />
-        <span>I confirm this basis applies to every row in the file.</span>
+    <div className="mt-4" data-basis="unset" data-import="blocked">
+      <h2 className="font-display text-[1.35rem] font-semibold tracking-[-0.03em]">Consent basis</h2>
+      <p className="mt-2 text-[0.9rem] text-pearl/60">contacts-example.csv. The import stays blocked until you choose a basis and write a source note.</p>
+      <fieldset className="mt-4">
+        <legend className={labelClass}>Basis</legend>
+        <div className="mt-2 space-y-2">
+          <BasisOption name="basis" label="Opted in" detail="They asked to receive letters from Board Arabia." />
+          <BasisOption name="basis" label="Known contact" detail="You already know them. Legal Counsel signs this off before the first send. Sending is off." />
+        </div>
+      </fieldset>
+      <label className={`${labelClass} mt-4`}>
+        Source note
+        <textarea className={`${fieldClass} min-h-24`} readOnly value="" placeholder="Where this list came from" />
       </label>
+      <fieldset className="mt-4">
+        <legend className={labelClass}>List</legend>
+        <p className="mt-1 text-[0.85rem] text-pearl/55">Pick a list or create one. Lists can be an audience next to tiers.</p>
+        <div className="mt-2 space-y-2">
+          <BasisOption name="list" label="October briefing" detail="Existing list." />
+          <BasisOption name="list" label="Majlis guests" detail="Existing list." />
+          <BasisOption name="list" label="Create a new list" detail="Name it before import." />
+        </div>
+      </fieldset>
       <button type="button" className={`${actionClass} mt-4`} disabled>
-        Continue
+        Import
       </button>
-    </fieldset>
+    </div>
   )
 }
 
-function BasisOption({ label }: { label: string }) {
+function BasisOption({ name, label, detail }: { name: string; label: string; detail: string }) {
   return (
     <label className="flex min-h-11 items-start gap-3 border border-pearl/10 px-3 py-3 text-[0.95rem] text-pearl/85">
-      <input type="radio" name="basis" disabled defaultChecked={false} className="mt-1" />
-      <span>{label}</span>
+      <input type="radio" name={name} disabled defaultChecked={false} className="mt-1" />
+      <span>
+        <span className="block">{label}</span>
+        <span className="mt-1 block text-[0.85rem] text-pearl/55">{detail}</span>
+      </span>
     </label>
   )
 }
 
 function ContactSummary() {
+  const skipped = [
+    ['Role address', '8'],
+    ['Disposable domain', '6'],
+    ['Duplicate', '6'],
+    ['Already a contact or member', '6'],
+    ['Suppressed', '6'],
+    ['Address not usable', '6'],
+    ['Domain not found', '6'],
+  ] as const
   return (
     <div data-import-summary="">
       <h2 className="mt-4 font-display text-[1.35rem] font-semibold tracking-[-0.03em]">Import summary</h2>
-      <p className="mt-2 text-[0.95rem] text-pearl/75">contacts-example.csv. Basis: they asked for news and invitations.</p>
+      <p className="mt-2 text-[0.95rem] text-pearl/75">
+        contacts-example.csv. 240 rows read. List: October briefing. Basis: Opted in. Source: sign-up sheet at an example event.
+      </p>
       <dl className="mt-4 grid grid-cols-2 gap-3">
-        <Stat label="Rows read" value="240" />
-        <Stat label="Ready to store" value="228" />
-        <Stat label="Duplicates" value="6" />
-        <Stat label="No usable address" value="6" />
+        <Stat label="Added" value="196" />
+        <Stat label="Skipped" value="44" />
       </dl>
+      <ul className="mt-4 space-y-2">
+        {skipped.map((row) => (
+          <li key={row[0]} className="flex min-h-11 items-center justify-between gap-3 border border-pearl/10 px-3">
+            <span className="text-[0.9rem] text-pearl/80">{row[0]}</span>
+            <span className="text-[0.95rem] text-pearl">{row[1]}</span>
+          </li>
+        ))}
+      </ul>
+      <p className="mt-4 text-[0.9rem] text-pearl/60">No addresses are listed here. The skipped-rows file is built in the browser and is not stored.</p>
+      <button type="button" className={`${actionClass} mt-4`}>Download skipped rows</button>
       <p className="mt-4 text-[0.95rem] text-pearl/70">Nothing was emailed. Sending is off.</p>
-      <button type="button" className={`${actionClass} mt-4`}>Save these contacts</button>
     </div>
   )
 }

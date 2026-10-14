@@ -59,7 +59,7 @@ There is no newsletter-event row in the retention job. The notice uses the fallb
 
 Email redesign: `weekly`, `letters`, `results`, `step-1`, `step-3`, `step-5`, `step-6`, `plain`, `details`.
 
-Contacts import, mock only: `contacts-list`, `contacts-upload`, `contacts-map`, `contacts-basis`, `contacts-summary`. The basis step has nothing selected. The attached brief had no EM-1g section, so this copy is a placeholder for review. It does not import and it does not send.
+Contacts import, mock only: `contacts-list`, `contacts-upload`, `contacts-map`, `contacts-basis`, `contacts-summary`. The basis step offers Opted in or Known contact, plus a source note and a list, and Import stays blocked until those are set. No EM-1g migration or route. It does not send.
 
 Release on step 6 stays disabled while sending is off. Opens on Results are labelled approximate. Cells under 5 show `<5`.
 

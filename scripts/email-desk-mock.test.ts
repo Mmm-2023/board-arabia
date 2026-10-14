@@ -83,13 +83,18 @@ test('email desk mock shots at 1440 and 390', { timeout: 180_000 }, async (t) =>
           assert.equal(text.includes('@'), false, shot)
         }
         if (shot === 'contacts-basis') {
-          assert.equal(await page.locator('[data-basis]').getAttribute('data-basis'), 'unset')
-          const radios = page.locator('input[type="radio"]')
-          assert.equal(await radios.count(), 3)
-          for (let index = 0; index < 3; index += 1) {
-            assert.equal(await radios.nth(index).isChecked(), false)
-          }
-          assert.equal(await page.getByRole('button', { name: 'Continue', exact: true }).isDisabled(), true)
+          const basis = page.locator('[data-basis]')
+          assert.equal(await basis.getAttribute('data-basis'), 'unset')
+          assert.equal(await basis.getAttribute('data-import'), 'blocked')
+          const radios = basis.locator('input[name="basis"]')
+          assert.equal(await radios.count(), 2)
+          assert.equal(await radios.nth(0).isChecked(), false)
+          assert.equal(await radios.nth(1).isChecked(), false)
+          assert.match(await basis.innerText(), /Opted in/)
+          assert.match(await basis.innerText(), /Known contact/)
+          assert.match(await basis.innerText(), /source note/i)
+          assert.equal(await basis.getByRole('button', { name: 'Import', exact: true }).isDisabled(), true)
+          assert.equal((await page.locator('body').innerText()).includes('Placeholder copy'), false)
         }
         if (shot.startsWith('contacts')) {
           assert.match(text, /example\.com/)
