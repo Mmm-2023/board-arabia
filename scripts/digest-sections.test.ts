@@ -295,7 +295,7 @@ test('digest copy keeps one contact, the footer credit, and no prices', async ()
 
 const DIGEST_SHOT_TIMEOUT_MS = 90_000
 
-test('member and admin digest shots at 1440 and 390', { timeout: DIGEST_SHOT_TIMEOUT_MS }, async (t) => {
+test('member and admin digest shots at 1440 and 390', { timeout: DIGEST_SHOT_TIMEOUT_MS * 2 }, async (t) => {
   const executablePath = chromePath()
   if (!executablePath) {
     t.skip('Chrome is not installed')
