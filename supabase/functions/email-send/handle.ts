@@ -1,0 +1,266 @@
+import { digestIssueSendable } from '../_shared/weekly_digest_copy.ts'
+import {
+  addressHash,
+  buildOutbound,
+  cleanMailbox,
+  deliverBatches,
+  httpsOrigin,
+  memberLinks,
+  type BatchResult,
+  type PreparedSend,
+} from '../_shared/bulk_mail.ts'
+
+export type SendMode = 'test' | 'live'
+
+export type SendGate = {
+  found: boolean
+  status: string
+  kind: string
+  category: string
+  subject: string
+  preheader: string
+  body_text: string
+  body_html: string
+  master_enabled: boolean
+  batch_size: number
+  batch_pause_ms: number
+  issue_status: string | null
+  issue_mail_ready: boolean
+  issue_send_enabled: boolean
+}
+
+export type SendRecipient = {
+  userId: string
+  address: string
+  unsubscribeToken: string
+}
+
+export type LogSendInput = {
+  campaignId: string
+  userId: string | null
+  emailHash: string
+  isTest: boolean
+  status: 'queued' | 'skipped' | 'sent' | 'failed'
+  skipReason: string | null
+  providerMessageId: string | null
+  sendId: string | null
+}
+
+export type LogSendResult = {
+  ok: boolean
+  id?: string
+  status?: string
+  send?: boolean
+}
+
+export type SendDeps = {
+  role: 'staff' | 'master'
+  userId: string
+  staffAddress: string
+  apiKey: string
+  fromAddress: string
+  contactEmail: string
+  siteOrigin: string
+  functionsOrigin: string
+  now: () => number
+  sleep: (ms: number) => Promise<void>
+  fetchImpl: Parameters<typeof deliverBatches>[0]['fetchImpl']
+  loadGate: (campaignId: string) => Promise<SendGate | null>
+  loadRecipients: (campaignId: string) => Promise<SendRecipient[]>
+  isSuppressed: (emailHash: string) => Promise<boolean>
+  logSend: (row: LogSendInput) => Promise<LogSendResult>
+  setProgress: (campaignId: string, status: 'sending' | 'sent') => Promise<boolean>
+}
+
+export type SendResult = {
+  status: number
+  body: { ok: boolean; error?: string; mode?: SendMode; sent?: number; skipped?: number; failed?: number }
+}
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+
+function fail(status: number, error: string): SendResult {
+  return { status, body: { ok: false, error } }
+}
+
+export function parseSendBody(raw: unknown): { campaignId: string; mode: SendMode } | null {
+  if (!raw || typeof raw !== 'object') return null
+  const body = raw as { campaign_id?: unknown; mode?: unknown }
+  if (typeof body.campaign_id !== 'string' || !UUID.test(body.campaign_id)) return null
+  if (body.mode !== 'test' && body.mode !== 'live') return null
+  return { campaignId: body.campaign_id, mode: body.mode }
+}
+
+function configured(deps: SendDeps): { fromMailbox: string; contact: string; site: string; functions: string } | null {
+  const fromMailbox = cleanMailbox(deps.fromAddress)
+  const contact = cleanMailbox(deps.contactEmail)
+  const site = httpsOrigin(deps.siteOrigin)
+  const functions = httpsOrigin(deps.functionsOrigin)
+  if (!deps.apiKey.trim() || !fromMailbox || !contact || !site || !functions) return null
+  return { fromMailbox, contact, site, functions }
+}
+
+export async function handleEmailSend(raw: unknown, deps: SendDeps): Promise<SendResult> {
+  const parsed = parseSendBody(raw)
+  if (!parsed) return fail(400, 'invalid_body')
+  if (parsed.mode === 'live' && deps.role !== 'master') return fail(403, 'not_allowed')
+
+  const gate = await deps.loadGate(parsed.campaignId)
+  if (!gate || !gate.found) return fail(404, 'not_found')
+  if (parsed.mode === 'live' && gate.master_enabled !== true) return fail(409, 'master_off')
+  if (parsed.mode === 'live' && gate.status !== 'approved' && gate.status !== 'sending') {
+    return fail(409, 'not_approved')
+  }
+  if (parsed.mode === 'live' && gate.kind === 'digest') {
+    const sendable = digestIssueSendable({
+      status: gate.issue_status || '',
+      sendEnabled: gate.issue_send_enabled === true,
+      mailReady: gate.issue_mail_ready === true,
+    })
+    if (!sendable) return fail(409, 'not_sendable')
+  }
+
+  const settings = configured(deps)
+  if (!settings) return fail(503, 'not_configured')
+
+  if (parsed.mode === 'live') {
+    const started = await deps.setProgress(parsed.campaignId, 'sending')
+    if (!started) return fail(409, 'not_approved')
+  }
+
+  const staff = cleanMailbox(deps.staffAddress)
+  if (parsed.mode === 'test' && !staff) return fail(503, 'not_configured')
+
+  const recipients = parsed.mode === 'test'
+    ? [{ userId: deps.userId, address: staff, unsubscribeToken: '' }]
+    : await deps.loadRecipients(parsed.campaignId)
+
+  const queued: PreparedSend[] = []
+  let skipped = 0
+  let failed = 0
+  const hashes = new Map<string, string>()
+
+  for (const recipient of recipients) {
+    const address = cleanMailbox(recipient.address)
+    if (!address) {
+      skipped += 1
+      continue
+    }
+    const hash = await addressHash(address)
+    const token = parsed.mode === 'test' ? recipient.unsubscribeToken || 'preview' : recipient.unsubscribeToken
+    if (parsed.mode === 'live' && !token) {
+      skipped += 1
+      continue
+    }
+    const links = memberLinks({
+      siteOrigin: settings.site,
+      functionsOrigin: settings.functions,
+      token,
+    })
+    const opened = await deps.logSend({
+      campaignId: parsed.campaignId,
+      userId: recipient.userId,
+      emailHash: hash,
+      isTest: parsed.mode === 'test',
+      status: 'queued',
+      skipReason: null,
+      providerMessageId: null,
+      sendId: null,
+    })
+    if (!opened.ok || !opened.id) {
+      failed += 1
+      continue
+    }
+    if (opened.send === false) {
+      skipped += 1
+      continue
+    }
+    hashes.set(opened.id, hash)
+    queued.push({
+      sendId: opened.id,
+      userId: recipient.userId,
+      hash,
+      message: buildOutbound({
+        fromMailbox: settings.fromMailbox,
+        contactEmail: settings.contact,
+        to: address,
+        subject: gate.subject,
+        preheader: gate.preheader,
+        bodyText: gate.body_text,
+        bodyHtml: gate.body_html,
+        unsubscribeUrl: links.unsubscribeUrl,
+        preferencesUrl: links.preferencesUrl,
+        oneClickUrl: links.oneClickUrl,
+        test: parsed.mode === 'test',
+      }),
+    })
+  }
+
+  const results: BatchResult[] = queued.length === 0
+    ? []
+    : await deliverBatches({
+      campaignId: parsed.campaignId,
+      prepared: queued,
+      batchSize: parsed.mode === 'test' ? 1 : gate.batch_size,
+      pauseMs: parsed.mode === 'test' ? 0 : gate.batch_pause_ms,
+      apiKey: deps.apiKey,
+      now: deps.now,
+      sleep: deps.sleep,
+      fetchImpl: deps.fetchImpl,
+      keep: async (item) => {
+        if (parsed.mode !== 'live') return true
+        if (!(await deps.isSuppressed(item.hash))) return true
+        await deps.logSend({
+          campaignId: parsed.campaignId,
+          userId: item.userId,
+          emailHash: item.hash,
+          isTest: false,
+          status: 'skipped',
+          skipReason: 'suppressed',
+          providerMessageId: null,
+          sendId: item.sendId,
+        })
+        skipped += 1
+        return false
+      },
+    })
+
+  let sent = 0
+  for (const result of results) {
+    for (const row of result.rows) {
+      const hash = hashes.get(row.sendId) || ''
+      const userId = queued.find((item) => item.sendId === row.sendId)?.userId || null
+      if (result.ok && row.providerId) {
+        await deps.logSend({
+          campaignId: parsed.campaignId,
+          userId,
+          emailHash: hash,
+          isTest: parsed.mode === 'test',
+          status: 'sent',
+          skipReason: null,
+          providerMessageId: row.providerId,
+          sendId: row.sendId,
+        })
+        sent += 1
+      } else {
+        await deps.logSend({
+          campaignId: parsed.campaignId,
+          userId,
+          emailHash: hash,
+          isTest: parsed.mode === 'test',
+          status: 'failed',
+          skipReason: result.status === 429 ? 'rate_limited' : 'provider_error',
+          providerMessageId: null,
+          sendId: row.sendId,
+        })
+        failed += 1
+      }
+    }
+  }
+
+  if (parsed.mode === 'live') {
+    await deps.setProgress(parsed.campaignId, failed > 0 ? 'sending' : 'sent')
+  }
+
+  return { status: 200, body: { ok: true, mode: parsed.mode, sent, skipped, failed } }
+}
