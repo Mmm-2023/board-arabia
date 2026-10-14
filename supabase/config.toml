@@ -201,3 +201,11 @@ verify_jwt = true
 # Staff suspend or restore. requireStaff checks the caller JWT.
 [functions.set-member-status]
 verify_jwt = true
+
+# Drains pending member notices. Service role or staff. No schedule.
+[functions.member-notice-send]
+verify_jwt = true
+
+# Records a two-step sign-in change for the signed-in member. No schedule.
+[functions.record-security-notice]
+verify_jwt = true

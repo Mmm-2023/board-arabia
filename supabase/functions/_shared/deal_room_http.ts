@@ -136,7 +136,7 @@ async function inviteRoom(req: Request, gate: DealGate, body: unknown, deps: Dea
     p_room_id: parsed.roomId,
     p_member_id: parsed.memberId,
   })
-  return inviteResponse(req, result, deps)
+  return inviteResponse(req, result, deps, { inviteeId: parsed.memberId, roomId: parsed.roomId })
 }
 
 async function respondRoom(req: Request, gate: DealGate, body: unknown): Promise<Response> {
@@ -184,7 +184,9 @@ async function manageRoom(req: Request, gate: DealGate, body: unknown, deps: Dea
     p_purpose: parsed.purpose,
     p_member_id: parsed.memberId,
   })
-  if (parsed.action === 'add') return inviteResponse(req, result, deps)
+  if (parsed.action === 'add' && parsed.memberId) {
+    return inviteResponse(req, result, deps, { inviteeId: parsed.memberId, roomId: parsed.roomId })
+  }
   return rpcResponse(req, result)
 }
 
@@ -240,10 +242,15 @@ function inviteResponse(
   req: Request,
   result: { data: unknown; error: { message: string } | null },
   deps: DealRoomDeps,
+  notice?: { inviteeId: string; roomId: string },
 ): Response {
   if (result.error) return jsonResponse(req, reasonBody(reasonFrom(result.error.message)), statusFrom(result.error.message))
   const job = inviteJob(result.data)
   if (job) {
+    if (notice?.inviteeId && notice.roomId) {
+      job.inviteeId = notice.inviteeId
+      job.roomId = notice.roomId
+    }
     try {
       deps.deliverInvite(job)
     } catch {
@@ -258,7 +265,9 @@ function rpcResponse(req: Request, result: { data: unknown; error: { message: st
   return jsonResponse(req, publicPayload(result.data))
 }
 
-export function inviteJob(data: unknown): { to: string; roomName: string; purpose: string; ownerName: string } | null {
+export function inviteJob(
+  data: unknown,
+): { to: string; roomName: string; purpose: string; ownerName: string; inviteeId?: string; roomId?: string } | null {
   if (!data || typeof data !== 'object') return null
   const row = data as Record<string, unknown>
   const to = typeof row.invitee_email === 'string' ? row.invitee_email.trim() : ''

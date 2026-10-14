@@ -1,5 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1'
 import { cleanInviteeName } from '../_shared/invitee_name.ts'
+import { enqueueMemberNotice } from '../_shared/member_notice.ts'
 import { applyInviteUrl, peerInviteMail, whatsAppInviteUrl } from '../_shared/peer_invite.ts'
 import { corsHeaders, jsonResponse, logEmailEvent, publicSite, sendEmail } from './mail.ts'
 
@@ -146,6 +147,18 @@ Deno.serve(async (req) => {
   if (sent.status === 'error') {
     await admin.rpc('release_member_invite', { p_invite_id: inviteId })
     return jsonResponse(req, { error: sent.detail || 'Email failed' }, 502)
+  }
+
+  if (channel === 'email' && email) {
+    const { data: recipient } = await admin.from('members').select('user_id').eq('email', email).maybeSingle()
+    if (recipient?.user_id && recipient.user_id !== user.id) {
+      await enqueueMemberNotice({
+        typeKey: 'invite',
+        userId: String(recipient.user_id),
+        refId: inviteId,
+        payload: { invite_id: inviteId },
+      })
+    }
   }
 
   return jsonResponse(req, {

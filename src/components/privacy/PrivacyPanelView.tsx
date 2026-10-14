@@ -9,6 +9,15 @@ const body = 'mt-2 max-w-xl text-[1rem] leading-relaxed text-ink/75'
 const choice =
   'inline-flex min-h-11 items-center border px-3 text-[0.75rem] font-semibold tracking-[0.06em] uppercase'
 
+export const EMAIL_NOTICE_ROWS = [
+  { key: 'welcome', label: 'Welcome' },
+  { key: 'message_new', label: 'New message', soon: true },
+  { key: 'intro_suggested', label: 'Intro suggested' },
+  { key: 'invite', label: 'Invite' },
+  { key: 'event_reminder', label: 'Event reminder' },
+  { key: 'mandate_update', label: 'Mandate update' },
+] as const
+
 export function PrivacyPanelView({
   hidden,
   showSponsors,
@@ -22,6 +31,9 @@ export function PrivacyPanelView({
   onDownload,
   digestOptIn = false,
   onDigestOptIn,
+  noticeOptIn = {},
+  noticesConnected = false,
+  onNoticeOptIn,
 }: {
   hidden: boolean
   showSponsors: boolean
@@ -35,6 +47,9 @@ export function PrivacyPanelView({
   onDownload: () => void
   digestOptIn?: boolean
   onDigestOptIn?: (optIn: boolean) => void
+  noticeOptIn?: Record<string, boolean>
+  noticesConnected?: boolean
+  onNoticeOptIn?: (key: string, optIn: boolean) => void
 }) {
   return (
     <div className="max-w-xl" data-screen="your-privacy" data-directory={hidden ? 'hidden' : 'visible'}>
@@ -128,6 +143,53 @@ export function PrivacyPanelView({
         </div>
         <p className="mt-3 max-w-xl text-[0.95rem] leading-relaxed text-ink/65">
           This choice is saved for when weekly email is connected. Nothing is sent now.
+        </p>
+      </section>
+
+      <section className={section} aria-labelledby="privacy-notices" data-email-notices={noticesConnected ? 'on' : 'off'}>
+        <h2 id="privacy-notices" className={heading}>
+          Email notifications
+        </h2>
+        <p className={body}>
+          {noticesConnected
+            ? 'Choose which notices you want. Account security emails stay on.'
+            : 'These notices are not connected yet. Your choices are saved for when they are. Nothing is sent now.'}
+        </p>
+        <div className="mt-6 space-y-6">
+          {EMAIL_NOTICE_ROWS.map((row) => {
+            const on = noticeOptIn[row.key] === true
+            const soon = 'soon' in row && row.soon
+            return (
+              <div key={row.key} data-notice={row.key} data-notice-state={soon ? 'soon' : on ? 'on' : 'off'}>
+                <h3 className="font-display text-[1.15rem] font-semibold tracking-[-0.02em]">{row.label}</h3>
+                {soon ? <p className="mt-2 text-[0.95rem] leading-relaxed text-ink/65">Coming soon</p> : null}
+                <div className="mt-3 flex flex-wrap gap-2" role="group" aria-label={row.label}>
+                  <button
+                    type="button"
+                    className={`${choice} ${on && !soon ? 'border-ink/20 text-ink/70' : 'ba-primary border-transparent'} disabled:opacity-40`}
+                    aria-pressed={!on}
+                    disabled={soon}
+                    onClick={() => onNoticeOptIn?.(row.key, false)}
+                  >
+                    Off
+                  </button>
+                  <button
+                    type="button"
+                    className={`${choice} ${on && !soon ? 'ba-primary border-transparent' : 'border-ink/20 text-ink/70'} disabled:opacity-40`}
+                    aria-pressed={on}
+                    disabled={soon}
+                    onClick={() => onNoticeOptIn?.(row.key, true)}
+                  >
+                    On
+                  </button>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+        <p className="mt-6 max-w-xl text-[0.95rem] leading-relaxed text-ink/75" data-essential-notices="always">
+          Account security emails: always on. Sign-in, two-step sign-in, and account deletion emails cannot be turned
+          off.
         </p>
       </section>
 

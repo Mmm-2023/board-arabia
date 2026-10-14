@@ -1,4 +1,5 @@
 import { corsHeaders, jsonResponse } from '../_shared/mail.ts'
+import { enqueueMemberNotice } from '../_shared/member_notice.ts'
 import { requireUser } from '../_shared/require_user.ts'
 
 Deno.serve(async (req) => {
@@ -8,6 +9,13 @@ Deno.serve(async (req) => {
   const gate = await requireUser(req)
   if ('error' in gate) return jsonResponse(req, { error: gate.error }, gate.status)
   const { user, admin } = gate
+
+  await enqueueMemberNotice({
+    typeKey: 'security_deletion',
+    userId: user.id,
+    refId: user.id,
+    payload: { user_id: user.id },
+  })
 
   const { data, error } = await admin.rpc('prepare_candidate_delete', { p_user_id: user.id })
   if (error || !data || typeof data !== 'object') {

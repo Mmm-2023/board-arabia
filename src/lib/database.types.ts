@@ -1520,6 +1520,18 @@ export type Database = {
         Args: Record<string, never>
         Returns: Json
       }
+      my_email_preferences: {
+        Args: Record<string, never>
+        Returns: Json
+      }
+      set_email_preference: {
+        Args: { p_category: string; p_opt_in: boolean }
+        Returns: Json
+      }
+      own_staff_notice_preference: {
+        Args: Record<string, never>
+        Returns: Json
+      }
     }
     Enums: Record<string, never>
     CompositeTypes: Record<string, never>

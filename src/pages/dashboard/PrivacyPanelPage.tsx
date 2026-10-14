@@ -10,6 +10,8 @@ export function PrivacyPanelPage() {
   const [hidden, setHidden] = useState(false)
   const [showSponsors, setShowSponsors] = useState(false)
   const [digestOptIn, setDigestOptIn] = useState(false)
+  const [noticeOptIn, setNoticeOptIn] = useState<Record<string, boolean>>({})
+  const [noticesConnected, setNoticesConnected] = useState(false)
   const [twoStepOn, setTwoStepOn] = useState(false)
   const [downloadState, setDownloadState] = useState<'idle' | 'ready' | 'limited' | 'error'>('idle')
   const [busy, setBusy] = useState(false)
@@ -27,6 +29,12 @@ export function PrivacyPanelPage() {
       if (cancelled || !data || typeof data !== 'object' || Array.isArray(data)) return
       const row = data as { digest_email_opt_in?: boolean }
       if (row.digest_email_opt_in === true) setDigestOptIn(true)
+    })
+    void supabase.rpc('my_email_preferences').then(({ data }) => {
+      if (cancelled || !data || typeof data !== 'object' || Array.isArray(data)) return
+      const row = data as { master_enabled?: boolean; notices?: Record<string, boolean> }
+      if (row.master_enabled === true) setNoticesConnected(true)
+      if (row.notices && typeof row.notices === 'object' && !Array.isArray(row.notices)) setNoticeOptIn(row.notices)
     })
     void listTotpFactors().then((factors) => {
       if (!cancelled) setTwoStepOn(factors.some((factor) => factor.status === 'verified'))
@@ -55,6 +63,14 @@ export function PrivacyPanelPage() {
     setDigestOptIn(next)
     const { error } = await supabase.rpc('set_digest_email_opt_in', { p_opt_in: next })
     if (error) setDigestOptIn(previous)
+  }
+
+  async function onNotice(key: string, next: boolean) {
+    if (key === 'message_new') return
+    const previous = noticeOptIn[key] === true
+    setNoticeOptIn((current) => ({ ...current, [key]: next }))
+    const { error } = await supabase.rpc('set_email_preference', { p_category: key, p_opt_in: next })
+    if (error) setNoticeOptIn((current) => ({ ...current, [key]: previous }))
   }
 
   async function onDownload() {
@@ -93,6 +109,9 @@ export function PrivacyPanelPage() {
       onDownload={() => void onDownload()}
       digestOptIn={digestOptIn}
       onDigestOptIn={(next) => void onDigest(next)}
+      noticeOptIn={noticeOptIn}
+      noticesConnected={noticesConnected}
+      onNoticeOptIn={(key, next) => void onNotice(key, next)}
     />
   )
 }

@@ -308,6 +308,12 @@ export type VerifyDeps = {
   lookupEmail: (userId: string) => Promise<string | null>
   sendMail: (message: MailMessage) => Promise<{ ok: boolean; dryRun: boolean }>
   recordEvent: (userId: string, kind: string, detail: Record<string, string | boolean>) => Promise<void>
+  enqueueNotice?: (notice: {
+    typeKey: string
+    userId: string
+    refId: string
+    payload?: Record<string, string>
+  }) => Promise<void>
 }
 
 export async function verifyCandidate(body: VerifyBody, deps: VerifyDeps): Promise<FlowResult> {
@@ -363,6 +369,12 @@ export async function verifyCandidate(body: VerifyBody, deps: VerifyDeps): Promi
     const site = deps.site.replace(/\/$/, '')
     const mail = accountOpenMail({ dashboardUrl: `${site}/dashboard` })
     await deps.sendMail({ to: accountEmail, ...mail })
+    await deps.enqueueNotice?.({
+      typeKey: 'welcome',
+      userId: consumed.userId,
+      refId: consumed.userId,
+      payload: { user_id: consumed.userId },
+    })
     await deps.recordEvent(consumed.userId, 'email_verified', { method: byLink ? 'link' : 'code' })
   }
 
