@@ -24,6 +24,8 @@ export function EmailCampaignPanel() {
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [confirmText, setConfirmText] = useState('')
   const [attempt, setAttempt] = useState(0)
+  const [newsFrom, setNewsFrom] = useState('')
+  const [mailFrom, setMailFrom] = useState('')
 
   useEffect(() => {
     let cancelled = false
@@ -42,6 +44,12 @@ export function EmailCampaignPanel() {
         if (current && next.campaigns.some((item) => item.id === current)) return current
         return next.campaigns[0]?.id ?? null
       })
+    })
+    void supabase.functions.invoke('email-streams', { body: {} }).then(({ data }) => {
+      if (cancelled || !data || typeof data !== 'object') return
+      const row = data as { news_from?: unknown; mail_from?: unknown }
+      setNewsFrom(typeof row.news_from === 'string' ? row.news_from : '')
+      setMailFrom(typeof row.mail_from === 'string' ? row.mail_from : '')
     })
     void supabase.rpc('staff_digest_issue').then(({ data }) => {
       if (cancelled || !data || typeof data !== 'object' || Array.isArray(data)) return
@@ -159,6 +167,18 @@ export function EmailCampaignPanel() {
     }
   }
 
+  async function resume() {
+    setBusy(true)
+    setNotice('')
+    const { error } = await supabase.rpc('staff_resume_email_pause')
+    setBusy(false)
+    if (error) {
+      setNotice('Could not resume sending.')
+      return
+    }
+    await reload()
+  }
+
   async function setMaster(enabled: boolean) {
     setBusy(true)
     setNotice('')
@@ -182,6 +202,9 @@ export function EmailCampaignPanel() {
       notice={notice}
       confirmOpen={confirmOpen}
       confirmText={confirmText}
+      newsFrom={newsFrom}
+      mailFrom={mailFrom}
+      onResume={() => void resume()}
       onSelect={(id) => setSelectedId(id)}
       onNew={() => {
         setSelectedId(null)

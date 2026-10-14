@@ -49,11 +49,13 @@ Deno.serve(async (req) => {
   const stream = noticeStreamConfig({
     RESEND_API_KEY_MAIL: Deno.env.get('RESEND_API_KEY_MAIL') ?? '',
     EMAIL_FROM_MAIL: Deno.env.get('EMAIL_FROM_MAIL') ?? '',
+    EMAIL_SENDING_PARENT: Deno.env.get('EMAIL_SENDING_PARENT') ?? '',
   })
   const apiKey = stream.apiKey
   const fromMailbox = stream.fromMailbox
-  const replyTo = Deno.env.get('PUBLIC_CONTACT_EMAIL')?.trim() || ''
-  if (!apiKey || !fromMailbox || !replyTo) {
+  const replyTo = Deno.env.get('EMAIL_REPLY_TO')?.trim() || ''
+  const sendingParent = Deno.env.get('EMAIL_SENDING_PARENT')?.trim() || ''
+  if (!apiKey || !fromMailbox || !replyTo || !sendingParent) {
     return jsonResponse(req, { ok: false, blocked: 'not_configured' }, 503)
   }
 
@@ -109,6 +111,7 @@ Deno.serve(async (req) => {
     apiKey,
     fromMailbox,
     replyTo,
+    sendingParent,
   })
   for (const outcome of result.outcomes) {
     await admin.rpc('service_finish_member_notice', {

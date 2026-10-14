@@ -207,6 +207,10 @@ verify_jwt = true
 [functions.email-send]
 verify_jwt = true
 
+# Read-only newsletter and transactional From addresses for admin. No send.
+[functions.email-streams]
+verify_jwt = true
+
 # Provider events. A missing signing secret rejects every call.
 # verify_jwt stays off. The function stores events and does not send mail.
 [functions.email-webhook]

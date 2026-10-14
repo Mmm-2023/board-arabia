@@ -2,6 +2,7 @@ import {
   AUDIENCE_REASON_LABELS,
   categoryLabel,
   confirmMatches,
+  pauseBanner,
   releaseBlockers,
   releaseReady,
   statusLabel,
@@ -30,6 +31,8 @@ export function EmailCampaignView({
   notice = '',
   confirmOpen = false,
   confirmText = '',
+  newsFrom = '',
+  mailFrom = '',
   onSelect,
   onNew,
   onDigest,
@@ -43,6 +46,7 @@ export function EmailCampaignView({
   onConfirmText,
   onRelease,
   onRetry,
+  onResume,
 }: {
   state: 'loading' | 'ready' | 'error'
   screen: EmailScreen | null
@@ -53,6 +57,9 @@ export function EmailCampaignView({
   notice?: string
   confirmOpen?: boolean
   confirmText?: string
+  newsFrom?: string
+  mailFrom?: string
+  onResume?: () => void
   onSelect: (id: string) => void
   onNew: () => void
   onDigest: () => void
@@ -79,6 +86,10 @@ export function EmailCampaignView({
   const open = releaseReady(gate)
   const reasons = releaseBlockers(gate)
   const confirmed = confirmMatches(confirmText, gate.eligible)
+  const pauseReason = screen?.pauseReason === 'complaint_rate' || screen?.pauseReason === 'bounce_rate'
+    ? screen.pauseReason
+    : ''
+  const pauseText = pauseBanner(pauseReason)
 
   return (
     <section id="email-campaign" className="mt-8 border-t border-pearl/10 pt-8" aria-label="Letters" data-email-campaign="">
@@ -86,6 +97,17 @@ export function EmailCampaignView({
       <p className="mt-2 max-w-xl text-[0.95rem] text-stone/65">
         Write a letter, or email an approved digest. A test goes to the address on your account. Release is for the owner.
       </p>
+      <StreamFrom newsFrom={newsFrom} mailFrom={mailFrom} />
+      {pauseText ? (
+        <div className="mt-4 border border-pearl/20 px-4 py-4" role="status" data-pause={pauseReason}>
+          <p className="text-[0.95rem] text-pearl/85">{pauseText}</p>
+          {screen?.isOwner === true ? (
+            <button type="button" className={`${actionClass} mt-3`} disabled={busy} onClick={onResume}>
+              Resume
+            </button>
+          ) : null}
+        </div>
+      ) : null}
       <MasterSwitch
         isOwner={screen?.isOwner === true}
         enabled={screen?.masterEnabled === true}
@@ -247,6 +269,20 @@ export function EmailCampaignView({
         </div>
       ) : null}
     </section>
+  )
+}
+
+function StreamFrom({ newsFrom, mailFrom }: { newsFrom: string; mailFrom: string }) {
+  return (
+    <div className="mt-4 border border-pearl/15 px-4 py-4" data-streams="">
+      <h3 className="font-display text-[1.2rem] font-semibold">Sending addresses</h3>
+      <p className="mt-2 text-[0.95rem] text-pearl/80" data-stream="news">
+        Newsletter from: {newsFrom || 'Not configured'}
+      </p>
+      <p className="mt-1 text-[0.95rem] text-pearl/80" data-stream="mail">
+        Transactional from: {mailFrom || 'Not configured'}
+      </p>
+    </div>
   )
 }
 
