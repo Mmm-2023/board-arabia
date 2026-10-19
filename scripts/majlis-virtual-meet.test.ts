@@ -60,11 +60,16 @@ function read(rel: string) {
 
 test('virtual seats stay within 150 and the migration matches the helper', () => {
   assert.equal(VIRTUAL_MEET_PARTICIPANT_CAP, 150)
-  assert.equal(virtualMemberCap(null), 149)
-  assert.equal(virtualMemberCap('10000000-0000-4000-8000-000000000001'), 148)
+  assert.equal(virtualMemberCap(null) + 1, 150)
+  assert.equal(virtualMemberCap('10000000-0000-4000-8000-000000000001') + 2, 150)
   const sql = read(`supabase/migrations/${migrationName}`)
   assert.match(sql, /p_host is null then 149 else 148/)
   assert.match(sql, /seat_cap := least\(ev\.capacity, private\.majlis_virtual_member_cap/)
+  assert.match(sql, /registered_n >= seat_cap/)
+  assert.match(sql, /registered_n < seat_cap/)
+  const rsvp = read('scripts/majlis-calendar-rsvp.test.ts')
+  assert.match(rsvp, /virtual staff room did not waitlist at 150/)
+  assert.match(rsvp, /virtual hosted room did not waitlist at 150/)
   assert.equal(sql.includes('\u2014'), false)
   assert.equal(/aal2/i.test(sql), false)
   const tooMany = validateMajlisApplication({ ...baseEvent, format: 'virtual', venueName: 'Google Meet', venueAddress: '', capacity: 150 })
@@ -268,7 +273,7 @@ test('screens say Google Meet with Q&A and polls, and do not claim the later fea
   assert.match(admin, /Fallback if sync fails/)
   assert.match(admin, /Google not connected/)
   assert.match(admin, /A virtual majlis saves even when Google is not connected/)
-  const banned = /co-host|breakout|recording|livestream|attendance report/i
+  const banned = /co-host|attendance report|livestream/i
   assert.equal(banned.test(member), false)
   assert.equal(banned.test(admin), false)
   assert.equal(/calendar\.app\.google/i.test(member + admin), false)

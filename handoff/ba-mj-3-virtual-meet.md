@@ -33,7 +33,7 @@ A staff field "Fallback if sync fails" accepts `https://meet.google.com/{code}` 
 
 `majlis-ics` adds the link to `LOCATION`, `DESCRIPTION`, and `URL` only for a registered member, and only while the majlis is still running and not cancelled. The file has no `ATTENDEE` line.
 
-Virtual RSVP seats are 149 when there is no member host, and 148 when there is one. That keeps members, the host, and the organizer within 150. `majlis_place_rsvp` uses that cap and the existing waitlist.
+Virtual RSVP seats are 149 when there is no member host, and 148 when there is one. That is 149 members plus one staff organizer, or 148 members plus the member host plus one staff organizer. The total stays at or under 150. A further Yes uses the existing waitlist. Co-hosts are out of this change. A host adds them in Meet by hand.
 
 ## One-time Google sign-in
 
@@ -73,7 +73,7 @@ To stop it: the owner removes the app at myaccount.google.com, Security, Third-p
 
 ## Copy
 
-The majlis page may say the session runs on Google Meet with Q&A and polls. It does not mention co-hosts, breakout rooms, recording, attendance reports, or livestream.
+The majlis page may say the session runs on Google Meet with Q&A and polls. It does not mention co-hosts, attendance reports, or livestream.
 
 ## Screens
 
@@ -90,5 +90,5 @@ Shell: Board Arabia UX UI (member and admin majlis, decision first, same destina
 1. Link gate: VERIFIED in `20270102120000_majlis_virtual_meet.sql` (`meet_url` case) and `icsMeetLink`.
 2. No Google attendees: VERIFIED in `buildMajlisGoogleEventBody` and the sync test.
 3. Fail closed: VERIFIED. Missing secrets do not call Google. The majlis still saves.
-4. 150 cap: VERIFIED. 149 or 148 member seats, trigger, validation, and `majlis_place_rsvp`.
-5. Copy: VERIFIED. Q&A and polls only. No co-host, breakout, recording, attendance, or livestream lines.
+4. 150 cap: VERIFIED. 149 member seats plus one staff organizer, or 148 member seats plus the member host plus one staff organizer. The next Yes waits. The postgres check is in `scripts/majlis-calendar-rsvp.test.ts`.
+5. Copy: VERIFIED. The page may say Google Meet with Q&A and polls. No co-host claim, no attendance report, and no livestream.

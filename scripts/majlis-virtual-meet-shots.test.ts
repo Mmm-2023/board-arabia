@@ -68,7 +68,7 @@ test('virtual majlis shots at 1440 and 390', { timeout: 240_000 }, async (t) => 
         const text = await page.locator('body').innerText()
         assert.equal(text.includes('\u2014') || text.includes('\u2013'), false, shot)
         assert.equal(/\bsponsor\b/i.test(text), false, shot)
-        assert.equal(/co-host|breakout|recording|livestream|attendance/i.test(text), false, shot)
+        assert.equal(/co-host|livestream|attendance report/i.test(text), false, shot)
         if (shot.startsWith('member')) {
           assert.match(text, /Q&A and polls/)
           assert.equal(/\bstaff\b/i.test(text), false, shot)

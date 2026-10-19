@@ -60,7 +60,7 @@ $$;
 revoke all on function private.majlis_virtual_member_cap(uuid) from public, anon, authenticated;
 
 comment on function private.majlis_virtual_member_cap(uuid) is
-  'RSVP seats so members, the host, and the organizer stay within 150. One seat is the organizer. A member host takes another.';
+  'RSVP seats so members, the host, and one staff organizer stay within 150. One seat is the staff organizer. A member host takes another.';
 
 create or replace function private.majlis_events_guard_virtual()
 returns trigger
