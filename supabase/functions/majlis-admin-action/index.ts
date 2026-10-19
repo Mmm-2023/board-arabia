@@ -1,4 +1,5 @@
-import { isMajlisRegion, parseFocusTags, regionGeotag, riyadhWallToUtc, validateMajlisApplication } from '../_shared/majlis.ts'
+import { syncStoredMajlis } from '../_shared/majlis_calendar.ts'
+import { canonicalMeetUrl, isMajlisFormat, isMajlisRegion, parseFocusTags, regionGeotag, riyadhWallToUtc, validateMajlisApplication, virtualMemberCap, VIRTUAL_MEET_PARTICIPANT_CAP } from '../_shared/majlis.ts'
 import { hostGuestLabel, type MajlisMailEvent } from '../_shared/majlis_mail.ts'
 import { mailEventCancelled, mailEventUpdated, mailGuestPromoted, mailHostRsvp, markCalendarSent } from '../_shared/majlis_notify.ts'
 import { jsonResponse } from '../_shared/mail.ts'
@@ -13,6 +14,9 @@ type EventRow = MajlisMailEvent & {
   focus_tags: string[]
   starts_at: string
   ends_at: string
+  capacity: number
+  format: string
+  meet_fallback_url: string | null
 }
 
 Deno.serve(async (req) => {
@@ -38,7 +42,7 @@ Deno.serve(async (req) => {
 
   const { data: row, error: readError } = await admin
     .from('majlis_events')
-    .select('id, host_member_id, title, description, region, focus_tags, starts_at, ends_at, venue_name, venue_address, venue_visibility, capacity, status')
+    .select('id, host_member_id, title, description, region, focus_tags, starts_at, ends_at, venue_name, venue_address, venue_visibility, capacity, status, format, meet_fallback_url')
     .eq('id', eventId)
     .maybeSingle()
   if (readError) return jsonResponse(req, { error: 'Could not load the majlis.' }, 500)
@@ -76,7 +80,8 @@ Deno.serve(async (req) => {
     if (error) return jsonResponse(req, { error: 'Could not cancel the majlis.' }, 500)
     await audit(admin, eventId, user.id, 'cancel', reason)
     await notifyCancelled(admin, event, reason)
-    return jsonResponse(req, { ok: true, status: 'cancelled' })
+    const google = await syncQuiet(admin, eventId, 'cancel')
+    return jsonResponse(req, { ok: true, status: 'cancelled', google: google.status, detail: google.detail })
   }
 
   if (action === 'sponsor') {
@@ -142,6 +147,12 @@ Deno.serve(async (req) => {
     return jsonResponse(req, { ok: true, status: 'registered' })
   }
 
+  if (action === 'sync') {
+    const google = await syncQuiet(admin, eventId, 'upsert')
+    await audit(admin, eventId, user.id, 'sync', google.status)
+    return jsonResponse(req, { ok: google.status !== 'failed', google: google.status, detail: google.detail })
+  }
+
   if (action === 'update') {
     if (event.status !== 'published' && event.status !== 'hidden') {
       return jsonResponse(req, { error: 'Only a published majlis can be updated.' }, 409)
@@ -149,13 +160,14 @@ Deno.serve(async (req) => {
     const patch = buildUpdate(event, body)
     if ('error' in patch) return jsonResponse(req, { error: patch.error }, 400)
     const { error } = await admin.from('majlis_events').update(patch.value).eq('id', eventId)
-    if (error) return jsonResponse(req, { error: 'Could not update the majlis.' }, 500)
+    if (error) return jsonResponse(req, { error: writeError(error.message) }, 500)
     await audit(admin, eventId, user.id, 'update', patch.material ? 'time_or_venue' : 'details')
     if (patch.material) {
       const next = { ...event, ...patch.mail }
       await notifyUpdated(admin, next)
     }
-    return jsonResponse(req, { ok: true, mailed: patch.material })
+    const google = await syncQuiet(admin, eventId, 'upsert')
+    return jsonResponse(req, { ok: true, mailed: patch.material, google: google.status, detail: google.detail })
   }
 
   return jsonResponse(req, { error: 'Unknown action.' }, 400)
@@ -179,6 +191,10 @@ async function createMajlis(
   if (!startUtc || !endUtc) {
     return jsonResponse(req, { error: 'Enter a start and end time in Asia/Riyadh.' }, 400)
   }
+  const format = String(body.format || 'in_person')
+  if (!isMajlisFormat(format)) return jsonResponse(req, { error: 'Choose in person or virtual.' }, 400)
+  const fallback = readFallback(body.meet_fallback_url)
+  if ('error' in fallback) return jsonResponse(req, { error: fallback.error }, 400)
   const capacity = Number(body.capacity)
   const parsed = validateMajlisApplication({
     title: String(body.title ?? ''),
@@ -188,8 +204,10 @@ async function createMajlis(
     startsAtUtc: startUtc,
     endsAtUtc: endUtc,
     capacity: Number.isInteger(capacity) ? capacity : Number.NaN,
-    venueName: String(body.venue_name ?? ''),
-    venueAddress: String(body.venue_address ?? ''),
+    venueName: format === 'virtual' ? String(body.venue_name ?? '').trim() || 'Google Meet' : String(body.venue_name ?? ''),
+    venueAddress: format === 'virtual' ? String(body.venue_address ?? '').trim() : String(body.venue_address ?? ''),
+    format,
+    hostMemberId: null,
   })
   if (!parsed.ok) return jsonResponse(req, { error: parsed.error }, 400)
   const geo = regionGeotag(parsed.value.region)
@@ -214,6 +232,9 @@ async function createMajlis(
       venue_name: parsed.value.venueName,
       venue_address: parsed.value.venueAddress,
       venue_visibility: 'members_on_rsvp',
+      format: parsed.value.format,
+      meet_fallback_url: parsed.value.format === 'virtual' ? fallback.url : null,
+      meet_sync_status: parsed.value.format === 'virtual' ? 'not_connected' : 'skipped',
       status: publishAs,
       approved_by: staffId,
       approved_at: opens,
@@ -224,9 +245,10 @@ async function createMajlis(
     })
     .select('id, status')
     .single()
-  if (error || !created) return jsonResponse(req, { error: 'Could not create the majlis.' }, 500)
+  if (error || !created) return jsonResponse(req, { error: writeError(error?.message) }, 500)
   await audit(admin, created.id, staffId, 'create', publishAs)
-  return jsonResponse(req, { ok: true, id: created.id, status: created.status })
+  const google = await syncQuiet(admin, created.id, 'upsert')
+  return jsonResponse(req, { ok: true, id: created.id, status: created.status, google: google.status, detail: google.detail })
 }
 
 function buildUpdate(event: EventRow, body: Record<string, unknown>):
@@ -256,12 +278,37 @@ function buildUpdate(event: EventRow, body: Record<string, unknown>):
     ends = endUtc
   }
 
-  const venueName = body.venue_name == null ? event.venue_name : String(body.venue_name).trim()
+  const formatRaw = body.format == null ? event.format || 'in_person' : String(body.format)
+  if (!isMajlisFormat(formatRaw)) return { error: 'Choose in person or virtual.' }
+  const fallback = body.meet_fallback_url == null
+    ? { url: event.meet_fallback_url }
+    : readFallback(body.meet_fallback_url)
+  if ('error' in fallback) return { error: fallback.error }
+
+  let capacity = Number(event.capacity)
+  if (body.capacity != null) {
+    const next = Number(body.capacity)
+    if (!Number.isInteger(next) || next < 1 || next > 500) {
+      return { error: 'Capacity must be a whole number from 1 to 500.' }
+    }
+    capacity = next
+  }
+  if (formatRaw === 'virtual' && capacity > virtualMemberCap(event.host_member_id)) {
+    const seatCap = virtualMemberCap(event.host_member_id)
+    return {
+      error: `A virtual majlis can take at most ${seatCap} member seats so the meeting stays within ${VIRTUAL_MEET_PARTICIPANT_CAP} people.`,
+    }
+  }
+
+  const venueName = body.venue_name == null
+    ? event.venue_name
+    : String(body.venue_name).trim() || (formatRaw === 'virtual' ? 'Google Meet' : '')
   const venueAddress = body.venue_address == null ? event.venue_address || '' : String(body.venue_address).trim()
   if (venueName.length < 1 || venueName.length > 200) return { error: 'Add a venue name (200 characters or fewer).' }
-  if (venueAddress.length < 1 || venueAddress.length > 500) {
+  if (formatRaw === 'in_person' && (venueAddress.length < 1 || venueAddress.length > 500)) {
     return { error: 'Add a venue address (500 characters or fewer).' }
   }
+  if (venueAddress.length > 500) return { error: 'Add a venue address (500 characters or fewer).' }
 
   let focus = event.focus_tags
   if (body.focus_tags != null) {
@@ -300,8 +347,40 @@ function buildUpdate(event: EventRow, body: Record<string, unknown>):
       venue_name: venueName,
       venue_address: venueAddress,
       focus_tags: focus,
+      format: formatRaw,
+      capacity,
+      meet_fallback_url: formatRaw === 'virtual' ? fallback.url : null,
       updated_at: new Date().toISOString(),
     },
+  }
+}
+
+function readFallback(raw: unknown): { url: string | null } | { error: string } {
+  const text = String(raw ?? '').trim()
+  if (!text) return { url: null }
+  const url = canonicalMeetUrl(text)
+  if (!url) return { error: 'Use a Meet link from meet.google.com, with no extra text.' }
+  return { url }
+}
+
+function writeError(message: string | undefined): string {
+  if (message?.includes('virtual_cap')) {
+    return `A virtual majlis can take at most ${virtualMemberCap(null)} member seats so the meeting stays within ${VIRTUAL_MEET_PARTICIPANT_CAP} people.`
+  }
+  if (message?.includes('meet_url')) return 'Use a Meet link from meet.google.com, with no extra text.'
+  return 'Could not save the majlis.'
+}
+
+async function syncQuiet(
+  admin: Parameters<typeof mailEventCancelled>[0],
+  eventId: string,
+  op: 'upsert' | 'cancel',
+): Promise<{ status: string; detail: string }> {
+  try {
+    const result = await syncStoredMajlis(admin, eventId, op)
+    return { status: result.status, detail: result.detail }
+  } catch {
+    return { status: 'failed', detail: 'Google sync did not finish.' }
   }
 }
 

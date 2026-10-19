@@ -20,6 +20,10 @@ const hiddenFromSponsor = [
   'rejection_feedback',
   'cancel_reason',
   'approved_at',
+  'meet_url',
+  'google_meet_url',
+  'meet_fallback_url',
+  'google_event_id',
 ]
 
 function normalizeSql(value: string): string {
@@ -105,6 +109,21 @@ test('majlis read models keep the previous rows and columns without a definer vi
       assert.match(text, /maybe_count/)
       const memberChunk = text.split('function private.majlis_events_member_rows')[1]?.split('$fn$;')[0] ?? ''
       assert.equal(/\bemail\b/i.test(memberChunk), false)
+      continue
+    }
+    if (file === '20270102120000_majlis_virtual_meet.sql') {
+      assert.equal(recreatesMajlis, true)
+      assert.match(text, /security_barrier = true, security_invoker = true/)
+      assert.equal(/grant select on table public\.majlis_\w+ to anon/i.test(text), false)
+      assert.match(text, /create view public\.majlis_events_member\b/)
+      assert.equal(/create view public\.majlis_events_sponsor\b/i.test(text), false)
+      assert.equal(/create view public\.majlis_roster\b/i.test(text), false)
+      assert.match(text, /security definer/)
+      assert.match(text, /set search_path = ''/)
+      const memberChunk = text.split('function private.majlis_events_member_rows')[1]?.split('$fn$;')[0] ?? ''
+      assert.equal(/\bemail\b/i.test(memberChunk), false)
+      assert.match(memberChunk, /meet_url/)
+      assert.match(memberChunk, /status = 'registered'/)
       continue
     }
     assert.equal(recreatesMajlis, false, file)
@@ -792,7 +811,8 @@ begin
       and table_name = 'majlis_events_sponsor'
       and column_name in (
         'venue_address', 'host_member_id', 'email', 'full_name',
-        'admin_note', 'rejection_feedback', 'cancel_reason', 'approved_at'
+        'admin_note', 'rejection_feedback', 'cancel_reason', 'approved_at',
+        'meet_url', 'google_meet_url', 'meet_fallback_url', 'google_event_id'
       )
   ) then
     raise exception 'sponsor view exposes a hidden column';

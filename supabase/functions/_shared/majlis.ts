@@ -31,6 +31,7 @@ export type MajlisApplication = {
   capacity: number
   venueName: string
   venueAddress: string
+  format: MajlisFormat
 }
 
 export function isMajlisRegion(value: string): value is MajlisRegion {
@@ -78,6 +79,62 @@ export function parseFocusTags(raw: string): string[] {
   return tags
 }
 
+export type MajlisFormat = 'in_person' | 'virtual'
+
+export function isMajlisFormat(value: string): value is MajlisFormat {
+  return value === 'in_person' || value === 'virtual'
+}
+
+/** People in one Google Meet on this Workspace edition, including the organizer. */
+export const VIRTUAL_MEET_PARTICIPANT_CAP = 150
+
+/**
+ * Member RSVP seats for a virtual majlis.
+ * One seat is the organizer. A member host takes a second seat.
+ */
+export function virtualMemberCap(hostMemberId: string | null | undefined): number {
+  return hostMemberId ? VIRTUAL_MEET_PARTICIPANT_CAP - 2 : VIRTUAL_MEET_PARTICIPANT_CAP - 1
+}
+
+/** https://meet.google.com/{code} with no query, fragment, or extra host. */
+export function canonicalMeetUrl(raw: string): string | null {
+  const trimmed = raw.trim()
+  if (!trimmed || /\s/.test(trimmed)) return null
+  let url: URL
+  try {
+    url = new URL(trimmed)
+  } catch {
+    return null
+  }
+  if (url.protocol !== 'https:') return null
+  if (url.username || url.password) return null
+  if (url.hostname !== 'meet.google.com') return null
+  if (url.port) return null
+  if (url.search || url.hash) return null
+  const path = url.pathname.replace(/^\/+/, '').replace(/\/+$/, '')
+  if (!path || path.includes('/') || path.includes('..')) return null
+  if (!/^[a-z0-9-]{3,64}$/i.test(path)) return null
+  return `https://meet.google.com/${path.toLowerCase()}`
+}
+
+/** Meet link for a registered member's own calendar file. Hidden after the event and after cancel. */
+export function icsMeetLink(
+  event: {
+    format?: string | null
+    status?: string | null
+    ends_at: string
+    google_meet_url?: string | null
+    meet_fallback_url?: string | null
+  },
+  nowMs = Date.now(),
+): string | null {
+  if (event.format !== 'virtual') return null
+  if (event.status === 'cancelled') return null
+  const ends = Date.parse(event.ends_at)
+  if (!Number.isFinite(ends) || ends <= nowMs) return null
+  return canonicalMeetUrl(event.google_meet_url || '') || canonicalMeetUrl(event.meet_fallback_url || '')
+}
+
 export function validateMajlisApplication(input: {
   title: string
   description: string
@@ -88,11 +145,14 @@ export function validateMajlisApplication(input: {
   capacity: number
   venueName: string
   venueAddress: string
+  format?: MajlisFormat
+  hostMemberId?: string | null
 }): { ok: true; value: MajlisApplication } | { ok: false; error: string } {
   const title = input.title.trim()
   const description = input.description.trim()
   const venueName = input.venueName.trim()
   const venueAddress = input.venueAddress.trim()
+  const format: MajlisFormat = input.format === 'virtual' ? 'virtual' : 'in_person'
   if (title.length < 1 || title.length > 160) {
     return { ok: false, error: 'Add a title (160 characters or fewer).' }
   }
@@ -119,10 +179,22 @@ export function validateMajlisApplication(input: {
   if (!Number.isInteger(input.capacity) || input.capacity < 1 || input.capacity > 500) {
     return { ok: false, error: 'Capacity must be a whole number from 1 to 500.' }
   }
+  if (format === 'virtual') {
+    const seatCap = virtualMemberCap(input.hostMemberId)
+    if (input.capacity > seatCap) {
+      return {
+        ok: false,
+        error: `A virtual majlis can take at most ${seatCap} member seats so the meeting stays within ${VIRTUAL_MEET_PARTICIPANT_CAP} people.`,
+      }
+    }
+  }
   if (venueName.length < 1 || venueName.length > 200) {
     return { ok: false, error: 'Add a venue name (200 characters or fewer).' }
   }
-  if (venueAddress.length < 1 || venueAddress.length > 500) {
+  if (format === 'in_person' && (venueAddress.length < 1 || venueAddress.length > 500)) {
+    return { ok: false, error: 'Add a venue address (500 characters or fewer).' }
+  }
+  if (venueAddress.length > 500) {
     return { ok: false, error: 'Add a venue address (500 characters or fewer).' }
   }
   return {
@@ -137,6 +209,7 @@ export function validateMajlisApplication(input: {
       capacity: input.capacity,
       venueName,
       venueAddress,
+      format,
     },
   }
 }
@@ -379,7 +452,7 @@ function foldIcs(line: string): string {
   return parts.join('\r\n')
 }
 
-/** Session ICS. The UID is event and member ids, never an email address. */
+/** Session ICS. The UID is event and member ids, never an email address. No attendee list. */
 export function buildMajlisIcs(input: {
   eventId: string
   memberId: string
@@ -389,6 +462,7 @@ export function buildMajlisIcs(input: {
   startsAtUtc: string
   endsAtUtc: string
   nowIso?: string
+  url?: string | null
 }): string {
   const lines = [
     'BEGIN:VCALENDAR',
@@ -404,9 +478,9 @@ export function buildMajlisIcs(input: {
     `SUMMARY:${icsEscape(input.title)}`,
     `DESCRIPTION:${icsEscape(input.description)}`,
     `LOCATION:${icsEscape(input.location)}`,
-    'END:VEVENT',
-    'END:VCALENDAR',
   ]
+  if (input.url) lines.push(`URL:${icsEscape(input.url)}`)
+  lines.push('END:VEVENT', 'END:VCALENDAR')
   return `${lines.map(foldIcs).join('\r\n')}\r\n`
 }
 
