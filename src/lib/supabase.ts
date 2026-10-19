@@ -859,6 +859,11 @@ export type MajlisEventRow = {
   host_avatar_path?: string | null
   host_full_name?: string | null
   maybe_count?: number | null
+  format?: 'in_person' | 'virtual'
+  meet_url?: string | null
+  meet_sync_status?: string | null
+  meet_sync_detail?: string | null
+  meet_fallback_url?: string | null
 }
 
 export type MajlisSponsorEvent = {
@@ -940,15 +945,29 @@ function normalizeEvent(row: MajlisEventRow): MajlisEventRow {
     my_waitlist_position: num(row.my_waitlist_position),
     host_full_name: row.host_full_name ?? null,
     maybe_count: row.maybe_count == null ? null : num(row.maybe_count),
+    format: row.format === 'virtual' ? 'virtual' : 'in_person',
+    meet_url: row.meet_url ?? null,
+    meet_sync_status: row.meet_sync_status ?? null,
+    meet_sync_detail: row.meet_sync_detail ?? null,
+    meet_fallback_url: row.meet_fallback_url ?? null,
   }
 }
 
 const MAJLIS_HOST = 'host_avatar_style, host_avatar_path'
 const MAJLIS_FACE = 'host_full_name, maybe_count'
+const MAJLIS_MEET = 'format, meet_url, meet_sync_status, meet_sync_detail, meet_fallback_url'
 
 export async function fetchMajlisEvents(): Promise<
   { error: string } | { events: MajlisEventRow[] }
 > {
+  const withMeet = await supabase
+    .from('majlis_events_member')
+    .select(`${MAJLIS_COLUMNS}, ${MAJLIS_HOST}, ${MAJLIS_FACE}, ${MAJLIS_MEET}`)
+    .order('starts_at', { ascending: true })
+  if (!withMeet.error) {
+    return { events: ((withMeet.data ?? []) as MajlisEventRow[]).map(normalizeEvent) }
+  }
+  if (!shapeMissing(withMeet.error.message)) return { error: withMeet.error.message }
   const faced = await supabase
     .from('majlis_events_member')
     .select(`${MAJLIS_COLUMNS}, ${MAJLIS_HOST}, ${MAJLIS_FACE}`)
@@ -1144,16 +1163,16 @@ export async function downloadMajlisIcs(eventId: string): Promise<{ error?: stri
 
 export async function majlisAdminAction(
   body: Record<string, unknown>,
-): Promise<{ error?: string; message?: string }> {
+): Promise<{ error?: string; message?: string; google?: string; detail?: string }> {
   try {
     const res = await fetch(`${functionsBase}/majlis-admin-action`, {
       method: 'POST',
       headers: await staffHeaders(),
       body: JSON.stringify(body),
     })
-    const payload = (await res.json().catch(() => ({}))) as { error?: string }
+    const payload = (await res.json().catch(() => ({}))) as { error?: string; google?: string; detail?: string }
     if (!res.ok) return { error: payload.error || `Update failed (${res.status})` }
-    return { message: 'Saved.' }
+    return { message: 'Saved.', google: payload.google, detail: payload.detail }
   } catch (err) {
     return { error: err instanceof Error ? err.message : 'Update failed' }
   }

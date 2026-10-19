@@ -19,6 +19,10 @@ verify_jwt = true
 [functions.majlis-admin-action]
 verify_jwt = true
 
+# Staff JWT. Creates, updates, or cancels the Google Calendar event for a virtual majlis.
+[functions.majlis-calendar-sync]
+verify_jwt = true
+
 # Cron uses MAJLIS_CRON_SECRET or the service role. The anon key is not enough.
 [functions.majlis-reminders]
 verify_jwt = false
