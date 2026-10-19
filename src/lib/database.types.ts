@@ -1194,6 +1194,18 @@ export type Database = {
         Args: { p_id: string; p_decision: string }
         Returns: Json
       }
+      staff_list_majlis_requests: {
+        Args: Record<string, never>
+        Returns: Json
+      }
+      staff_majlis_request_drafts: {
+        Args: Record<string, never>
+        Returns: Json
+      }
+      staff_save_majlis_request_draft: {
+        Args: { p_kind: string; p_subject: string; p_body: string }
+        Returns: Json
+      }
       request_sponsor_intro: {
         Args: { p_partner_id: string }
         Returns: Json

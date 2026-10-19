@@ -53,6 +53,12 @@ const EmailUnsubscribePage = lazy(() =>
   import('./pages/EmailUnsubscribePage').then((m) => ({ default: m.EmailUnsubscribePage })),
 )
 const AdminMajlisPage = lazy(() => import('./pages/admin/MajlisPage').then((m) => ({ default: m.AdminMajlisPage })))
+const AdminMajlisLayout = lazy(() =>
+  import('./pages/admin/MajlisLayout').then((m) => ({ default: m.AdminMajlisLayout })),
+)
+const MajlisRequestsPage = lazy(() =>
+  import('./pages/admin/MajlisRequestsPage').then((m) => ({ default: m.MajlisRequestsPage })),
+)
 const StaffRoomsPage = lazy(() => import('./pages/admin/StaffRoomsPage').then((m) => ({ default: m.StaffRoomsPage })))
 const AdminIntrosPage = lazy(() => import('./pages/admin/AdminIntrosPage').then((m) => ({ default: m.AdminIntrosPage })))
 const AdminPeopleLayout = lazy(() =>
@@ -179,7 +185,10 @@ export default function App() {
         <Route path="ai/:toolSlug" element={<StaffAiToolPage />} />
         <Route path="marketing" element={<MarketingPage />} />
         <Route path="email" element={<EmailPage />} />
-        <Route path="majlis" element={<AdminMajlisPage />} />
+        <Route path="majlis" element={<AdminMajlisLayout />}>
+          <Route index element={<AdminMajlisPage />} />
+          <Route path="requests" element={<MajlisRequestsPage />} />
+        </Route>
         <Route path="mandates" element={<AdminMandatesPage />} />
         <Route path="mandates/:mandateId" element={<AdminMandateMatchPage />} />
         <Route path="rooms" element={<StaffRoomsPage />} />

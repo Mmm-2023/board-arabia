@@ -42,6 +42,7 @@ const FIXED_SHELLS = [
   ['/admin/settings', 'admin'],
   ['/admin/email', 'admin'],
   ['/admin/majlis', 'admin'],
+  ['/admin/majlis/requests', 'admin'],
   ['/admin/mandates', 'admin'],
   ['/admin/rooms', 'admin'],
   ['/ops', 'admin'],
