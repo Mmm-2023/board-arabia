@@ -48,6 +48,13 @@ Left as the literal `[N]`. Flag: daily-backup retention and PITR retention are n
 
 The only backup statement is `handoff/ba-ad1-self-delete.md:39`: `The project has no automatic database backup. Supabase documents daily backups for Pro, Team, and Enterprise only.` That line names no day count and does not mention PITR. `README.md` and `supabase/` have no daily-backup retention and no PITR retention. The number was not guessed.
 
+## Browser
+
+Local Vite at `http://127.0.0.1:5173`. Chrome read the privacy page text at 1440 and 390. The new sentence appears twice on `/privacy` (the member-data retention row and clause 9.2). The restore sentence is absent. `/account-deletion` still shows Delete your account, What is deleted, and What is kept, and does not contain the backup sentence.
+
+- `handoff/ba-bk-1-backup-wording/privacy-retention-1440.png`
+- `handoff/ba-bk-1-backup-wording/privacy-retention-390.png`
+
 ## Secrets
 
 Grade: VERIFIED.
