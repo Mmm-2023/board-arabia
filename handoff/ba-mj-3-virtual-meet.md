@@ -37,7 +37,7 @@ Virtual RSVP seats are 149 when there is no member host, and 148 when there is o
 
 ## One-time Google sign-in
 
-The owner signs in. The operator runs the exchange and writes the refresh token straight into Edge secrets. The token does not go in the database or the repo.
+The owner signs in. The owner runs the exchange and writes the refresh token straight into Edge secrets. The token does not go in the database or the repo.
 
 1. The owner opens Google Cloud Console while signed in as the Workspace user who should own the Majlis calendar (the Meet organizer). Use a project that is only for this calendar. Enable the Google Calendar API.
 2. OAuth consent screen: User type Internal. App name: Board Arabia Majlis. Add one scope: `https://www.googleapis.com/auth/calendar.app.created`. Google's consent text for that scope is "Make secondary Google calendars, and see, create, change, and delete events on them." Do not add Gmail, Drive, Meet member, or any other Calendar scope. Do not reuse the Gmail OAuth client.

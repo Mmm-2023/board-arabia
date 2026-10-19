@@ -34,7 +34,7 @@ Turnstile runs only when `TURNSTILE_SECRET_KEY` and `VITE_TURNSTILE_SITE_KEY` ar
 
 ## Retention and deletion
 
-LEGAL CHANGE. A free account with a majlis request is not deleted at 120 days. It is deleted 12 months after the last accepted majlis, or 12 months after rejection when none was accepted. A request still in review is kept.
+LEGAL CHANGE. A free account with a majlis request is not deleted at 120 days. It is deleted 12 months after your last majlis, or 12 months after rejection when none was accepted. Accounts whose requests are only cancelled are deleted 12 months after the last update. A request still in review is kept. Only an accepted request holds a seat.
 
 `prepare_candidate_delete` deletes majlis applications and clears `seat_held`. The same release runs when a member row is anonymised.
 
@@ -55,9 +55,9 @@ The diff was scanned for private keys, service-role keys, and mailbox literals. 
 
 ## Env names
 
-- `TURNSTILE_SECRET_KEY` optional. When unset, signup does not call Turnstile.
-- `VITE_TURNSTILE_SITE_KEY` optional. When unset, the widget is not shown.
+- `TURNSTILE_SECRET_KEY` and `VITE_TURNSTILE_SITE_KEY`: set both or neither. If only the secret is set, every signup fails the security check.
 - `CANDIDATE_CODE_PEPPER` still required for the email code.
+- Confirm the Supabase Auth Site URL before the sign-in link is used. `generateLink` does not set its own redirect, so the link follows that Site URL.
 - Live smoke only, not stored in the repo: `SUPABASE_URL`, `SUPABASE_ANON_KEY`.
 
 ## Edge

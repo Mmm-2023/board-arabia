@@ -114,9 +114,7 @@ async function issueAndSend(
   const linkHash = await sha256(deps.pepper, linkToken)
   const expires = new Date(deps.now().getTime() + CODE_TTL_MS).toISOString()
   const issued = await deps.issueCode(userId, codeHash, linkHash, expires)
-  if (issued === 'cooldown') {
-    return result(429, { error: 'Wait a minute, then ask for a new code.', error_code: 'cooldown' })
-  }
+  if (issued === 'cooldown') return sameReply()
   if (issued === 'rate_limited') {
     return result(429, { error: 'Too many codes. Try again later.', error_code: 'rate_limited' })
   }
@@ -141,13 +139,28 @@ function sameReply(): FlowResult {
 }
 
 async function sendExistingSignIn(email: string, deps: RegisterDeps): Promise<FlowResult> {
+  const userId = await deps.findAuthUserId(email)
+  if (!userId) return sameReply()
+  const codeHash = await sha256(deps.pepper, randomCode())
+  const linkHash = await sha256(deps.pepper, randomToken())
+  const expires = new Date(deps.now().getTime() + CODE_TTL_MS).toISOString()
+  const issued = await deps.issueCode(userId, codeHash, linkHash, expires)
+  if (issued === 'cooldown') return sameReply()
+  if (issued === 'rate_limited') {
+    return result(429, { error: 'Too many codes. Try again later.', error_code: 'rate_limited' })
+  }
+  if (issued !== 'ok') {
+    return result(400, { error: 'Could not send a code. Try again.', error_code: 'server' })
+  }
   const linked = deps.issueSignInLink ? await deps.issueSignInLink(email) : { error: 'link' }
   if ('error' in linked) {
+    await deps.voidLatestCode(userId)
     return result(502, { error: 'We could not send the email. Wait a minute, then try again.', error_code: 'mail' })
   }
   const mail = signInLinkMail({ signInUrl: linked.url })
   const sent = await deps.sendMail({ to: email, ...mail })
   if (!sent.ok) {
+    await deps.voidLatestCode(userId)
     return result(502, { error: 'We could not send the email. Wait a minute, then try again.', error_code: 'mail' })
   }
   return sameReply()

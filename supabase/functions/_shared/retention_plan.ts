@@ -15,6 +15,7 @@ export type CandidateRetentionInput = {
   majlisPending?: boolean
   lastMajlisAt?: string | null
   majlisRejectedAt?: string | null
+  majlisCancelledAt?: string | null
 }
 
 function monthsBefore(now: Date, months: number) {
@@ -44,6 +45,11 @@ export function classifyCandidate(input: CandidateRetentionInput, now: Date): Re
     if (input.majlisRejectedAt) {
       const rejected = Date.parse(input.majlisRejectedAt)
       if (Number.isFinite(rejected) && rejected <= monthsBefore(now, 12)) return 'delete_decided'
+      return 'keep'
+    }
+    if (input.majlisCancelledAt) {
+      const cancelled = Date.parse(input.majlisCancelledAt)
+      if (Number.isFinite(cancelled) && cancelled <= monthsBefore(now, 12)) return 'delete_decided'
       return 'keep'
     }
     return 'keep'

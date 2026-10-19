@@ -139,7 +139,7 @@ begin
     new.status := 'received';
   end if;
 
-  new.seat_held := new.status in ('accepted', 'waitlist');
+  new.seat_held := new.status = 'accepted';
   new.updated_at := pg_catalog.now();
   return new;
 end;
@@ -359,7 +359,13 @@ begin
     return pg_catalog.jsonb_build_object('ok', true, 'error_code', '');
   end if;
 
-  if p_event is null or not exists (select 1 from public.majlis_events e where e.id = p_event) then
+  if p_event is null or not exists (
+    select 1
+    from public.majlis_events e
+    where e.id = p_event
+      and e.status = 'published'
+      and e.ends_at > pg_catalog.now()
+  ) then
     return pg_catalog.jsonb_build_object('ok', true, 'error_code', '');
   end if;
 
@@ -478,7 +484,7 @@ begin
       select count(*)::integer
       from public.majlis_applications a
       where a.event_id = v_event
-        and a.seat_held
+        and a.status = 'accepted'
         and a.id is distinct from v_app.id
     ), 0);
 
@@ -572,7 +578,7 @@ create or replace function public.retention_sweep_plan(p_apply boolean)
 returns jsonb
 language plpgsql
 security definer
-set search_path = public, auth, private
+set search_path = ''
 as $$
 declare
   unverified uuid[];
@@ -662,7 +668,8 @@ begin
     limit 200
   ) due;
 
-  -- LEGAL CHANGE: 12 months after the last majlis, or after rejection when none was accepted.
+  -- LEGAL CHANGE: 12 months after your last majlis, or after rejection when none was accepted.
+  -- Cancelled-only accounts go 12 months after the last update.
   select coalesce(array_agg(user_id), '{}') into majlis_due
   from (
     select c.user_id
@@ -703,6 +710,19 @@ begin
             from public.majlis_applications rej
             where rej.user_id = c.user_id
               and rej.status = 'rejected'
+          ) < now() - interval '12 months'
+        )
+        or (
+          not exists (
+            select 1 from public.majlis_applications other
+            where other.user_id = c.user_id
+              and other.status in ('accepted', 'waitlist', 'rejected')
+          )
+          and (
+            select max(can.updated_at)
+            from public.majlis_applications can
+            where can.user_id = c.user_id
+              and can.status = 'cancelled'
           ) < now() - interval '12 months'
         )
       )
@@ -982,5 +1002,223 @@ revoke all on function public.retention_sweep_plan(boolean) from public, anon, a
 grant execute on function public.retention_sweep_plan(boolean) to service_role;
 
 comment on function public.retention_sweep_plan(boolean) is
-  'Retention plan. p_apply false lists rows. p_apply true deletes unverified sign-ups at 7 days, confirmed accounts that never submit at 120 days, and free accounts with a majlis request 12 months after the last majlis or after rejection. LEGAL CHANGE. Declined or closed requests and legacy applications go at 12 months. Members and staff are not deleted. Does not send mail.';
+  'Retention plan. p_apply false lists rows. p_apply true deletes unverified sign-ups at 7 days, confirmed accounts that never submit at 120 days, and free accounts with a majlis request 12 months after your last majlis or after rejection. Cancelled-only accounts go 12 months after the last update. LEGAL CHANGE. Declined or closed requests and legacy applications go at 12 months. Members and staff are not deleted. Does not send mail.';
 
+create or replace function public.majlis_place_rsvp(
+  p_event uuid,
+  p_member uuid,
+  p_action text
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  ev public.majlis_events%rowtype;
+  mem public.members%rowtype;
+  existing public.majlis_rsvps%rowtype;
+  has_row boolean := false;
+  registered_n int;
+  accepted_free int := 0;
+  seats_used int := 0;
+  waitlist_n int;
+  seat_cap int;
+  next_pos int;
+  promoted uuid;
+  prev text;
+  opens_at timestamptz;
+  priority_ends timestamptz;
+  next_status text;
+begin
+  if auth.role() is distinct from 'service_role' then
+    raise exception 'forbidden' using errcode = '42501';
+  end if;
+  if p_action not in ('register', 'cancel', 'promote', 'maybe', 'decline') then
+    raise exception 'bad_action' using errcode = '22023';
+  end if;
+
+  select * into ev
+  from public.majlis_events
+  where id = p_event
+  for update;
+  if not found then
+    raise exception 'not_found' using errcode = 'P0002';
+  end if;
+  if ev.status is distinct from 'published' then
+    raise exception 'not_published' using errcode = '42501';
+  end if;
+
+  select * into mem from public.members where user_id = p_member;
+  if not found or mem.status not in ('invited', 'active') then
+    raise exception 'not_member' using errcode = '42501';
+  end if;
+  if mem.seat = 'sponsor' then
+    raise exception 'sponsor_cannot_rsvp' using errcode = '42501';
+  end if;
+
+  select * into existing
+  from public.majlis_rsvps
+  where event_id = p_event and member_id = p_member
+  for update;
+  has_row := found;
+
+  opens_at := coalesce(ev.rsvp_opens_at, ev.approved_at);
+  priority_ends := coalesce(ev.founding_priority_ends_at, ev.approved_at + interval '48 hours');
+  prev := case when has_row then existing.status else null end;
+
+  seat_cap := ev.capacity;
+  if ev.format = 'virtual' then
+    seat_cap := least(ev.capacity, private.majlis_virtual_member_cap(ev.host_member_id));
+  end if;
+
+  select count(*) into registered_n
+  from public.majlis_rsvps
+  where event_id = p_event and status = 'registered';
+
+  select count(*) into accepted_free
+  from public.majlis_applications
+  where event_id = p_event and status = 'accepted';
+
+  seats_used := registered_n + coalesce(accepted_free, 0);
+
+  if p_action = 'promote' then
+    if not has_row or existing.status is distinct from 'waitlist' then
+      raise exception 'not_waitlist' using errcode = '42501';
+    end if;
+    if seats_used >= seat_cap then
+      raise exception 'full' using errcode = '42501';
+    end if;
+    update public.majlis_rsvps
+      set status = 'registered',
+          waitlist_position = null,
+          cancelled_at = null
+      where id = existing.id;
+    next_status := 'registered';
+  elsif p_action = 'cancel' then
+    if not has_row or existing.status = 'cancelled' then
+      return jsonb_build_object(
+        'status', 'cancelled',
+        'waitlist_position', null,
+        'changed', false,
+        'previous_status', prev,
+        'promoted_member_id', null
+      );
+    end if;
+    update public.majlis_rsvps
+      set status = 'cancelled',
+          cancelled_at = now(),
+          waitlist_position = null
+      where id = existing.id;
+    next_status := 'cancelled';
+  elsif p_action in ('maybe', 'decline') then
+    if ev.host_member_id = p_member then
+      raise exception 'host_cannot_rsvp' using errcode = '42501';
+    end if;
+    if opens_at is null or now() < opens_at then
+      raise exception 'not_open' using errcode = '42501';
+    end if;
+    next_status := case when p_action = 'decline' then 'declined' else 'maybe' end;
+    if has_row and existing.status = next_status then
+      null;
+    elsif not has_row then
+      insert into public.majlis_rsvps (event_id, member_id, status, registered_at)
+      values (p_event, p_member, next_status, now());
+    else
+      update public.majlis_rsvps
+        set status = next_status,
+            waitlist_position = null,
+            cancelled_at = null
+        where id = existing.id;
+    end if;
+  else
+    if ev.host_member_id = p_member then
+      raise exception 'host_cannot_rsvp' using errcode = '42501';
+    end if;
+    if opens_at is null or now() < opens_at then
+      raise exception 'not_open' using errcode = '42501';
+    end if;
+    if mem.seat not in ('ksa', 'intl') then
+      if priority_ends is null or now() < priority_ends then
+        raise exception 'founding_window' using errcode = '42501';
+      end if;
+    end if;
+    if has_row and existing.status = 'registered' then
+      next_status := 'registered';
+    elsif seats_used < seat_cap then
+      next_status := 'registered';
+      if not has_row then
+        insert into public.majlis_rsvps (event_id, member_id, status, registered_at)
+        values (p_event, p_member, 'registered', now());
+      else
+        update public.majlis_rsvps
+          set status = 'registered',
+              waitlist_position = null,
+              cancelled_at = null
+          where id = existing.id;
+      end if;
+    elsif has_row and existing.status = 'waitlist' then
+      next_status := 'waitlist';
+    else
+      select coalesce(max(waitlist_position), 0) + 1 into next_pos
+      from public.majlis_rsvps
+      where event_id = p_event and status = 'waitlist';
+      next_status := 'waitlist';
+      if not has_row then
+        insert into public.majlis_rsvps (event_id, member_id, status, waitlist_position, registered_at)
+        values (p_event, p_member, 'waitlist', next_pos, now());
+      else
+        update public.majlis_rsvps
+          set status = 'waitlist',
+              waitlist_position = next_pos,
+              cancelled_at = null
+          where id = existing.id;
+      end if;
+    end if;
+  end if;
+
+  if prev = 'registered' and next_status is distinct from 'registered' then
+    select r.member_id into promoted
+    from public.majlis_rsvps r
+    where r.event_id = p_event
+      and r.status = 'waitlist'
+    order by r.waitlist_position asc, r.registered_at asc
+    limit 1
+    for update;
+    if promoted is not null then
+      update public.majlis_rsvps
+        set status = 'registered',
+            waitlist_position = null,
+            cancelled_at = null
+        where event_id = p_event and member_id = promoted;
+    end if;
+  end if;
+
+  select
+    count(*) filter (where status = 'registered'),
+    count(*) filter (where status = 'waitlist')
+  into registered_n, waitlist_n
+  from public.majlis_rsvps
+  where event_id = p_event;
+
+  return jsonb_build_object(
+    'status', next_status,
+    'waitlist_position', (
+      select r.waitlist_position
+      from public.majlis_rsvps r
+      where r.event_id = p_event and r.member_id = p_member
+    ),
+    'changed', prev is distinct from next_status,
+    'previous_status', prev,
+    'promoted_member_id', promoted,
+    'registered_count', registered_n,
+    'waitlist_count', waitlist_n
+  );
+end;
+$$;
+
+revoke all on function public.majlis_place_rsvp(uuid, uuid, text) from public, anon, authenticated;
+grant execute on function public.majlis_place_rsvp(uuid, uuid, text) to service_role;
+
+comment on function public.majlis_place_rsvp(uuid, uuid, text) is
+  'Service role only. Yes uses capacity and the founding window. Accepted free accounts count toward the cap. A waitlisted request does not hold a seat. Virtual majlis seats stay within 150 people. Maybe and No do not take a seat.';

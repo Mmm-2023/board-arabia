@@ -53,7 +53,7 @@ function deps(overrides: Record<string, unknown> = {}) {
     now: () => NOW,
     pepper: 'test-pepper',
     turnstileSecret: 'test-secret',
-    site: 'https://boardarabia.com',
+    site: 'https://example.com',
     verifyTurnstile: async () => true,
     emailIsMember: async () => false,
     findCandidate: async () => null,
@@ -62,7 +62,7 @@ function deps(overrides: Record<string, unknown> = {}) {
     insertCandidate: async () => ({}),
     issueCode: async () => 'ok' as const,
     voidLatestCode: async () => {},
-    issueSignInLink: async () => ({ url: 'https://boardarabia.com/login' }),
+    issueSignInLink: async () => ({ url: 'https://example.com/login' }),
     sendMail: async () => ({ ok: true, dryRun: true }),
     recordEvent: async () => {},
     claimInvite: async () => false,
@@ -147,6 +147,7 @@ test('signup gives the same reply and skips Turnstile when it is not configured'
     deps({
       turnstileSecret: '',
       emailIsMember: async () => true,
+      findAuthUserId: async () => '22222222-2222-4222-8222-222222222222',
       sendMail: mail,
     }),
   )
@@ -188,7 +189,40 @@ test('a majlis free account keeps the 12 month clock', () => {
   assert.equal(classifyCandidate({ ...open, lastMajlisAt: daysAgo(400) }, NOW), 'delete_decided')
   assert.equal(classifyCandidate({ ...open, majlisRejectedAt: daysAgo(30) }, NOW), 'keep')
   assert.equal(classifyCandidate({ ...open, majlisRejectedAt: daysAgo(400) }, NOW), 'delete_decided')
+  assert.equal(classifyCandidate({ ...open, majlisCancelledAt: daysAgo(30) }, NOW), 'keep')
+  assert.equal(classifyCandidate({ ...open, majlisCancelledAt: daysAgo(400) }, NOW), 'delete_decided')
   assert.equal(classifyCandidate({ ...open, hasMajlisApplication: false }, NOW), 'delete_never_submitted')
+})
+
+test('member sign-in uses the same cooldown and still replies 200', async () => {
+  let sends = 0
+  let issued = 0
+  const issueCode = async () => {
+    issued += 1
+    return issued === 1 ? ('ok' as const) : ('cooldown' as const)
+  }
+  const mail = async () => {
+    sends += 1
+    return { ok: true, dryRun: true }
+  }
+  const shared = {
+    emailIsMember: async () => true,
+    findAuthUserId: async () => '22222222-2222-4222-8222-222222222222',
+    issueCode,
+    sendMail: mail,
+  }
+  const first = await registerCandidate(form(), '203.0.113.10', deps(shared))
+  const second = await registerCandidate(form(), '203.0.113.10', deps(shared))
+  const cooled = await registerCandidate(form({ email: 'new@example.com' }), '203.0.113.11', deps({
+    issueCode: async () => 'cooldown' as const,
+    sendMail: mail,
+  }))
+  assert.equal(first.status, 200)
+  assert.deepEqual(first.body, { ok: true, error_code: '' })
+  assert.deepEqual(second.body, first.body)
+  assert.deepEqual(cooled.body, first.body)
+  assert.equal(cooled.status, 200)
+  assert.equal(sends, 1)
 })
 
 test('own majlis rows drop other people and unsafe links', () => {

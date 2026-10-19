@@ -400,7 +400,7 @@ export const PRIVACY_EN: LegalDocument = {
     // LEGAL CHANGE: free-account privacy line. Legal clears this before merge.
     {
       "kind": "p",
-      "text": "Registering creates a free Board Arabia account. We use your details to review your request for a majlis and, if accepted, to send joining details and reminders. Free accounts are deleted 12 months after your last majlis, or 12 months after a rejection when you were never accepted, or sooner if you ask."
+      "text": "Registering creates a free Board Arabia account. We use your details to review your request for a majlis and, if accepted, to send joining details. Free accounts are deleted 12 months after your last majlis, or 12 months after a rejection when you were never accepted, or sooner if you ask."
     },
     {
       "kind": "table",

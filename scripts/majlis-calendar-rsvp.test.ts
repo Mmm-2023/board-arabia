@@ -503,6 +503,93 @@ begin
   if placed->>'status' <> 'waitlist' then perform pg_temp.fail('virtual hosted room did not waitlist at 150'); end if;
   if (placed->>'registered_count')::int <> 148 then perform pg_temp.fail('virtual hosted room count'); end if;
 
+  insert into public.majlis_events (
+    id, host_member_id, title, description, region, focus_tags, starts_at, ends_at, timezone,
+    capacity, venue_name, venue_address, venue_visibility, status, approved_by, approved_at, format
+  ) values (
+    '20000000-0000-4000-8000-0000000000a3', null, 'Mixed gathering', 'A private virtual gathering.', 'Riyadh', array['Governance'],
+    now() + interval '9 days', now() + interval '9 days 2 hours', 'Asia/Riyadh',
+    149, 'Google Meet', '', 'members_on_rsvp', 'published', '${STAFF}', now() - interval '3 days', 'virtual'
+  );
+
+  for i in 1..100 loop
+    placed := public.majlis_place_rsvp(
+      '20000000-0000-4000-8000-0000000000a3',
+      ('30000000-0000-4000-8000-' || lpad(i::text, 12, '0'))::uuid,
+      'register'
+    );
+    if placed->>'status' <> 'registered' then
+      perform pg_temp.fail('mixed room rejected member seat ' || i);
+    end if;
+  end loop;
+
+  for i in 1..49 loop
+    insert into auth.users (id, email)
+    values (
+      ('40000000-0000-4000-8000-' || lpad(i::text, 12, '0'))::uuid,
+      'free' || i || '@example.com'
+    );
+    insert into public.candidates (user_id, email, full_name, role, region, email_verified_at)
+    values (
+      ('40000000-0000-4000-8000-' || lpad(i::text, 12, '0'))::uuid,
+      'free' || i || '@example.com',
+      'Free Example',
+      'chairperson',
+      'ksa_gcc',
+      now()
+    );
+    insert into public.majlis_applications (event_id, user_id, status, form_snapshot, consent_version, submitted_at)
+    values (
+      '20000000-0000-4000-8000-0000000000a3',
+      ('40000000-0000-4000-8000-' || lpad(i::text, 12, '0'))::uuid,
+      'accepted',
+      '{}'::jsonb,
+      'v1',
+      now()
+    );
+  end loop;
+
+  placed := public.majlis_place_rsvp(
+    '20000000-0000-4000-8000-0000000000a3',
+    '30000000-0000-4000-8000-000000000101'::uuid,
+    'register'
+  );
+  if placed->>'status' <> 'waitlist' then perform pg_temp.fail('mixed room did not waitlist at 149'); end if;
+
+  insert into public.majlis_events (
+    id, host_member_id, title, description, region, focus_tags, starts_at, ends_at, timezone,
+    capacity, venue_name, venue_address, venue_visibility, status, approved_by, approved_at, format
+  ) values (
+    '20000000-0000-4000-8000-0000000000a4', null, 'Waitlist does not hold a seat', 'A private virtual gathering.', 'Riyadh', array['Governance'],
+    now() + interval '10 days', now() + interval '10 days 2 hours', 'Asia/Riyadh',
+    149, 'Google Meet', '', 'members_on_rsvp', 'published', '${STAFF}', now() - interval '3 days', 'virtual'
+  );
+  for i in 1..148 loop
+    placed := public.majlis_place_rsvp(
+      '20000000-0000-4000-8000-0000000000a4',
+      ('30000000-0000-4000-8000-' || lpad(i::text, 12, '0'))::uuid,
+      'register'
+    );
+    if placed->>'status' <> 'registered' then
+      perform pg_temp.fail('waitlist room rejected member seat ' || i);
+    end if;
+  end loop;
+  insert into public.majlis_applications (event_id, user_id, status, form_snapshot, consent_version, submitted_at)
+  values (
+    '20000000-0000-4000-8000-0000000000a4',
+    '40000000-0000-4000-8000-000000000001'::uuid,
+    'waitlist',
+    '{}'::jsonb,
+    'v1',
+    now()
+  );
+  placed := public.majlis_place_rsvp(
+    '20000000-0000-4000-8000-0000000000a4',
+    '30000000-0000-4000-8000-000000000149'::uuid,
+    'register'
+  );
+  if placed->>'status' <> 'registered' then perform pg_temp.fail('waitlisted free account held a seat'); end if;
+
   select pg_get_functiondef('public.majlis_consume_rsvp_slot(uuid)'::regprocedure) into rate;
   if position('hit_count > 30' in rate) = 0 then perform pg_temp.fail('rate limit changed'); end if;
 
