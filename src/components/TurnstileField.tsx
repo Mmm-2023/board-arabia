@@ -72,7 +72,13 @@ export function TurnstileField({
     }
   }, [onToken, resetKey, siteKey])
 
-  if (!siteKey) return null
+  if (!siteKey) {
+    return (
+      <span className="sr-only" data-turnstile="off">
+        Security check
+      </span>
+    )
+  }
 
   return <div ref={holder} className="min-h-16" data-turnstile="live" />
 }

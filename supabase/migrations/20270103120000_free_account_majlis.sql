@@ -145,6 +145,8 @@ begin
 end;
 $fn$;
 
+revoke all on function private.guard_majlis_application_review() from public, anon, authenticated;
+
 drop trigger if exists majlis_applications_guard_review on public.majlis_applications;
 create trigger majlis_applications_guard_review
   before insert or update on public.majlis_applications
@@ -169,6 +171,8 @@ begin
 end;
 $fn$;
 
+revoke all on function private.promote_majlis_applications_on_verify() from public, anon, authenticated;
+
 drop trigger if exists candidates_promote_majlis_review on public.candidates;
 create trigger candidates_promote_majlis_review
   after update of email_verified_at on public.candidates
@@ -188,6 +192,8 @@ begin
   return new;
 end;
 $fn$;
+
+revoke all on function private.majlis_release_on_anonymise() from public, anon, authenticated;
 
 drop trigger if exists members_release_majlis_on_anonymise on public.members;
 create trigger members_release_majlis_on_anonymise

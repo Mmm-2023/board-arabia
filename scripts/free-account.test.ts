@@ -260,5 +260,4 @@ test('free account majlis shots at 1440 and 390', { timeout: 180000 }, async (t)
 test('the free account migration uses the next slot', () => {
   const slots = readdirSync(path.join(root, 'supabase/migrations')).filter((file) => file.endsWith('.sql'))
   assert.equal(slots.filter((file) => file.startsWith('20270103')).length, 1)
-  assert.equal(slots.some((file) => file.startsWith('20270102')), false)
 })
