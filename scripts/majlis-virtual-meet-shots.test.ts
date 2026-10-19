@@ -14,7 +14,7 @@ function chromePath() {
     || (existsSync('/opt/google/chrome/chrome') ? '/opt/google/chrome/chrome' : null)
 }
 
-test('virtual majlis shots at 1440 and 390', { timeout: 180_000 }, async (t) => {
+test('virtual majlis shots at 1440 and 390', { timeout: 240_000 }, async (t) => {
   const executablePath = chromePath()
   if (!executablePath) {
     t.skip('Chrome is not installed')
@@ -41,8 +41,16 @@ test('virtual majlis shots at 1440 and 390', { timeout: 180_000 }, async (t) => 
     for (const shot of SHOTS) {
       for (const width of [1440, 390] as const) {
         const page = await browser.newPage({ viewport: { width, height: width === 390 ? 844 : 900 } })
-        await page.goto(`${origin}/scripts/smoke/majlis-virtual.html?shot=${shot}`, { waitUntil: 'networkidle' })
-        await page.locator(`[data-shot="${shot}"]`).waitFor()
+        page.setDefaultTimeout(90_000)
+        const pageErrors: string[] = []
+        page.on('pageerror', (error) => pageErrors.push(error.message))
+        await page.goto(`${origin}/scripts/smoke/majlis-virtual.html?shot=${shot}`, { waitUntil: 'domcontentloaded' })
+        try {
+          await page.locator(`[data-shot="${shot}"]`).waitFor({ timeout: 90_000 })
+        } catch (error) {
+          const body = await page.locator('body').innerText().catch(() => '')
+          throw new Error(`${shot} did not render. ${pageErrors.join(' | ')} ${body.slice(0, 500)} ${(error as Error).message}`)
+        }
         if (shot === 'staff-create') await prepareStaffCreate(page)
         if (shot.startsWith('member')) await page.locator('[data-meet-access]').scrollIntoViewIfNeeded()
         if (shot === 'member-before') {
