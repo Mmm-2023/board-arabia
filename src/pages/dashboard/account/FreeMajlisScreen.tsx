@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { formatUpdated } from '../../../shell/destinations'
 import {
   formatMajlisWhen,
@@ -62,6 +63,12 @@ export function FreeMajlisPanel({
           <p className="mt-2 text-[0.98rem] leading-relaxed text-ink/60">
             When you register for a majlis, the request shows here. Full member gatherings stay locked below.
           </p>
+          <Link
+            to="/majlis"
+            className="ba-primary mt-4 inline-flex min-h-11 items-center px-4 text-[0.75rem] font-semibold tracking-[0.08em] uppercase"
+          >
+            See open majlis
+          </Link>
         </div>
       ) : null}
 

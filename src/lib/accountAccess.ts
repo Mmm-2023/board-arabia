@@ -8,6 +8,7 @@ const ALLOWED_PATHS = [
   '/rest/v1/rpc/my_majlis_applications',
   '/rest/v1/rpc/majlis_join_for_me',
   '/rest/v1/rpc/submit_own_majlis_application',
+  '/rest/v1/rpc/list_public_majlis',
   '/functions/v1/register-candidate',
   '/functions/v1/verify-candidate',
   '/functions/v1/request-membership',

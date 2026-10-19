@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Nav } from '../components/Nav'
 import { track } from '../lib/analytics'
+import { flushPublicMajlisDraft, readPublicMajlisDraft } from '../lib/publicMajlisDraft'
 import { registerCandidate, supabase, verifyCandidate } from '../lib/supabase'
 import { useNoIndex } from '../lib/usePageTitle'
 import { clearVerifyEmail, readVerifyEmail, rememberVerifyEmail } from '../lib/verifyEmail'
@@ -62,6 +63,13 @@ export function VerifyPage({ security = 'live' as 'live' | 'preview' }) {
       track('login', { method: result.method === 'link' ? 'link' : 'code', path: '/dashboard' })
     } else {
       track('email_verified', { method: result.method === 'link' ? 'link' : 'code', path: '/dashboard' })
+    }
+    const pending = readPublicMajlisDraft()
+    if (pending) {
+      const flushed = await flushPublicMajlisDraft()
+      clearVerifyEmail()
+      navigate(flushed === 'sent' ? '/dashboard/majlis' : `/majlis/${pending.eventId}`, { replace: true })
+      return
     }
     clearVerifyEmail()
     navigate('/dashboard', { replace: true })

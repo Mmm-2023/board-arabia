@@ -17,6 +17,7 @@ import { LoginPage } from './pages/LoginPage'
 import { NotFoundPage } from './pages/NotFoundPage'
 import { PartnersPage } from './pages/PartnersPage'
 import { PrivacyPage } from './pages/PrivacyPage'
+import { PublicMajlisPage } from './pages/PublicMajlisPage'
 import { SecurityPage } from './pages/SecurityPage'
 import { TermsPage } from './pages/TermsPage'
 import { AdminIntrosRedirect } from './shell/adminIntrosRedirect'
@@ -141,6 +142,8 @@ export default function App() {
       <Route path="/apply/verify" element={<Navigate to="/register/verify" replace />} />
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/register/verify" element={<VerifyPage />} />
+      <Route path="/majlis" element={<PublicMajlisPage />} />
+      <Route path="/majlis/:eventId" element={<PublicMajlisPage />} />
       <Route path="/for-members" element={<ForMembersPage />} />
       <Route path="/for-capital" element={<ForCapitalPage />} />
       <Route path="/partners" element={<PartnersPage />} />
