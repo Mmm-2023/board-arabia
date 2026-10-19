@@ -249,9 +249,6 @@ test('own majlis rows drop other people and unsafe links', () => {
 })
 
 test('free account majlis shots at 1440 and 390', { timeout: 180000 }, async (t) => {
-  if (!process.env.CHROME_PATH && statSync('/usr/bin/google-chrome', { throwIfNoEntry: false })) {
-    process.env.CHROME_PATH = '/usr/bin/google-chrome'
-  }
   const chrome = resolveChromePath()
   if (!chrome) {
     t.skip(CHROME_SKIP)
