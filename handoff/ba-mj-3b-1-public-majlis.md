@@ -1,6 +1,6 @@
 # MJ-3b-1 Public majlis request
 
-Base: `main` after `2a81aac`. Branch: `cursor/mj-3b-1-public-majlis-3887`.
+Base: `main` at `2a81aac`. Branch: `cursor/mj-3b-1-public-majlis-3887`.
 Migration: `supabase/migrations/20270104120000_public_majlis_request.sql`.
 Not applied. No Edge deploy. No database push. No merge. No schedule. No send. The master switch stays off.
 
