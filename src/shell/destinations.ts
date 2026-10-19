@@ -110,7 +110,8 @@ export const MEMBER_ACCOUNT: readonly SecondaryLink[] = ACCOUNT_SHEET_LINKS
 /** Existing delete screen. Reached from Your privacy, not from the account list. */
 export const DELETE_ACCOUNT_PATH = '/dashboard/account/delete'
 
-export const LOCKED_HUBS = ['deals', 'people', 'majlis', 'ai'] as const
+/** Locked member hubs on a free account. Majlis stays open: that page is your own requests. */
+export const LOCKED_HUBS = ['deals', 'people', 'ai'] as const
 
 export function memberAccountLinks(seat: string | null | undefined): readonly SecondaryLink[] {
   if (seat !== 'sponsor') return ACCOUNT_SHEET_LINKS

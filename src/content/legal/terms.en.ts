@@ -108,6 +108,13 @@ export const TERMS_EN: LegalDocument = {
       "number": "3.5",
       "text": "We do not verify the merits of any business, mandate, deal or investment shared on the Platform."
     },
+    // LEGAL CHANGE: free-account clause. Legal clears this before merge.
+    {
+      "kind": "clause",
+      "id": "c-3-6",
+      "number": "3.6",
+      "text": "A free account lets you ask to attend a majlis and, if we accept your request, use your Join link. Acceptance is at our discretion, and your Join link is personal to you and must not be shared. A free account is not membership. It does not include the directory, deals, the member majlis list, the weekly digest or the partner showcase. Mail to a free account is transactional only."
+    },
     {
       "kind": "h2",
       "id": "s-4",

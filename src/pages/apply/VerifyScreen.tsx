@@ -57,7 +57,7 @@ export function VerifyScreen({
           <p className="text-[0.72rem] font-semibold tracking-[0.14em] text-[var(--ba-indigo)] uppercase">Check your email</p>
           <h1 className="mt-3 font-display text-[2rem] font-semibold tracking-[-0.03em]">Enter your code</h1>
           <p className="mt-3 text-[1rem] leading-relaxed text-ink/70">
-            We sent a 6 digit code{email ? ` to ${email}` : ''}. It expires in 10 minutes and works once.
+            Check your email{email ? ` at ${email}` : ''}. It has either a 6 digit code or a sign-in link. The code expires in 10 minutes and works once.
           </p>
           <div className="mt-6 grid grid-cols-6 gap-2">
             {digits.map((digit, index) => (

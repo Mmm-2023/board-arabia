@@ -5,7 +5,7 @@ import { displayPlatformMoney, type DisplayTotals } from '../../../lib/platformF
 import { fetchPlatformStats, supabase } from '../../../lib/supabase'
 import { MEMBER_SECTIONS } from '../../../shell/destinations'
 import { SectionTabs } from '../../../shell/SectionTabs'
-import { DigestPage, DigestUnsubscribePage } from '../DigestPage'
+import { DigestUnsubscribePage } from '../DigestPage'
 import { HelpPage } from '../HelpPage'
 import { PrivacyPanelPage } from '../PrivacyPanelPage'
 import { TwoStepPage } from '../TwoStepPage'
@@ -24,6 +24,7 @@ import {
   AccountProfileView,
   AccountRealEstate,
   AccountRooms,
+  LockPanel,
 } from './views'
 
 const WELCOME_KEY = 'ba-account-welcome'
@@ -184,12 +185,25 @@ export function AccountSurface() {
   if (pathname === '/dashboard/membership' || pathname.startsWith('/dashboard/membership/')) return <MembershipScreen />
   if (pathname === '/dashboard/profile' || pathname.startsWith('/dashboard/profile/')) return <AccountProfile />
   if (pathname === '/dashboard/help' || pathname.startsWith('/dashboard/help/')) return <HelpPage desk={false} />
-  if (pathname === '/dashboard/digest') return <DigestPage />
+  if (pathname === '/dashboard/digest') return <AccountDigest />
   if (pathname === '/dashboard/digest/unsubscribe') return <DigestUnsubscribePage />
   if (pathname === '/dashboard/privacy' || pathname.startsWith('/dashboard/privacy/')) return <PrivacyPanelPage />
   if (pathname === '/dashboard/two-step' || pathname.startsWith('/dashboard/two-step/')) return <TwoStepPage />
   if (pathname === '/dashboard/account/delete') return <DeleteAccountScreen />
   return <Navigate to="/dashboard" replace />
+}
+
+function AccountDigest() {
+  return (
+    <div className="max-w-xl" data-screen="account-digest">
+      <p className="text-[0.72rem] font-semibold tracking-[0.14em] text-[var(--ba-indigo)] uppercase">This week</p>
+      <h1 className="mt-3 font-display text-[1.7rem] font-semibold tracking-[-0.03em]">Weekly briefing</h1>
+      <p className="mt-3 text-[1rem] leading-relaxed text-ink/75">
+        The weekly briefing is for full members. A free account receives transactional email only, not the newsletter.
+      </p>
+      <LockPanel body="The weekly briefing opens with full membership. A free account does not receive the newsletter." />
+    </div>
+  )
 }
 
 function AccountProfile() {

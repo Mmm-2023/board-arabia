@@ -1174,6 +1174,22 @@ export type Database = {
         Args: Record<string, never>
         Returns: Json
       }
+      my_majlis_applications: {
+        Args: Record<string, never>
+        Returns: Json
+      }
+      majlis_join_for_me: {
+        Args: { p_event: string }
+        Returns: Json
+      }
+      submit_own_majlis_application: {
+        Args: { p_event: string; p_snapshot: Json; p_consent: string }
+        Returns: Json
+      }
+      review_majlis_application: {
+        Args: { p_id: string; p_decision: string }
+        Returns: Json
+      }
       request_sponsor_intro: {
         Args: { p_partner_id: string }
         Returns: Json

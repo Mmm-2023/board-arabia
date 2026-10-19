@@ -82,7 +82,7 @@ test('every account row, back link, and help link names a real route', () => {
   assert.match(deleteView, /Keep my account/)
   assert.match(deleteScreen, /deleteCandidateAccount/)
   assert.match(routes, /\/dashboard\/account\/delete/)
-  assert.match(routes, /<DigestPage \/>/)
+  assert.match(routes, /<AccountDigest \/>/)
   assert.match(routes, /<PrivacyPanelPage \/>/)
   assert.match(routes, /<TwoStepPage \/>/)
 

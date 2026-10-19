@@ -26,6 +26,19 @@ ${url}`,
   return { subject: 'Your Board Arabia code', ...sealed }
 }
 
+/** Existing account. The HTTP reply stays the same as a new sign-up. */
+export function signInLinkMail(input: { signInUrl: string }): { subject: string; text: string; html: string } {
+  const url = input.signInUrl.trim()
+  const sealed = boardMail(
+    `Use this link to sign in to Board Arabia. It expires soon and works once. If you did not ask for this, ignore this email.
+
+${url}`,
+    `<p>Use this link to sign in to Board Arabia. It expires soon and works once. If you did not ask for this, ignore this email.</p>
+<p><a href="${escapeHtml(url)}">${escapeHtml(url)}</a></p>`,
+  )
+  return { subject: 'Your Board Arabia sign-in link', ...sealed }
+}
+
 /** Sent once, after the email is confirmed. No sign-in secret. */
 export function accountOpenMail(input: { dashboardUrl: string }): { subject: string; text: string; html: string } {
   const url = input.dashboardUrl.trim()
