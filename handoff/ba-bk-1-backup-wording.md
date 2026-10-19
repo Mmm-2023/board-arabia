@@ -1,8 +1,8 @@
 # BK-1 backup wording
 
-LEGAL CHANGE. Base: main `5fabefab6c4677a65eeb3d927d99e33a7f94539e`. Branch: `cursor/bk-1-backup-wording-a727`. No migration. No Edge deploy. No force-push.
+LEGAL CHANGE. Base after merge: main `2a81aac1` (PR #197). Branch: `cursor/bk-1-backup-wording-a727`. No migration. No Edge deploy. No force-push.
 
-PR #197 also edits `src/content/legal/privacy.en.ts` (a free-account paragraph and a retention row above this sentence). This change only replaces the backup sentence inside the existing strings. Merge #197 first, then merge main into this branch with a normal commit if the sentence lines move.
+PR #197 is merged. A normal merge of `origin/main` kept the free-account paragraph and retention row verbatim. The only privacy difference from that main is the backup sentence inside the two existing strings.
 
 ## Replaced
 
@@ -12,8 +12,8 @@ The previous backup sentence occurred four times in product copy. Each one is no
 
 | File | Line | Where |
 | --- | --- | --- |
-| `src/content/legal/privacy.en.ts` | 422 | Retention table row `Member data, including profile, intros, "Deal started" tags, mandates and event records` |
-| `src/content/legal/privacy.en.ts` | 464 | Clause `c-9-2` |
+| `src/content/legal/privacy.en.ts` | 432 | Retention table row `Member data, including profile, intros, "Deal started" tags, mandates and event records` |
+| `src/content/legal/privacy.en.ts` | 474 | Clause `c-9-2` |
 | `src/content/privacyNotice.ts` | 86 | Section `How long we keep it` |
 | `src/content/privacyNotice.ts` | 94 | Section `Your rights` |
 
