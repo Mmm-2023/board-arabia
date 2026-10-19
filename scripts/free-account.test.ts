@@ -184,7 +184,25 @@ test('a majlis free account keeps the 12 month clock', () => {
     isStaff: false,
     hasMajlisApplication: true,
   }
-  assert.equal(classifyCandidate({ ...open, majlisPending: true }, NOW), 'keep')
+  assert.equal(classifyCandidate({ ...open, majlisPending: true, majlisPendingAt: daysAgo(30) }, NOW), 'keep')
+  assert.equal(classifyCandidate({ ...open, majlisPending: true, majlisPendingAt: daysAgo(400) }, NOW), 'delete_decided')
+  assert.equal(
+    classifyCandidate(
+      {
+        ...open,
+        createdAt: daysAgo(8),
+        emailVerifiedAt: null,
+        majlisPending: true,
+        majlisPendingAt: daysAgo(1),
+      },
+      NOW,
+    ),
+    'delete_unverified',
+  )
+  assert.equal(
+    classifyCandidate({ ...open, isMember: true, majlisPending: true, majlisPendingAt: daysAgo(400) }, NOW),
+    'keep',
+  )
   assert.equal(classifyCandidate({ ...open, lastMajlisAt: daysAgo(30) }, NOW), 'keep')
   assert.equal(classifyCandidate({ ...open, lastMajlisAt: daysAgo(400) }, NOW), 'delete_decided')
   assert.equal(classifyCandidate({ ...open, majlisRejectedAt: daysAgo(30) }, NOW), 'keep')
@@ -192,6 +210,18 @@ test('a majlis free account keeps the 12 month clock', () => {
   assert.equal(classifyCandidate({ ...open, majlisCancelledAt: daysAgo(30) }, NOW), 'keep')
   assert.equal(classifyCandidate({ ...open, majlisCancelledAt: daysAgo(400) }, NOW), 'delete_decided')
   assert.equal(classifyCandidate({ ...open, hasMajlisApplication: false }, NOW), 'delete_never_submitted')
+
+  const sweep = read(migration)
+  const unverifiedAt = sweep.indexOf("c.email_verified_at is null")
+  const pendingAt = sweep.indexOf("pend.status = 'pending'")
+  const acceptedAt = sweep.indexOf("acc.status in ('accepted', 'waitlist')")
+  assert.ok(unverifiedAt > 0 && pendingAt > unverifiedAt)
+  assert.ok(acceptedAt > 0 && acceptedAt < pendingAt)
+  assert.match(sweep, /set search_path = ''/)
+  assert.equal(sweep.includes("open_app.status in ('received', 'pending')"), false)
+  const unverifiedQuery = sweep.slice(sweep.indexOf('into unverified'), sweep.indexOf('into never_submitted'))
+  assert.equal(unverifiedQuery.includes('majlis_applications'), false)
+  assert.match(unverifiedQuery, /not exists \(select 1 from public\.members m where m\.user_id = c\.user_id\)/)
 })
 
 test('member sign-in uses the same cooldown and still replies 200', async () => {

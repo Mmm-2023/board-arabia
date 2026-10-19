@@ -178,12 +178,12 @@ export function RegisterScreen({
                 required
               />
               <span>
-                I agree to the <Link to={publicHref('/terms')} className="underline">Terms</Link> and <Link to={publicHref('/privacy')} className="underline">Privacy notice</Link>.
+                I agree to the <Link to={publicHref('/terms')} className="underline">Terms</Link> and have read the <Link to={publicHref('/privacy')} className="underline">Privacy Notice</Link>
               </span>
             </label>
-            {/* LEGAL CHANGE: free account consent. Legal clears this sentence before merge. */}
+            {/* LEGAL CHANGE: free account notice, not a consent sentence. */}
             <p className="text-[0.92rem] leading-relaxed text-ink/60">
-              Opening an account creates a free Board Arabia account. It is not full membership. We use it to review a majlis request and, if we accept you, to send joining details. Free accounts are deleted 12 months after your last majlis, or 12 months after a rejection when you were never accepted, or sooner if you ask.
+              By opening an account you create a free Board Arabia account and agree to our <Link to={publicHref('/terms')} className="underline">Terms</Link>. It is not full membership. We use your details to review your majlis request and, if we accept it, to send your joining details. Unverified accounts are deleted after 7 days. Other free accounts are deleted 12 months after your last majlis, or 12 months after a declined, undecided or cancelled request if you were never accepted. You can ask us to delete it sooner. See our <Link to={publicHref('/privacy')} className="underline">Privacy Notice</Link> for details.
             </p>
             <p className="text-[0.92rem] leading-relaxed text-ink/60">
               We record which link brought you here to understand how people find Board Arabia.{' '}

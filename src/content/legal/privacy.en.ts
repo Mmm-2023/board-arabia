@@ -400,7 +400,7 @@ export const PRIVACY_EN: LegalDocument = {
     // LEGAL CHANGE: free-account privacy line. Legal clears this before merge.
     {
       "kind": "p",
-      "text": "Registering creates a free Board Arabia account. We use your details to review your request for a majlis and, if accepted, to send joining details. Free accounts are deleted 12 months after your last majlis, or 12 months after a rejection when you were never accepted, or sooner if you ask."
+      "text": "Registering creates a free Board Arabia account. We use your name, email and phone number to review your request to attend a majlis and, if we accept it, to send your joining details and contact you about that majlis. We only send a free account messages about its requests, never marketing. If you do not verify your email, your account is deleted after 7 days. Free accounts are deleted 12 months after your last majlis. If you were never accepted, they are deleted 12 months after we decline your request, 12 months after the majlis date if your request was never decided, or 12 months after your last update if all your requests were cancelled. If you become a member, these free account time limits stop applying. You can ask us to delete your account sooner at any time by writing to [CONTACT EMAIL]."
     },
     {
       "kind": "table",
@@ -421,7 +421,7 @@ export const PRIVACY_EN: LegalDocument = {
         // LEGAL CHANGE: free-account retention row. Legal clears this before merge.
         [
           "Free account used for a majlis",
-          "Deleted 12 months after your last majlis, or 12 months after we decline a request that was never accepted. You can delete it sooner."
+          "Deleted after 7 days if your email is never verified. Otherwise deleted 12 months after your last majlis. If you were never accepted, deleted 12 months after we decline your request, 12 months after the majlis date if your request was never decided, or 12 months after your last update if all your requests were cancelled. These limits stop if you become a member. You can ask us to delete it sooner at [CONTACT EMAIL]."
         ],
         [
           "Rejected, declined, withdrawn or closed applications, and legacy applications",
