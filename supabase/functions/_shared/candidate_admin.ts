@@ -16,6 +16,11 @@ import { bumpKeyedLimit } from './rate_limit.ts'
 
 type Admin = SupabaseClient
 
+function failureClass(code: string | undefined) {
+  if (code && /^[0-9A-Z]{5}$/.test(code)) return code
+  return 'insert_failed'
+}
+
 function readEnv(name: string) {
   return Deno.env.get(name)?.trim() || ''
 }
@@ -60,6 +65,10 @@ function registerDeps(admin: Admin): RegisterDeps {
       if (created.error || !userId) return { error: created.error?.message || 'create_failed' }
       return { userId }
     },
+    deleteAuthUser: async (userId) => {
+      const removed = await admin.auth.admin.deleteUser(userId)
+      if (removed.error) throw new Error('delete_failed')
+    },
     insertCandidate: async (row) => {
       const { error } = await admin.from('candidates').insert({
         user_id: row.userId,
@@ -84,7 +93,7 @@ function registerDeps(admin: Admin): RegisterDeps {
         analytics_id: row.attribution.analytics_id,
         attribution_version: row.attribution.attribution_version,
       })
-      return error ? { error: error.message } : {}
+      return error ? { error: failureClass(error.code) } : {}
     },
     issueCode: async (userId, codeHash, linkHash, expiresAt) => {
       const { data, error } = await admin.rpc('candidate_issue_code', {

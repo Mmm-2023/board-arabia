@@ -41,6 +41,7 @@ export type RegisterDeps = {
   findCandidate: (email: string) => Promise<CandidateRow | null>
   findAuthUserId: (email: string) => Promise<string | null>
   createAuthUser: (email: string) => Promise<{ userId: string } | { error: string }>
+  deleteAuthUser: (userId: string) => Promise<void>
   insertCandidate: (row: {
     userId: string
     email: string
@@ -136,6 +137,16 @@ async function issueAndSend(
 
 function sameReply(): FlowResult {
   return result(200, { ok: true, error_code: '' })
+}
+
+function logClass(value: string) {
+  const trimmed = value.trim()
+  if (/^[0-9A-Z]{5}$/.test(trimmed) || /^[a-z][a-z0-9_]{0,31}$/.test(trimmed)) return trimmed
+  return 'insert_failed'
+}
+
+function logRegisterFailure(event: string, detail: string) {
+  console.error(JSON.stringify({ event, code: logClass(detail) }))
 }
 
 async function sendExistingSignIn(email: string, deps: RegisterDeps): Promise<FlowResult> {
@@ -286,12 +297,14 @@ export async function registerCandidate(
   let candidate = await deps.findCandidate(email)
   if (!candidate) {
     let userId = await deps.findAuthUserId(email)
+    let createdAuthUser = false
     if (!userId) {
       const createdUser = await deps.createAuthUser(email)
       if ('error' in createdUser) {
         return result(400, { error: 'Could not open the account. Try again.', error_code: 'server' })
       }
       userId = createdUser.userId
+      createdAuthUser = true
     }
     const inserted = await deps.insertCandidate({
       userId,
@@ -304,6 +317,14 @@ export async function registerCandidate(
       attribution,
     })
     if (inserted.error) {
+      if (createdAuthUser) {
+        logRegisterFailure('register_candidate_insert_failed', inserted.error)
+        try {
+          await deps.deleteAuthUser(userId)
+        } catch {
+          logRegisterFailure('register_auth_cleanup_failed', 'delete_failed')
+        }
+      }
       return result(400, { error: 'Could not open the account. Try again.', error_code: 'server' })
     }
     candidate = { userId, verified: false }
