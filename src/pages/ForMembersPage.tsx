@@ -133,6 +133,17 @@ export function ForMembersPage() {
                   {paragraph}
                 </p>
               ))}
+              {tool.id === 'majlis' ? (
+                <p>
+                  <Link
+                    to={publicHref('/majlis')}
+                    className="inline-flex min-h-11 items-center border-b border-brass text-ink"
+                    data-public-majlis-cta="true"
+                  >
+                    Request a place at a virtual majlis
+                  </Link>
+                </p>
+              ) : null}
             </div>
           </article>
         ))}

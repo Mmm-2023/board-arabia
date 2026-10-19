@@ -1186,6 +1186,10 @@ export type Database = {
         Args: { p_event: string; p_snapshot: Json; p_consent: string }
         Returns: Json
       }
+      list_public_majlis: {
+        Args: Record<string, never>
+        Returns: Json
+      }
       review_majlis_application: {
         Args: { p_id: string; p_decision: string }
         Returns: Json
