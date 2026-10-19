@@ -12,6 +12,7 @@ import {
 } from '../../../lib/accountPreview'
 import { DueDiligenceMemo } from '../DueDiligenceMemo'
 import { fullDraftAnalysis } from '../../../lib/dueDiligenceMemoFixture'
+import { FreeMajlisScreen } from './FreeMajlisScreen'
 import { MembershipChecklistView, MembershipMeter } from './MembershipChecklistView'
 import { checklistFromRecord, missingRequired } from '../../../../supabase/functions/_shared/membership_steps.ts'
 
@@ -292,10 +293,13 @@ export function AccountInvites() {
 export function AccountMajlis() {
   return (
     <div data-screen="account-locked" data-hub="majlis">
-      <h2 className="font-display text-[1.7rem] font-semibold tracking-[-0.03em]">{MAJLIS_ACCOUNT_COPY.title}</h2>
-      <p className="mt-3 max-w-xl text-[1rem] leading-relaxed text-ink/75">{MAJLIS_ACCOUNT_COPY.body}</p>
-      <LockedLine>Upcoming gatherings stay locked.</LockedLine>
-      <LockPanel body={LOCK_COPY.majlis} />
+      <FreeMajlisScreen />
+      <div className="mt-10">
+        <h2 className="font-display text-[1.7rem] font-semibold tracking-[-0.03em]">{MAJLIS_ACCOUNT_COPY.title}</h2>
+        <p className="mt-3 max-w-xl text-[1rem] leading-relaxed text-ink/75">{MAJLIS_ACCOUNT_COPY.body}</p>
+        <LockedLine>Upcoming gatherings stay locked.</LockedLine>
+        <LockPanel body={LOCK_COPY.majlis} />
+      </div>
     </div>
   )
 }

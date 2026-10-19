@@ -181,6 +181,10 @@ export function RegisterScreen({
                 I agree to the <Link to={publicHref('/terms')} className="underline">Terms</Link> and <Link to={publicHref('/privacy')} className="underline">Privacy notice</Link>.
               </span>
             </label>
+            {/* LEGAL CHANGE: free account consent. Legal clears this sentence before merge. */}
+            <p className="text-[0.92rem] leading-relaxed text-ink/60">
+              Opening an account creates a free Board Arabia account. It is not full membership. We use it to review a majlis request and, if we accept you, to send joining details. Free accounts are deleted 12 months after your last majlis, or sooner if you ask.
+            </p>
             <p className="text-[0.92rem] leading-relaxed text-ink/60">
               We record which link brought you here to understand how people find Board Arabia.{' '}
               <Link to={publicHref('/privacy')} className="underline">Privacy</Link>

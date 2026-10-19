@@ -10,6 +10,11 @@ export type CandidateRetentionInput = {
   remindedAt: string | null
   isMember: boolean
   isStaff: boolean
+  /** LEGAL CHANGE: a majlis request uses the 12 month clock instead of 120 days. */
+  hasMajlisApplication?: boolean
+  majlisPending?: boolean
+  lastMajlisAt?: string | null
+  majlisRejectedAt?: string | null
 }
 
 function monthsBefore(now: Date, months: number) {
@@ -29,6 +34,20 @@ export function classifyCandidate(input: CandidateRetentionInput, now: Date): Re
   const created = Date.parse(input.createdAt)
   if (!Number.isFinite(created)) return 'keep'
   const age = now.getTime() - created
+  if (input.requestState === 'open' && input.hasMajlisApplication) {
+    if (input.majlisPending) return 'keep'
+    if (input.lastMajlisAt) {
+      const last = Date.parse(input.lastMajlisAt)
+      if (Number.isFinite(last) && last <= monthsBefore(now, 12)) return 'delete_decided'
+      return 'keep'
+    }
+    if (input.majlisRejectedAt) {
+      const rejected = Date.parse(input.majlisRejectedAt)
+      if (Number.isFinite(rejected) && rejected <= monthsBefore(now, 12)) return 'delete_decided'
+      return 'keep'
+    }
+    return 'keep'
+  }
   if (input.requestState === 'open' && !input.emailVerifiedAt && age >= 7 * DAY_MS) return 'delete_unverified'
   if (input.requestState === 'open' && input.emailVerifiedAt && age >= 120 * DAY_MS) return 'delete_never_submitted'
   if (input.requestState === 'declined' || input.requestState === 'closed') {

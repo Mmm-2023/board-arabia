@@ -1,5 +1,5 @@
 import { storeAttribution, type StoredAttribution } from './attribution.ts'
-import { accountOpenMail, registrationCodeMail } from './candidate_copy.ts'
+import { accountOpenMail, registrationCodeMail, signInLinkMail } from './candidate_copy.ts'
 import { isFreeWebmail } from './email_domains.ts'
 
 export const CODE_TTL_MS = 10 * 60 * 1000
@@ -54,6 +54,7 @@ export type RegisterDeps = {
   domainStatus: (email: string) => Promise<'ok' | 'disposable' | 'blocked'>
   mailboxOk: (email: string) => Promise<boolean>
   consumeRegisterLimit: (email: string, remoteIp: string) => Promise<'ok' | 'limited' | 'error'>
+  issueSignInLink?: (email: string) => Promise<{ url: string } | { error: string }>
   issueCode: (userId: string, codeHash: string, linkHash: string, expiresAt: string) => Promise<'ok' | 'cooldown' | 'rate_limited' | 'error'>
   voidLatestCode: (userId: string) => Promise<void>
   sendMail: (message: MailMessage) => Promise<{ ok: boolean; dryRun: boolean }>
@@ -132,7 +133,28 @@ async function issueAndSend(
     return result(502, { error: 'We could not send the email. Wait a minute, then try again.', error_code: 'mail' })
   }
   await deps.recordEvent(userId, 'code_sent', { has_invite: hasInvite })
-  return result(200, { ok: true, dry_run: sent.dryRun, error_code: '' })
+  return sameReply()
+}
+
+function sameReply(): FlowResult {
+  return result(200, { ok: true, error_code: '' })
+}
+
+async function sendExistingSignIn(email: string, deps: RegisterDeps): Promise<FlowResult> {
+  const linked = deps.issueSignInLink ? await deps.issueSignInLink(email) : { error: 'link' }
+  if ('error' in linked) {
+    return result(502, { error: 'We could not send the email. Wait a minute, then try again.', error_code: 'mail' })
+  }
+  const mail = signInLinkMail({ signInUrl: linked.url })
+  const sent = await deps.sendMail({ to: email, ...mail })
+  if (!sent.ok) {
+    return result(502, { error: 'We could not send the email. Wait a minute, then try again.', error_code: 'mail' })
+  }
+  return sameReply()
+}
+
+function turnstileOn(deps: RegisterDeps) {
+  return Boolean(deps.turnstileSecret)
 }
 
 export async function registerCandidate(
@@ -140,7 +162,7 @@ export async function registerCandidate(
   remoteIp: string,
   deps: RegisterDeps,
 ): Promise<FlowResult> {
-  if (!deps.pepper || !deps.turnstileSecret) {
+  if (!deps.pepper) {
     return result(503, { error: 'Registration is not available yet.', error_code: 'not_configured' })
   }
 
@@ -150,12 +172,14 @@ export async function registerCandidate(
     if (!isEmail(email)) {
       return result(400, { error: 'Enter the work email you registered.', error_code: 'invalid_email' })
     }
-    if (!token) {
-      return result(400, { error: 'Complete the security check, then try again.', error_code: 'turnstile' })
-    }
-    const passed = await deps.verifyTurnstile(token, deps.turnstileSecret, remoteIp)
-    if (!passed) {
-      return result(400, { error: 'The security check did not pass. Try again.', error_code: 'turnstile' })
+    if (turnstileOn(deps)) {
+      if (!token) {
+        return result(400, { error: 'Complete the security check, then try again.', error_code: 'turnstile' })
+      }
+      const passed = await deps.verifyTurnstile(token, deps.turnstileSecret, remoteIp)
+      if (!passed) {
+        return result(400, { error: 'The security check did not pass. Try again.', error_code: 'turnstile' })
+      }
     }
     const domain = await deps.domainStatus(email)
     if (domain === 'disposable' || domain === 'blocked') {
@@ -171,13 +195,14 @@ export async function registerCandidate(
     if (limited === 'error') {
       return result(503, { error: 'Registration is not available yet.', error_code: 'not_configured' })
     }
+    if (await deps.emailIsMember(email)) {
+      return sendExistingSignIn(email, deps)
+    }
     const existing = await deps.findCandidate(email)
     if (!existing) {
-      return result(200, { ok: true, created: false, dry_run: false, error_code: '' })
+      return sameReply()
     }
-    const sent = await issueAndSend(email, existing.userId, false, deps)
-    if (sent.status === 200) sent.body.created = false
-    return sent
+    return issueAndSend(email, existing.userId, false, deps)
   }
 
   const fullName = clean(body.full_name, 200)
@@ -207,13 +232,14 @@ export async function registerCandidate(
   if (!Number.isFinite(started) || deps.now().getTime() - started < 3000) {
     return result(400, { error: 'Wait a moment, then try again.', error_code: 'too_fast' })
   }
-  if (!token) {
-    return result(400, { error: 'Complete the security check, then try again.', error_code: 'turnstile' })
-  }
-
-  const passed = await deps.verifyTurnstile(token, deps.turnstileSecret, remoteIp)
-  if (!passed) {
-    return result(400, { error: 'The security check did not pass. Try again.', error_code: 'turnstile' })
+  if (turnstileOn(deps)) {
+    if (!token) {
+      return result(400, { error: 'Complete the security check, then try again.', error_code: 'turnstile' })
+    }
+    const passed = await deps.verifyTurnstile(token, deps.turnstileSecret, remoteIp)
+    if (!passed) {
+      return result(400, { error: 'The security check did not pass. Try again.', error_code: 'turnstile' })
+    }
   }
 
   const domain = await deps.domainStatus(email)
@@ -235,10 +261,7 @@ export async function registerCandidate(
   }
 
   if (await deps.emailIsMember(email)) {
-    return result(409, {
-      error: 'This email already has an account. Sign in.',
-      error_code: 'account_exists',
-    })
+    return sendExistingSignIn(email, deps)
   }
 
   const attribution = storeAttribution({
@@ -248,7 +271,6 @@ export async function registerCandidate(
   })
 
   let candidate = await deps.findCandidate(email)
-  let created = false
   if (!candidate) {
     let userId = await deps.findAuthUserId(email)
     if (!userId) {
@@ -272,7 +294,6 @@ export async function registerCandidate(
       return result(400, { error: 'Could not open the account. Try again.', error_code: 'server' })
     }
     candidate = { userId, verified: false }
-    created = true
     if (inviteToken) {
       await deps.claimInvite(userId, inviteToken, inviteReason)
     }
@@ -283,9 +304,7 @@ export async function registerCandidate(
     })
   }
 
-  const sent = await issueAndSend(email, candidate.userId, Boolean(inviteToken), deps)
-  if (sent.status === 200) sent.body.created = created
-  return sent
+  return issueAndSend(email, candidate.userId, Boolean(inviteToken), deps)
 }
 
 export type VerifyBody = {

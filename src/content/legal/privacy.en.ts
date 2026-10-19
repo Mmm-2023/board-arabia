@@ -397,6 +397,11 @@ export const PRIVACY_EN: LegalDocument = {
       "kind": "p",
       "text": "We delete data automatically on a schedule. Where we anonymise instead, the data no longer identifies you."
     },
+    // LEGAL CHANGE: free-account privacy line. Legal clears this before merge.
+    {
+      "kind": "p",
+      "text": "Registering creates a free Board Arabia account. We use your details to review your request for a majlis and, if accepted, to send joining details and reminders. Free accounts are deleted 12 months after your last majlis, or 12 months after a rejection when you were never accepted, or sooner if you ask."
+    },
     {
       "kind": "table",
       "id": "retention",
@@ -412,6 +417,11 @@ export const PRIVACY_EN: LegalDocument = {
         [
           "Account opened for consideration that never submits a membership request",
           "Deleted at 120 days. One reminder is sent at 90 days"
+        ],
+        // LEGAL CHANGE: free-account retention row. Legal clears this before merge.
+        [
+          "Free account used for a majlis",
+          "Deleted 12 months after your last majlis, or 12 months after we decline a request that was never accepted. You can delete it sooner."
         ],
         [
           "Rejected, declined, withdrawn or closed applications, and legacy applications",

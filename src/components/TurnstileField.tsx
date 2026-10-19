@@ -72,13 +72,7 @@ export function TurnstileField({
     }
   }, [onToken, resetKey, siteKey])
 
-  if (!siteKey) {
-    return (
-      <p className="min-h-16 border border-[var(--ba-line)] bg-white px-3 py-3 text-[0.95rem] text-ink/70" data-turnstile="missing">
-        The security check could not load. Try again later.
-      </p>
-    )
-  }
+  if (!siteKey) return null
 
   return <div ref={holder} className="min-h-16" data-turnstile="live" />
 }
