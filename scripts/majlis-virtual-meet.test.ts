@@ -210,6 +210,8 @@ test('Google sync uses one scope, adds no guests, and fails closed without secre
       const parsed = raw ? JSON.parse(raw) as Record<string, unknown> : {}
       assert.equal('attendees' in parsed, false)
       assert.equal(parsed.guestsCanSeeOtherGuests, false)
+      assert.equal(parsed.id, virtualEvent().id.replaceAll('-', ''))
+      assert.equal(String(parsed.id).length, 32)
       const header = new Headers(init?.headers)
       assert.equal(header.get('authorization'), 'Bearer access-example')
       return new Response(JSON.stringify({ id: 'event-example', hangoutLink: sampleMeet }), { status: 200 })
@@ -231,6 +233,31 @@ test('Google sync uses one scope, adds no guests, and fails closed without secre
   })
   assert.equal(refused.status, 'failed')
   assert.equal(refused.detail.includes('refresh-example'), false)
+
+  const duplicateId = virtualEvent().id.replaceAll('-', '')
+  const duplicateCalls: string[] = []
+  const duplicate = await performMajlisGoogleSync({
+    secrets,
+    storedCalendarId: 'calendar-example',
+    event: virtualEvent(),
+    op: 'upsert',
+    fetchImpl: async (url, init) => {
+      duplicateCalls.push(`${init?.method || 'GET'} ${url}`)
+      if (url.includes('oauth2.googleapis.com')) {
+        return new Response(JSON.stringify({ access_token: 'access-example' }), { status: 200 })
+      }
+      if (init?.method === 'POST') {
+        return new Response('{}', { status: 409 })
+      }
+      assert.match(url, new RegExp(`/events/${duplicateId}$`))
+      return new Response(JSON.stringify({ id: duplicateId, hangoutLink: sampleMeet }), { status: 200 })
+    },
+  })
+  assert.equal(duplicate.status, 'synced')
+  assert.equal(duplicate.googleEventId, duplicateId)
+  assert.equal(duplicate.meetUrl, sampleMeet)
+  assert.equal(duplicateCalls.some((line) => line.startsWith('POST ') && line.includes('/events?')), true)
+  assert.equal(duplicateCalls.some((line) => line.startsWith('GET ') && line.includes(`/events/${duplicateId}`)), true)
 })
 
 test('the member view gates the Meet link and the sponsor view is untouched', () => {

@@ -87,6 +87,11 @@ export function majlisTokenRequestBody(secrets: MajlisGoogleSecrets): URLSearchP
   })
 }
 
+/** Google event ids are lowercase hex. A majlis uuid without dashes is 32 characters. */
+export function majlisGoogleEventId(majlisId: string): string {
+  return majlisId.replaceAll('-', '').toLowerCase()
+}
+
 export function buildMajlisGoogleEventBody(event: MajlisCalendarEvent, requestId: string | null): Record<string, unknown> {
   const body: Record<string, unknown> = {
     summary: event.title.slice(0, 160),
@@ -234,8 +239,9 @@ export async function performMajlisGoogleSync(input: {
     }
   }
 
-  const requestId = input.event.id.replaceAll('-', '')
+  const requestId = majlisGoogleEventId(input.event.id)
   const body = buildMajlisGoogleEventBody(input.event, requestId)
+  body.id = requestId
   assertNoGuestList(body)
   const inserted = await insertEvent(calendarId, token.token, body, fetchImpl)
   if ('error' in inserted) {
@@ -314,6 +320,11 @@ async function insertEvent(
   const url = `${CALENDAR_API}/calendars/${encodeURIComponent(calendarId)}/events?conferenceDataVersion=1`
   const res = await googleFetch(fetchImpl, url, token, { method: 'POST', body: JSON.stringify(body) })
   if ('error' in res) return res
+  if (res.status === 409) {
+    const id = typeof body.id === 'string' ? body.id : ''
+    if (!id) return { error: 'Google already has this majlis event.' }
+    return getEvent(calendarId, id, token, fetchImpl)
+  }
   const event = (await res.json().catch(() => ({}))) as GoogleEvent
   if (!res.ok) return { error: safeDetail(res.status, 'Google refused the calendar call') }
   return { event }
@@ -444,6 +455,9 @@ export async function syncStoredMajlis(
   } else if (result.googleEventId) {
     patch.google_event_id = result.googleEventId
   }
-  await admin.from('majlis_events').update(patch).eq('id', eventId)
+  const saved = await admin.from('majlis_events').update(patch).eq('id', eventId)
+  if (saved.error) {
+    console.error(`majlis google sync did not store the event id or link (${saved.error.message})`)
+  }
   return result
 }

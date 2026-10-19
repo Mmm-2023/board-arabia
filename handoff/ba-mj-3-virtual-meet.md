@@ -47,8 +47,8 @@ The owner signs in. The operator runs the exchange and writes the refresh token 
 `https://accounts.google.com/o/oauth2/v2/auth?client_id=CLIENT_ID&redirect_uri=http://127.0.0.1&response_type=code&scope=https://www.googleapis.com/auth/calendar.app.created&access_type=offline&prompt=consent&include_granted_scopes=false`
 
 5. The owner signs in with the Workspace account, not a personal Gmail account. The consent screen shows the app name and the single permission above. Allow.
-6. The browser goes to `http://127.0.0.1/?code=...` and may not load a page. The owner copies the `code` query value and gives it to the operator in a private channel. The code expires in minutes. It is not the refresh token.
-7. The operator exchanges it at once:
+6. The browser goes to `http://127.0.0.1/?code=...` and may not load a page. The code is in that address. It expires in minutes. It is not the refresh token. Never paste the code or the refresh token into chat or the repo.
+7. Run the code exchange on the owner's own machine, then clear the terminal:
 
 ```
 curl -s https://oauth2.googleapis.com/token \
@@ -59,15 +59,10 @@ curl -s https://oauth2.googleapis.com/token \
   -d redirect_uri=http://127.0.0.1
 ```
 
-8. Put `refresh_token` into Edge secrets and discard the curl output:
+8. Paste `GOOGLE_MAJLIS_CLIENT_ID`, `GOOGLE_MAJLIS_CLIENT_SECRET`, and `GOOGLE_MAJLIS_REFRESH_TOKEN` into Supabase Dashboard, Edge Functions, Secrets. Do not pass those values to `supabase secrets set`. That command would keep them in the shell history.
+9. After the first sync creates the Board Arabia Majlis calendar, paste its id into the same secrets screen as `MAJLIS_CALENDAR_ID`. Set it once so a later sync does not create a second calendar.
 
-```
-supabase secrets set GOOGLE_MAJLIS_CLIENT_ID=... GOOGLE_MAJLIS_CLIENT_SECRET=... GOOGLE_MAJLIS_REFRESH_TOKEN=...
-```
-
-`MAJLIS_CALENDAR_ID` is optional. Leave it unset to create the calendar on first sync.
-
-9. Apply the migration via MCP, then redeploy `majlis-calendar-sync`, `majlis-admin-action`, and `majlis-ics`.
+10. Apply the migration via MCP, then redeploy `majlis-calendar-sync`, `majlis-admin-action`, and `majlis-ics`.
 
 To stop it: the owner removes the app at myaccount.google.com, Security, Third-party connections, or the operator deletes the three secrets.
 
