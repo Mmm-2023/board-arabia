@@ -179,7 +179,7 @@ begin
   ) listed;
   -- Public wrappers stay on the anon list. The private impls are the
   -- security definer bodies those wrappers call. The one-click unsubscribe
-  -- RPC is the only extra anon function. The list stays closed.
+  -- RPC and the public majlis list are the extra anon functions. The list stays closed.
   if anon_found is distinct from array[
     'private.landing_platform_totals_impl()',
     'private.list_landing_preview_deals_impl()',
@@ -191,6 +191,7 @@ begin
     'public.landing_platform_totals()',
     'public.list_landing_preview_deals()',
     'public.list_partner_categories()',
+    'public.list_public_majlis()',
     'public.list_trusted_partners()',
     'public.lookup_member_invite(p_token text)',
     'public.submit_partner_interest(p_name text, p_firm text, p_category text, p_note text)'
