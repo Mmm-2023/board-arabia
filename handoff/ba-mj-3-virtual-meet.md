@@ -71,6 +71,19 @@ supabase secrets set GOOGLE_MAJLIS_CLIENT_ID=... GOOGLE_MAJLIS_CLIENT_SECRET=...
 
 To stop it: the owner removes the app at myaccount.google.com, Security, Third-party connections, or the operator deletes the three secrets.
 
+## Join redirect
+
+Not built. The gated raw link stays.
+
+A Join URL on our server would need to 302 only for a signed-in member who has registered, and both the page button and the `.ics` URL would have to point at that URL. That is not a small add on this app:
+
+- Sign-in is the Supabase session in local storage, not a cookie. A normal link, including a URL inside a calendar file, does not send that session. The function cannot tell that the caller is signed in.
+- The function host is not the site host. A signed-in page that fetches a cross-origin 302 cannot read the Location header, so the browser cannot follow it to Meet.
+- A token inside the `.ics` URL would open the meeting without a signed-in session, and it would put a credential in a file the member downloads.
+- Cookie sign-in, so one same-origin 302 could serve the button and the calendar file, would change how members sign in.
+
+Registered members still receive the Meet link from the member view and in their own `.ics`, and only while the majlis is running. The host and staff see it too. It is hidden after the event and when the majlis is cancelled, except for staff. Nothing records join clicks. Attendance capture waits for the owner.
+
 ## Copy
 
 The majlis page may say the session runs on Google Meet with Q&A and polls. It does not mention co-hosts, attendance reports, or livestream.
