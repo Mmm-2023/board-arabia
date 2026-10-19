@@ -28,9 +28,7 @@ Honeypot field `company_fax`. Per-email and per-IP limits stay on `register-cand
 
 ## LEGAL CHANGE
 
-`src/content/legal/privacy.en.ts`, `src/content/legal/terms.en.ts`, and the notice in `src/pages/apply/RegisterScreen.tsx` match main verbatim. They are not hunks on this branch.
-
-The request form in `src/pages/PublicMajlisPage.tsx` repeats that retention notice under a LEGAL CHANGE comment. Legal clears that sentence before merge.
+The request notice is in `src/pages/PublicMajlisPage.tsx` under a LEGAL CHANGE comment. The free-account paragraph in `src/content/legal/privacy.en.ts` is also marked LEGAL CHANGE. Both use the contact placeholder, not a literal address. The retention row "Free account used for a majlis" has no field list, so it is unchanged. Terms and the register screen are unchanged from main.
 
 ## Locked files
 

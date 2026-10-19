@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict'
-import { existsSync, mkdirSync, readdirSync, readFileSync, statSync } from 'node:fs'
+import { execFileSync } from 'node:child_process'
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
 import path from 'node:path'
 import test from 'node:test'
 import { chromium } from 'playwright-core'
@@ -52,6 +54,13 @@ test('the public page reuses signup and the existing request function', () => {
   assert.equal(/\$\d|SAR \d|Pricing/.test(page), false)
   assert.match(page, /legalField\('contactEmail'\)/)
   assert.match(page, /LEGAL CHANGE/)
+  assert.match(page, /I agree to the <Link to=\{publicHref\('\/terms'\)\} className="underline">Terms<\/Link> and have read the <Link to=\{publicHref\('\/privacy'\)\} className="underline">Privacy Notice<\/Link>/)
+  assert.match(page, /check it fits the majlis/)
+  assert.match(page, /legalField\('contactEmail'\)/)
+  assert.equal(page.includes('contact@'), false)
+  assert.match(read('src/content/legal/privacy.en.ts'), /work email, company, role and phone number/)
+  assert.match(read('src/content/legal/privacy.en.ts'), /\[CONTACT EMAIL\]/)
+  assert.equal(read('src/content/legal/privacy.en.ts').includes('contact@'), false)
   assert.equal((page.match(/type="checkbox"/g) || []).length, 1)
   assert.match(page, /newsletter opt-in is not part of this form/)
   assert.equal(page.includes('name="newsletter"'), false)
@@ -148,8 +157,170 @@ test('public majlis migration is slot 20270104120000 and does not send', () => {
   assert.match(sql, /e\.format = 'virtual'/)
   assert.match(sql, /e\.ends_at > pg_catalog\.now\(\)/)
   assert.match(sql, /private\.public_majlis_phone/)
+  assert.match(sql, /private\.public_majlis_request_open/)
+  assert.match(sql, /coalesce\(p_rsvp_opens_at, p_approved_at\)/)
+  assert.match(sql, /p_approved_at \+ interval '48 hours'/)
+  assert.equal(sql.split('private.public_majlis_request_open(').length, 6)
   assert.match(sql, /Does not send mail/)
   assert.equal(sql.includes('master_enabled'), false)
+})
+
+test('public requests wait until member RSVP is open and the founding window has passed', { timeout: 120000 }, () => {
+  const dir = mkdtempSync(path.join(tmpdir(), 'ba-public-majlis-'))
+  const script = path.join(dir, 'run.sql')
+  const db = `ba_public_majlis_${process.pid}`
+  const migration = path.join(root, 'supabase/migrations/20270104120000_public_majlis_request.sql')
+  const user = '11111111-1111-4111-8111-111111111111'
+  const before = '20000000-0000-4000-8000-000000000001'
+  const window = '20000000-0000-4000-8000-000000000002'
+  const ready = '20000000-0000-4000-8000-000000000003'
+  const ended = '20000000-0000-4000-8000-000000000004'
+  const draft = '20000000-0000-4000-8000-000000000005'
+  const cancelled = '20000000-0000-4000-8000-000000000006'
+  const room = '20000000-0000-4000-8000-000000000007'
+  writeFileSync(script, `
+do $roles$
+begin
+  if not exists (select 1 from pg_roles where rolname = 'anon') then
+    create role anon nologin;
+  end if;
+  if not exists (select 1 from pg_roles where rolname = 'authenticated') then
+    create role authenticated nologin;
+  end if;
+end
+$roles$;
+
+create schema if not exists auth;
+create schema if not exists private;
+create or replace function auth.uid() returns uuid
+language sql stable as $$
+  select nullif(current_setting('request.jwt.claims', true)::jsonb ->> 'sub', '')::uuid
+$$;
+
+create table public.majlis_events (
+  id uuid primary key,
+  title text,
+  description text,
+  region text,
+  focus_tags text[],
+  starts_at timestamptz,
+  ends_at timestamptz,
+  status text,
+  format text,
+  cancelled_at timestamptz,
+  capacity int,
+  rsvp_opens_at timestamptz,
+  founding_priority_ends_at timestamptz,
+  approved_at timestamptz
+);
+create table public.majlis_rsvps (event_id uuid, status text);
+create table public.majlis_applications (
+  id uuid primary key default gen_random_uuid(),
+  event_id uuid not null,
+  user_id uuid not null,
+  status text not null default 'received',
+  form_snapshot jsonb not null default '{}'::jsonb,
+  consent_version text,
+  verified_at timestamptz,
+  submitted_at timestamptz,
+  seat_held boolean not null default false,
+  unique (event_id, user_id)
+);
+create table public.candidates (user_id uuid primary key, email_verified_at timestamptz);
+create table public.register_rate_limits (
+  rate_key text primary key,
+  window_start timestamptz not null default now(),
+  hit_count int not null default 0
+);
+\\i ${migration}
+
+insert into public.candidates (user_id) values ('${user}');
+insert into public.majlis_events (
+  id, title, description, region, focus_tags, starts_at, ends_at, status, format, capacity,
+  rsvp_opens_at, founding_priority_ends_at
+) values
+  ('${before}', 'Before open', 'A session', 'Riyadh', array['Capital'], now() + interval '3 days', now() + interval '4 days', 'published', 'virtual', 20, now() + interval '2 days', now() - interval '1 day'),
+  ('${window}', 'Founding window', 'A session', 'Riyadh', array['Capital'], now() + interval '3 days', now() + interval '4 days', 'published', 'virtual', 20, now() - interval '1 day', now() + interval '1 day'),
+  ('${ready}', 'Open request', 'A session', 'Riyadh', array['Capital'], now() + interval '3 days', now() + interval '4 days', 'published', 'virtual', 20, now() - interval '2 days', now() - interval '1 day'),
+  ('${ended}', 'Ended', 'A session', 'Riyadh', array['Capital'], now() - interval '2 days', now() - interval '1 hour', 'published', 'virtual', 20, now() - interval '3 days', now() - interval '2 days'),
+  ('${draft}', 'Draft', 'A session', 'Riyadh', array['Capital'], now() + interval '3 days', now() + interval '4 days', 'pending_approval', 'virtual', 20, now() - interval '2 days', now() - interval '1 day'),
+  ('${cancelled}', 'Cancelled', 'A session', 'Riyadh', array['Capital'], now() + interval '3 days', now() + interval '4 days', 'published', 'virtual', 20, now() - interval '2 days', now() - interval '1 day'),
+  ('${room}', 'In person', 'A session', 'Riyadh', array['Capital'], now() + interval '3 days', now() + interval '4 days', 'published', 'in_person', 20, now() - interval '2 days', now() - interval '1 day');
+update public.majlis_events set cancelled_at = now() where id = '${cancelled}';
+
+do $checks$
+declare
+  listed jsonb := public.list_public_majlis();
+  reply jsonb;
+  n int;
+  snap jsonb := '{"full_name":"Ada Example","phone":"+966501234567","company":"Example Holdings","role":"Chairperson","linkedin":"","why":""}'::jsonb;
+begin
+  perform set_config('request.jwt.claims', json_build_object('sub', '${user}')::text, true);
+
+  if listed @> jsonb_build_array(jsonb_build_object('id', '${before}')) then
+    raise exception 'before rsvp open was listed';
+  end if;
+  reply := public.submit_own_majlis_application('${before}', snap, 'public-majlis-2026-10');
+  if reply <> '{"ok":true,"error_code":""}'::jsonb then
+    raise exception 'before rsvp open reply %', reply;
+  end if;
+  select count(*) into n from public.majlis_applications where event_id = '${before}';
+  if n <> 0 then raise exception 'before rsvp open stored a row'; end if;
+
+  if listed @> jsonb_build_array(jsonb_build_object('id', '${window}')) then
+    raise exception 'founding window was listed';
+  end if;
+  reply := public.submit_own_majlis_application('${window}', snap, 'public-majlis-2026-10');
+  if reply <> '{"ok":true,"error_code":""}'::jsonb then
+    raise exception 'founding window reply %', reply;
+  end if;
+  select count(*) into n from public.majlis_applications where event_id = '${window}';
+  if n <> 0 then raise exception 'founding window stored a row'; end if;
+
+  if not (listed @> jsonb_build_array(jsonb_build_object('id', '${ready}'))) then
+    raise exception 'open event was missing: %', listed;
+  end if;
+  reply := public.submit_own_majlis_application('${ready}', snap, 'public-majlis-2026-10');
+  if reply <> '{"ok":true,"error_code":""}'::jsonb then
+    raise exception 'open event reply %', reply;
+  end if;
+  select count(*) into n from public.majlis_applications where event_id = '${ready}' and status = 'received';
+  if n <> 1 then raise exception 'open event was not stored'; end if;
+
+  if listed @> jsonb_build_array(jsonb_build_object('id', '${ended}'))
+    or listed @> jsonb_build_array(jsonb_build_object('id', '${draft}'))
+    or listed @> jsonb_build_array(jsonb_build_object('id', '${cancelled}'))
+    or listed @> jsonb_build_array(jsonb_build_object('id', '${room}')) then
+    raise exception 'closed event was listed: %', listed;
+  end if;
+  reply := public.submit_own_majlis_application('${ended}', snap, 'public-majlis-2026-10');
+  if reply <> '{"ok":true,"error_code":""}'::jsonb then
+    raise exception 'ended reply %', reply;
+  end if;
+  select count(*) into n from public.majlis_applications where event_id = '${ended}';
+  if n <> 0 then raise exception 'ended event stored a row'; end if;
+end
+$checks$;
+`)
+  try {
+    execFileSync('dropdb', ['--if-exists', db], { stdio: 'ignore' })
+    execFileSync('createdb', [db], { stdio: 'ignore' })
+    try {
+      execFileSync('psql', ['-d', db, '-v', 'ON_ERROR_STOP=1', '-q', '-f', script], {
+        stdio: ['ignore', 'pipe', 'pipe'],
+      })
+    } catch (error) {
+      const failed = error as { stdout?: Buffer; stderr?: Buffer }
+      throw new Error(`${failed.stdout?.toString() ?? ''}\n${failed.stderr?.toString() ?? ''}`)
+    }
+  } finally {
+    try {
+      execFileSync('dropdb', ['--if-exists', db], { stdio: 'ignore' })
+    } catch {
+      // The database was not created.
+    }
+    rmSync(dir, { recursive: true, force: true })
+  }
 })
 
 const FIXTURE = [
@@ -242,6 +413,8 @@ test('public majlis shots at 1440 and 390', { timeout: 240000 }, async (t) => {
       await page.screenshot({ path: path.join(shotDir, `public-majlis-${width}.png`) })
       await page.getByRole('link', { name: 'Request a place' }).click()
       await page.getByLabel('Phone').waitFor()
+      await page.getByText('have read the Privacy Notice').waitFor()
+      await page.getByText('check it fits the majlis').waitFor()
       await page.setViewportSize({ width, height: width === 390 ? 2500 : 2000 })
       await page.evaluate(() => window.scrollTo(0, 0))
       await page.screenshot({ path: path.join(shotDir, `public-majlis-form-${width}.png`) })

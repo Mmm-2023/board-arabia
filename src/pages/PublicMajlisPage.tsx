@@ -415,12 +415,12 @@ function RequestForm({
       <label className="flex min-h-11 items-start gap-3 text-[0.98rem] leading-relaxed">
         <input type="checkbox" className="mt-1 h-5 w-5" checked={consent} onChange={(change) => setConsent(change.target.checked)} required />
         <span>
-          I agree to the <Link to={publicHref('/terms')} className="underline">Terms</Link> and <Link to={publicHref('/privacy')} className="underline">Privacy notice</Link>.
+          I agree to the <Link to={publicHref('/terms')} className="underline">Terms</Link> and have read the <Link to={publicHref('/privacy')} className="underline">Privacy Notice</Link>
         </span>
       </label>
       {/* LEGAL CHANGE: majlis request notice. Legal clears this before merge. */}
       <p className="text-[0.92rem] leading-relaxed text-ink/60">
-        A free Board Arabia account is required. It is not full membership. We use your name, work email, company, role, and phone to review this request and, if we accept it, to send your joining details. We only send messages about this request, never marketing. Unverified accounts are deleted after 7 days. Other free accounts are deleted 12 months after your last majlis, or 12 months after a declined, undecided or cancelled request if you were never accepted. You can ask us to delete it sooner. See our <Link to={publicHref('/terms')} className="underline">Terms</Link> and <Link to={publicHref('/privacy')} className="underline">Privacy Notice</Link>.
+        Requesting a place creates a free Board Arabia account and means you agree to our <Link to={publicHref('/terms')} className="underline">Terms</Link>. It is not full membership. We use your name, work email, company, role and phone number to review this request and check it fits the majlis, and, if we accept it, to send your joining details and contact you about that majlis. We only send messages about this request, never marketing. Unverified accounts are deleted after 7 days. Other free accounts are deleted 12 months after your last majlis, or 12 months after a declined, undecided or cancelled request if you were never accepted. You can ask us to delete it sooner at {legalField('contactEmail')}. See our <Link to={publicHref('/terms')} className="underline">Terms</Link> and <Link to={publicHref('/privacy')} className="underline">Privacy Notice</Link>.
       </p>
       <p className="text-[0.92rem] leading-relaxed text-ink/60">
         Mail about this request is transactional only. A newsletter opt-in is not part of this form. Questions: {legalField('contactEmail')}

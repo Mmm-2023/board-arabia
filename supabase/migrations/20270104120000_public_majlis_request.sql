@@ -78,6 +78,29 @@ revoke all on function private.public_majlis_place(uuid) from public, anon, auth
 comment on function private.public_majlis_place(uuid) is
   'open, few, or full. The number of places is not returned.';
 
+-- Same open and founding window members use. Public requests wait until both have passed.
+create or replace function private.public_majlis_request_open(
+  p_rsvp_opens_at timestamptz,
+  p_founding_priority_ends_at timestamptz,
+  p_approved_at timestamptz,
+  p_now timestamptz
+)
+returns boolean
+language sql
+immutable
+set search_path = ''
+as $$
+  select coalesce(p_rsvp_opens_at, p_approved_at) is not null
+    and p_now >= coalesce(p_rsvp_opens_at, p_approved_at)
+    and coalesce(p_founding_priority_ends_at, p_approved_at + interval '48 hours') is not null
+    and p_now >= coalesce(p_founding_priority_ends_at, p_approved_at + interval '48 hours');
+$$;
+
+revoke all on function private.public_majlis_request_open(timestamptz, timestamptz, timestamptz, timestamptz) from public, anon, authenticated;
+
+comment on function private.public_majlis_request_open(timestamptz, timestamptz, timestamptz, timestamptz) is
+  'True after member RSVP has opened and the founding priority window has passed. Uses the same fallback as member RSVP.';
+
 create or replace function public.list_public_majlis()
 returns jsonb
 language sql
@@ -104,6 +127,12 @@ as $fn$
       and e.format = 'virtual'
       and e.cancelled_at is null
       and e.ends_at > pg_catalog.now()
+      and private.public_majlis_request_open(
+        e.rsvp_opens_at,
+        e.founding_priority_ends_at,
+        e.approved_at,
+        pg_catalog.now()
+      )
   ), '[]'::jsonb);
 $fn$;
 
@@ -111,7 +140,7 @@ revoke all on function public.list_public_majlis() from public;
 grant execute on function public.list_public_majlis() to anon, authenticated;
 
 comment on function public.list_public_majlis() is
-  'Published virtual majlis that have not ended. No Meet link, no counts, no names, no emails.';
+  'Published virtual majlis that have not ended, after member RSVP is open and the founding priority window has passed. No Meet link, no counts, no names, no emails.';
 
 create or replace function public.submit_own_majlis_application(
   p_event uuid,
@@ -206,6 +235,12 @@ begin
       and e.format = 'virtual'
       and e.cancelled_at is null
       and e.ends_at > pg_catalog.now()
+      and private.public_majlis_request_open(
+        e.rsvp_opens_at,
+        e.founding_priority_ends_at,
+        e.approved_at,
+        pg_catalog.now()
+      )
   ) then
     return pg_catalog.jsonb_build_object('ok', true, 'error_code', '');
   end if;
