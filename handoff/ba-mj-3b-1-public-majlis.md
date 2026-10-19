@@ -1,6 +1,6 @@
 # MJ-3b-1 Public majlis request
 
-Base: `cursor/mj-3a-free-account-b9d4`. Branch: `cursor/mj-3b-1-public-majlis-3887`.
+Base: `main` after `2a81aac`. Branch: `cursor/mj-3b-1-public-majlis-3887`.
 Migration: `supabase/migrations/20270104120000_public_majlis_request.sql`.
 Not applied. No Edge deploy. No database push. No merge. No schedule. No send. The master switch stays off.
 
@@ -28,7 +28,9 @@ Honeypot field `company_fax`. Per-email and per-IP limits stay on `register-cand
 
 ## LEGAL CHANGE
 
-No hunk in `src/content/legal/*`. The privacy line and the 12 month retention row are already in the free-account change. This page repeats the consent and retention sentence in `src/pages/PublicMajlisPage.tsx` under a LEGAL CHANGE comment. Legal clears that sentence before merge.
+`src/content/legal/privacy.en.ts`, `src/content/legal/terms.en.ts`, and the notice in `src/pages/apply/RegisterScreen.tsx` match main verbatim. They are not hunks on this branch.
+
+The request form in `src/pages/PublicMajlisPage.tsx` repeats that retention notice under a LEGAL CHANGE comment. Legal clears that sentence before merge.
 
 ## Locked files
 
