@@ -34,18 +34,20 @@ Turnstile runs only when `TURNSTILE_SECRET_KEY` and `VITE_TURNSTILE_SITE_KEY` ar
 
 ## Retention and deletion
 
-LEGAL CHANGE. A free account with a majlis request is not deleted at 120 days. It is deleted 12 months after your last majlis, or 12 months after rejection when none was accepted. Accounts whose requests are only cancelled are deleted 12 months after the last update. A request still in review is kept. Only an accepted request holds a seat.
+LEGAL CHANGE. A free account with a majlis request is not deleted at 120 days. It is deleted 12 months after your last majlis. If the account was never accepted, it is deleted 12 months after a decline, 12 months after the majlis date when the request was never decided, or 12 months after the last update when every request was cancelled. An unverified account is still deleted after 7 days, before those clocks. A member is not deleted by these rules. Only an accepted request holds a seat.
 
 `prepare_candidate_delete` deletes majlis applications and clears `seat_held`. The same release runs when a member row is anonymised.
 
 ## LEGAL CHANGE
 
-Legal clears these before merge:
+Cleared wording. The contact address is the `[CONTACT EMAIL]` token, filled by `legalField('contactEmail')`. No mailbox literal was added.
 
-- Terms clause 3.6 in `src/content/legal/terms.en.ts`
-- Privacy section 9 paragraph and the retention row in `src/content/legal/privacy.en.ts`
-- The consent sentence on the consideration form in `src/pages/apply/RegisterScreen.tsx`
-- The 12 month rule in the migration and in `classifyCandidate`
+- `src/content/legal/terms.en.ts:116` clause 3.6. Comment at line 111.
+- `src/content/legal/privacy.en.ts:403` free account paragraph. Comment at line 400.
+- `src/content/legal/privacy.en.ts:424` retention row for "Free account used for a majlis". Comment at line 421.
+- `src/pages/apply/RegisterScreen.tsx:186` sign-up notice. Comment at line 184. The checkbox label is at line 181.
+
+The undecided-request rule is in that privacy paragraph and retention row. There is no separate placeholder. The sweep in `supabase/migrations/20270103120000_free_account_majlis.sql` and `classifyCandidate` use the same order: unverified accounts at 7 days, then 12 months after your last majlis, then an undecided request 12 months after the majlis date, then a decline, then a cancelled-only account 12 months after the last update. Members are excluded.
 
 ## Secrets
 

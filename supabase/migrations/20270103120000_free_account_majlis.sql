@@ -668,8 +668,8 @@ begin
     limit 200
   ) due;
 
-  -- LEGAL CHANGE: 12 months after your last majlis, or after rejection when none was accepted.
-  -- Cancelled-only accounts go 12 months after the last update.
+  -- LEGAL CHANGE: 12 months after your last majlis, after a decline, after an
+  -- undecided majlis date, or after the last update when every request was cancelled.
   select coalesce(array_agg(user_id), '{}') into majlis_due
   from (
     select c.user_id
@@ -678,11 +678,6 @@ begin
       and exists (select 1 from public.majlis_applications app where app.user_id = c.user_id)
       and not exists (select 1 from public.members m where m.user_id = c.user_id)
       and not exists (select 1 from public.staff_users s where s.user_id = c.user_id)
-      and not exists (
-        select 1 from public.majlis_applications open_app
-        where open_app.user_id = c.user_id
-          and open_app.status in ('received', 'pending')
-      )
       and (
         (
           exists (
@@ -705,6 +700,26 @@ begin
             where acc.user_id = c.user_id
               and acc.status in ('accepted', 'waitlist')
           )
+          and exists (
+            select 1 from public.majlis_applications pend
+            where pend.user_id = c.user_id
+              and pend.status = 'pending'
+          )
+          and not exists (
+            select 1
+            from public.majlis_applications pend
+            join public.majlis_events e on e.id = pend.event_id
+            where pend.user_id = c.user_id
+              and pend.status = 'pending'
+              and e.ends_at > now() - interval '12 months'
+          )
+        )
+        or (
+          not exists (
+            select 1 from public.majlis_applications acc
+            where acc.user_id = c.user_id
+              and acc.status in ('accepted', 'waitlist', 'pending')
+          )
           and (
             select max(rej.decided_at)
             from public.majlis_applications rej
@@ -716,7 +731,7 @@ begin
           not exists (
             select 1 from public.majlis_applications other
             where other.user_id = c.user_id
-              and other.status in ('accepted', 'waitlist', 'rejected')
+              and other.status in ('accepted', 'waitlist', 'pending', 'rejected')
           )
           and (
             select max(can.updated_at)

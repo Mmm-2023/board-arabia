@@ -418,9 +418,9 @@ function RequestForm({
           I agree to the <Link to={publicHref('/terms')} className="underline">Terms</Link> and <Link to={publicHref('/privacy')} className="underline">Privacy notice</Link>.
         </span>
       </label>
-      {/* LEGAL CHANGE: majlis request consent and retention. Legal clears this before merge. */}
+      {/* LEGAL CHANGE: majlis request notice. Legal clears this before merge. */}
       <p className="text-[0.92rem] leading-relaxed text-ink/60">
-        A free Board Arabia account is required. It is not membership. We use your name, work email, company, role, and phone to review this request. If we accept you, joining details are sent to this account. We keep rejected and attended applicant details for 12 months. You can ask us to delete the account sooner.
+        A free Board Arabia account is required. It is not full membership. We use your name, work email, company, role, and phone to review this request and, if we accept it, to send your joining details. We only send messages about this request, never marketing. Unverified accounts are deleted after 7 days. Other free accounts are deleted 12 months after your last majlis, or 12 months after a declined, undecided or cancelled request if you were never accepted. You can ask us to delete it sooner. See our <Link to={publicHref('/terms')} className="underline">Terms</Link> and <Link to={publicHref('/privacy')} className="underline">Privacy Notice</Link>.
       </p>
       <p className="text-[0.92rem] leading-relaxed text-ink/60">
         Mail about this request is transactional only. A newsletter opt-in is not part of this form. Questions: {legalField('contactEmail')}
