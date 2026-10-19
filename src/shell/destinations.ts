@@ -148,6 +148,10 @@ export const STAFF_SECTIONS: Readonly<Record<string, readonly SectionLink[]>> = 
     { id: 'people', label: 'People', to: '/admin/people', end: true },
     { id: 'intros', label: 'Intros', to: '/admin/people/intros', end: true },
   ],
+  majlis: [
+    { id: 'events', label: 'Events', to: '/admin/majlis', end: true },
+    { id: 'requests', label: 'Requests', to: '/admin/majlis/requests', end: true },
+  ],
 }
 
 const DEALS_SECTIONS = [
