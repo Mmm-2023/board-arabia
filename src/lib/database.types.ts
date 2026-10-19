@@ -815,6 +815,11 @@ export type Database = {
           host_avatar_path: string | null
           host_full_name: string | null
           maybe_count: number | null
+          format: 'in_person' | 'virtual'
+          meet_url: string | null
+          meet_sync_status: string | null
+          meet_sync_detail: string | null
+          meet_fallback_url: string | null
         }
         Relationships: []
       }

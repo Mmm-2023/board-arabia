@@ -1,4 +1,4 @@
-import { buildMajlisIcs } from '../_shared/majlis.ts'
+import { buildMajlisIcs, icsMeetLink } from '../_shared/majlis.ts'
 import { includeVenueAddress, type MajlisMailEvent } from '../_shared/majlis_mail.ts'
 import { corsHeaders, jsonResponse } from '../_shared/mail.ts'
 import { requireUser } from '../_shared/require_user.ts'
@@ -35,22 +35,32 @@ Deno.serve(async (req) => {
 
   const { data: event, error: eventError } = await admin
     .from('majlis_events')
-    .select('id, title, region, starts_at, ends_at, venue_name, venue_address, venue_visibility, capacity')
+    .select('id, title, region, starts_at, ends_at, venue_name, venue_address, venue_visibility, capacity, format, status, google_meet_url, meet_fallback_url')
     .eq('id', eventId)
     .maybeSingle()
   if (eventError || !event) return jsonResponse(req, { error: 'Majlis not found.' }, 404)
 
-  const row = event as MajlisMailEvent
+  const row = event as MajlisMailEvent & {
+    format?: string | null
+    status?: string | null
+    google_meet_url?: string | null
+    meet_fallback_url?: string | null
+  }
   const address = includeVenueAddress(row, true) ? row.venue_address : null
-  const location = address ? `${row.venue_name}, ${address}` : row.venue_name
+  const meet = icsMeetLink(row)
+  const location = meet || (address ? `${row.venue_name}, ${address}` : row.venue_name)
+  const description = meet
+    ? `${row.title}. Region: ${row.region}. Asia/Riyadh. Join: ${meet}`
+    : `${row.title}. Region: ${row.region}. Asia/Riyadh.`
   const ics = buildMajlisIcs({
     eventId: row.id,
     memberId: user.id,
     title: row.title,
-    description: `${row.title}. Region: ${row.region}. Asia/Riyadh.`,
+    description,
     location,
     startsAtUtc: row.starts_at,
     endsAtUtc: row.ends_at,
+    url: meet,
   })
 
   return new Response(ics, {

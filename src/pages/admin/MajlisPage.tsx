@@ -7,6 +7,8 @@ import {
   parseFocusTags,
   rejectionFeedbackError,
   utcToRiyadhWall,
+  VIRTUAL_MEET_PARTICIPANT_CAP,
+  virtualMemberCap,
 } from '../../../supabase/functions/_shared/majlis.ts'
 import { SignedAvatar } from '../../components/SignedAvatar'
 import { KsaRegionMap } from '../../components/majlis/KsaRegionMap'
@@ -319,7 +321,8 @@ export function AdminMajlisPage({
                   <Field label="When" value={formatMajlisWhen(event.starts_at, event.ends_at)} />
                   <Field label="Seats" value={`${event.registered_count} of ${event.capacity} filled, ${event.waitlist_count} waiting`} />
                   <Field label="Venue" value={event.venue_name} />
-                  <Field label="Address" value={event.venue_address || 'Not shown'} />
+                  <Field label="Address" value={event.format === 'virtual' ? 'Online' : event.venue_address || 'Not shown'} />
+                  <GoogleFields event={event} />
                   <Field label="Geotag" value={event.map_lat != null && event.map_lng != null ? `${event.map_lat}, ${event.map_lng}` : 'Missing'} />
                   <Field label="Partner" value={event.sponsor_label || 'None'} />
                 </dl>
@@ -434,7 +437,8 @@ function PendingCard({ event, host, onDone }: { event: MajlisEventRow; host: str
         <Field label="When" value={formatMajlisWhen(event.starts_at, event.ends_at)} />
         <Field label="Capacity" value={String(event.capacity)} />
         <Field label="Venue" value={event.venue_name} />
-        <Field label="Address" value={event.venue_address || 'Not shown'} />
+        <Field label="Address" value={event.format === 'virtual' ? 'Online' : event.venue_address || 'Not shown'} />
+        <GoogleFields event={event} />
       </dl>
       <p className="mt-3 break-words text-[0.92rem] text-stone/80">{event.focus_tags.join(', ')}</p>
       <div className="mt-5 grid gap-2 sm:flex sm:flex-wrap">
@@ -513,6 +517,9 @@ function Ops({
   const [ends, setEnds] = useState(utcToRiyadhWall(event.ends_at))
   const [venueName, setVenueName] = useState(event.venue_name)
   const [venueAddress, setVenueAddress] = useState(event.venue_address || '')
+  const [format, setFormat] = useState(event.format === 'virtual' ? 'virtual' : 'in_person')
+  const [fallback, setFallback] = useState(event.meet_fallback_url || '')
+  const [capacity, setCapacity] = useState(String(event.capacity))
   const [region, setRegion] = useState(event.region)
   const [tags, setTags] = useState(event.focus_tags.join(', '))
   const [roster, setRoster] = useState<MajlisRosterRow[] | null>(seededRoster ?? null)
@@ -663,9 +670,12 @@ function Ops({
               starts_at: starts,
               ends_at: ends,
               venue_name: venueName,
-              venue_address: venueAddress,
+              venue_address: format === 'virtual' ? '' : venueAddress,
               region,
               focus_tags: parseFocusTags(tags),
+              format,
+              capacity: Number(capacity),
+              meet_fallback_url: format === 'virtual' ? fallback : '',
             })
           }}
         >
@@ -690,17 +700,45 @@ function Ops({
             <input className="mt-1 min-h-11 w-full border border-white/20 bg-transparent px-3" value={tags} onChange={(input) => setTags(input.target.value)} />
           </label>
           <label className="block text-[0.92rem]">
+            Format
+            <select className="mt-1 min-h-11 w-full border border-white/20 bg-transparent px-3" value={format} onChange={(input) => setFormat(input.target.value === 'virtual' ? 'virtual' : 'in_person')}>
+              <option value="in_person">In person</option>
+              <option value="virtual">Virtual (Google Meet)</option>
+            </select>
+          </label>
+          <label className="block text-[0.92rem]">
+            Capacity
+            <input className="mt-1 min-h-11 w-full border border-white/20 bg-transparent px-3" inputMode="numeric" value={capacity} onChange={(input) => setCapacity(input.target.value)} />
+          </label>
+          <label className="block text-[0.92rem]">
             Venue name
             <input className="mt-1 min-h-11 w-full border border-white/20 bg-transparent px-3" value={venueName} onChange={(input) => setVenueName(input.target.value)} />
           </label>
-          <label className="block text-[0.92rem]">
-            Venue address
-            <input className="mt-1 min-h-11 w-full border border-white/20 bg-transparent px-3" value={venueAddress} onChange={(input) => setVenueAddress(input.target.value)} />
-          </label>
+          {format === 'in_person' ? (
+            <label className="block text-[0.92rem]">
+              Venue address
+              <input className="mt-1 min-h-11 w-full border border-white/20 bg-transparent px-3" value={venueAddress} onChange={(input) => setVenueAddress(input.target.value)} />
+            </label>
+          ) : (
+            <label className="block text-[0.92rem] md:col-span-2">
+              Fallback if sync fails
+              <input className="mt-1 min-h-11 w-full border border-white/20 bg-transparent px-3" value={fallback} onChange={(input) => setFallback(input.target.value)} inputMode="url" autoComplete="off" />
+            </label>
+          )}
+          {format === 'virtual' && (
+            <p className="text-[0.92rem] text-pearl/70 md:col-span-2">
+              {googleStatusLabel(event)} Member seats stay at or under {virtualMemberCap(event.host_member_id)} so the meeting stays within {VIRTUAL_MEET_PARTICIPANT_CAP} people.
+            </p>
+          )}
           <button type="submit" className={`${primaryBtn} w-fit`} disabled={busy}>
             Save changes
           </button>
         </form>
+      )}
+      {event.format === 'virtual' && (event.status === 'published' || event.status === 'hidden') && (
+        <button type="button" className={`${quietBtn} w-fit`} disabled={busy} onClick={() => void run({ action: 'sync' })}>
+          Retry Google sync
+        </button>
       )}
       <div>
         <div className="flex flex-wrap items-center justify-between gap-2">
@@ -764,6 +802,25 @@ function hostLabel(event: MajlisEventRow, hosts: Record<string, string>): string
   return hosts[event.host_member_id] || 'Member'
 }
 
+function googleStatusLabel(event: MajlisEventRow): string {
+  if (event.meet_sync_status === 'not_connected') return 'Google not connected.'
+  if (event.meet_sync_status === 'failed') return event.meet_sync_detail || 'Sync failed.'
+  if (event.meet_sync_status === 'synced') return 'Google is connected.'
+  if (event.meet_sync_status === 'cancelled') return 'Cancelled on Google.'
+  return 'Not synced yet.'
+}
+
+function GoogleFields({ event }: { event: MajlisEventRow }) {
+  if (event.format !== 'virtual') return <Field label="Format" value="In person" />
+  return (
+    <>
+      <Field label="Format" value="Virtual (Google Meet)" />
+      <Field label="Google" value={googleStatusLabel(event)} />
+      <Field label="Meet link" value={event.meet_url || 'Not ready'} />
+    </>
+  )
+}
+
 function CreateMajlis({ onCreated }: { onCreated: () => void }) {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
@@ -774,9 +831,12 @@ function CreateMajlis({ onCreated }: { onCreated: () => void }) {
   const [capacity, setCapacity] = useState('12')
   const [venueName, setVenueName] = useState('')
   const [venueAddress, setVenueAddress] = useState('')
+  const [format, setFormat] = useState<'in_person' | 'virtual'>('in_person')
+  const [fallback, setFallback] = useState('')
   const [publishAs, setPublishAs] = useState<'published' | 'hidden'>('hidden')
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState('')
+  const seatCap = virtualMemberCap(null)
 
   return (
     <section className="mt-10" aria-labelledby="admin-majlis-create">
@@ -784,10 +844,11 @@ function CreateMajlis({ onCreated }: { onCreated: () => void }) {
         Create a majlis
       </h2>
       <p className="mt-2 max-w-3xl text-[0.95rem] leading-relaxed text-pearl/70">
-        Members see this as hosted by our admin team. Hidden keeps it off the member list until you restore it.
+        Members see this as hosted by our admin team. Hidden keeps it off the member list until you restore it. A virtual majlis saves even when Google is not connected.
       </p>
       <form
         className="mt-4 grid gap-3 md:grid-cols-2"
+        data-majlis-format={format}
         onSubmit={(submit) => {
           submit.preventDefault()
           setBusy(true)
@@ -801,8 +862,10 @@ function CreateMajlis({ onCreated }: { onCreated: () => void }) {
             starts_at: starts,
             ends_at: ends,
             capacity: Number(capacity),
-            venue_name: venueName,
-            venue_address: venueAddress,
+            venue_name: format === 'virtual' ? venueName || 'Google Meet' : venueName,
+            venue_address: format === 'virtual' ? '' : venueAddress,
+            format,
+            meet_fallback_url: format === 'virtual' ? fallback : '',
             status: publishAs,
           }).then((result) => {
             setBusy(false)
@@ -817,7 +880,15 @@ function CreateMajlis({ onCreated }: { onCreated: () => void }) {
             setEnds('')
             setVenueName('')
             setVenueAddress('')
-            setMessage('Saved.')
+            setFallback('')
+            const google = result.google === 'not_connected'
+              ? 'Saved. Google not connected.'
+              : result.google === 'failed'
+                ? `Saved. ${result.detail || 'Google sync failed.'}`
+                : result.google === 'synced'
+                  ? 'Saved. Meet link is ready.'
+                  : 'Saved.'
+            setMessage(google)
             onCreated()
           })
         }}
@@ -851,6 +922,21 @@ function CreateMajlis({ onCreated }: { onCreated: () => void }) {
           <input className="mt-1 min-h-11 w-full border border-white/20 bg-transparent px-3" type="datetime-local" value={ends} onChange={(input) => setEnds(input.target.value)} />
         </label>
         <label className="block text-[0.92rem]">
+          Format
+          <select
+            className="mt-1 min-h-11 w-full border border-white/20 bg-transparent px-3"
+            value={format}
+            onChange={(input) => {
+              const next = input.target.value === 'virtual' ? 'virtual' : 'in_person'
+              setFormat(next)
+              if (next === 'virtual' && !venueName.trim()) setVenueName('Google Meet')
+            }}
+          >
+            <option value="in_person">In person</option>
+            <option value="virtual">Virtual (Google Meet)</option>
+          </select>
+        </label>
+        <label className="block text-[0.92rem]">
           Capacity
           <input className="mt-1 min-h-11 w-full border border-white/20 bg-transparent px-3" inputMode="numeric" value={capacity} onChange={(input) => setCapacity(input.target.value)} />
         </label>
@@ -865,10 +951,22 @@ function CreateMajlis({ onCreated }: { onCreated: () => void }) {
           Venue name
           <input className="mt-1 min-h-11 w-full border border-white/20 bg-transparent px-3" value={venueName} onChange={(input) => setVenueName(input.target.value)} />
         </label>
-        <label className="block text-[0.92rem]">
-          Venue address
-          <input className="mt-1 min-h-11 w-full border border-white/20 bg-transparent px-3" value={venueAddress} onChange={(input) => setVenueAddress(input.target.value)} />
-        </label>
+        {format === 'in_person' ? (
+          <label className="block text-[0.92rem]">
+            Venue address
+            <input className="mt-1 min-h-11 w-full border border-white/20 bg-transparent px-3" value={venueAddress} onChange={(input) => setVenueAddress(input.target.value)} />
+          </label>
+        ) : (
+          <label className="block text-[0.92rem] md:col-span-2">
+            Fallback if sync fails
+            <input className="mt-1 min-h-11 w-full border border-white/20 bg-transparent px-3" value={fallback} onChange={(input) => setFallback(input.target.value)} inputMode="url" autoComplete="off" />
+          </label>
+        )}
+        {format === 'virtual' && (
+          <p className="text-[0.92rem] leading-relaxed text-pearl/70 md:col-span-2">
+            Member seats stay at or under {seatCap} so the meeting stays within {VIRTUAL_MEET_PARTICIPANT_CAP} people, including the organizer. Members who register see the Meet link. The session runs on Google Meet, with Q&A and polls in the meeting. If Google is not connected, the majlis still saves.
+          </p>
+        )}
         <div className="md:col-span-2">
           <button type="submit" className={primaryBtn} disabled={busy}>
             {busy ? 'Saving' : 'Create majlis'}

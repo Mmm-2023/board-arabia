@@ -712,14 +712,17 @@ function MemberCard({
         when={formatMajlisWhen(event.starts_at, event.ends_at)}
         seats={seatLine(event.registered_count, event.capacity, event.waitlist_count)}
         venueName={event.venue_name}
-        address={event.venue_address}
+        address={event.format === 'virtual' ? null : event.venue_address}
         addressHint={
-          !host && event.venue_visibility === 'members_on_rsvp' && !event.venue_address
-            ? 'The address is shared after you register.'
-            : null
+          event.format === 'virtual'
+            ? null
+            : !host && event.venue_visibility === 'members_on_rsvp' && !event.venue_address
+              ? 'The address is shared after you register.'
+              : null
         }
         onRegion={onRegion}
       />
+      <MeetAccess event={event} host={host} />
       {priority && <p className="mt-3 text-[0.92rem] text-[var(--ba-indigo)]">{priority}</p>}
       <TagRow tags={event.focus_tags} onFocus={onFocus} />
       {host ? (
@@ -837,6 +840,27 @@ function Meta({
   )
 }
 
+function MeetAccess({ event, host }: { event: MajlisEventRow; host: boolean }) {
+  if (event.format !== 'virtual') return null
+  const status = event.my_rsvp_status
+  return (
+    <div className="mt-3 text-[0.95rem]" data-meet-access="">
+      <p>This session runs on Google Meet. Q&A and polls are available in the meeting.</p>
+      {event.meet_url ? (
+        <a className={`${primaryBtn} mt-3`} href={event.meet_url} target="_blank" rel="noreferrer">
+          Join Google Meet
+        </a>
+      ) : host || status === 'registered' ? (
+        <p className="mt-2 text-[var(--ba-muted)]">The Meet link is not ready yet.</p>
+      ) : status === 'waitlist' ? (
+        <p className="mt-2 text-[var(--ba-muted)]">The Meet link is shared when a seat opens.</p>
+      ) : (
+        <p className="mt-2 text-[var(--ba-muted)]">Register to receive the Meet link.</p>
+      )}
+    </div>
+  )
+}
+
 function TagRow({ tags, onFocus }: { tags: string[]; onFocus: (tag: string) => void }) {
   return (
     <ul className="mt-3 flex flex-wrap gap-2">
@@ -866,7 +890,11 @@ function RsvpControls({
   const status = event.my_rsvp_status
   const yesOn = status === 'registered' || status === 'waitlist'
   const full = event.registered_count >= event.capacity && status !== 'registered'
-  const location = event.venue_address ? `${event.venue_name}, ${event.venue_address}` : event.venue_name
+  const location = event.meet_url
+    ? event.meet_url
+    : event.venue_address
+      ? `${event.venue_name}, ${event.venue_address}`
+      : event.venue_name
   const choice = status === 'registered' ? 'yes' : status === 'waitlist' ? 'waitlist' : status === 'maybe' ? 'maybe' : status === 'declined' ? 'no' : 'none'
 
   async function act(action: MajlisRsvpAction) {
@@ -893,7 +921,9 @@ function RsvpControls({
         title: event.title,
         startsAtUtc: event.starts_at,
         endsAtUtc: event.ends_at,
-        details: `${event.title}. Region: ${event.region}. ${formatMajlisWhen(event.starts_at, event.ends_at)}`,
+        details: event.meet_url
+          ? `${event.title}. Region: ${event.region}. ${formatMajlisWhen(event.starts_at, event.ends_at)} Join: ${event.meet_url}`
+          : `${event.title}. Region: ${event.region}. ${formatMajlisWhen(event.starts_at, event.ends_at)}`,
         location,
       })
     : ''
@@ -926,7 +956,7 @@ function RsvpControls({
       )}
       {status === 'registered' && (
         <div className="mt-3 flex flex-wrap gap-2">
-          <a className={primaryBtn} href={calendar} target="_blank" rel="noreferrer">
+          <a className={event.format === 'virtual' ? quietBtn : primaryBtn} href={calendar} target="_blank" rel="noreferrer">
             Google Calendar
           </a>
           <button type="button" className={quietBtn} disabled={busy} onClick={() => void downloadMajlisIcs(event.id).then((result) => setMessage(result.error || ''))}>

@@ -421,6 +421,88 @@ begin
     where table_schema = 'public' and table_name = 'majlis_events_member' and column_name = 'created_by_staff'
   ) then perform pg_temp.fail('member view exposes created_by_staff'); end if;
 
+  perform pg_temp.service();
+  begin
+    insert into public.majlis_events (
+      id, host_member_id, title, description, region, focus_tags, starts_at, ends_at, timezone,
+      capacity, venue_name, venue_address, venue_visibility, status, approved_by, approved_at, format
+    ) values (
+      '20000000-0000-4000-8000-0000000000aa', null, 'Too large', 'A private virtual gathering.', 'Riyadh', array['Governance'],
+      now() + interval '8 days', now() + interval '8 days 2 hours', 'Asia/Riyadh',
+      150, 'Google Meet', '', 'members_on_rsvp', 'published', '${STAFF}', now() - interval '3 days', 'virtual'
+    );
+    perform pg_temp.fail('virtual capacity of 150 members was stored');
+  exception
+    when others then
+      if sqlerrm not like '%virtual_cap%' then
+        perform pg_temp.fail('virtual capacity error was ' || sqlerrm);
+      end if;
+  end;
+
+  insert into public.majlis_events (
+    id, host_member_id, title, description, region, focus_tags, starts_at, ends_at, timezone,
+    capacity, venue_name, venue_address, venue_visibility, status, approved_by, approved_at, format
+  ) values (
+    '20000000-0000-4000-8000-0000000000a1', null, 'Virtual gathering', 'A private virtual gathering.', 'Riyadh', array['Governance'],
+    now() + interval '6 days', now() + interval '6 days 2 hours', 'Asia/Riyadh',
+    149, 'Google Meet', '', 'members_on_rsvp', 'published', '${STAFF}', now() - interval '3 days', 'virtual'
+  ), (
+    '20000000-0000-4000-8000-0000000000a2', '${HOST}', 'Hosted virtual gathering', 'A private virtual gathering.', 'Riyadh', array['Governance'],
+    now() + interval '7 days', now() + interval '7 days 2 hours', 'Asia/Riyadh',
+    148, 'Google Meet', '', 'members_on_rsvp', 'published', '${STAFF}', now() - interval '3 days', 'virtual'
+  );
+
+  for i in 1..150 loop
+    insert into auth.users (id, email)
+    values (
+      ('30000000-0000-4000-8000-' || lpad(i::text, 12, '0'))::uuid,
+      'seat' || i || '@example.com'
+    );
+    insert into public.members (user_id, email, seat, status)
+    values (
+      ('30000000-0000-4000-8000-' || lpad(i::text, 12, '0'))::uuid,
+      'seat' || i || '@example.com',
+      'ksa',
+      'active'
+    );
+  end loop;
+
+  for i in 1..149 loop
+    placed := public.majlis_place_rsvp(
+      '20000000-0000-4000-8000-0000000000a1',
+      ('30000000-0000-4000-8000-' || lpad(i::text, 12, '0'))::uuid,
+      'register'
+    );
+    if placed->>'status' <> 'registered' then
+      perform pg_temp.fail('virtual staff room rejected seat ' || i);
+    end if;
+  end loop;
+  placed := public.majlis_place_rsvp(
+    '20000000-0000-4000-8000-0000000000a1',
+    '30000000-0000-4000-8000-000000000150'::uuid,
+    'register'
+  );
+  if placed->>'status' <> 'waitlist' then perform pg_temp.fail('virtual staff room did not waitlist at 150'); end if;
+  if (placed->>'registered_count')::int <> 149 then perform pg_temp.fail('virtual staff room count'); end if;
+
+  for i in 1..148 loop
+    placed := public.majlis_place_rsvp(
+      '20000000-0000-4000-8000-0000000000a2',
+      ('30000000-0000-4000-8000-' || lpad(i::text, 12, '0'))::uuid,
+      'register'
+    );
+    if placed->>'status' <> 'registered' then
+      perform pg_temp.fail('virtual hosted room rejected seat ' || i);
+    end if;
+  end loop;
+  placed := public.majlis_place_rsvp(
+    '20000000-0000-4000-8000-0000000000a2',
+    '30000000-0000-4000-8000-000000000149'::uuid,
+    'register'
+  );
+  if placed->>'status' <> 'waitlist' then perform pg_temp.fail('virtual hosted room did not waitlist at 150'); end if;
+  if (placed->>'registered_count')::int <> 148 then perform pg_temp.fail('virtual hosted room count'); end if;
+
   select pg_get_functiondef('public.majlis_consume_rsvp_slot(uuid)'::regprocedure) into rate;
   if position('hit_count > 30' in rate) = 0 then perform pg_temp.fail('rate limit changed'); end if;
 
