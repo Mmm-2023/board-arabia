@@ -10,6 +10,14 @@ export type CandidateRetentionInput = {
   remindedAt: string | null
   isMember: boolean
   isStaff: boolean
+  /** LEGAL CHANGE: a majlis request uses the 12 month clock instead of 120 days. */
+  hasMajlisApplication?: boolean
+  majlisPending?: boolean
+  /** Latest ended event among pending requests. Absent while that majlis has not ended. */
+  majlisPendingAt?: string | null
+  lastMajlisAt?: string | null
+  majlisRejectedAt?: string | null
+  majlisCancelledAt?: string | null
 }
 
 function monthsBefore(now: Date, months: number) {
@@ -30,6 +38,31 @@ export function classifyCandidate(input: CandidateRetentionInput, now: Date): Re
   if (!Number.isFinite(created)) return 'keep'
   const age = now.getTime() - created
   if (input.requestState === 'open' && !input.emailVerifiedAt && age >= 7 * DAY_MS) return 'delete_unverified'
+  if (input.requestState === 'open' && input.hasMajlisApplication) {
+    if (input.lastMajlisAt) {
+      const last = Date.parse(input.lastMajlisAt)
+      if (Number.isFinite(last) && last <= monthsBefore(now, 12)) return 'delete_decided'
+      return 'keep'
+    }
+    if (input.majlisPending) {
+      if (input.majlisPendingAt) {
+        const pending = Date.parse(input.majlisPendingAt)
+        if (Number.isFinite(pending) && pending <= monthsBefore(now, 12)) return 'delete_decided'
+      }
+      return 'keep'
+    }
+    if (input.majlisRejectedAt) {
+      const rejected = Date.parse(input.majlisRejectedAt)
+      if (Number.isFinite(rejected) && rejected <= monthsBefore(now, 12)) return 'delete_decided'
+      return 'keep'
+    }
+    if (input.majlisCancelledAt) {
+      const cancelled = Date.parse(input.majlisCancelledAt)
+      if (Number.isFinite(cancelled) && cancelled <= monthsBefore(now, 12)) return 'delete_decided'
+      return 'keep'
+    }
+    return 'keep'
+  }
   if (input.requestState === 'open' && input.emailVerifiedAt && age >= 120 * DAY_MS) return 'delete_never_submitted'
   if (input.requestState === 'declined' || input.requestState === 'closed') {
     const decided = input.decidedAt ? Date.parse(input.decidedAt) : Number.NaN

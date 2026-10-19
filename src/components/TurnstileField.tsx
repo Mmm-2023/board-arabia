@@ -74,9 +74,9 @@ export function TurnstileField({
 
   if (!siteKey) {
     return (
-      <p className="min-h-16 border border-[var(--ba-line)] bg-white px-3 py-3 text-[0.95rem] text-ink/70" data-turnstile="missing">
-        The security check could not load. Try again later.
-      </p>
+      <span className="sr-only" data-turnstile="off">
+        Security check
+      </span>
     )
   }
 

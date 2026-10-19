@@ -46,7 +46,10 @@ test('locked account pages render no member-private fields', async () => {
     assert.match(home, /Request full membership/)
     const sheet = htmls.find((html) => html.includes('aria-label="Deals, locked"')) || ''
     assert.match(sheet, /Membership/)
-    assert.match(sheet, /aria-label="Majlis, locked"/)
+    assert.match(sheet, /aria-label="Deals, locked"/)
+    assert.match(sheet, /data-destination="Majlis"/)
+    assert.equal(sheet.includes('data-destination="Majlis" data-locked="true"'), false)
+    assert.equal(sheet.includes('aria-label="Majlis, locked"'), false)
     assert.equal(htmls.join('\n').includes(SECRET), false)
     assert.equal(htmls.join('\n').includes(MAIL), false)
   } finally {

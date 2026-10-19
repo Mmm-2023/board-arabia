@@ -111,6 +111,12 @@ function registerDeps(admin: Admin): RegisterDeps {
     domainStatus: (email) => domainStatus(admin, email),
     mailboxOk: async (email) => mailboxAccepts(emailDomain(email)),
     consumeRegisterLimit: (email, remoteIp) => consumeRegisterLimit(admin, email, remoteIp),
+    issueSignInLink: async (email) => {
+      const linked = await admin.auth.admin.generateLink({ type: 'magiclink', email })
+      const url = linked.data?.properties?.action_link || ''
+      if (linked.error || !url) return { error: 'link' }
+      return { url }
+    },
     // The invite is spent here, when the invitee registers. The wallet returns
     // it only if this person never verifies. A decline does not refill it.
     claimInvite: async (userId, token, reason) => {

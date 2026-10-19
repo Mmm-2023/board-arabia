@@ -91,7 +91,8 @@ export function RegisterPage({ security = 'live' as 'live' | 'preview' }) {
       track('register_error', { step: 'register', error_code: 'invite_reason', path: '/register' })
       return
     }
-    if (security !== 'preview' && !values.turnstileToken) {
+    const turnstileOn = Boolean(import.meta.env.VITE_TURNSTILE_SITE_KEY?.trim())
+    if (security !== 'preview' && turnstileOn && !values.turnstileToken) {
       setError('Complete the security check, then try again.')
       track('register_error', { step: 'register', error_code: 'turnstile', path: '/register' })
       return
