@@ -17,7 +17,9 @@ The previous backup sentence occurred four times in product copy. Each one is no
 | `src/content/privacyNotice.ts` | 86 | Section `How long we keep it` |
 | `src/content/privacyNotice.ts` | 94 | Section `Your rights` |
 
-A repo-wide search for that old sentence after the edit is empty. No test or snapshot asserted the old sentence, so no test file changed.
+A repo-wide search for that old sentence after the edit is empty. No test or snapshot asserted the old sentence.
+
+`scripts/legal-pages.test.ts` treats any square-bracket token outside a short allowlist as a drafting leftover. `[N]` is that token, so the allowlist now includes `[N]`. The bracket scan strips tags first, because `MixedText` wraps the letter N in `bdi` and the raw HTML no longer contains the characters `[N]` in a row. The same test requires the new sentence twice in the privacy plain text (the retention row and clause 9.2). It still fails if any other new bracket appears.
 
 ## Not present
 
