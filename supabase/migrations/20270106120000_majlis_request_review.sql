@@ -179,7 +179,7 @@ language plpgsql
 stable
 security definer
 set search_path = ''
-as $fn$
+as $$
 begin
   if not private.is_staff() then
     raise exception 'not_allowed' using errcode = '42501';
@@ -214,7 +214,7 @@ begin
     ) q
   ), '[]'::jsonb);
 end;
-$fn$;
+$$;
 
 revoke all on function public.staff_list_majlis_requests() from public, anon;
 grant execute on function public.staff_list_majlis_requests() to authenticated;
@@ -228,7 +228,7 @@ language plpgsql
 stable
 security definer
 set search_path = ''
-as $fn$
+as $$
 begin
   if not private.is_staff() then
     raise exception 'not_allowed' using errcode = '42501';
@@ -248,7 +248,7 @@ begin
     from public.majlis_request_mail_drafts d
   ), '[]'::jsonb);
 end;
-$fn$;
+$$;
 
 revoke all on function public.staff_majlis_request_drafts() from public, anon;
 grant execute on function public.staff_majlis_request_drafts() to authenticated;
@@ -265,7 +265,7 @@ returns jsonb
 language plpgsql
 security definer
 set search_path = ''
-as $fn$
+as $$
 declare
   v_kind text := btrim(coalesce(p_kind, ''));
   v_subject text := btrim(coalesce(p_subject, ''));
@@ -295,7 +295,7 @@ begin
 
   return pg_catalog.jsonb_build_object('ok', true, 'send_enabled', false);
 end;
-$fn$;
+$$;
 
 revoke all on function public.staff_save_majlis_request_draft(text, text, text) from public, anon;
 grant execute on function public.staff_save_majlis_request_draft(text, text, text) to authenticated;
