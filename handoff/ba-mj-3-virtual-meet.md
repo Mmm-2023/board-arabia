@@ -77,7 +77,7 @@ The majlis page may say the session runs on Google Meet with Q&A and polls. It d
 
 ## Screens
 
-Shots are under `/opt/cursor/artifacts/mj-3-virtual-majlis/`:
+Shots are under `/opt/cursor/artifacts/mj-3-virtual-majlis/`. The browser pass is local. On GitHub Actions the admin shell does not finish compiling while the rest of the suite is running, so that test skips there. The copy checks still run in CI.
 
 - `staff-create-1440.png`, `staff-create-390.png`
 - `member-before-1440.png`, `member-before-390.png`
