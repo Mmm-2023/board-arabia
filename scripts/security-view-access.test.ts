@@ -271,6 +271,7 @@ test('every staff_* function checks staff and is not executable by anon', () => 
     'staff_save_trusted_partner',
     'staff_set_trusted_partner_published',
     'staff_reorder_trusted_partners',
+    'staff_resume_email_pause',
     'staff_set_trusted_partner_logo',
     'staff_list_sponsor_options',
     'staff_list_sponsor_intros',

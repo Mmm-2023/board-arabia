@@ -7,7 +7,8 @@ export const EMAIL_CATEGORIES = [
 
 export type EmailCategoryId = (typeof EMAIL_CATEGORIES)[number]['id']
 export type CampaignKind = 'digest' | 'campaign'
-export type CampaignStatus = 'draft' | 'approved' | 'test_sent' | 'sending' | 'sent' | 'cancelled'
+export type CampaignStatus = 'draft' | 'approved' | 'test_sent' | 'sending' | 'sent' | 'cancelled' | 'paused'
+export type PauseReason = '' | 'complaint_rate' | 'bounce_rate'
 
 export const AUDIENCE_REASON_LABELS = [
   ['eligible', 'Eligible'],
@@ -73,7 +74,18 @@ export type CampaignSummary = CampaignDraft & {
 export type EmailScreen = {
   masterEnabled: boolean
   isOwner: boolean
+  pauseReason: PauseReason
   campaigns: CampaignSummary[]
+}
+
+export function pauseBanner(reason: string): string {
+  if (reason === 'complaint_rate') {
+    return 'Sending is paused because complaints reached 0.1% of delivered mail. Only the owner can resume. The master switch stays off.'
+  }
+  if (reason === 'bounce_rate') {
+    return 'Sending is paused because bounces reached 4% of delivered mail. Only the owner can resume. The master switch stays off.'
+  }
+  return ''
 }
 
 const emptyCounts = (): AudienceCounts => ({
@@ -183,6 +195,9 @@ export function presentEmailScreen(value: unknown): EmailScreen | null {
   const row = value as Record<string, unknown>
   const isOwner = row.is_owner === true
   const masterEnabled = row.master_enabled === true
+  const pauseReason: PauseReason = row.pause_reason === 'complaint_rate' || row.pause_reason === 'bounce_rate'
+    ? row.pause_reason
+    : ''
   const campaigns = Array.isArray(row.campaigns) ? row.campaigns : []
   const parsed: CampaignSummary[] = []
   for (const item of campaigns) {
@@ -191,7 +206,7 @@ export function presentEmailScreen(value: unknown): EmailScreen | null {
     const id = text(campaign.id, 80)
     const kind = campaign.kind === 'digest' ? 'digest' : campaign.kind === 'campaign' ? 'campaign' : null
     const category = campaign.category === 'weekly_digest' || campaign.category === 'news_invitations' ? campaign.category : null
-    const status = ['draft', 'approved', 'test_sent', 'sending', 'sent', 'cancelled'].includes(String(campaign.status))
+    const status = ['draft', 'approved', 'test_sent', 'sending', 'sent', 'cancelled', 'paused'].includes(String(campaign.status))
       ? (campaign.status as CampaignStatus)
       : null
     if (!id || !kind || !category || !status) continue
@@ -213,7 +228,7 @@ export function presentEmailScreen(value: unknown): EmailScreen | null {
       log: logFrom(campaign.log),
     })
   }
-  return { masterEnabled, isOwner, campaigns: parsed }
+  return { masterEnabled, isOwner, pauseReason, campaigns: parsed }
 }
 
 export function releaseReady(gate: ReleaseGate): boolean {
@@ -251,6 +266,7 @@ export function statusLabel(status: string): string {
   if (status === 'sending') return 'Sending'
   if (status === 'sent') return 'Sent'
   if (status === 'cancelled') return 'Cancelled'
+  if (status === 'paused') return 'Paused'
   if (status === 'new') return 'New'
   return ''
 }

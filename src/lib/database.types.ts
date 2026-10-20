@@ -1779,6 +1779,10 @@ export type Database = {
         Args: { p_enabled: boolean }
         Returns: Json
       }
+      staff_resume_email_pause: {
+        Args: Record<string, never>
+        Returns: Json
+      }
       staff_email_screen: {
         Args: Record<string, never>
         Returns: Json

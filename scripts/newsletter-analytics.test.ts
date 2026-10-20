@@ -97,22 +97,36 @@ test('unsubscribe clicks stay out of the stats and the header stays a raw url', 
 test('tracked news sender is used only when measurement is on and the env is set', () => {
   const plain = {
     RESEND_API_KEY: 'plain-key',
-    EMAIL_FROM: 'news@example.com',
+    EMAIL_FROM: 'news@news.boardarabia.test',
     RESEND_API_KEY_NEWS_TRACKED: 'tracked-key',
-    EMAIL_FROM_NEWS_TRACKED: 'tracked@example.com',
+    EMAIL_FROM_NEWS_TRACKED: 'tracked@news.boardarabia.test',
+    EMAIL_SENDING_PARENT: 'boardarabia.test',
   }
   const off = resolveNewsCopy(plain, false)
   assert.equal(off.tracked, false)
-  assert.equal(off.fromMailbox, 'news@example.com')
+  assert.equal(off.fromMailbox, 'news@news.boardarabia.test')
   assert.equal(off.apiKey, 'plain-key')
   const on = resolveNewsCopy(plain, true)
   assert.equal(on.tracked, true)
-  assert.equal(on.fromMailbox, 'tracked@example.com')
+  assert.equal(on.fromMailbox, 'tracked@news.boardarabia.test')
   assert.equal(on.apiKey, 'tracked-key')
-  const missing = resolveNewsCopy({ RESEND_API_KEY: 'plain-key', EMAIL_FROM: 'news@example.com' }, true)
+  const missing = resolveNewsCopy({
+    RESEND_API_KEY: 'plain-key',
+    EMAIL_FROM: 'news@news.boardarabia.test',
+    EMAIL_SENDING_PARENT: 'boardarabia.test',
+  }, true)
   assert.equal(missing.tracked, false)
-  assert.equal(missing.fromMailbox, 'news@example.com')
+  assert.equal(missing.fromMailbox, 'news@news.boardarabia.test')
   assert.equal(missing.apiKey, 'plain-key')
+  const rootTracked = resolveNewsCopy({
+    RESEND_API_KEY: 'plain-key',
+    EMAIL_FROM: 'news@news.boardarabia.test',
+    RESEND_API_KEY_NEWS_TRACKED: 'tracked-key',
+    EMAIL_FROM_NEWS_TRACKED: 'tracked@boardarabia.test',
+    EMAIL_SENDING_PARENT: 'boardarabia.test',
+  }, true)
+  assert.equal(rootTracked.tracked, false)
+  assert.equal(rootTracked.fromMailbox, 'news@news.boardarabia.test')
 })
 
 test('privacy notice states aggregate newsletter measurement', () => {

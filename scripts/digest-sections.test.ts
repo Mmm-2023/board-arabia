@@ -311,6 +311,8 @@ test('member and admin digest shots at 1440 and 390', { timeout: DIGEST_SHOT_TIM
   const shotDir = mkdtempSync(path.join(tmpdir(), 'ba-fw4c-digest-'))
   const vite = await createServer({
     server: { host: '127.0.0.1', port: 0, hmr: false },
+    cacheDir: path.join(tmpdir(), `ba-digest-vite-${process.pid}`),
+    optimizeDeps: { holdUntilCrawlEnd: false },
     logLevel: 'error',
   })
   await vite.listen()

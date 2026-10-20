@@ -37,7 +37,7 @@ export function noticeStreamConfig(env: StreamEnv) {
 }
 
 function noticeMessage(notice: NoticeToSend, fromMailbox: string, replyTo: string): OutboundMessage {
-  const message: OutboundMessage = {
+  return {
     from: `"${FROM_NAME}" <${fromMailbox}>`,
     to: [notice.address],
     reply_to: replyTo,
@@ -45,13 +45,6 @@ function noticeMessage(notice: NoticeToSend, fromMailbox: string, replyTo: strin
     text: notice.text,
     html: notice.html,
   }
-  if (!notice.essential && notice.unsubscribeUrl) {
-    message.headers = {
-      'List-Unsubscribe': `<${notice.unsubscribeUrl}>, <mailto:${replyTo}?subject=unsubscribe>`,
-      'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
-    }
-  }
-  return message
 }
 
 /** Drain one explicit batch through the shared sender. The mail stream has tracking off. */
@@ -63,6 +56,7 @@ export async function deliverMemberNotices(input: {
   apiKey: string
   fromMailbox: string
   replyTo: string
+  sendingParent?: string
   fetchImpl?: typeof fetch
   sleep?: (ms: number) => Promise<void>
 }): Promise<NoticeSendResult> {
@@ -101,6 +95,7 @@ export async function deliverMemberNotices(input: {
     batchSize: input.batchSize,
     pauseMs: input.pauseMs,
     apiKey: input.apiKey,
+    sendingParent: input.sendingParent,
     stream: MEMBER_NOTICE_STREAM,
     now: () => Date.now(),
     sleep,
