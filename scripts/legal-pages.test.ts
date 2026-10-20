@@ -32,6 +32,7 @@ const ALLOWED_BRACKETS = new Set([
   '[CONTACT EMAIL]',
   '[DPO CONTACT]',
   '[AI PROVIDER]',
+  '[N]',
 ])
 
 const DOCS = [
@@ -53,7 +54,9 @@ function walk(dir: string, out: string[] = []) {
 }
 
 function brackets(text: string) {
-  return text.match(/\[[^[\]]*\]/g) ?? []
+  // MixedText wraps a Latin run in bdi, so a short token such as [N] is split across tags in the HTML.
+  const visible = text.replace(/<[^>]+>/g, '')
+  return visible.match(/\[[^[\]]*\]/g) ?? []
 }
 
 function legalArticle(html: string) {
@@ -187,6 +190,10 @@ test('rendered legal copy has no drafting brackets and both retention states', (
   assert.equal(privacyEnOff.includes('Deleted after 30 days'), false)
   assert.match(privacyEnOn, /Deleted after 30 days\. You can delete them earlier at any time/)
   assert.match(privacyEnOn, /Retained while your account is active; you can delete at any time/)
+  const backupLine =
+    'When we delete your records, they are removed from our live systems straight away. Copies may remain in our secure backups for up to [N] days until those backups expire, and we do not use them for any other purpose.'
+  assert.equal(privacyEnOff.split(backupLine).length - 1, 2)
+  assert.equal(privacyEnOn.split(backupLine).length - 1, 2)
 
   setLegalEnvForTests({
     partnersEmail: 'partners@example.com',
