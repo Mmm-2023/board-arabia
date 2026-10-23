@@ -1,8 +1,5 @@
 import { useEffect, useRef, type ReactNode } from 'react'
-import { HELD_FOR_LINE } from '../../content/marketing'
 import { armMotionRoot, motionAllowed, usePendingReveal } from '../Reveal'
-
-export { HELD_FOR_LINE }
 
 export function ConnectionGraphic() {
   const ref = useRef<SVGSVGElement>(null)
@@ -39,10 +36,10 @@ export function ConnectionGraphic() {
         <rect x="-28" y="-28" width="56" height="56" fill="none" stroke="#E8E4F7" strokeWidth="3" />
         <rect x="-14" y="-14" width="28" height="28" fill="none" stroke="#E8E4F7" strokeWidth="2" />
       </g>
-      <text x="110" y="162" fill="#F6F5FB" fontSize="13" textAnchor="middle" fontFamily="Figtree, sans-serif">
+      <text x="110" y="162" fill="#F6F5FB" fontSize="20" textAnchor="middle" fontFamily="Figtree, sans-serif">
         Saudi Arabia
       </text>
-      <text x="330" y="162" fill="#F6F5FB" fontSize="13" textAnchor="middle" fontFamily="Figtree, sans-serif">
+      <text x="330" y="162" fill="#F6F5FB" fontSize="20" textAnchor="middle" fontFamily="Figtree, sans-serif">
         International
       </text>
     </svg>

@@ -7,7 +7,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { chromium } from 'playwright-core'
-import { LANDING_FEATURES } from '../src/content/landingFeatures.ts'
+import { LANDING_TILES } from '../src/content/landingFeatures.ts'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const outDir = process.env.LANDING_SHOT_DIR || '/opt/cursor/artifacts'
@@ -59,24 +59,21 @@ try {
         })
         const page = await context.newPage()
         await page.goto(`http://127.0.0.1:${port}/`, { waitUntil: 'networkidle' })
-        await page.waitForSelector('#membership [data-feature]')
+        await page.waitForSelector('#membership [data-tile]')
         const layout = await page.evaluate(async (expected) => {
           const root = document.documentElement
           const section = document.querySelector('#membership')
           if (!section) return { ok: false, reason: 'missing section' }
           section.scrollIntoView()
-          const cards = [...section.querySelectorAll('[data-feature]')]
+          const cards = [...section.querySelectorAll('[data-tile]')]
           for (const card of cards) card.scrollIntoView({ block: 'center' })
           await new Promise((resolve) => setTimeout(resolve, 400))
-          const hidden = cards.filter((card) => !isShown(card)).map((card) => card.getAttribute('data-feature'))
-          const groups = [...section.querySelectorAll('[data-feature-group]')].map((group) => {
-            const items = [...group.querySelectorAll('[data-feature]')]
-            return {
-              id: group.getAttribute('data-feature-group'),
-              count: items.length,
-              columns: new Set(items.map((item) => item.offsetLeft)).size,
-            }
-          })
+          const hidden = cards.filter((card) => !isShown(card)).map((card) => card.getAttribute('data-tile'))
+          const groups = [{
+            id: 'tiles',
+            count: cards.length,
+            columns: new Set(cards.map((item) => item.offsetLeft)).size,
+          }]
           const controls = [...section.querySelectorAll('a, button')].map((node) => ({
             text: (node.textContent || '').trim().slice(0, 40),
             height: node.getBoundingClientRect().height,
@@ -102,7 +99,7 @@ try {
             const rect = node.getBoundingClientRect()
             return rect.width > 8 && rect.height > 8
           }
-        }, LANDING_FEATURES.length)
+        }, LANDING_TILES.length)
         if (!layout.ok) {
           throw new Error(`layout ${width} reduced=${reduced} ${JSON.stringify(layout)}`)
         }

@@ -12,8 +12,9 @@ import {
   LANDING_GROUPS,
   LANDING_LIVE_AI_FLAGS,
   LANDING_NOT_YET,
+  LANDING_TILES,
 } from '../src/content/landingFeatures.ts'
-import { SIGNING_IN, WHERE_DATA_LIVES } from '../src/content/trust.ts'
+import { HOSTING_ENCRYPTION_LINE, SIGNING_IN } from '../src/content/trust.ts'
 import { isAiToolKey, toolFromSlug, toolPath } from '../supabase/functions/_shared/ai_tools.ts'
 import { toolTitle } from '../src/lib/aiToolCopy.ts'
 import {
@@ -130,7 +131,8 @@ test('landing does not advertise features that are not live', async () => {
   for (const pattern of LANDING_NOT_YET) {
     assert.equal(pattern.test(text), false, pattern.source)
   }
-  assert.equal(text.includes('open messaging'), true)
+  const intros = LANDING_FEATURES.find((feature) => feature.id === 'intros')
+  assert.match(intros?.body || '', /No open messaging/)
 })
 
 test('landing feature copy locks', async () => {
@@ -162,7 +164,13 @@ test('landing feature copy locks', async () => {
     assert.equal(words(feature.title).length <= 4, true, feature.title)
     assert.equal(/\d/.test(feature.body), false, feature.id)
     assert.equal(ADVICE_ROLE.test(`${feature.title} ${feature.body}`), false, feature.id)
-    assert.match(html, new RegExp(`data-feature="${feature.id}"`))
+    assert.equal(html.includes(`data-feature="${feature.id}"`), false, feature.id)
+  }
+  assert.equal(LANDING_TILES.length, 5)
+  for (const tile of LANDING_TILES) {
+    assert.equal(words(tile.body).length <= 16, true, tile.id)
+    assert.match(html, new RegExp(`data-tile="${tile.id}"`))
+    assert.match(html, new RegExp(tile.body.replace(/[.]/g, '\\.')))
   }
   for (const group of LANDING_GROUPS) {
     assert.equal(words(group.title).length <= 4, true, group.title)
@@ -185,17 +193,16 @@ test('landing feature copy locks', async () => {
 test('security card bodies match the trust page strings', async () => {
   const byId = new Map(LANDING_FEATURES.map((feature) => [feature.id, feature.body]))
   assert.equal(byId.get('two-step'), SIGNING_IN[2])
-  assert.equal(byId.get('secure'), WHERE_DATA_LIVES[0])
+  assert.equal(byId.has('secure'), false)
+  assert.equal(byId.get('encrypted'), HOSTING_ENCRYPTION_LINE)
   assert.equal(
-    WHERE_DATA_LIVES[0],
-    'All your data is secure and fully encrypted, in transit and at rest.',
+    HOSTING_ENCRYPTION_LINE,
+    'Data is encrypted in transit and at rest by our hosting provider.',
   )
-  assert.equal(byId.get('encrypted'), WHERE_DATA_LIVES[1])
   assert.equal(byId.has('frankfurt'), false)
   const html = await renderLanding()
-  assert.match(html, /Secure and encrypted/)
-  assert.match(html, /All your data is secure and fully encrypted, in transit and at rest/)
-  assert.match(html, /encrypted in transit and at rest/)
+  assert.equal(html.includes('All your data is secure and fully encrypted'), false)
+  assert.equal(html.includes('Secure and encrypted'), false)
   assert.equal(/\bFrankfurt\b|\bGermany\b/.test(html), false)
 })
 
@@ -203,7 +210,8 @@ test('AI scope line is exact and each AI card names AI', async () => {
   const ai = LANDING_GROUPS.find((group) => group.id === 'ai')
   assert.equal(ai?.scope, LANDING_AI_SCOPE)
   const html = await renderLanding()
-  assert.match(html, new RegExp(LANDING_AI_SCOPE.replace(/[.]/g, '\\.')))
+  assert.match(html, /Labelled AI first reads\. Not legal, financial or investment advice\./)
+  assert.equal(html.includes(LANDING_AI_SCOPE), false)
   for (const feature of LANDING_FEATURES.filter((item) => item.group === 'ai')) {
     assert.match(feature.body, /AI/)
   }
@@ -230,12 +238,15 @@ test('landing CTAs and section links stay on their routes', async () => {
     assert.match(anchor, /ba-login|ba-secondary|ba-textlink|ba-footer-link/)
   }
   assert.match(html, /href="\/for-members\/"[^>]*>See all member tools/)
-  assert.match(html, /href="\/for-capital\/"[^>]*>How FDI and family offices engage/)
+  const membership = html.slice(html.indexOf('id="membership"'), html.indexOf('id="process"'))
+  assert.equal(membership.includes('How FDI and family offices engage'), false)
+  assert.match(html, /href="\/how-it-works\/"[^>]*>Full sequence/)
   assert.match(html, /href="\/security\/"[^>]*>How we protect your data/)
   assert.equal(html.includes('id="partners"'), false)
   assert.equal(html.includes('Three seats a year'), false)
   assert.match(html, /Features and tools/)
-  assert.match(html, /What admitted members use today/)
+  assert.match(html, /What admitted members use, after sign-in/)
+  assert.equal(html.includes('What admitted members use today'), false)
 })
 
 let landingServer: Awaited<ReturnType<typeof createServer>> | null = null

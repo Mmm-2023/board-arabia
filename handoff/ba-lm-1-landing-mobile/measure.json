@@ -1,0 +1,86 @@
+{
+  "state": "shown",
+  "heading": {
+    "top": 0,
+    "bottom": 85
+  },
+  "bar": {
+    "top": 779,
+    "bottom": 844,
+    "opacity": "1"
+  },
+  "overlapAtWhyTop": false,
+  "pageHeight": 4864,
+  "words": 369,
+  "order": [
+    "top",
+    "why",
+    "founding",
+    "membership",
+    "process",
+    "faq",
+    "closing",
+    "FOOTER"
+  ],
+  "g1": 20,
+  "eyebrow": 16.8,
+  "card": 15,
+  "cardLine": "21.75px",
+  "preview": 15,
+  "sections": [
+    {
+      "id": "top",
+      "padTop": "0px",
+      "padBottom": "0px",
+      "h": 679
+    },
+    {
+      "id": "why",
+      "padTop": "32px",
+      "padBottom": "32px",
+      "h": 701
+    },
+    {
+      "id": "founding",
+      "padTop": "32px",
+      "padBottom": "32px",
+      "h": 394
+    },
+    {
+      "id": "membership",
+      "padTop": "32px",
+      "padBottom": "32px",
+      "h": 1314
+    },
+    {
+      "id": "process",
+      "padTop": "32px",
+      "padBottom": "32px",
+      "h": 467
+    },
+    {
+      "id": "faq",
+      "padTop": "32px",
+      "padBottom": "32px",
+      "h": 392
+    },
+    {
+      "id": "closing",
+      "padTop": "32px",
+      "padBottom": "32px",
+      "h": 315
+    }
+  ],
+  "login": {
+    "w": 49,
+    "h": 44
+  },
+  "small": [
+    {
+      "size": 12,
+      "tag": "P",
+      "text": "powered by nammco"
+    }
+  ],
+  "taps": []
+}

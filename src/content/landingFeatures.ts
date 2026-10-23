@@ -1,5 +1,5 @@
 import type { AiToolKey } from '../../supabase/functions/_shared/ai_tools.ts'
-import { SIGNING_IN, WHERE_DATA_LIVES } from './trust.ts'
+import { HOSTING_ENCRYPTION_LINE, SIGNING_IN } from './trust.ts'
 
 export type LandingGroupId = 'people' | 'deals' | 'real-estate' | 'ai' | 'events' | 'security'
 
@@ -28,6 +28,45 @@ export type LandingFeature = {
 
 export const LANDING_AI_SCOPE =
   'These are AI tools, not people. They are not legal, financial or investment advice. Each tool says what it will and will not do.'
+
+/** Home tiles. One line each. The full list stays on /for-members. */
+export const LANDING_TILES: {
+  id: 'people' | 'deals' | 'real-estate' | 'ai' | 'events'
+  title: string
+  body: string
+  icon: LandingFeature['icon']
+}[] = [
+  {
+    id: 'people',
+    title: 'Meet the right people',
+    body: 'Private directory and warm intros the other member accepts.',
+    icon: 'directory',
+  },
+  {
+    id: 'deals',
+    title: 'Do deals privately',
+    body: 'Mandates and deal rooms, opened after admin review.',
+    icon: 'deals',
+  },
+  {
+    id: 'real-estate',
+    title: 'Real estate',
+    body: 'Opportunities, board roles and vetted partner firms.',
+    icon: 'real-estate',
+  },
+  {
+    id: 'ai',
+    title: 'AI tools for directors',
+    body: 'Labelled AI first reads. Not legal, financial or investment advice.',
+    icon: 'ai',
+  },
+  {
+    id: 'events',
+    title: 'Events',
+    body: 'Majlis, small private gatherings for members.',
+    icon: 'majlis',
+  },
+]
 
 export const LANDING_GROUPS: { id: LandingGroupId; title: string; scope?: string }[] = [
   { id: 'people', title: 'Meet the right people' },
@@ -186,19 +225,11 @@ export const LANDING_FEATURES: LandingFeature[] = [
     route: '/dashboard/two-step',
   },
   {
-    id: 'secure',
-    group: 'security',
-    icon: 'settings',
-    title: 'Secure and encrypted',
-    body: WHERE_DATA_LIVES[0],
-    route: '/security',
-  },
-  {
     id: 'encrypted',
     group: 'security',
     icon: 'settings',
     title: 'Encrypted',
-    body: WHERE_DATA_LIVES[1],
+    body: HOSTING_ENCRYPTION_LINE,
     route: '/security',
   },
 ]

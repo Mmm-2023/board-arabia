@@ -1,4 +1,3 @@
-import { firstSentence } from '../../content/marketing'
 import { publicProcessSteps } from '../../content/twoTierCopy'
 import { usePendingReveal } from '../Reveal'
 
@@ -14,7 +13,6 @@ export function StepDiagram() {
             <b>{index + 1}</b>
           </span>
           <h3>{step.title}</h3>
-          <p>{firstSentence(step.home)}</p>
         </li>
       ))}
     </ol>
