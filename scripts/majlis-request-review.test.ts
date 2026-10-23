@@ -124,6 +124,29 @@ function chromePath() {
 
 const shotNames = ['requests-1440.png', 'requests-390.png', 'requests-empty-1440.png', 'requests-empty-390.png'] as const
 
+async function warmSmoke(origin: string) {
+  const seen = new Set<string>()
+  async function walk(urlPath: string) {
+    const clean = urlPath.split(/[?#]/)[0]
+    if (!clean || seen.has(clean) || clean.startsWith('/@') || clean.includes('/node_modules/')) return
+    seen.add(clean)
+    const res = await fetch(`${origin}${urlPath}`)
+    const text = await res.text()
+    if (!res.ok) throw new Error(`smoke ${res.status} ${clean}\n${text.slice(0, 1600)}`)
+    if (!/\.(tsx|ts|jsx|js|css|mjs|html)$/.test(clean)) return
+    const specs = [...text.matchAll(/(?:from|import)\s*(?:\(\s*)?["']([^"']+)["']/g), ...text.matchAll(/src="([^"]+)"/g)].map((match) => match[1])
+    for (const spec of specs) {
+      if (spec.startsWith('/@') || spec.startsWith('http')) continue
+      if (!spec.startsWith('/') && !spec.startsWith('.')) continue
+      const next = spec.startsWith('.')
+        ? new URL(spec, `http://local${clean.slice(0, clean.lastIndexOf('/') + 1)}`).pathname
+        : spec.split(/[?#]/)[0]
+      await walk(next)
+    }
+  }
+  await walk('/majlis-requests.html')
+}
+
 async function shot(page: import('playwright-core').Page, width: number, file: string) {
   if (width === 390) {
     const height = await page.evaluate(() => document.documentElement.scrollHeight)
@@ -153,15 +176,25 @@ test('majlis request shots at 1440 and 390', { timeout: 300_000 }, async (t) => 
   await vite.listen()
   const address = vite.httpServer?.address()
   const port = address && typeof address === 'object' ? address.port : 0
+  const origin = `http://127.0.0.1:${port}`
+  await warmSmoke(origin)
   const browser = await chromium.launch({ executablePath: chrome, args: ['--no-sandbox', '--disable-dev-shm-usage'] })
   try {
     const page = await browser.newPage()
-    page.setDefaultTimeout(120_000)
-    page.setDefaultNavigationTimeout(120_000)
+    const pageErrors: string[] = []
+    page.on('pageerror', (error) => pageErrors.push(error.message))
+    page.on('requestfailed', (request) => pageErrors.push(`${request.failure()?.errorText || 'failed'} ${request.url()}`))
+    page.setDefaultTimeout(45_000)
+    page.setDefaultNavigationTimeout(45_000)
     for (const width of [1440, 390] as const) {
       await page.setViewportSize({ width, height: width === 390 ? 844 : 900 })
-      await page.goto(`http://127.0.0.1:${port}/majlis-requests.html`, { waitUntil: 'networkidle' })
-      await page.getByRole('heading', { name: 'Requests' }).waitFor()
+      await page.goto(`${origin}/majlis-requests.html`, { waitUntil: 'domcontentloaded' })
+      try {
+        await page.getByRole('heading', { name: 'Requests' }).waitFor()
+      } catch (error) {
+        const body = await page.locator('body').innerText().catch(() => '')
+        throw new Error(`${pageErrors.join('\n')}\n${body.slice(0, 800)}\n${error instanceof Error ? error.message : String(error)}`)
+      }
       const draftSubject = await page.locator('input').first().inputValue()
       assert.match(draftSubject, /DRAFT FOR MICHAEL/)
       const text = await page.locator('body').innerText()
