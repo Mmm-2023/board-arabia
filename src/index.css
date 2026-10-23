@@ -615,7 +615,8 @@
 .ba-g1 {
   display: block;
   width: 100%;
-  height: 96px;
+  height: auto;
+  aspect-ratio: 440 / 180;
 }
 
 .ba-g1-wrap {
@@ -634,8 +635,8 @@
   gap: 0.35rem;
   margin-top: 0.75rem;
   overflow-x: auto;
-  font-size: 0.8125rem;
-  line-height: 1.4;
+  font-size: 0.875rem;
+  line-height: 1.45;
   color: var(--ba-muted);
   white-space: nowrap;
 }
@@ -707,7 +708,7 @@
 }
 
 .ba-frame-chip {
-  font-size: 0.75rem;
+  font-size: 0.875rem;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -734,10 +735,9 @@
 }
 
 .ba-frame-deal-top h3,
-.ba-frame-meta,
-.ba-frame-deals p {
-  font-size: 0.8125rem;
-  line-height: 1.35;
+.ba-frame-meta {
+  font-size: 0.875rem;
+  line-height: 1.45;
 }
 
 .ba-frame-deal-top h3 {
@@ -755,6 +755,8 @@
 .ba-frame-deals p {
   margin-top: 0.15rem;
   color: var(--ba-ink);
+  font-size: 0.9375rem;
+  line-height: 1.45;
 }
 
 .ba-steps {
@@ -807,7 +809,7 @@
   position: relative;
   z-index: 1;
   color: #f6f5fb;
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
   font-weight: 700;
 }
 
@@ -873,7 +875,7 @@
 
   .ba-frame-side li {
     padding: 0.28rem 0.7rem;
-    font-size: 0.8125rem;
+    font-size: 0.875rem;
     color: var(--ba-muted);
   }
 

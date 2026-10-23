@@ -64,7 +64,7 @@ export function Footer() {
               </li>
             ) : null}
           </ul>
-          <p className="mt-2 text-[0.8125rem] text-[var(--ba-muted)]">
+          <p className="mt-2 text-[0.875rem] text-[var(--ba-muted)]">
             © {new Date().getFullYear()} Board Arabia
           </p>
         </nav>

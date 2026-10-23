@@ -7,12 +7,11 @@ import { Nav } from '../components/Nav'
 import { Reveal } from '../components/Reveal'
 import { Seo } from '../components/Seo'
 import { DisplayHeading, Eyebrow } from '../components/Type'
-import { ConnectionGraphic, DiamondGrid, HeroEnter, HELD_FOR_LINE, IconCapital, IconDoors, IconRelationships } from '../components/landing/graphics'
+import { ConnectionGraphic, DiamondGrid, HeroEnter, IconCapital, IconDoors, IconRelationships } from '../components/landing/graphics'
 import { ProductFrame } from '../components/landing/ProductFrame'
 import { StepDiagram } from '../components/landing/StepDiagram'
 import { StickyApply } from '../components/landing/StickyApply'
-import { LANDING_FEATURES, LANDING_GROUPS } from '../content/landingFeatures'
-import { AUDIENCE_LINE } from '../content/marketing'
+import { LANDING_TILES } from '../content/landingFeatures'
 import { FAQ, publicHref } from '../content/seo'
 import { LANDING_STRIP_LEAD, LANDING_STRIP_LINK } from '../content/trust'
 import { closingCtaBody } from '../content/twoTierCopy'
@@ -27,17 +26,17 @@ import { trackApplyClick } from '../lib/tracking/browser'
 const WHY = [
   {
     title: 'Access to capital',
-    body: 'Mandates are capital briefs that admin reviews before members see them. Members are not left open to cold outreach on the open web.',
+    body: 'Admin-reviewed capital briefs. No cold outreach.',
     icon: IconCapital,
   },
   {
     title: 'Business relationships',
-    body: `Saudi and international ${AUDIENCE_LINE} admitted on one standard: credentials first, then a decision. Fifty founding seats for Saudi Arabia and the GCC. Fifty for international counterparts.`,
+    body: 'Peers admitted on one standard: credentials first.',
     icon: IconRelationships,
   },
   {
     title: 'Opening doors',
-    body: 'Warm introductions, deal rooms, Majlis, and a private directory open the right doors without an open messaging wall. Nothing opens from this public site.',
+    body: 'Warm introductions, deal rooms and Majlis gatherings.',
     icon: IconDoors,
   },
 ] as const
@@ -114,23 +113,20 @@ function Hero() {
         <div>
           <HeroEnter index={0}>
             <p className="mb-2 font-serif text-[1.05rem] italic text-[#E8E4F7]">
-              Founding membership · Saudi Arabia & international
+              Founding membership
             </p>
           </HeroEnter>
           <h1 className="max-w-3xl font-display text-[clamp(2.05rem,4.6vw,3.5rem)] font-extrabold leading-[1.08] tracking-[-0.03em] text-balance text-[#F6F5FB]">
             Where Saudi boardrooms meet international capital
           </h1>
           <p className="mt-3 max-w-xl text-[1rem] leading-relaxed text-[#F6F5FB] md:text-[1.05rem]">
-            No public booking calendar is offered, and credentials come first for {AUDIENCE_LINE}.
+            Reviewed membership for Chairperson, Board members and C-suite executives, in Saudi Arabia and internationally.
           </p>
           <HeroEnter index={1}>
             <HeroConsideration />
           </HeroEnter>
-          <HeroEnter index={2}>
-            <p className="mt-4 text-[0.875rem] leading-relaxed text-[#E8E4F7]">{HELD_FOR_LINE}</p>
-          </HeroEnter>
         </div>
-        <HeroEnter index={3} className="ba-g1-wrap">
+        <HeroEnter index={2} className="ba-g1-wrap">
           <ConnectionGraphic />
         </HeroEnter>
       </div>
@@ -140,19 +136,15 @@ function Hero() {
 
 function WhySection() {
   return (
-    <section id="why" className="bg-pearl py-5 md:py-10">
+    <section id="why" className="bg-pearl py-8 md:py-10">
       <div className="mx-auto max-w-7xl px-5 md:px-10">
         <Reveal>
           <Eyebrow>Why Board Arabia</Eyebrow>
           <DisplayHeading compact className="max-w-3xl">
             Access to capital. Business relationships. Opening doors.
           </DisplayHeading>
-          <p className="ba-quiet mt-3 max-w-3xl text-[0.9375rem] leading-relaxed">
-            Board Arabia is a reviewed founding membership. It links Saudi
-            Arabia’s boardrooms with international counterparts for
-            Chairpersons, Board members, and C-suite executives. Growth and
-            governance sit inside that frame. It is not a public directory,
-            and it is not a calendar you can book.
+          <p className="ba-quiet mt-3 max-w-3xl text-[0.9375rem] leading-[1.45]">
+            A reviewed membership linking Saudi boardrooms with international counterparts.
           </p>
         </Reveal>
         <ol className="mt-3 grid gap-2 md:mt-5 md:grid-cols-3 md:gap-3">
@@ -166,7 +158,7 @@ function WhySection() {
                     <h3 className="mt-2 font-display text-[1.05rem] font-semibold tracking-[-0.02em] text-ink">
                       {point.title}
                     </h3>
-                    <p className="ba-quiet mt-1 text-[0.8125rem] leading-snug">{point.body}</p>
+                    <p className="ba-quiet mt-1 text-[0.9375rem] leading-[1.45]">{point.body}</p>
                   </article>
                 </Reveal>
               </li>
@@ -188,26 +180,13 @@ function FoundingSection() {
           <Reveal>
             <Eyebrow>Founding 100</Eyebrow>
             <DisplayHeading compact>Fifty and fifty.</DisplayHeading>
-            <p className="ba-quiet mt-3 max-w-xl text-[0.9375rem] leading-relaxed">
-              One hundred founding places, split evenly: fifty in Saudi Arabia,
-              fifty international. Complimentary founding membership, given in
-              exchange for time, judgment and introductions. Places are not
-              priced on this site.
+            <p className="ba-quiet mt-3 max-w-xl text-[0.9375rem] leading-[1.45]">
+              One hundred complimentary founding places: fifty in Saudi Arabia and the GCC, fifty international.
             </p>
           </Reveal>
           <div className="grid grid-cols-2 gap-4">
-            <Split
-              count="50"
-              title="Saudi Arabia"
-              body="Chairpersons, Board members, and C-suite executives held for Saudi Arabia and the GCC."
-              filled={fill.ksa}
-            />
-            <Split
-              count="50"
-              title="International"
-              body="International Chairpersons, Board members, and C-suite executives. The room is not a GCC-only practice."
-              filled={fill.intl}
-            />
+            <Split count="50" title="Saudi Arabia and the GCC" filled={fill.ksa} />
+            <Split count="50" title="International" filled={fill.intl} />
           </div>
         </div>
         <PlatformTotalsLine shown={shown} />
@@ -219,12 +198,10 @@ function FoundingSection() {
 function Split({
   count,
   title,
-  body,
   filled,
 }: {
   count: string
   title: string
-  body: string
   filled: number
 }) {
   return (
@@ -234,7 +211,6 @@ function Split({
       </p>
       <h3 className="mt-2 font-display text-[1rem] font-semibold text-ink">{title}</h3>
       <DiamondGrid filled={filled} />
-      <p className="ba-quiet mt-2 text-[0.8125rem] leading-relaxed">{body}</p>
     </div>
   )
 }
@@ -258,60 +234,36 @@ function useLandingDeals(): LandingDeal[] {
 function MembershipSection() {
   const deals = useLandingDeals()
   return (
-    <section id="membership" className="bg-pearl py-5 md:py-10">
+    <section id="membership" className="bg-pearl py-8 md:py-10">
       <div className="mx-auto max-w-7xl px-5 md:px-10">
         <Reveal>
           <Eyebrow>Inside the membership</Eyebrow>
           <DisplayHeading compact className="max-w-3xl">
             Features and tools
           </DisplayHeading>
-          <p className="ba-quiet mt-3 max-w-3xl text-[0.9375rem] leading-relaxed">
-            What admitted members use today. Everything below opens after you are admitted and signed in.
-          </p>
-          <p className="ba-quiet mt-2 max-w-3xl text-[0.8125rem] leading-snug">
-            While the founding cohort forms, some lists show cards marked Example.
+          <p className="ba-quiet mt-3 max-w-3xl text-[0.9375rem] leading-[1.45]">
+            What admitted members use, after sign-in.
           </p>
         </Reveal>
         <div className="mt-3">
           <ProductFrame deals={deals} />
         </div>
-        {LANDING_GROUPS.map((group, index) => (
-          <Reveal key={group.id} delay={0.06 * index}>
-            <h3 className="mt-4 font-display text-[1.15rem] font-semibold tracking-[-0.02em] text-ink md:mt-6">
-              {group.title}
-            </h3>
-            {group.scope ? (
-              <p className="ba-quiet mt-1 max-w-3xl text-[0.8125rem] leading-snug">{group.scope}</p>
-            ) : null}
-            <ul
-              className="mt-2 grid gap-2 md:grid-cols-2 md:gap-3 lg:grid-cols-3"
-              data-feature-group={group.id}
-            >
-              {LANDING_FEATURES.filter((feature) => feature.group === group.id).map((feature) => (
-                <li key={feature.id}>
-                  <article className="ba-card h-full px-3 py-3" data-feature={feature.id}>
-                    <FeatureIcon id={feature.icon} />
-                    <h4 className="mt-2 font-display text-[1.05rem] font-semibold tracking-[-0.02em] text-ink">
-                      {feature.title}
-                    </h4>
-                    <p className="ba-quiet mt-1 text-[0.8125rem] leading-snug">{feature.body}</p>
-                  </article>
-                </li>
-              ))}
-            </ul>
-          </Reveal>
-        ))}
+        <ul className="mt-3 grid gap-2 md:grid-cols-2 md:gap-3 lg:grid-cols-3">
+          {LANDING_TILES.map((tile) => (
+            <li key={tile.id}>
+              <article className="ba-card h-full px-3 py-3" data-tile={tile.id}>
+                <FeatureIcon id={tile.icon} />
+                <h3 className="mt-2 font-display text-[1.05rem] font-semibold tracking-[-0.02em] text-ink">
+                  {tile.title}
+                </h3>
+                <p className="ba-quiet mt-1 text-[0.9375rem] leading-[1.45]">{tile.body}</p>
+              </article>
+            </li>
+          ))}
+        </ul>
         <p className="mt-2">
-          <Link to={publicHref('/security')} className="ba-textlink inline-flex min-h-11 items-center text-[0.9375rem]">
-            {LANDING_STRIP_LINK}
-          </Link>
-        </p>
-        <p className="mt-1 flex flex-wrap gap-x-6">
           <Link to={publicHref('/for-members')} className="ba-textlink inline-flex min-h-11 items-center text-[0.9375rem]">
             See all member tools
-          </Link>
-          <Link to={publicHref('/for-capital')} className="ba-textlink inline-flex min-h-11 items-center text-[0.9375rem]">
-            How FDI and family offices engage
           </Link>
         </p>
       </div>
@@ -343,12 +295,17 @@ function ProcessSection() {
         <div className="mt-4">
           <StepDiagram />
         </div>
-        <p className="mt-4 max-w-3xl text-[0.9375rem] leading-relaxed text-[#E8E4F7]">
-          Reviewed. Gated. Off the open web. Applications, mandate intros and real estate intros pass admin review. A member introduction needs the other member to accept.
+        <p className="mt-4 max-w-3xl text-[0.9375rem] leading-[1.45] text-[#E8E4F7]">
+          Every application, mandate intro and real estate intro passes admin review.
         </p>
-        <Link to={publicHref('/how-it-works')} className="ba-textlink mt-2 inline-flex min-h-11 items-center text-[0.9375rem] text-[#F6F5FB]">
-          Full sequence
-        </Link>
+        <p className="mt-2 flex flex-wrap gap-x-6">
+          <Link to={publicHref('/how-it-works')} className="ba-textlink inline-flex min-h-11 items-center text-[0.9375rem] text-[#F6F5FB]">
+            Full sequence
+          </Link>
+          <Link to={publicHref('/security')} className="ba-textlink inline-flex min-h-11 items-center text-[0.9375rem] text-[#F6F5FB]">
+            {LANDING_STRIP_LINK}
+          </Link>
+        </p>
       </div>
     </section>
   )

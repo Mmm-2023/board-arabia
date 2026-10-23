@@ -56,7 +56,7 @@ export function CtaBand({
               Already a member?{' '}
               <Link
                 to="/login"
-                className="ba-textlink inline-flex min-h-11 items-center"
+                className="ba-textlink inline-flex min-h-11 min-w-11 items-center justify-center px-1"
                 onClick={() => trackLoginClick('closing')}
               >
                 Log in

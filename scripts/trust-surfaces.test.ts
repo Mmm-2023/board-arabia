@@ -17,7 +17,7 @@ import {
   registerStrip,
   TRUST_COPY,
   UPLOAD_HANDLING,
-  DATA_SECURE_LINE,
+  HOSTING_ENCRYPTION_LINE,
 } from '../src/content/trust.ts'
 import { MARKETING_PATHS } from '../src/content/seo.ts'
 import {
@@ -100,7 +100,8 @@ test('trust copy passes the do-not-say list and names no company', () => {
   assert.match(copy, /Two-step sign-in with an authenticator app is optional for admin and for every member/)
   assert.match(copy, /unless you choose to share it with admin/)
   assert.match(copy, /a specialist AI provider/)
-  assert.match(copy, new RegExp(DATA_SECURE_LINE.replace(/[.]/g, '\\.')))
+  assert.match(copy, new RegExp(HOSTING_ENCRYPTION_LINE.replace(/[.]/g, '\\.')))
+  assert.equal(copy.includes('All your data is secure and fully encrypted'), false)
   assert.equal(copy.includes('We name that provider'), false)
   assert.equal(/\bFrankfurt\b|\bGermany\b|European Union/.test(copy), false)
   assert.match(ISO_FOOTNOTE, /does not hold an ISO 27001 or SOC 2 certification/)
@@ -131,7 +132,8 @@ test('/security prerender output omits the DD 30-day line and keeps the allowed 
 
     const landing = render('/').body
     assert.match(landing, /data-trust-strip="landing"/)
-    assert.match(landing, /encrypted in transit and at rest/)
+    assert.equal(landing.includes('All your data is secure and fully encrypted'), false)
+    assert.equal(landing.includes('encrypted in transit and at rest'), false)
     assert.equal(landing.includes('throughout'), false)
     assert.equal(read('src/pages/LandingPage.tsx').includes('throughout'), false)
     assert.equal(read('src/content/trust.ts').includes('throughout'), false)
@@ -197,11 +199,11 @@ test('public pages outside the legal pages do not say Frankfurt or Germany', asy
     }
     const landing = render('/')
     const security = render('/security')
-    assert.match(landing.body, /data-feature="secure"/)
-    assert.match(landing.body, /Secure and encrypted/)
-    assert.match(landing.body, /All your data is secure and fully encrypted, in transit and at rest\./)
+    assert.equal(landing.body.includes('data-feature="secure"'), false)
+    assert.equal(landing.body.includes('All your data is secure and fully encrypted'), false)
     assert.match(security.body, /How your data is protected/)
-    assert.match(security.body, /All your data is secure and fully encrypted, in transit and at rest\./)
+    assert.match(security.body, /Data is encrypted in transit and at rest by our hosting provider\./)
+    assert.equal(security.body.includes('All your data is secure and fully encrypted'), false)
     assert.equal(
       security.description,
       'How Board Arabia protects applications and member data: members-only directory, private storage, encryption and two-step sign-in.',

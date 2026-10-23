@@ -105,7 +105,7 @@ test('public copy keeps one booking phrase, invite email, and the scale pair', (
   const footer = read('src/components/Footer.tsx')
   const seo = read('src/content/seo.ts')
   const apply = read('src/pages/ApplyPage.tsx')
-  assert.equal((landing.match(/No public booking calendar/g) || []).length, 1)
+  assert.equal((landing.match(/No public booking calendar/g) || []).length, 0)
   assert.equal(footer.includes('No public calendar'), false)
   assert.equal(seo.includes('private next-step email'), false)
   assert.equal(seo.includes('Private next step by email'), false)
