@@ -14,7 +14,7 @@ VERIFIED. The diff has no mailbox, API key, token, password, service-role key, o
 | --- | --- | --- |
 | P1-1 Five membership tiles, Example deals preview, See all member tools | Done | `src/content/landingFeatures.ts:33-69`, `src/pages/LandingPage.tsx:237-268` |
 | P1-2 Remove "All your data is secure and fully encrypted". Keep the hosting line on the trust page | Done | `src/content/trust.ts:24-30`, `:66`, `:69-71`, `:87-88`. Trust page renders `WHERE_DATA_LIVES` from `src/pages/SecurityPage.tsx`. Catalog card `encrypted` uses the hosting line at `src/content/landingFeatures.ts:227-233` and is not rendered on the home |
-| P1-3 Hero opens with who it is for. Held for line removed | Done | `src/pages/LandingPage.tsx:115-127` |
+| P1-3 Hero opens with who it is for. Held for line removed | Done | `src/pages/LandingPage.tsx:115-127`. The locked prerender still requires the substring "No public booking calendar", so that sentence sits once under How it works (`src/pages/LandingPage.tsx:298-299`), not in the hero |
 | P1-4 Why intro and cards are one-liners. H2 unchanged | Done | `src/pages/LandingPage.tsx:27-39`, `:147` |
 | P1-5 Card and preview body at 15px, line height 1.45 | Done | `src/pages/LandingPage.tsx:165`, `:257`. Preview body `src/index.css:755-759`. Preview labels and Example chip at 14px: `src/index.css:710-740`, `src/components/ExampleMark.tsx:5`, `src/components/landing/ProductFrame.tsx:33` |
 | P2-1 How it works is titles only, plus one review line | Done | `src/components/landing/StepDiagram.tsx:14`, `src/pages/LandingPage.tsx:298-307` |
