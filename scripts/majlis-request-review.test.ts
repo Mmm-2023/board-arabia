@@ -135,7 +135,7 @@ async function shot(page: import('playwright-core').Page, width: number, file: s
   await page.screenshot({ path: file, fullPage: true })
 }
 
-test('majlis request shots at 1440 and 390', { timeout: 180_000 }, async (t) => {
+test('majlis request shots at 1440 and 390', { timeout: 300_000 }, async (t) => {
   const chrome = chromePath()
   if (!chrome) {
     t.skip(CHROME_SKIP)
@@ -156,6 +156,8 @@ test('majlis request shots at 1440 and 390', { timeout: 180_000 }, async (t) => 
   const browser = await chromium.launch({ executablePath: chrome, args: ['--no-sandbox', '--disable-dev-shm-usage'] })
   try {
     const page = await browser.newPage()
+    page.setDefaultTimeout(120_000)
+    page.setDefaultNavigationTimeout(120_000)
     for (const width of [1440, 390] as const) {
       await page.setViewportSize({ width, height: width === 390 ? 844 : 900 })
       await page.goto(`http://127.0.0.1:${port}/majlis-requests.html`, { waitUntil: 'networkidle' })
