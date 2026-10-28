@@ -624,6 +624,12 @@ export function ProfilePage({ preview }: { preview?: { src: string | null } }) {
             <p className="mt-2 text-[0.98rem] leading-relaxed text-ink/60">
               Phone, calendar, and capacity stay off your directory card.
             </p>
+            <Link
+              to="/dashboard/two-step#password"
+              className="mt-3 inline-flex min-h-12 items-center text-[0.95rem] font-semibold text-ink underline"
+            >
+              Change your password under Two-step sign-in
+            </Link>
           </div>
           <Field
             label="LinkedIn URL"

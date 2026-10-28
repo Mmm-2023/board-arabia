@@ -152,7 +152,7 @@ test('primary CTA follows profile, intro, majlis, mandate, then invite', () => {
   }
   assert.equal(primaryHomeCta(all)?.id, 'profile')
   assert.equal(primaryHomeCta(all)?.label, 'Complete profile')
-  assert.equal(primaryHomeCta({ ...all, profileReady: true, mustSetPassword: true })?.to, '/dashboard/profile#password')
+  assert.equal(primaryHomeCta({ ...all, profileReady: true, mustSetPassword: true })?.to, '/dashboard/two-step#password')
   assert.equal(primaryHomeCta({ ...all, profileReady: true })?.id, 'intro')
   assert.equal(primaryHomeCta({ ...all, profileReady: true })?.label, 'Review intro')
   assert.equal(primaryHomeCta({ ...all, profileReady: true, pendingIntros: 0 })?.id, 'majlis')
@@ -468,7 +468,7 @@ test('needs you copy, this week lines, and live partners stay exact', () => {
       {
         title: 'Set your password',
         body: 'Set a password before you leave this session so your invite link is not the only way back in.',
-        to: '/dashboard/profile#password',
+        to: '/dashboard/two-step#password',
         cta: 'Set password',
       },
     ],
@@ -477,7 +477,7 @@ test('needs you copy, this week lines, and live partners stay exact', () => {
     items.map((item) => [item.label, item.action, item.to]),
     [
       [TWO_STEP_LABEL, 'Turn on', TWO_STEP_TO],
-      ['Set your password', 'Set password', '/dashboard/profile#password'],
+      ['Set your password', 'Set password', '/dashboard/two-step#password'],
       ["You're invited to a deal room: Care network room", 'View invite', '/dashboard/deals/rooms/a3000001-0000-4000-8000-000000000001'],
       ['2 suggested introductions for you', 'Suggested introductions', SUGGESTED_INTROS_TO],
     ],

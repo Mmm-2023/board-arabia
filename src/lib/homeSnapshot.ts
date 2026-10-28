@@ -251,7 +251,7 @@ export function primaryHomeCta(input: CtaInput): HomeCta | null {
     return {
       id: 'profile',
       label: 'Complete profile',
-      to: passwordOnly ? '/dashboard/profile#password' : '/dashboard/profile',
+      to: passwordOnly ? '/dashboard/two-step#password' : '/dashboard/profile',
     }
   }
   if (input.pendingIntros != null && input.pendingIntros > 0) {
@@ -534,7 +534,7 @@ export function assembleHome(input: AssembleInput): HomeModel {
       founding,
       seatLabel: homeSeatLabel(input.seat),
       profileNeedsWork,
-      profileTo: input.mustSetPassword && input.profileReady ? '/dashboard/profile#password' : '/dashboard/profile',
+      profileTo: input.mustSetPassword && input.profileReady ? '/dashboard/two-step#password' : '/dashboard/profile',
     },
     attention: input.attention,
     pulse,

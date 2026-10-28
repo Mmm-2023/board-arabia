@@ -257,7 +257,7 @@ export function DashboardHome() {
     attention.push({
       title: 'Set your password',
       body: 'Set a password before you leave this session so your invite link is not the only way back in.',
-      to: '/dashboard/profile#password',
+      to: '/dashboard/two-step#password',
       cta: 'Set password',
     })
   }
