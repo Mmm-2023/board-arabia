@@ -1,22 +1,14 @@
-import { normalizeTags, SECTOR_TAGS, VISION_2030_THEMES } from './profileTags.ts'
+import { isAvailability, normalizeTags, SECTOR_TAGS, VISION_2030_THEMES } from './profileTags.ts'
 
-/** Exact empty-state line when sectors or themes are missing. */
-export const ADD_SECTORS_AND_THEMES = 'Add your sectors and themes to get suggested introductions.'
-
-/** Exact empty-state line when the member already has sectors and themes. */
+/** Exact empty-state line when the member already has weekly intros on. */
 export const NO_SUGGESTIONS_THIS_WEEK = 'No suggested introductions this week.'
-
-/** Home prompt. Intro suggestions use these fields. */
-export const PROFILE_PROMPT_LINE =
-  'Add your sectors, themes, and location. Intro suggestions depend on them.'
-
-export const SUGGESTION_PROFILE_HREF = '/dashboard/profile#profile-tags'
 
 export type SuggestionProfile = {
   status: 'loading' | 'ready' | 'error'
   sectorSet: boolean
   themeSet: boolean
   locationSet: boolean
+  availabilitySet: boolean
 }
 
 export function profilePromptStorageKey(userId: string) {
@@ -27,35 +19,23 @@ export function isProfilePromptDismissed(stored: string | null) {
   return stored === '1'
 }
 
-/** Weekly suggestions need at least one sector and one theme. Location is prompted separately. */
-export function suggestionTagsReady(profile: Pick<SuggestionProfile, 'sectorSet' | 'themeSet'>) {
-  return profile.sectorSet && profile.themeSet
-}
-
-export function suggestionProfileNeedsPrompt(
-  profile: Pick<SuggestionProfile, 'sectorSet' | 'themeSet' | 'locationSet'>,
-) {
-  return !profile.sectorSet || !profile.themeSet || !profile.locationSet
-}
-
-/** True only while the Home prompt is on screen. */
-export function profilePromptShowing(input: {
-  staff: boolean
-  dismissed: boolean
-  profile: Pick<SuggestionProfile, 'status' | 'sectorSet' | 'themeSet' | 'locationSet'>
-}) {
-  if (input.staff || input.dismissed || input.profile.status === 'loading') return false
-  return suggestionProfileNeedsPrompt(input.profile)
-}
-
 export function suggestionProfileFromFields(
-  row: { location?: string | null; sector_tags?: unknown; vision_themes?: unknown } | null | undefined,
-): Pick<SuggestionProfile, 'sectorSet' | 'themeSet' | 'locationSet'> {
-  if (!row) return { sectorSet: false, themeSet: false, locationSet: false }
+  row:
+    | {
+        location?: string | null
+        sector_tags?: unknown
+        vision_themes?: unknown
+        availability?: unknown
+      }
+    | null
+    | undefined,
+): Pick<SuggestionProfile, 'sectorSet' | 'themeSet' | 'locationSet' | 'availabilitySet'> {
+  if (!row) return { sectorSet: false, themeSet: false, locationSet: false, availabilitySet: false }
   const location = typeof row.location === 'string' ? row.location.trim() : ''
   return {
     sectorSet: normalizeTags(row.sector_tags, SECTOR_TAGS).length > 0,
     themeSet: normalizeTags(row.vision_themes, VISION_2030_THEMES).length > 0,
     locationSet: location.length > 0,
+    availabilitySet: isAvailability(row.availability),
   }
 }

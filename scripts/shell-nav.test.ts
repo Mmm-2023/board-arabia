@@ -215,6 +215,7 @@ test('routes drop the trailing slash and unknown paths render page not found', a
     await page.goto(`${origin}/no-such-page`)
     await page.locator('[data-screen="not-found"]').getByRole('link', { name: 'Apply', exact: true }).click()
     await page.waitForURL((url) => url.pathname === '/apply')
+    await page.getByText(/consideration/i).first().waitFor()
     assert.match(await page.locator('body').innerText(), /consideration/i)
 
     await page.goto(`${origin}/no-such-page`)
@@ -301,6 +302,7 @@ test('routes drop the trailing slash and unknown paths render page not found', a
 
     await page.goto(`${origin}/dashboard/profile#password`)
     await page.locator('#password').waitFor()
+    await page.waitForFunction(() => location.pathname === '/dashboard/two-step' && location.hash === '#password')
     const passwordTop = await page.evaluate(() => {
       const form = document.getElementById('password')
       const header = document.querySelector('header')

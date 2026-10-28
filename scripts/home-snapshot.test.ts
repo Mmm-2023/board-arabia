@@ -35,7 +35,6 @@ import {
   buildNeedsYou,
   digestPreviewLines,
   liveHomePartners,
-  profileGapLabel,
   roomInviteCopy,
 } from '../src/lib/homeNeeds.ts'
 
@@ -453,9 +452,6 @@ test('needs you copy, this week lines, and live partners stay exact', () => {
   assert.equal(NEEDS_YOU_TITLE, 'Needs you')
   assert.equal(NEEDS_YOU_SUBTITLE, 'A few things to finish so your membership works for you.')
   assert.equal(NEEDS_YOU_EMPTY, "You're all set. Nothing needs you right now.")
-  assert.equal(profileGapLabel(1), 'One step left to complete your profile')
-  assert.equal(profileGapLabel(3), 'Your profile is 3 steps from complete')
-  assert.equal(profileGapLabel(0), null)
   assert.equal(roomInviteCopy(1, 'Care network room')?.label, "You're invited to a deal room: Care network room")
   assert.equal(roomInviteCopy(1, 'Care network room')?.action, 'View invite')
   assert.equal(roomInviteCopy(2, 'Care network room')?.label, 'You have 2 deal room invites')
@@ -466,7 +462,6 @@ test('needs you copy, this week lines, and live partners stay exact', () => {
   assert.equal(SEE_MORE_ACCESSIBLE, 'Show more from Board Arabia')
   const items = buildNeedsYou({
     twoStepOff: true,
-    profileGaps: 1,
     invites: [{ id: 'a3000001-0000-4000-8000-000000000001', name: 'Care network room' }],
     suggestionCount: 2,
     attention: [
@@ -483,14 +478,12 @@ test('needs you copy, this week lines, and live partners stay exact', () => {
     [
       [TWO_STEP_LABEL, 'Turn on', TWO_STEP_TO],
       ['Set your password', 'Set password', '/dashboard/profile#password'],
-      ['One step left to complete your profile', 'Finish profile', '/dashboard/profile#profile-tags'],
       ["You're invited to a deal room: Care network room", 'View invite', '/dashboard/deals/rooms/a3000001-0000-4000-8000-000000000001'],
       ['2 suggested introductions for you', 'Suggested introductions', SUGGESTED_INTROS_TO],
     ],
   )
   assert.equal(buildNeedsYou({
     twoStepOff: false,
-    profileGaps: 0,
     invites: [],
     suggestionCount: 0,
     attention: [],
@@ -552,7 +545,6 @@ test('home sections follow needs you, this week, one next action, activity, then
           weekLines: ['Example Member', 'A clear example mandate.', 'Example gathering'],
           needsYou: buildNeedsYou({
             twoStepOff: true,
-            profileGaps: 2,
             invites: [],
             suggestionCount: 1,
             attention: [],
@@ -568,8 +560,8 @@ test('home sections follow needs you, this week, one next action, activity, then
     const moreAt = html.indexOf('data-home-more')
     assert.ok(needsAt >= 0 && needsAt < weekAt && weekAt < nextAt && nextAt < activityAt && activityAt < moreAt)
     assert.match(html, new RegExp(NEEDS_YOU_TITLE))
-    assert.match(html, /Your profile is 2 steps from complete/)
-    assert.match(html, /href="\/dashboard\/profile#profile-tags"/)
+    assert.equal(html.includes('Your profile is 2 steps from complete'), false)
+    assert.equal(html.includes('Finish your profile'), false)
     assert.match(html, /1 suggested introductions for you/)
     assert.match(html, new RegExp(`href="${SUGGESTED_INTROS_TO}"`))
     assert.match(html, /Example Member/)

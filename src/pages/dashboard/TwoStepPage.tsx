@@ -4,8 +4,11 @@ import { supabase } from '../../lib/supabase'
 import { useNoIndex } from '../../lib/usePageTitle'
 import { TwoStepEnrolScreen } from '../../components/mfa/TwoStepScreens'
 import { AccountBackLink } from './AccountBackLink'
+import { SetPasswordForm } from './SetPasswordForm'
+import { useMember } from './context'
 
 export function TwoStepPage() {
+  const { member } = useMember()
   const [code, setCode] = useState('')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
@@ -80,18 +83,17 @@ export function TwoStepPage() {
     }
   }
 
-  if (!ready) {
-    return (
-      <div>
-        <AccountBackLink />
-        <p className="text-ink/60">Loading…</p>
-      </div>
-    )
-  }
+  const passwordFirst = member.must_set_password
 
   return (
-    <div>
+    <div className="max-w-xl">
       <AccountBackLink />
+      {passwordFirst ? (
+        <div className="mb-12">
+          <SetPasswordForm />
+        </div>
+      ) : null}
+      {!ready ? <p className="text-ink/60">Loading…</p> : (
       <TwoStepEnrolScreen
       tone="light"
       forced={false}
@@ -106,6 +108,12 @@ export function TwoStepPage() {
       onStart={() => void startEnrol()}
       onRemove={(id) => void onRemove(id)}
       />
+      )}
+      {passwordFirst ? null : (
+        <div className="mt-12 border-t border-ink/10 pt-10">
+          <SetPasswordForm />
+        </div>
+      )}
     </div>
   )
 }

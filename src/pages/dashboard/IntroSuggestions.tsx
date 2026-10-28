@@ -2,11 +2,8 @@ import { type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { Avatar } from '../../components/Avatar'
 import { suggestionDetail, WEEKLY_INTRO_SUGGESTION_LINE, type IntroSuggestion } from '../../lib/introSuggestions'
-import {
-  ADD_SECTORS_AND_THEMES,
-  NO_SUGGESTIONS_THIS_WEEK,
-  SUGGESTION_PROFILE_HREF,
-} from '../../lib/suggestionProfile'
+import { PROFILE_SECTION_HREF, WEEKLY_INTROS_CARD_CTA, WEEKLY_INTROS_EMPTY } from '../../lib/profileCompleteness'
+import { NO_SUGGESTIONS_THIS_WEEK } from '../../lib/suggestionProfile'
 import type { IntroQuota, IntroStatus } from '../../lib/memberIntros'
 import { EmptyState } from '../../shell/ViewState'
 import { DirectoryIntroAction } from './DirectoryIntroAction'
@@ -44,10 +41,10 @@ export function IntroSuggestions({
         <div className="mt-3" data-suggestion-empty={emptyMode === 'needs_tags' ? 'needs-tags' : 'complete'}>
           {emptyMode === 'needs_tags' ? (
             <>
-              <EmptyState tone="member" message={ADD_SECTORS_AND_THEMES} />
+              <EmptyState tone="member" message={WEEKLY_INTROS_EMPTY} />
               <p className="mt-3">
-                <Link to={SUGGESTION_PROFILE_HREF} className="inline-flex min-h-11 items-center text-ink underline">
-                  Profile
+                <Link to={PROFILE_SECTION_HREF.focus} className="inline-flex min-h-12 items-center text-ink underline">
+                  {WEEKLY_INTROS_CARD_CTA}
                 </Link>
               </p>
             </>
