@@ -545,7 +545,7 @@ begin
       'staff_get_intro_monthly_limit','staff_get_own_display_name','staff_intro_funnel',
       'staff_link_re_club_room','staff_list_access_log','staff_list_all_intros',
       'staff_list_desk_intros','staff_list_intro_deals','staff_list_mandate_intros',
-      'staff_list_mandate_matches','staff_list_mandates','staff_list_partner_interest',
+      'staff_list_mandate_matches','staff_list_mandates','staff_list_partner_interest','staff_list_profiles',
       'staff_list_re_appetites','staff_list_re_board_role_intros','staff_list_re_club_interest',
       'staff_list_re_opportunity_intros','staff_list_re_partner_intros','staff_list_sponsor_catalog',
       'staff_list_sponsor_intros','staff_list_sponsor_options','staff_list_trusted_partners',
