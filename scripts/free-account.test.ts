@@ -103,6 +103,7 @@ test('member card helper is false for a free account and every caller is reviewe
     'supabase/migrations/20261218120000_digest_sections.sql',
     'supabase/migrations/20261227120000_board_seats_member.sql',
     migration,
+    'supabase/migrations/20270108120000_boardroom_fields.sql',
   ]
   const callers = walk('supabase').filter((rel) => read(rel).includes('caller_sees_member_card')).sort()
   assert.deepEqual(callers, reviewed)

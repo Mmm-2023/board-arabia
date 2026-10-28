@@ -37,7 +37,7 @@ Do not build matching in this PR.
 - `public.profile_board_roles`: `user_id`, `organisation`, `role`, `org_type`, `position` (1 to 5).
 - `public.profile_boardroom`: `user_id`, `open_to_seats` (boolean, Yes is true, Not now is false), `seat_types`, `seat_where`, `expertise`.
 - `private.board_seat_match_fields(uuid)` returns `board_seat_type` and `board_seat_where` as text. Both are empty unless `open_to_seats` is true and that list has a value. A match is on only when both are non-empty. `staff_list_profiles` reads this helper.
-- `list_directory` adds `board_roles` (`role`, `org_type`, `organisation`), `open_to_board_seats`, `seat_types`, `seat_where`, `expertise`. Same hidden-member and partner opt-in rules as the rest of the card. No email, phone, or turnover keys.
+- `list_directory` adds `board_roles` (`role`, `org_type`, `organisation`), `open_to_board_seats`, `seat_types`, `seat_where`, `expertise`. It still calls `private.caller_sees_member_card` and `private.can_read_member_room`, so a free account still cannot read the directory. The caller list in `scripts/free-account.test.ts` includes this migration. No email, phone, or turnover keys.
 
 Role titles: Chair, Vice chair, Independent director, Non-executive director, Committee chair, Adviser.
 
