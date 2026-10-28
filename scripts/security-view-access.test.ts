@@ -276,6 +276,7 @@ test('every staff_* function checks staff and is not executable by anon', () => 
     'staff_list_sponsor_intros',
     'staff_decide_sponsor_intro',
     'staff_list_partner_interest',
+    'staff_list_profiles',
     'staff_mark_partner_interest_seen',
     'staff_read_membership_request',
     'staff_read_member',
