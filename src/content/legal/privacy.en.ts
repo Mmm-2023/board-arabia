@@ -505,7 +505,7 @@ export const PRIVACY_EN: LegalDocument = {
       "kind": "clause",
       "id": "c-11-2",
       "number": "11.2",
-      "text": "To use these rights, write to [CONTACT EMAIL] or [DPO CONTACT]. We may ask you to confirm your identity. We will reply within the period the PDPL sets."
+      "text": "We have not appointed a data protection officer. Questions about your data go to [CONTACT EMAIL]."
     },
     {
       "kind": "clause",
