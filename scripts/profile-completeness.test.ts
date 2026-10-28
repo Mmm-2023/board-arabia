@@ -104,7 +104,8 @@ test('profile password hash redirects to the sign-in page anchor', () => {
   assert.match(read('src/pages/dashboard/ProfilePage.tsx'), /profilePasswordTarget\(hash\)/)
   assert.equal(read('src/shell/destinations.ts').includes('password'), false)
   const migrations = readdirSync(path.join(root, 'supabase/migrations')).filter((name) => name.endsWith('.sql'))
-  assert.equal(migrations.some((name) => name.startsWith('20270107')), false)
+  assert.equal(migrations.some((name) => /profile_completeness|profile-page/.test(name)), false)
+  assert.equal(migrations.includes('20270107120000_staff_list_profiles.sql'), true)
 })
 
 test('profile fold, sticky save, and the set-password route', async (t) => {

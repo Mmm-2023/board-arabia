@@ -18,6 +18,7 @@ import {
 } from '../../lib/linkedinConnect'
 import { LINKEDIN_CONNECT_ENABLED, LINKEDIN_COPY } from '../../lib/linkedinFlag'
 import type { ProfileRow } from '../../lib/member'
+import { boardSeatFieldsForCompleteness } from '../../lib/boardroom'
 import { profileCompleteness, profilePasswordTarget, type CompletenessRow } from '../../lib/profileCompleteness'
 import {
   isAvailability,
@@ -33,6 +34,7 @@ import { useNoIndex } from '../../lib/usePageTitle'
 import { useMember } from './context'
 import { LinkedInConnect } from './LinkedInConnect'
 import { MemberAvatar } from './MemberAvatar'
+import { BoardroomSection, type BoardroomPreview } from './BoardroomSection'
 import { ProfileTagFields } from './ProfileTagFields'
 
 const fieldClass =
@@ -56,7 +58,13 @@ type Draft = {
   themes: string
 }
 
-export function ProfilePage({ preview }: { preview?: { src: string | null } }) {
+export function ProfilePage({
+  preview,
+  boardroomPreview,
+}: {
+  preview?: { src: string | null }
+  boardroomPreview?: BoardroomPreview
+}) {
   const { userId, email, profile, member, reload } = useMember()
   const [fullName, setFullName] = useState(profile?.full_name ?? '')
   const [headline, setHeadline] = useState(profile?.headline ?? '')
@@ -81,6 +89,11 @@ export function ProfilePage({ preview }: { preview?: { src: string | null } }) {
   const [tagNote, setTagNote] = useState('')
   const [tagStatus, setTagStatus] = useState<'loading' | 'ready' | 'error'>(tagsFromProfile ? 'ready' : 'loading')
   const [tagAttempt, setTagAttempt] = useState(0)
+  const [seatFields, setSeatFields] = useState(() =>
+    boardroomPreview
+      ? boardSeatFieldsForCompleteness(boardroomPreview)
+      : { boardSeatType: '', boardSeatWhere: '' },
+  )
   const [includeInPublic, setIncludeInPublic] = useState(profile?.include_in_public_aggregates !== false)
   const [includeSource, setIncludeSource] = useState(profile?.include_in_public_aggregates)
   const saved = useRef<Draft>({
@@ -412,6 +425,8 @@ export function ProfilePage({ preview }: { preview?: { src: string | null } }) {
     city: cityText,
     sectorCount: sectors.length,
     availabilitySet: availability != null,
+    boardSeatType: seatFields.boardSeatType,
+    boardSeatWhere: seatFields.boardSeatWhere,
   })
 
   return (
@@ -555,6 +570,12 @@ export function ProfilePage({ preview }: { preview?: { src: string | null } }) {
             />
           )}
         </section>
+
+        <BoardroomSection
+          preview={boardroomPreview}
+          enabled={Boolean(profile)}
+          onMatchChange={setSeatFields}
+        />
 
         <section id="focus" aria-labelledby="focus-title" className="scroll-mt-24 space-y-5">
           <div>

@@ -64,7 +64,7 @@ begin
     create role service_role nologin;
   end if;
 exception
-  when unique_violation then
+  when unique_violation or duplicate_object then
     null;
 end
 $roles$;
