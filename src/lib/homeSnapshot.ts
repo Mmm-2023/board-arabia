@@ -118,7 +118,7 @@ export type HomeModel = {
     to: string
   } | null
   cta: HomeCta | null
-  /** Sector and availability still Needed. Null when both are set, or while unknown. */
+  /** Kept for older fixtures. Profile completeness now lives in profileCompleteness.ts. */
   profileNudge: ProfileMatchNudge | null
   /** True only while the sector and availability read is still in flight. */
   profileMatchPending: boolean
@@ -245,27 +245,13 @@ export type ProfileMatchNudge = {
   to: string
 }
 
-export const PROFILE_TAGS_HREF = '/dashboard/profile#profile-tags'
-
-/** Count of sector and availability still Needed. Both set, or not yet known, returns null. */
-export function profileMatchNudge(input: ProfileMatchInput | null | undefined): ProfileMatchNudge | null {
-  if (!input || input.status !== 'ready') return null
-  const missing = (input.availabilitySet ? 0 : 1) + (input.sectorSet ? 0 : 1)
-  if (missing === 0) return null
-  return {
-    missing,
-    line: `Finish your profile: add sector and availability (${missing} left)`,
-    to: PROFILE_TAGS_HREF,
-  }
-}
-
 export function primaryHomeCta(input: CtaInput): HomeCta | null {
   if (!input.profileReady || input.mustSetPassword) {
     const passwordOnly = input.mustSetPassword && input.profileReady
     return {
       id: 'profile',
       label: 'Complete profile',
-      to: passwordOnly ? '/dashboard/profile#password' : '/dashboard/profile',
+      to: passwordOnly ? '/dashboard/two-step#password' : '/dashboard/profile',
     }
   }
   if (input.pendingIntros != null && input.pendingIntros > 0) {
@@ -548,7 +534,7 @@ export function assembleHome(input: AssembleInput): HomeModel {
       founding,
       seatLabel: homeSeatLabel(input.seat),
       profileNeedsWork,
-      profileTo: input.mustSetPassword && input.profileReady ? '/dashboard/profile#password' : '/dashboard/profile',
+      profileTo: input.mustSetPassword && input.profileReady ? '/dashboard/two-step#password' : '/dashboard/profile',
     },
     attention: input.attention,
     pulse,
@@ -560,7 +546,7 @@ export function assembleHome(input: AssembleInput): HomeModel {
         }
       : null,
     cta,
-    profileNudge: input.loading ? null : profileMatchNudge(input.profileMatch),
+    profileNudge: null,
     profileMatchPending: !input.loading && input.profileMatch?.status === 'loading',
     platform: {
       fill,
