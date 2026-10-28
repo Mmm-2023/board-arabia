@@ -37,6 +37,11 @@ jobs:
           VITE_SUPABASE_URL: https://iirqbizwanyhgkhanntq.supabase.co
           VITE_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlpcnFiaXp3YW55aGdraGFubnRxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAwNzMzMjEsImV4cCI6MjEwNTY0OTMyMX0.VSxdt1GVSka1Il7oozc6K_9pIKy8zFYegomBvWgOQDY
           VITE_LEGAL_CONTACT_EMAIL: ${{ vars.VITE_LEGAL_CONTACT_EMAIL }}
+          VITE_LEGAL_ADDRESS: ${{ vars.VITE_LEGAL_ADDRESS }}
+          VITE_LEGAL_DPO_CONTACT: ${{ vars.VITE_LEGAL_DPO_CONTACT }}
+          VITE_LEGAL_AI_PROVIDER: ${{ vars.VITE_LEGAL_AI_PROVIDER }}
+          VITE_LEGAL_PARTNERS_EMAIL: ${{ vars.VITE_LEGAL_PARTNERS_EMAIL }}
+          VITE_LEGAL_SERVICE_EMAIL: ${{ vars.VITE_LEGAL_SERVICE_EMAIL }}
           APPLE_TEAM_ID: ${{ vars.APPLE_TEAM_ID }}
           ANDROID_APP_LINK_SHA256: ${{ vars.ANDROID_APP_LINK_SHA256 }}
         run: npm run build
