@@ -6,9 +6,9 @@ Member profile and directory card: boards held, open to new seats, and expertise
 
 - VERIFIED: brief base was main `ee1938d`. This work started from main `3d8314b` (privacy and terms placeholders, #205).
 - VERIFIED: migration slot `20261212120000` in the brief is weekly digest on main. Latest migration on main at start was `20270106120000_majlis_request_review.sql`. Open PF-5 (#207) reserves `20270107120000_staff_list_profiles.sql` and is not on main. This PR uses `20270108120000_boardroom_fields.sql`.
-- VERIFIED: PF-4 (#206, `cursor/pf-4-profile-completeness-162f`) and PF-5 (#207, `cursor/pf-5-admin-profiles-84ef`) were open and unmerged. Their files were not edited. Profile on main is still one form titled "Your details", not PF-4's Your card / Focus / Private sections. Boardroom is inserted between City and the tag fields, which is the card-then-focus seam on this page (`src/pages/dashboard/ProfilePage.tsx`).
-- VERIFIED: PF-4's unmerged `profileCompleteness` already shows a "Board seat matches on" row when `boardSeatType` or `boardSeatWhere` is passed. This PR computes those two strings in `boardSeatFieldsForCompleteness` (`src/lib/boardroom.ts`). The live checklist on main uses the same boolean (`ProfilePage.tsx`).
-- VERIFIED: the admin People > Profiles page does not exist on main. PF-5's `staff_list_profiles` hardcodes `board_seat_type` and `board_seat_where` as null, which hides the chip. This PR does not create or replace that staff function. Creating it here would add a `staff_*` name to the inventory in `scripts/security-view-access.test.ts` (a PF-5 file) and an earlier migration applied later would put the nulls back. `private.board_seat_match_fields(uuid)` is the helper a later replace should read.
+- VERIFIED: PF-4 (#206, `4665c4f`) and PF-5 (#207, `3977f24`) are merged. This branch merges that main. Boardroom sits between Your card and Focus on the profile page.
+- VERIFIED: `profileCompleteness` shows "Board seat matches on" when `boardSeatType` or `boardSeatWhere` is passed. `ProfilePage` passes `boardSeatFieldsForCompleteness`. Both empty strings mean the row is visible and not done. Omitting the keys still hides the row, which is how home stays until those fields are loaded there.
+- VERIFIED: `staff_list_profiles` from `20270107120000` returns null for the two board keys. `20270108120000` replaces that function and fills them from `private.board_seat_match_fields`. Empty text means the admin chip is off. `adminProfileList.ts` was not edited. It already treats strings as known and null as hidden.
 - VERIFIED: `private.is_staff()` on main (`20261230120000_staff_aal1_access.sql`) does not check aal2. Boardroom writes still reject staff by calling `private.is_staff()`.
 - VERIFIED: no Edge function reads `list_directory`. No Edge deploy.
 - INFERRED: shots are 390 and 1440, as asked for this run. The brief asked for 1280 and 390.
@@ -22,7 +22,7 @@ Member profile and directory card: boards held, open to new seats, and expertise
 | Expertise, up to 5 | `profile_boardroom.expertise` | same |
 | Profile Boardroom section | `BoardroomSection.tsx`, mounted from `ProfilePage.tsx` | `boardroom route stays on the profile page` |
 | Card: roles, chip, expertise; seat types and where when expanded | `DirectoryBoardroom.tsx`, `DirectoryBoard.tsx`, `presentDirectoryCard` | `directory card drops contact text and keeps permitted board fields` |
-| Completeness row | `BOARD_SEAT_MATCHES_LABEL` on the profile checklist | client match test |
+| Completeness row | `profileCompleteness` via `boardSeatType` and `boardSeatWhere` on `ProfilePage` | `PF-6 and PF-7 rows appear only when their fields are passed` |
 | Admin chip contract | `adminSeatMatchState`, `SeatMatchChip.tsx` | client match test and the chip copy test |
 | Use what you told us | `applicationWhereOffer`: `ksa_gcc` to Saudi Arabia and GCC, `intl` to International. Shown before the tap. | client match test |
 | Application board seats text | Read-only "You told us:" plus Dismiss via existing `dismiss_my_application_answer` | SQL test dismisses `board_seats` |
@@ -36,7 +36,7 @@ Do not build matching in this PR.
 
 - `public.profile_board_roles`: `user_id`, `organisation`, `role`, `org_type`, `position` (1 to 5).
 - `public.profile_boardroom`: `user_id`, `open_to_seats` (boolean, Yes is true, Not now is false), `seat_types`, `seat_where`, `expertise`.
-- `private.board_seat_match_fields(uuid)` returns `board_seat_type` and `board_seat_where` as text. Both are empty unless `open_to_seats` is true and that list has a value. A match is on only when both are non-empty.
+- `private.board_seat_match_fields(uuid)` returns `board_seat_type` and `board_seat_where` as text. Both are empty unless `open_to_seats` is true and that list has a value. A match is on only when both are non-empty. `staff_list_profiles` reads this helper.
 - `list_directory` adds `board_roles` (`role`, `org_type`, `organisation`), `open_to_board_seats`, `seat_types`, `seat_where`, `expertise`. Same hidden-member and partner opt-in rules as the rest of the card. No email, phone, or turnover keys.
 
 Role titles: Chair, Vice chair, Independent director, Non-executive director, Committee chair, Adviser.
@@ -68,11 +68,11 @@ Skills applied: Board Arabia UX UI, and Dashboard UX desktop and mobile.
 - Phone targets on the new controls are 48px (`min-h-12`), 44px from `md` up. The directory More control follows the same sizes.
 - Empty: "No board roles yet" and "Add a board role". Loading: skeleton. Error: message and Retry. Missing profile: ask our admin team.
 - Directory: roles, expertise chips, and the "Open to board seats" chip on the card face. Seat types and Where are in the expanded card (More on a phone, always on desktop).
-- The admin chip shot is a staff-shell fixture of `SeatMatchChip`, not the unmerged PF-5 page. Names use ink on a white card.
+- The admin Profiles page from PF-5 shows "Seat matches on" or "Seat matches off" once the replaced `staff_list_profiles` returns text. Both null still hides the chip. The fixture shot uses the same chip.
 
 ## Shots
 
-Before and after at 390 and 1440 in this folder. Example data only (`example.com`, Example Holdings, Example Member).
+Before and after at 390 and 1440 in this folder. Example data only (`example.com`, Example Holdings, Example Member). Profile after shots are the merged page: Your card, then Boardroom, then Focus.
 
 - Profile empty, filled, application offer, and load error.
 - Directory card, and the expanded card.
@@ -81,15 +81,15 @@ Before and after at 390 and 1440 in this folder. Example data only (`example.com
 ## Not done
 
 - Focus fields, intro reasons, languages: PF-7.
-- Live admin Profiles list chip: the page and `staff_list_profiles` are PF-5, still open. After both land, replace the two nulls in that function with `private.board_seat_match_fields(m.user_id)`. Until then the chip stays hidden on that list because both values are null. The predicate and the chip component are in this PR.
-- PF-4 checklist module: when #206 merges, pass `boardSeatFieldsForCompleteness` into `profileCompleteness`. This PR does not edit that file.
+- `adminProfileList.ts` still has its own card and intros checks. It was not edited. The chip math already matches `boardSeatFieldsForCompleteness` when the list returns text.
 - Seat matching, nudges, and mail. A later in-app notice could tell admin that a member opened to seats. No send path was added. Email stays parked.
 - `private.can_read_member_room` still uses `search_path = public` from an older migration. This PR does not rewrite it.
 
 ## Apply
 
-1. `supabase/migrations/20270108120000_boardroom_fields.sql` after `20270106120000`. It does not depend on `20270107120000`. Do not apply it from the app or CI.
-2. No Edge functions.
+1. `supabase/migrations/20270107120000_staff_list_profiles.sql` (already on main, from PF-5).
+2. `supabase/migrations/20270108120000_boardroom_fields.sql` after that. It replaces `staff_list_profiles` so the two board keys are text from `private.board_seat_match_fields`. Do not apply it from the app or CI.
+3. No Edge functions.
 
 ## Secrets
 

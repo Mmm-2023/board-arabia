@@ -40,6 +40,7 @@ export function HomeSnapshotView({
   shareSlot = null,
   digestNotice = null,
   needsYou = null,
+  profileCard = null,
   weekLines = [],
   dailyBriefSlot = null,
   staff = false,
@@ -56,6 +57,7 @@ export function HomeSnapshotView({
   shareSlot?: ReactNode
   digestNotice?: DigestHomeNotice | null
   needsYou?: NeedsYouItem[] | null
+  profileCard?: ReactNode
   weekLines?: string[]
   dailyBriefSlot?: ReactNode
   staff?: boolean
@@ -84,7 +86,6 @@ export function HomeSnapshotView({
     model.teasers.majlis.length > 0
   const needsItems = (needsYou ?? buildNeedsYou({
     twoStepOff: false,
-    profileGaps: 0,
     invites: [],
     suggestionCount: 0,
     attention: model.attention,
@@ -149,6 +150,8 @@ export function HomeSnapshotView({
           </div>
         </section>
       ) : null}
+
+      {profileCard ? <div className="mt-4">{profileCard}</div> : null}
 
       <section aria-label="This week" className="mt-4" data-home-digest="">
         <div className={`${styles.panel} px-4 py-3`}>

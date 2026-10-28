@@ -3,7 +3,7 @@ import { SignedAvatar } from '../../components/SignedAvatar'
 import { suggestionPortrait } from './suggestionPortrait'
 import { fetchIntroContacts, fetchIntroQuota, fetchMyIntroSuggestions, fetchMyIntros, recordIntroMeet, requestMemberIntro, respondMemberIntro } from '../../lib/demoFetch'
 import type { IntroSuggestion } from '../../lib/introSuggestions'
-import { suggestionTagsReady } from '../../lib/suggestionProfile'
+import { weeklyIntrosOn } from '../../lib/profileCompleteness'
 import { useOwnSuggestionProfile } from '../../lib/suggestionProfileLoad'
 import { introQuotaHint, outgoingMemberStatus, type IntroContact, type IntroQuota, type IntroRow, type MeetOutcome } from '../../lib/memberIntros'
 import { useNoIndex } from '../../lib/usePageTitle'
@@ -144,7 +144,15 @@ export function IntrosPage() {
           errorId={requestErrorId}
           error={requestError}
           showEmpty={list.status === 'ready' && suggestionProfile.status !== 'loading'}
-          emptyMode={suggestionTagsReady(suggestionProfile) ? 'complete' : 'needs_tags'}
+          emptyMode={
+            suggestionProfile.status === 'ready' &&
+            weeklyIntrosOn({
+              sectorCount: suggestionProfile.sectorSet ? 1 : 0,
+              availabilitySet: suggestionProfile.availabilitySet,
+            })
+              ? 'complete'
+              : 'needs_tags'
+          }
           portrait={suggestionPortrait}
           onRequest={(id, reason, askDesk) => void onRequestSuggestion(id, reason, askDesk)}
         />

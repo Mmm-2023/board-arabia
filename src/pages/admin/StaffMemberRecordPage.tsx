@@ -10,13 +10,14 @@ type MemberRecord = {
   full_name: string
 }
 
-export function StaffMemberRecordPage() {
+export function StaffMemberRecordPage({ preview }: { preview?: MemberRecord } = {}) {
   const { memberId = '' } = useParams()
-  const [record, setRecord] = useState<MemberRecord | null>(null)
+  const [record, setRecord] = useState<MemberRecord | null>(preview ?? null)
   const [error, setError] = useState('')
   useNoIndex('Member record | Board Arabia')
 
   useEffect(() => {
+    if (preview) return
     let cancelled = false
     void supabase.rpc('staff_read_member', { p_user_id: memberId }).then(({ data, error: rpcError }) => {
       if (cancelled) return
@@ -37,7 +38,7 @@ export function StaffMemberRecordPage() {
     return () => {
       cancelled = true
     }
-  }, [memberId])
+  }, [memberId, preview])
 
   return (
     <div className="max-w-xl">

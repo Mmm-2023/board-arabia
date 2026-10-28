@@ -45,8 +45,8 @@ const migration = read(`supabase/migrations/${migrationName}`)
 test('boardroom migration slot, lists, and security text', () => {
   const names = readdirSync(migrationsDir).filter((name) => name.endsWith('.sql')).sort()
   assert.equal(names.at(-1), migrationName)
-  assert.ok(names.indexOf(migrationName) > names.indexOf('20270106120000_majlis_request_review.sql'))
-  assert.equal(names.includes('20270107120000_staff_list_profiles.sql'), false)
+  assert.ok(names.indexOf(migrationName) > names.indexOf('20270107120000_staff_list_profiles.sql'))
+  assert.match(migration, /private\.board_seat_match_fields\(m\.user_id\)/)
   assert.equal(/search_path\s*=\s*public/i.test(migration), false)
   assert.equal(migration.includes('\u2014'), false)
   assert.equal(migration.includes('\u2013'), false)
@@ -207,7 +207,8 @@ test('boardroom section, card, and admin chip keep the fixed copy', () => {
   assert.match(face, /Seat types/)
   assert.match(face, /Where/)
   assert.match(chip, /adminSeatMatchLabel/)
-  assert.match(profile, /BOARD_SEAT_MATCHES_LABEL/)
+  assert.match(profile, /boardSeatType: seatFields.boardSeatType/)
+  assert.match(read('src/lib/profileCompleteness.ts'), /BOARD_SEAT_LABEL/)
   for (const text of [section, face, chip]) {
     assert.equal(text.includes('\u2014'), false, 'em dash')
     assert.equal(text.includes('\u2013'), false, 'en dash')
@@ -523,6 +524,18 @@ begin
   listed := public.list_directory();
   if listed::text not like '%Visible Holdings%' or listed::text like '%staff.pf6@example.com%' then
     raise exception 'staff directory %', listed;
+  end if;
+  listed := public.staff_list_profiles();
+  select item into card
+  from jsonb_array_elements(listed) item
+  where item ->> 'member_id' = member_id::text;
+  if card is null
+     or card ->> 'board_seat_type' is distinct from 'Independent director'
+     or card ->> 'board_seat_where' is distinct from 'Saudi Arabia'
+     or card ? 'email'
+     or card ? 'phone'
+  then
+    raise exception 'staff profile list %', card;
   end if;
 
   set role anon;

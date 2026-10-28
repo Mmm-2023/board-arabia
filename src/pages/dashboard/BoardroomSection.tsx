@@ -6,7 +6,7 @@ import {
   BOARD_ROLE_TITLES,
   BOARD_SEAT_TYPES,
   BOARD_SEAT_WHERE,
-  boardSeatMatchesOn,
+  boardSeatFieldsForCompleteness,
   emptyBoardroom,
   MAX_BOARD_EXPERTISE,
   MAX_BOARD_ROLES,
@@ -43,7 +43,7 @@ export function BoardroomSection({
 }: {
   preview?: BoardroomPreview
   enabled?: boolean
-  onMatchChange?: (on: boolean) => void
+  onMatchChange?: (fields: { boardSeatType: string; boardSeatWhere: string }) => void
 }) {
   const offerId = useId()
   const [status, setStatus] = useState<'loading' | 'ready' | 'error' | 'missing'>(
@@ -68,7 +68,7 @@ export function BoardroomSection({
           return
         }
         setRecord(result.record)
-        onMatchChange?.(boardSeatMatchesOn(result.record))
+        onMatchChange?.(boardSeatFieldsForCompleteness(result.record))
         setStatus('ready')
         setError('')
       }),
@@ -81,7 +81,7 @@ export function BoardroomSection({
   async function persistFocus(next: BoardroomRecord) {
     if (preview) {
       setRecord(next)
-      onMatchChange?.(boardSeatMatchesOn(next))
+      onMatchChange?.(boardSeatFieldsForCompleteness(next))
       setNote('Saved')
       setError('')
       return true
@@ -96,7 +96,7 @@ export function BoardroomSection({
       return false
     }
     setRecord(next)
-    onMatchChange?.(boardSeatMatchesOn(next))
+    onMatchChange?.(boardSeatFieldsForCompleteness(next))
     setNote('Saved')
     return true
   }
@@ -213,7 +213,7 @@ export function BoardroomSection({
       id="boardroom"
       aria-labelledby="boardroom-title"
       aria-busy={status === 'loading' || saving}
-      className="scroll-mt-24 space-y-5 border-t border-ink/10 pt-10"
+      className="scroll-mt-24 space-y-5"
       onKeyDown={(event) => {
         const tag = (event.target as HTMLElement).tagName
         if (event.key === 'Enter' && (tag === 'INPUT' || tag === 'SELECT')) event.preventDefault()

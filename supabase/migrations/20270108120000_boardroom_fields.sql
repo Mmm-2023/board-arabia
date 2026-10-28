@@ -1,7 +1,6 @@
 -- Boardroom fields: roles held, open to new seats, expertise.
--- Apply after 20270106120000. Slot 20270107120000 is reserved by open PF-5
--- (staff_list_profiles) and is not used here.
--- Do not apply this file from the app, from CI, or against a live database.
+-- Apply after 20270107120000. Do not apply this file from the app, from CI,
+-- or against a live database.
 -- No Edge function. No mail.
 -- public.re_board_roles is a different table (real estate seats). Do not alter it.
 --
@@ -10,9 +9,7 @@
 -- profile_boardroom: user_id, open_to_seats, seat_types, seat_where, expertise
 -- private.board_seat_match_fields(uuid) returns board_seat_type and
 -- board_seat_where as text. Both are empty unless open_to_seats is true and
--- that list has a value. staff_list_profiles (PF-5) still returns null for
--- those two keys until a later replace reads this helper. This file does not
--- create a staff function.
+-- that list has a value. The staff list below reads that helper.
 
 create or replace function private.board_role_titles()
 returns text[]
@@ -300,27 +297,30 @@ $$;
 
 create or replace function private.board_seat_match_fields(p_user uuid)
 returns jsonb
-language sql
+language plpgsql
 stable
 security definer
 set search_path = ''
 as $$
-  select pg_catalog.jsonb_build_object(
-    'board_seat_type', case
-      when coalesce(b.open_to_seats, false)
-        and coalesce(pg_catalog.cardinality(b.seat_types), 0) > 0
-        then b.seat_types[1]
-      else ''
-    end,
-    'board_seat_where', case
-      when coalesce(b.open_to_seats, false)
-        and coalesce(pg_catalog.cardinality(b.seat_where), 0) > 0
-        then b.seat_where[1]
-      else ''
-    end
-  )
-  from (select p_user as user_id) seed
-  left join public.profile_boardroom b on b.user_id = seed.user_id;
+declare
+  v_open boolean;
+  v_types text[];
+  v_where text[];
+begin
+  select b.open_to_seats, b.seat_types, b.seat_where
+    into v_open, v_types, v_where
+  from public.profile_boardroom b
+  where b.user_id = p_user;
+
+  if not found or coalesce(v_open, false) is not true then
+    return pg_catalog.jsonb_build_object('board_seat_type', '', 'board_seat_where', '');
+  end if;
+
+  return pg_catalog.jsonb_build_object(
+    'board_seat_type', coalesce(v_types[1], ''),
+    'board_seat_where', coalesce(v_where[1], '')
+  );
+end;
 $$;
 
 revoke all on function private.member_boardroom_card(uuid) from public, anon, authenticated, service_role;
@@ -627,3 +627,71 @@ grant execute on function public.list_directory() to authenticated;
 
 comment on function public.list_directory() is
   'Directory cards for a permitted viewer. Boardroom fields use the same hidden and partner rules. No email, phone, or turnover.';
+
+-- Same staff list as 20270107120000, with the two board seat keys filled.
+-- Empty text means the chip is off. Help and looking for stay null for PF-7.
+
+create or replace function public.staff_list_profiles()
+returns jsonb
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+begin
+  if not private.is_staff() then
+    raise exception 'not_allowed' using errcode = '42501';
+  end if;
+
+  return coalesce((
+    select pg_catalog.jsonb_agg(q.row_json order by q.updated_at desc nulls last, q.display_name asc)
+    from (
+      select
+        pg_catalog.jsonb_build_object(
+          'member_id', m.user_id,
+          'display_name', coalesce(nullif(pg_catalog.btrim(p.full_name), ''::text), 'Name not set'),
+          'seat_label', case m.seat
+            when 'ksa' then 'Saudi Arabia'
+            when 'intl' then 'International'
+            when 'sponsor' then 'Partner'
+            else 'Unknown seat'
+          end,
+          'status', m.status,
+          'has_photo', coalesce(pg_catalog.btrim(p.avatar_path), ''::text) <> ''::text,
+          'title', nullif(pg_catalog.btrim(p.headline), ''::text),
+          'organisation', nullif(pg_catalog.btrim(p.company), ''::text),
+          'city_key', nullif(pg_catalog.btrim(p.city_key), ''::text),
+          'sector_count', coalesce(pg_catalog.cardinality(p.sector_tags), 0),
+          'availability_set', coalesce(pg_catalog.btrim(p.availability), ''::text) <> ''::text,
+          'theme_count', coalesce(pg_catalog.cardinality(p.vision_themes), 0),
+          'profile_updated_at', p.updated_at,
+          'open_suggestion', null::text,
+          'open_request', null::text,
+          'help_with', null::text,
+          'looking_for', null::text,
+          'board_seat_type', coalesce(private.board_seat_match_fields(m.user_id) ->> 'board_seat_type', ''),
+          'board_seat_where', coalesce(private.board_seat_match_fields(m.user_id) ->> 'board_seat_where', '')
+        ) as row_json,
+        p.updated_at,
+        coalesce(nullif(pg_catalog.btrim(p.full_name), ''::text), 'Name not set') as display_name
+      from public.members m
+      left join public.profiles p on p.user_id = m.user_id
+      where m.status in ('invited', 'active', 'suspended')
+        and m.is_demo = false
+        and m.anonymised_at is null
+        and not private.sample_subject(m.user_id)
+        and not exists (
+          select 1
+          from public.staff_users s
+          where s.user_id = m.user_id
+        )
+    ) q
+  ), '[]'::jsonb);
+end;
+$$;
+
+revoke all on function public.staff_list_profiles() from public, anon;
+grant execute on function public.staff_list_profiles() to authenticated;
+
+comment on function public.staff_list_profiles() is
+  'Admin list of member profile status. Board seat match text comes from private.board_seat_match_fields. No email, phone, or other contact fields. The list read is not logged.';

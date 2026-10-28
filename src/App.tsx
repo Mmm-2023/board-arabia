@@ -65,6 +65,9 @@ const AdminPeopleLayout = lazy(() =>
   import('./pages/admin/PeopleLayout').then((m) => ({ default: m.AdminPeopleLayout })),
 )
 const PeoplePage = lazy(() => import('./pages/admin/PeoplePage').then((m) => ({ default: m.PeoplePage })))
+const AdminProfilesPage = lazy(() =>
+  import('./pages/admin/AdminProfilesPage').then((m) => ({ default: m.AdminProfilesPage })),
+)
 const SettingsPage = lazy(() => import('./pages/admin/SettingsPage').then((m) => ({ default: m.SettingsPage })))
 const MarketingPage = lazy(() => import('./pages/admin/MarketingPage').then((m) => ({ default: m.MarketingPage })))
 const DashboardHome = lazy(() =>
@@ -175,6 +178,7 @@ export default function App() {
         <Route path="people" element={<AdminPeopleLayout />}>
           <Route index element={<PeoplePage />} />
           <Route path="intros" element={<AdminIntrosPage />} />
+          <Route path="profiles" element={<AdminProfilesPage />} />
           <Route path="member/:memberId" element={<StaffMemberRecordPage />} />
           <Route path="*" element={<ShellNotFound homeTo="/admin" />} />
         </Route>

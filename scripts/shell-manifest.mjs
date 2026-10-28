@@ -38,6 +38,7 @@ const FIXED_SHELLS = [
   ['/admin/review', 'admin'],
   ['/admin/people', 'admin'],
   ['/admin/people/intros', 'admin'],
+  ['/admin/people/profiles', 'admin'],
   ['/admin/capacity', 'admin'],
   ['/admin/settings', 'admin'],
   ['/admin/email', 'admin'],

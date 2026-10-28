@@ -1246,6 +1246,10 @@ export type Database = {
         Args: Record<string, never>
         Returns: Json
       }
+      staff_list_profiles: {
+        Args: Record<string, never>
+        Returns: Json
+      }
       staff_create_mandate: {
         Args: {
           p_sector: string
