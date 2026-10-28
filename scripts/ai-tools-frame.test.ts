@@ -340,6 +340,16 @@ test('AI tool legal slots read the shared legal config', () => {
 })
 
 test('with no env set, consent links point at the in-app pages', async () => {
+  const legalNames = [
+    'VITE_LEGAL_ADDRESS',
+    'VITE_LEGAL_CONTACT_EMAIL',
+    'VITE_LEGAL_DPO_CONTACT',
+    'VITE_LEGAL_AI_PROVIDER',
+    'VITE_LEGAL_PARTNERS_EMAIL',
+    'VITE_LEGAL_SERVICE_EMAIL',
+  ]
+  const savedLegal = new Map(legalNames.map((name) => [name, process.env[name]]))
+  for (const name of legalNames) delete process.env[name]
   const vite = await createServer({ server: { middlewareMode: true }, appType: 'custom', logLevel: 'error' })
   try {
     const config = await vite.ssrLoadModule('/src/lib/aiToolConfig.ts')
@@ -402,6 +412,10 @@ test('with no env set, consent links point at the in-app pages', async () => {
     assert.equal(enConsent.includes('[TERMS LINK]'), false)
     assert.equal(/[\u0600-\u06FF]/.test(read('src/lib/aiToolCopy.ts')), false)
   } finally {
+    for (const [name, value] of savedLegal) {
+      if (value === undefined) delete process.env[name]
+      else process.env[name] = value
+    }
     await vite.close()
   }
 })
