@@ -30,12 +30,20 @@ import { useMember } from './context'
 import { LinkedInConnect } from './LinkedInConnect'
 import { MemberAvatar } from './MemberAvatar'
 import { LEAVE_BOARD_PATH } from '../../lib/leaveBoard'
+import { BOARD_SEAT_MATCHES_LABEL, boardSeatMatchesOn } from '../../lib/boardroom'
+import { BoardroomSection, type BoardroomPreview } from './BoardroomSection'
 import { ProfileTagFields } from './ProfileTagFields'
 
 const fieldClass =
   'mt-2 w-full border border-ink/15 bg-white/70 px-4 py-3 text-[1rem] text-ink outline-none placeholder:text-ink/30 focus:border-brass'
 
-export function ProfilePage({ preview }: { preview?: { src: string | null } }) {
+export function ProfilePage({
+  preview,
+  boardroomPreview,
+}: {
+  preview?: { src: string | null }
+  boardroomPreview?: BoardroomPreview
+}) {
   const { userId, email, profile, member, reload } = useMember()
   const [fullName, setFullName] = useState(profile?.full_name ?? '')
   const [headline, setHeadline] = useState(profile?.headline ?? '')
@@ -82,6 +90,9 @@ export function ProfilePage({ preview }: { preview?: { src: string | null } }) {
   const [savingStyle, setSavingStyle] = useState(false)
   const [styleError, setStyleError] = useState('')
   const [pendingStyle, setPendingStyle] = useState<AvatarStyle | null>(null)
+  const [boardSeatOn, setBoardSeatOn] = useState(() =>
+    boardroomPreview ? boardSeatMatchesOn(boardroomPreview) : false,
+  )
   if (profile?.avatar_style !== styleSource) {
     setStyleSource(profile?.avatar_style)
     if (pendingStyle == null) setAvatarStyle(normalizeAvatarStyle(profile?.avatar_style))
@@ -379,6 +390,7 @@ export function ProfilePage({ preview }: { preview?: { src: string | null } }) {
         showTags={tagStatus === 'ready'}
         availabilitySet={availability != null}
         sectorSet={sectors.length > 0}
+        boardSeatOn={boardSeatOn}
       />
 
       {member.must_set_password ? (
@@ -471,6 +483,11 @@ export function ProfilePage({ preview }: { preview?: { src: string | null } }) {
             </label>
           ) : null}
         </div>
+        <BoardroomSection
+          preview={boardroomPreview}
+          enabled={Boolean(profile)}
+          onMatchChange={setBoardSeatOn}
+        />
         <div id="profile-tags" className="scroll-mt-24 space-y-5">
         {tagStatus === 'loading' ? (
           <div aria-busy="true" aria-label="Loading availability and tags" className="space-y-3">
@@ -659,6 +676,7 @@ function ProfileChecklist({
   showTags,
   availabilitySet,
   sectorSet,
+  boardSeatOn,
 }: {
   name: string
   passwordSet: boolean
@@ -667,6 +685,7 @@ function ProfileChecklist({
   showTags: boolean
   availabilitySet: boolean
   sectorSet: boolean
+  boardSeatOn: boolean
 }) {
   const items: { label: string; done: boolean; doneLabel?: string }[] = [
     { label: 'Name on file', done: name.trim().length > 0 },
@@ -674,6 +693,7 @@ function ProfileChecklist({
     { label: 'Photo', done: photo },
     { label: 'LinkedIn link', done: linkedin.trim().length > 0 },
   ]
+  items.push({ label: BOARD_SEAT_MATCHES_LABEL, done: boardSeatOn })
   if (showTags) {
     items.push(
       { label: 'Availability', done: availabilitySet },

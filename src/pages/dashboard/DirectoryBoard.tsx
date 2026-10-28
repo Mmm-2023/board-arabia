@@ -23,6 +23,7 @@ import { Avatar } from '../../components/Avatar'
 import { DirectoryIntroAction } from './DirectoryIntroAction'
 import type { IntroQuota, IntroStatus } from '../../lib/memberIntros'
 import type { SeatCountState } from './DirectoryEmpty'
+import { DirectoryBoardroomDetail, DirectoryBoardroomFace } from './DirectoryBoardroom'
 import { chipOptions, FilterRow, MemberFilterControls } from './MemberFilters'
 
 const searchClass =
@@ -238,8 +239,10 @@ function DirectoryPerson({
           {sector}
           {firm}
         </dl>
+        <DirectoryBoardroomFace card={card} />
         {open ? (
           <div id={moreId}>
+            <DirectoryBoardroomDetail card={card} />
             <div className="mt-3 text-end">
               {card.seat === 'sponsor' ? null : (
                 <p className="mt-1 text-[0.85rem] text-[var(--ba-muted)]">{seatLabel(card.seat)}</p>
@@ -262,7 +265,7 @@ function DirectoryPerson({
         ) : null}
         <button
           type="button"
-          className="mt-3 inline-flex min-h-11 items-center text-[0.95rem] font-semibold text-[var(--ba-indigo)]"
+          className="mt-3 inline-flex min-h-12 items-center text-[0.95rem] font-semibold text-[var(--ba-indigo)] md:min-h-11"
           aria-expanded={open}
           aria-controls={moreId}
           onClick={() => setOpen((value) => !value)}
@@ -278,6 +281,8 @@ function DirectoryPerson({
           {city}
           {firm}
         </dl>
+        <DirectoryBoardroomFace card={card} />
+        <DirectoryBoardroomDetail card={card} />
         {aboutText ? (
           <div className="mt-3">
             <AboutText value={aboutText} />
