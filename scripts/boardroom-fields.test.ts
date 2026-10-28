@@ -44,8 +44,8 @@ const migration = read(`supabase/migrations/${migrationName}`)
 
 test('boardroom migration slot, lists, and security text', () => {
   const names = readdirSync(migrationsDir).filter((name) => name.endsWith('.sql')).sort()
-  assert.equal(names.at(-1), migrationName)
   assert.ok(names.indexOf(migrationName) > names.indexOf('20270107120000_staff_list_profiles.sql'))
+  assert.ok(names.includes('20270109120000_focus_fields.sql'))
   assert.match(migration, /private\.board_seat_match_fields\(m\.user_id\)/)
   assert.equal(/search_path\s*=\s*public/i.test(migration), false)
   assert.equal(migration.includes('\u2014'), false)

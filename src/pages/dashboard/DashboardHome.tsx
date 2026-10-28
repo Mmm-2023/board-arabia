@@ -261,6 +261,10 @@ export function DashboardHome() {
       cta: 'Set password',
     })
   }
+  const focusRows =
+    profileMatch.helpWith !== undefined || profileMatch.lookingFor !== undefined
+      ? { helpWith: profileMatch.helpWith ?? '', lookingFor: profileMatch.lookingFor ?? '' }
+      : {}
   const completenessRows =
     profileMatch.status === 'ready'
       ? profileCompleteness({
@@ -271,6 +275,7 @@ export function DashboardHome() {
           city: profile?.location ?? '',
           sectorCount: profileMatch.sectorSet ? 1 : 0,
           availabilitySet: profileMatch.availabilitySet,
+          ...focusRows,
         })
       : []
 

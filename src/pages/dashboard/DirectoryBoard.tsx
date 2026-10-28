@@ -24,6 +24,7 @@ import { DirectoryIntroAction } from './DirectoryIntroAction'
 import type { IntroQuota, IntroStatus } from '../../lib/memberIntros'
 import type { SeatCountState } from './DirectoryEmpty'
 import { DirectoryBoardroomDetail, DirectoryBoardroomFace } from './DirectoryBoardroom'
+import { DirectoryFocusFace, DirectoryFocusLines } from './DirectoryFocus'
 import { chipOptions, FilterRow, MemberFilterControls } from './MemberFilters'
 
 const searchClass =
@@ -240,9 +241,11 @@ function DirectoryPerson({
           {firm}
         </dl>
         <DirectoryBoardroomFace card={card} />
+        <DirectoryFocusFace card={card} />
         {open ? (
           <div id={moreId}>
             <DirectoryBoardroomDetail card={card} />
+            <DirectoryFocusLines card={card} />
             <div className="mt-3 text-end">
               {card.seat === 'sponsor' ? null : (
                 <p className="mt-1 text-[0.85rem] text-[var(--ba-muted)]">{seatLabel(card.seat)}</p>
@@ -282,7 +285,9 @@ function DirectoryPerson({
           {firm}
         </dl>
         <DirectoryBoardroomFace card={card} />
+        <DirectoryFocusFace card={card} />
         <DirectoryBoardroomDetail card={card} />
+        <DirectoryFocusLines card={card} />
         {aboutText ? (
           <div className="mt-3">
             <AboutText value={aboutText} />

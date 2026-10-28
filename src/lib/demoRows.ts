@@ -4,6 +4,14 @@ import { normalizeAvatarStyle, type AvatarStyle } from './avatarStyle.ts'
 import { cityKeyFromLocation, cityLabel, isCityKey } from './cities.ts'
 import { isPartnerLogoPath } from './partnerLogo.ts'
 import { presentBoardroomCard, type BoardExpertise, type BoardRole, type BoardSeatType, type BoardSeatWhere } from './boardroom.ts'
+import {
+  CAN_HELP_WITH,
+  FOCUS_LINE_MAX,
+  LANGUAGES,
+  LOOKING_FOR,
+  allowedChips,
+  focusLineProblem,
+} from '../../supabase/functions/_shared/focus_fields.ts'
 import { isAvailability, normalizeTags, SECTOR_TAGS, VISION_2030_THEMES, type Availability } from './profileTags.ts'
 
 export type DirectoryCard = {
@@ -31,6 +39,11 @@ export type DirectoryCard = {
   seat_types?: BoardSeatType[]
   seat_where?: BoardSeatWhere[]
   expertise?: BoardExpertise[]
+  can_help_with?: string[]
+  looking_for?: string[]
+  can_help_line?: string
+  looking_for_line?: string
+  languages?: string[]
 }
 
 export type RoomCard = {
@@ -117,7 +130,17 @@ export function presentDirectoryCard(raw: unknown): DirectoryCard | null {
     seat_types: boardroom.seat_types,
     seat_where: boardroom.seat_where,
     expertise: boardroom.expertise,
+    can_help_with: allowedChips(row.can_help_with, CAN_HELP_WITH),
+    looking_for: allowedChips(row.looking_for, LOOKING_FOR),
+    can_help_line: publicFocusLine(row.can_help_line),
+    looking_for_line: publicFocusLine(row.looking_for_line),
+    languages: allowedChips(row.languages, LANGUAGES, LANGUAGES.length),
   }
+}
+
+function publicFocusLine(value: unknown): string {
+  const line = text(value, FOCUS_LINE_MAX)
+  return focusLineProblem(line) ? '' : line
 }
 
 function cityName(value: string): string {

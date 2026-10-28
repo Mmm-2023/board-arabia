@@ -18,6 +18,15 @@ import {
 } from '../../lib/linkedinConnect'
 import { LINKEDIN_CONNECT_ENABLED, LINKEDIN_COPY } from '../../lib/linkedinFlag'
 import type { ProfileRow } from '../../lib/member'
+import {
+  CAN_HELP_WITH,
+  LANGUAGES,
+  LOOKING_FOR,
+  MAX_FOCUS_CHIPS,
+  allowedChips,
+  focusLineProblem,
+} from '../../../supabase/functions/_shared/focus_fields.ts'
+import { saveMyFocus } from '../../lib/focusApi'
 import { boardSeatFieldsForCompleteness } from '../../lib/boardroom'
 import { profileCompleteness, profilePasswordTarget, type CompletenessRow } from '../../lib/profileCompleteness'
 import {
@@ -35,6 +44,7 @@ import { useMember } from './context'
 import { LinkedInConnect } from './LinkedInConnect'
 import { MemberAvatar } from './MemberAvatar'
 import { BoardroomSection, type BoardroomPreview } from './BoardroomSection'
+import { FocusFields } from './FocusFields'
 import { ProfileTagFields } from './ProfileTagFields'
 
 const fieldClass =
@@ -56,6 +66,11 @@ type Draft = {
   availability: Availability | null
   sectors: string
   themes: string
+  canHelp: string
+  canHelpLine: string
+  lookingFor: string
+  lookingForLine: string
+  languages: string
 }
 
 export function ProfilePage({
@@ -86,6 +101,16 @@ export function ProfilePage({
   )
   const [sectors, setSectors] = useState(() => normalizeTags(profile?.sector_tags, SECTOR_TAGS))
   const [themes, setThemes] = useState(() => normalizeTags(profile?.vision_themes, VISION_2030_THEMES))
+  const [canHelp, setCanHelp] = useState(() => allowedChips(profile?.can_help_with, CAN_HELP_WITH))
+  const [canHelpLine, setCanHelpLine] = useState(profile?.can_help_line ?? '')
+  const [lookingFor, setLookingFor] = useState(() => allowedChips(profile?.looking_for, LOOKING_FOR))
+  const [lookingForLine, setLookingForLine] = useState(profile?.looking_for_line ?? '')
+  const [languages, setLanguages] = useState(() => allowedChips(profile?.languages, LANGUAGES, LANGUAGES.length))
+  const focusFromProfile =
+    profile?.can_help_with !== undefined || profile?.looking_for !== undefined || profile?.languages !== undefined
+  const [focusKnown, setFocusKnown] = useState(focusFromProfile)
+  const [focusStatus, setFocusStatus] = useState<'loading' | 'ready' | 'error'>(focusFromProfile ? 'ready' : 'loading')
+  const [focusAttempt, setFocusAttempt] = useState(0)
   const [tagNote, setTagNote] = useState('')
   const [tagStatus, setTagStatus] = useState<'loading' | 'ready' | 'error'>(tagsFromProfile ? 'ready' : 'loading')
   const [tagAttempt, setTagAttempt] = useState(0)
@@ -110,6 +135,11 @@ export function ProfilePage({
     availability: isAvailability(profile?.availability) ? profile.availability : null,
     sectors: normalizeTags(profile?.sector_tags, SECTOR_TAGS).join('\n'),
     themes: normalizeTags(profile?.vision_themes, VISION_2030_THEMES).join('\n'),
+    canHelp: allowedChips(profile?.can_help_with, CAN_HELP_WITH).join('\n'),
+    canHelpLine: profile?.can_help_line ?? '',
+    lookingFor: allowedChips(profile?.looking_for, LOOKING_FOR).join('\n'),
+    lookingForLine: profile?.looking_for_line ?? '',
+    languages: allowedChips(profile?.languages, LANGUAGES, LANGUAGES.length).join('\n'),
   })
   if (profile?.include_in_public_aggregates !== includeSource) {
     const next = profile?.include_in_public_aggregates !== false
@@ -136,6 +166,7 @@ export function ProfilePage({
   const [liBusy, setLiBusy] = useState(false)
   const oauthSeen = useRef('')
   const tagEdited = useRef(false)
+  const focusEdited = useRef(false)
   const { hash } = useLocation()
   const [searchParams, setSearchParams] = useSearchParams()
   useNoIndex('Profile | Board Arabia')
@@ -159,6 +190,11 @@ export function ProfilePage({
       availability,
       sectors: sectors.join('\n'),
       themes: themes.join('\n'),
+      canHelp: canHelp.join('\n'),
+      canHelpLine,
+      lookingFor: lookingFor.join('\n'),
+      lookingForLine,
+      languages: languages.join('\n'),
     }
   }
 
@@ -290,6 +326,53 @@ export function ProfilePage({
   }, [userId, tagAttempt, tagsFromProfile])
 
   useEffect(() => {
+    if (focusFromProfile) return
+    let cancelled = false
+    void supabase
+      .from('profiles')
+      .select('can_help_with, can_help_line, looking_for, looking_for_line, languages')
+      .eq('user_id', userId)
+      .maybeSingle()
+      .then(({ data, error }) => {
+        if (cancelled) return
+        if (error) {
+          if (schemaMissing(error.message)) {
+            setFocusKnown(false)
+            setFocusStatus('ready')
+            return
+          }
+          setFocusStatus('error')
+          return
+        }
+        const nextHelp = allowedChips(data?.can_help_with, CAN_HELP_WITH)
+        const nextHelpLine = data?.can_help_line ?? ''
+        const nextLooking = allowedChips(data?.looking_for, LOOKING_FOR)
+        const nextLookingLine = data?.looking_for_line ?? ''
+        const nextLanguages = allowedChips(data?.languages, LANGUAGES, LANGUAGES.length)
+        if (!focusEdited.current) {
+          saved.current = {
+            ...saved.current,
+            canHelp: nextHelp.join('\n'),
+            canHelpLine: nextHelpLine,
+            lookingFor: nextLooking.join('\n'),
+            lookingForLine: nextLookingLine,
+            languages: nextLanguages.join('\n'),
+          }
+          setCanHelp(nextHelp)
+          setCanHelpLine(nextHelpLine)
+          setLookingFor(nextLooking)
+          setLookingForLine(nextLookingLine)
+          setLanguages(nextLanguages)
+        }
+        setFocusKnown(true)
+        setFocusStatus('ready')
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [userId, focusAttempt, focusFromProfile])
+
+  useEffect(() => {
     const id = hash.startsWith('#') ? hash.slice(1) : ''
     if (!SECTION_IDS.includes(id)) return
     let frame = 0
@@ -331,6 +414,11 @@ export function ProfilePage({
     const aboutError = aboutLengthError(bio)
     if (aboutError) {
       setProfileError(aboutError)
+      return
+    }
+    const lineError = focusLineProblem(canHelpLine) || focusLineProblem(lookingForLine)
+    if (lineError) {
+      setProfileError(lineError)
       return
     }
     const city = resolveProfileCity(cityKey, otherCity)
@@ -384,6 +472,7 @@ export function ProfilePage({
       setProfileNote('Profile saved. Availability and tags are not available yet.')
       saved.current = draftNow()
       tagEdited.current = false
+      focusEdited.current = false
       await reload()
       return
     }
@@ -392,9 +481,33 @@ export function ProfilePage({
       setProfileError(savedRow.error.message)
       return
     }
+    if (focusKnown) {
+      const focusSaved = await saveMyFocus({ canHelp, canHelpLine, lookingFor, lookingForLine, languages })
+      if (!focusSaved.ok) {
+        setSavingProfile(false)
+        saved.current = {
+          ...draftNow(),
+          canHelp: saved.current.canHelp,
+          canHelpLine: saved.current.canHelpLine,
+          lookingFor: saved.current.lookingFor,
+          lookingForLine: saved.current.lookingForLine,
+          languages: saved.current.languages,
+        }
+        tagEdited.current = false
+        if (focusSaved.missing) {
+          setProfileNote('Profile saved. Focus fields are not available yet.')
+          await reload()
+          return
+        }
+        setProfileError(focusSaved.message)
+        return
+      }
+    }
     setProfileNote('Profile saved.')
     saved.current = draftNow()
     tagEdited.current = false
+    focusEdited.current = false
+    setSavingProfile(false)
     await reload()
   }
 
@@ -427,6 +540,7 @@ export function ProfilePage({
     availabilitySet: availability != null,
     boardSeatType: seatFields.boardSeatType,
     boardSeatWhere: seatFields.boardSeatWhere,
+    ...(focusKnown ? { helpWith: canHelp[0] ?? '', lookingFor: lookingFor[0] ?? '' } : {}),
   })
 
   return (
@@ -583,7 +697,8 @@ export function ProfilePage({
               Focus
             </h2>
             <p className="mt-2 text-[0.98rem] leading-relaxed text-ink/60">
-              A sector and availability switch on weekly introductions. A Vision 2030 theme is a bonus.
+              A sector and your availability switch on weekly introductions. Say what you can help with and what you
+              are looking for so a match can be a reason. Vision 2030 themes are optional.
             </p>
           </div>
           <div id="profile-tags" className="scroll-mt-24 space-y-5">
@@ -631,6 +746,63 @@ export function ProfilePage({
                   const result = toggleTag(themes, tag, VISION_2030_THEMES)
                   setThemes(result.next)
                   setTagNote(result.limited ? 'Three Vision 2030 themes is the limit.' : '')
+                }}
+              />
+            ) : null}
+            {focusStatus === 'loading' ? (
+              <div aria-busy="true" aria-label="Loading focus" className="space-y-3">
+                <div className="h-12 bg-[var(--ba-lavender)] motion-reduce:animate-none animate-pulse" />
+                <div className="h-12 bg-[var(--ba-lavender)] motion-reduce:animate-none animate-pulse" />
+              </div>
+            ) : null}
+            {focusStatus === 'error' ? (
+              <div className="space-y-3">
+                <p className="text-[0.92rem] text-[var(--ba-error)]" role="alert">
+                  Could not load what you can help with and what you are looking for.
+                </p>
+                <button
+                  type="button"
+                  className="inline-flex min-h-12 items-center border border-ink/20 px-4 text-[0.75rem] font-semibold tracking-[0.08em] uppercase"
+                  onClick={() => {
+                    setFocusStatus('loading')
+                    setFocusAttempt((value) => value + 1)
+                  }}
+                >
+                  Retry
+                </button>
+              </div>
+            ) : null}
+            {focusStatus === 'ready' && focusKnown ? (
+              <FocusFields
+                canHelp={canHelp}
+                canHelpLine={canHelpLine}
+                lookingFor={lookingFor}
+                lookingForLine={lookingForLine}
+                languages={languages}
+                onCanHelp={(tag) => {
+                  focusEdited.current = true
+                  const result = toggleTag(canHelp, tag, CAN_HELP_WITH, MAX_FOCUS_CHIPS)
+                  setCanHelp(result.next)
+                  setTagNote(result.limited ? 'Three is the limit for what you can help with.' : '')
+                }}
+                onCanHelpLine={(value) => {
+                  focusEdited.current = true
+                  setCanHelpLine(value)
+                }}
+                onLookingFor={(tag) => {
+                  focusEdited.current = true
+                  const result = toggleTag(lookingFor, tag, LOOKING_FOR, MAX_FOCUS_CHIPS)
+                  setLookingFor(result.next)
+                  setTagNote(result.limited ? 'Three is the limit for what you are looking for.' : '')
+                }}
+                onLookingForLine={(value) => {
+                  focusEdited.current = true
+                  setLookingForLine(value)
+                }}
+                onLanguage={(tag) => {
+                  focusEdited.current = true
+                  const result = toggleTag(languages, tag, LANGUAGES, LANGUAGES.length)
+                  setLanguages(result.next)
                 }}
               />
             ) : null}
@@ -735,7 +907,12 @@ function sameDraft(draft: Draft, savedDraft: Draft) {
     draft.includeInPublic === savedDraft.includeInPublic &&
     draft.availability === savedDraft.availability &&
     draft.sectors === savedDraft.sectors &&
-    draft.themes === savedDraft.themes
+    draft.themes === savedDraft.themes &&
+    draft.canHelp === savedDraft.canHelp &&
+    draft.canHelpLine === savedDraft.canHelpLine &&
+    draft.lookingFor === savedDraft.lookingFor &&
+    draft.lookingForLine === savedDraft.lookingForLine &&
+    draft.languages === savedDraft.languages
   )
 }
 

@@ -1,3 +1,4 @@
+import { suggestedVisionThemes } from '../../../supabase/functions/_shared/focus_fields.ts'
 import { AVAILABILITY, AVAILABILITY_LABEL, SECTOR_TAGS, VISION_2030_THEMES, type Availability } from '../../lib/profileTags'
 import { Chip } from './MemberFilters'
 
@@ -35,7 +36,7 @@ export function ProfileTagFields({
           aria-describedby="profile-availability-help"
         >
           {AVAILABILITY.map((value) => (
-            <Chip key={value} radio pressed={availability === value} onClick={() => onAvailability(value)}>
+            <Chip key={value} touch radio pressed={availability === value} onClick={() => onAvailability(value)}>
               {AVAILABILITY_LABEL[value]}
             </Chip>
           ))}
@@ -49,18 +50,53 @@ export function ProfileTagFields({
         selected={sectors}
         onPick={onSector}
       />
-      <TagGroup
-        id="profile-vision"
-        label="Vision 2030"
-        help="Pick the Vision 2030 themes where you sit. Up to 3."
-        options={VISION_2030_THEMES}
-        selected={themes}
-        onPick={onTheme}
-      />
+      <VisionThemes sectors={sectors} themes={themes} onTheme={onTheme} />
       {limitNote ? (
         <p className="text-[0.92rem] text-ink/70" role="status">
           {limitNote}
         </p>
+      ) : null}
+    </div>
+  )
+}
+
+function VisionThemes({
+  sectors,
+  themes,
+  onTheme,
+}: {
+  sectors: readonly string[]
+  themes: readonly string[]
+  onTheme: (tag: string) => void
+}) {
+  const suggested = suggestedVisionThemes(sectors).filter((theme) => !themes.includes(theme))
+  return (
+    <div className="space-y-5">
+      <TagGroup
+        id="profile-vision"
+        label="Vision 2030"
+        help="Optional. Suggestions follow your sectors. Tap to add. Up to 3."
+        options={VISION_2030_THEMES}
+        selected={themes}
+        onPick={onTheme}
+      />
+      {suggested.length > 0 ? (
+        <div>
+          <p id="profile-vision-suggested-label" className="text-[0.72rem] font-semibold tracking-[0.08em] text-ink/45 uppercase">
+            Suggested from your sectors
+          </p>
+          <div
+            className="mt-3 flex flex-wrap gap-2"
+            role="group"
+            aria-labelledby="profile-vision-suggested-label"
+          >
+            {suggested.map((option) => (
+              <Chip key={option} touch pressed={false} onClick={() => onTheme(option)}>
+                {option}
+              </Chip>
+            ))}
+          </div>
+        </div>
       ) : null}
     </div>
   )
@@ -91,7 +127,7 @@ function TagGroup({
       </p>
       <div className="mt-3 flex flex-wrap gap-2" role="group" aria-labelledby={`${id}-label`} aria-describedby={`${id}-help`}>
         {options.map((option) => (
-          <Chip key={option} pressed={selected.includes(option)} onClick={() => onPick(option)}>
+          <Chip key={option} touch pressed={selected.includes(option)} onClick={() => onPick(option)}>
             {option}
           </Chip>
         ))}

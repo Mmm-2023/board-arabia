@@ -1,6 +1,7 @@
 /** Weekly intro suggestions and once-only nudges. Pure planning. No secrets. */
 
 import { cityKeyFromLocation, cityLabel, cityToken, isFixedCityKey } from './cities.ts'
+import { FOCUS_CHIP_WEIGHT, focusMatchReason, matchedHelpChips } from './focus_fields.ts'
 import { boardMail } from './mail.ts'
 
 export const INTROS_SCHEDULE_SECRET = 'INTROS_SCHEDULE_SECRET'
@@ -22,6 +23,9 @@ export type PlanMember = {
   fullName: string
   sectorTags: string[]
   visionThemes: string[]
+  /** Allowlisted chips only. Lines are never loaded and never scored. */
+  canHelpWith?: readonly string[]
+  lookingFor?: readonly string[]
   /** Location display text. Same-city uses cityKey when both keys are fixed. */
   region: string
   cityKey?: string
@@ -319,9 +323,11 @@ function rankedCandidates(
       const sectors = shared(member.sectorTags, other.sectorTags)
       const themes = shared(member.visionThemes, other.visionThemes)
       const region = sameCityLabel(member, other)
-      const reason = suggestionReason({ sectors, themes, region })
+      const help = matchedHelpChips(member.lookingFor ?? [], other.canHelpWith ?? [])
+      const chipReason = help[0] ? focusMatchReason(help[0]) : ''
+      const reason = chipReason || suggestionReason({ sectors, themes, region })
       if (!reason || reason.includes('@')) return []
-      const score = sectors.length * 3 + themes.length * 2 + (region ? 2 : 0)
+      const score = sectors.length * 3 + themes.length * 2 + (region ? 2 : 0) + help.length * FOCUS_CHIP_WEIGHT
       if (score <= 0) return []
       return [{ id: other.id, score, reason }]
     })

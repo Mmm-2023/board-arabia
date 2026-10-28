@@ -17,6 +17,7 @@ import {
   type PlannedSuggestion,
   type PriorSuggestion,
 } from '../_shared/suggest_intros.ts'
+import { CAN_HELP_WITH, LOOKING_FOR, allowedChips } from '../_shared/focus_fields.ts'
 
 type MemberRow = {
   user_id?: string
@@ -39,6 +40,8 @@ type ProfileRow = {
   full_name?: string | null
   sector_tags?: string[] | null
   vision_themes?: string[] | null
+  can_help_with?: string[] | null
+  looking_for?: string[] | null
   location?: string | null
   city_key?: string | null
 }
@@ -175,7 +178,7 @@ async function loadPlanInputs(
   const prev = previousIsoWeek(now)
   const [membersRes, profilesRes, introsRes, samplesRes, currentRes, priorRes] = await Promise.all([
     admin.from('members').select('user_id, email, status, seat, is_demo, directory_hidden'),
-    admin.from('profiles').select('user_id, full_name, sector_tags, vision_themes, location, city_key'),
+    admin.from('profiles').select('user_id, full_name, sector_tags, vision_themes, can_help_with, looking_for, location, city_key'),
     admin
       .from('member_intros')
       .select(
@@ -232,6 +235,8 @@ function toMember(row: MemberRow, profile: ProfileRow | undefined, samples: Read
     fullName,
     sectorTags: stringList(profile?.sector_tags),
     visionThemes: stringList(profile?.vision_themes),
+    canHelpWith: allowedChips(profile?.can_help_with, CAN_HELP_WITH),
+    lookingFor: allowedChips(profile?.looking_for, LOOKING_FOR),
     region: String(profile?.location || '').trim(),
     cityKey: String(profile?.city_key || '').trim(),
     sample: samples.has(id) || row.is_demo === true || isExampleMemberName(fullName),
