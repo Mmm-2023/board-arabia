@@ -31,7 +31,7 @@ export function Footer() {
         <div>
           <BrandLockup to="/" tone="on-light" subline={false} />
           <p className="mt-2 max-w-sm text-[0.875rem] leading-snug text-[var(--ba-muted)]">
-            A selective founding membership for Saudi and international
+            A founding membership by application for Saudi and international
             Chairpersons, Board members, and C-suite executives.
           </p>
         </div>

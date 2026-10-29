@@ -131,7 +131,7 @@ test('section 5 copy, one audience line, and the desk name', () => {
   const about = read('src/pages/AboutPage.tsx')
   const landing = read('src/pages/LandingPage.tsx')
   assert.match(about, /AUDIENCE_LINE/)
-  assert.match(landing, /Reviewed membership for Chairperson, Board members and C-suite executives/)
+  assert.match(landing, /Membership for Chairperson, Board members and C-suite executives/)
   assert.equal(about.includes('NEDs'), false)
   assert.equal(landing.includes('\u2014'), false)
   assert.equal(about.includes('\u2014'), false)

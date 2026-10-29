@@ -61,7 +61,7 @@ export const STEP_COPY: Record<StepId, { label: string; why: string; required: b
   },
   linkedin: {
     label: 'LinkedIn profile',
-    why: 'Our admin team checks your board and executive record here. It is not shown to other candidates.',
+    why: 'Our admin team reads your board and executive record here. It is not shown to other candidates.',
     required: true,
   },
   scale_band: {
@@ -91,7 +91,7 @@ export const STEP_COPY: Record<StepId, { label: string; why: string; required: b
   },
   capacity: {
     label: 'Investable capacity',
-    why: 'Used only inside a platform sum, and only after our admin team verifies it.',
+    why: 'Used only inside a platform sum, and only after our admin team checks it looks right for a decision maker.',
     required: false,
   },
   phone: {
