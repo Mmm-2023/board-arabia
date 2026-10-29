@@ -1,5 +1,6 @@
 # VT-2 AI Due Diligence safeguards
 
+PR: https://github.com/Mmm-2023/board-arabia/pull/213
 Branch: `cursor/vt-2-ai-dd-safeguards-f038`
 Base: `main` at `e713d64e569e206ade03e1dc3fc5098305ac6dc2` (PR #212, already merged)
 Date: 29 Oct 2026
