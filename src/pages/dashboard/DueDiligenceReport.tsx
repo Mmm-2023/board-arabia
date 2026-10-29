@@ -17,7 +17,9 @@ import {
 } from '../../../supabase/functions/_shared/due_diligence.ts'
 import { REPORT_COPY } from '../../lib/dueDiligenceCopy.ts'
 import { presentNextSteps, visibleNextSteps, type NextStepItem } from '../../lib/dueDiligenceNextSteps.ts'
+import { AiDueDiligenceScoreNotice } from '../../components/ai/AiDueDiligenceScoreNotice'
 import { AiReportOperatorLine } from '../../components/ai/AiReportOperatorLine'
+import { memberTextStatesScore } from '../../lib/aiDueDiligenceNotice'
 import { MEMBER_VIEWS } from '../../shell/viewCopy.ts'
 import { DraftMemoMissing, DueDiligenceMemo } from './DueDiligenceMemo.tsx'
 
@@ -123,6 +125,7 @@ export function DueDiligenceReport({
         <p className="mt-4 text-[1rem] leading-relaxed text-ink/80">
           {compact ? REPORT_COPY.compactOverview : presented.overview}
         </p>
+        {!compact && memberTextStatesScore(presented.overview) ? <AiDueDiligenceScoreNotice className="mt-3" /> : null}
         <dl className="mt-4 grid gap-3 sm:grid-cols-3">
           <OverviewItem label={REPORT_COPY.metaCompany} value={report.company_label} />
           <OverviewItem label={REPORT_COPY.metaSector} value={report.sector_label} />
@@ -283,6 +286,7 @@ function SummaryCard({
   return (
     <div className={`dd-summary-card ${toneClass}`}>
       <p className="dd-summary-value font-display text-[2rem] font-semibold tracking-[-0.03em]">{value}%</p>
+      <AiDueDiligenceScoreNotice className="mt-2" />
       <div className="mt-2">
         <StatusPill verdict={verdict} />
       </div>

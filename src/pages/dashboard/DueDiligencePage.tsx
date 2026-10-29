@@ -34,7 +34,9 @@ import { CardSkeleton, EmptyState, ErrorBanner, PermissionState } from '../../sh
 import { MEMBER_VIEWS } from '../../shell/viewCopy'
 import { useMember } from './context'
 import { AiOutputAcknowledgement } from '../../components/ai/AiToolDesk'
+import { AiDueDiligenceScoreNotice } from '../../components/ai/AiDueDiligenceScoreNotice'
 import { AiReportOperatorLine } from '../../components/ai/AiReportOperatorLine'
+import { memberTextStatesScore } from '../../lib/aiDueDiligenceNotice'
 import { UploadHandling } from '../../components/ai/UploadHandling'
 import { AdminShareBar } from '../../components/mfa/TwoStepScreens'
 import { DueDiligenceReport } from './DueDiligenceReport'
@@ -770,6 +772,7 @@ function PriorNoteGroupRow({
 }
 
 function PriorNoteLink({ report }: { report: PriorNote }) {
+  const scoreLine = publicConsistencyLabel(report)
   return (
     <Link
       to={`/dashboard/ai/due-diligence/${report.id}`}
@@ -777,10 +780,11 @@ function PriorNoteLink({ report }: { report: PriorNote }) {
     >
       <span className="text-[1rem] break-words text-ink">{report.title}</span>
       <span className="text-[0.92rem] text-[var(--ba-muted)]">
-        {publicConsistencyLabel(report)}
+        {scoreLine}
         {' · '}
         {formatWhen(report.created_at)}
       </span>
+      {memberTextStatesScore(scoreLine) ? <AiDueDiligenceScoreNotice className="mt-1" /> : null}
     </Link>
   )
 }
