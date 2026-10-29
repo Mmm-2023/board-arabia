@@ -27,9 +27,17 @@ A search for the day-count token across the repo is empty after this handoff is 
 
 ## Head and checks
 
-Head SHA: filled after this commit is pushed. Grade until then: UNKNOWN.
+Wording commit `b834c6df1f4033f7382586dc420f3c71c3ca85ab` is the change under review. Grade: VERIFIED by `git rev-parse` before this note.
 
-CI run link: UNKNOWN until the five checks finish on that SHA.
+Each check on that commit is VERIFIED from the GitHub check list:
+
+- pr-checks: https://github.com/Mmm-2023/board-arabia/actions/runs/40901101863/job/123543292438
+- crawl: https://github.com/Mmm-2023/board-arabia/actions/runs/40901101866/job/123543288661
+- Android debug APK: https://github.com/Mmm-2023/board-arabia/actions/runs/40901101881/job/123543290101
+- iOS simulator: https://github.com/Mmm-2023/board-arabia/actions/runs/40901101881/job/123543290893
+- Android emulator Home: https://github.com/Mmm-2023/board-arabia/actions/runs/40901101881/job/123544695664
+
+This note only records those results. It does not change product copy.
 
 ## Secrets
 
