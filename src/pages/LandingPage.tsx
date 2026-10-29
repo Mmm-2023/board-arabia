@@ -26,12 +26,12 @@ import { trackApplyClick } from '../lib/tracking/browser'
 const WHY = [
   {
     title: 'Access to capital',
-    body: 'Admin-reviewed capital briefs. No cold outreach.',
+    body: 'Capital briefs shared through admin. No cold outreach.',
     icon: IconCapital,
   },
   {
     title: 'Business relationships',
-    body: 'Peers admitted on one standard: credentials first.',
+    body: 'Peers admitted by application and personal review.',
     icon: IconRelationships,
   },
   {
@@ -120,7 +120,7 @@ function Hero() {
             Where Saudi boardrooms meet international capital
           </h1>
           <p className="mt-3 max-w-xl text-[1rem] leading-relaxed text-[#F6F5FB] md:text-[1.05rem]">
-            Reviewed membership for Chairperson, Board members and C-suite executives, in Saudi Arabia and internationally.
+            Membership for Chairperson, Board members and C-suite executives, in Saudi Arabia and internationally.
           </p>
           <HeroEnter index={1}>
             <HeroConsideration />
@@ -144,7 +144,7 @@ function WhySection() {
             Access to capital. Business relationships. Opening doors.
           </DisplayHeading>
           <p className="ba-quiet mt-3 max-w-3xl text-[0.9375rem] leading-[1.45]">
-            A reviewed membership linking Saudi boardrooms with international counterparts.
+            A membership linking Saudi boardrooms with international counterparts.
           </p>
         </Reveal>
         <ol className="mt-3 grid gap-2 md:mt-5 md:grid-cols-3 md:gap-3">
@@ -296,7 +296,7 @@ function ProcessSection() {
           <StepDiagram />
         </div>
         <p className="mt-4 max-w-3xl text-[0.9375rem] leading-[1.45] text-[#E8E4F7]">
-          Every application, mandate intro and real estate intro passes admin review.
+          Admin reads every application and handles every mandate intro and real estate intro.
         </p>
         <p className="mt-2 flex flex-wrap gap-x-6">
           <Link to={publicHref('/how-it-works')} className="ba-textlink inline-flex min-h-11 items-center text-[0.9375rem] text-[#F6F5FB]">

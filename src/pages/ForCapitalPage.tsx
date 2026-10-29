@@ -60,7 +60,7 @@ export function ForCapitalPage() {
         <p className="mt-6 max-w-2xl text-[1.08rem] leading-relaxed text-ink/65">
           Board Arabia is not an open deal board. FDI, family offices, private
           equity, and venture capital reach members via structured mandates
-          our admin team reviews, so outreach stays credentialled and discreet.
+          that go through our admin team, so outreach stays discreet.
         </p>
       </header>
 
@@ -125,7 +125,7 @@ export function ForCapitalPage() {
           </div>
           <div className="space-y-4 text-[1.05rem] leading-relaxed text-ink/70">
             <p>
-              A deal room holds one mandate that has already passed our admin team:
+              A deal room holds one mandate that admin has released to it:
               the people who need to see it, and no one else. It is not a
               standing data room for the whole membership.
             </p>

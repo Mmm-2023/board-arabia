@@ -16,7 +16,7 @@ export function whatsAppInviteText(applyUrl: string, name: string): string {
   const who = oneLine(name) || FALLBACK_NAME
   const link = oneLine(applyUrl)
   return [
-    `${who} vouched for you on Board Arabia.`,
+    `${who} invited you to apply to Board Arabia.`,
     '',
     `Private founding cohort for operators and capital around Saudi Arabia and the region. ${who} used one of only two peer invites on their seat.`,
     '',

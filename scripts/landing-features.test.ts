@@ -182,7 +182,7 @@ test('landing feature copy locks', async () => {
   )
   assert.equal(
     bodies.get('partners'),
-    'Request an intro to a vetted real estate partner firm. Admin reviews it before any outreach.',
+    'Request an intro to a real estate partner firm. Admin handles the intro before any outreach.',
   )
   assert.equal(
     bodies.get('suggestions'),

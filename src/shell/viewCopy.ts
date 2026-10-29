@@ -39,7 +39,7 @@ export const MEMBER_VIEWS = {
     clear: 'Clear filters',
   },
   mandates: {
-    empty: 'No mandates yet. When capital briefs are approved, they land here.',
+    empty: 'No mandates yet. When admin publishes a capital brief, it lands here.',
     error: REFRESH_ERROR,
     retry: 'Retry',
     denied: 'Mandates are for admitted members.',
@@ -60,7 +60,7 @@ export const MEMBER_VIEWS = {
     partnersIntro:
       'Request intro asks our admin team to make the introduction. This page does not open a message thread.',
     partnersForming:
-      'Real estate partners are still forming. These examples stay until vetted firms can take their place.',
+      'Real estate partners are still forming. These examples stay until partner firms are added.',
     partnersEmpty: 'No partners yet. When our admin team publishes a firm, it lands here.',
     partnersDenied: 'Partners are for admitted members.',
     partnersRequested: 'Intro requested. Our admin team reviews it before any outreach.',

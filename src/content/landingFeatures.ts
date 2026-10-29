@@ -45,13 +45,13 @@ export const LANDING_TILES: {
   {
     id: 'deals',
     title: 'Do deals privately',
-    body: 'Mandates and deal rooms, opened after admin review.',
+    body: 'Mandates and deal rooms, opened through admin.',
     icon: 'deals',
   },
   {
     id: 'real-estate',
     title: 'Real estate',
-    body: 'Opportunities, board roles and vetted partner firms.',
+    body: 'Opportunities, board roles and partner firms.',
     icon: 'real-estate',
   },
   {
@@ -155,7 +155,7 @@ export const LANDING_FEATURES: LandingFeature[] = [
     group: 'real-estate',
     icon: 'real-estate',
     title: 'Partners',
-    body: 'Request an intro to a vetted real estate partner firm. Admin reviews it before any outreach.',
+    body: 'Request an intro to a real estate partner firm. Admin handles the intro before any outreach.',
     route: '/dashboard/deals/real-estate',
   },
   {

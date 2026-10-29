@@ -226,6 +226,9 @@ export function ApplyPage() {
           <p className="font-serif text-[1.15rem] italic text-ink-soft/70">
             Pre-vet
           </p>
+          <p className="mt-3 text-[1.02rem] leading-relaxed text-ink/80">
+            It checks you are real, a good fit and a decision maker. Nothing about any business or deal.
+          </p>
           <h1 className="mt-3 font-display text-[clamp(2.2rem,5vw,3.4rem)] font-bold leading-[1.05] tracking-[-0.035em] text-ink">
             Apply for consideration
           </h1>
@@ -337,7 +340,7 @@ export function ApplyPage() {
               onChange={(v) => setField('investable', v)}
               placeholder="e.g. 1000000"
               inputMode="decimal"
-              hint="Optional. US dollars you can put to work. Used only inside a platform sum, and only after our admin team verifies it."
+              hint="Optional. US dollars you can put to work. Used only inside a platform sum, and only after our admin team checks it looks right for a decision maker."
             />
             <div>
               <label className="flex min-h-11 cursor-pointer items-center gap-3 text-[0.98rem] leading-relaxed text-ink">

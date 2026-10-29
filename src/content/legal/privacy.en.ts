@@ -136,7 +136,7 @@ export const PRIVACY_EN: LegalDocument = {
       "kind": "clause",
       "id": "c-3-12",
       "number": "3.12",
-      "text": "Public totals. If you leave the public-totals box checked, a verified capacity figure can be added into a platform total after you are admitted. The public site shows the total only. It does not show your name, company or amount."
+      "text": "Public totals. If you leave the public-totals box checked, a capacity figure can be added into a platform total after you are admitted. Our admin team checks it looks right for a decision maker. The public site shows the total only. It does not show your name, company or amount."
     },
     {
       "kind": "clause",
@@ -217,7 +217,7 @@ export const PRIVACY_EN: LegalDocument = {
         ],
         [
           "Public totals",
-          "Verified capacity figure, as a sum only",
+          "Capacity figure, as a sum only",
           "Consent (the public-totals box)"
         ],
         [
