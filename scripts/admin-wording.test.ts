@@ -75,7 +75,8 @@ test('user-facing copy says admin, and the locked Who runs the desk block stays'
   const who = read('src/components/WhoRunsTheDesk.tsx')
   assert.match(who, /Who runs the desk/)
   assert.match(who, /Michael Mateer, Co-Founder and CEO/)
-  assert.match(who, /A named person reads applications\. There is no public booking calendar\./)
+  assert.match(who, /A named person reads applications\./)
+  assert.equal(/no public booking calendar/i.test(who), false)
   assert.equal(who.replace(/Who runs the desk/g, '').toLowerCase().includes('the desk'), false)
 
   assert.equal(STAFF_VIEWS.home.denied, 'This page is for admin.')

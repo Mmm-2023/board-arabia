@@ -131,6 +131,7 @@ test('home route / keeps Founding 100 and drops the booking sentence', async () 
   assert.match(process, /Every application, mandate intro and real estate intro passes admin review\./)
   assert.equal(process.includes('No public booking calendar'), false)
   assert.equal(html.includes('No public booking calendar is offered.'), false)
+  assert.equal(/there is no public booking calendar/i.test(html), false)
   const founding = html.slice(html.indexOf('id="founding"'), html.indexOf('id="membership"'))
   assert.match(founding, /Founding 100/)
   assert.match(founding, /Fifty and fifty\./)
@@ -149,7 +150,7 @@ test('home route / keeps Founding 100 and drops the booking sentence', async () 
   assert.equal(prerender.includes('No public booking calendar'), false)
   assert.equal(prerender.includes('home missing answer-first blurb'), false)
   const hits = walkFiles(path.join(root, 'src')).filter((file) =>
-    read(path.relative(root, file)).includes('No public booking calendar'),
+    /no public booking calendar/i.test(read(path.relative(root, file))),
   )
   assert.deepEqual(hits, [])
 })
