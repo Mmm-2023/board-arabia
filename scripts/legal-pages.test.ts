@@ -187,6 +187,10 @@ test('rendered legal copy has no drafting brackets and both retention states', (
   assert.equal(privacyEnOff.includes('Deleted after 30 days'), false)
   assert.match(privacyEnOn, /Deleted after 30 days\. You can delete them earlier at any time/)
   assert.match(privacyEnOn, /Retained while your account is active; you can delete at any time/)
+  const backupLine =
+    "When we delete your records, they are removed from our live systems straight away. Our hosting provider may keep short-term technical copies for a limited period as part of running its service. We do not access or use those copies, and they expire under the provider's own processes."
+  assert.equal(privacyEnOff.split(backupLine).length - 1, 2)
+  assert.equal(privacyEnOn.split(backupLine).length - 1, 2)
 
   setLegalEnvForTests({
     partnersEmail: 'partners@example.com',

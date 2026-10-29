@@ -47,7 +47,7 @@ The approved sentence was relayed by Code PM. The earlier draft that only droppe
 - INFERRED. After the operator sets all six variables and the Pages deploy runs, live `/privacy/` and `/terms/` should show zero `To be confirmed`. This was not curled against production. Production still has the old build until this merges and the deploy runs.
 - UNKNOWN. Whether the repository variables are already set. Do not set them from this handoff. The real address and mailboxes stay in the operator note, outside the repo.
 - UNKNOWN. The commercial registration extract, and the placeholders in `src/content/privacyNotice.ts`. Out of scope. Not edited.
-- UNKNOWN. The backup day count `[N]` on PR #198. Out of scope. Not edited.
+- UNKNOWN. The backup day count on PR #198. Out of scope. Not edited.
 
 ## Shots
 
