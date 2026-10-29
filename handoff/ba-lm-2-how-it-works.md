@@ -93,7 +93,9 @@ VERIFIED passed locally: `scripts/landing-mobile-copy.test.ts`, `scripts/ux-e-po
 
 ## Head and checks
 
-Product commit SHA is recorded after the commit that introduces the page change. GitHub check status starts UNKNOWN and is filled when the five jobs finish: pr-checks, crawl, Android debug APK, iOS simulator, Android emulator Home.
+Product commit: `49a59d4f5b3c55743a6b8aac238ed5aedad4ad15`. Grade: VERIFIED by `git rev-parse` on that commit.
+
+That commit is the page change. A short note commit may sit on top of it to record this SHA. GitHub check status for pr-checks, crawl, Android debug APK, iOS simulator, and Android emulator Home starts UNKNOWN until those jobs finish.
 
 ## UX checklist
 
