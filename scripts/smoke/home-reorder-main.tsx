@@ -85,7 +85,6 @@ const input: AssembleInput = {
 
 const needsYou = buildNeedsYou({
   twoStepOff: true,
-  profileGaps: 2,
   invites: [{ id: 'a3000001-0000-4000-8000-000000000001', name: 'Care network room' }],
   suggestionCount: 2,
   attention: [],

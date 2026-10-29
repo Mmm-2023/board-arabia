@@ -75,7 +75,7 @@ const DRAFTING_MARKERS = [
   'DRAFT',
 ]
 
-/** Privacy 11.2 asks the person to confirm their identity. That is not a drafting note. */
+/** An identity check is not a drafting note. */
 function draftingMarkerHits(text: string) {
   const rightsConfirm = 'to confirm your identity'
   return DRAFTING_MARKERS.filter((phrase) => {
@@ -183,7 +183,7 @@ test('rendered legal copy has no drafting brackets and both retention states', (
   assert.match(privacyEnOff, /Only admin can read it/)
   assert.equal(privacyEnOff.includes('opens a draft in your own mail app'), false)
   assert.equal(privacyEnOff.includes('is not stored on the website'), false)
-  assert.match(privacyEnOff, /We may ask you to confirm your identity/)
+  assert.match(privacyEnOff, /We have not appointed a data protection officer\. Questions about your data go to To be confirmed\./)
   assert.match(privacyEnOff, /Kept while your account is active; you can delete them at any time/)
   assert.match(privacyEnOff, /Retained while your account is active; you can delete at any time/)
   assert.equal(privacyEnOff.includes('Final period to confirm'), false)
@@ -365,6 +365,81 @@ test('an unset address reads as registered address, and a set address stays of',
   }
 })
 
+const FILLED_LEGAL = {
+  address: '1 Example Road, Example City',
+  contactEmail: 'privacy@example.com',
+  dpoContact: 'No DPO appointed, privacy questions to privacy@example.com',
+  aiProvider: 'a third-party AI model provider',
+  partnersEmail: 'partners@example.com',
+  serviceEmail: 'service@example.com',
+}
+
+test('privacy and terms show no To be confirmed and no bracket token once every field is set', () => {
+  for (const retention30 of [false, true]) {
+    setLegalEnvForTests(FILLED_LEGAL)
+    try {
+      const privacy = legalPlainText(resolveLegalDocument(PRIVACY_EN, 'en', retention30))
+      const terms = legalPlainText(resolveLegalDocument(TERMS_EN, 'en', retention30))
+      for (const text of [privacy, terms]) {
+        assert.equal(/to be confirmed/i.test(text), false)
+        assert.equal(/\[[A-Z][A-Z ]+\]/.test(text), false)
+      }
+      assert.match(privacy, /of 1 Example Road, Example City \("we", "us"\)/)
+      assert.match(privacy, /Data protection officer: No DPO appointed, privacy questions to privacy@example\.com\./)
+      assert.match(privacy, /a third-party AI model provider, for AI tools/)
+      assert.match(privacy, /sent from service@example\.com/)
+      assert.match(privacy, /processed by a third-party AI model provider at its hosting location/)
+      assert.equal(privacy.includes('write to privacy@example.com or'), false)
+    } finally {
+      setLegalEnvForTests(null)
+    }
+  }
+})
+
+test('privacy 11.2 renders the approved sentence with the contact mailbox and no To be confirmed', () => {
+  setLegalEnvForTests({ contactEmail: 'privacy@example.com' })
+  try {
+    const privacy = legalPlainText(resolveLegalDocument(PRIVACY_EN, 'en', true))
+    const sentence = 'We have not appointed a data protection officer. Questions about your data go to privacy@example.com.'
+    const clause = privacy.split('\n').find((line) => line.startsWith('11.2 '))
+    assert.equal(clause, `11.2 ${sentence}`)
+    assert.equal(clause.includes('To be confirmed'), false)
+    assert.equal(clause.includes('[DPO CONTACT]'), false)
+    assert.equal(clause.includes('[CONTACT EMAIL]'), false)
+  } finally {
+    setLegalEnvForTests(null)
+  }
+})
+
+test('an unset field keeps To be confirmed only where that field is used', () => {
+  const { aiProvider: _unset, ...rest } = FILLED_LEGAL
+  setLegalEnvForTests(rest)
+  try {
+    const privacy = legalPlainText(resolveLegalDocument(PRIVACY_EN, 'en', true))
+    assert.equal((privacy.match(/To be confirmed/g) ?? []).length, 2)
+    assert.match(privacy, /To be confirmed, for AI tools/)
+  } finally {
+    setLegalEnvForTests(null)
+  }
+})
+
+test('both workflows pass every filled legal field from repo variables and none as a literal', () => {
+  for (const file of ['.github/workflows/pages.yml', '.github/workflows/pr-checks.yml']) {
+    const yml = read(file)
+    for (const name of [
+      'VITE_LEGAL_CONTACT_EMAIL',
+      'VITE_LEGAL_ADDRESS',
+      'VITE_LEGAL_DPO_CONTACT',
+      'VITE_LEGAL_AI_PROVIDER',
+      'VITE_LEGAL_PARTNERS_EMAIL',
+      'VITE_LEGAL_SERVICE_EMAIL',
+    ]) {
+      assert.match(yml, new RegExp(`${name}: \\$\\{\\{ vars\\.${name} \\}\\}`), `${file} ${name}`)
+    }
+    assert.equal(/VITE_LEGAL_\w+:\s*['"]?[^$\s'"]/.test(yml), false, `${file} has a literal legal value`)
+  }
+})
+
 test('privacy and terms render the entity line and marketing routes keep only the footer credit', async () => {
   delete process.env.VITE_LEGAL_ADDRESS
   delete process.env.VITE_LEGAL_CONTACT_EMAIL
@@ -420,6 +495,47 @@ test('privacy and terms render the entity line and marketing routes keep only th
     assert.match(privacy, /Ask admin/)
     assert.match(terms, /Ask admin/)
   } finally {
+    await vite.close()
+  }
+})
+
+test('rendered /privacy and /terms show no To be confirmed when the legal env is set', async () => {
+  process.env.VITE_LEGAL_ADDRESS = FILLED_LEGAL.address
+  process.env.VITE_LEGAL_CONTACT_EMAIL = FILLED_LEGAL.contactEmail
+  process.env.VITE_LEGAL_DPO_CONTACT = FILLED_LEGAL.dpoContact
+  process.env.VITE_LEGAL_AI_PROVIDER = FILLED_LEGAL.aiProvider
+  process.env.VITE_LEGAL_PARTNERS_EMAIL = FILLED_LEGAL.partnersEmail
+  process.env.VITE_LEGAL_SERVICE_EMAIL = FILLED_LEGAL.serviceEmail
+  process.env.VITE_SUPABASE_URL ||= 'https://example.supabase.co'
+  process.env.VITE_SUPABASE_ANON_KEY ||= 'example-anon-key'
+  const vite = await createServer({
+    server: { middlewareMode: true, hmr: false },
+    appType: 'custom',
+    logLevel: 'error',
+  })
+  try {
+    const privacy = pageHtml((await vite.ssrLoadModule('/src/pages/PrivacyPage.tsx')).PrivacyPage, '/privacy')
+    const terms = pageHtml((await vite.ssrLoadModule('/src/pages/TermsPage.tsx')).TermsPage, '/terms')
+    for (const [html, artifact] of [
+      [privacy, 'privacy/index.html'],
+      [terms, 'terms/index.html'],
+    ] as const) {
+      assert.equal(html.includes('To be confirmed'), false, artifact)
+      assert.match(html, new RegExp(`>${FOOTER_NAMMCO_CREDIT}<`))
+      assert.equal(strayPublicNammco(html, artifact), false, artifact)
+      assert.equal(/sponsor/i.test(html), false, artifact)
+    }
+    const privacyText = privacy.replace(/<[^>]+>/g, '')
+    assert.match(privacyText, /We have not appointed a data protection officer\. Questions about your data go to privacy@example\.com\./)
+    assert.match(privacyText, /Data protection officer: No DPO appointed, privacy questions to privacy@example\.com\./)
+    assert.equal(privacyText.includes('To be confirmed'), false)
+  } finally {
+    delete process.env.VITE_LEGAL_ADDRESS
+    delete process.env.VITE_LEGAL_CONTACT_EMAIL
+    delete process.env.VITE_LEGAL_DPO_CONTACT
+    delete process.env.VITE_LEGAL_AI_PROVIDER
+    delete process.env.VITE_LEGAL_PARTNERS_EMAIL
+    delete process.env.VITE_LEGAL_SERVICE_EMAIL
     await vite.close()
   }
 })

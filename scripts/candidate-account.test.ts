@@ -273,6 +273,7 @@ test('an open account cannot request member-private endpoints', () => {
   assert.equal(accountRequestAllowed('https://example.supabase.co/rest/v1/rpc/my_majlis_applications'), true)
   assert.equal(accountRequestAllowed('https://example.supabase.co/rest/v1/rpc/majlis_join_for_me'), true)
   assert.equal(accountRequestAllowed('https://example.supabase.co/rest/v1/rpc/submit_own_majlis_application'), true)
+  assert.equal(accountRequestAllowed('https://example.supabase.co/rest/v1/rpc/list_public_majlis'), true)
   for (const blocked of [
     '/rest/v1/members',
     '/rest/v1/profiles',
@@ -285,6 +286,9 @@ test('an open account cannot request member-private endpoints', () => {
     '/rest/v1/rpc/my_weekly_digest',
     '/rest/v1/rpc/list_sponsor_showcase',
     '/rest/v1/rpc/review_majlis_application',
+    '/rest/v1/rpc/staff_list_majlis_requests',
+    '/rest/v1/rpc/staff_majlis_request_drafts',
+    '/rest/v1/rpc/staff_save_majlis_request_draft',
     '/functions/v1/due-diligence-start',
     '/functions/v1/deal-room-create',
   ]) {

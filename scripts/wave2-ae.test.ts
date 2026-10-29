@@ -8,7 +8,8 @@ import { MemoryRouter } from 'react-router-dom'
 import { createServer } from 'vite'
 import { AUDIENCE_LINE } from '../src/content/marketing.ts'
 import type { HistoryItem } from '../src/lib/dueDiligence.ts'
-import { assembleHome, profileMatchNudge, type AssembleInput } from '../src/lib/homeSnapshot.ts'
+import { assembleHome, type AssembleInput } from '../src/lib/homeSnapshot.ts'
+import { profileCompleteness, weeklyIntrosOn } from '../src/lib/profileCompleteness.ts'
 import { LEAVE_BOARD_PATH } from '../src/lib/leaveBoard.ts'
 import { earlierRunsLabel, groupPriorNotes } from '../src/lib/priorNotes.ts'
 import { FORMING_TOTALS } from '../src/lib/platformFloors.ts'
@@ -63,19 +64,27 @@ function homeInput(profileMatch: AssembleInput['profileMatch']): AssembleInput {
   }
 }
 
-test('home nudge counts missing sector and availability and drops when both are set', () => {
-  const both = profileMatchNudge({ status: 'ready', availabilitySet: false, sectorSet: false })
+test('weekly intros count a sector and availability, and a theme is not a gate', () => {
+  const base = {
+    photo: true,
+    name: 'Example Member',
+    title: 'Chair',
+    organisation: 'Example House',
+    city: 'Riyadh',
+  }
+  const both = profileCompleteness({ ...base, sectorCount: 0, availabilitySet: false }).find((row) => row.id === 'weekly')
   assert.equal(both?.missing, 2)
-  assert.equal(both?.line, 'Finish your profile: add sector and availability (2 left)')
-  assert.equal(both?.to, '/dashboard/profile#profile-tags')
-  const one = profileMatchNudge({ status: 'ready', availabilitySet: true, sectorSet: false })
-  assert.equal(one?.line, 'Finish your profile: add sector and availability (1 left)')
-  assert.equal(profileMatchNudge({ status: 'ready', availabilitySet: true, sectorSet: true }), null)
-  assert.equal(profileMatchNudge({ status: 'loading', availabilitySet: false, sectorSet: false }), null)
-  assert.equal(profileMatchNudge({ status: 'error', availabilitySet: false, sectorSet: false }), null)
+  assert.equal(both?.addLabel, 'Add 2 things')
+  assert.equal(both?.href, '/dashboard/profile#focus')
+  const one = profileCompleteness({ ...base, sectorCount: 0, availabilitySet: true }).find((row) => row.id === 'weekly')
+  assert.equal(one?.addLabel, 'Add 1 thing')
+  assert.equal(weeklyIntrosOn({ sectorCount: 1, availabilitySet: true }), true)
+  assert.equal(weeklyIntrosOn({ sectorCount: 1, availabilitySet: false }), false)
+  assert.equal(read('src/lib/homeSnapshot.ts').includes('Finish your profile: add sector and availability'), false)
+  assert.equal(read('src/lib/suggestionProfile.ts').includes('PROFILE_PROMPT_LINE'), false)
 
   const missing = assembleHome(homeInput({ status: 'ready', availabilitySet: false, sectorSet: true }))
-  assert.equal(missing.profileNudge?.missing, 1)
+  assert.equal(missing.profileNudge, null)
   assert.equal(missing.profileMatchPending, false)
   const pending = assembleHome(homeInput({ status: 'loading', availabilitySet: false, sectorSet: false }))
   assert.equal(pending.profileNudge, null)
@@ -105,8 +114,8 @@ test('section 5 copy, one audience line, and the desk name', () => {
   assert.equal(FORMING_TOTALS, 'Totals appear once enough members opt in.')
   assert.equal(AUDIENCE_LINE, 'Chairpersons, Board members, and C-suite executives')
   assert.match(read('src/lib/homeSnapshot.ts'), /Add your capacity in Profile to count in the totals\./)
-  assert.match(read('src/pages/LandingPage.tsx'), /What admitted members use today/)
-  assert.match(read('src/pages/LandingPage.tsx'), /Complimentary founding membership, given in\s+exchange for time, judgment and introductions\./)
+  assert.match(read('src/pages/LandingPage.tsx'), /What admitted members use, after sign-in/)
+  assert.match(read('src/pages/LandingPage.tsx'), /One hundred complimentary founding places: fifty in Saudi Arabia and the GCC, fifty international\./)
   assert.match(read('src/pages/AboutPage.tsx'), /you get a\s+private invite email/)
   assert.match(read('src/pages/HowItWorksPage.tsx'), /admin sends you a private\s+invite/)
   assert.equal(read('src/pages/HowItWorksPage.tsx').includes('private booking'), false)
@@ -122,7 +131,7 @@ test('section 5 copy, one audience line, and the desk name', () => {
   const about = read('src/pages/AboutPage.tsx')
   const landing = read('src/pages/LandingPage.tsx')
   assert.match(about, /AUDIENCE_LINE/)
-  assert.match(landing, /AUDIENCE_LINE/)
+  assert.match(landing, /Reviewed membership for Chairperson, Board members and C-suite executives/)
   assert.equal(about.includes('NEDs'), false)
   assert.equal(landing.includes('\u2014'), false)
   assert.equal(about.includes('\u2014'), false)
@@ -147,7 +156,8 @@ test('landing H1 is the promise and Who runs the desk names Michael without a ne
 
 test('leave uses the delete flow and does not add a member tab', () => {
   assert.equal(LEAVE_BOARD_PATH, '/dashboard/profile/leave')
-  assert.match(read('src/pages/dashboard/ProfilePage.tsx'), /Leave Board Arabia/)
+  assert.equal(read('src/pages/dashboard/ProfilePage.tsx').includes('Leave Board Arabia'), false)
+  assert.match(read('src/components/privacy/PrivacyPanelView.tsx'), /Leave Board Arabia/)
   assert.match(read('src/pages/dashboard/LeaveBoardArabia.tsx'), /DeleteAccountScreen/)
   assert.equal(read('src/pages/dashboard/LeaveBoardArabia.tsx').includes('sendDeskNote'), false)
   assert.equal(read('src/pages/dashboard/LeaveBoardArabia.tsx').includes('deleteCandidateAccount'), false)

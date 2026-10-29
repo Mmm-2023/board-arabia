@@ -91,6 +91,8 @@ const ADDED_SHELLS = [
   '/verify',
   '/apply/verify',
   '/admin/intros',
+  '/admin/majlis/requests',
+  '/admin/people/profiles',
   '/dashboard/deals/board-seats',
   '/dashboard/deals/board-seats/new',
 ]

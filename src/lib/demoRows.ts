@@ -3,6 +3,7 @@
 import { normalizeAvatarStyle, type AvatarStyle } from './avatarStyle.ts'
 import { cityKeyFromLocation, cityLabel, isCityKey } from './cities.ts'
 import { isPartnerLogoPath } from './partnerLogo.ts'
+import { presentBoardroomCard, type BoardExpertise, type BoardRole, type BoardSeatType, type BoardSeatWhere } from './boardroom.ts'
 import { isAvailability, normalizeTags, SECTOR_TAGS, VISION_2030_THEMES, type Availability } from './profileTags.ts'
 
 export type DirectoryCard = {
@@ -25,6 +26,11 @@ export type DirectoryCard = {
   avatar_style: AvatarStyle
   /** Invited people are not admitted peers. Missing means the row did not say. */
   membership_status?: 'invited' | 'active' | null
+  board_roles?: BoardRole[]
+  open_to_board_seats?: boolean
+  seat_types?: BoardSeatType[]
+  seat_where?: BoardSeatWhere[]
+  expertise?: BoardExpertise[]
 }
 
 export type RoomCard = {
@@ -84,6 +90,7 @@ export function presentDirectoryCard(raw: unknown): DirectoryCard | null {
   const location = cityName(text(row.location, 120))
   const explicitKey = text(row.city_key, 40)
   const cityKey = isCityKey(explicitKey) ? explicitKey : cityKeyFromLocation(location) ?? ''
+  const boardroom = presentBoardroomCard(row)
   return {
     id,
     is_demo: row.is_demo === true,
@@ -105,6 +112,11 @@ export function presentDirectoryCard(raw: unknown): DirectoryCard | null {
     membership_status: row.membership_status === 'invited' || row.membership_status === 'active'
       ? row.membership_status
       : null,
+    board_roles: boardroom.board_roles,
+    open_to_board_seats: boardroom.open_to_board_seats,
+    seat_types: boardroom.seat_types,
+    seat_where: boardroom.seat_where,
+    expertise: boardroom.expertise,
   }
 }
 

@@ -17,6 +17,7 @@ import { LoginPage } from './pages/LoginPage'
 import { NotFoundPage } from './pages/NotFoundPage'
 import { PartnersPage } from './pages/PartnersPage'
 import { PrivacyPage } from './pages/PrivacyPage'
+import { PublicMajlisPage } from './pages/PublicMajlisPage'
 import { SecurityPage } from './pages/SecurityPage'
 import { TermsPage } from './pages/TermsPage'
 import { AdminIntrosRedirect } from './shell/adminIntrosRedirect'
@@ -52,12 +53,21 @@ const EmailUnsubscribePage = lazy(() =>
   import('./pages/EmailUnsubscribePage').then((m) => ({ default: m.EmailUnsubscribePage })),
 )
 const AdminMajlisPage = lazy(() => import('./pages/admin/MajlisPage').then((m) => ({ default: m.AdminMajlisPage })))
+const AdminMajlisLayout = lazy(() =>
+  import('./pages/admin/MajlisLayout').then((m) => ({ default: m.AdminMajlisLayout })),
+)
+const MajlisRequestsPage = lazy(() =>
+  import('./pages/admin/MajlisRequestsPage').then((m) => ({ default: m.MajlisRequestsPage })),
+)
 const StaffRoomsPage = lazy(() => import('./pages/admin/StaffRoomsPage').then((m) => ({ default: m.StaffRoomsPage })))
 const AdminIntrosPage = lazy(() => import('./pages/admin/AdminIntrosPage').then((m) => ({ default: m.AdminIntrosPage })))
 const AdminPeopleLayout = lazy(() =>
   import('./pages/admin/PeopleLayout').then((m) => ({ default: m.AdminPeopleLayout })),
 )
 const PeoplePage = lazy(() => import('./pages/admin/PeoplePage').then((m) => ({ default: m.PeoplePage })))
+const AdminProfilesPage = lazy(() =>
+  import('./pages/admin/AdminProfilesPage').then((m) => ({ default: m.AdminProfilesPage })),
+)
 const SettingsPage = lazy(() => import('./pages/admin/SettingsPage').then((m) => ({ default: m.SettingsPage })))
 const MarketingPage = lazy(() => import('./pages/admin/MarketingPage').then((m) => ({ default: m.MarketingPage })))
 const DashboardHome = lazy(() =>
@@ -141,6 +151,8 @@ export default function App() {
       <Route path="/apply/verify" element={<Navigate to="/register/verify" replace />} />
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/register/verify" element={<VerifyPage />} />
+      <Route path="/majlis" element={<PublicMajlisPage />} />
+      <Route path="/majlis/:eventId" element={<PublicMajlisPage />} />
       <Route path="/for-members" element={<ForMembersPage />} />
       <Route path="/for-capital" element={<ForCapitalPage />} />
       <Route path="/partners" element={<PartnersPage />} />
@@ -166,6 +178,7 @@ export default function App() {
         <Route path="people" element={<AdminPeopleLayout />}>
           <Route index element={<PeoplePage />} />
           <Route path="intros" element={<AdminIntrosPage />} />
+          <Route path="profiles" element={<AdminProfilesPage />} />
           <Route path="member/:memberId" element={<StaffMemberRecordPage />} />
           <Route path="*" element={<ShellNotFound homeTo="/admin" />} />
         </Route>
@@ -176,7 +189,10 @@ export default function App() {
         <Route path="ai/:toolSlug" element={<StaffAiToolPage />} />
         <Route path="marketing" element={<MarketingPage />} />
         <Route path="email" element={<EmailPage />} />
-        <Route path="majlis" element={<AdminMajlisPage />} />
+        <Route path="majlis" element={<AdminMajlisLayout />}>
+          <Route index element={<AdminMajlisPage />} />
+          <Route path="requests" element={<MajlisRequestsPage />} />
+        </Route>
         <Route path="mandates" element={<AdminMandatesPage />} />
         <Route path="mandates/:mandateId" element={<AdminMandateMatchPage />} />
         <Route path="rooms" element={<StaffRoomsPage />} />

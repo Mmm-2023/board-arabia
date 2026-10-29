@@ -119,7 +119,7 @@ test('hero CTA still points at /apply', async () => {
     const hero = (html.match(/<a\b[^>]*>/g) || []).find((tag) => tag.includes('id="hero-apply"'))
     assert.ok(hero, 'hero anchor')
     assert.match(hero, /href="\/apply\/"/)
-    assert.match(html, /Complimentary founding membership, given in exchange for time, judgment and introductions\./)
+    assert.match(html, /One hundred complimentary founding places: fifty in Saudi Arabia and the GCC, fifty international\./)
     assert.match(html, /It is a board network for Saudi and international rooms/)
     assert.match(html, /Opening doors/)
   } finally {
@@ -177,7 +177,7 @@ test('public marketing body does not say the desk outside Who runs the desk', as
       const body = html.replace(/Who runs the desk/g, '')
       assert.equal(/the desk/i.test(body), false, route)
       if (route === '/apply') assert.match(html, /Our admin team reviews your credentials/)
-      if (route === '/') assert.match(html, /Mandates are capital briefs that admin reviews before members see them/)
+      if (route === '/') assert.match(html, /Admin-reviewed capital briefs\. No cold outreach\./)
     }
     const legalPages = [
       ['/src/pages/PrivacyPage.tsx', 'PrivacyPage', '/privacy'],

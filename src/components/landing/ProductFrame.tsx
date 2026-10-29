@@ -30,7 +30,7 @@ export function ProductFrame({ deals }: { deals: LandingDeal[] }) {
                     <div className="ba-frame-deal-top">
                       <h3>{deal.sector}</h3>
                       <span className="ba-frame-meta">
-                        {deal.is_demo ? <ExampleMark /> : null}
+                        {deal.is_demo ? <ExampleMark large /> : null}
                         <span>{deal.status}</span>
                       </span>
                     </div>

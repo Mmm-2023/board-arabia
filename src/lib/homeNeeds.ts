@@ -16,9 +16,6 @@ export const TWO_STEP_LABEL = 'Turn on two-step sign-in to protect your account'
 export const TWO_STEP_ACTION = 'Turn on'
 export const TWO_STEP_TO = '/dashboard/two-step'
 
-export const FINISH_PROFILE_ACTION = 'Finish profile'
-export const FINISH_PROFILE_TO = '/dashboard/profile#profile-tags'
-
 export const VIEW_INVITE = 'View invite'
 export const VIEW_INVITES = 'View invites'
 export const ROOMS_TO = '/dashboard/deals/rooms'
@@ -31,22 +28,6 @@ export type NeedsYouItem = {
   label: string
   action: string
   to: string
-}
-
-export function profileGapCount(profile: {
-  status: string
-  sectorSet: boolean
-  themeSet: boolean
-  locationSet: boolean
-}): number {
-  if (profile.status !== 'ready') return 0
-  return Number(!profile.sectorSet) + Number(!profile.themeSet) + Number(!profile.locationSet)
-}
-
-export function profileGapLabel(missing: number): string | null {
-  if (!Number.isInteger(missing) || missing <= 0) return null
-  if (missing === 1) return 'One step left to complete your profile'
-  return `Your profile is ${missing} steps from complete`
 }
 
 export function roomInviteCopy(count: number, roomName: string): { label: string; action: string } | null {
@@ -62,7 +43,6 @@ export function suggestionLabel(count: number): string | null {
 
 export function buildNeedsYou(input: {
   twoStepOff: boolean
-  profileGaps: number
   invites: { id: string; name: string }[]
   suggestionCount: number
   attention: { title: string; to: string; cta: string }[]
@@ -79,22 +59,6 @@ export function buildNeedsYou(input: {
   for (const item of input.attention) {
     if (item.to.includes('#password')) {
       items.push({ id: 'password', label: item.title, action: item.cta, to: item.to })
-    }
-  }
-  const gap = profileGapLabel(input.profileGaps)
-  if (gap) {
-    items.push({
-      id: 'profile',
-      label: gap,
-      action: FINISH_PROFILE_ACTION,
-      to: FINISH_PROFILE_TO,
-    })
-  } else {
-    for (const item of input.attention) {
-      if (!item.to.startsWith('/dashboard/profile') || item.to.includes('#password')) continue
-      const one = profileGapLabel(1)
-      if (!one) continue
-      items.push({ id: 'profile', label: one, action: FINISH_PROFILE_ACTION, to: item.to })
     }
   }
   const count = input.invites.length

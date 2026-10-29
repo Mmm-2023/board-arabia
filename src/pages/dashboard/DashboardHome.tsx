@@ -11,9 +11,9 @@ import { fetchMyDealRooms } from '../../lib/dealRoomApi'
 import { pendingInvites, type MemberDealRoom } from '../../lib/dealRoomView'
 import { assembleHome, isFoundingMember, type AttentionItem, type ProfileMatchInput } from '../../lib/homeSnapshot'
 import { loadHomeSources, type LoadedSources } from '../../lib/homeSnapshotLoad'
-import { buildNeedsYou, digestPreviewLines, profileGapCount } from '../../lib/homeNeeds'
+import { buildNeedsYou, digestPreviewLines } from '../../lib/homeNeeds'
+import { profileCompleteness } from '../../lib/profileCompleteness'
 import { readAssurance } from '../../lib/mfa'
-import { useOwnSuggestionProfile } from '../../lib/suggestionProfileLoad'
 import { presentWeeklyDigest } from '../../lib/weeklyDigest'
 import { seatLabel } from '../../lib/member'
 import { loadProfileMatch, profileMatchFromRow } from '../../lib/profileMatchLoad'
@@ -28,6 +28,7 @@ import { useDashboardStatus, useMember } from './context'
 import { DailyMarketBriefCard } from './DailyMarketBriefCard'
 import { AdmitShareCard } from './AdmitShareCard'
 import { HomeSnapshotView, type DigestHomeNotice } from './HomeSnapshotView'
+import { ProfileCompletenessPrompt } from './ProfileCompletenessPrompt'
 import { SponsorWelcomeGate } from './SponsorWelcomeGate'
 
 const EMPTY_SOURCES: LoadedSources = {
@@ -48,7 +49,6 @@ const EMPTY_SOURCES: LoadedSources = {
 
 export function DashboardHome() {
   const { member, profile, staffRole, userId } = useMember()
-  const suggestionProfile = useOwnSuggestionProfile(userId)
   const status = useDashboardStatus()
   const [attempt, setAttempt] = useState(0)
   const [profileMatch, setProfileMatch] = useState<ProfileMatchInput>({
@@ -56,6 +56,7 @@ export function DashboardHome() {
     availabilitySet: false,
     sectorSet: false,
   })
+  const [matchAttempt, setMatchAttempt] = useState(0)
   const [bundle, setBundle] = useState<{ attempt: number; nowMs: number; sources: LoadedSources } | null>(null)
   const [photo, setPhoto] = useState<{ path: string; url: string } | null>(null)
   const [invites, setInvites] = useState<MemberDealRoom[]>([])
@@ -144,7 +145,7 @@ export function DashboardHome() {
     return () => {
       cancelled = true
     }
-  }, [profile, userId])
+  }, [profile, userId, matchAttempt])
 
   useEffect(() => {
     let cancelled = false
@@ -256,17 +257,22 @@ export function DashboardHome() {
     attention.push({
       title: 'Set your password',
       body: 'Set a password before you leave this session so your invite link is not the only way back in.',
-      to: '/dashboard/profile#password',
+      to: '/dashboard/two-step#password',
       cta: 'Set password',
     })
-  } else if (!profileReady) {
-    attention.push({
-      title: 'Finish your profile',
-      body: MEMBER_VIEWS.home.empty,
-      to: '/dashboard/profile',
-      cta: MEMBER_VIEWS.home.emptyCta,
-    })
   }
+  const completenessRows =
+    profileMatch.status === 'ready'
+      ? profileCompleteness({
+          photo: Boolean(profile?.avatar_path),
+          name: profile?.full_name ?? '',
+          title: profile?.headline ?? '',
+          organisation: profile?.company ?? '',
+          city: profile?.location ?? '',
+          sectorCount: profileMatch.sectorSet ? 1 : 0,
+          availabilitySet: profileMatch.availabilitySet,
+        })
+      : []
 
   const model = assembleHome({
     nowMs: bundle?.attempt === attempt ? bundle.nowMs : 0,
@@ -361,11 +367,19 @@ export function DashboardHome() {
         weekLines={weekLines}
         needsYou={buildNeedsYou({
           twoStepOff,
-          profileGaps: staffRole != null ? 0 : profileGapCount(suggestionProfile),
           invites: invites.map((room) => ({ id: room.id, name: room.name })),
           suggestionCount,
           attention,
         })}
+        profileCard={
+          <ProfileCompletenessPrompt
+            userId={userId}
+            staff={staffRole != null}
+            status={profileMatch.status}
+            rows={completenessRows}
+            onRetry={() => setMatchAttempt((value) => value + 1)}
+          />
+        }
         dailyBriefSlot={dailyBrief ? <DailyMarketBriefCard brief={dailyBrief} /> : null}
         unreadNote={unreadNote}
         onMarkNotificationRead={(id) => {

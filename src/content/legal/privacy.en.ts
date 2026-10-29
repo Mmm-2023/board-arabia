@@ -400,7 +400,7 @@ export const PRIVACY_EN: LegalDocument = {
     // LEGAL CHANGE: free-account privacy line. Legal clears this before merge.
     {
       "kind": "p",
-      "text": "Registering creates a free Board Arabia account. We use your name, email and phone number to review your request to attend a majlis and, if we accept it, to send your joining details and contact you about that majlis. We only send a free account messages about its requests, never marketing. If you do not verify your email, your account is deleted after 7 days. Free accounts are deleted 12 months after your last majlis. If you were never accepted, they are deleted 12 months after we decline your request, 12 months after the majlis date if your request was never decided, or 12 months after your last update if all your requests were cancelled. If you become a member, these free account time limits stop applying. You can ask us to delete your account sooner at any time by writing to [CONTACT EMAIL]."
+      "text": "Registering creates a free Board Arabia account. We use your name, work email, company, role and phone number to review your request to attend a majlis and check it fits that majlis, and, if we accept it, to send your joining details and contact you about that majlis. We only send a free account messages about its requests, never marketing. If you do not verify your email, your account is deleted after 7 days. Free accounts are deleted 12 months after your last majlis. If you were never accepted, they are deleted 12 months after we decline your request, 12 months after the majlis date if your request was never decided, or 12 months after your last update if all your requests were cancelled. If you become a member, these free account time limits stop applying. You can ask us to delete your account sooner at any time by writing to [CONTACT EMAIL]."
     },
     {
       "kind": "table",
@@ -505,7 +505,7 @@ export const PRIVACY_EN: LegalDocument = {
       "kind": "clause",
       "id": "c-11-2",
       "number": "11.2",
-      "text": "To use these rights, write to [CONTACT EMAIL] or [DPO CONTACT]. We may ask you to confirm your identity. We will reply within the period the PDPL sets."
+      "text": "We have not appointed a data protection officer. Questions about your data go to [CONTACT EMAIL]."
     },
     {
       "kind": "clause",

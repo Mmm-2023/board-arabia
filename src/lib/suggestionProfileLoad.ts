@@ -8,17 +8,18 @@ const EMPTY: SuggestionProfile = {
   sectorSet: false,
   themeSet: false,
   locationSet: false,
+  availabilitySet: false,
 }
 
 /** Own profile row only. Column grants already allow location, sector_tags, and vision_themes. */
 export async function loadOwnSuggestionProfile(userId: string): Promise<SuggestionProfile> {
   const { data, error } = await supabase
     .from('profiles')
-    .select('location, sector_tags, vision_themes')
+    .select('location, sector_tags, vision_themes, availability')
     .eq('user_id', userId)
     .maybeSingle()
   if (error && !schemaMissing(error.message)) {
-    return { status: 'error', sectorSet: false, themeSet: false, locationSet: false }
+    return { status: 'error', sectorSet: false, themeSet: false, locationSet: false, availabilitySet: false }
   }
   return { status: 'ready', ...suggestionProfileFromFields(data) }
 }

@@ -19,7 +19,7 @@ export const ACCOUNT_OPENS_LINE = 'An account opens to look around. Membership f
 export const CLOSING_CTA_BODY = 'Register for consideration. Membership is decided by our admin team.'
 
 export const LEGACY_CLOSING_BODY =
-  'Submit the pre-vet. If you are accepted, admin sends you a private invite.'
+  'Submit the pre-vet. If accepted, you get a private invite.'
 
 export const LEGACY_CTA_BODY =
   'A pre-vet form. Our admin team reviews credentials. If you are accepted, admin sends you a private invite.'

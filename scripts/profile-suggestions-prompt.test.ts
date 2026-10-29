@@ -12,15 +12,17 @@ import { CHROME_SKIP, resolveChromePath } from './chrome-path.ts'
 import { assembleHome, type AssembleInput } from '../src/lib/homeSnapshot.ts'
 import { stampPromptDismissal } from '../src/lib/mfaFlow.ts'
 import {
-  ADD_SECTORS_AND_THEMES,
+  profileCardVisible,
+  profileCompleteness,
+  WEEKLY_INTROS_CARD_LINE,
+  WEEKLY_INTROS_EMPTY,
+  weeklyIntrosOn,
+} from '../src/lib/profileCompleteness.ts'
+import {
   isProfilePromptDismissed,
   NO_SUGGESTIONS_THIS_WEEK,
-  PROFILE_PROMPT_LINE,
-  profilePromptShowing,
   profilePromptStorageKey,
   suggestionProfileFromFields,
-  suggestionProfileNeedsPrompt,
-  suggestionTagsReady,
 } from '../src/lib/suggestionProfile.ts'
 
 const root = path.resolve(new URL('..', import.meta.url).pathname)
@@ -36,62 +38,70 @@ function render(node: ReactNode) {
   return renderToStaticMarkup(createElement(MemoryRouter, null, node))
 }
 
-const emptyProfile = {
-  status: 'ready' as const,
-  sectorSet: false,
-  themeSet: false,
-  locationSet: false,
-}
+const emptyRows = profileCompleteness({
+  photo: false,
+  name: '',
+  title: '',
+  organisation: '',
+  city: '',
+  sectorCount: 0,
+  availabilitySet: false,
+})
 
-const completeProfile = {
-  status: 'ready' as const,
-  sectorSet: true,
-  themeSet: true,
-  locationSet: true,
-}
+const completeRows = profileCompleteness({
+  photo: true,
+  name: 'Example Member',
+  title: 'Chair',
+  organisation: 'Example House',
+  city: 'Riyadh',
+  sectorCount: 1,
+  availabilitySet: true,
+})
 
 test('suggestion fields come from the member profile and dismissal is per member', () => {
   assert.deepEqual(suggestionProfileFromFields(null), {
     sectorSet: false,
     themeSet: false,
     locationSet: false,
+    availabilitySet: false,
   })
   assert.deepEqual(
     suggestionProfileFromFields({ location: '  ', sector_tags: [], vision_themes: ['Not a theme'] }),
-    { sectorSet: false, themeSet: false, locationSet: false },
+    { sectorSet: false, themeSet: false, locationSet: false, availabilitySet: false },
   )
   const tagsOnly = suggestionProfileFromFields({
     location: '',
     sector_tags: ['Health'],
-    vision_themes: ['Housing'],
+    vision_themes: [],
+    availability: 'open',
   })
-  assert.equal(suggestionTagsReady(tagsOnly), true)
-  assert.equal(suggestionProfileNeedsPrompt(tagsOnly), true)
-  const located = suggestionProfileFromFields({
-    location: 'Riyadh',
-    sector_tags: ['Health'],
-    vision_themes: ['Housing'],
-  })
-  assert.equal(suggestionTagsReady(located), true)
-  assert.equal(suggestionProfileNeedsPrompt(located), false)
-  assert.equal(suggestionTagsReady({ sectorSet: true, themeSet: false }), false)
-  assert.equal(suggestionTagsReady({ sectorSet: false, themeSet: true }), false)
+  assert.equal(weeklyIntrosOn({ sectorCount: tagsOnly.sectorSet ? 1 : 0, availabilitySet: tagsOnly.availabilitySet }), true)
+  assert.equal(weeklyIntrosOn({ sectorCount: 1, availabilitySet: true }), true)
+  assert.equal(weeklyIntrosOn({ sectorCount: 1, availabilitySet: false }), false)
+  assert.equal(weeklyIntrosOn({ sectorCount: 0, availabilitySet: true }), false)
   assert.notEqual(profilePromptStorageKey(EXAMPLE_MEMBER), profilePromptStorageKey(EXAMPLE_OTHER))
   assert.equal(isProfilePromptDismissed('1'), true)
   assert.equal(isProfilePromptDismissed(null), false)
   assert.equal(isProfilePromptDismissed('0'), false)
 
   const loader = read('src/lib/suggestionProfileLoad.ts')
-  assert.match(loader, /\.select\('location, sector_tags, vision_themes'\)/)
+  assert.match(loader, /\.select\('location, sector_tags, vision_themes, availability'\)/)
   assert.match(loader, /\.eq\('user_id', userId\)/)
   assert.equal(loader.includes('security definer'), false)
   assert.match(read('src/pages/dashboard/DashboardHome.tsx'), /staff=\{staffRole != null\}/)
-  assert.match(read('src/pages/dashboard/ProfileCompletenessPrompt.tsx'), /profilePromptShowing\(\{ staff, dismissed, profile \}\)/)
-  assert.equal(profilePromptShowing({ staff: true, dismissed: false, profile: emptyProfile }), false)
-  assert.equal(profilePromptShowing({ staff: false, dismissed: true, profile: emptyProfile }), false)
-  assert.equal(profilePromptShowing({ staff: false, dismissed: false, profile: completeProfile }), false)
-  assert.equal(profilePromptShowing({ staff: false, dismissed: false, profile: emptyProfile }), true)
-  assert.match(read('src/pages/dashboard/IntrosPage.tsx'), /emptyMode=\{suggestionTagsReady/)
+  assert.match(read('src/pages/dashboard/ProfileCompletenessPrompt.tsx'), /profileCardVisible\(\{ staff, dismissed, status, rows \}\)/)
+  assert.equal(profileCardVisible({ staff: true, dismissed: false, status: 'ready', rows: emptyRows }), false)
+  assert.equal(profileCardVisible({ staff: false, dismissed: true, status: 'ready', rows: emptyRows }), false)
+  assert.equal(profileCardVisible({ staff: false, dismissed: false, status: 'ready', rows: completeRows }), false)
+  assert.equal(profileCardVisible({ staff: false, dismissed: false, status: 'ready', rows: emptyRows }), true)
+  assert.match(read('src/pages/dashboard/IntrosPage.tsx'), /weeklyIntrosOn/)
+  for (const file of [
+    'src/pages/dashboard/ProfilePage.tsx',
+    'src/pages/dashboard/DashboardHome.tsx',
+    'src/pages/dashboard/IntrosPage.tsx',
+  ]) {
+    assert.match(read(file), /profileCompleteness|weeklyIntrosOn/)
+  }
 
   const owned = [
     'src/lib/suggestionProfile.ts',
@@ -125,28 +135,29 @@ test('the prompt is member-only and the empty states use the two lines', async (
       onRequest: () => {},
     }
     const needs = render(createElement(suggestions.IntroSuggestions, { ...props, emptyMode: 'needs_tags' }))
-    assert.match(needs, new RegExp(ADD_SECTORS_AND_THEMES.replace(/[.]/g, '\\.')))
+    assert.match(needs, new RegExp(WEEKLY_INTROS_EMPTY.replace(/[.]/g, '\\.')))
     assert.equal(needs.includes(NO_SUGGESTIONS_THIS_WEEK), false)
     assert.equal(anchorHrefs(needs), 1)
-    assert.match(needs, /href="\/dashboard\/profile#profile-tags"/)
-    assert.match(needs, />Profile</)
+    assert.match(needs, /href="\/dashboard\/profile#focus"/)
+    assert.match(needs, />Fill it in</)
     assert.equal(directoryLinks(needs), 0)
 
     const complete = render(createElement(suggestions.IntroSuggestions, { ...props, emptyMode: 'complete' }))
     assert.match(complete, /No suggested introductions this week\./)
-    assert.equal(complete.includes(ADD_SECTORS_AND_THEMES), false)
+    assert.equal(complete.includes(WEEKLY_INTROS_EMPTY), false)
     assert.equal(anchorHrefs(complete), 0)
 
     const member = render(
       createElement(prompt.ProfileCompletenessPrompt, {
         userId: EXAMPLE_MEMBER,
         staff: false,
-        profile: emptyProfile,
+        status: 'ready',
+        rows: emptyRows,
       }),
     )
     assert.match(member, /data-profile-prompt/)
-    assert.match(member, /Intro suggestions depend on them/)
-    assert.match(member, />Profile</)
+    assert.match(member, new RegExp(WEEKLY_INTROS_CARD_LINE.replace(/[.]/g, '\\.')))
+    assert.match(member, />Fill it in</)
     assert.match(member, />Dismiss</)
     assert.equal(anchorHrefs(member), 1)
 
@@ -154,17 +165,19 @@ test('the prompt is member-only and the empty states use the two lines', async (
       createElement(prompt.ProfileCompletenessPrompt, {
         userId: EXAMPLE_STAFF,
         staff: true,
-        profile: emptyProfile,
+        status: 'ready',
+        rows: emptyRows,
       }),
     )
     assert.equal(staff.includes('data-profile-prompt'), false)
-    assert.equal(staff.includes(PROFILE_PROMPT_LINE), false)
+    assert.equal(staff.includes(WEEKLY_INTROS_CARD_LINE), false)
 
     const done = render(
       createElement(prompt.ProfileCompletenessPrompt, {
         userId: EXAMPLE_MEMBER,
         staff: false,
-        profile: completeProfile,
+        status: 'ready',
+        rows: completeRows,
       }),
     )
     assert.equal(done.includes('data-profile-prompt'), false)
@@ -212,7 +225,7 @@ test('home keeps one next action and does not render suggestion cards', async ()
     assert.equal(quiet.includes('data-home-needs'), false)
     assert.equal(quiet.includes('Nothing needs you right now'), false)
     assert.equal(quiet.includes(NO_SUGGESTIONS_THIS_WEEK), false)
-    assert.equal(quiet.includes(PROFILE_PROMPT_LINE), false)
+    assert.equal(quiet.includes(WEEKLY_INTROS_CARD_LINE), false)
     assert.equal((quiet.match(/data-home-cta=/g) || []).length, 1)
     assert.match(quiet, />Explore deals</)
 
@@ -323,57 +336,51 @@ async function captureMember(
   try {
     await page.goto(`${origin}/dashboard`, { waitUntil: 'domcontentloaded' })
     if (tags === 'empty') {
-      await page.getByText('Your profile is 3 steps from complete').waitFor()
-      assert.equal(await page.getByText(PROFILE_PROMPT_LINE).count(), 0)
-      assert.equal(await page.getByText(ADD_SECTORS_AND_THEMES).count(), 0)
+      await page.getByText(WEEKLY_INTROS_CARD_LINE).waitFor()
+      assert.equal(await page.getByText('Your profile is 3 steps from complete').count(), 0)
+      assert.equal(await page.getByText('Finish your profile: add sector and availability').count(), 0)
+      assert.equal(await page.getByText(WEEKLY_INTROS_EMPTY).count(), 0)
       assert.equal(await page.getByText(NO_SUGGESTIONS_THIS_WEEK).count(), 0)
-      assert.equal(await page.locator('[data-profile-prompt]').count(), 0)
-      assert.equal(await page.locator('[data-needs-action="profile"]').getAttribute('href'), '/dashboard/profile#profile-tags')
+      assert.equal(await page.locator('[data-profile-prompt]').count(), 1)
+      assert.equal(await page.locator('[data-needs-item="profile"]').count(), 0)
+      assert.equal(await page.locator('[data-profile-prompt] a').getAttribute('href'), '/dashboard/profile#your-card')
       await saveShot(
         page,
-        '[data-home-needs]',
+        '[data-profile-prompt]',
         path.join(shotDir, homeShot),
         width,
-        '[data-needs-action="profile"]',
+        '[data-profile-prompt] a',
       )
       if (introsShot) {
         await page.goto(`${origin}/dashboard/people/intros`, { waitUntil: 'domcontentloaded' })
         await page.getByRole('heading', { name: 'Intros' }).waitFor()
-        await page.getByText(ADD_SECTORS_AND_THEMES).waitFor()
+        await page.getByText(WEEKLY_INTROS_EMPTY).waitFor()
         assert.equal(await page.getByText(NO_SUGGESTIONS_THIS_WEEK).count(), 0)
         assert.equal(await page.locator('[data-profile-prompt]').count(), 0)
         await saveShot(page, '[data-intro-suggestions]', path.join(shotDir, introsShot), width)
       }
       if (profileShot) {
         await page.goto(`${origin}/dashboard`, { waitUntil: 'domcontentloaded' })
-        await page.getByText('Your profile is 3 steps from complete').waitFor()
-        await page.locator('[data-needs-action="profile"]').click()
-        await page.waitForURL((url) => url.pathname === '/dashboard/profile')
+        await page.getByText(WEEKLY_INTROS_CARD_LINE).waitFor()
+        await page.locator('[data-profile-prompt] a').click()
+        await page.waitForURL((url) => url.pathname === '/dashboard/profile' && url.hash === '#your-card')
         await page.getByRole('heading', { name: 'Your details' }).waitFor()
-        await page.getByText('Sector', { exact: true }).waitFor()
-        await page.getByText('Vision 2030', { exact: true }).waitFor()
+        await page.locator('[data-profile-card-preview]').waitFor()
+        await page.locator('#profile-name').waitFor()
         if (width < 800) {
-          await page.locator('#profile-tags').scrollIntoViewIfNeeded()
-          await page.evaluate(() => {
-            const el = document.getElementById('profile-tags')
-            if (!(el instanceof HTMLElement)) return
-            document.documentElement.style.scrollBehavior = 'auto'
-            const top = el.getBoundingClientRect().top
-            window.scrollTo(0, Math.max(0, window.scrollY + top - 72))
-          })
           await page.screenshot({ path: path.join(shotDir, profileShot) })
         } else {
-          await page.locator('form').filter({ hasText: 'City' }).screenshot({ path: path.join(shotDir, profileShot) })
+          await page.locator('[data-profile-card-preview]').screenshot({ path: path.join(shotDir, profileShot) })
         }
       }
       return
     }
     await page.getByRole('link', { name: 'Explore deals' }).waitFor()
     assert.equal(await page.getByText(NO_SUGGESTIONS_THIS_WEEK).count(), 0)
-    assert.equal(await page.getByText(PROFILE_PROMPT_LINE).count(), 0)
-    assert.equal(await page.getByText(ADD_SECTORS_AND_THEMES).count(), 0)
+    assert.equal(await page.getByText(WEEKLY_INTROS_CARD_LINE).count(), 0)
+    assert.equal(await page.getByText(WEEKLY_INTROS_EMPTY).count(), 0)
     assert.equal(await page.locator('[data-profile-prompt]').count(), 0)
-    assert.equal(await page.locator('[data-needs-action="profile"]').count(), 0)
+    assert.equal(await page.locator('[data-needs-item="profile"]').count(), 0)
     await saveShot(page, '[data-home-next]', path.join(shotDir, homeShot), width)
   } finally {
     await context.close()
@@ -413,8 +420,8 @@ async function assertStaffSeesNoPrompt(
     await page.goto(`${origin}/dashboard`, { waitUntil: 'domcontentloaded' })
     await page.waitForURL((url) => url.pathname.startsWith('/admin') || url.pathname.startsWith('/login'))
     assert.equal(await page.locator('[data-profile-prompt]').count(), 0)
-    assert.equal(await page.getByText(PROFILE_PROMPT_LINE).count(), 0)
-    assert.equal(await page.getByText(ADD_SECTORS_AND_THEMES).count(), 0)
+    assert.equal(await page.getByText(WEEKLY_INTROS_CARD_LINE).count(), 0)
+    assert.equal(await page.getByText(WEEKLY_INTROS_EMPTY).count(), 0)
   } finally {
     await context.close()
   }
@@ -558,11 +565,11 @@ async function mockSupabase(
       capacity_currency: 'USD',
       include_in_public_aggregates: false,
       capacity_verified: false,
-      avatar_path: null,
+      avatar_path: complete ? 'example-member/avatar' : null,
       avatar_style: 'male',
-      availability: null,
+      availability: complete ? 'open' : null,
       sector_tags: complete ? ['Health'] : [],
-      vision_themes: complete ? ['Housing'] : [],
+      vision_themes: [],
     }
     return json(single ? row : [row])
   }

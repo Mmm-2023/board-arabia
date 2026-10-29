@@ -9,22 +9,30 @@ function source(rel: string) {
   return readFileSync(path.join(root, rel), 'utf8')
 }
 
-test('password attention card uses the set-password label and keeps the profile hash', () => {
+test('password attention card uses the set-password label and opens two-step sign-in', () => {
   const home = source('src/pages/dashboard/DashboardHome.tsx')
   assert.match(home, /title: 'Set your password'/)
   assert.match(
     home,
     /body: 'Set a password before you leave this session so your invite link is not the only way back in\.'/,
   )
-  assert.match(home, /to: '\/dashboard\/profile#password'/)
+  assert.match(home, /to: '\/dashboard\/two-step#password'/)
   assert.match(home, /cta: 'Set password'/)
   assert.equal(home.includes('Replace the invitation before you leave this session.'), false)
+  assert.equal(home.includes('Finish your profile'), false)
   const profile = source('src/pages/dashboard/ProfilePage.tsx')
-  assert.match(profile, /id="password"/)
-  assert.match(profile, /hash !== '#password'/)
-  assert.match(profile, /window\.scrollTo\(\{ top: Math\.max\(0, top\), behavior: 'auto' \}\)/)
-  assert.equal(profile.includes("closest('.shell-main')"), false)
-  assert.match(profile, /input\.focus/)
+  assert.match(profile, /Change your password under Two-step sign-in/)
+  assert.match(profile, /to="\/dashboard\/two-step#password"/)
+  assert.match(profile, /profilePasswordTarget\(hash\)/)
+  assert.match(profile, /<Navigate to=\{passwordTarget\} replace \/>/)
+  assert.equal(profile.includes('id="password"'), false)
+  const password = source('src/pages/dashboard/SetPasswordForm.tsx')
+  assert.match(password, /id="password"/)
+  assert.match(password, /hash !== '#password'/)
+  assert.match(password, /window\.scrollTo\(\{ top: Math\.max\(0, top\), behavior: 'auto' \}\)/)
+  assert.equal(password.includes("closest('.shell-main')"), false)
+  assert.match(password, /input\.focus/)
+  assert.match(source('src/pages/dashboard/TwoStepPage.tsx'), /SetPasswordForm/)
 })
 
 test('home does not show a dead availability status', () => {

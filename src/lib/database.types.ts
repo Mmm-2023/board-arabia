@@ -1186,8 +1186,24 @@ export type Database = {
         Args: { p_event: string; p_snapshot: Json; p_consent: string }
         Returns: Json
       }
+      list_public_majlis: {
+        Args: Record<string, never>
+        Returns: Json
+      }
       review_majlis_application: {
         Args: { p_id: string; p_decision: string }
+        Returns: Json
+      }
+      staff_list_majlis_requests: {
+        Args: Record<string, never>
+        Returns: Json
+      }
+      staff_majlis_request_drafts: {
+        Args: Record<string, never>
+        Returns: Json
+      }
+      staff_save_majlis_request_draft: {
+        Args: { p_kind: string; p_subject: string; p_body: string }
         Returns: Json
       }
       request_sponsor_intro: {
@@ -1227,6 +1243,10 @@ export type Database = {
         Returns: Json
       }
       staff_list_mandates: {
+        Args: Record<string, never>
+        Returns: Json
+      }
+      staff_list_profiles: {
         Args: Record<string, never>
         Returns: Json
       }
