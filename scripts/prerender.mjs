@@ -81,9 +81,6 @@ function assertPage(route, html) {
   if (html.includes('/login/staff') || html.includes('/login?next=/dashboard')) {
     errors.push('public page links to staff sign-in or the old member query')
   }
-  if (route === '/' && !html.includes('No public booking calendar')) {
-    errors.push('home missing answer-first blurb')
-  }
   if (html.includes('\u2014')) errors.push('em dash in prerender')
   if (route === '/' && !html.includes('Fifty and fifty.')) {
     errors.push('home missing founding split')

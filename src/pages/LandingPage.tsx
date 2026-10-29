@@ -296,7 +296,7 @@ function ProcessSection() {
           <StepDiagram />
         </div>
         <p className="mt-4 max-w-3xl text-[0.9375rem] leading-[1.45] text-[#E8E4F7]">
-          Every application, mandate intro and real estate intro passes admin review. No public booking calendar is offered.
+          Every application, mandate intro and real estate intro passes admin review.
         </p>
         <p className="mt-2 flex flex-wrap gap-x-6">
           <Link to={publicHref('/how-it-works')} className="ba-textlink inline-flex min-h-11 items-center text-[0.9375rem] text-[#F6F5FB]">
