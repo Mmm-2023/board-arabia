@@ -6,7 +6,7 @@ The sentence "There is no public booking calendar." is removed from Who runs the
 
 Base is `origin/main` at `21892a25787fa293d535e8d6b9fea6eed00071ad` (LM-2, "Drop the public booking calendar sentence from How it works"). No rebase. No force-push. No migration. No Edge change. Do not merge this PR.
 
-Product commit SHA is filled in the follow-up commit on this branch.
+Product commit: `4cca8330b3fc15bd749f8f875cdb38fe669e797d`. Grade: VERIFIED by `git rev-parse` on that commit. The follow-up commit that records this SHA is the PR head until a later CI note lands.
 
 ## Skills and rules
 
