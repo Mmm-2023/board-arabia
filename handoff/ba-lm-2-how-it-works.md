@@ -95,7 +95,17 @@ VERIFIED passed locally: `scripts/landing-mobile-copy.test.ts`, `scripts/ux-e-po
 
 Product commit: `49a59d4f5b3c55743a6b8aac238ed5aedad4ad15`. Grade: VERIFIED by `git rev-parse` on that commit.
 
-That commit is the page change. A short note commit may sit on top of it to record this SHA. GitHub check status for pr-checks, crawl, Android debug APK, iOS simulator, and Android emulator Home starts UNKNOWN until those jobs finish.
+First tip `826cdf326a42c4e3faf8d581cdf9f2e76e5f3019` on pull request 210, run `40913072308` and the crawl run `40913072671`:
+
+| Check | Result | Grade |
+| --- | --- | --- |
+| pr-checks | success | VERIFIED |
+| crawl | success | VERIFIED |
+| Android debug APK | success | VERIFIED |
+| iOS simulator | success | VERIFIED |
+| Android emulator Home | failure | VERIFIED |
+
+The emulator job failed inside `sdkmanager --install emulator` with `Error on ZipFile unknown archive`, then adb could not connect to port 5554, then the screenshot upload found no `emulator-shot/` files. The app was not installed. The same zip error, on the system image that time, failed run `40749434083` on 28 Oct and the next commit of that pull request passed. Grade for "this is a download flake, not the home sentence": INFERRED from those two logs. No product file changes in the retry commit.
 
 ## UX checklist
 
