@@ -4,8 +4,8 @@ Two undrafted pull requests. Backend first, then the screens. Nothing here is ap
 
 ## Pull requests
 
-- Backend: rules, migration, and tests. Base `main`.
-- UI: May fit you, the seat reasons, People who may fit, the open to seats card, skills wanted, and the admin switch. Base is the backend branch so the diff is the screens.
+- Backend: https://github.com/Mmm-2023/board-arabia/pull/228 against `main`. Head `5cb99d7bb4461d6ef34ce9652e499c167b8901d6`.
+- UI: https://github.com/Mmm-2023/board-arabia/pull/229 against the backend branch. Head is the latest commit on `cursor/sm-1-seat-match-ui-ebc5`.
 
 ## Secrets grade
 
