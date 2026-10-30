@@ -169,7 +169,26 @@ exception
 end
 $roles$;
 alter role service_role bypassrls;
-grant anon, authenticated, service_role to current_user;
+-- Parallel suites grant these cluster-wide roles at the same moment.
+do $grant_roles$
+declare
+  attempt int := 0;
+begin
+  loop
+    attempt := attempt + 1;
+    begin
+      grant anon, authenticated, service_role to current_user;
+      exit;
+    exception
+      when others then
+        if attempt >= 5 or sqlerrm not like '%tuple concurrently updated%' then
+          raise;
+        end if;
+        perform pg_sleep(0.2 * attempt);
+    end;
+  end loop;
+end
+$grant_roles$;
 
 create schema if not exists extensions;
 create extension if not exists pgcrypto with schema extensions;

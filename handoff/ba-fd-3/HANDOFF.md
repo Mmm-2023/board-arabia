@@ -63,7 +63,13 @@ Staff sign-in at `/login/staff` uses the same porcelain chrome. Its heading, lea
 - The form sits on porcelain with white fields. The HTML mockups do that. The prose also says a white card for the form. INFERRED that the HTML is the layout to follow, so there is no extra white card around the fields. The mist card is the Not a member yet card.
 - Staff sign-in shares the porcelain chrome. INFERRED. It is the same component. Staff copy that existing tests pin was left in place.
 
+## CI
+
+Head `29e005248013785c1ca884e948396ca0c0c04d88` passed crawl, Android debug APK, Android emulator Home, and iOS simulator. pr-checks failed one test: `scripts/partner-logo-storage.test.ts`, `tuple concurrently updated` on the shared role grant. That grant is cluster-wide and the suite applies it from many databases at once. It is not a sign-in failure. VERIFIED from the job log.
+
+The shared test stub now retries that one error. `scripts/sponsor-directory-opt-in.test.ts`. The sign-in page did not change in that commit.
+
 ## Unknown
 
-- CI on the pull request was not green at the time this file was written. UNKNOWN until the five checks finish.
+- Whether the retried grant is green on the new head. UNKNOWN until pr-checks finishes again.
 - Whether a later brief removes the one-time-code warning from this page. UNKNOWN.
