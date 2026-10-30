@@ -129,21 +129,6 @@ async function anonHeaders(): Promise<HeadersInit> {
   }
 }
 
-/** Posts to the existing request-password-reset function. The reply text is ignored. */
-export async function requestPasswordResetLetter(email: string): Promise<{ ok: boolean; status: number; network?: boolean }> {
-  try {
-    const res = await fetch(`${functionsBase}/request-password-reset`, {
-      method: 'POST',
-      headers: await anonHeaders(),
-      body: JSON.stringify({ email: email.trim() }),
-    })
-    const network = res.status >= 500
-    return { ok: res.ok && !network, status: res.status, network }
-  } catch {
-    return { ok: false, status: 0, network: true }
-  }
-}
-
 async function staffHeaders(): Promise<HeadersInit> {
   const { data } = await supabase.auth.getSession()
   const token = data.session?.access_token
@@ -193,6 +178,21 @@ export async function submitApplication(payload: {
     }
   } catch (err) {
     return { error: err instanceof Error ? err.message : 'Submit failed' }
+  }
+}
+
+/** Posts to the existing request-password-reset function. The reply text is ignored. */
+export async function requestPasswordResetLetter(email: string): Promise<{ ok: boolean; status: number; network?: boolean }> {
+  try {
+    const res = await fetch(`${functionsBase}/request-password-reset`, {
+      method: 'POST',
+      headers: await anonHeaders(),
+      body: JSON.stringify({ email: email.trim() }),
+    })
+    const network = res.status >= 500
+    return { ok: res.ok && !network, status: res.status, network }
+  } catch {
+    return { ok: false, status: 0, network: true }
   }
 }
 

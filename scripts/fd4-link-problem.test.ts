@@ -56,7 +56,7 @@ test('the link problem page calls the existing reset function and keeps password
   const confirm = read('src/pages/AuthConfirmPage.tsx')
   const client = read('src/lib/supabase.ts')
   const start = client.indexOf('export async function requestPasswordResetLetter')
-  const letter = client.slice(start, client.indexOf('async function staffHeaders'))
+  const letter = client.slice(start, client.indexOf('async function postAccountDelete'))
   assert.match(copy, /That link did not work\. Enter your email to get a new one\./)
   assert.match(copy, /If that address has an account, a link is on its way\./)
   assert.match(screen, /LINK_PROBLEM_HEADING/)

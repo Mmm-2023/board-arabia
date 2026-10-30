@@ -12,7 +12,7 @@ The error phase of `src/pages/AuthConfirmPage.tsx` renders `src/pages/LinkProble
 
 - Heading: That link did not work. Enter your email to get a new one. `src/lib/linkProblem.ts` line 3.
 - Email field and one primary button, Email me a new link. `src/pages/LinkProblemScreen.tsx` lines 122 and 140.
-- The button posts to the existing function. `src/lib/supabase.ts` lines 133 to 135. The reply text is not shown.
+- The button posts to the existing function. `src/lib/supabase.ts` lines 185 to 187. The reply text is not shown.
 - Success, for every address: If that address has an account, a link is on its way. `src/lib/linkProblem.ts` line 4.
 - Empty or invalid email: Enter the email address you use for Board Arabia. The sentence is under the field and in the alert above the form.
 - Resend cooldown: You can ask again in 60 seconds. The button stays disabled for 60 seconds.
@@ -48,7 +48,7 @@ Playwright, reduced motion, Vite, fixture host `example.supabase.co`. Before sho
 
 ## Claims
 
-- The failed link screen has an email field and one primary button that calls `request-password-reset`. VERIFIED. `scripts/fd4-link-problem.test.ts` and `src/lib/supabase.ts` line 135. The Edge function file was not edited.
+- The failed link screen has an email field and one primary button that calls `request-password-reset`. VERIFIED. `scripts/fd4-link-problem.test.ts` and `src/lib/supabase.ts` line 187. The Edge function file was not edited.
 - The same success sentence is shown for `layla@example.com` and `nobody@example.com`, and the endpoint sentence "If this inbox can sign in, a reset link is on its way." is not shown. VERIFIED. Browser test. `presentLinkProblem` does not take an address. `src/lib/linkProblem.ts` line 24.
 - A 400 body that names an account is not shown. The validation sentence is shown instead, and the email stays in the field. VERIFIED. Browser test.
 - A network failure keeps the typed email and uses the network sentence. VERIFIED. Browser test and the error shots.
