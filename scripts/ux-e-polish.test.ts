@@ -100,12 +100,12 @@ test('recent report dates use 6 Oct 2026 and off-tool links follow live flags on
   }
 })
 
-test('public copy keeps one booking phrase, invite email, and the scale pair', () => {
+test('public copy drops the home booking sentence, and keeps invite email and the scale pair', () => {
   const landing = read('src/pages/LandingPage.tsx')
   const footer = read('src/components/Footer.tsx')
   const seo = read('src/content/seo.ts')
   const apply = read('src/pages/ApplyPage.tsx')
-  assert.equal((landing.match(/No public booking calendar/g) || []).length, 1)
+  assert.equal((landing.match(/No public booking calendar/g) || []).length, 0)
   assert.equal(footer.includes('No public calendar'), false)
   assert.equal(seo.includes('private next-step email'), false)
   assert.equal(seo.includes('Private next step by email'), false)

@@ -1,8 +1,8 @@
 # PF-7 handoff: focus fields and intro reasons
 
 Branch: `cursor/pf-7-focus-fields-93c7`
-Base: `main` after boardroom fields (#208, `426d4b8`).
-Head SHA: recorded on the pull request. It is the tip of this branch.
+Merged main: `27d132b6aa6325adc5bf47c681e39435ccf7f429` (phone sizing, AI Due Diligence notice, vetting copy).
+Head SHA: the merge commit on this branch. It is recorded on the pull request.
 
 ## What changed
 
@@ -32,8 +32,13 @@ Weekly intro suggestions add 1 point per offer/ask chip match. A shared sector s
 | Anon allowlist unchanged. No new `staff_*` function. | no edit to the allowlist array | `anon allowlist stays closed`; `every staff_* function checks staff` | VERIFIED |
 | `list_directory` payload has no email, phone, turnover, LinkedIn, or calendar keys | migration comment at `:387`; card builder | database test checks those keys are absent, and the payload text has no `@` | VERIFIED |
 | Admin list stores the first chip, not the line | migration `:428` | database test: `help_with` is `Deal introductions`, line keys absent | VERIFIED |
-| Same destinations on desktop and phone. 48px chip targets on a phone. Loading, empty, error, and missing-profile states stay. | `FocusFields.tsx` uses `touch` chips (`min-h-12`); profile loading and retry blocks | shots at 390 and 1280 | VERIFIED |
+| Same destinations on desktop and phone. Phone chips stay 44px tall and wide. Long labels wrap. Loading, empty, error, and missing-profile states stay. | `src/pages/dashboard/MemberFilters.tsx:154` keeps `min-h-11 min-w-11`. Profile copy sits in `data-phone-body`. | `phone tap targets are at least 44px and phone body text is at least 15px`; fresh shot `focus-390.png` | VERIFIED |
 | SeatMatchChip.tsx deleted | not deleted | `scripts/smoke/boardroom-main.tsx` and `scripts/boardroom-fields.test.ts` still import it | VERIFIED unused cleanup does not fit |
+| Main merge keeps the phone sizing classes | Directory More stays `min-h-12 min-w-11`. Profile checklist stays `min-h-11`. Home order attributes stay. | `scripts/dm1-mobile.test.ts` source guard | VERIFIED |
+| AI Due Diligence notice behaviour is unchanged by this merge | `src/lib/aiDueDiligenceNotice.ts` and the Due Diligence pages match main | `git diff origin/main` on those files is empty | VERIFIED |
+| Migration slot `20270109120000` is only this file | `supabase/migrations/20270109120000_focus_fields.sql` | `git ls-tree` of main has no file with that timestamp | VERIFIED |
+| This merge does not edit Edge code, legal text, or locked files | suggest-intros diff against the pre-merge branch is empty. Legal and operator files match main. | file diff | VERIFIED |
+| Fresh 390px focus shot after the merge | `handoff/ba-pf-7-focus-fields/focus-390.png` | Playwright at width 390 after the chip resolution | VERIFIED |
 
 ## Proposed match table (for review)
 
@@ -84,7 +89,7 @@ Older `search_path = public` definers were not rewritten.
 Example data only, at 390 and 1280:
 
 - `completeness-390.png`, `completeness-1280.png`
-- `focus-390.png`, `focus-1280.png`
+- `focus-390.png` (retaken after the main merge), `focus-1280.png`
 - `directory-chips-390.png`, `directory-chips-1280.png`
 - `directory-lines-390.png`, `directory-lines-1280.png`
 - `suggestion-390.png`, `suggestion-1280.png`

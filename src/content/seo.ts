@@ -9,7 +9,7 @@ export const OG_TITLE = 'Board Arabia'
 export const HOME_SHARE_TITLE = 'Board Arabia | Saudi boardrooms meet international capital'
 
 export const OG_DESCRIPTION =
-  'Board Arabia is a selective founding membership linking Saudi Chairpersons, board members and C-suite executives with international capital.'
+  'Board Arabia is a founding membership by application linking Saudi Chairpersons, board members and C-suite executives with international capital.'
 
 export const OG_IMAGE = `${SITE_ORIGIN}/og-board-arabia.png`
 
@@ -58,14 +58,14 @@ export const MARKETING_PAGES: Record<MarketingPath, MarketingPage> = {
     path: '/for-members',
     title: 'For members: directory, mandates, majlis | Board Arabia',
     description:
-      'What Board Arabia members get: a private directory, reviewed intros and mandates, majlis events, deal rooms and Vision 2030 tags.',
+      'What Board Arabia members get: a private directory, intros and mandates, majlis events, deal rooms and Vision 2030 tags.',
     faq: true,
   },
   '/for-capital': {
     path: '/for-capital',
     title: 'For capital: family offices, FDI, PE, VC | Board Arabia',
     description:
-      'Family offices, FDI, PE and VC reach Board Arabia members through mandates our admin team reviews. No open directory, no cold outreach.',
+      'Family offices, FDI, PE and VC reach Board Arabia members through mandates that go through our admin team. No open directory, no cold outreach.',
   },
   '/partners': {
     path: '/partners',
@@ -163,7 +163,7 @@ export const FAQ: FaqItem[] = [
   {
     question: 'What is Board Arabia?',
     answer:
-      'Board Arabia is a selective founding membership that connects Saudi Arabia’s boardrooms with international counterparts for Chairpersons, Board members, and C-suite executives. Access to capital, business relationships, and opening doors happen in reviewed rooms. Growth and governance stay in the frame. It is not an open directory. It is a board network for Saudi and international rooms, kept off the open web.',
+      'Board Arabia is a founding membership by application that connects Saudi Arabia’s boardrooms with international counterparts for Chairpersons, Board members, and C-suite executives. Access to capital, business relationships, and opening doors happen in private rooms. Growth and governance stay in the frame. It is not an open directory. It is a board network for Saudi and international rooms, kept off the open web.',
   },
   {
     question: 'Who is it for?',
@@ -175,7 +175,7 @@ export const FAQ: FaqItem[] = [
   {
     question: 'How do family offices or FDI engage?',
     answer:
-      'Capital (FDI, family offices, PE, VC) engages through mandates our admin team reviews. There is no open outbound to members.',
+      'Capital (FDI, family offices, PE, VC) engages through mandates that go through our admin team. There is no open outbound to members.',
     to: '/for-capital',
     toLabel: 'For capital',
   },
@@ -187,7 +187,7 @@ export const MEMBERS_FAQ: FaqItem[] = [
   {
     question: 'What do members get?',
     answer:
-      'Mandates admin reviews, a private Directory, Intros, Invites, Deal rooms, Real estate, Majlis, and AI tools: AI Due Diligence, CFO check and Deal readiness memo. AI tools are not legal, financial or investment advice.',
+      'Mandates that go through admin, a private Directory, Intros, Invites, Deal rooms, Real estate, Majlis, and AI tools: AI Due Diligence, CFO check and Deal readiness memo. AI tools are not legal, financial or investment advice.',
   },
   NAMES_FAQ,
   {
@@ -216,7 +216,7 @@ const ABOUT_FAQ: FaqItem[] = [
   {
     question: 'What is Board Arabia?',
     answer:
-      "Board Arabia is a selective founding membership for Chairpersons, board members and C-suite executives, connecting Saudi Arabia's boardrooms with international capital.",
+      "Board Arabia is a founding membership by application for Chairpersons, board members and C-suite executives, connecting Saudi Arabia's boardrooms with international capital.",
   },
   {
     question: 'Who can join?',
@@ -231,7 +231,7 @@ const ABOUT_FAQ: FaqItem[] = [
   {
     question: 'How do investors engage members?',
     answer:
-      'Family offices, FDI, PE and VC engage members through mandates our admin team reviews. The member directory is private.',
+      'Family offices, FDI, PE and VC engage members through mandates that go through our admin team. The member directory is private.',
   },
   {
     question: 'How do I contact Board Arabia?',
@@ -318,7 +318,7 @@ export function pageGraph(page: MarketingPage) {
     logo: `${SITE_ORIGIN}/favicon.svg`,
     image: OG_IMAGE,
     description:
-      "A selective founding membership connecting Saudi Arabia's Chairpersons, board members and C-suite executives with international capital.",
+      "A founding membership by application connecting Saudi Arabia's Chairpersons, board members and C-suite executives with international capital.",
     areaServed: ['Saudi Arabia', 'GCC', 'International'],
   }
   if (contact) {

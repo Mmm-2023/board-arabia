@@ -268,7 +268,7 @@ function DirectoryPerson({
         ) : null}
         <button
           type="button"
-          className="mt-3 inline-flex min-h-12 items-center text-[0.95rem] font-semibold text-[var(--ba-indigo)] md:min-h-11"
+          className="mt-3 inline-flex min-h-12 min-w-11 items-center justify-center text-[0.95rem] font-semibold text-[var(--ba-indigo)] md:min-h-11"
           aria-expanded={open}
           aria-controls={moreId}
           onClick={() => setOpen((value) => !value)}

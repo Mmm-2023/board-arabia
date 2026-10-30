@@ -116,7 +116,7 @@ function PhoneFields({ card, rest }: { card: ReOpportunityCard; rest: ReactNode 
       {open ? <div id={moreId}>{rest}</div> : null}
       <button
         type="button"
-        className="mt-3 inline-flex min-h-11 items-center text-[0.95rem] font-semibold text-[var(--ba-indigo)]"
+        className="mt-3 inline-flex min-h-11 min-w-11 items-center justify-center text-[0.95rem] font-semibold text-[var(--ba-indigo)]"
         aria-expanded={open}
         aria-controls={moreId}
         onClick={() => setOpen((value) => !value)}

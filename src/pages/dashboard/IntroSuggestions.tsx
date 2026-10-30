@@ -43,7 +43,7 @@ export function IntroSuggestions({
             <>
               <EmptyState tone="member" message={WEEKLY_INTROS_EMPTY} />
               <p className="mt-3">
-                <Link to={PROFILE_SECTION_HREF.focus} className="inline-flex min-h-12 items-center text-ink underline">
+                <Link to={PROFILE_SECTION_HREF.focus} className="inline-flex min-h-12 min-w-11 items-center justify-center text-ink underline">
                   {WEEKLY_INTROS_CARD_CTA}
                 </Link>
               </p>

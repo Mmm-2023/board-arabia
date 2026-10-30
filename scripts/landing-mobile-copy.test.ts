@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { readFileSync } from 'node:fs'
+import { readdirSync, readFileSync, statSync } from 'node:fs'
 import path from 'node:path'
 import test from 'node:test'
 import { createElement } from 'react'
@@ -17,12 +17,12 @@ function read(rel: string) {
 }
 
 const HERO_LEAD =
-  'Reviewed membership for Chairperson, Board members and C-suite executives, in Saudi Arabia and internationally.'
-const WHY_LEAD = 'A reviewed membership linking Saudi boardrooms with international counterparts.'
+  'Membership for Chairperson, Board members and C-suite executives, in Saudi Arabia and internationally.'
+const WHY_LEAD = 'A membership linking Saudi boardrooms with international counterparts.'
 const FOUNDING_LEAD =
   'One hundred complimentary founding places: fifty in Saudi Arabia and the GCC, fifty international.'
 const MEMBERSHIP_LEAD = 'What admitted members use, after sign-in.'
-const PROCESS_LEAD = 'Every application, mandate intro and real estate intro passes admin review.'
+const PROCESS_LEAD = 'Admin reads every application and handles every mandate intro and real estate intro.'
 
 let landingServer: Awaited<ReturnType<typeof createServer>> | null = null
 
@@ -92,15 +92,15 @@ test('home copy matches the mobile review and drops the overclaim', async () => 
     assert.equal(html.includes(tile.title), true, tile.title)
     assert.equal(html.includes(tile.body), true, tile.body)
   }
-  assert.match(html, /Admin-reviewed capital briefs\. No cold outreach\./)
-  assert.match(html, /Peers admitted on one standard: credentials first\./)
+  assert.match(html, /Capital briefs shared through admin\. No cold outreach\./)
+  assert.match(html, /Peers admitted by application and personal review\./)
   assert.match(html, /Warm introductions, deal rooms and Majlis gatherings\./)
   assert.match(html, /Saudi Arabia and the GCC/)
   assert.equal(html.includes('Held for:'), false)
   const hero = html.slice(html.indexOf('id="top"'), html.indexOf('id="why"'))
   assert.equal(hero.includes('No public booking calendar'), false)
-  assert.equal((html.match(/No public booking calendar/g) || []).length, 1)
-  assert.match(html, /No public booking calendar is offered\./)
+  assert.equal((html.match(/No public booking calendar/g) || []).length, 0)
+  assert.equal(html.includes('No public booking calendar is offered.'), false)
   assert.equal(html.includes('not priced'), false)
   assert.equal(html.includes('How FDI and family offices engage'), false)
   assert.equal(html.includes('All your data is secure and fully encrypted'), false)
@@ -119,6 +119,51 @@ test('home copy matches the mobile review and drops the overclaim', async () => 
   assert.match(read('src/index.css'), /\.ba-frame-deals p \{[\s\S]*font-size: 0\.9375rem;[\s\S]*line-height: 1\.45;/)
   assert.match(read('src/index.css'), /\.ba-g1 \{[\s\S]*aspect-ratio: 440 \/ 180;/)
 })
+
+test('home route / keeps Founding 100 and drops the booking sentence', async () => {
+  const app = read('src/App.tsx')
+  const homeLine = app.split('\n').find((line) => line.includes('path="/"'))
+  assert.equal(homeLine?.trim(), '<Route path="/" element={<LandingPage />} />')
+  const html = await renderLanding()
+  const process = html.slice(html.indexOf('id="process"'), html.indexOf('id="faq"'))
+  assert.match(process, /How it works/)
+  assert.match(process, /Consideration before any conversation\./)
+  assert.match(process, /Admin reads every application and handles every mandate intro and real estate intro\./)
+  assert.equal(process.includes('No public booking calendar'), false)
+  assert.equal(html.includes('No public booking calendar is offered.'), false)
+  assert.equal(/there is no public booking calendar/i.test(html), false)
+  const founding = html.slice(html.indexOf('id="founding"'), html.indexOf('id="membership"'))
+  assert.match(founding, /Founding 100/)
+  assert.match(founding, /Fifty and fifty\./)
+  assert.match(
+    founding,
+    /One hundred complimentary founding places: fifty in Saudi Arabia and the GCC, fifty international\./,
+  )
+  const order = ['id="top"', 'id="why"', 'id="founding"', 'id="membership"', 'id="process"', 'id="faq"', 'id="closing"']
+  let cursor = -1
+  for (const id of order) {
+    const at = html.indexOf(id)
+    assert.equal(at > cursor, true, id)
+    cursor = at
+  }
+  const prerender = read('scripts/prerender.mjs')
+  assert.equal(prerender.includes('No public booking calendar'), false)
+  assert.equal(prerender.includes('home missing answer-first blurb'), false)
+  const hits = walkFiles(path.join(root, 'src')).filter((file) =>
+    /no public booking calendar/i.test(read(path.relative(root, file))),
+  )
+  assert.deepEqual(hits, [])
+})
+
+function walkFiles(dir: string): string[] {
+  const found: string[] = []
+  for (const name of readdirSync(dir)) {
+    const full = path.join(dir, name)
+    if (statSync(full).isDirectory()) found.push(...walkFiles(full))
+    else found.push(full)
+  }
+  return found
+}
 
 test.after(async () => {
   if (landingServer) await landingServer.close()

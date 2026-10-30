@@ -136,7 +136,7 @@ export const PRIVACY_EN: LegalDocument = {
       "kind": "clause",
       "id": "c-3-12",
       "number": "3.12",
-      "text": "Public totals. If you leave the public-totals box checked, a verified capacity figure can be added into a platform total after you are admitted. The public site shows the total only. It does not show your name, company or amount."
+      "text": "Public totals. If you leave the public-totals box checked, a capacity figure can be added into a platform total after you are admitted. Our admin team checks it looks right for a decision maker. The public site shows the total only. It does not show your name, company or amount."
     },
     {
       "kind": "clause",
@@ -217,7 +217,7 @@ export const PRIVACY_EN: LegalDocument = {
         ],
         [
           "Public totals",
-          "Verified capacity figure, as a sum only",
+          "Capacity figure, as a sum only",
           "Consent (the public-totals box)"
         ],
         [
@@ -429,7 +429,7 @@ export const PRIVACY_EN: LegalDocument = {
         ],
         [
           "Member data, including profile, intros, \"Deal started\" tags, mandates and event records",
-          "The profile, directory listing, introductions, notifications and event replies are removed when you delete your account. Contact details already shared with another member through an accepted introduction cannot be recalled from that member. The sign-in is anonymised, not deleted. Consent logs are kept for up to 13 months from when they were recorded, with the user reference removed unless a legal hold applies (for example, a dispute, a regulator's request or a legal obligation). Deal room files you uploaded are not removed when you delete your account. They are removed on request to [CONTACT EMAIL], and in any case within 24 months of exit. AI tool uploads and their stored files are not removed when you delete your account. They are removed on request to [CONTACT EMAIL], and in any case within 24 months of exit. Deleted records are not kept in backup copies. Anything still held is removed on request to [CONTACT EMAIL], and in any case within 24 months of exit, unless a legal hold applies."
+          "The profile, directory listing, introductions, notifications and event replies are removed when you delete your account. Contact details already shared with another member through an accepted introduction cannot be recalled from that member. The sign-in is anonymised, not deleted. Consent logs are kept for up to 13 months from when they were recorded, with the user reference removed unless a legal hold applies (for example, a dispute, a regulator's request or a legal obligation). Deal room files you uploaded are not removed when you delete your account. They are removed on request to [CONTACT EMAIL], and in any case within 24 months of exit. AI tool uploads and their stored files are not removed when you delete your account. They are removed on request to [CONTACT EMAIL], and in any case within 24 months of exit. When we delete your records, they are removed from our live systems straight away. Our hosting provider may keep short-term technical copies for a limited period as part of running its service. We do not access or use those copies, and they expire under the provider's own processes. Anything still held is removed on request to [CONTACT EMAIL], and in any case within 24 months of exit, unless a legal hold applies."
         ],
         [
           "AI tool uploads and their output",
@@ -471,7 +471,7 @@ export const PRIVACY_EN: LegalDocument = {
       "kind": "clause",
       "id": "c-9-2",
       "number": "9.2",
-      "text": "From Your privacy, any member can delete their account, including a full membership, after confirming with a one-time code. This removes the profile, directory card, directory listing, introductions, notifications and event replies. Contact details already shared with another member through an accepted introduction cannot be recalled from that member. The member sign-in is anonymised, not deleted. Consent logs are kept for up to 13 months from when they were recorded, with the user reference removed, unless a legal hold applies (for example, a dispute, a regulator's request or a legal obligation). The application record is kept with personal details replaced and the user reference removed. Under a legal hold, the application record is kept unchanged until the hold ends. Deal room files you uploaded are not removed when you delete your account. They are removed on request to [CONTACT EMAIL], and in any case within 24 months of exit. AI tool uploads and their stored files are not removed when you delete your account. They are removed on request to [CONTACT EMAIL], and in any case within 24 months of exit. Invoices and payment records are kept for the period Saudi law requires. Deleted records are not kept in backup copies. An account that has not become a member still has its sign-in deleted."
+      "text": "From Your privacy, any member can delete their account, including a full membership, after confirming with a one-time code. This removes the profile, directory card, directory listing, introductions, notifications and event replies. Contact details already shared with another member through an accepted introduction cannot be recalled from that member. The member sign-in is anonymised, not deleted. Consent logs are kept for up to 13 months from when they were recorded, with the user reference removed, unless a legal hold applies (for example, a dispute, a regulator's request or a legal obligation). The application record is kept with personal details replaced and the user reference removed. Under a legal hold, the application record is kept unchanged until the hold ends. Deal room files you uploaded are not removed when you delete your account. They are removed on request to [CONTACT EMAIL], and in any case within 24 months of exit. AI tool uploads and their stored files are not removed when you delete your account. They are removed on request to [CONTACT EMAIL], and in any case within 24 months of exit. Invoices and payment records are kept for the period Saudi law requires. When we delete your records, they are removed from our live systems straight away. Our hosting provider may keep short-term technical copies for a limited period as part of running its service. We do not access or use those copies, and they expire under the provider's own processes. An account that has not become a member still has its sign-in deleted."
     },
     {
       "kind": "h2",

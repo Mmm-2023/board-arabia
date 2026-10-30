@@ -59,7 +59,7 @@ export function whatsAppInviteText(applyUrl: string, name: string): string {
   const who = inviterName(name)
   const link = oneLine(applyUrl)
   return [
-    `${who} vouched for you on Board Arabia.`,
+    `${who} invited you to apply to Board Arabia.`,
     '',
     `Private founding cohort for operators and capital around Saudi Arabia and the region. ${who} used one of only two peer invites on their seat.`,
     '',
@@ -92,12 +92,12 @@ export function peerInviteMail(
   const who = inviterName(inviter.name)
   const attr = inviterAttr(inviter)
   const link = oneLine(applyUrl)
-  const subject = `${who} vouched for you on Board Arabia`
+  const subject = `${who} invited you to apply to Board Arabia`
   const preheader = 'A private founding seat invitation. Review still required.'
   const text = [
     'Board Arabia',
     '',
-    `You were vouched for by ${attr}`,
+    `You were invited by ${attr}`,
     '',
     `That is rare. Board Arabia is a private founding cohort for operators and capital around Saudi Arabia and the region. ${who} used one of only two peer invites to put your name forward.`,
     '',
@@ -116,7 +116,7 @@ export function peerInviteMail(
   const html = letter({
     preheader,
     title: 'Board Arabia invitation',
-    heading: `You were vouched for by ${escapeHtml(attr)}`,
+    heading: `You were invited by ${escapeHtml(attr)}`,
     body: [
       `That is rare. Board Arabia is a private founding cohort for operators and capital around Saudi Arabia and the region. ${escapeHtml(who)} used one of only two peer invites to put your name forward.`,
       'This is an invitation to apply, not an automatic seat. Applications are reviewed personally.',
@@ -141,7 +141,7 @@ export function peerInviteReminderMail(
     '',
     `Your invitation from ${who} is still open`,
     '',
-    `A short reminder only. ${who} vouched for you with a peer invite on Board Arabia. Applications are reviewed personally. Nothing changes until you choose to apply.`,
+    `A short reminder only. ${who} invited you to apply to Board Arabia. Applications are reviewed personally. Nothing changes until you choose to apply.`,
     '',
     'Review the invitation:',
     link,
@@ -154,7 +154,7 @@ export function peerInviteReminderMail(
     title: 'Board Arabia invitation',
     heading: `Your invitation from ${escapeHtml(who)} is still open`,
     body: [
-      `A short reminder only. ${escapeHtml(who)} vouched for you with a peer invite on Board Arabia. Applications are reviewed personally. Nothing changes until you choose to apply.`,
+      `A short reminder only. ${escapeHtml(who)} invited you to apply to Board Arabia. Applications are reviewed personally. Nothing changes until you choose to apply.`,
     ],
     benefits: true,
     link,

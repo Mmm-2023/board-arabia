@@ -177,7 +177,7 @@ test('public marketing body does not say the desk outside Who runs the desk', as
       const body = html.replace(/Who runs the desk/g, '')
       assert.equal(/the desk/i.test(body), false, route)
       if (route === '/apply') assert.match(html, /Our admin team reviews your credentials/)
-      if (route === '/') assert.match(html, /Admin-reviewed capital briefs\. No cold outreach\./)
+      if (route === '/') assert.match(html, /Capital briefs shared through admin\. No cold outreach\./)
     }
     const legalPages = [
       ['/src/pages/PrivacyPage.tsx', 'PrivacyPage', '/privacy'],

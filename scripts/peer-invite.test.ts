@@ -35,7 +35,7 @@ test('peer invite mail is Board Arabia only', () => {
   process.env.GMAIL_FROM = 'ops@example.com'
   try {
     const mail = peerInviteMail(applyUrl, { name: 'Layla Hassan' })
-    assert.equal(mail.subject, 'Layla Hassan vouched for you on Board Arabia')
+    assert.equal(mail.subject, 'Layla Hassan invited you to apply to Board Arabia')
     assert.equal(hasBoardFooter(mail.text, mail.html), true)
     assert.equal(marketingSignatureHit(mail.text, mail.html), null)
     assert.equal(mail.text.includes('\u2014'), false)
@@ -69,7 +69,7 @@ test('WhatsApp url carries the same apply link', () => {
   assert.equal(decodeURIComponent(withPhone.split('text=')[1] || ''), whatsAppInviteText(applyUrl, 'Layla Hassan'))
   assert.equal(clientWhatsAppUrl('966500000000', applyUrl, 'Layla Hassan'), withPhone)
   assert.equal(clientWhatsAppText(applyUrl, 'Layla Hassan'), whatsAppInviteText(applyUrl, 'Layla Hassan'))
-  assert.match(whatsAppInviteText(applyUrl, 'Layla Hassan'), /^Layla Hassan vouched for you on Board Arabia\./)
+  assert.match(whatsAppInviteText(applyUrl, 'Layla Hassan'), /^Layla Hassan invited you to apply to Board Arabia\./)
   assert.equal(/calendar\.app\.google|nammco/i.test(withPhone + bare), false)
   assert.equal((withPhone + bare).includes('\u2014'), false)
 })

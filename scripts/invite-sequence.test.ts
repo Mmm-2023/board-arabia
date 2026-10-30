@@ -37,11 +37,11 @@ function assertClean(label: string, subject: string, text: string, html: string)
 
 test('invite letter fills the locked copy', () => {
   const mail = peerInviteMail(applyUrl, inviter)
-  assert.equal(mail.subject, 'Layla Hassan vouched for you on Board Arabia')
+  assert.equal(mail.subject, 'Layla Hassan invited you to apply to Board Arabia')
   assert.equal(mail.preheader, 'A private founding seat invitation. Review still required.')
   assert.match(mail.html, /A private founding seat invitation\. Review still required\./)
-  assert.match(mail.text, /You were vouched for by Layla Hassan \(Operator, Example House\)/)
-  assert.match(mail.html, /You were vouched for by Layla Hassan \(Operator, Example House\)/)
+  assert.match(mail.text, /You were invited by Layla Hassan \(Operator, Example House\)/)
+  assert.match(mail.html, /You were invited by Layla Hassan \(Operator, Example House\)/)
   assert.match(mail.text, /not an automatic seat/)
   assert.match(mail.text, /Review the invitation:\nhttps:\/\/boardarabia\.com\/apply\?invite=/)
   for (const line of BENEFIT_LINES) {
@@ -59,7 +59,7 @@ test('empty headline and company drop out of the attribution line', () => {
   assert.equal(inviterAttr({ name: 'Layla Hassan', headline: '', company: 'Example House' }), 'Layla Hassan (Example House)')
   assert.equal(inviterAttr({ name: 'Layla Hassan' }), 'Layla Hassan')
   const bare = peerInviteMail(applyUrl, { name: 'Layla Hassan', headline: ' ', company: null })
-  assert.match(bare.text, /You were vouched for by Layla Hassan\n/)
+  assert.match(bare.text, /You were invited by Layla Hassan\n/)
   assert.equal(bare.text.includes('Layla Hassan ()'), false)
   assert.equal(bare.text.includes('( )'), false)
 })
@@ -82,7 +82,7 @@ test('WhatsApp share text is the locked name-only note', () => {
   assert.equal(
     text,
     [
-      'Layla Hassan vouched for you on Board Arabia.',
+      'Layla Hassan invited you to apply to Board Arabia.',
       '',
       'Private founding cohort for operators and capital around Saudi Arabia and the region. Layla Hassan used one of only two peer invites on their seat.',
       '',

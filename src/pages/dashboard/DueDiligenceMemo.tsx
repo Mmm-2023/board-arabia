@@ -2,7 +2,6 @@ import {
   ANALYSIS_DISCLAIMER,
   NOT_A_RECOMMENDATION,
   missingBannerLabels,
-  POSTURE_LABEL,
   SCORE_KEYS,
   SCORE_LABEL,
   type ClaimStatus,
@@ -12,7 +11,9 @@ import {
   type ScoreKey,
   type Severity,
 } from '../../../supabase/functions/_shared/deck_analysis.ts'
+import { AiDueDiligenceScoreTag } from '../../components/ai/AiDueDiligenceScoreNotice'
 import { AiReportOperatorLine } from '../../components/ai/AiReportOperatorLine'
+import { memberPostureLabel } from '../../lib/aiDueDiligenceNotice'
 import { REPORT_COPY } from '../../lib/dueDiligenceCopy.ts'
 
 const RESULT_LABEL: Record<MathResult, string> = {
@@ -64,17 +65,22 @@ export function DueDiligenceMemo({
         {analysis.snapshot.one_liner ? (
           <p className="mt-2 max-w-3xl text-[1rem] leading-relaxed text-ink/80">{analysis.snapshot.one_liner}</p>
         ) : null}
-        <div className="mt-4 flex flex-wrap items-center gap-3">
-          <PostureChip posture={posture} />
-          <p className="text-[1rem] text-ink" data-dd-overall={overall ?? 'missing'}>
-            <span className="text-[0.82rem] font-semibold text-[var(--ba-muted)]">{REPORT_COPY.overallLabel} </span>
-            {overall == null ? (
-              <span className="font-semibold">{REPORT_COPY.scoreMissing}</span>
-            ) : (
-              <span className="font-display text-[1.75rem] font-semibold tracking-[-0.03em]">{overall}</span>
-            )}
-            {overall == null ? null : <span className="text-[var(--ba-muted)]"> {REPORT_COPY.ofFive}</span>}
-          </p>
+        <div className="mt-4" data-dd-overall={overall ?? 'missing'}>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+            <PostureChip posture={posture} />
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+              <p className="text-[1rem] text-ink">
+                <span className="text-[0.82rem] font-semibold text-[var(--ba-muted)]">{REPORT_COPY.overallLabel} </span>
+                {overall == null ? (
+                  <span className="font-semibold">{REPORT_COPY.scoreMissing}</span>
+                ) : (
+                  <span className="font-display text-[1.75rem] font-semibold tracking-[-0.03em]">{overall}</span>
+                )}
+                {overall == null ? null : <span className="text-[var(--ba-muted)]"> {REPORT_COPY.ofFive}</span>}
+              </p>
+              {overall == null ? null : <AiDueDiligenceScoreTag />}
+            </div>
+          </div>
         </div>
         {analysis.snapshot.posture_reason ? (
           <p className="mt-3 max-w-3xl text-[0.98rem] leading-relaxed text-ink/80">{analysis.snapshot.posture_reason}</p>
@@ -311,7 +317,7 @@ export function DraftMemoMissing() {
 }
 
 function PostureChip({ posture }: { posture: Posture | '' }) {
-  const label = posture ? POSTURE_LABEL[posture] : REPORT_COPY.scoreMissing
+  const label = posture ? memberPostureLabel(posture) : REPORT_COPY.scoreMissing
   const tone =
     posture === 'pass'
       ? 'dd-pill-conflict'
@@ -330,9 +336,12 @@ function ScoreBar({ scoreKey, value }: { scoreKey: ScoreKey; value: number | nul
   const width = value == null ? 0 : (value / 5) * 100
   return (
     <div className="rounded-xl border border-[var(--ba-line)] bg-white px-4 py-3" data-dd-score={scoreKey}>
-      <div className="flex items-baseline justify-between gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
         <p className="text-[0.95rem] font-medium text-ink">{SCORE_LABEL[scoreKey]}</p>
-        <p className="text-[0.95rem] font-semibold text-ink">{value == null ? REPORT_COPY.scoreMissing : `${value} ${REPORT_COPY.ofFive}`}</p>
+        <div className="flex flex-wrap items-center gap-2">
+          <p className="text-[0.95rem] font-semibold text-ink">{value == null ? REPORT_COPY.scoreMissing : `${value} ${REPORT_COPY.ofFive}`}</p>
+          {value == null ? null : <AiDueDiligenceScoreTag />}
+        </div>
       </div>
       <div className="mt-2 h-2 rounded-full bg-[var(--ba-line)]" aria-hidden="true">
         <div className="h-2 rounded-full bg-[var(--ba-indigo)]" style={{ width: `${width}%` }} />

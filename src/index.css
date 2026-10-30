@@ -1417,3 +1417,27 @@ html.ba-native body {
 html.ba-biometric-locked #root > *:not([data-biometric-lock]) {
   visibility: hidden;
 }
+
+/* Home, Profile, and Mandates on a phone: body text is 16px, and other copy is at least 15px. Status chips stay small. Desktop type is unchanged. */
+@media (max-width: 767px) {
+  [data-phone-body] {
+    font-size: 1rem;
+  }
+
+  [data-phone-body] :is(
+    .text-\[0\.65rem\],
+    .text-\[0\.68rem\],
+    .text-\[0\.7rem\],
+    .text-\[0\.72rem\],
+    .text-\[0\.75rem\],
+    .text-\[0\.78rem\],
+    .text-\[0\.8rem\],
+    .text-\[0\.8125rem\],
+    .text-\[0\.82rem\],
+    .text-\[0\.85rem\],
+    .text-\[0\.875rem\],
+    .text-\[0\.92rem\]
+  ):not([data-chip]) {
+    font-size: 1rem !important;
+  }
+}
