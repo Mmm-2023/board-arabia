@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react'
 import { useLocation, useSearchParams } from 'react-router-dom'
 import { MajlisCardTitle } from '../../components/MajlisCardTitle'
+import { MajlisShareCard } from './MajlisShareCard'
 import { SignedAvatar } from '../../components/SignedAvatar'
 import {
   MAJLIS_REGIONS,
@@ -38,7 +39,14 @@ import { CardSkeleton, EmptyState, ErrorBanner, FilteredZero } from '../../shell
 import { MEMBER_VIEWS } from '../../shell/viewCopy'
 import { useMember } from './context'
 
-type MajlisPreview = { events: MajlisEventRow[]; roster?: MajlisRosterRow[] }
+type MajlisPreview = {
+  events: MajlisEventRow[]
+  roster?: MajlisRosterRow[]
+  shareCards?: boolean
+  nowMs?: number
+  hold?: boolean
+  pageError?: string
+}
 
 const fieldClass =
   'mt-1 w-full min-h-11 border border-[var(--ba-line)] bg-white px-3 text-[1rem] text-ink'
@@ -55,14 +63,14 @@ export function MajlisPage({ preview }: { preview?: MajlisPreview } = {}) {
   const region = isMajlisRegion(params.get('region') || '') ? params.get('region') : ''
   const focus = params.get('focus') || ''
   const highlight = params.get('event') || ''
-  const [nowMs] = useState(() => Date.now())
+  const [nowMs] = useState(() => preview?.nowMs ?? Date.now())
   const [hostOpen, setHostOpen] = useState(false)
   const [view, setView] = useState<'list' | 'calendar'>('list')
   const [ownByEvent, setOwnByEvent] = useState<Record<string, OwnMajlisRsvp> | null>(null)
-  const [events, setEvents] = useState<MajlisEventRow[] | null>(preview?.events ?? null)
+  const [events, setEvents] = useState<MajlisEventRow[] | null>(preview?.hold ? null : (preview?.events ?? null))
   const [sponsorEvents, setSponsorEvents] = useState<MajlisSponsorEvent[] | null>(null)
   const [unavailable, setUnavailable] = useState(false)
-  const [error, setError] = useState('')
+  const [error, setError] = useState(preview?.pageError ?? '')
   const [attempt, setAttempt] = useState(0)
   useNoIndex('Majlis | Board Arabia')
 
@@ -303,6 +311,7 @@ export function MajlisPage({ preview }: { preview?: MajlisPreview } = {}) {
                 nowMs={nowMs}
                 highlight={highlight}
                 roster={preview?.roster}
+                shareEnabled={preview?.shareCards ? true : undefined}
                 seat={member.seat}
                 onFocus={(tag) => setFilter({ focus: tag })}
                 onRegion={(name) => setFilter({ region: name })}
@@ -439,6 +448,7 @@ function EventList({
   nowMs,
   highlight,
   roster,
+  shareEnabled,
   seat,
   onFocus,
   onRegion,
@@ -453,12 +463,14 @@ function EventList({
   nowMs: number
   highlight: string
   roster?: MajlisRosterRow[]
+  shareEnabled?: boolean
   seat: string
   onFocus: (tag: string) => void
   onRegion: (region: string) => void
   onChanged: () => void
   shown: (event: MajlisEventRow) => MajlisEventRow
 }) {
+  const [hiddenShare, setHiddenShare] = useState<ReadonlySet<string>>(() => new Set())
   const [cursor, setCursor] = useState(() => {
     const first = events[0] ? riyadhDay(events[0].starts_at) : null
     const today = riyadhDay(new Date(nowMs).toISOString())
@@ -483,8 +495,23 @@ function EventList({
       )
     }
     const row = shown(event as MajlisEventRow)
+    const share = (
+      <MajlisShareCard
+        event={row}
+        nowMs={nowMs}
+        enabled={shareEnabled}
+        dismissed={hiddenShare.has(row.id)}
+        onDismiss={() => {
+          setHiddenShare((current) => {
+            const next = new Set(current)
+            next.add(row.id)
+            return next
+          })
+        }}
+      />
+    )
     if (past) {
-      return <PastCard event={row} onFocus={onFocus} onRegion={onRegion} />
+      return <PastCard event={row} onFocus={onFocus} onRegion={onRegion} share={share} />
     }
     return (
       <MemberCard
@@ -497,6 +524,7 @@ function EventList({
         onFocus={onFocus}
         onRegion={onRegion}
         onChanged={onChanged}
+        share={share}
       />
     )
   }
@@ -595,10 +623,12 @@ function PastCard({
   event,
   onFocus,
   onRegion,
+  share,
 }: {
   event: MajlisEventRow
   onFocus: (tag: string) => void
   onRegion: (region: string) => void
+  share?: ReactNode
 }) {
   return (
     <article className="border border-[var(--ba-line)] bg-white px-4 py-4" data-majlis-past="">
@@ -624,6 +654,7 @@ function PastCard({
         </div>
       </dl>
       <TagRow tags={event.focus_tags} onFocus={onFocus} />
+      {share}
     </article>
   )
 }
@@ -681,6 +712,7 @@ function MemberCard({
   onFocus,
   onRegion,
   onChanged,
+  share,
 }: {
   event: MajlisEventRow
   userId: string
@@ -691,6 +723,7 @@ function MemberCard({
   onFocus: (tag: string) => void
   onRegion: (region: string) => void
   onChanged: () => void
+  share?: ReactNode
 }) {
   const host = event.host_member_id === userId
   const priority = priorityText(event.founding_priority_ends_at, nowMs)
@@ -734,6 +767,7 @@ function MemberCard({
       ) : (
         <RsvpControls event={event} blocked={blocked} onChanged={onChanged} />
       )}
+      {share}
     </article>
   )
 }

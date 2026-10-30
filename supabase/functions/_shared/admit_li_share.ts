@@ -2,6 +2,10 @@
  * The member publishes. We never post. Flags default off unless the exact string true.
  */
 
+import { isLinkedInShareUrl, linkedInShareUrl } from './linkedin_share_url.ts'
+
+export { isLinkedInShareUrl, linkedInShareUrl }
+
 const NIGHT = '#1C1343'
 const PORCELAIN = '#F6F5FB'
 const INDIGO = '#4B3F9A'
@@ -117,23 +121,6 @@ export function linkedInPostText(input: {
     ? FOUNDING_OPEN
     : `I am honoured to join Board Arabia as a ${seatLabel}.`
   return paragraphs([open, roleLine(input.headline, input.company), NETWORK, CLOSE, SITE_LINE])
-}
-
-export function linkedInShareUrl(postBody: string): string {
-  return `https://www.linkedin.com/feed/?shareActive=true&text=${encodeURIComponent(postBody)}`
-}
-
-export function isLinkedInShareUrl(value: string): boolean {
-  try {
-    const url = new URL(value)
-    if (url.protocol !== 'https:') return false
-    if (url.hostname !== 'www.linkedin.com') return false
-    if (url.pathname !== '/feed/') return false
-    if (url.searchParams.get('shareActive') !== 'true') return false
-    return true
-  } catch {
-    return false
-  }
 }
 
 export function isAdmitShareClickUrl(value: string): boolean {
