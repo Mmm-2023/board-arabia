@@ -115,13 +115,18 @@ test('dependabot is weekly, grouped, and not auto merged', () => {
   assert.equal(text.includes('\u2013'), false)
 })
 
-test('retention and intro workflows keep dispatch and have no schedule', () => {
-  for (const name of ['retention-sweep.yml', 'suggest-intros.yml']) {
-    const text = read(`.github/workflows/${name}`)
-    assert.match(text, /workflow_dispatch:/)
-    assert.equal(text.includes('cron:'), false, name)
-    assert.equal(/\n\s*schedule:/.test(text), false, name)
-  }
+test('intro workflow keeps dispatch and has no schedule', () => {
+  const text = read('.github/workflows/suggest-intros.yml')
+  assert.match(text, /workflow_dispatch:/)
+  assert.equal(text.includes('cron:'), false)
+  assert.equal(/\n\s*schedule:/.test(text), false)
+})
+
+test('retention workflow keeps dispatch and a gated daily schedule', () => {
+  const text = read('.github/workflows/retention-sweep.yml')
+  assert.match(text, /workflow_dispatch:/)
+  assert.match(text, /cron: '0 3 \* \* \*'/)
+  assert.match(text, /vars\.RETENTION_SWEEP_ENABLED == 'true'/)
 })
 
 test('apply stays on the legacy route', () => {

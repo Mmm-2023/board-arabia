@@ -1,12 +1,15 @@
 # Retention runs from server routines.
-# The schedule trigger is removed. workflow_dispatch stays for a manual check.
-# No-op until RETENTION_SWEEP_SECRET is set on this repository and the same
-# value is set as an Edge secret.
-# POST only. Header x-retention-sweep. Add ?dry_run=1 to list rows.
+# The job stays skipped until the repository variable RETENTION_SWEEP_ENABLED
+# is the exact string true. That covers the daily schedule and a manual run.
+# RETENTION_SWEEP_SECRET is a repository secret and the same Edge secret.
+# SUPABASE_URL is the project origin with no path and no key.
+# A plain POST applies the retention plan.
 
 name: Retention sweep
 
 on:
+  schedule:
+    - cron: '0 3 * * *'
   workflow_dispatch:
 
 permissions:
@@ -14,22 +17,25 @@ permissions:
 
 jobs:
   sweep:
+    if: ${{ vars.RETENTION_SWEEP_ENABLED == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: Run retention sweep
         env:
           RETENTION_SWEEP_SECRET: ${{ secrets.RETENTION_SWEEP_SECRET }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
         run: |
-          if [ -z "$RETENTION_SWEEP_SECRET" ]; then
-            echo "RETENTION_SWEEP_SECRET is unset. Retention run is a no-op."
+          if [ -z "$RETENTION_SWEEP_SECRET" ] || [ -z "$SUPABASE_URL" ]; then
+            echo "RETENTION_SWEEP_SECRET or SUPABASE_URL is unset. Retention run is a no-op."
             exit 0
           fi
+          origin=${SUPABASE_URL%/}
           code=$(curl -sS --max-time 120 -o /tmp/retention-sweep-body.txt -w '%{http_code}' \
             -X POST \
             -H "Content-Type: application/json" \
             -H "x-retention-sweep: ${RETENTION_SWEEP_SECRET}" \
             --data '{}' \
-            "https://iirqbizwanyhgkhanntq.supabase.co/functions/v1/retention-sweep")
+            "${origin}/functions/v1/retention-sweep")
           echo "status ${code}"
           python3 - <<'PY'
           import pathlib, re

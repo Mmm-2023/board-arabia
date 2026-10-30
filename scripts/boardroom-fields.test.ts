@@ -44,7 +44,7 @@ const migration = read(`supabase/migrations/${migrationName}`)
 
 test('boardroom migration slot, lists, and security text', () => {
   const names = readdirSync(migrationsDir).filter((name) => name.endsWith('.sql')).sort()
-  assert.equal(names.at(-1), '20270110120000_majlis_reminder_windows.sql')
+  assert.equal(names.at(-1), '20270111120000_application_withdrawn_closed_retention.sql')
   assert.equal(names.includes(migrationName), true)
   assert.ok(names.indexOf(migrationName) > names.indexOf('20270107120000_staff_list_profiles.sql'))
   assert.ok(names.includes('20270109120000_focus_fields.sql'))
