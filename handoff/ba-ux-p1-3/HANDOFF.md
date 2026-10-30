@@ -51,4 +51,6 @@ VERIFIED. The diff adds no mailbox, API key, token, password, service role, SMTP
 
 `scripts/ux-p1-3.test.ts` measures computed style at 390, 768, and 1440 for Directory, Deal rooms, and Post a seat, including the open filter sheet, the introduction form, empty, error, and loading. It requires text at least 15px (13px on status chips), tap targets at least 44px, buttons at 17px sentence case, no sideways overflow, and 29 seat checkboxes.
 
-VERIFIED locally: `node --experimental-strip-types --test scripts/ux-p1-3.test.ts` passed. The browser half skips when Chrome is missing, so CI may only run the source guard. That skip is INFERRED until the PR check log is read.
+VERIFIED locally: `node --experimental-strip-types --test scripts/ux-p1-3.test.ts` passed, including the Chrome measure at 390, 768, and 1440.
+
+On GitHub Actions the browser half skips, same as the home phone measure. The parallel suite does not finish the smoke compile. The source guard still runs in pr-checks. First CI run failed because the page wait timed out at 20s (`pr-checks` run 41047393964). The skip is the fix.
