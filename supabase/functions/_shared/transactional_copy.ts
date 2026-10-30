@@ -21,11 +21,11 @@ export function applicationAck(greeting: string): { subject: string; text: strin
   const sealed = boardMail(
     `Hello ${name},
 
-Thank you for applying to Board Arabia. We have your pre-vet details and Michael will review them shortly.
+Thank you for applying to Board Arabia. We have your check details and Michael will review them shortly.
 
 You do not need to book anything yet. If accepted, you will receive a private next-step email.`,
     `<p>Hello ${escapeHtml(name)},</p>
-<p>Thank you for applying to Board Arabia. We have your pre-vet details and Michael will review them shortly.</p>
+<p>Thank you for applying to Board Arabia. We have your check details and Michael will review them shortly.</p>
 <p>You do not need to book anything yet. If accepted, you will receive a private next-step email.</p>`,
   )
   return { subject: 'We received your Board Arabia application', ...sealed }

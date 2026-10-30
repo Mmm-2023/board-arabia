@@ -318,6 +318,9 @@ test('apply ack, Accept, Reject, and Admit use a Board Arabia footer only', () =
     assert.equal(/advisory gateway|partnerships built to last|lasting partnerships/i.test(`${mail.text}\n${mail.html}`), false)
     assert.equal(/nammco/i.test(`${mail.text}\n${mail.html}`), false)
   }
+  assert.match(messages[0].text, /check details/)
+  assert.match(messages[0].html, /check details/)
+  assert.equal(/pre-vet/i.test(`${messages[0].text}\n${messages[0].html}`), false)
   assert.match(messages[1].text, /has been accepted/)
   assert.match(messages[1].text, /https:\/\/booking\.example\/private/)
 })

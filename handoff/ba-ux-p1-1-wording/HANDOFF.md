@@ -1,14 +1,14 @@
 # UX-P1-1 public wording
 
-Copy only. Base `27d132b6aa6325adc5bf47c681e39435ccf7f429` (main). No migration. No Edge change. No force push.
+Copy only. Base `27d132b6aa6325adc5bf47c681e39435ccf7f429` (main). No migration. No Edge deploy. No force push. Not merged.
 
 ## Locked file stop
 
-`src/components/WhoRunsTheDesk.tsx` was not edited.
+Michael's decision on #217: keep the heading. `src/components/WhoRunsTheDesk.tsx` was not edited.
 
-About (`src/pages/AboutPage.tsx` line 49) and Apply (`src/pages/ApplyPage.tsx` line 251) both render `<WhoRunsTheDesk />`. The only public heading that says "the desk" on those pages is the hardcoded `h2` in `src/components/WhoRunsTheDesk.tsx` line 13: "Who runs the desk". The review heading "Who reads your application" would replace that string. The file is locked, so the heading, the named person line, and "A named person reads applications." are unchanged. `scripts/prerender.mjs` does not hardcode this heading or the step name, so it was not edited.
+About (`src/pages/AboutPage.tsx` line 49) and Apply (`src/pages/ApplyPage.tsx` line 251) both render `<WhoRunsTheDesk />`. The heading "Who runs the desk" stays at `src/components/WhoRunsTheDesk.tsx` line 13. `scripts/prerender.mjs` was not edited.
 
-Shots of About and Apply still show "Who runs the desk". That claim is VERIFIED from the after shots and from `git diff` (the component is absent).
+Shots of About and Apply still show "Who runs the desk". VERIFIED from the after shots and from `git diff` (the component is absent).
 
 ## What changed
 
@@ -31,9 +31,20 @@ Copy only:
 
 Not touched: `src/components/WhoRunsTheDesk.tsx`, `scripts/prerender.mjs`, `src/content/legal/*`.
 
-## Left in place
+## Acknowledgement mail
 
-`supabase/functions/_shared/transactional_copy.ts` still says "pre-vet details" in the application acknowledgement. That file is Edge mail copy. This wave does not change Edge.
+`supabase/functions/_shared/transactional_copy.ts` lines 24 and 28 now say "check details" in both the text and HTML of `applicationAck`. No test pinned the old phrase. `scripts/gmail-mail.test.ts` now requires "check details" and rejects "pre-vet" on that letter.
+
+Redeploy after merge. Do not deploy from this branch. `rg` on imports under `supabase/functions` finds six direct importers and no further function that imports those entry files:
+
+- `supabase/functions/admit-member/index.ts`
+- `supabase/functions/decide-application/index.ts`
+- `supabase/functions/invite-sponsor/index.ts`
+- `supabase/functions/notify-application/index.ts`
+- `supabase/functions/request-password-reset/index.ts`
+- `supabase/functions/submit-application/index.ts`
+
+## Left in place
 
 `README.md` still describes the old step name. It is not a public page.
 
@@ -48,7 +59,7 @@ Not touched: `src/components/WhoRunsTheDesk.tsx`, `scripts/prerender.mjs`, `src/
 - About and Apply still show "Who runs the desk" because that component is locked. VERIFIED. After shots and the unchanged file.
 - Terms and Privacy sources were not edited. VERIFIED. `git diff` does not include `src/content/legal`.
 - No em dash, no "sponsor", no price, and nammco only in the footer credit. VERIFIED for the diff. Footer credit still one "powered by nammco" via `scripts/public-nammco.test.ts`.
-- No migration and no Edge deploy. VERIFIED. No files under `supabase/migrations` or `supabase/functions`.
+- No migration and no Edge deploy. VERIFIED. No files under `supabase/migrations`. The only Edge edit is the shared acknowledgement sentence. Nothing was deployed.
 - Secrets. VERIFIED. The diff has no email address, key, token, password, or staff allowlist. Shots are public marketing pages. `.env` is gitignored and not committed.
 
 ## CI
@@ -58,4 +69,4 @@ Base: `main` at `27d132b6aa6325adc5bf47c681e39435ccf7f429`
 Branch: `cursor/ux-p1-1-wording-e8b1`
 Not merged.
 
-Checks were still running when this note was written. The live result is on the PR.
+The acknowledgement change is a later commit on the same branch. The live result is on the PR. Not merged.
