@@ -90,7 +90,7 @@ export type ProcessStep = {
 export const PROCESS_STEPS: ProcessStep[] = [
   {
     n: '01',
-    title: 'Pre-vet',
+    title: 'Check',
     home: 'Submit credentials for consideration. The form does not reserve a time.',
     detail:
       'The application asks for your name, email, phone if you wish, LinkedIn, titles, companies, turnover or family-office size, and an optional investable capacity in US dollars. You can include that capacity in the public platform totals. The form does not hold a slot and it does not open a calendar.',
