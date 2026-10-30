@@ -1441,3 +1441,60 @@ html.ba-biometric-locked #root > *:not([data-biometric-lock]) {
     font-size: 1rem !important;
   }
 }
+
+/* Directory, Deal rooms, and Post a seat at every width.
+   Body and helper text is 16px. Anything a member must read stays at least 15px.
+   Status chips may stay at 13px. Buttons are 17px sentence case. Tap targets are at least 44px. */
+[data-read-floor] {
+  font-size: 1rem;
+}
+
+[data-read-floor] :is(
+  .text-\[0\.65rem\],
+  .text-\[0\.68rem\],
+  .text-\[0\.7rem\],
+  .text-\[0\.72rem\],
+  .text-\[0\.75rem\],
+  .text-\[0\.78rem\],
+  .text-\[0\.8rem\],
+  .text-\[0\.8125rem\],
+  .text-\[0\.82rem\],
+  .text-\[0\.85rem\],
+  .text-\[0\.875rem\],
+  .text-\[0\.92rem\]
+):not([data-chip]):not(button):not(a) {
+  font-size: 1rem !important;
+}
+
+.shell-tone-member .shell-main [data-read-floor] :is(button, a.inline-flex) {
+  font-size: 1.0625rem !important;
+}
+
+[data-read-floor] [data-chip].text-\[12px\] {
+  font-size: 0.8125rem !important;
+}
+
+[data-read-floor] .uppercase:not([data-chip]) {
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+[data-read-floor] :is(button, a.inline-flex) {
+  min-height: 44px;
+  min-width: 44px;
+  max-width: 100%;
+  font-size: 1.0625rem !important;
+  line-height: 1.25;
+  letter-spacing: 0;
+  text-transform: none;
+  white-space: normal;
+}
+
+[data-read-floor] :is(input:not([type='checkbox']):not([type='radio']), select, textarea) {
+  min-height: 44px;
+  font-size: 1rem;
+}
+
+[data-read-floor] [role='group'] > div {
+  row-gap: 0.75rem;
+}

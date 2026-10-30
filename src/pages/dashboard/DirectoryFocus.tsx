@@ -21,9 +21,9 @@ export function DirectoryFocus({
     <div className="mt-3 space-y-3">
       <ChipRow label="Can help with" chips={help} tone="help" line={expanded ? card.can_help_line : ''} />
       <ChipRow label="Looking for" chips={looking} tone="ask" line={expanded ? card.looking_for_line : ''} />
-      {languageLine ? <p className="text-[15px] leading-relaxed text-ink">{languageLine}</p> : null}
+      {languageLine ? <p className="text-[1rem] leading-relaxed text-ink">{languageLine}</p> : null}
       {asks.map((ask) => (
-        <p key={ask} className="flex items-start gap-2 text-[15px] leading-relaxed text-ink">
+        <p key={ask} className="flex items-start gap-2 text-[1rem] leading-relaxed text-ink">
           <svg viewBox="0 0 16 16" className="mt-0.5 size-4 shrink-0 text-[var(--ba-copper-deep)]" aria-hidden="true">
             <path
               d="M3.5 8.5 6.5 11.5 12.5 4.5"
@@ -62,10 +62,10 @@ function ChipRow({
     <div>
       {chips.length > 0 ? (
         <>
-          <p className="text-[15px] font-semibold text-ink">{label}</p>
+          <p className="text-[1rem] font-semibold text-ink">{label}</p>
           <ul className="mt-2 flex flex-wrap gap-2">
             {chips.map((chip) => (
-              <li key={chip} data-chip="" className={`inline-flex min-h-8 items-center px-3 text-[15px] ${chipClass}`}>
+              <li key={chip} data-chip="" className={`inline-flex min-h-11 max-w-full items-center px-3 text-[1rem] ${chipClass}`}>
                 {chip}
               </li>
             ))}
@@ -73,7 +73,7 @@ function ChipRow({
         </>
       ) : null}
       {text ? (
-        <p className={`${chips.length > 0 ? 'mt-2' : ''} border-s-[3px] border-s-[var(--ba-indigo)] ps-3 text-[15px] leading-relaxed text-ink`}>
+        <p className={`${chips.length > 0 ? 'mt-2' : ''} border-s-[3px] border-s-[var(--ba-indigo)] ps-3 text-[1rem] leading-relaxed text-ink`}>
           {text}
         </p>
       ) : null}

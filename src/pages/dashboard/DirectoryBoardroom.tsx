@@ -6,13 +6,13 @@ export function DirectoryBoardroomFace({ card }: { card: DirectoryCard }) {
   const open = card.open_to_board_seats === true
   if (roles.length === 0 && expertise.length === 0 && !open) return null
   return (
-    <div className="mt-3 space-y-3">
+    <div className="mt-4 space-y-4">
       {roles.length > 0 ? (
         <div>
-          <p className="text-[0.68rem] font-semibold tracking-[0.12em] text-ink/40 uppercase">Boards</p>
-          <ul className="mt-1 space-y-1">
+          <p className="text-[1rem] font-semibold text-ink/70">Boards</p>
+          <ul className="mt-2 space-y-2">
             {roles.map((role) => (
-              <li key={`${role.role}-${role.orgType}-${role.organisation}`} className="text-[0.95rem] text-ink/80">
+              <li key={`${role.role}-${role.orgType}-${role.organisation}`} className="text-[1rem] text-ink/80">
                 {role.role}, {role.orgType}, {role.organisation}
               </li>
             ))}
@@ -21,12 +21,12 @@ export function DirectoryBoardroomFace({ card }: { card: DirectoryCard }) {
       ) : null}
       {expertise.length > 0 ? (
         <div>
-          <p className="text-[0.68rem] font-semibold tracking-[0.12em] text-ink/40 uppercase">Expertise</p>
-          <ul className="mt-1 flex flex-wrap gap-2">
+          <p className="text-[1rem] font-semibold text-ink/70">Expertise</p>
+          <ul className="mt-2 flex flex-wrap gap-2">
             {expertise.map((item) => (
               <li
                 key={item}
-                className="inline-flex min-h-8 items-center border border-[var(--ba-line)] bg-white px-2 text-[0.85rem] text-ink"
+                className="inline-flex min-h-11 items-center border border-[var(--ba-line)] bg-white px-3 text-[1rem] text-ink"
               >
                 {item}
               </li>
@@ -35,7 +35,7 @@ export function DirectoryBoardroomFace({ card }: { card: DirectoryCard }) {
         </div>
       ) : null}
       {open ? (
-        <p className="inline-flex min-h-8 items-center bg-[var(--ba-indigo)] px-3 text-[0.85rem] text-[var(--ba-porcelain)]">
+        <p className="inline-flex min-h-11 items-center bg-[var(--ba-indigo)] px-3 text-[1rem] text-[var(--ba-porcelain)]">
           Open to board seats
         </p>
       ) : null}
@@ -52,14 +52,14 @@ export function DirectoryBoardroomDetail({ card }: { card: DirectoryCard }) {
     <dl className="mt-3 space-y-2">
       {types.length > 0 ? (
         <div>
-          <dt className="text-[0.68rem] font-semibold tracking-[0.12em] text-ink/40 uppercase">Seat types</dt>
-          <dd className="mt-0.5 text-[0.95rem] text-ink/80">{types.join(', ')}</dd>
+          <dt className="text-[1rem] font-semibold text-ink/70">Seat types</dt>
+          <dd className="mt-1 text-[1rem] text-ink/80">{types.join(', ')}</dd>
         </div>
       ) : null}
       {where.length > 0 ? (
         <div>
-          <dt className="text-[0.68rem] font-semibold tracking-[0.12em] text-ink/40 uppercase">Where</dt>
-          <dd className="mt-0.5 text-[0.95rem] text-ink/80">{where.join(', ')}</dd>
+          <dt className="text-[1rem] font-semibold text-ink/70">Where</dt>
+          <dd className="mt-1 text-[1rem] text-ink/80">{where.join(', ')}</dd>
         </div>
       ) : null}
     </dl>

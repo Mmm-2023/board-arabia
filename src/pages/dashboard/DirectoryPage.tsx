@@ -85,7 +85,7 @@ export function DirectoryPage() {
 
   if (list.status === 'loading') {
     return (
-      <div className="max-w-3xl">
+      <div className="max-w-3xl" data-read-floor="">
         <h1 className="font-display text-[2.2rem] font-bold tracking-[-0.03em]">Directory</h1>
         <div className="mt-8">
           <CardSkeleton tone="member" label="Loading directory" />
@@ -96,7 +96,7 @@ export function DirectoryPage() {
 
   if (list.status === 'error') {
     return (
-      <div className="max-w-3xl">
+      <div className="max-w-3xl" data-read-floor="">
         <h1 className="font-display text-[2.2rem] font-bold tracking-[-0.03em]">Directory</h1>
         <div className="mt-8">
           <ErrorBanner
