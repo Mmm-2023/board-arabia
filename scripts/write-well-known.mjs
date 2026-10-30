@@ -18,8 +18,6 @@ export const APP_LINK_PATHS = [
   '/login/*',
   '/apply',
   '/apply/*',
-  '/register',
-  '/register/*',
   '/dashboard',
   '/dashboard/*',
 ]

@@ -469,24 +469,25 @@ async function main() {
     if (!state.submitted) fail('Apply submit did not reach the application endpoint')
     await collect(publicPage.page, 'flow:apply-submit')
 
-    await publicPage.page.goto(`${origin}/register`, { waitUntil: 'load' })
-    await publicPage.page.locator('[data-turnstile="live"], [data-turnstile="missing"]').waitFor()
-    const turnstileState = await publicPage.page.locator('[data-turnstile]').first().getAttribute('data-turnstile')
-    if (turnstileState !== 'live') fail(`Turnstile did not mount (${turnstileState})`)
-    try {
-      await publicPage.page.waitForFunction(() => {
-        const input = document.querySelector('input[name="cf-turnstile-response"]')
-        return Boolean(input && input.value)
-      }, null, { timeout: 15000 })
-    } catch {
-      const widget = await publicPage.page.locator('[data-turnstile="live"]').innerHTML().catch(() => '')
-      console.error(`turnstile widget html: ${widget.slice(0, 500)}`)
-      await collect(publicPage.page, 'flow:register-turnstile-failed')
-      fail('Turnstile did not return a token')
+    await publicPage.page.goto(`${origin}/register?invite=x`, { waitUntil: 'load' })
+    await publicPage.page.waitForURL(/\/apply\/?\?invite=x(?:#|$)/)
+    await publicPage.page.getByRole('heading', { name: 'Apply for consideration' }).waitFor()
+    if (!publicPage.page.url().includes('invite=x')) fail(`invite query was dropped: ${publicPage.page.url()}`)
+    await collect(publicPage.page, 'flow:register-redirect')
+
+    for (const path of ['/book', '/verify', '/apply/verify']) {
+      await publicPage.page.goto(`${origin}${path}`, { waitUntil: 'load' })
+      await publicPage.page.waitForURL(/\/apply\/?$/)
+      await publicPage.page.getByRole('heading', { name: 'Apply for consideration' }).waitFor()
+      await collect(publicPage.page, `flow:${path}-redirect`)
     }
-    const value = await publicPage.page.locator('input[name="cf-turnstile-response"]').inputValue()
-    if (value !== 'XXXX.DUMMY.TOKEN.XXXX') fail(`Turnstile token was not the always-pass dummy: ${value}`)
-    await collect(publicPage.page, 'flow:register-turnstile')
+
+    await publicPage.page.goto(`${origin}/register/verify`, { waitUntil: 'load' })
+    await publicPage.page.getByText('Check your email').first().waitFor()
+    if (!/\/register\/verify\/?$/.test(new URL(publicPage.page.url()).pathname)) {
+      fail(`register verify moved to ${publicPage.page.url()}`)
+    }
+    await collect(publicPage.page, 'flow:register-verify')
     await publicPage.context.close()
 
     const login = await open()
