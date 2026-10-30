@@ -7,6 +7,7 @@ import {
   publicChecksNotRun,
   PUBLIC_CHECKS_NOT_RUN,
   showsAnalysisReport,
+  NOT_STATED,
   VERDICT_SHORT,
   type BuiltReport,
   type ClaimVerdict,
@@ -16,6 +17,7 @@ import {
   type SourceLink,
 } from '../../../supabase/functions/_shared/due_diligence.ts'
 import { REPORT_COPY } from '../../lib/dueDiligenceCopy.ts'
+import { reportListTitle } from '../../lib/recentReports.ts'
 import { presentNextSteps, visibleNextSteps, type NextStepItem } from '../../lib/dueDiligenceNextSteps.ts'
 import { AiDueDiligenceReportNotice, AiDueDiligenceScoreTag } from '../../components/ai/AiDueDiligenceScoreNotice'
 import { AiReportOperatorLine } from '../../components/ai/AiReportOperatorLine'
@@ -41,6 +43,10 @@ export function DueDiligenceReport({
   report: BuiltReport
   reportId: string
 }) {
+  const companyTitle =
+    report.company_label === NOT_STATED
+      ? NOT_STATED
+      : reportListTitle(report.company_label, presented.documents_reviewed)
   const checklist = presentNextSteps(report.next_steps, presented.areas)
   const degraded = report.degraded_notes ?? []
   const compact = isDegradedCompact(report)
@@ -70,11 +76,11 @@ export function DueDiligenceReport({
           </p>
         ) : null}
         {searchSkipped ? (
-          <p className="mt-3 max-w-3xl text-[0.92rem] leading-relaxed text-[var(--ba-muted)]" data-dd-search-note="true">
+          <p className="mt-3 max-w-3xl text-[0.95rem] leading-relaxed text-[var(--ba-muted)]" data-dd-search-note="true">
             {DEGRADED_NOTE_SEARCH}
           </p>
         ) : null}
-        <DueDiligenceMemo analysis={analysis} companyLabel={report.company_label} preparedAt={preparedAt} />
+        <DueDiligenceMemo analysis={analysis} companyLabel={companyTitle} preparedAt={preparedAt} />
         <p className="mt-4 max-w-3xl text-[0.95rem] leading-relaxed text-ink/80">{report.disclaimer}</p>
         <section className="mt-8" aria-labelledby="dd-public">
           <h2 id="dd-public" className="font-display text-[1.35rem] font-semibold">
@@ -133,7 +139,7 @@ export function DueDiligenceReport({
           </div>
         ) : null}
         <dl className="mt-4 grid gap-3 sm:grid-cols-3">
-          <OverviewItem label={REPORT_COPY.metaCompany} value={report.company_label} />
+          <OverviewItem label={REPORT_COPY.metaCompany} value={companyTitle} />
           <OverviewItem label={REPORT_COPY.metaSector} value={report.sector_label} />
           <OverviewItem label={REPORT_COPY.metaAim} value={report.ask_label} />
         </dl>
@@ -472,7 +478,7 @@ function NextSteps({
         </div>
       )}
       <div className="mt-6 border-t border-[var(--ba-line)] pt-4" data-next-note="true">
-        <p className="text-[0.92rem] font-semibold text-[var(--ba-copper-deep)]">{REPORT_COPY.groupNote}</p>
+        <p className="text-[0.95rem] font-semibold text-[var(--ba-copper-deep)]">{REPORT_COPY.groupNote}</p>
         <p className="mt-2 text-[0.95rem] leading-relaxed text-[var(--ba-muted)]">{closingNote}</p>
       </div>
     </section>
@@ -483,7 +489,7 @@ function GroupLabel({ text }: { text: string }) {
   const [lead, rest] = text.split('\u00b7')
   return (
     <p className="text-[0.95rem] leading-snug">
-      <span className="text-[0.92rem] font-semibold text-[var(--ba-copper-deep)]">{lead?.trim()}</span>
+      <span className="text-[0.95rem] font-semibold text-[var(--ba-copper-deep)]">{lead?.trim()}</span>
       {rest ? <span className="text-[var(--ba-muted)]"> {'\u00b7'} {rest.trim()}</span> : null}
     </p>
   )

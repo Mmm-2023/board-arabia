@@ -4,6 +4,7 @@ import { MemoryRouter } from 'react-router-dom'
 import { exampleCoReport, fullDraftReport, passDraftReport, publicChecksReport, rangeBreachReport } from '../lib/dueDiligenceMemoFixture'
 import { DueDiligenceReport } from '../pages/dashboard/DueDiligenceReport'
 import { presentReport } from '../../supabase/functions/_shared/due_diligence.ts'
+import { reportListTitle } from '../lib/recentReports.ts'
 import { AppShell } from './AppShell'
 import { MEMBER_DESTINATIONS, MEMBER_SECONDARY } from './destinations'
 import '../index.css'
@@ -19,7 +20,9 @@ const report =
         : state === 'example'
           ? exampleCoReport()
           : fullDraftReport()
-const presented = presentReport(report, state === 'example' ? 'example-seed.pdf' : 'northwind-freight.pdf')
+const fileName = state === 'example' ? 'example-seed.pdf' : 'northwind-freight.pdf'
+const presented = presentReport(report, fileName)
+const title = reportListTitle(report.company_label, fileName)
 const root = document.getElementById('root')
 if (!root) throw new Error('Missing memo preview root')
 
@@ -37,8 +40,11 @@ createRoot(root).render(
       >
         <div className="max-w-5xl">
           <p className="hidden text-[0.72rem] font-semibold tracking-[0.14em] text-brass uppercase md:block">AI Due Diligence</p>
-          <h1 className="font-display text-[1.75rem] leading-tight font-bold tracking-[-0.03em] break-words text-balance md:mt-3 md:text-[2.2rem]">
-            {report.company_label}
+          <h1
+            className="font-display text-[1.75rem] leading-tight font-bold tracking-[-0.03em] break-words text-balance md:mt-3 md:text-[2.2rem]"
+            data-dd-title="report"
+          >
+            {title}
           </h1>
           <p className="mt-3 inline-flex min-h-11 items-center text-[0.95rem] text-[var(--ba-indigo)]">All checks</p>
           <DueDiligenceReport

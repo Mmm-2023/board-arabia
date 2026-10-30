@@ -3,6 +3,8 @@
  * Figures stay deck-stated, recomputed, or unknown. No sector-specific examples.
  */
 
+import { repairDeckLabel, titleHasOddChars } from './deck_title.ts'
+
 export const ANALYSIS_DISCLAIMER =
   'Document review only. Illustrative. Not investment advice, not an audit, and not a substitute for legal, financial, or regulatory diligence.'
 
@@ -593,8 +595,8 @@ export function numberDeckPages(pages: readonly string[]): string {
 }
 
 export function preferredCompany(raw: string): string {
-  const cleaned = oneLine(raw, 80)
-  if (!cleaned) return ''
+  const cleaned = oneLine(repairDeckLabel(raw), 80)
+  if (!cleaned || titleHasOddChars(cleaned)) return ''
   if (/^not in deck$/i.test(cleaned)) return ''
   if (/^(pass|evidence_required|discuss_with_milestones)$/i.test(cleaned)) return ''
   if (/\b(valid|invalid|investable|approved|rejected|fraud|invest)\b/i.test(cleaned)) return ''

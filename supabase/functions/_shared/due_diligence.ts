@@ -4,6 +4,7 @@
  */
 
 import { preferredAsk, preferredCompany, readStoredAnalysis, type DeckAnalysis } from './deck_analysis.ts'
+import { cleanCompanyName, persistCompanyLabel, repairDeckLabel, titleHasOddChars } from './deck_title.ts'
 
 export const DECK_BUCKET = 'due-diligence-decks'
 
@@ -276,7 +277,7 @@ export function sniffDeck(bytes: Uint8Array): DeckExt | null {
 }
 
 export function safeFileName(name: string, ext: DeckExt): string {
-  const cleaned = name
+  const cleaned = repairDeckLabel(name)
     .replace(/[/\\]/g, ' ')
     .replace(/\.\./g, ' ')
     .replace(/[^\w.\- ()]+/g, '')
@@ -548,7 +549,7 @@ function hasDeckControlChar(value: string): boolean {
 
 export function extractDeckFacts(text: string, fileName = ''): DeckFacts {
   const source = normalizeDeckText(text).slice(0, 80_000)
-  const company = companyFromDeck(source, fileName)
+  const company = cleanCompanyName(companyFromDeck(source, fileName), fileName)
   const sector = titleCaseSector(
     labelFrom(source, 'sector') || labelFrom(source, 'industry') || sectorPhrase(source) || sectorKeyword(source),
   )
@@ -571,7 +572,7 @@ export function isClassificationStamp(value: string): boolean {
 }
 
 export function companyFromFileName(fileName: string): string {
-  const base = fileName.replace(/^.*[/\\]/, '').replace(/\.(pdf|pptx)$/i, '')
+  const base = repairDeckLabel(fileName).replace(/^.*[/\\]/, '').replace(/\.(pdf|pptx)$/i, '')
   const drop = new Set([
     'seed', 'investment', 'invest', 'deck', 'pitch', 'investor', 'presentation', 'confidential',
     'draft', 'final', 'pdf', 'pptx', 'the', 'and', 'for', 'series', 'round', 'management', 'case', 'nda',
@@ -931,7 +932,7 @@ export function buildReport(
   const claims = facts.claims.map((claim) => scoreClaim(claim, independent, owned))
   const percents = diligencePercents(claims)
   return {
-    company_label: facts.company,
+    company_label: persistCompanyLabel(facts.company),
     sector_label: facts.sector,
     ask_label: facts.ask,
     disclaimer: DUE_DILIGENCE_DISCLAIMER,
@@ -951,11 +952,16 @@ export function buildReport(
 }
 
 export function presentReport(report: BuiltReport, fileName: string): PresentedReport {
-  const documents = fileName.replace(/\s+/g, ' ').trim() || 'Pitch deck'
-  const assessed =
+  const rawFile = fileName.replace(/\s+/g, ' ').trim()
+  const documents = repairDeckLabel(rawFile) || 'Pitch deck'
+  const company =
     report.company_label === NOT_STATED
+      ? NOT_STATED
+      : cleanCompanyName(report.company_label, rawFile) || report.company_label
+  const assessed =
+    company === NOT_STATED
       ? 'Public-source check of claims in the pitch deck.'
-      : `Public-source check of claims for ${report.company_label}.`
+      : `Public-source check of claims for ${company}.`
   const areas = AREA_SPECS.map((spec) => {
     if (!spec.kinds) return { area: spec.title, ...entityScore(report) }
     return { area: spec.title, ...rollupArea(report.claims.filter((claim) => spec.kinds?.includes(claim.kind))) }
@@ -968,9 +974,9 @@ export function presentReport(report: BuiltReport, fileName: string): PresentedR
         ? [
             {
               claim:
-                report.company_label === NOT_STATED
+                company === NOT_STATED
                   ? 'The deck did not name a company.'
-                  : `Company name: ${report.company_label}`,
+                  : `Company name: ${company}`,
               source: 'Pitch deck',
               finding: area.reason,
               status: area.label,
@@ -1001,7 +1007,7 @@ export function presentReport(report: BuiltReport, fileName: string): PresentedR
   return {
     assessed_line: assessed,
     documents_reviewed: documents,
-    overview: overviewText(report, documents),
+    overview: overviewText(report, documents, company),
     areas,
     findings,
   }
@@ -1257,16 +1263,16 @@ export function publicConsistencyLabel(input: {
   return `${input.publicly_consistent_pct}% publicly consistent`
 }
 
-function overviewText(report: BuiltReport, documents: string): string {
+function overviewText(report: BuiltReport, documents: string, company: string): string {
   const sector = report.sector_label === NOT_STATED ? '' : ` Sector in the deck: ${report.sector_label}.`
   const ask = report.ask_label === NOT_STATED ? '' : ` Ask in the deck: ${report.ask_label}.`
   if (publicChecksNotRun(report)) {
-    return `This assessment reads ${documents} for ${report.company_label}.${sector}${ask} Public checks not run. This is not legal advice. You decide what to do next.`
+    return `This assessment reads ${documents} for ${company}.${sector}${ask} Public checks not run. This is not legal advice. You decide what to do next.`
   }
   if (report.publicly_consistent_pct === null || report.not_publicly_verifiable_pct === null) {
-    return `This assessment reads ${documents} for ${report.company_label}.${sector}${ask} The deck did not state a checkable claim, so there is no percentage. Public sources only. You decide what to do next.`
+    return `This assessment reads ${documents} for ${company}.${sector}${ask} The deck did not state a checkable claim, so there is no percentage. Public sources only. You decide what to do next.`
   }
-  return `This assessment reads ${documents} for ${report.company_label} and compares the claims with public pages.${sector}${ask} ${report.publicly_consistent_pct}% of the checkable claims were publicly consistent. ${report.not_publicly_verifiable_pct}% were not publicly verifiable. Where a public page states a different figure, the scorecard says conflict with public sources. This is not legal advice. You decide what to do next.`
+  return `This assessment reads ${documents} for ${company} and compares the claims with public pages.${sector}${ask} ${report.publicly_consistent_pct}% of the checkable claims were publicly consistent. ${report.not_publicly_verifiable_pct}% were not publicly verifiable. Where a public page states a different figure, the scorecard says conflict with public sources. This is not legal advice. You decide what to do next.`
 }
 
 function nextStepsFor(claims: ReportClaim[]): string[] {
@@ -1458,9 +1464,9 @@ function sectorKeyword(text: string): string {
 }
 
 function companyFromDeck(text: string, fileName: string): string {
-  const labeled = labelFrom(text, 'company')
+  const labeled = repairDeckLabel(labelFrom(text, 'company'))
   if (labeled && !isClassificationStamp(labeled)) return labeled
-  const submitted = submittedByEntity(text)
+  const submitted = repairDeckLabel(submittedByEntity(text))
   if (submitted && !isClassificationStamp(submitted)) return submitted
   const org = titleSlideOrgName(text)
   if (org) return org
@@ -1491,22 +1497,24 @@ function isSkippedCoverLine(line: string): boolean {
 
 function titleSlideOrgName(text: string): string {
   for (const line of coverLines(text)) {
-    if (isSkippedCoverLine(line)) continue
-    const words = line.split(/\s+/)
-    const org = /\b(inc|llc|ltd|limited|plc|corp|corporation|gmbh|capital|group|holdings|labs|robotics|partners|consortium)\b/i.test(line)
+    const cleaned = repairDeckLabel(line)
+    if (!cleaned || isSkippedCoverLine(cleaned)) continue
+    const words = cleaned.split(/\s+/)
+    const org = /\b(inc|llc|ltd|limited|plc|corp|corporation|gmbh|capital|group|holdings|labs|robotics|partners|consortium)\b/i.test(cleaned)
     const titled = words.length >= 2 && words.every((word) => /^[A-Z0-9]/.test(word))
-    if (org || titled) return line
+    if (org || titled) return cleaned
   }
   return ''
 }
 
 function logoBrandText(text: string): string {
   for (const line of coverLines(text)) {
-    if (isSkippedCoverLine(line)) continue
-    const words = line.split(/\s+/)
+    const cleaned = repairDeckLabel(line)
+    if (!cleaned || isSkippedCoverLine(cleaned)) continue
+    const words = cleaned.split(/\s+/)
     if (words.length > 3) continue
-    if (!/^[A-Za-z0-9][A-Za-z0-9 .&'-]{1,40}$/.test(line)) continue
-    return line
+    if (!/^[A-Za-z0-9][A-Za-z0-9 .&'-]{1,40}$/.test(cleaned)) continue
+    return cleaned
   }
   return ''
 }
@@ -1614,9 +1622,19 @@ function cleanModelLabel(value: unknown, max: number): string {
 }
 
 function modelCompany(value: unknown, deckText: string): string {
-  const cleaned = cleanModelLabel(value, 80)
-  if (cleaned && !isClassificationStamp(cleaned) && !GENERIC_DECK_TITLE.test(cleaned) && companyFromModelOk(cleaned, deckText)) return cleaned
-  return submittedByEntity(deckText)
+  const cleaned = repairDeckLabel(cleanModelLabel(value, 80))
+  if (
+    cleaned &&
+    !titleHasOddChars(cleaned) &&
+    !isClassificationStamp(cleaned) &&
+    !GENERIC_DECK_TITLE.test(cleaned) &&
+    companyFromModelOk(cleaned, deckText)
+  ) {
+    return cleaned
+  }
+  const submitted = repairDeckLabel(submittedByEntity(deckText))
+  if (submitted && titleHasOddChars(submitted)) return ''
+  return submitted
 }
 
 function modelSector(value: unknown, deckText: string): string {
