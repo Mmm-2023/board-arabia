@@ -31,10 +31,11 @@ function sliceFn(name: string) {
   return migration.slice(start, end)
 }
 
-test('seat matching migration is the newest slot and stays inert', () => {
+test('seat matching migration sorts before the daily brief and stays inert', () => {
   const names = readdirSync(migrationsDir).filter((name) => name.endsWith('.sql')).sort()
   assert.ok(names.includes(migrationName))
-  assert.equal(names.at(-1), '20270114120000_seat_suggestions_joined.sql')
+  assert.equal(names.at(-1), '20270115120000_daily_brief_publish.sql')
+  assert.ok(names.indexOf(migrationName) < names.indexOf('20270115120000_daily_brief_publish.sql'))
   assert.ok(migrationName > '20270112120000')
   assert.ok(migrationName > '20270111120000_application_withdrawn_closed_retention.sql')
   assert.equal(migration.includes('\u2014'), false)

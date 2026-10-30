@@ -1,52 +1,42 @@
 import { Link } from 'react-router-dom'
 import {
   DAILY_BRIEF_AI_LABEL,
-  DAILY_BRIEF_GROUP_LABEL,
+  DAILY_BRIEF_OPEN,
   DAILY_BRIEF_PATH,
   DAILY_BRIEF_TITLE,
-  briefDateLabel,
+  briefUpdatedLabel,
+  calendarLabel,
+  riyadhTodayKey,
   type MemberBrief,
 } from '../../lib/dailyMarketBrief'
 
-export function DailyMarketBriefCard({ brief }: { brief: MemberBrief }) {
+export function DailyMarketBriefCard({ brief, now = new Date() }: { brief: MemberBrief; now?: Date }) {
   const top = brief.items.slice(0, 3)
+  const older = brief.briefDate !== riyadhTodayKey(now)
+  const updated = briefUpdatedLabel(brief.generatedAt)
+  const dateLine = older
+    ? `Brief from ${calendarLabel(brief.briefDate, false)}`
+    : calendarLabel(brief.briefDate, false)
   return (
-    <section
-      aria-label={DAILY_BRIEF_TITLE}
+    <Link
+      to={DAILY_BRIEF_PATH}
       data-daily-brief-card=""
-      className="mb-8 max-w-3xl border border-[var(--ba-line)] bg-white px-5 py-4"
+      className="mb-8 block max-w-3xl border border-[var(--ba-line)] bg-white px-5 py-4 text-base text-ink"
     >
-      <h2 className="text-[0.72rem] font-semibold tracking-[0.14em] text-ink/40 uppercase">{DAILY_BRIEF_TITLE}</h2>
-      <p className="mt-2 text-[0.95rem] text-ink/70">{briefDateLabel(brief.briefDate)}</p>
-      <ul className="mt-3 space-y-3">
+      <p className="text-[0.9375rem] font-semibold text-ink/70">{DAILY_BRIEF_TITLE}</p>
+      <p className="mt-2 text-[0.9375rem] font-semibold text-[var(--ba-indigo)]">{DAILY_BRIEF_AI_LABEL}</p>
+      <p className="mt-2 text-[0.9375rem] text-ink/80">{dateLine}</p>
+      {updated ? <p className="text-[0.9375rem] text-ink/80">{updated}</p> : null}
+      <ul className="mt-3 space-y-2">
         {top.map((item) => (
-          <li key={item.url} className="border border-[var(--ba-line)] px-3 py-3">
-            <p className="text-[0.72rem] font-semibold tracking-[0.12em] text-ink/50 uppercase">
-              {DAILY_BRIEF_GROUP_LABEL[item.group]}
-            </p>
-            <p className="mt-2 text-[0.72rem] font-semibold tracking-[0.08em] text-[var(--ba-indigo)] uppercase">
-              {DAILY_BRIEF_AI_LABEL}
-            </p>
-            <p className="mt-1 text-[1rem] leading-relaxed text-ink">{item.summary}</p>
-            <p className="mt-2 text-[0.95rem] text-ink/70">{item.outlet}</p>
-            <p className="text-[0.95rem] text-ink/70">{briefDateLabel(item.dated)}</p>
-            <a
-              href={item.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-1 inline-flex min-h-11 items-center text-[0.95rem] font-semibold text-[var(--ba-indigo)] underline"
-            >
-              Source
-            </a>
+          <li key={item.url} className="text-base leading-snug">
+            {item.headline}
           </li>
         ))}
       </ul>
-      <Link
-        to={DAILY_BRIEF_PATH}
-        className="mt-3 inline-flex min-h-11 items-center text-[0.75rem] font-semibold tracking-[0.08em] text-brass uppercase"
-      >
-        Open the brief
-      </Link>
-    </section>
+      <span className="mt-3 inline-flex min-h-11 items-center text-[1.0625rem] font-semibold text-[var(--ba-indigo)] underline">
+        {DAILY_BRIEF_OPEN}
+      </span>
+    </Link>
   )
 }

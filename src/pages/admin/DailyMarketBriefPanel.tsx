@@ -9,14 +9,19 @@ import {
   reorderDailyBriefOutlets,
   saveDailyBriefOutlet,
   saveDailyBriefSettings,
+  setDailyBriefPublish,
   type AdminBriefLatest,
   type MemberBrief,
   type OutletDraft,
+  type PublishStatus,
 } from '../../lib/dailyMarketBrief'
 import { toneClasses } from '../../shell/ViewState'
 
 const fieldClass =
-  'mt-1 block w-full min-h-11 border border-pearl/20 bg-ink px-3 text-[1rem] text-pearl'
+  'mt-1 block w-full min-h-11 border border-pearl/20 bg-ink px-3 text-base text-pearl'
+const buttonClass =
+  'inline-flex min-h-11 items-center border border-pearl/30 px-4 text-[1.0625rem] text-pearl disabled:opacity-40'
+const primaryClass = 'ba-primary inline-flex min-h-11 items-center px-4 text-[1.0625rem] font-semibold'
 
 export function DailyMarketBriefPanel() {
   const [outlets, setOutlets] = useState<OutletDraft[]>([])
@@ -35,7 +40,7 @@ export function DailyMarketBriefPanel() {
       if (cancelled) return
       setLoaded(true)
       if (!state) {
-        setError('Could not load the daily market brief. Retry.')
+        setError('We could not load the brief. Try again.')
         return
       }
       setOutlets(state.outlets)
@@ -64,7 +69,7 @@ export function DailyMarketBriefPanel() {
     if (!ok) {
       setEnabled(previous.enabled)
       setMembersVisible(previous.membersVisible)
-      setError('Could not save those switches. Retry.')
+      setError('We could not save those switches. Try again.')
     }
   }
 
@@ -84,7 +89,7 @@ export function DailyMarketBriefPanel() {
       enabled: outlet.enabled,
     })
     if (!ok) {
-      setError('Could not save that outlet. Retry.')
+      setError('We could not save that outlet. Try again.')
       return
     }
     setNote('Saved.')
@@ -101,7 +106,7 @@ export function DailyMarketBriefPanel() {
     }
     const ok = await saveDailyBriefOutlet({ id: null, ...draft })
     if (!ok) {
-      setError('Could not add that outlet. Retry.')
+      setError('We could not add that outlet. Try again.')
       return false
     }
     setNote('Saved.')
@@ -122,7 +127,7 @@ export function DailyMarketBriefPanel() {
     setNote('')
     const ok = await reorderDailyBriefOutlets(order)
     if (!ok) {
-      setError('Could not reorder outlets. Retry.')
+      setError('We could not reorder outlets. Try again.')
       return
     }
     setAttempt((value) => value + 1)
@@ -133,6 +138,21 @@ export function DailyMarketBriefPanel() {
       ? { briefDate: latest.briefDate, generatedAt: latest.generatedAt, items: latest.items }
       : null
   const statusLine = dailyBriefStatusLine({ searchConfigured, latest })
+  const canApprove = latest?.publishStatus === 'draft' && latest.status === 'ok' && latest.items.length > 0
+  const canPublish = latest?.publishStatus === 'approved' && latest.items.length > 0
+
+  async function onReview(next: 'approved' | 'published') {
+    if (!latest) return
+    setError('')
+    setNote('')
+    const ok = await setDailyBriefPublish(latest.briefDate, next)
+    if (!ok) {
+      setError('We could not save that. The brief is unchanged.')
+      return
+    }
+    setNote(next === 'approved' ? 'Brief approved.' : 'Brief published.')
+    setAttempt((value) => value + 1)
+  }
 
   return (
     <DailyMarketBriefPanelView
@@ -141,12 +161,17 @@ export function DailyMarketBriefPanel() {
       membersVisible={membersVisible}
       statusLine={loaded && !statusLine && searchConfigured === null ? 'Could not read the last run.' : statusLine}
       preview={preview}
+      publishStatus={latest?.publishStatus ?? null}
+      canApprove={canApprove}
+      canPublish={canPublish}
       loaded={loaded}
       error={error}
       note={note}
       onRetry={() => setAttempt((value) => value + 1)}
       onEnabled={(value) => void onSwitch(value, membersVisible)}
       onMembersVisible={(value) => void onSwitch(enabled, value)}
+      onApprove={() => void onReview('approved')}
+      onPublish={() => void onReview('published')}
       onSave={(outlet) => void onSave(outlet)}
       onAdd={onAdd}
       onMove={(index, direction) => void onMove(index, direction)}
@@ -160,12 +185,17 @@ export function DailyMarketBriefPanelView({
   membersVisible,
   statusLine,
   preview,
+  publishStatus = null,
+  canApprove = false,
+  canPublish = false,
   loaded = true,
   error = '',
   note = '',
   onRetry,
   onEnabled,
   onMembersVisible,
+  onApprove,
+  onPublish,
   onSave,
   onAdd,
   onMove,
@@ -175,12 +205,17 @@ export function DailyMarketBriefPanelView({
   membersVisible: boolean
   statusLine: string
   preview: MemberBrief | null
+  publishStatus?: PublishStatus | null
+  canApprove?: boolean
+  canPublish?: boolean
   loaded?: boolean
   error?: string
   note?: string
   onRetry?: () => void
   onEnabled: (value: boolean) => void
   onMembersVisible: (value: boolean) => void
+  onApprove?: () => void
+  onPublish?: () => void
   onSave: (outlet: OutletDraft) => void
   onAdd: (draft: { name: string; domain: string; pathPrefix: string; enabled: boolean }) => boolean | Promise<boolean>
   onMove: (index: number, direction: -1 | 1) => void
@@ -203,11 +238,13 @@ export function DailyMarketBriefPanelView({
 
   return (
     <section className={`${styles.panel} mt-8 px-5 py-5`} aria-label={DAILY_BRIEF_TITLE} data-daily-brief-admin="">
-      <h2 className={`text-[0.72rem] font-semibold tracking-[0.12em] uppercase ${styles.quiet}`}>{DAILY_BRIEF_TITLE}</h2>
-      <p className="mt-3 text-[1rem] leading-relaxed text-pearl/80">
-        Headlines come only from these outlets. Members see a brief only when both switches are on.
+      <h2 className={`text-[1.0625rem] font-semibold ${styles.quiet}`}>{DAILY_BRIEF_TITLE}</h2>
+      <p className="mt-3 text-base leading-relaxed text-pearl/80">
+        Headlines and short snippets come only from these outlets. Members see a brief only after you publish it, and
+        only when both switches are on. Nothing is emailed.
       </p>
       <div data-daily-brief-status="">
+        {!loaded ? <p className="mt-4 text-base text-pearl">Loading the brief</p> : null}
         <div className="mt-4 flex flex-col gap-3">
           <button
             type="button"
@@ -215,9 +252,9 @@ export function DailyMarketBriefPanelView({
             aria-checked={enabled}
             disabled={!loaded}
             onClick={() => onEnabled(!enabled)}
-            className="inline-flex min-h-11 items-center justify-between gap-3 border border-pearl/30 px-3 text-[0.95rem] text-pearl"
+            className="inline-flex min-h-11 items-center justify-between gap-3 border border-pearl/30 px-3 text-base text-pearl"
           >
-            <span>Daily brief</span>
+            <span>Brief on</span>
             <span>{enabled ? 'On' : 'Off'}</span>
           </button>
           <button
@@ -226,23 +263,40 @@ export function DailyMarketBriefPanelView({
             aria-checked={membersVisible}
             disabled={!loaded}
             onClick={() => onMembersVisible(!membersVisible)}
-            className="inline-flex min-h-11 items-center justify-between gap-3 border border-pearl/30 px-3 text-[0.95rem] text-pearl"
+            className="inline-flex min-h-11 items-center justify-between gap-3 border border-pearl/30 px-3 text-base text-pearl"
           >
             <span>Visible to members</span>
             <span>{membersVisible ? 'On' : 'Off'}</span>
           </button>
         </div>
         {statusLine ? (
-          <p className="mt-4 text-[1rem] leading-relaxed text-pearl" role="status">
+          <p className="mt-4 text-base leading-relaxed text-pearl" role="status">
             {statusLine}
           </p>
         ) : null}
+        {publishStatus ? (
+          <p className="mt-2 text-base text-pearl" data-daily-brief-review="">
+            Review: {publishStatus === 'approved' ? 'Approved' : publishStatus === 'published' ? 'Published' : 'Draft'}
+          </p>
+        ) : null}
+        <div className="mt-3 flex flex-wrap gap-2" data-daily-brief-actions="">
+          {canApprove ? (
+            <button type="button" className={primaryClass} onClick={onApprove}>
+              Approve brief
+            </button>
+          ) : null}
+          {canPublish ? (
+            <button type="button" className={primaryClass} onClick={onPublish}>
+              Publish brief
+            </button>
+          ) : null}
+        </div>
       </div>
 
       <ul className="mt-6 space-y-4" data-daily-brief-outlets="">
         {drafts.map((outlet, index) => (
           <li key={outlet.id} className="border border-pearl/15 px-3 py-3">
-            <label className="block text-[0.95rem] text-pearl/80">
+            <label className="block text-[0.9375rem] text-pearl/80">
               Name
               <input
                 value={outlet.name}
@@ -250,7 +304,7 @@ export function DailyMarketBriefPanelView({
                 className={fieldClass}
               />
             </label>
-            <label className="mt-3 block text-[0.95rem] text-pearl/80">
+            <label className="mt-3 block text-[0.9375rem] text-pearl/80">
               Domain
               <input
                 value={outlet.domain}
@@ -259,7 +313,7 @@ export function DailyMarketBriefPanelView({
                 spellCheck={false}
               />
             </label>
-            <label className="mt-3 block text-[0.95rem] text-pearl/80">
+            <label className="mt-3 block text-[0.9375rem] text-pearl/80">
               Path prefix
               <input
                 value={outlet.pathPrefix}
@@ -275,7 +329,7 @@ export function DailyMarketBriefPanelView({
                 aria-checked={outlet.enabled}
                 aria-label={`${outlet.name} enabled`}
                 onClick={() => patch(outlet.id, { enabled: !outlet.enabled })}
-                className="inline-flex min-h-11 items-center border border-pearl/30 px-3 text-[0.95rem] text-pearl"
+                className={buttonClass}
               >
                 {outlet.enabled ? 'Enabled' : 'Disabled'}
               </button>
@@ -283,7 +337,7 @@ export function DailyMarketBriefPanelView({
                 type="button"
                 onClick={() => onMove(index, -1)}
                 disabled={index === 0}
-                className="inline-flex min-h-11 items-center border border-pearl/30 px-3 text-[0.95rem] text-pearl disabled:opacity-40"
+                className={buttonClass}
               >
                 Move up
               </button>
@@ -291,7 +345,7 @@ export function DailyMarketBriefPanelView({
                 type="button"
                 onClick={() => onMove(index, 1)}
                 disabled={index === drafts.length - 1}
-                className="inline-flex min-h-11 items-center border border-pearl/30 px-3 text-[0.95rem] text-pearl disabled:opacity-40"
+                className={buttonClass}
               >
                 Move down
               </button>
@@ -301,7 +355,7 @@ export function DailyMarketBriefPanelView({
                   const current = drafts.find((item) => item.id === outlet.id)
                   if (current) onSave(current)
                 }}
-                className="ba-primary inline-flex min-h-11 items-center px-3 text-[0.75rem] font-semibold tracking-[0.08em] uppercase"
+                className={primaryClass}
               >
                 Save
               </button>
@@ -327,12 +381,12 @@ export function DailyMarketBriefPanelView({
           })
         }}
       >
-        <h3 className="text-[0.95rem] font-semibold text-pearl">Add outlet</h3>
-        <label className="mt-3 block text-[0.95rem] text-pearl/80">
+        <h3 className="text-base font-semibold text-pearl">Add outlet</h3>
+        <label className="mt-3 block text-[0.9375rem] text-pearl/80">
           Name
           <input value={name} onChange={(event) => setName(event.target.value)} className={fieldClass} />
         </label>
-        <label className="mt-3 block text-[0.95rem] text-pearl/80">
+        <label className="mt-3 block text-[0.9375rem] text-pearl/80">
           Domain
           <input
             value={domain}
@@ -341,7 +395,7 @@ export function DailyMarketBriefPanelView({
             spellCheck={false}
           />
         </label>
-        <label className="mt-3 block text-[0.95rem] text-pearl/80">
+        <label className="mt-3 block text-[0.9375rem] text-pearl/80">
           Path prefix
           <input
             value={pathPrefix}
@@ -356,35 +410,36 @@ export function DailyMarketBriefPanelView({
             role="switch"
             aria-checked={adding}
             onClick={() => setAdding((value) => !value)}
-            className="inline-flex min-h-11 items-center border border-pearl/30 px-3 text-[0.95rem] text-pearl"
+            className={buttonClass}
           >
             {adding ? 'Enabled' : 'Disabled'}
           </button>
-          <button
-            type="submit"
-            className="ba-primary inline-flex min-h-11 items-center px-3 text-[0.75rem] font-semibold tracking-[0.08em] uppercase"
-          >
+          <button type="submit" className={primaryClass}>
             Add outlet
           </button>
         </div>
       </form>
 
       {error ? (
-        <p className="mt-3 text-[0.95rem] text-red-300" role="alert">
+        <p className="mt-3 text-base text-red-300" role="alert">
           {error}{' '}
           {onRetry ? (
-            <button type="button" className="min-h-11 font-semibold underline" onClick={onRetry}>
-              Retry
+            <button type="button" className="inline-flex min-h-11 items-center text-[1.0625rem] font-semibold underline" onClick={onRetry}>
+              Try again
             </button>
           ) : null}
         </p>
       ) : null}
-      {note ? <p className="mt-3 text-[0.95rem] text-pearl/80">{note}</p> : null}
+      {note ? <p className="mt-3 text-base text-pearl/80">{note}</p> : null}
 
-      <div className="mt-8 border border-pearl/15 bg-pearl px-4 py-4 text-ink" data-daily-brief-preview="">
-        <h3 className="text-[0.72rem] font-semibold tracking-[0.12em] text-ink/50 uppercase">Preview</h3>
+      <div className="mt-8 border border-pearl/15 bg-pearl px-4 py-4 text-base text-ink" data-daily-brief-preview="">
+        <h3 className="text-[0.9375rem] font-semibold text-ink/70">Preview</h3>
         <div className="mt-3">
-          {preview ? <DailyMarketBriefView brief={preview} /> : <p className="text-[1rem] text-ink/70">No brief to preview.</p>}
+          {preview ? (
+            <DailyMarketBriefView brief={preview} now={new Date(`${preview.briefDate}T12:00:00.000Z`)} />
+          ) : (
+            <p className="text-base text-ink/70">No brief to preview.</p>
+          )}
         </div>
       </div>
     </section>
