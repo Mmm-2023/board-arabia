@@ -501,7 +501,7 @@ test('privacy and terms render the entity line and marketing routes keep only th
         const note = html.indexOf('data-apply-submit-note')
         const strip = html.indexOf('data-trust-strip="apply"')
         assert.ok(submit > -1 && note > submit && strip > note)
-        assert.match(html, /Questions about your application go to contact@boardarabia\.com\./)
+        assert.match(html, /If we don(?:'|&#x27;|&#39;)t accept your application, we keep it and your contact details for 12 months after our decision/)
         assert.equal(html.includes('[POSTAL ADDRESS TBC]'), false)
       }
     }

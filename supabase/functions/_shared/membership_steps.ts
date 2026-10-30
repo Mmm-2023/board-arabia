@@ -91,7 +91,7 @@ export const STEP_COPY: Record<StepId, { label: string; why: string; required: b
   },
   capacity: {
     label: 'Investable capacity',
-    why: 'Used only inside a platform sum, and only after our admin team checks it looks right for a decision maker.',
+    why: 'Used only inside a platform sum, and only after our admin team has looked at it. We do not verify the amount.',
     required: false,
   },
   phone: {

@@ -8,10 +8,10 @@ This pull request changes legal copy on purpose.
 
 | Locked file | What changed |
 | --- | --- |
-| `src/content/legal/privacy.en.ts` | Clause 1.1 entity line. New staff access log row in the retention table. |
-| `src/content/legal/terms.en.ts` | Clause 1.1 entity line. |
+| `src/content/legal/privacy.en.ts` | Clause 1.1 entity line. Staff access log row. Public totals sentence. Applications retention row. |
+| `src/content/legal/terms.en.ts` | Clause 1.1 entity line. Clause 9.4 first sentence. |
 
-`src/pages/apply/*` was not edited. The line under the Apply submit button is in `src/pages/ApplyPage.tsx`, which is outside that folder.
+`src/pages/apply/*` was not edited. `membership_steps.ts` is `supabase/functions/_shared/membership_steps.ts`, not under `src/pages/apply`. The line under the Apply submit button is in `src/pages/ApplyPage.tsx`.
 
 `src/components/WhoRunsTheDesk.tsx` was not edited. The heading and the name line stay as they were.
 
@@ -21,17 +21,32 @@ This pull request changes legal copy on purpose.
 
 `src/components/LegalDocumentView.tsx` keeps clause 1.1 as one text node so that exact string stays together in the HTML. Other clauses still use the existing letter layout.
 
-No migration was added or edited. No Edge function was edited. No workflow was edited. Transactional copy in `supabase/functions/_shared/transactional_copy.ts` was not edited, so no Edge function needs a redeploy for this pull request.
+No migration was added or edited. No Edge function entry file was edited. No workflow was edited. Transactional copy in `supabase/functions/_shared/transactional_copy.ts` was not edited.
+
+`src/content/privacyNotice.ts` is not imported by any file under `supabase/functions`. No Edge redeploy for that file.
+
+`supabase/functions/_shared/membership_steps.ts` is imported by Edge code. The capacity sentence those functions do not send is still in the shared module:
+
+- `supabase/functions/remind-membership/index.ts` imports it directly (`missingRequired` returns labels, not the capacity line).
+- `supabase/functions/request-membership/index.ts` and `supabase/functions/review-membership/index.ts` import `membership_dispatch.ts`, which imports `membership_steps.ts` for dates, role labels, and the booking flag, not for the capacity line.
+
+A redeploy of those three functions would ship the new module. It would not change an email, because the mail helpers do not read that sentence. The live checklist and the Apply hint ship in the Pages bundle.
 
 ## What changed
 
 Privacy 1.1 and Terms 1.1 now read that Board Arabia is operated by `NAMMCO Holdings LLC, CR 1009167564`, of `[POSTAL ADDRESS TBC]`. Privacy still says Board Arabia is the controller. The postal line stays the placeholder even when `VITE_LEGAL_ADDRESS` is set. The street is not in this pull request.
 
-`legalField('contactEmail')` returns `contact@boardarabia.com` when that env value is empty. A set value still wins, so tests keep `example.com` fixtures. Privacy and terms still store the `[CONTACT EMAIL]` token. The mailbox literal is only in `src/config/legal.ts`.
+`legalField('contactEmail')` returns `contact@boardarabia.com` when that env value is empty. A set value still wins, so tests keep `example.com` fixtures. That fallback was not changed in the review commit.
 
-The privacy retention table has one new row: Staff access log. The second cell says a record that staff opened your member record or a file you shared, kept for 13 months.
+Approved wording now in source, exact:
 
-Under Submit for consideration, Apply now says: Questions about your application go to the contact mailbox. The existing admin strip stays under that line.
+- Apply amount hint and the membership checklist capacity line keep their opening words and then say only after our admin team has looked at it. We do not verify the amount.
+- Privacy 3.12 and the short privacy notice replace the old check sentence with: Our admin team looks at it before it is included. We do not check or verify the amount.
+- Terms 9.4 first sentence: You must check any output with your own licensed advisers before you act.
+- Under Submit for consideration: If we don't accept your application, we keep it and your contact details for 12 months after our decision, in case you ask about it or apply again, and then delete them. You can ask us to delete them sooner at any time by writing to contact@boardarabia.com.
+- The applications retention row names the answers, contact details, and decision notes, and says they are deleted 12 months after the decision, with the same mailbox for an earlier delete.
+
+The staff access log row is still in the table. The existing admin strip stays under the new Apply note.
 
 ## Audit of migration 20261128120000
 
@@ -46,6 +61,28 @@ Read only. `git diff` does not include `supabase/migrations/20261128120000_reten
 | Members with `left_at` older than 24 months and no legal hold are anonymised. The privacy member row describes deletion on request and a 24 month file period. It does not say the sign in is anonymised on that 24 month clock. | VERIFIED that both texts exist. UNKNOWN whether Legal wants the member row rewritten. Not edited. |
 | Consent log and the staff access log both use 13 months. Marketing stats use 24 hours. AI tool jobs and due diligence decks, jobs, and reports use `retention_days`, default 30. The privacy AI row already says 30 days and the collection clause already names decks for AI due diligence. | VERIFIED in the migration. INFERRED that the existing AI row covers due diligence files. No second row was added. |
 | `retention_sweep_plan` is security definer and sets `search_path` to `public, auth, private`. | VERIFIED by reading the function header. Not changed. |
+
+## Review audit, read only
+
+No new migration file is in this pull request. The follow-up file named below belongs in a separate pull request.
+
+### (a) Withdrawn and closed are not in the applications delete
+
+VERIFIED. In `20261128120000_retention_privacy_audit.sql` the applications delete selects `status in ('rejected', 'declined')`. The same filter is still the latest copy, in `20270103120000_free_account_majlis.sql`. `applications_status_check` in `20260922135500_applications_status_legacy_and_prevet.sql` allows pending, verified, declined, accepted, and rejected. It does not allow withdrawn or closed. Candidates do have `closed`, and the candidate delete already includes `request_state in ('declined', 'closed')`. Candidates do not have a withdrawn state.
+
+Follow-up pull request only, not this one. New file `supabase/migrations/20270111120000_application_withdrawn_closed_retention.sql`. It should replace `retention_sweep_plan` and add withdrawn and closed to the applications status filter, and widen `applications_status_check` if those states are to be stored. Until the check allows them, adding the words to the filter deletes no extra rows.
+
+### (b) Where decision notes live
+
+VERIFIED. `public.applications.notes` is a column on the application row (`src/lib/database.types.ts`). `delete from public.applications` removes that column with the row. `public.candidates.decision_note` is a column on the candidate row (`20261105120000_membership_review.sql`). `candidates.user_id` references `auth.users` on delete cascade (`20261104120000_two_tier_candidates.sql`). The sweep deletes those auth users, so the candidate row and its decision note go with them. `public.candidate_notes` is a separate table and is deleted in the same apply block before the user delete. `public.member_application_answers` is a different table for an admitted member. It is deleted when that member is anonymised, not when a rejected application row is deleted.
+
+### (c) Application uploads
+
+VERIFIED for the schema and the sweep. The applications row has no storage path. `retention-sweep` removes objects from `ai-tool-uploads` and `due-diligence-decks`, plus orphan paths. It does not name an application bucket. The SQL delete removes the application row only. INFERRED from the Apply form: the public form stores text fields, not a file. UNKNOWN whether a live bucket holds an application file that this schema does not name.
+
+### (d) What runs the sweep, and whether it is scheduled live
+
+VERIFIED in the repo. The Edge function `retention-sweep` calls `retention_sweep_plan`. `.github/workflows/retention-sweep.yml` is `workflow_dispatch` only. Its header says the schedule trigger was removed. `pg_cron` in `20261102120000_consent_log.sql` schedules `purge_expired_consent_log` at 03:20, not `retention_sweep_plan`. `supabase/config.toml` still says the retention function is a daily GitHub Action. The workflow file has no cron, so that comment is stale. UNKNOWN whether someone runs the manual workflow in production, whether `RETENTION_SWEEP_SECRET` is set, and whether the live database has a cron job that is not in this repo.
 
 ## Carry forward
 
@@ -66,7 +103,7 @@ FD-6. The password rule stays at least 8 characters. No password screen was edit
 | Who runs the desk was not edited. | VERIFIED. It is not in the diff. The Apply shot still shows the existing heading and name. |
 | No migration, no Edge edit, no workflow edit. | VERIFIED. Diff. |
 | English only. No em dash and no en dash in the diff. No prices. The public word is partners. | VERIFIED. Diff scan. The route test rejects the banned commercial word on the rendered pages. |
-| Shots at 390 and 1440 for `/privacy/`, `/terms/`, and `/apply/`. The script checked the clause text, the staff row, the Apply note, and that Apply does not show the entity. No page error. No horizontal overflow. | VERIFIED. |
+| Shots at 390 and 1440 for `/privacy/`, `/terms/`, and `/apply/` were taken again after the approved sentences. The script checked the entity line, the public totals sentence, the applications retention row, terms 9.4, the Apply amount hint, and the 12 month note under submit. Apply does not show the entity. No page error. No horizontal overflow. | VERIFIED. |
 | A physical phone was not used. | UNKNOWN for a device in hand. The 390 shots are desktop Chrome. |
 | GitHub checks. | UNKNOWN until the pull request run finishes. |
 

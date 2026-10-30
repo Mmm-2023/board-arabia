@@ -48,7 +48,7 @@ export const PRIVACY_NOTICE_EN: PrivacyNotice = {
         'If you open an account for consideration, we keep that account: your name, work email, role, region, your sign-in, and the professional details you add for membership review. We also keep which link brought you here. You can delete that account yourself from Your privacy after confirming with a one-time code. Deleting it removes those details and the sign-in.',
         'Site analytics: pages, engaged time, scroll depth, coarse location taken from an IP address that is not stored, campaign source, and named events.',
         'Site analytics are not the membership file. Cookies for analytics run only after you choose Accept. Before that, visits are counted without an identifier that could tie one visit to the next.',
-        'If you leave the public-totals box checked, a capacity figure can be added into a platform sum after you are admitted. Our admin team checks it looks right for a decision maker. The public site shows that sum only. It does not show your name, your company, or your amount.',
+        'If you leave the public-totals box checked, a capacity figure can be added into a platform sum after you are admitted. Our admin team looks at it before it is included. We do not check or verify the amount. The public site shows that sum only. It does not show your name, your company, or your amount.',
       ],
     },
     {

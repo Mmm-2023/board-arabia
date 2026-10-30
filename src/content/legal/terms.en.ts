@@ -342,7 +342,7 @@ export const TERMS_EN: LegalDocument = {
       "kind": "clause",
       "id": "c-9-4",
       "number": "9.4",
-      "text": "You must verify any output with licensed advisers before you act. You are responsible for any decision you make."
+      "text": "You must check any output with your own licensed advisers before you act. You are responsible for any decision you make."
     },
     {
       "kind": "clause",
