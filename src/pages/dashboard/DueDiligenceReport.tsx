@@ -17,7 +17,7 @@ import {
 } from '../../../supabase/functions/_shared/due_diligence.ts'
 import { REPORT_COPY } from '../../lib/dueDiligenceCopy.ts'
 import { presentNextSteps, visibleNextSteps, type NextStepItem } from '../../lib/dueDiligenceNextSteps.ts'
-import { AiDueDiligenceScoreNotice } from '../../components/ai/AiDueDiligenceScoreNotice'
+import { AiDueDiligenceReportNotice, AiDueDiligenceScoreTag } from '../../components/ai/AiDueDiligenceScoreNotice'
 import { AiReportOperatorLine } from '../../components/ai/AiReportOperatorLine'
 import { memberTextStatesScore } from '../../lib/aiDueDiligenceNotice'
 import { MEMBER_VIEWS } from '../../shell/viewCopy.ts'
@@ -52,12 +52,13 @@ export function DueDiligenceReport({
   if (showsAnalysisReport(report) && analysis) {
     return (
       <article className="mt-6" data-dd-view="analysis">
+        <AiDueDiligenceReportNotice />
         {analysisBanner ? (
           <div
             role="status"
             data-dd-degraded="true"
             data-dd-compact="false"
-            className="max-w-3xl rounded-xl border border-[var(--ba-line)] border-s-2 border-s-[var(--ba-copper)] bg-[var(--ba-porcelain)] px-4 py-3"
+            className="mt-3 max-w-3xl rounded-xl border border-[var(--ba-line)] border-s-2 border-s-[var(--ba-copper)] bg-[var(--ba-porcelain)] px-4 py-3"
           >
             <p className="text-[0.82rem] font-semibold text-[var(--ba-copper-deep)]">{REPORT_COPY.degradedLabel}</p>
             <p className="mt-2 text-[1rem] leading-relaxed text-ink">{analysisBanner}</p>
@@ -97,12 +98,13 @@ export function DueDiligenceReport({
 
   return (
     <article className="mt-6" data-dd-view="claims">
+      <AiDueDiligenceReportNotice />
       {banner ? (
         <div
           role="status"
           data-dd-degraded="true"
           data-dd-compact={compact ? 'true' : 'false'}
-          className="max-w-3xl rounded-xl border border-[var(--ba-line)] border-s-2 border-s-[var(--ba-copper)] bg-[var(--ba-porcelain)] px-4 py-3"
+          className="mt-3 max-w-3xl rounded-xl border border-[var(--ba-line)] border-s-2 border-s-[var(--ba-copper)] bg-[var(--ba-porcelain)] px-4 py-3"
         >
           <p className="text-[0.82rem] font-semibold text-[var(--ba-copper-deep)]">{REPORT_COPY.degradedLabel}</p>
           <p className="mt-2 text-[1rem] leading-relaxed text-ink">{banner}</p>
@@ -125,7 +127,11 @@ export function DueDiligenceReport({
         <p className="mt-4 text-[1rem] leading-relaxed text-ink/80">
           {compact ? REPORT_COPY.compactOverview : presented.overview}
         </p>
-        {!compact && memberTextStatesScore(presented.overview) ? <AiDueDiligenceScoreNotice className="mt-3" /> : null}
+        {!compact && memberTextStatesScore(presented.overview) ? (
+          <div className="mt-3">
+            <AiDueDiligenceScoreTag />
+          </div>
+        ) : null}
         <dl className="mt-4 grid gap-3 sm:grid-cols-3">
           <OverviewItem label={REPORT_COPY.metaCompany} value={report.company_label} />
           <OverviewItem label={REPORT_COPY.metaSector} value={report.sector_label} />
@@ -285,8 +291,10 @@ function SummaryCard({
   const toneClass = tone === 'consistent' ? 'dd-summary-consistent' : 'dd-summary-neutral'
   return (
     <div className={`dd-summary-card ${toneClass}`}>
-      <p className="dd-summary-value font-display text-[2rem] font-semibold tracking-[-0.03em]">{value}%</p>
-      <AiDueDiligenceScoreNotice className="mt-2" />
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+        <p className="dd-summary-value font-display text-[2rem] font-semibold tracking-[-0.03em]">{value}%</p>
+        <AiDueDiligenceScoreTag />
+      </div>
       <div className="mt-2">
         <StatusPill verdict={verdict} />
       </div>
