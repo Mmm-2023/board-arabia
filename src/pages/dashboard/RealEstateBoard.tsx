@@ -147,14 +147,15 @@ export function RealEstateBoard({
   return (
     <div className="max-w-3xl">
       <header>
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <h1 className="font-display text-[2.2rem] font-bold tracking-[-0.03em]">Real estate</h1>
           <div
             role="tablist"
             aria-label="Real estate"
             aria-orientation="horizontal"
             data-re-segment=""
-            className="grid w-full grid-cols-3 overflow-hidden rounded-md border border-[var(--ba-line)] bg-white md:w-[22.5rem] md:shrink-0"
+            data-re-header-control=""
+            className="grid w-full max-w-full grid-cols-3 overflow-hidden rounded-md border border-[var(--ba-line)] bg-white md:w-fit md:shrink-0"
             onKeyDown={onTabKey}
           >
             {TABS.map((item, index) => {
@@ -171,7 +172,7 @@ export function RealEstateBoard({
                   aria-controls={panelId}
                   tabIndex={selected ? 0 : -1}
                   data-re-tab={item.id}
-                  className={`flex h-11 min-h-11 min-w-0 items-center justify-center px-1 text-center text-[0.8125rem] font-semibold whitespace-nowrap focus-visible:relative focus-visible:z-10 focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[var(--ba-copper)] ${
+                  className={`flex h-11 min-h-11 min-w-11 items-center justify-center px-2 text-center text-[0.9375rem] font-semibold whitespace-nowrap focus-visible:relative focus-visible:z-10 focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[var(--ba-copper)] ${
                     index > 0 ? 'border-s border-[var(--ba-line)]' : ''
                   } ${selected ? 'bg-[var(--ba-indigo)] text-white' : 'bg-white text-ink'}`}
                   onClick={() => selectTab(item.id)}

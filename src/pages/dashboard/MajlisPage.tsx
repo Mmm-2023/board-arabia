@@ -37,8 +37,14 @@ import { useNoIndex } from '../../lib/usePageTitle'
 import { CardSkeleton, EmptyState, ErrorBanner, FilteredZero } from '../../shell/ViewState'
 import { MEMBER_VIEWS } from '../../shell/viewCopy'
 import { useMember } from './context'
+import { majlisCalendarOn } from './majlisCalendarQuery'
 
-type MajlisPreview = { events: MajlisEventRow[]; roster?: MajlisRosterRow[] }
+type MajlisPreview = {
+  events: MajlisEventRow[]
+  roster?: MajlisRosterRow[]
+  loading?: boolean
+  error?: boolean
+}
 
 const fieldClass =
   'mt-1 w-full min-h-11 border border-[var(--ba-line)] bg-white px-3 text-[1rem] text-ink'
@@ -57,12 +63,12 @@ export function MajlisPage({ preview }: { preview?: MajlisPreview } = {}) {
   const highlight = params.get('event') || ''
   const [nowMs] = useState(() => Date.now())
   const [hostOpen, setHostOpen] = useState(false)
-  const [view, setView] = useState<'list' | 'calendar'>('list')
+  const calendar = !past && majlisCalendarOn(params)
   const [ownByEvent, setOwnByEvent] = useState<Record<string, OwnMajlisRsvp> | null>(null)
-  const [events, setEvents] = useState<MajlisEventRow[] | null>(preview?.events ?? null)
+  const [events, setEvents] = useState<MajlisEventRow[] | null>(preview?.loading ? null : (preview?.events ?? null))
   const [sponsorEvents, setSponsorEvents] = useState<MajlisSponsorEvent[] | null>(null)
   const [unavailable, setUnavailable] = useState(false)
-  const [error, setError] = useState('')
+  const [error, setError] = useState(preview?.error ? 'error' : '')
   const [attempt, setAttempt] = useState(0)
   useNoIndex('Majlis | Board Arabia')
 
@@ -213,16 +219,6 @@ export function MajlisPage({ preview }: { preview?: MajlisPreview } = {}) {
           <h2 id="majlis-feed-title" className="font-display text-[1.35rem] font-semibold">
             {past ? 'Past' : 'Upcoming'}
           </h2>
-          {!past && (
-            <div className="flex gap-2" role="group" aria-label="Upcoming view">
-              <button type="button" className={view === 'list' ? primaryBtn : quietBtn} aria-pressed={view === 'list'} onClick={() => setView('list')}>
-                List
-              </button>
-              <button type="button" className={view === 'calendar' ? primaryBtn : quietBtn} aria-pressed={view === 'calendar'} onClick={() => setView('calendar')}>
-                Calendar
-              </button>
-            </div>
-          )}
           {!loading && !error && feed.length > 0 && (
             <p className="text-[0.92rem] text-[var(--ba-muted)]">{past ? pastLabel(feed.length) : upcomingLabel(feed.length)}</p>
           )}
@@ -297,7 +293,7 @@ export function MajlisPage({ preview }: { preview?: MajlisPreview } = {}) {
               <EventList
                 events={filtered}
                 past={past}
-                calendar={view === 'calendar' && !past}
+                calendar={calendar}
                 sponsor={sponsor}
                 userId={userId}
                 nowMs={nowMs}
