@@ -1,9 +1,17 @@
 {
+  "redirects": [
+    { "source": "/register", "destination": "/apply/", "statusCode": 301 },
+    { "source": "/register/", "destination": "/apply/", "statusCode": 301 },
+    { "source": "/apply/verify", "destination": "/apply/", "statusCode": 301 },
+    { "source": "/apply/verify/", "destination": "/apply/", "statusCode": 301 },
+    { "source": "/book", "destination": "/apply/", "statusCode": 301 },
+    { "source": "/book/", "destination": "/apply/", "statusCode": 301 },
+    { "source": "/verify", "destination": "/apply/", "statusCode": 301 },
+    { "source": "/verify/", "destination": "/apply/", "statusCode": 301 }
+  ],
   "rewrites": [
     { "source": "/admin", "destination": "/shell.html" },
     { "source": "/ops", "destination": "/shell.html" },
-    { "source": "/book", "destination": "/apply/index.html" },
-    { "source": "/verify", "destination": "/apply/index.html" },
     { "source": "/apply", "destination": "/apply/index.html" },
     { "source": "/for-members", "destination": "/for-members/index.html" },
     { "source": "/for-capital", "destination": "/for-capital/index.html" },

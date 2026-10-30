@@ -40,9 +40,11 @@ test('the app build stays at / and does not run the Pages prerender', () => {
   assert.match(buildApp, /VITE_BASE_PATH:\s*'\/'/)
   assert.equal(buildApp.includes('prerender.mjs'), false)
   assert.equal(buildApp.includes('write-ar-redirects.mjs'), false)
+  assert.equal(buildApp.includes('write-fd-redirects.mjs'), false)
   const scripts = JSON.parse(read('package.json')).scripts
   assert.equal(scripts['build:app'], 'node scripts/build-app.mjs')
   assert.match(scripts.build, /scripts\/prerender\.mjs/)
+  assert.match(scripts.build, /scripts\/write-fd-redirects\.mjs/)
   assert.match(scripts.build, /scripts\/write-ar-redirects\.mjs/)
   const pages = read('.github/workflows/pages.yml')
   assert.match(pages, /run: npm run build/)

@@ -6,7 +6,6 @@ import { AboutPage } from './pages/AboutPage'
 import { AccountDeletionPage } from './pages/AccountDeletionPage'
 import { LegalRedirectPage } from './pages/LegalRedirectPage'
 import { ApplyPage } from './pages/ApplyPage'
-import { RegisterPage } from './pages/RegisterPage'
 import { VerifyPage } from './pages/VerifyPage'
 import { AuthConfirmPage } from './pages/AuthConfirmPage'
 import { ForCapitalPage } from './pages/ForCapitalPage'
@@ -20,6 +19,7 @@ import { PrivacyPage } from './pages/PrivacyPage'
 import { PublicMajlisPage } from './pages/PublicMajlisPage'
 import { SecurityPage } from './pages/SecurityPage'
 import { TermsPage } from './pages/TermsPage'
+import { ApplyRedirect } from './shell/ApplyRedirect'
 import { AdminIntrosRedirect } from './shell/adminIntrosRedirect'
 import { RedirectKeep } from './shell/RedirectKeep'
 import { ShellNotFound } from './shell/ShellNotFound'
@@ -148,8 +148,8 @@ export default function App() {
       <Route path="/" element={<LandingPage />} />
       <Route path="/apply" element={<ApplyPage />} />
       <Route path="/security" element={<SecurityPage />} />
-      <Route path="/apply/verify" element={<Navigate to="/register/verify" replace />} />
-      <Route path="/register" element={<RegisterPage />} />
+      <Route path="/apply/verify" element={<ApplyRedirect />} />
+      <Route path="/register" element={<ApplyRedirect />} />
       <Route path="/register/verify" element={<VerifyPage />} />
       <Route path="/majlis" element={<PublicMajlisPage />} />
       <Route path="/majlis/:eventId" element={<PublicMajlisPage />} />
@@ -262,9 +262,9 @@ export default function App() {
         <Route path="events" element={<RedirectKeep />} />
         <Route path="*" element={<RedirectKeep />} />
       </Route>
-      {/* Legacy book/verify routes redirect. Public calendar CTA removed. */}
-      <Route path="/book" element={<Navigate to="/apply/" replace />} />
-      <Route path="/verify" element={<Navigate to="/apply/" replace />} />
+      {/* Old book and verify links land on Apply. The query string stays. */}
+      <Route path="/book" element={<ApplyRedirect />} />
+      <Route path="/verify" element={<ApplyRedirect />} />
       <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>

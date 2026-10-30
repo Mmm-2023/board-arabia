@@ -84,12 +84,8 @@ const ADDED_SHELLS = [
   '/admin/ai',
   '/admin/marketing',
   '/admin/access',
-  '/register',
   '/email/unsubscribe',
   '/register/verify',
-  '/book',
-  '/verify',
-  '/apply/verify',
   '/admin/intros',
   '/admin/majlis/requests',
   '/admin/people/profiles',
@@ -163,9 +159,12 @@ test('each shell kind has one generic share card and no banned wording', () => {
   const shells = appShells()
   assert.equal(shells.find((item) => item.path === '/dashboard/privacy')?.kind, 'member')
   assert.equal(shells.find((item) => item.path === '/admin/marketing')?.kind, 'admin')
-  assert.equal(shells.find((item) => item.path === '/register')?.kind, 'public-utility')
-  assert.equal(shells.find((item) => item.path === '/book')?.kind, 'public-utility')
-  assert.equal(shells.find((item) => item.path === '/verify')?.kind, 'public-utility')
+  assert.equal(shells.find((item) => item.path === '/register/verify')?.kind, 'public-utility')
+  assert.equal(shells.find((item) => item.path === '/email/unsubscribe')?.kind, 'public-utility')
+  assert.equal(shells.some((item) => item.path === '/register'), false)
+  assert.equal(shells.some((item) => item.path === '/book'), false)
+  assert.equal(shells.some((item) => item.path === '/verify'), false)
+  assert.equal(shells.some((item) => item.path === '/apply/verify'), false)
   const banned = [/nammco/i, /\b\d{10}\b/, /\u2014/]
   for (const entry of shells) {
     for (const pattern of banned) {

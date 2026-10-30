@@ -89,12 +89,10 @@ const FIXED_SHELLS = [
   ['/admin/ai', 'admin'],
   ['/admin/marketing', 'admin'],
   ['/admin/access', 'admin'],
-  ['/register', 'public-utility'],
   ['/email/unsubscribe', 'public-utility'],
+  // /register, /apply/verify, /book, and /verify are redirect stubs, not shells.
+  // /register/verify stays so accounts already created can still confirm.
   ['/register/verify', 'public-utility'],
-  ['/book', 'public-utility'],
-  ['/verify', 'public-utility'],
-  ['/apply/verify', 'public-utility'],
   // Old /admin/intros bookmarks. Pages answers 200 and React hops.
   ['/admin/intros', 'admin'],
 ]

@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "node scripts/with-public-legal-env.mjs tsc -b && node scripts/with-public-legal-env.mjs vite build && node scripts/with-public-legal-env.mjs node scripts/prerender.mjs && node scripts/write-ar-redirects.mjs && node scripts/write-well-known.mjs",
+    "build": "node scripts/with-public-legal-env.mjs tsc -b && node scripts/with-public-legal-env.mjs vite build && node scripts/with-public-legal-env.mjs node scripts/prerender.mjs && node scripts/write-fd-redirects.mjs && node scripts/write-ar-redirects.mjs && node scripts/write-well-known.mjs",
     "build:app": "node scripts/build-app.mjs",
     "lint": "oxlint",
     "preview": "vite preview"
