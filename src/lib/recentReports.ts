@@ -3,6 +3,8 @@
  * Stored report rows stay as they are. This only chooses a title, drops repeats, and caps the list.
  */
 
+import { repairDeckLabel, titleHasOddChars } from '../../supabase/functions/_shared/deck_title.ts'
+
 export type RecentReportInput = {
   id: string
   company_label: string
@@ -168,7 +170,7 @@ const WORDS = new Set([
 ])
 
 function tidyReportTitle(raw: string): string {
-  let text = raw.normalize('NFKC')
+  let text = repairDeckLabel(raw).normalize('NFKC')
   text = text.replace(/[\u00A0\u2000-\u200B\u202F\u205F\u3000]/g, ' ')
   text = text.replace(/[\u00D2\u00D3]/g, '')
   text = text.replace(/[\u201C\u201D\u2018\u2019\u00AB\u00BB]/g, '')
@@ -250,11 +252,17 @@ function usableTitle(value: string): boolean {
   return true
 }
 
+function withoutOddChars(value: string): string {
+  return value.replace(/[^\p{L}\p{M}\p{N} .,&'\u2019/:()+\u00B7\u2022|\-]/gu, ' ').replace(/\s+/g, ' ').trim()
+}
+
 export function reportListTitle(company: string, fileName: string): string {
   const fromCompany = tidyReportTitle(company)
-  if (usableTitle(fromCompany)) return fromCompany
+  if (usableTitle(fromCompany) && !titleHasOddChars(fromCompany)) return fromCompany
   const fromFile = tidyReportTitle(stripExtension(fileName))
-  if (usableTitle(fromFile)) return fromFile
+  if (usableTitle(fromFile) && !titleHasOddChars(fromFile)) return fromFile
+  const stripped = withoutOddChars(fromFile)
+  if (usableTitle(stripped) && !titleHasOddChars(stripped)) return stripped
   return 'Due diligence report'
 }
 

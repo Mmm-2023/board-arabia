@@ -25,6 +25,7 @@ import {
   type ReadFailure,
 } from '../../lib/dueDiligence'
 import { earlierRunsLabel, groupPriorNotes, type PriorNote, type PriorNoteGroup } from '../../lib/priorNotes'
+import { reportListTitle } from '../../lib/recentReports'
 import { DD_COPY, deckHintText, deskCtaLabel, deskProgressLine, presentDeskError } from '../../lib/dueDiligenceCopy'
 import { deskPhase, nextPollFailures, type DeskPhase } from '../../lib/dueDiligencePhase'
 import { supabase } from '../../lib/supabase'
@@ -451,8 +452,8 @@ export function DueDiligenceDeskView({
             >
               {DD_COPY.deckButton}
             </button>
-            {fileName ? <p className="mt-2 truncate text-[0.92rem] text-[var(--ba-muted)]">{fileName}</p> : null}
-            <p className="mt-2 text-[0.92rem] leading-relaxed text-[var(--ba-muted)]" data-dd-hint={retentionCopy ? 'on' : 'off'}>
+            {fileName ? <p className="mt-2 truncate text-[0.95rem] text-[var(--ba-muted)]">{fileName}</p> : null}
+            <p className="mt-2 text-[0.95rem] leading-relaxed text-[var(--ba-muted)]" data-dd-hint={retentionCopy ? 'on' : 'off'}>
               {deckHintText(retentionCopy)}
             </p>
             <UploadHandling />
@@ -496,10 +497,10 @@ export function DueDiligenceDeskView({
               className={fieldClass}
               disabled={busy || activeJob}
             />
-            <p className="mt-2 text-[0.92rem] leading-relaxed text-[var(--ba-muted)] sm:hidden">
+            <p className="mt-2 text-[0.95rem] leading-relaxed text-[var(--ba-muted)] sm:hidden">
               {DD_COPY.siteHelperShort}
             </p>
-            <p className="mt-2 hidden text-[0.92rem] leading-relaxed text-[var(--ba-muted)] sm:block">
+            <p className="mt-2 hidden text-[0.95rem] leading-relaxed text-[var(--ba-muted)] sm:block">
               {DD_COPY.siteHelper}
             </p>
             <button
@@ -529,7 +530,7 @@ export function DueDiligenceDeskView({
                   >
                     <div className="h-3 bg-[var(--ba-indigo)]" style={{ width: `${progress}%` }} />
                   </div>
-                  <p className="mt-3 text-[0.92rem] leading-relaxed text-[var(--ba-muted)]">{DD_COPY.progressHint}</p>
+                  <p className="mt-3 text-[0.95rem] leading-relaxed text-[var(--ba-muted)]">{DD_COPY.progressHint}</p>
                 </div>
               ) : null}
               {phase === 'starting' ? (
@@ -627,8 +628,11 @@ function ReportView({ reportId }: { reportId: string }) {
 
   return (
     <div className="max-w-5xl">
-      <h1 className="font-display text-[1.75rem] leading-tight font-bold tracking-[-0.03em] break-words text-balance md:text-[2.2rem]">
-        {ready ? ready.report.company_label : 'AI Due Diligence'}
+      <h1
+        className="font-display text-[1.75rem] leading-tight font-bold tracking-[-0.03em] break-words text-balance md:text-[2.2rem]"
+        data-dd-title={ready ? 'report' : 'section'}
+      >
+        {ready ? reportListTitle(ready.report.company_label, fileName) : 'AI Due Diligence'}
       </h1>
       <Link
         to="/dashboard/ai/due-diligence"
@@ -778,8 +782,8 @@ function PriorNoteLink({ report }: { report: PriorNote }) {
       to={`/dashboard/ai/due-diligence/${report.id}`}
       className="flex min-h-11 min-w-0 flex-1 flex-col justify-center px-4 py-3"
     >
-      <span className="text-[1rem] break-words text-ink">{report.title}</span>
-      <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[0.92rem] text-[var(--ba-muted)]">
+      <span className="text-[1rem] break-words text-ink" data-dd-title="list">{report.title}</span>
+      <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[0.95rem] text-[var(--ba-muted)]">
         <span>{scoreLine}</span>
         {memberTextStatesScore(scoreLine) ? <AiDueDiligenceScoreTag /> : null}
         <span>
