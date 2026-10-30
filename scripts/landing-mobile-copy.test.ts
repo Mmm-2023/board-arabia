@@ -8,7 +8,7 @@ import { MemoryRouter } from 'react-router-dom'
 import { createServer } from 'vite'
 import { LANDING_TILES } from '../src/content/landingFeatures.ts'
 import { HOSTING_ENCRYPTION_LINE } from '../src/content/trust.ts'
-import { LEGACY_CLOSING_BODY } from '../src/content/twoTierCopy.ts'
+import { CONSIDERATION_NOTE, PUBLIC_PROCESS_STEPS } from '../src/content/twoTierCopy.ts'
 
 const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..')
 
@@ -17,12 +17,11 @@ function read(rel: string) {
 }
 
 const HERO_LEAD =
-  'Membership for Chairperson, Board members and C-suite executives, in Saudi Arabia and internationally.'
+  'Membership for Chairpersons, Board members and C-suite executives, in Saudi Arabia and internationally.'
 const WHY_LEAD = 'A membership linking Saudi boardrooms with international counterparts.'
 const FOUNDING_LEAD =
   'One hundred complimentary founding places: fifty in Saudi Arabia and the GCC, fifty international.'
 const MEMBERSHIP_LEAD = 'What admitted members use, after sign-in.'
-const PROCESS_LEAD = 'Admin reads every application and handles every mandate intro and real estate intro.'
 
 let landingServer: Awaited<ReturnType<typeof createServer>> | null = null
 
@@ -59,6 +58,7 @@ test('home public CTAs keep one destination on desktop and mobile', async () => 
   assert.deepEqual(hrefs('Full sequence'), ['/how-it-works/'])
   assert.deepEqual([...new Set(hrefs('How we protect your data'))], ['/security/'])
   assert.deepEqual([...new Set(hrefs('Log in'))], ['/login'])
+  assert.deepEqual([...new Set(hrefs('Sign in'))], ['/login'])
   assert.equal(hrefs('How it works').includes('#process'), true)
   assert.equal(hrefs('How it works').includes('/how-it-works/'), true)
   assert.equal(hrefs('For members').includes('/for-members/'), true)
@@ -84,8 +84,11 @@ test('home copy matches the mobile review and drops the overclaim', async () => 
   const landing = read('src/pages/LandingPage.tsx')
   const graphics = read('src/components/landing/graphics.tsx')
   const steps = read('src/components/landing/StepDiagram.tsx')
-  for (const line of [HERO_LEAD, WHY_LEAD, FOUNDING_LEAD, MEMBERSHIP_LEAD, PROCESS_LEAD, LEGACY_CLOSING_BODY]) {
+  for (const line of [HERO_LEAD, WHY_LEAD, FOUNDING_LEAD, MEMBERSHIP_LEAD, CONSIDERATION_NOTE]) {
     assert.equal(html.includes(line), true, line)
+  }
+  for (const step of PUBLIC_PROCESS_STEPS) {
+    assert.equal(html.includes(step.detail), true, step.detail)
   }
   assert.equal(LANDING_TILES.length, 5)
   for (const tile of LANDING_TILES) {
@@ -127,8 +130,9 @@ test('home route / keeps Founding 100 and drops the booking sentence', async () 
   const html = await renderLanding()
   const process = html.slice(html.indexOf('id="process"'), html.indexOf('id="faq"'))
   assert.match(process, /How it works/)
-  assert.match(process, /Consideration before any conversation\./)
-  assert.match(process, /Admin reads every application and handles every mandate intro and real estate intro\./)
+  assert.match(process, /Apply\. Three short steps\. Takes only your details and your board record\./)
+  assert.match(process, /Our admin team reviews\. A named person reads every application\. There is no fixed response time\./)
+  assert.match(process, /Create your account\. If you are accepted, we email you a private link\. Your account is created then, not before\./)
   assert.equal(process.includes('No public booking calendar'), false)
   assert.equal(html.includes('No public booking calendar is offered.'), false)
   assert.equal(/there is no public booking calendar/i.test(html), false)

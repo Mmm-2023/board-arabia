@@ -91,12 +91,12 @@ test('home and apply routes keep the scope lines and drop the old claims', async
     const apply = renderToStaticMarkup(
       createElement(MemoryRouter, { initialEntries: ['/apply'] }, createElement(applyMod.ApplyPage)),
     )
-    assert.match(home, /Membership for Chairperson, Board members and C-suite executives/)
+    assert.match(home, /Membership for Chairpersons, Board members and C-suite executives/)
     assert.equal(home.includes('Reviewed membership'), false)
     assert.match(home, /Capital briefs shared through admin\. No cold outreach\./)
     assert.match(home, /Peers admitted by application and personal review\./)
     assert.match(home, /A founding membership by application/)
-    assert.match(home, /Admin reads every application and handles every mandate intro and real estate intro\./)
+    assert.match(home, /A named person reads every application\. There is no fixed response time\./)
     assert.match(apply, /Pre-vet/)
     assert.match(apply, new RegExp(PRE_VET_SCOPE.replace(/[.]/g, '\\.')))
     assert.match(apply, new RegExp(CAPACITY_CHECK.replace(/[.]/g, '\\.')))

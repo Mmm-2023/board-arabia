@@ -79,19 +79,13 @@ test('trailing slash normaliser stays on the same path', () => {
   assert.equal(component.includes('host'), false)
 })
 
-test('review returns to the phone tabs only when the two-tier flag is on', () => {
-  setTwoTierRegisterForTests(false)
+test('review stays off the phone tabs after the register switch is removed', () => {
+  setTwoTierRegisterForTests(true)
   assert.deepEqual(
     phoneDestinations(staffDestinations()).tabs.map((item) => item.label),
     ['Home', 'Applications', 'People', 'Majlis'],
   )
   assert.deepEqual(phoneDestinations(staffDestinations()).more.map((item) => item.label), ['Review'])
-  setTwoTierRegisterForTests(true)
-  assert.deepEqual(
-    phoneDestinations(staffDestinations()).tabs.map((item) => item.label),
-    ['Home', 'Applications', 'Review', 'People', 'Majlis'],
-  )
-  assert.deepEqual(phoneDestinations(staffDestinations()).more.map((item) => item.label), [])
   setTwoTierRegisterForTests(null)
   assert.deepEqual(
     STAFF_SECONDARY.map((item) => item.label),

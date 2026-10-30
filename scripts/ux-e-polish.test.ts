@@ -109,7 +109,7 @@ test('public copy drops the home booking sentence, and keeps invite email and th
   assert.equal(footer.includes('No public calendar'), false)
   assert.equal(seo.includes('private next-step email'), false)
   assert.equal(seo.includes('Private next step by email'), false)
-  assert.match(seo, /private invite email/)
+  assert.match(seo, /we email you a private link/)
   assert.match(apply, /Turnover \(one of these is required\)/)
   assert.match(apply, /Family-office size \(one of these is required\)/)
   assert.match(apply, /<fieldset>/)

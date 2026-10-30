@@ -56,7 +56,7 @@ export function StickyApply({ menuOpen }: { menuOpen: boolean }) {
     <div className="ba-sticky" data-state={open ? 'shown' : 'hidden'}>
       <Link
         to={publicHref(cta.to)}
-        className="ba-primary ba-sticky-btn"
+        className="ba-primary ba-apply ba-sticky-btn"
         data-consideration-cta="public"
         tabIndex={open ? undefined : -1}
         aria-hidden={open ? undefined : true}

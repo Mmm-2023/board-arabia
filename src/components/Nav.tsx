@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom'
 import { BrandLockup } from './BrandLockup'
 import { MEMBER_LOGIN, NAV_LINKS } from '../content/marketing'
 import { publicHref } from '../content/seo'
+import { CONSIDERATION_NOTE } from '../content/twoTierCopy'
 import { publicConsiderationCta } from '../lib/twoTierRegister'
 import { trackApplyClick, trackLoginClick } from '../lib/tracking/browser'
 
@@ -73,14 +74,14 @@ export function Nav({
         <div className="flex items-center gap-2 sm:gap-3">
           <Link
             to={MEMBER_LOGIN}
-            className={darkNav ? 'ba-login is-light' : 'ba-login is-dark'}
+            className={darkNav ? 'ba-signin is-light' : 'ba-signin is-dark'}
             onClick={() => trackLoginClick('header')}
           >
-            Log in
+            Sign in
           </Link>
           <Link
             to={publicHref(to)}
-            className="ba-primary ba-header-apply"
+            className="ba-primary ba-apply ba-header-apply"
             data-consideration-cta={to === consideration.to ? 'public' : undefined}
             onClick={() => {
               if (to === consideration.to) trackApplyClick('header', label)
@@ -120,7 +121,7 @@ export function Nav({
             <li className="pt-2">
               <Link
                 to={publicHref(to)}
-                className="ba-primary ba-menu-apply"
+                className="ba-primary ba-apply ba-menu-apply"
                 data-consideration-cta={to === consideration.to ? 'public' : undefined}
                 onClick={() => {
                   if (to === consideration.to) trackApplyClick('menu', label)
@@ -128,14 +129,17 @@ export function Nav({
               >
                 {label}
               </Link>
+              {to === consideration.to ? (
+                <p className="mt-2 text-[1rem] leading-relaxed text-ink/70">{CONSIDERATION_NOTE}</p>
+              ) : null}
             </li>
-            <li className="pt-2 pb-3">
+            <li className="pt-1 pb-3">
               <Link
                 to={MEMBER_LOGIN}
-                className="ba-secondary ba-menu-login"
+                className="ba-menu-signin"
                 onClick={() => trackLoginClick('menu')}
               >
-                Log in
+                Sign in
               </Link>
             </li>
           </ul>

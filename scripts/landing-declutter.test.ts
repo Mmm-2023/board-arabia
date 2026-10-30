@@ -34,7 +34,7 @@ test('public nav order, held-for line, and home FAQ copy fixes', () => {
   assert.ok(apply)
   assert.equal(apply.answer.includes('/apply'), false)
   assert.equal(apply.answer.includes('/for-members'), false)
-  assert.match(apply.answer, /Submit the pre-vet form with your credentials/)
+  assert.match(apply.answer, /Apply for consideration\. Three short steps\./)
   const fdi = FAQ.find((item) => item.question === 'How do family offices or FDI engage?')
   assert.ok(fdi)
   assert.equal(fdi.answer.includes('/for-capital'), false)

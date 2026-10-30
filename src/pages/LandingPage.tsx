@@ -14,7 +14,7 @@ import { StickyApply } from '../components/landing/StickyApply'
 import { LANDING_TILES } from '../content/landingFeatures'
 import { FAQ, publicHref } from '../content/seo'
 import { LANDING_STRIP_LEAD, LANDING_STRIP_LINK } from '../content/trust'
-import { closingCtaBody } from '../content/twoTierCopy'
+import { CONSIDERATION_NOTE } from '../content/twoTierCopy'
 import { DestinationIcon } from '../shell/icons'
 import { publicConsiderationCta } from '../lib/twoTierRegister'
 import { LANDING_PREVIEW_EXAMPLES, presentLandingDealList, type LandingDeal } from '../lib/landingPreview'
@@ -66,7 +66,7 @@ export function LandingPage() {
         </p>
         <CtaBand
           eyebrow="Begin"
-          body={closingCtaBody()}
+          note={CONSIDERATION_NOTE}
           memberLogin
           compact
           location="closing"
@@ -81,19 +81,22 @@ export function LandingPage() {
 function HeroConsideration() {
   const cta = publicConsiderationCta()
   return (
-    <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+    <div className="mt-4">
       <Link
         id="hero-apply"
         to={publicHref(cta.to)}
-        className="ba-primary inline-flex min-h-12 items-center justify-center px-5 text-[0.9375rem] font-semibold"
+        className="ba-primary ba-apply inline-flex items-center justify-center"
         data-consideration-cta="public"
         onClick={() => trackApplyClick('hero', cta.label)}
       >
         {cta.label}
       </Link>
-      <a href="#process" className="ba-secondary inline-flex min-h-12 items-center justify-center px-5 text-[0.9375rem] font-semibold">
-        How it works
-      </a>
+      <p className="mt-2 max-w-md text-[1rem] leading-relaxed text-[#E8E4F7]">{CONSIDERATION_NOTE}</p>
+      <p className="mt-1">
+        <a href="#process" className="ba-textlink inline-flex min-h-11 items-center text-[1rem]">
+          How it works
+        </a>
+      </p>
     </div>
   )
 }
@@ -120,7 +123,7 @@ function Hero() {
             Where Saudi boardrooms meet international capital
           </h1>
           <p className="mt-3 max-w-xl text-[1rem] leading-relaxed text-[#F6F5FB] md:text-[1.05rem]">
-            Membership for Chairperson, Board members and C-suite executives, in Saudi Arabia and internationally.
+            Membership for Chairpersons, Board members and C-suite executives, in Saudi Arabia and internationally.
           </p>
           <HeroEnter index={1}>
             <HeroConsideration />
@@ -287,17 +290,13 @@ function ProcessSection() {
     <section id="process" className="ba-on-dark bg-ink py-8 text-pearl md:py-10">
       <div className="mx-auto max-w-7xl px-5 md:px-10">
         <Reveal>
-          <Eyebrow tone="light">How it works</Eyebrow>
           <DisplayHeading tone="light" compact className="max-w-3xl">
-            Consideration before any conversation.
+            How it works
           </DisplayHeading>
         </Reveal>
         <div className="mt-4">
           <StepDiagram />
         </div>
-        <p className="mt-4 max-w-3xl text-[0.9375rem] leading-[1.45] text-[#E8E4F7]">
-          Admin reads every application and handles every mandate intro and real estate intro.
-        </p>
         <p className="mt-2 flex flex-wrap gap-x-6">
           <Link to={publicHref('/how-it-works')} className="ba-textlink inline-flex min-h-11 items-center text-[0.9375rem] text-[#F6F5FB]">
             Full sequence

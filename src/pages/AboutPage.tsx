@@ -5,6 +5,7 @@ import { MarketingLayout } from '../components/MarketingLayout'
 import { WhoRunsTheDesk } from '../components/WhoRunsTheDesk'
 import { AUDIENCE_LINE } from '../content/marketing'
 import { faqFor, publicHref } from '../content/seo'
+import { CONSIDERATION_NOTE, publicProcessSteps } from '../content/twoTierCopy'
 
 export function AboutPage() {
   return (
@@ -29,11 +30,19 @@ export function AboutPage() {
             site.
           </p>
           <p>
-            Admission is by review. There is no fixed response time. Every
-            application is reviewed personally. If you are accepted, you get a
-            private invite email. We never publish it here. If you are not
-            accepted, you receive a decline.
+            Admission is by review. There is no fixed response time. A named
+            person reads every application. If you are accepted, we email you a
+            private link. Your account is created then, not before. We never
+            publish that link here. If you are not accepted, you receive a decline.
           </p>
+          <ol className="space-y-4">
+            {publicProcessSteps().map((step, index) => (
+              <li key={step.n} className="text-[1.05rem] leading-relaxed text-ink/80">
+                <span className="font-semibold text-ink">{index + 1}. </span>
+                {step.detail}
+              </li>
+            ))}
+          </ol>
           <p>
             The tools (a private directory, availability, warm introductions,
             a mandate inbox, deal rooms, and a quarterly majlis) are the standard
@@ -41,7 +50,7 @@ export function AboutPage() {
             display members, and it does not invent them.
           </p>
           <p>
-            <Link to={publicHref('/how-it-works')} className="border-b border-brass text-ink">
+            <Link to={publicHref('/how-it-works')} className="inline-flex min-h-11 items-center border-b border-brass text-[1rem] text-ink">
               Read the sequence
             </Link>
           </p>
@@ -49,7 +58,7 @@ export function AboutPage() {
         <WhoRunsTheDesk />
       </article>
       <FaqList items={faqFor('/about') ?? []} heading="About Board Arabia" />
-      <CtaBand location="section-about" />
+      <CtaBand location="section-about" note={CONSIDERATION_NOTE} />
     </MarketingLayout>
   )
 }
