@@ -1,6 +1,7 @@
 # UP-1 (P2-2) Due Diligence report titles
 
 Date: 30 Oct 2026
+PR: https://github.com/Mmm-2023/board-arabia/pull/226
 Base: `main` at `f33a4362811d885e9a2fe1d4fbbb53415cd2561a`
 Branch: `cursor/up-1-dd-title-mojibake-dc14`
 
