@@ -10,6 +10,7 @@ import {
   MAJLIS_ACCOUNT_COPY,
   type AccountDeal,
 } from '../../../lib/accountPreview'
+import { AiDueDiligenceReportNotice } from '../../../components/ai/AiDueDiligenceScoreNotice'
 import { DueDiligenceMemo } from '../DueDiligenceMemo'
 import { fullDraftAnalysis } from '../../../lib/dueDiligenceMemoFixture'
 import { FreeMajlisScreen } from './FreeMajlisScreen'
@@ -316,7 +317,10 @@ export function AccountAi() {
         <ExampleMark />
       </div>
       <div className="mt-4">
-        <DueDiligenceMemo analysis={analysis} companyLabel="Northwind Freight" preparedAt="2026-09-01T00:00:00.000Z" />
+        <AiDueDiligenceReportNotice />
+        <div className="mt-4">
+          <DueDiligenceMemo analysis={analysis} companyLabel="Northwind Freight" preparedAt="2026-09-01T00:00:00.000Z" />
+        </div>
       </div>
       <LockPanel body={LOCK_COPY.ai} />
     </div>
