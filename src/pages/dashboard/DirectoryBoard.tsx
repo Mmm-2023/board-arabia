@@ -28,7 +28,7 @@ import { DirectoryFocus } from './DirectoryFocus'
 import { chipOptions, FilterRow, MemberFilterControls } from './MemberFilters'
 
 const searchClass =
-  'mt-2 w-full border border-ink/15 bg-white px-4 py-3 text-[1rem] text-ink outline-none placeholder:text-ink/30 focus:border-brass'
+  'mt-2 w-full min-h-11 border border-ink/15 bg-white px-4 py-3 text-[1rem] text-ink outline-none placeholder:text-ink/30 focus:border-brass'
 
 export function DirectoryBoard({
   cards,
@@ -67,7 +67,7 @@ export function DirectoryBoard({
 
   function renderGroups() {
     return (
-      <div className="space-y-4">
+      <div className="space-y-5">
         <FilterRow
           label="Saudi or International"
           value={filters.seat}
@@ -101,7 +101,7 @@ export function DirectoryBoard({
   }
 
   return (
-    <div className="max-w-3xl xl:max-w-6xl">
+    <div className="max-w-3xl xl:max-w-6xl" data-read-floor="">
       <h1 className="font-display text-[2.2rem] font-bold tracking-[-0.03em]">Directory</h1>
       <p className="mt-3 max-w-xl text-[1rem] leading-relaxed text-ink/65">
         {hasExamples
@@ -116,7 +116,7 @@ export function DirectoryBoard({
       ) : null}
       <div className="mt-8">
         <label className="block" htmlFor="directory-search">
-          <span className="text-[0.72rem] font-semibold tracking-[0.08em] text-ink/45 uppercase">Search</span>
+          <span className="text-[1rem] font-semibold text-ink/70">Search</span>
           <input
             id="directory-search"
             type="search"
@@ -151,7 +151,7 @@ export function DirectoryBoard({
           />
         </div>
       ) : (
-        <ul className="mt-4 grid gap-3 xl:grid-cols-2">
+        <ul className="mt-6 grid gap-4 xl:grid-cols-2">
           {visible.map((card) => (
             <li key={card.id}>
               <DirectoryPerson
@@ -201,7 +201,7 @@ function DirectoryPerson({
 }) {
   const [open, setOpen] = useState(false)
   const moreId = useId()
-  const headline = card.headline ? <p className="mt-1 text-[0.95rem] text-ink/70">{card.headline}</p> : null
+  const headline = card.headline ? <p className="mt-1 text-[1rem] text-ink/70">{card.headline}</p> : null
   const sector = <SectorFields card={card} />
   const firm = card.company ? <Field label="Firm" value={card.company} /> : null
   const vision = card.vision_themes.length > 0 ? <Field label="Vision 2030" value={card.vision_themes.join(', ')} /> : null
@@ -220,7 +220,7 @@ function DirectoryPerson({
     />
   )
   return (
-    <article className="h-full border border-[var(--ba-line)] bg-white px-5 py-5">
+    <article className="h-full border border-[var(--ba-line)] bg-white px-5 py-6">
       <div className="flex items-start justify-between gap-4">
         <Portrait card={card} src={src} />
         <div className="text-end">
@@ -231,7 +231,7 @@ function DirectoryPerson({
             </div>
           ) : null}
           {card.membership_status === 'invited' ? (
-            <p className="mt-1 text-[0.85rem] font-semibold text-ink md:hidden">Invited</p>
+            <p className="mt-1 text-[1rem] font-semibold text-ink md:hidden">Invited</p>
           ) : null}
           <div className="hidden md:block">
             <CardStatus card={card} />
@@ -241,7 +241,7 @@ function DirectoryPerson({
       <h2 className="mt-4 font-display text-[1.35rem] font-semibold tracking-[-0.03em]">{card.full_name}</h2>
       <div className="md:hidden">
         {headline}
-        <dl className="mt-4 space-y-2">
+        <dl className="mt-4 space-y-3">
           {sector}
           {firm}
         </dl>
@@ -252,12 +252,12 @@ function DirectoryPerson({
             <DirectoryBoardroomDetail card={card} />
             <div className="mt-3 text-end">
               {card.seat === 'sponsor' ? null : (
-                <p className="mt-1 text-[0.85rem] text-[var(--ba-muted)]">{seatLabel(card.seat)}</p>
+                <p className="mt-1 text-[1rem] text-[var(--ba-muted)]">{seatLabel(card.seat)}</p>
               )}
               {card.availability ? <AvailabilityMark value={card.availability} /> : null}
             </div>
             {vision || city ? (
-              <dl className="mt-2 space-y-2">
+              <dl className="mt-3 space-y-3">
                 {vision}
                 {city}
               </dl>
@@ -272,7 +272,7 @@ function DirectoryPerson({
         ) : null}
         <button
           type="button"
-          className="mt-3 inline-flex min-h-12 min-w-11 items-center justify-center text-[0.95rem] font-semibold text-[var(--ba-indigo)] md:min-h-11"
+          className="mt-4 inline-flex min-h-12 min-w-11 items-center justify-center text-[1.0625rem] font-semibold text-[var(--ba-indigo)] md:min-h-11"
           aria-expanded={open}
           aria-controls={moreId}
           onClick={() => setOpen((value) => !value)}
@@ -282,7 +282,7 @@ function DirectoryPerson({
       </div>
       <div className="hidden md:block">
         {headline}
-        <dl className="mt-4 space-y-2">
+        <dl className="mt-4 space-y-3">
           {sector}
           {vision}
           {city}
@@ -306,10 +306,10 @@ function CardStatus({ card }: { card: DirectoryCard }) {
   return (
     <>
       {card.membership_status === 'invited' ? (
-        <p className="mt-1 text-[0.85rem] font-semibold text-ink">Invited</p>
+        <p className="mt-1 text-[1rem] font-semibold text-ink">Invited</p>
       ) : null}
       {card.seat === 'sponsor' ? null : (
-        <p className="mt-1 text-[0.85rem] text-[var(--ba-muted)]">{seatLabel(card.seat)}</p>
+        <p className="mt-1 text-[1rem] text-[var(--ba-muted)]">{seatLabel(card.seat)}</p>
       )}
       {card.availability ? <AvailabilityMark value={card.availability} /> : null}
     </>
@@ -326,7 +326,7 @@ function AvailabilityMark({ value }: { value: Availability }) {
   const tone =
     value === 'open' ? 'bg-[var(--ba-success)]' : value === 'selective' ? 'bg-[var(--ba-indigo)]' : 'bg-[var(--ba-muted)]'
   return (
-    <p className="mt-1 flex items-center justify-end gap-2 text-[0.85rem] text-ink/70">
+    <p className="mt-1 flex items-center justify-end gap-2 text-[1rem] text-ink/70">
       <span className={`inline-block size-2 rounded-full ${tone}`} aria-hidden="true" />
       <span>{availabilityLabel(value)}</span>
     </p>
@@ -336,8 +336,8 @@ function AvailabilityMark({ value }: { value: Availability }) {
 function Field({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <dt className="text-[15px] font-semibold text-ink/70">{label}</dt>
-      <dd className="mt-0.5 text-[0.95rem] text-ink/80">{value}</dd>
+      <dt className="text-[1rem] font-semibold text-ink/70">{label}</dt>
+      <dd className="mt-1 text-[1rem] text-ink/80">{value}</dd>
     </div>
   )
 }

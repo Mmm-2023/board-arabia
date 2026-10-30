@@ -26,6 +26,11 @@ const labelClass = 'block text-[0.68rem] font-semibold tracking-[0.08em] text-in
 const buttonClass =
   'ba-primary inline-flex min-h-11 items-center px-4 text-[0.75rem] font-semibold tracking-[0.08em] uppercase disabled:opacity-40'
 
+const formLabelClass = 'block text-[1rem] font-semibold text-ink/70'
+
+const formButtonClass =
+  'ba-primary inline-flex min-h-11 min-w-11 items-center px-4 text-[1.0625rem] font-semibold disabled:opacity-40'
+
 export function MemberBoardSeatList({
   status,
   seats,
@@ -410,17 +415,17 @@ export function MemberBoardSeatForm({
     onSubmit()
   }
   return (
-    <div className="max-w-xl">
-      <p className="text-[0.95rem]">
-        <Link to="/dashboard/deals/board-seats" className="font-semibold text-ink underline">
+    <div className="max-w-xl" data-read-floor="">
+      <p>
+        <Link to="/dashboard/deals/board-seats" className="inline-flex min-h-11 items-center text-[1.0625rem] font-semibold text-ink underline">
           {copy.title}
         </Link>
       </p>
       <h1 className="mt-4 font-display text-[2.2rem] font-bold tracking-[-0.03em]">{copy.formTitle}</h1>
       <p className="mt-3 text-[1rem] leading-relaxed text-ink/60">{copy.formLead}</p>
       <form data-member-seat-form="" className="mt-8" onSubmit={submit}>
-        <div className="space-y-4">
-          <label className={labelClass} htmlFor="member-seat-kind">
+        <div className="space-y-6">
+          <label className={formLabelClass} htmlFor="member-seat-kind">
             Seat kind
             <select
               id="member-seat-kind"
@@ -465,7 +470,7 @@ export function MemberBoardSeatForm({
             {message}
           </p>
         ) : null}
-        <button type="submit" disabled={busy} className={`${buttonClass} mt-5`}>
+        <button type="submit" disabled={busy} className={`${formButtonClass} mt-6`}>
           {busy ? copy.saving : copy.save}
         </button>
       </form>
@@ -487,7 +492,7 @@ function Field({
   onChange: (value: string) => void
 }) {
   return (
-    <label className={labelClass} htmlFor={id}>
+    <label className={formLabelClass} htmlFor={id}>
       {label}
       <input id={id} value={value} maxLength={maxLength} autoComplete="off" onChange={(event) => onChange(event.target.value)} className={fieldClass} />
     </label>
@@ -508,7 +513,7 @@ function Area({
   onChange: (value: string) => void
 }) {
   return (
-    <label className={labelClass} htmlFor={id}>
+    <label className={formLabelClass} htmlFor={id}>
       {label}
       <textarea id={id} value={value} maxLength={maxLength} rows={3} onChange={(event) => onChange(event.target.value)} className={fieldClass} />
     </label>
@@ -534,25 +539,37 @@ function TagGroup({
 }) {
   return (
     <fieldset>
-      <legend className={labelClass}>{legend}</legend>
-      <p className="mt-1 text-[0.85rem] text-ink/50">{hint}</p>
-      <div className="mt-2 flex flex-wrap gap-2">
+      <legend className={formLabelClass}>{legend}</legend>
+      <p className="mt-2 text-[1rem] leading-relaxed text-ink/70">{hint}</p>
+      <div className="mt-3 flex flex-wrap gap-x-2 gap-y-3">
         {options.map((option) => {
           const checked = selected.includes(option)
+          const disabled = !checked && selected.length >= max
           return (
-            <label key={option} className="inline-flex min-h-11 items-center gap-2 border border-ink/15 px-3 text-[0.85rem] text-ink">
+            <label
+              key={option}
+              className="relative inline-flex min-h-11 max-w-full min-w-11 items-center gap-3 border border-ink/15 py-2 pe-3 ps-3 text-[1rem] text-ink has-[:disabled]:opacity-40 has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-[var(--ba-indigo)]"
+            >
               <input
                 type="checkbox"
                 name={name}
-                className="size-4"
+                className="absolute inset-0 size-full min-h-11 min-w-11 cursor-pointer opacity-0"
                 checked={checked}
-                disabled={!checked && selected.length >= max}
+                disabled={disabled}
                 onChange={() => {
                   const next = checked ? selected.filter((item) => item !== option) : [...selected, option]
                   onToggle(next.slice(0, max))
                 }}
               />
-              {option}
+              <span
+                aria-hidden="true"
+                className={`inline-flex size-5 shrink-0 items-center justify-center border ${
+                  checked ? 'border-[var(--ba-indigo)] bg-[var(--ba-indigo)]' : 'border-ink/40 bg-white'
+                }`}
+              >
+                {checked ? <span className="size-2.5 bg-white" /> : null}
+              </span>
+              <span>{option}</span>
             </label>
           )
         })}

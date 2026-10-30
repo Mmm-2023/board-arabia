@@ -1,0 +1,73 @@
+# UX-P1-3 type and tap floors
+
+Styling and layout only, on Directory, Deal rooms, and Post a seat. Base is `origin/main` at the branch point `4f6c510ce7f60c1856eeb1d7e5c6f6292e5215f6`. No migration. No Edge deploy. No email. No force push. Not merged.
+
+## What changed
+
+Body and helper text on these three pages is 16px, with a 15px floor for anything a member must read. Status chips may stay at 13px (`data-chip`). Buttons and button-like links are 17px sentence case. Tap targets (buttons, chips, links, inputs, selects, and checkbox rows) are at least 44px. Checked at 390, 768, and 1440.
+
+The floor is `data-read-floor` in `src/index.css` (from line 1445). It is set on:
+
+- Directory list, `src/pages/dashboard/DirectoryBoard.tsx` line 104
+- Directory loading and error, `src/pages/dashboard/DirectoryPage.tsx` lines 88 and 99
+- Directory empty, `src/pages/dashboard/DirectoryEmpty.tsx` line 36
+- Deal rooms, `src/pages/dashboard/DealRoomsView.tsx` line 40
+- Post a seat, `src/pages/dashboard/MemberBoardSeatsView.tsx` line 418
+
+Post a seat checkboxes are a 44px row (label and box together). The visible mark stays 20px. `src/pages/dashboard/MemberBoardSeatsView.tsx` line 549. The same row is used by the directory introduction checkbox in `src/pages/dashboard/DirectoryIntroAction.tsx`, which Intros suggestions also render. Intros copy size is unchanged because that page does not set `data-read-floor`.
+
+Deal section tabs no longer clip under a fade. They wrap, stay 16px, and the pill hugs its labels. `src/shell/SectionTabs.tsx` line 65. Same destinations. The other hubs stay on one row. See the shots below.
+
+## States
+
+Kept, and still on the pages:
+
+- Directory loading skeleton, error with Retry, empty with Complete your profile and Invite 2, and filtered zero.
+- Deal rooms loading, error with Retry, empty with Open a room, admin empty ("None are open."), and the denied permission state already on `RoomsPage`.
+- Post a seat error alert, and Saving... on the submit button. The form is local, so there is no remote loading skeleton to add.
+
+Shots: `handoff/ba-ux-p1-3/before-*.png` and `after-*.png` at 390, 768, and 1440, plus empty, error, and loading at 390.
+
+## Other hubs on the same tab row
+
+`<SectionTabs` in `src` is used by these layouts. Account preview (`src/pages/dashboard/account/AccountRoutes.tsx`) repeats the member Deals, People, and AI tools lists. It is not a separate set of labels.
+
+| Hub | Layout | Labels | 390 | 1440 |
+|---|---|---|---|---|
+| Deals | `src/pages/dashboard/DealsLayout.tsx` | Mandates, Real estate, Board seats, Deal rooms | `after-rooms-390.png` | `after-rooms-1440.png` |
+| People | `src/pages/dashboard/PeopleLayout.tsx` | Directory, Intros, Invites, Partners | `tabs-people-390.png` | `tabs-people-1440.png` |
+| Majlis | `src/pages/dashboard/MajlisLayout.tsx` | Upcoming, Past | `tabs-majlis-390.png` | `tabs-majlis-1440.png` |
+| AI tools | `src/pages/dashboard/AiToolsLayout.tsx` | Tools, Due diligence | `tabs-ai-390.png` | `tabs-ai-1440.png` |
+| Staff People | `src/pages/admin/PeopleLayout.tsx` | People, Profiles, Intros | `tabs-staff-people-390.png` | `tabs-staff-people-1440.png` |
+| Staff Majlis | `src/pages/admin/MajlisLayout.tsx` | Events, Requests | `tabs-staff-majlis-390.png` | `tabs-staff-majlis-1440.png` |
+
+Deals on a phone is two rows: Mandates, Real estate, and Board seats, then Deal rooms alone. Every word is inside the pill. At 1440 it is one row. People, Majlis, AI tools, staff People, and staff Majlis are one row at both widths. No label is cut, none sit outside the pill, and the page does not scroll sideways. People at 390 uses the full content width. Partners ends at the content edge and is still complete.
+
+No product code change for this pass. The smoke fixture gained a `view=tabs` query so these shots can be taken again.
+
+## Left alone (not this wave)
+
+These were in the 30 Oct review and were not restyled. A compact Directory, shorter tab names, or a new screen would be a redesign.
+
+- New room radios (`src/pages/dashboard/CreateRoomForm.tsx`)
+- Board seats list and seat detail (only the Post a seat form changed)
+- Your privacy, Invites, Help, Real estate, Mandates
+- Phone bottom bar labels stay 12px. That chrome is shared and was not part of this page floor.
+
+## Locks
+
+Not touched: `src/components/WhoRunsTheDesk.tsx`, `scripts/prerender.mjs`, `scripts/public-nammco.mjs`, `scripts/check-pages-artifact.mjs`, `.github/workflows/pages.yml`, `src/content/legal/*`, `aiReportOperator.ts`, the `/apply` route, migrations, Edge functions, mail.
+
+No prices. No banned partner word in new user copy. nammco was not added. Fixtures use example.com and Example Member only.
+
+## Secrets
+
+VERIFIED. The diff adds no mailbox, API key, token, password, service role, SMTP secret, staff allowlist, or private booking link. The smoke fixture uses `https://example.supabase.co` and `example-anon-key`.
+
+## Test
+
+`scripts/ux-p1-3.test.ts` measures computed style at 390, 768, and 1440 for Directory, Deal rooms, and Post a seat, including the open filter sheet, the introduction form, empty, error, and loading. It requires text at least 15px (13px on status chips), tap targets at least 44px, buttons at 17px sentence case, no sideways overflow, and 29 seat checkboxes.
+
+VERIFIED locally: `node --experimental-strip-types --test scripts/ux-p1-3.test.ts` passed, including the Chrome measure at 390, 768, and 1440.
+
+On GitHub Actions the browser half skips, same as the home phone measure. The parallel suite does not finish the smoke compile. The source guard still runs in pr-checks. First CI run failed because the page wait timed out at 20s (`pr-checks` run 41047393964). The skip is the fix.

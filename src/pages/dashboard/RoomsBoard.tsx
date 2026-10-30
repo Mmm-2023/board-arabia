@@ -8,24 +8,24 @@ export function RoomsBoard({ rooms, embedded = false }: { rooms: RoomCard[]; emb
     ? 'Deal rooms opened by our admin team. Cards marked Example are samples.'
     : 'Deal rooms opened by our admin team.'
   const cards = (
-    <ul className={embedded ? 'mt-4 grid gap-3 xl:grid-cols-2' : 'mt-8 grid gap-3 xl:grid-cols-2'}>
+    <ul className={embedded ? 'mt-4 grid gap-4 xl:grid-cols-2' : 'mt-8 grid gap-4 xl:grid-cols-2'}>
       {rooms.map((room) => (
         <li key={room.id}>
-          <article className="border border-[var(--ba-line)] bg-white px-5 py-5">
+          <article className="border border-[var(--ba-line)] bg-white px-5 py-6">
             <div className="flex items-start justify-between gap-4">
-              <p className="text-[0.72rem] font-semibold tracking-[0.12em] text-brass uppercase">
+              <p className="min-w-0 text-[1rem] font-semibold text-brass">
                 {room.sector}
               </p>
-              <div className="text-end">
+              <div className="shrink-0 text-end">
                 {room.is_demo ? <ExampleMark /> : null}
-                <p className="mt-1 text-[0.85rem] text-ink/55">{room.stage}</p>
+                <p className="mt-1 text-[1rem] text-ink/70">{room.stage}</p>
               </div>
             </div>
             <h2 className="mt-3 font-display text-[1.45rem] font-semibold tracking-[-0.03em]">
               {room.name}
             </h2>
             <p className="mt-3 text-[1rem] leading-relaxed text-ink/75">{room.summary}</p>
-            <p className="mt-4 text-[0.92rem] text-ink/60">
+            <p className="mt-4 text-[1rem] text-ink/70">
               {room.member_count} {room.member_count === 1 ? 'member' : 'members'}
               {room.host_name ? ` · Host ${room.host_name}` : ''}
             </p>

@@ -115,14 +115,22 @@ export function DirectoryIntroAction({
             />
           </label>
           <p className="mt-2 text-[0.85rem] text-ink/45">Up to {INTRO_REASON_MAX} characters.</p>
-          <label className="mt-3 flex min-h-11 items-center gap-3 text-[1rem] text-ink">
+          <label className="relative mt-3 flex min-h-11 items-center gap-3 text-[1rem] text-ink has-[:disabled]:opacity-40 has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-[var(--ba-indigo)]">
             <input
               type="checkbox"
-              className="size-5 shrink-0"
+              className="absolute inset-0 size-full min-h-11 min-w-11 cursor-pointer opacity-0"
               checked={askDesk}
               disabled={busy || limitHit}
               onChange={(event) => setAskDesk(event.target.checked)}
             />
+            <span
+              aria-hidden="true"
+              className={`inline-flex size-5 shrink-0 items-center justify-center border ${
+                askDesk ? 'border-[var(--ba-indigo)] bg-[var(--ba-indigo)]' : 'border-ink/40 bg-white'
+              }`}
+            >
+              {askDesk ? <span className="size-2.5 bg-white" /> : null}
+            </span>
             Ask admin to introduce us
           </label>
           <p className="mt-1 text-[0.92rem] leading-relaxed text-ink/55">

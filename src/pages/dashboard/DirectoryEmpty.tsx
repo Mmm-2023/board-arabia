@@ -14,9 +14,9 @@ export type SeatCountState =
   | { status: 'error' }
 
 const primaryClass =
-  'ba-primary inline-flex w-full items-center justify-center px-5 py-3 text-center text-[0.75rem] font-semibold tracking-[0.08em] uppercase lg:w-auto'
+  'ba-primary inline-flex min-h-11 w-full items-center justify-center px-5 py-3 text-center text-[1.0625rem] font-semibold lg:w-auto'
 const secondaryClass =
-  'inline-flex w-full items-center justify-center border border-ink/20 bg-white/40 px-5 py-3 text-center text-[0.75rem] font-semibold tracking-[0.08em] text-ink uppercase lg:w-auto'
+  'inline-flex min-h-11 w-full items-center justify-center border border-ink/20 bg-white/40 px-5 py-3 text-center text-[1.0625rem] font-semibold text-ink lg:w-auto'
 
 export function DirectoryEmpty({
   seat,
@@ -33,7 +33,7 @@ export function DirectoryEmpty({
   const inviteFirst = ctas.primary === 'invite'
 
   return (
-    <div className="max-w-3xl pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+    <div className="max-w-3xl pb-[max(1.5rem,env(safe-area-inset-bottom))]" data-read-floor="">
       <h1 className="font-display text-[2.3rem] font-bold tracking-[-0.03em] text-balance md:text-[2.8rem]">
         {DIRECTORY_COPY.heading}
       </h1>
@@ -58,7 +58,7 @@ export function DirectoryEmpty({
             <button
               type="button"
               onClick={onRetry}
-              className="border-b border-brass font-semibold text-ink"
+              className="inline-flex min-h-11 min-w-11 items-center text-[1.0625rem] font-semibold text-ink underline"
             >
               {DIRECTORY_COPY.retry}
             </button>
@@ -66,7 +66,7 @@ export function DirectoryEmpty({
         ) : null}
       </div>
 
-      <div className="mt-6 flex flex-col gap-3 lg:flex-row lg:items-start">
+      <div className="mt-6 flex flex-col gap-4 lg:flex-row lg:items-start">
         {inviteFirst ? <InviteControl ctas={ctas} prominent /> : <CompleteControl prominent />}
         {inviteFirst ? (
           ctas.showComplete ? <CompleteControl prominent={false} /> : null
@@ -75,7 +75,7 @@ export function DirectoryEmpty({
         )}
       </div>
 
-      <p className="mt-12 text-[0.72rem] font-semibold tracking-[0.14em] text-ink/40 uppercase">
+      <p className="mt-12 text-[1rem] font-semibold text-ink/70">
         {DIRECTORY_COPY.ghostLabel}
       </p>
       <ul className="mt-4 grid gap-3 lg:grid-cols-2" aria-hidden="true">
@@ -87,10 +87,10 @@ export function DirectoryEmpty({
             <div className="flex items-start justify-between gap-4">
               <div className="h-12 w-12 rounded-full bg-[var(--ba-lavender)]" />
               <div className="text-right">
-                <p className="text-[0.68rem] font-semibold tracking-[0.12em] text-ink/30 uppercase">
+                <p className="text-[1rem] font-semibold text-ink/30">
                   {DIRECTORY_COPY.seat}
                 </p>
-                <p className="mt-1 text-[0.85rem] text-ink/25">{DIRECTORY_COPY.seatPlaceholder}</p>
+                <p className="mt-1 text-[1rem] text-ink/25">{DIRECTORY_COPY.seatPlaceholder}</p>
               </div>
             </div>
             <div className="mt-4 h-3 w-2/3 bg-[var(--ba-lavender)]" />
@@ -140,7 +140,7 @@ function InviteControl({ ctas, prominent }: { ctas: DirectoryCtas; prominent: bo
           {DIRECTORY_COPY.invite}
         </button>
       )}
-      <p id="directory-invite-help" className="mt-2 text-[0.85rem] text-ink/50">
+      <p id="directory-invite-help" className="mt-2 text-[1rem] text-ink/60">
         {ctas.invite.helper}
       </p>
       <UtmBuilder />
@@ -151,10 +151,10 @@ function InviteControl({ ctas, prominent }: { ctas: DirectoryCtas; prominent: bo
 function GhostField({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <dt className="text-[0.68rem] font-semibold tracking-[0.12em] text-ink/30 uppercase">
+      <dt className="text-[1rem] font-semibold text-ink/30">
         {label}
       </dt>
-      <dd className="mt-1 text-[0.95rem] text-ink/25">{value}</dd>
+      <dd className="mt-1 text-[1rem] text-ink/25">{value}</dd>
     </div>
   )
 }

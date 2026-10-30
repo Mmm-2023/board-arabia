@@ -62,7 +62,7 @@ function SectionTabBar({
       <nav
         ref={scroller}
         aria-label={label}
-        className="flex w-max max-w-full gap-1 overflow-x-auto rounded-full bg-[var(--ba-lavender-mist)] p-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="flex w-fit min-w-0 max-w-full flex-wrap gap-x-1 gap-y-2 rounded-3xl bg-[var(--ba-lavender-mist)] p-1"
         onKeyDown={onKeyDown}
       >
         {sections.map((item) => (
@@ -71,7 +71,7 @@ function SectionTabBar({
             to={item.to}
             end={item.end}
             className={({ isActive }) =>
-              `section-tab inline-flex min-h-11 shrink-0 items-center rounded-full px-3 text-[0.875rem] font-semibold whitespace-nowrap ${
+              `section-tab inline-flex min-h-11 shrink-0 items-center rounded-full px-3 text-[1rem] font-semibold whitespace-nowrap ${
                 isActive ? 'bg-[var(--ba-indigo)] text-white' : 'text-[var(--ba-ink)] hover:bg-white'
               }`
             }

@@ -37,13 +37,13 @@ export function DealRoomsView({
   openedByAdmin: ReactNode
 }) {
   return (
-    <div className="max-w-3xl xl:max-w-6xl">
+    <div className="max-w-3xl xl:max-w-6xl" data-read-floor="">
       <h1 className="font-display text-[2.2rem] font-bold tracking-[-0.03em]">Deal rooms</h1>
       <p className="mt-3 max-w-xl text-[1rem] leading-relaxed text-ink/65">{DEAL_COPY.yourRoomsIntro}</p>
       {showCreate ? (
         <Link
           to={OPEN_ROOM_PATH}
-          className="ba-primary mt-5 inline-flex min-h-11 items-center px-4 text-[0.75rem] font-semibold tracking-[0.08em] uppercase"
+          className="ba-primary mt-5 inline-flex min-h-11 min-w-11 items-center px-4 text-[1.0625rem] font-semibold"
         >
           {MEMBER_VIEWS.rooms.emptyCta}
         </Link>
