@@ -8,6 +8,8 @@ import { supabase } from '../../lib/supabase'
 import { useNoIndex } from '../../lib/usePageTitle'
 import { CardSkeleton, ErrorBanner } from '../../shell/ViewState'
 import { MEMBER_VIEWS } from '../../shell/viewCopy'
+import { LOOKING_FOR, allowedChips } from '../../../supabase/functions/_shared/focus_fields.ts'
+import { schemaMissing } from '../../lib/demoRows'
 import { useMember } from './context'
 import { DirectoryBoard } from './DirectoryBoard'
 import { DirectoryEmpty, type SeatCountState } from './DirectoryEmpty'
@@ -27,7 +29,24 @@ export function DirectoryPage() {
   const [requestError, setRequestError] = useState('')
   const [quota, setQuota] = useState<IntroQuota | null>(null)
   const [attempt, setAttempt] = useState(0)
+  const [viewerLookingFor, setViewerLookingFor] = useState<string[]>([])
   useNoIndex('Directory | Board Arabia')
+
+  useEffect(() => {
+    let cancelled = false
+    void supabase
+      .from('profiles')
+      .select('looking_for')
+      .eq('user_id', userId)
+      .maybeSingle()
+      .then(({ data, error }) => {
+        if (cancelled || (error && schemaMissing(error.message))) return
+        if (!error) setViewerLookingFor(allowedChips(data?.looking_for, LOOKING_FOR))
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [userId])
 
   useEffect(() => {
     let cancelled = false
@@ -133,6 +152,7 @@ export function DirectoryPage() {
       cards={list.cards}
       seat={seat}
       selfId={userId}
+      viewerLookingFor={viewerLookingFor}
       introStatus={(id) => outgoingMemberStatus(intros, id)}
       busyId={busyId}
       errorId={errorId}

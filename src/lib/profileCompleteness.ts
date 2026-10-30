@@ -57,6 +57,12 @@ export function addThingsLabel(missing: number): string {
   return `Add ${missing} things`
 }
 
+export function reasonsAction(missing: number): string {
+  if (missing <= 0) return ''
+  if (missing === 1) return 'Pick 1 more'
+  return 'Pick 1 in each group'
+}
+
 function filled(value: string | null | undefined) {
   return typeof value === 'string' && value.trim().length > 0
 }
@@ -99,12 +105,12 @@ export function profileCompleteness(input: ProfileCompletenessInput): Completene
     ]),
   ]
   if (hasOwn(input, 'helpWith') || hasOwn(input, 'lookingFor')) {
-    rows.push(
-      row('reasons', INTRO_REASONS_LABEL, PROFILE_SECTION_HREF.focus, [
-        filled(input.helpWith),
-        filled(input.lookingFor),
-      ]),
-    )
+    const reasons = row('reasons', INTRO_REASONS_LABEL, PROFILE_SECTION_HREF.focus, [
+      filled(input.helpWith),
+      filled(input.lookingFor),
+    ])
+    reasons.addLabel = reasonsAction(reasons.missing)
+    rows.push(reasons)
   }
   if (hasOwn(input, 'boardSeatType') || hasOwn(input, 'boardSeatWhere')) {
     rows.splice(

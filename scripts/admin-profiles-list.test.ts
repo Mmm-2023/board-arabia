@@ -428,18 +428,24 @@ test('admin profiles shots at 1440 and 390', { timeout: 300_000 }, async (t) => 
 })
 
 const stubSql = `
-do $roles$
+do $anon_role$
 begin
   if not exists (select 1 from pg_roles where rolname = 'anon') then
     create role anon nologin;
   end if;
+exception
+  when unique_violation or duplicate_object then null;
+end
+$anon_role$;
+do $auth_role$
+begin
   if not exists (select 1 from pg_roles where rolname = 'authenticated') then
     create role authenticated nologin;
   end if;
 exception
-  when duplicate_object then null;
+  when unique_violation or duplicate_object then null;
 end
-$roles$;
+$auth_role$;
 grant anon, authenticated to current_user;
 
 create schema if not exists auth;

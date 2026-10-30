@@ -135,11 +135,14 @@ export function Chip({
   onClick,
   children,
   radio = false,
+  touch = false,
 }: {
   pressed: boolean
   onClick: () => void
   children: string
   radio?: boolean
+  /** Long labels wrap. The tap target stays 44px. */
+  touch?: boolean
 }) {
   return (
     <button
@@ -148,9 +151,9 @@ export function Chip({
       aria-checked={radio ? pressed : undefined}
       aria-pressed={radio ? undefined : pressed}
       onClick={onClick}
-      className={`inline-flex min-h-11 min-w-11 items-center justify-center px-3 text-[0.92rem] whitespace-nowrap ${
-        pressed ? 'bg-[var(--ba-indigo)] text-[var(--ba-porcelain)]' : 'border border-[var(--ba-line)] bg-white text-ink'
-      }`}
+      className={`inline-flex min-h-11 min-w-11 items-center px-3 text-[0.92rem] ${
+        touch ? 'whitespace-normal text-left' : 'justify-center whitespace-nowrap'
+      } ${pressed ? 'bg-[var(--ba-indigo)] text-[var(--ba-porcelain)]' : 'border border-[var(--ba-line)] bg-white text-ink'}`}
     >
       {children}
     </button>

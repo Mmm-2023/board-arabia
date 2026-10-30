@@ -38,6 +38,11 @@ export type ProfileRow = {
   availability?: Availability | null
   sector_tags?: string[]
   vision_themes?: string[]
+  can_help_with?: string[]
+  can_help_line?: string | null
+  looking_for?: string[]
+  looking_for_line?: string | null
+  languages?: string[]
 }
 
 export type FoundingCapacity = {

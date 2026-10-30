@@ -271,6 +271,11 @@ export type Database = {
           availability: 'open' | 'selective' | 'at_capacity' | null
           sector_tags: string[]
           vision_themes: string[]
+          can_help_with: string[]
+          can_help_line: string | null
+          looking_for: string[]
+          looking_for_line: string | null
+          languages: string[]
           updated_at: string
         }
         Insert: {
@@ -295,6 +300,11 @@ export type Database = {
           availability?: 'open' | 'selective' | 'at_capacity' | null
           sector_tags?: string[]
           vision_themes?: string[]
+          can_help_with?: string[]
+          can_help_line?: string | null
+          looking_for?: string[]
+          looking_for_line?: string | null
+          languages?: string[]
           updated_at?: string
         }
         Update: {
@@ -319,6 +329,11 @@ export type Database = {
           availability?: 'open' | 'selective' | 'at_capacity' | null
           sector_tags?: string[]
           vision_themes?: string[]
+          can_help_with?: string[]
+          can_help_line?: string | null
+          looking_for?: string[]
+          looking_for_line?: string | null
+          languages?: string[]
           updated_at?: string
         }
         Relationships: []
