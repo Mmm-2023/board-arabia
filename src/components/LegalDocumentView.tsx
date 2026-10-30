@@ -89,7 +89,7 @@ export function LegalDocumentView({
         <div key={index} id={block.id} className="ba-legal-clause">
           <span className="ba-legal-num">{block.number}</span>
           <div className="ba-legal-body">
-            <LetterList text={block.text} />
+            {block.id === 'c-1-1' ? <p>{block.text}</p> : <LetterList text={block.text} />}
           </div>
         </div>,
       )

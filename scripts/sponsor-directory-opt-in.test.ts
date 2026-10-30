@@ -100,7 +100,8 @@ test('legal copy says a partner sees a card only when the member chooses', () =>
     'Partners and payments. Partnership package, intro credits and other allowances used, invoices and payment records. We do not take card details on the public pages.',
   )
   const operator = clause(PRIVACY_EN, 'c-1-1')
-  assert.match(operator, /Board Arabia is the operator of the Platform/)
+  assert.match(operator, /Board Arabia is operated by/)
+  assert.match(operator, /\[POSTAL ADDRESS TBC\]/)
   assert.match(operator, /Board Arabia is the controller of the personal data/)
   assert.equal(operator.includes('[BA ENTITY]'), false)
   assert.equal(operator.includes('commercial registration number'), false)

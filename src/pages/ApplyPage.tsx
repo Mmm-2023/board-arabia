@@ -9,6 +9,7 @@ import { publicHref } from '../content/seo'
 import { parseUsdInput, PLATFORM_TOTALS_NOTE } from '../lib/capacity'
 import { track } from '../lib/analytics'
 import { lookupMemberInvite, submitApplication } from '../lib/supabase'
+import { legalField } from '../config/legal'
 import { APPLY_STRIP, APPLY_STRIP_LINK } from '../content/trust'
 import { readSubmitAttribution } from '../lib/tracking/touch'
 
@@ -400,6 +401,10 @@ export function ApplyPage() {
             >
               {submitting ? 'Submitting…' : 'Submit for consideration'}
             </button>
+            {/* LEGAL CHANGE: line under Apply submit. */}
+            <p className="text-[0.875rem] leading-relaxed text-ink/65" data-apply-submit-note="">
+              Questions about your application go to {legalField('contactEmail')}.
+            </p>
             <p className="text-[0.875rem] leading-relaxed text-ink/65" data-trust-strip="apply">
               {APPLY_STRIP}{' '}
               <Link to={publicHref('/privacy')} className="border-b border-brass text-ink">

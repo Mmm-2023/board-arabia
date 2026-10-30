@@ -12,6 +12,7 @@ import {
   EFFECTIVE_DATE,
   LEGAL_PENDING,
   PARTNERS_EMAIL,
+  PUBLIC_CONTACT_EMAIL,
   PRIVACY_LINK,
   SERVICE_EMAIL,
   TERMS_LINK,
@@ -24,11 +25,12 @@ import { PRIVACY_EN } from '../src/content/legal/privacy.en.ts'
 import { legalPlainText, resolveLegalDocument } from '../src/content/legal/resolve.ts'
 import { TERMS_EN } from '../src/content/legal/terms.en.ts'
 import { publicEntityHits } from './no-public-entity.test.ts'
-import { FOOTER_NAMMCO_CREDIT, strayPublicNammco } from './public-nammco.mjs'
+import { FOOTER_NAMMCO_CREDIT, LEGAL_ENTITY_LINE, strayPublicNammco } from './public-nammco.mjs'
 const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..')
 
 const ALLOWED_BRACKETS = new Set([
   '[ADDRESS]',
+  '[POSTAL ADDRESS TBC]',
   '[CONTACT EMAIL]',
   '[DPO CONTACT]',
   '[AI PROVIDER]',
@@ -156,7 +158,10 @@ test('rendered legal copy has no drafting brackets and both retention states', (
       assert.equal(text.includes('[EFFECTIVE DATE]'), false)
       assert.equal(text.includes(EFFECTIVE_DATE[lang]), true, `${name} ${lang}`)
       assert.equal(text.includes(LEGAL_PENDING[lang]), true, `${name} ${lang}`)
-      assert.equal(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/.test(text), false, text)
+      assert.equal(text.includes(LEGAL_ENTITY_LINE), true, `${name} ${lang}`)
+      assert.equal(text.includes('[POSTAL ADDRESS TBC]'), true, `${name} ${lang}`)
+      const emails = text.match(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g) ?? []
+      assert.deepEqual([...new Set(emails)], [PUBLIC_CONTACT_EMAIL], `${name} ${lang}`)
       if (name === 'terms') {
         assert.equal(/\b7\.7\b/.test(text), false)
         assert.match(text, /\b7\.6\b/)
@@ -180,7 +185,10 @@ test('rendered legal copy has no drafting brackets and both retention states', (
   assert.match(privacyEnOff, /Only admin can read it/)
   assert.equal(privacyEnOff.includes('opens a draft in your own mail app'), false)
   assert.equal(privacyEnOff.includes('is not stored on the website'), false)
-  assert.match(privacyEnOff, /We have not appointed a data protection officer\. Questions about your data go to To be confirmed\./)
+  assert.match(
+    privacyEnOff,
+    /We have not appointed a data protection officer\. Questions about your data go to contact@boardarabia\.com\./,
+  )
   assert.match(privacyEnOff, /Kept while your account is active; you can delete them at any time/)
   assert.match(privacyEnOff, /Retained while your account is active; you can delete at any time/)
   assert.equal(privacyEnOff.includes('Final period to confirm'), false)
@@ -202,7 +210,8 @@ test('rendered legal copy has no drafting brackets and both retention states', (
     assert.equal(filled.includes('partners@example.com'), false)
     assert.match(filled, /service@example\.com/)
     assert.equal(filled.includes('Example Entity'), false)
-    assert.match(filled, /Board Arabia is the operator of the Platform/)
+    assert.match(filled, /Board Arabia is operated by/)
+    assert.equal(filled.includes(LEGAL_ENTITY_LINE), true)
     assert.match(filled, /Board Arabia is the controller of the personal data/)
     assert.equal(filled.includes('[PARTNERS EMAIL]'), false)
     assert.equal(filled.includes('[SERVICE EMAIL]'), false)
@@ -330,11 +339,11 @@ test('legal sources have no mailbox literal and no em or en dash', () => {
   for (const file of files) {
     const source = read(file)
     const found = source.match(email) ?? []
-    assert.deepEqual(
-      found.filter((item) => !item.endsWith('@example.com')),
-      [],
-      file,
-    )
+    const extra = found.filter((item) => item !== PUBLIC_CONTACT_EMAIL && !item.endsWith('@example.com'))
+    if (file === 'src/config/legal.ts') {
+      assert.deepEqual(found, [PUBLIC_CONTACT_EMAIL], file)
+    }
+    assert.deepEqual(extra, [], file)
     assert.equal(source.includes('\u2014'), false, file)
     assert.equal(source.includes('\u2013'), false, file)
     assert.equal(source.includes('Drafting note'), false, file)
@@ -345,16 +354,20 @@ test('an unset address reads as registered address, and a set address stays of',
   setLegalEnvForTests(null)
   const pendingPrivacy = legalPlainText(resolveLegalDocument(PRIVACY_EN, 'en', false))
   const pendingTerms = legalPlainText(resolveLegalDocument(TERMS_EN, 'en', false))
-  assert.match(pendingPrivacy, /registered address: To be confirmed \("we", "us"\)/)
-  assert.match(pendingTerms, /registered address: To be confirmed \("Board Arabia", "we", "us"\)/)
+  assert.match(pendingPrivacy, /of \[POSTAL ADDRESS TBC\] \("we", "us"\)/)
+  assert.match(pendingTerms, /of \[POSTAL ADDRESS TBC\] \("Board Arabia", "we", "us"\)/)
   assert.equal(pendingPrivacy.includes('of To be confirmed'), false)
   assert.equal(pendingTerms.includes('of To be confirmed'), false)
+  assert.equal(pendingPrivacy.includes('registered address:'), false)
+  assert.equal(pendingTerms.includes('registered address:'), false)
   setLegalEnvForTests({ address: '12 Example Road' })
   try {
     const filledPrivacy = legalPlainText(resolveLegalDocument(PRIVACY_EN, 'en', false))
     const filledTerms = legalPlainText(resolveLegalDocument(TERMS_EN, 'en', false))
-    assert.match(filledPrivacy, /of 12 Example Road \("we", "us"\)/)
-    assert.match(filledTerms, /of 12 Example Road \("Board Arabia", "we", "us"\)/)
+    assert.match(filledPrivacy, /of \[POSTAL ADDRESS TBC\] \("we", "us"\)/)
+    assert.match(filledTerms, /of \[POSTAL ADDRESS TBC\] \("Board Arabia", "we", "us"\)/)
+    assert.equal(filledPrivacy.includes('12 Example Road'), false)
+    assert.equal(filledTerms.includes('12 Example Road'), false)
     assert.equal(filledPrivacy.includes('registered address:'), false)
     assert.equal(filledTerms.includes('registered address:'), false)
   } finally {
@@ -379,9 +392,11 @@ test('privacy and terms show no To be confirmed and no bracket token once every 
       const terms = legalPlainText(resolveLegalDocument(TERMS_EN, 'en', retention30))
       for (const text of [privacy, terms]) {
         assert.equal(/to be confirmed/i.test(text), false)
-        assert.equal(/\[[A-Z][A-Z ]+\]/.test(text), false)
+        assert.deepEqual(text.match(/\[[^[\]]+\]/g), ['[POSTAL ADDRESS TBC]'])
+        assert.equal(text.includes('1 Example Road'), false)
       }
-      assert.match(privacy, /of 1 Example Road, Example City \("we", "us"\)/)
+      assert.match(privacy, /of \[POSTAL ADDRESS TBC\] \("we", "us"\)/)
+      assert.equal(privacy.includes(LEGAL_ENTITY_LINE), true)
       assert.match(privacy, /Data protection officer: No DPO appointed, privacy questions to privacy@example\.com\./)
       assert.match(privacy, /a third-party AI model provider, for AI tools/)
       assert.match(privacy, /sent from service@example\.com/)
@@ -465,27 +480,40 @@ test('privacy and terms render the entity line and marketing routes keep only th
     for (const [file, name, route, artifact] of pages) {
       const mod = await vite.ssrLoadModule(file)
       const html = pageHtml(mod[name], route)
+      const legalRoute = route === '/privacy' || route === '/terms'
+      const scanned = legalRoute ? html.split(LEGAL_ENTITY_LINE).join('') : html
       assert.match(html, new RegExp(`>${FOOTER_NAMMCO_CREDIT}<`))
       assert.equal(strayPublicNammco(html, artifact), false, route)
-      assert.deepEqual(publicEntityHits(html), [], route)
-      assert.equal(/\bCR\s*\d{10}\b/.test(html), false, route)
+      assert.equal(html.includes(LEGAL_ENTITY_LINE), legalRoute, route)
+      assert.deepEqual(publicEntityHits(scanned), [], route)
+      assert.equal(/\bCR\s*\d{10}\b/.test(scanned), false, route)
       assert.equal(/\bsponsor(?:s|ship|ships|ed)?\b/i.test(html), false, route)
-      if (route === '/privacy' || route === '/terms') {
-        assert.match(html, /Board Arabia is the operator of the Platform/)
+      if (legalRoute) {
+        assert.match(html, /Board Arabia is operated by/)
+        assert.match(html, /\[POSTAL ADDRESS TBC\]/)
         assert.match(html, /To be confirmed/)
         assert.equal(html.includes('Ask the desk'), false)
         assert.equal(/the desk/i.test(html), false)
+        assert.equal(html.includes('registered address:'), false)
+      }
+      if (route === '/apply') {
+        const submit = html.indexOf('Submit for consideration')
+        const note = html.indexOf('data-apply-submit-note')
+        const strip = html.indexOf('data-trust-strip="apply"')
+        assert.ok(submit > -1 && note > submit && strip > note)
+        assert.match(html, /Questions about your application go to contact@boardarabia\.com\./)
+        assert.equal(html.includes('[POSTAL ADDRESS TBC]'), false)
       }
     }
     const privacy = pageHtml((await vite.ssrLoadModule('/src/pages/PrivacyPage.tsx')).PrivacyPage, '/privacy')
     const terms = pageHtml((await vite.ssrLoadModule('/src/pages/TermsPage.tsx')).TermsPage, '/terms')
-    assert.match(privacy, /Privacy contact:[\s\S]{0,80}To be confirmed/)
+    assert.match(privacy, /Privacy contact:[\s\S]{0,80}contact@boardarabia\.com/)
     assert.match(privacy, /Data protection officer:[\s\S]{0,80}To be confirmed/)
     assert.match(privacy, /To be confirmed[\s\S]{0,80}for AI tools/)
-    assert.match(terms, /contact us at[\s\S]{0,80}To be confirmed/)
+    assert.match(privacy, /Staff access log/)
+    assert.match(privacy, /Kept for 13 months/)
+    assert.match(terms, /contact us at[\s\S]{0,80}contact@boardarabia\.com/)
     assert.match(terms, /AI provider[\s\S]{0,80}To be confirmed/)
-    assert.match(privacy, /registered address:[\s\S]{0,40}To be confirmed/)
-    assert.match(terms, /registered address:[\s\S]{0,40}To be confirmed/)
     assert.equal(privacy.includes('of To be confirmed'), false)
     assert.equal(terms.includes('of To be confirmed'), false)
     assert.match(privacy, /Introductions and admin/)
@@ -560,5 +588,17 @@ test('AI provider lines and resolve.ts stay byte-identical to main', () => {
     createHash('sha256').update(bytes).digest('hex'),
     'f5740b538295e39e5be8344201e2dd6bc90b7c3c3ad7eabf26e6a7e4ed61fe9c',
   )
+})
+
+test('the staff access log row matches the retention migration and the migration file is not a new copy', () => {
+  const sql = read('supabase/migrations/20261128120000_retention_privacy_audit.sql')
+  const privacy = read('src/content/legal/privacy.en.ts')
+  assert.match(sql, /Kept 13 months/)
+  assert.match(sql, /staff_access_log/)
+  assert.match(sql, /interval '13 months'/)
+  assert.match(privacy, /Staff access log/)
+  assert.match(privacy, /A record that staff opened your member record or a file you shared\. Kept for 13 months\./)
+  assert.equal(sql.includes(LEGAL_ENTITY_LINE), false)
+  assert.equal(sql.includes(PUBLIC_CONTACT_EMAIL), false)
 })
 })

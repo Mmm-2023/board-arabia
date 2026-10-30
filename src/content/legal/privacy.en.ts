@@ -20,11 +20,12 @@ export const PRIVACY_EN: LegalDocument = {
       "id": "s-1",
       "text": "1. Who we are"
     },
+    // LEGAL CHANGE: entity line and postal address placeholder on this page only.
     {
       "kind": "clause",
       "id": "c-1-1",
       "number": "1.1",
-      "text": "Board Arabia is the operator of the Platform, of [ADDRESS] (\"we\", \"us\"). Board Arabia is the controller of the personal data described in this notice."
+      "text": "Board Arabia is operated by NAMMCO Holdings LLC, CR 1009167564, of [POSTAL ADDRESS TBC] (\"we\", \"us\"). Board Arabia is the controller of the personal data described in this notice."
     },
     {
       "kind": "clause",
@@ -450,6 +451,11 @@ export const PRIVACY_EN: LegalDocument = {
         [
           "Consent log",
           "13 months"
+        ],
+        // LEGAL CHANGE: staff access log retention row. The sweep keeps this record for 13 months.
+        [
+          "Staff access log",
+          "A record that staff opened your member record or a file you shared. Kept for 13 months."
         ],
         [
           "Marketing stats cache",

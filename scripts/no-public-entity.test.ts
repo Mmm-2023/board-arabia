@@ -3,6 +3,7 @@ import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import path from 'node:path'
 import test from 'node:test'
 import { fileURLToPath } from 'node:url'
+import { LEGAL_ENTITY_LINE } from './public-nammco.mjs'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const selfPath = fileURLToPath(import.meta.url)
@@ -22,7 +23,14 @@ const PATTERNS: Array<[string, RegExp]> = [
   ['cr digits', new RegExp(`(?<!\\d)${crDigits}(?!\\d)`)],
 ]
 
-/** No path exceptions except this file, which builds the needles from fragments. */
+/** Legal pages may carry the exact entity line. Every other path still fails. */
+export function allowsExactEntitySource(relativePath: string): boolean {
+  const rel = relativePath.split('\\').join('/')
+  if (rel === 'src/content/legal/privacy.en.ts' || rel === 'src/content/legal/terms.en.ts') return true
+  if (rel === 'dist/privacy/index.html' || rel === 'dist/terms/index.html') return true
+  return /^dist\/assets\/legal-pages-[A-Za-z0-9_-]+\.js$/.test(rel)
+}
+
 export function publicEntityHits(text: string): string[] {
   const hits: string[] = []
   for (const [label, pattern] of PATTERNS) {
@@ -64,7 +72,11 @@ test('src, scripts, the built bundle, and prerendered pages name no holding enti
     const rel = path.relative(root, file).split(path.sep).join('/')
     if (rel.startsWith('dist/') && !DIST_TEXT.test(rel)) continue
     const text = readFileSync(file).toString('utf8')
-    const found = publicEntityHits(text)
+    const scanned = allowsExactEntitySource(rel) ? text.split(LEGAL_ENTITY_LINE).join('') : text
+    if (allowsExactEntitySource(rel) && rel.startsWith('src/')) {
+      if (!text.includes(LEGAL_ENTITY_LINE)) hits.push(`${rel}: missing exact entity line`)
+    }
+    const found = publicEntityHits(scanned)
     if (found.length) hits.push(`${rel}: ${found.join(', ')}`)
   }
   assert.deepEqual(hits, [])

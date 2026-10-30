@@ -8,7 +8,7 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { MemoryRouter } from 'react-router-dom'
 import { chromium } from 'playwright-core'
 import { createServer } from 'vite'
-import { LEGAL_PENDING } from '../src/config/legal.ts'
+import { LEGAL_PENDING, PUBLIC_CONTACT_EMAIL } from '../src/config/legal.ts'
 import { strayPublicNammco } from './public-nammco.mjs'
 import { DIGEST_SECTION_ORDER, type DigestNewsItem } from '../supabase/functions/_shared/weekly_digest_copy.ts'
 import {
@@ -249,8 +249,9 @@ test('news items need a headline and a source, and the board lens renders when p
 
 test('digest copy keeps one contact, the footer credit, and no prices', async () => {
   const unset = await renderDigest(exampleDigest())
-  assert.equal(emailRe.test(unset), false)
-  assert.equal(unset.includes('mailto:'), false)
+  emailRe.lastIndex = 0
+  assert.deepEqual(unset.match(emailRe) ?? [], [PUBLIC_CONTACT_EMAIL, PUBLIC_CONTACT_EMAIL])
+  assert.match(unset, new RegExp(`href="mailto:${PUBLIC_CONTACT_EMAIL}"`))
   assert.equal(unset.includes(LEGAL_PENDING.en), false)
   emailRe.lastIndex = 0
   const html = await renderDigest(exampleDigest(), 'contact@example.com')
