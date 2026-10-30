@@ -53,4 +53,9 @@ Not touched: `src/components/WhoRunsTheDesk.tsx`, `scripts/prerender.mjs`, `src/
 
 ## CI
 
-Recorded after the checks finish. Head SHA is the commit on `cursor/ux-p1-1-wording-e8b1`.
+PR: https://github.com/Mmm-2023/board-arabia/pull/217
+Base: `main` at `27d132b6aa6325adc5bf47c681e39435ccf7f429`
+Branch: `cursor/ux-p1-1-wording-e8b1`
+Not merged.
+
+Checks were still running when this note was written. The live result is on the PR.
