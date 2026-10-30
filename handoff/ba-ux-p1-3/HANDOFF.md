@@ -16,7 +16,7 @@ The floor is `data-read-floor` in `src/index.css` (from line 1445). It is set on
 
 Post a seat checkboxes are a 44px row (label and box together). The visible mark stays 20px. `src/pages/dashboard/MemberBoardSeatsView.tsx` line 549. The same row is used by the directory introduction checkbox in `src/pages/dashboard/DirectoryIntroAction.tsx`, which Intros suggestions also render. Intros copy size is unchanged because that page does not set `data-read-floor`.
 
-Deal section tabs no longer clip under a fade. They wrap, stay 16px, and the pill hugs its labels. `src/shell/SectionTabs.tsx` line 65. Same destinations. Other hubs that share this tab row (People, AI tools, Majlis, and the rest of Deals) wrap the same way.
+Deal section tabs no longer clip under a fade. They wrap, stay 16px, and the pill hugs its labels. `src/shell/SectionTabs.tsx` line 65. Same destinations. The other hubs stay on one row. See the shots below.
 
 ## States
 
@@ -27,6 +27,23 @@ Kept, and still on the pages:
 - Post a seat error alert, and Saving... on the submit button. The form is local, so there is no remote loading skeleton to add.
 
 Shots: `handoff/ba-ux-p1-3/before-*.png` and `after-*.png` at 390, 768, and 1440, plus empty, error, and loading at 390.
+
+## Other hubs on the same tab row
+
+`<SectionTabs` in `src` is used by these layouts. Account preview (`src/pages/dashboard/account/AccountRoutes.tsx`) repeats the member Deals, People, and AI tools lists. It is not a separate set of labels.
+
+| Hub | Layout | Labels | 390 | 1440 |
+|---|---|---|---|---|
+| Deals | `src/pages/dashboard/DealsLayout.tsx` | Mandates, Real estate, Board seats, Deal rooms | `after-rooms-390.png` | `after-rooms-1440.png` |
+| People | `src/pages/dashboard/PeopleLayout.tsx` | Directory, Intros, Invites, Partners | `tabs-people-390.png` | `tabs-people-1440.png` |
+| Majlis | `src/pages/dashboard/MajlisLayout.tsx` | Upcoming, Past | `tabs-majlis-390.png` | `tabs-majlis-1440.png` |
+| AI tools | `src/pages/dashboard/AiToolsLayout.tsx` | Tools, Due diligence | `tabs-ai-390.png` | `tabs-ai-1440.png` |
+| Staff People | `src/pages/admin/PeopleLayout.tsx` | People, Profiles, Intros | `tabs-staff-people-390.png` | `tabs-staff-people-1440.png` |
+| Staff Majlis | `src/pages/admin/MajlisLayout.tsx` | Events, Requests | `tabs-staff-majlis-390.png` | `tabs-staff-majlis-1440.png` |
+
+Deals on a phone is two rows: Mandates, Real estate, and Board seats, then Deal rooms alone. Every word is inside the pill. At 1440 it is one row. People, Majlis, AI tools, staff People, and staff Majlis are one row at both widths. No label is cut, none sit outside the pill, and the page does not scroll sideways. People at 390 uses the full content width. Partners ends at the content edge and is still complete.
+
+No product code change for this pass. The smoke fixture gained a `view=tabs` query so these shots can be taken again.
 
 ## Left alone (not this wave)
 

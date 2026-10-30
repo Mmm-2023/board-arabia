@@ -7,7 +7,16 @@ import type { RoomCard } from '../../src/lib/demoRows'
 import type { MemberDealRoom } from '../../src/lib/dealRoomView'
 import { emptyMemberSeatDraft } from '../../src/lib/memberBoardSeats'
 import { AppShell } from '../../src/shell/AppShell'
-import { MEMBER_DESTINATIONS, MEMBER_SECONDARY, MEMBER_SECTIONS } from '../../src/shell/destinations'
+import { peopleSections } from '../../src/pages/admin/peopleSections'
+import {
+  MEMBER_DESTINATIONS,
+  MEMBER_SECONDARY,
+  MEMBER_SECTIONS,
+  STAFF_DESTINATIONS,
+  STAFF_SECONDARY,
+  STAFF_SECTIONS,
+  type SectionLink,
+} from '../../src/shell/destinations'
 import { SectionTabs } from '../../src/shell/SectionTabs'
 import { CardSkeleton, EmptyState, ErrorBanner } from '../../src/shell/ViewState'
 import { MEMBER_VIEWS } from '../../src/shell/viewCopy'
@@ -128,7 +137,7 @@ const draft = {
   narrative: 'Example Holdings is a fictional company. This seat is an illustration.',
 }
 
-type ViewName = 'directory' | 'rooms' | 'seat'
+type ViewName = 'directory' | 'rooms' | 'seat' | 'tabs'
 type StateName = 'ready' | 'empty' | 'error' | 'loading'
 
 function param(name: string, fallback: string) {
@@ -137,8 +146,49 @@ function param(name: string, fallback: string) {
 
 function viewName(): ViewName {
   const value = param('view', 'directory')
-  if (value === 'rooms' || value === 'seat') return value
+  if (value === 'rooms' || value === 'seat' || value === 'tabs') return value
   return 'directory'
+}
+
+const HUBS: Record<
+  string,
+  { tone: 'member' | 'staff'; path: string; label: string; sections: readonly SectionLink[]; title: string }
+> = {
+  people: {
+    tone: 'member',
+    path: '/dashboard/people/directory',
+    label: 'People sections',
+    sections: MEMBER_SECTIONS.people ?? [],
+    title: 'Directory',
+  },
+  majlis: {
+    tone: 'member',
+    path: '/dashboard/majlis',
+    label: 'Majlis sections',
+    sections: MEMBER_SECTIONS.majlis ?? [],
+    title: 'Majlis',
+  },
+  ai: {
+    tone: 'member',
+    path: '/dashboard/ai',
+    label: 'AI tools sections',
+    sections: MEMBER_SECTIONS.ai ?? [],
+    title: 'AI tools',
+  },
+  'staff-people': {
+    tone: 'staff',
+    path: '/admin/people',
+    label: 'People sections',
+    sections: peopleSections(),
+    title: 'People',
+  },
+  'staff-majlis': {
+    tone: 'staff',
+    path: '/admin/majlis',
+    label: 'Majlis sections',
+    sections: STAFF_SECTIONS.majlis ?? [],
+    title: 'Majlis',
+  },
 }
 
 function stateName(): StateName {
@@ -256,8 +306,16 @@ function Screen({ view, state }: { view: ViewName; state: StateName }) {
 
 const view = viewName()
 const state = stateName()
+const hub = HUBS[param('hub', 'people')] ?? HUBS.people
 const path =
-  view === 'rooms' ? '/dashboard/deals/rooms' : view === 'seat' ? '/dashboard/deals/board-seats/new' : '/dashboard/people/directory'
+  view === 'tabs'
+    ? hub.path
+    : view === 'rooms'
+      ? '/dashboard/deals/rooms'
+      : view === 'seat'
+        ? '/dashboard/deals/board-seats/new'
+        : '/dashboard/people/directory'
+const staff = view === 'tabs' && hub.tone === 'staff'
 
 const root = document.getElementById('root')
 if (!root) throw new Error('missing root')
@@ -266,17 +324,27 @@ createRoot(root).render(
   <StrictMode>
     <MemoryRouter initialEntries={[path]}>
       <AppShell
-        tone="member"
-        destinations={MEMBER_DESTINATIONS}
-        secondary={MEMBER_SECONDARY}
+        tone={staff ? 'staff' : 'member'}
+        destinations={staff ? STAFF_DESTINATIONS : MEMBER_DESTINATIONS}
+        secondary={staff ? STAFF_SECONDARY : MEMBER_SECONDARY}
         updatedLabel={null}
         roleSwitch={null}
         onSignOut={() => {}}
-        accountLabel="Member"
+        accountLabel={staff ? 'Admin' : 'Member'}
         accountName="Example Member"
         accountMark={<Avatar src={null} avatarStyle="male" size={36} alt="" />}
       >
-        <Screen view={view} state={state} />
+        {view === 'tabs' ? (
+          <>
+            <SectionTabs label={hub.label} sections={hub.sections} />
+            <div className="mt-6 max-w-3xl">
+              <h1 className="font-display text-[2.2rem] font-bold tracking-[-0.03em]">{hub.title}</h1>
+              <p className="mt-3 max-w-xl text-[1rem] leading-relaxed">Section tabs for this hub.</p>
+            </div>
+          </>
+        ) : (
+          <Screen view={view} state={state} />
+        )}
       </AppShell>
     </MemoryRouter>
   </StrictMode>,
