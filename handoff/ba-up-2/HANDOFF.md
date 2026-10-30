@@ -43,7 +43,7 @@ Loading, empty, and error still render on the four screens. Shots use the same s
 
 - Deals uses the shared skeleton, the mandates empty line, and the mandates error with Retry.
 - AI tools uses the real page: a skeleton while tools load, the empty tool note when none are on, and "Could not load the tool list. Retry." The AI Due Diligence card stays on the page, as it did before.
-- Real estate uses the board loading, empty, and error states. The header control stays above them.
+- Real estate uses the board loading, empty, and error states. The header control stays above them. The ready fixture has no cards, so the ready shot and the empty shot match. Loading and error are separate.
 - Majlis uses the page skeleton, "No upcoming majlis.", and the majlis error with Retry. List and Calendar stay on the Upcoming row.
 
 ## Shots
