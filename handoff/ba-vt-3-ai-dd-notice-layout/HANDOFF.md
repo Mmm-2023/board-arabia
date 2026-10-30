@@ -1,5 +1,6 @@
 # VT-3 AI Due Diligence notice layout
 
+PR: https://github.com/Mmm-2023/board-arabia/pull/214
 Branch: `cursor/vt-3-ai-dd-notice-layout-7bc8`
 Base: `main` at `b6a2047e1d931d226aa699008c00c7d44ec80439` (PR #213, already merged)
 Date: 30 Oct 2026
