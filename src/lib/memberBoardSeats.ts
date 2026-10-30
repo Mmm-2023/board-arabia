@@ -1,3 +1,4 @@
+import { BOARD_EXPERTISE } from './boardroom.ts'
 import { normalizeTags, SECTOR_TAGS } from './profileTags.ts'
 import { RE_REGIONS } from './reRegions.ts'
 import {
@@ -28,6 +29,7 @@ export type MemberSeatDraft = {
   organisationName: string
   terms: string
   narrative: string
+  skillsWanted: string[]
 }
 
 export type PublishedBoardSeat = {
@@ -42,6 +44,7 @@ export type PublishedBoardSeat = {
   organisationName: string
   terms: string
   narrative: string
+  skillsWanted: string[]
   isDemo: boolean
   posterIsPartner: boolean
 }
@@ -94,6 +97,7 @@ export function emptyMemberSeatDraft(): MemberSeatDraft {
     organisationName: '',
     terms: '',
     narrative: '',
+    skillsWanted: [],
   }
 }
 
@@ -141,6 +145,8 @@ export function memberSeatProblem(draft: MemberSeatDraft) {
   if (tags.length === 0 && regions.length === 0) {
     return 'Choose at least one sector or region.'
   }
+  const skills = normalizeTags(draft.skillsWanted, BOARD_EXPERTISE, 3)
+  if (skills.length !== draft.skillsWanted.length) return 'Choose expertise from the list. Up to 3.'
   return ''
 }
 
@@ -179,6 +185,7 @@ function publishedSeat(row: Record<string, unknown>): PublishedBoardSeat | null 
     organisationName,
     terms,
     narrative,
+    skillsWanted: normalizeTags(row.skills_wanted, BOARD_EXPERTISE, 3),
     isDemo: row.is_demo === true,
     posterIsPartner: row.poster_is_partner === true,
   }

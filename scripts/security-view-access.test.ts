@@ -255,6 +255,8 @@ test('every staff_* function checks staff and is not executable by anon', () => 
     'staff_close_board_seat',
     'staff_list_board_seats',
     'staff_list_board_seat_applicants',
+    'staff_get_seat_suggestions',
+    'staff_set_seat_suggestions',
     'staff_list_re_club_interest',
     'staff_open_re_club_room',
     'staff_link_re_club_room',

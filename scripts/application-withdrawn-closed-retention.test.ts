@@ -35,7 +35,7 @@ const invite = read('.github/workflows/invite-reminders.yml')
 test('the applications check keeps every current status and adds withdrawn and closed', () => {
   const names = readdirSync(migrationsDir).filter((name) => name.endsWith('.sql')).sort()
   assert.equal(names.filter((name) => name.startsWith('20270111120000')).length, 1)
-  assert.equal(names.at(-1), migrationName)
+  assert.ok((names.at(-1) ?? '') >= migrationName)
   assert.ok(names.indexOf(migrationName) > names.indexOf('20270110120000_majlis_reminder_windows.sql'))
   const previous = statusList(read(`supabase/migrations/${priorCheck}`))
   assert.deepEqual(previous, ['pending', 'verified', 'declined', 'accepted', 'rejected', 'admitted'])

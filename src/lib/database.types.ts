@@ -1713,7 +1713,40 @@ export type Database = {
           p_organisation_name: string
           p_terms: string
           p_narrative: string
+          p_skills_wanted?: string[]
         }
+        Returns: Json
+      }
+      list_my_seat_suggestions: {
+        Args: Record<string, never>
+        Returns: Json
+      }
+      my_seat_match: {
+        Args: { p_role_id: string }
+        Returns: Json
+      }
+      list_people_for_my_seat: {
+        Args: { p_role_id: string }
+        Returns: Json
+      }
+      dismiss_seat_match: {
+        Args: { p_role_id: string; p_person_id?: string | null }
+        Returns: Json
+      }
+      restore_seat_match: {
+        Args: { p_role_id: string; p_person_id?: string | null }
+        Returns: Json
+      }
+      set_board_seat_skills: {
+        Args: { p_id: string; p_skills: string[] }
+        Returns: Json
+      }
+      staff_get_seat_suggestions: {
+        Args: Record<string, never>
+        Returns: Json
+      }
+      staff_set_seat_suggestions: {
+        Args: { p_enabled: boolean }
         Returns: Json
       }
       list_published_board_seats: {

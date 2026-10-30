@@ -38,16 +38,30 @@ export async function loadBoardSeats(): Promise<{ ok: true; rows: BoardSeatRow[]
   return { ok: true, rows: presentBoardSeatList(data) }
 }
 
-export async function createBoardSeat(draft: BoardSeatDraft) {
-  const { error } = await supabase.rpc('staff_create_board_seat', args(draft))
+export async function setBoardSeatSkills(id: string, skills: string[]) {
+  const { error } = await supabase.rpc('set_board_seat_skills', { p_id: id, p_skills: skills })
   if (error) return boardSeatError(error.message)
   return ''
+}
+
+function seatId(data: unknown) {
+  if (!data || typeof data !== 'object' || Array.isArray(data)) return ''
+  const id = (data as { id?: unknown }).id
+  return typeof id === 'string' ? id : ''
+}
+
+export async function createBoardSeat(draft: BoardSeatDraft) {
+  const { data, error } = await supabase.rpc('staff_create_board_seat', args(draft))
+  if (error) return boardSeatError(error.message)
+  const id = seatId(data)
+  if (!id) return ''
+  return setBoardSeatSkills(id, draft.skillsWanted)
 }
 
 export async function editBoardSeat(id: string, draft: BoardSeatDraft) {
   const { error } = await supabase.rpc('staff_edit_board_seat', { p_id: id, ...args(draft) })
   if (error) return boardSeatError(error.message)
-  return ''
+  return setBoardSeatSkills(id, draft.skillsWanted)
 }
 
 export async function publishBoardSeat(id: string) {
