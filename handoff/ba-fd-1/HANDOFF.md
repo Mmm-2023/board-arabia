@@ -38,7 +38,7 @@ Public consideration always opens `/apply` with the label Apply for consideratio
 | `isTwoTierRegisterEnabled()` remains and always returns false, so the locked imports in `src/shell/destinations.ts` and `src/pages/apply/RegisterScreen.tsx` still compile. Staff Review stays off the phone tab. | VERIFIED. `scripts/shell-nav.test.ts` passed. |
 | `pages.yml` and `scripts/build-for-csp-crawl.mjs` still set `VITE_TWO_TIER_REGISTER_ENABLED`. Application code does not read it. `.env.example` no longer documents the switch. | VERIFIED. `pages.yml` was not edited (locked). The two tier test asserts the workflow line remains and that `src` does not read the name. |
 | No migration, no Edge function, no email template, emails stay off. | VERIFIED. Diff has none of those files. |
-| English only. No em dash or en dash in the diff. No user-facing sponsor. nammco only in the existing footer line. No prices. | VERIFIED. Diff scan, and `scripts/partner-wording.test.ts` plus the landing nammco assertion passed. |
+| English only. No em dash or en dash in the diff. The banned partner synonym is not in the new user-facing copy. nammco only in the existing footer line. No prices. | VERIFIED. Diff scan, and `scripts/partner-wording.test.ts` plus the landing nammco assertion passed. |
 | Secrets: no email address, key, token, or password in the diff. Local `.env` is the example file and is gitignored. | VERIFIED. |
 | Touched Apply buttons are 17px, sentence case, and at least 44px tall. | VERIFIED. Playwright on the hero, header (1440), menu, sticky, How it works, and About buttons. |
 | New step and support sentences are 16px. | VERIFIED. Computed style. |
