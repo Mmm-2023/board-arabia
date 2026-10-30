@@ -158,9 +158,11 @@ verify_jwt = false
 [functions.ai-tool-job]
 verify_jwt = true
 
-# Daily market brief. Header x-market-brief-daily-secret must match MARKET_BRIEF_DAILY_SECRET.
+# Daily brief. Header x-market-brief-daily-secret must match MARKET_BRIEF_DAILY_SECRET.
 # verify_jwt stays off so the anon key is not a credential. An unset secret rejects every call.
-# POST only. ?dry_run=1 does not write. Deploy only. Do not set the secret, do not add a schedule, and do not invoke.
+# POST only. ?dry_run=1 does not write. A run stores a draft and does not publish.
+# The workflow daily-brief.yml stays skipped until vars.DAILY_BRIEF_ENABLED is true.
+# Do not set the secret and do not invoke from this change.
 [functions.market-brief-daily]
 verify_jwt = false
 

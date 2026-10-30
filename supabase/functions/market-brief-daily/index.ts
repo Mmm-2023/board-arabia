@@ -3,6 +3,7 @@ import { completeAiToolPrompt } from '../_shared/ai_tool_provider.ts'
 import {
   MARKET_BRIEF_DAILY_SECRET,
   MARKET_BRIEF_SEARCH_SECRET,
+  canReplaceBriefDay,
   handleDailyMarketBrief,
   type DayWrite,
 } from '../_shared/daily_market_brief.ts'
@@ -47,6 +48,15 @@ function store() {
       return outlets
     },
     async writeDay(row: DayWrite): Promise<boolean> {
+      const current = await admin
+        .from('market_brief_days')
+        .select('publish_status')
+        .eq('brief_date', row.briefDate)
+        .maybeSingle()
+      if (current.error) return false
+      const publishStatus =
+        current.data && typeof current.data.publish_status === 'string' ? current.data.publish_status : null
+      if (!canReplaceBriefDay(publishStatus)) return false
       const { error } = await admin.from('market_brief_days').upsert(
         {
           brief_date: row.briefDate,

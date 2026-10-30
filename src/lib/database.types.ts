@@ -1603,6 +1603,13 @@ export type Database = {
         Args: { p_ids: string[] }
         Returns: undefined
       }
+      market_brief_set_publish: {
+        Args: {
+          p_brief_date: string
+          p_next: string
+        }
+        Returns: undefined
+      }
       my_weekly_digest: {
         Args: Record<string, never>
         Returns: Json

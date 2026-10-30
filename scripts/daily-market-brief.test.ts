@@ -9,14 +9,18 @@ import { createServer } from 'vite'
 import { resolveRedirect } from '../src/shell/redirects.ts'
 import {
   acceptBriefItems,
+  briefRunsOn,
   briefSystemPrompt,
   briefUserPrompt,
+  canReplaceBriefDay,
   handleDailyMarketBrief,
+  HEADLINE_MAX,
   hitsFromOutletBody,
   MARKET_BRIEF_DAILY_HEADER,
   marketBriefDayDue,
   outletSearchRequest,
   runDailyMarketBrief,
+  SUMMARY_MAX,
   type BriefHit,
 } from '../supabase/functions/_shared/daily_market_brief.ts'
 import { STARTER_OUTLETS, outletForUrl, type OutletRule } from '../supabase/functions/_shared/outlet_allowlist.ts'
@@ -238,32 +242,67 @@ test('an AI item with a URL outside the input set is dropped', () => {
       dated: '2026-10-12',
       outlet: 'Saudi Press Agency',
     },
+    {
+      title: 'Example regulator publishes a sample note',
+      url: 'https://cma.org.sa/en/example-rule',
+      snippet: 'A second sample snippet for the unit test only.',
+      dated: '2026-10-12',
+      outlet: 'Capital Market Authority',
+    },
   ]
   const raw = JSON.stringify({
     items: [
       {
         group: 'deals',
+        headline: 'Example holding plans a sample joint venture',
         summary: 'Example holding agrees a sample joint venture.',
         url: 'https://www.spa.gov.sa/w/example-deal',
       },
       {
+        group: 'regulation',
+        headline: 'Example regulator publishes a sample note',
+        summary: 'This headline copies the source and must drop.',
+        url: 'https://cma.org.sa/en/example-rule',
+      },
+      {
         group: 'deals',
+        headline: 'Invented source',
         summary: 'This source was not in the input set.',
         url: 'https://example.com/invented',
       },
       {
         group: 'regulation',
+        headline: 'A headline with a dash',
         summary: 'A summary that uses an em dash here \u2014 and must drop.',
         url: 'https://www.spa.gov.sa/w/example-deal',
       },
       {
         group: 'leadership',
+        headline: 'Arabic headline',
         summary: `Arabic mark ${String.fromCharCode(0x0645)} must drop.`,
         url: 'https://www.spa.gov.sa/w/example-deal',
       },
       {
         group: 'deals',
+        headline: 'Named model',
         summary: 'This summary names openai and must drop.',
+        url: 'https://www.spa.gov.sa/w/example-deal',
+      },
+      {
+        group: 'deals',
+        summary: 'Missing headline must drop.',
+        url: 'https://www.spa.gov.sa/w/example-deal',
+      },
+      {
+        group: 'deals',
+        headline: 'H'.repeat(HEADLINE_MAX + 1),
+        summary: 'Headline over the cap must drop.',
+        url: 'https://www.spa.gov.sa/w/example-deal',
+      },
+      {
+        group: 'deals',
+        headline: 'Summary over the cap',
+        summary: 'S'.repeat(SUMMARY_MAX + 1),
         url: 'https://www.spa.gov.sa/w/example-deal',
       },
     ],
@@ -271,12 +310,17 @@ test('an AI item with a URL outside the input set is dropped', () => {
   const kept = acceptBriefItems(raw, hits, outlets)
   assert.equal(kept.length, 1)
   assert.equal(kept[0]?.url, 'https://www.spa.gov.sa/w/example-deal')
+  assert.equal(kept[0]?.headline, 'Example holding plans a sample joint venture')
   assert.equal(kept[0]?.outlet, 'Saudi Press Agency')
   assert.equal(kept[0]?.summary.includes('\u2014'), false)
   const prompt = briefUserPrompt(hits)
   assert.match(prompt, /https:\/\/www\.spa\.gov\.sa\/w\/example-deal/)
   assert.equal(prompt.includes('@'), false)
-  assert.equal(briefSystemPrompt().includes('\u2014'), false)
+  const system = briefSystemPrompt()
+  assert.equal(system.includes('\u2014'), false)
+  assert.match(system, /90 characters/)
+  assert.match(system, /300 characters/)
+  assert.equal(system.includes('400'), false)
 })
 
 test('dry run searches enabled outlets only and does not write', async () => {
@@ -313,6 +357,7 @@ test('dry run searches enabled outlets only and does not write', async () => {
         items: [
           {
             group: 'deals',
+            headline: 'Example holding plans a sample joint venture',
             summary: 'Example holding agrees a sample joint venture.',
             url: 'https://www.spa.gov.sa/w/example-deal',
           },
@@ -331,7 +376,39 @@ test('dry run searches enabled outlets only and does not write', async () => {
   assert.equal(result.status, 'ok')
   assert.equal(result.wrote, false)
   assert.equal(result.items.length, 1)
+  assert.equal(result.items[0]?.headline, 'Example holding plans a sample joint venture')
   assert.equal(result.modelId, 'unit-model-id')
+})
+
+test('Friday and Saturday in Riyadh skip before any network call', async () => {
+  assert.equal(briefRunsOn(new Date('2026-10-16T02:00:00.000Z')), false)
+  assert.equal(briefRunsOn(new Date('2026-10-17T02:00:00.000Z')), false)
+  assert.equal(briefRunsOn(new Date('2026-10-18T02:00:00.000Z')), true)
+  assert.equal(canReplaceBriefDay(null), true)
+  assert.equal(canReplaceBriefDay('draft'), true)
+  assert.equal(canReplaceBriefDay('approved'), false)
+  assert.equal(canReplaceBriefDay('published'), false)
+  let calls = 0
+  const result = await runDailyMarketBrief({
+    now: new Date('2026-10-16T02:00:00.000Z'),
+    searchKey: 'unit-search-key',
+    dryRun: false,
+    loadOutlets: async () => {
+      calls += 1
+      return outlets
+    },
+    writeDay: async () => {
+      calls += 1
+      return true
+    },
+    complete: async () => {
+      calls += 1
+      return { text: '{}', modelId: 'unit-model-id', skipReason: null }
+    },
+  })
+  assert.equal(result.status, 'skipped')
+  assert.equal(result.wrote, false)
+  assert.equal(calls, 0)
 })
 
 test('member presentation stays empty unless the brief is ok and public', async () => {
@@ -359,6 +436,7 @@ test('member presentation stays empty unless the brief is ok and public', async 
       items: [
         {
           group: 'deals',
+          headline: 'Example holding plans a sample joint venture',
           summary: 'Example holding agrees a sample joint venture.',
           outlet: 'Saudi Press Agency',
           url: 'https://www.spa.gov.sa/w/example-deal',
@@ -366,6 +444,7 @@ test('member presentation stays empty unless the brief is ok and public', async 
         },
         {
           group: 'deals',
+          headline: 'Dropped because the link is not https',
           summary: 'Dropped because the link is not https.',
           outlet: 'Saudi Press Agency',
           url: 'http://spa.gov.sa/w/example',
@@ -406,10 +485,11 @@ test('the member route is its own page and the card links to it', async () => {
   assert.equal(appShells().some((item) => item.path === '/dashboard/market-brief'), true)
   const brief = {
     briefDate: '2026-10-12',
-    generatedAt: '2026-10-12T09:00:00.000Z',
+    generatedAt: '2026-10-12T04:00:00.000Z',
     items: [
       {
         group: 'deals' as const,
+        headline: 'Example holding plans a sample joint venture',
         summary: 'Example holding agrees a sample joint venture.',
         outlet: 'Saudi Press Agency',
         url: 'https://www.spa.gov.sa/w/example-deal',
@@ -417,6 +497,9 @@ test('the member route is its own page and the card links to it', async () => {
       },
     ],
   }
+  const sameDay = new Date('2026-10-12T09:00:00.000Z')
+  const thursday = new Date('2026-10-15T12:00:00.000Z')
+  const friday = new Date('2026-10-16T12:00:00.000Z')
   const vite = await createServer({ server: { middlewareMode: true }, appType: 'custom', logLevel: 'error' })
   try {
     const copy = (await vite.ssrLoadModule('/src/lib/dailyMarketBrief.ts')) as {
@@ -433,18 +516,40 @@ test('the member route is its own page and the card links to it', async () => {
       DailyMarketBriefView: (props: { brief: typeof brief | null }) => unknown
     }
     const card = renderToStaticMarkup(
-      createElement(MemoryRouter, null, createElement(cardMod.DailyMarketBriefCard, { brief })),
+      createElement(MemoryRouter, null, createElement(cardMod.DailyMarketBriefCard, { brief, now: sameDay })),
     )
     assert.match(card, new RegExp(`href="${copy.DAILY_BRIEF_PATH}"`))
     assert.match(card, /AI summary/)
-    assert.match(card, /rel="noopener noreferrer"/)
-    assert.match(card, /target="_blank"/)
-    const page = renderToStaticMarkup(createElement(pageMod.DailyMarketBriefView, { brief }))
+    assert.match(card, /Example holding plans a sample joint venture/)
+    assert.match(card, /Open the brief/)
+    assert.equal(card.includes('target="_blank"'), false)
+    const page = renderToStaticMarkup(
+      createElement(MemoryRouter, null, createElement(pageMod.DailyMarketBriefView, { brief, now: sameDay })),
+    )
     assert.match(page, /Example holding agrees a sample joint venture\./)
+    assert.match(page, /Read at Saudi Press Agency/)
+    assert.match(page, /rel="noopener noreferrer"/)
+    assert.match(page, /target="_blank"/)
     assert.match(page, new RegExp(copy.DAILY_BRIEF_FOOTER.replace(/[.]/g, '\\.')))
     assert.match(page, new RegExp(copy.DAILY_BRIEF_AI_LABEL))
-    const empty = renderToStaticMarkup(createElement(pageMod.DailyMarketBriefView, { brief: null }))
-    assert.match(empty, new RegExp(copy.DAILY_BRIEF_EMPTY))
+    assert.match(page, /Updated 07:00 Riyadh time/)
+    const empty = renderToStaticMarkup(
+      createElement(MemoryRouter, null, createElement(pageMod.DailyMarketBriefView, { brief: null, now: thursday })),
+    )
+    assert.match(empty, new RegExp(copy.DAILY_BRIEF_EMPTY.replaceAll("'", '&#x27;')))
+    const weekend = renderToStaticMarkup(
+      createElement(MemoryRouter, null, createElement(pageMod.DailyMarketBriefView, { brief: null, now: friday })),
+    )
+    assert.match(weekend, /No brief on Fridays and Saturdays/)
+    const error = renderToStaticMarkup(
+      createElement(
+        MemoryRouter,
+        null,
+        createElement(pageMod.DailyMarketBriefView, { brief: null, phase: 'error', onRetry: () => undefined }),
+      ),
+    )
+    assert.match(error, /We could not load the brief/)
+    assert.match(error, /Try again/)
     assert.equal(empty.includes(copy.DAILY_BRIEF_NOT_CONFIGURED), false)
     assert.equal(empty.includes('Retry'), false)
     assert.equal(empty.includes('\u2014'), false)
@@ -495,8 +600,10 @@ test('the daily function is deploy only and does not touch the other market brie
   const index = read('supabase/functions/market-brief-daily/index.ts')
   const config = read('supabase/config.toml')
   assert.match(config, /\[functions\.market-brief-daily\]\s+verify_jwt = false/)
-  assert.match(config, /Do not set the secret, do not add a schedule, and do not invoke/)
+  assert.match(config, /Do not set the secret and do not invoke from this change/)
+  assert.match(config, /daily-brief\.yml stays skipped until vars\.DAILY_BRIEF_ENABLED is true/)
   assert.equal(existsSync(path.join(root, '.github/workflows/market-brief-daily.yml')), false)
+  assert.equal(existsSync(path.join(root, '.github/workflows/daily-brief.yml')), true)
   assert.equal(index.includes('suggest_intros'), false)
   assert.equal(index.includes('tools/market_brief'), false)
   assert.match(index, /MARKET_BRIEF_SEARCH_SECRET/)
@@ -509,6 +616,52 @@ test('the daily function is deploy only and does not touch the other market brie
   assert.equal(read('supabase/functions/_shared/suggest_intros.ts').includes('market_brief'), false)
   assert.equal(marketBriefDayDue('2026-07-14', new Date('2026-10-13T00:00:00.000Z')), true)
   assert.equal(marketBriefDayDue('2026-07-15', new Date('2026-10-13T00:00:00.000Z')), false)
+  assert.match(index, /canReplaceBriefDay/)
+  const workflow = read('.github/workflows/daily-brief.yml')
+  assert.match(workflow, /cron: '0 2 \* \* 0,1,2,3,4'/)
+  assert.match(workflow, /vars\.DAILY_BRIEF_ENABLED == 'true'/)
+  const secretNames = [...workflow.matchAll(/\$\{\{\s*secrets\.([A-Z0-9_]+)\s*\}\}/g)].map((match) => match[1])
+  assert.deepEqual(secretNames, ['MARKET_BRIEF_DAILY_SECRET', 'SUPABASE_URL'])
+  assert.equal(workflow.includes('vars.DAILY_BRIEF_ENABLED == \'true\'') && workflow.includes('secrets.DAILY_BRIEF'), false)
+  const withoutRefs = workflow
+    .replace(/\$\{\{\s*secrets\.[A-Z0-9_]+\s*\}\}/g, '')
+    .replace(/\$\{\{\s*vars\.DAILY_BRIEF_ENABLED == 'true'\s*\}\}/g, '')
+  assert.equal(withoutRefs.includes('secrets.'), false)
+  assert.equal(/https?:\/\/\S+/i.test(withoutRefs), false)
+  assert.equal(/supabase\.co/i.test(workflow), false)
+  assert.equal(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/.test(workflow), false)
+  assert.equal(/retention-sweep|email-send|suggest-intros/i.test(workflow), false)
+  assert.equal(workflow.includes('\u2014'), false)
+  assert.match(workflow, /does not publish and it does not send mail/)
+})
+
+test('publish migration is the newest slot and members see published rows only', () => {
+  const names = readdirSync(path.join(root, 'supabase/migrations')).filter((name) => name.endsWith('.sql')).sort()
+  const migration = '20270112120000_daily_brief_publish.sql'
+  assert.equal(names.at(-1), migration)
+  assert.ok(names.indexOf(migration) > names.indexOf('20270111120000_application_withdrawn_closed_retention.sql'))
+  const sql = read(`supabase/migrations/${migration}`)
+  assert.match(sql, /publish_status text not null default 'draft'/)
+  assert.match(sql, /publish_status in \('draft', 'approved', 'published'\)/)
+  assert.match(sql, /d\.publish_status = 'published'/)
+  assert.match(sql, /private\.is_staff\(\)/)
+  assert.match(sql, /set search_path = ''/)
+  assert.equal(sql.includes('model_id,'), false)
+  assert.equal(/to anon/i.test(sql), false)
+  assert.equal(sql.includes('\u2014'), false)
+  assert.equal(sql.includes('\u2013'), false)
+  assert.equal(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/.test(sql), false)
+  assert.equal(/retention-sweep|email-send/i.test(sql), false)
+  assert.match(sql, /char_length\(v_headline\) > 90/)
+  assert.match(sql, /char_length\(v_summary\) > 300/)
+  const member = sql.slice(sql.indexOf('function public.market_brief_for_member'), sql.indexOf('function public.market_brief_admin_state'))
+  assert.equal(member.includes('model_id'), false)
+  for (const name of ['market_brief_admin_state', 'market_brief_set_publish']) {
+    const start = sql.indexOf(`function public.${name}`)
+    assert.ok(start > 0, name)
+    const body = sql.slice(start, start + 1800)
+    assert.match(body, /private\.is_staff\(\)/, name)
+  }
 })
 
 test('client copy names no model provider and has no em dash', () => {
@@ -530,7 +683,7 @@ test('client copy names no model provider and has no em dash', () => {
     assert.equal(/\bthe desk\b/i.test(text), false, file)
     assert.equal(text.includes('daily_market_brief.ts'), false, file)
   }
-  assert.match(read('src/lib/dailyMarketBrief.ts'), /Daily market brief/)
+  assert.match(read('src/lib/dailyMarketBrief.ts'), /Daily brief/)
   assert.match(read('src/pages/dashboard/DailyMarketBriefPage.tsx'), /DAILY_BRIEF_TITLE/)
   const assets = path.join(root, 'dist/assets')
   if (!existsSync(assets)) return
