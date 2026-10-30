@@ -20,14 +20,25 @@ const DELETED = 'Report deleted.'
 const DELETE_FAILED = 'Could not delete that report. Retry.'
 const FILE_LEFT = 'The report was removed, but the uploaded deck could not be deleted. Retry.'
 
-export function AiToolsHome() {
+export function AiToolsHome({
+  preview,
+}: {
+  preview?: {
+    flags: AiToolFlags | null
+    flagsError?: boolean
+    reports?: HistoryItem[] | null
+    reportsError?: boolean
+  }
+} = {}) {
   const { userId } = useMember()
   const ui = AI_UI
-  const [flags, setFlags] = useState<AiToolFlags | null>(null)
-  const [flagsError, setFlagsError] = useState(false)
+  const [flags, setFlags] = useState<AiToolFlags | null>(preview ? preview.flags : null)
+  const [flagsError, setFlagsError] = useState(Boolean(preview?.flagsError))
   const [flagsAttempt, setFlagsAttempt] = useState(0)
-  const [reports, setReports] = useState<HistoryItem[] | null>(null)
-  const [error, setError] = useState(false)
+  const [reports, setReports] = useState<HistoryItem[] | null>(
+    preview ? (preview.reports === undefined ? [] : preview.reports) : null,
+  )
+  const [error, setError] = useState(Boolean(preview?.reportsError))
   const [attempt, setAttempt] = useState(0)
   const [pendingId, setPendingId] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -37,6 +48,7 @@ export function AiToolsHome() {
   useNoIndex('AI tools | Board Arabia')
 
   useEffect(() => {
+    if (preview) return
     let cancelled = false
     void loadDueDiligenceDesk(userId).then((result) => {
       if (cancelled) return
@@ -51,9 +63,10 @@ export function AiToolsHome() {
     return () => {
       cancelled = true
     }
-  }, [attempt, userId])
+  }, [attempt, preview, userId])
 
   useEffect(() => {
+    if (preview) return
     let cancelled = false
     void readAiToolFrame().then((frame) => {
       if (cancelled) return
@@ -68,7 +81,7 @@ export function AiToolsHome() {
     return () => {
       cancelled = true
     }
-  }, [flagsAttempt])
+  }, [flagsAttempt, preview])
 
   const rows = reports ? recentReports(reports) : null
 
