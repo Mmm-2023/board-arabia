@@ -22,6 +22,7 @@ import { supabase } from '../lib/supabase'
 import { PlatformTotalsLine, seatDiamondFill, useLandingTotals } from '../components/StatsStrip'
 import { TrustedPartnersSection } from '../components/TrustedPartners'
 import { trackApplyClick } from '../lib/tracking/browser'
+import { mainLandmarkProps } from '../components/SkipLink'
 
 const WHY = [
   {
@@ -47,7 +48,7 @@ export function LandingPage() {
     <div className="ba-landing">
       <Seo path="/" />
       <Nav onMenuChange={setMenuOpen} />
-      <main>
+      <main {...mainLandmarkProps}>
         <Hero />
         <WhySection />
         <FoundingSection />
@@ -157,7 +158,7 @@ function WhySection() {
               <li key={point.title}>
                 <Reveal delay={0.06 * index}>
                   <article className="ba-card h-full px-3 py-3">
-                    <Icon />
+                    <Icon label={point.title} />
                     <h3 className="mt-2 font-display text-[1.05rem] font-semibold tracking-[-0.02em] text-ink">
                       {point.title}
                     </h3>

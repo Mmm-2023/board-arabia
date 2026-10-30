@@ -94,6 +94,7 @@ export function Nav({
             className={`ba-menu ${darkNav ? 'is-light' : 'is-dark'}`}
             aria-expanded={open}
             aria-controls="mobile-nav"
+            aria-label={open ? 'Close menu' : 'Open menu'}
             onClick={() => setOpenPath(open ? null : location.pathname)}
           >
             <span className="sr-only">{open ? 'Close menu' : 'Open menu'}</span>

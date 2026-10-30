@@ -205,7 +205,7 @@ export function MajlisPage({ preview }: { preview?: MajlisPreview } = {}) {
 
   return (
     <div className="min-w-0 max-w-5xl" data-majlis-section={past ? 'past' : 'upcoming'}>
-      <h1 className="font-display text-[2rem] font-semibold tracking-[-0.03em]">Majlis</h1>
+      <h1 className="font-display text-[2rem] font-semibold tracking-[-0.03em]">Your majlis</h1>
       <p className="mt-2 max-w-full break-words text-[0.98rem] leading-relaxed text-[var(--ba-muted)]">
         {sponsor
           ? 'Regional activity for partners. Guest names and contact details stay with the host.'

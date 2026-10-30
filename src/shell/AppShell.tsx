@@ -4,6 +4,7 @@ import { BrandLockup } from '../components/BrandLockup'
 import type { Destination, SecondaryLink, ShellTone } from './destinations'
 import { accountPathActive, dealsBadgeLabel, phoneDestinations, shellSectionTitle } from './destinations'
 import { DestinationIcon } from './icons'
+import { mainLandmarkProps } from '../components/SkipLink'
 
 type RoleSwitch = { label: string; to: string }
 
@@ -393,7 +394,7 @@ export function AppShell({
               </div>
             </div>
           </header>
-          <main className="shell-main min-h-0 flex-1">{children}</main>
+          <main {...mainLandmarkProps} className="shell-main min-h-0 flex-1">{children}</main>
         </div>
       </div>
 

@@ -124,7 +124,7 @@ export function AiToolsHome({
 
   return (
     <div className="max-w-3xl pe-16" dir="ltr" lang="en">
-      <h1 className="font-display text-[2.2rem] font-bold tracking-[-0.03em]">{ui.hub}</h1>
+      <h1 className="font-display text-[2.2rem] font-bold tracking-[-0.03em]">Checks you can run</h1>
       <p className="mt-3 max-w-xl text-[1rem] leading-relaxed text-ink/65">{ui.intro}</p>
       {flagsError ? (
         <div className="mt-6">

@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { mainLandmarkProps } from '../components/SkipLink'
 import { clearPasswordFlag } from '../lib/clearPasswordFlag'
 import { resolveAfterLogin } from '../lib/memberGate'
 import { readRecoveryLocation } from '../lib/recovery'
@@ -189,7 +190,7 @@ export function AuthConfirmPage() {
 
   return (
     <div className="flex min-h-dvh items-center justify-center bg-pearl px-5 text-ink">
-      <div className="w-full max-w-md">
+      <main {...mainLandmarkProps} className="w-full max-w-md">
         <p className="text-[0.72rem] font-semibold tracking-[0.14em] text-brass uppercase">
           Board Arabia
         </p>
@@ -258,7 +259,7 @@ export function AuthConfirmPage() {
             </div>
           </>
         )}
-      </div>
+      </main>
     </div>
   )
 }

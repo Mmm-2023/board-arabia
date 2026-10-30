@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { AnalyticsRoot } from './components/AnalyticsRoot'
+import { SkipLink } from './components/SkipLink'
 import { EnglishOnlyQuery } from './components/EnglishOnly'
 import { AboutPage } from './pages/AboutPage'
 import { AccountDeletionPage } from './pages/AccountDeletionPage'
@@ -137,7 +138,8 @@ const PartnerShowcase = lazy(() =>
 )
 export default function App() {
   return (
-    <><EnglishOnlyQuery />
+    <><SkipLink />
+    <EnglishOnlyQuery />
     <NativeShell />
     <PushBridge />
     <BiometricGate />

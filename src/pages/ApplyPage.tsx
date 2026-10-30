@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { Footer } from '../components/Footer'
 import { Nav } from '../components/Nav'
 import { Seo } from '../components/Seo'
+import { mainLandmarkProps } from '../components/SkipLink'
 import { WhoRunsTheDesk } from '../components/WhoRunsTheDesk'
 import { REVIEW_SLA } from '../content/marketing'
 import { publicHref } from '../content/seo'
@@ -188,7 +189,7 @@ export function ApplyPage() {
       <>
         <Seo path="/apply" />
         <Nav ctaTo="/" ctaLabel="Home" />
-        <main className="min-h-dvh bg-pearl pt-24 pb-20 md:pt-28">
+        <main {...mainLandmarkProps} className="min-h-dvh bg-pearl pt-24 pb-20 md:pt-28">
           <div className="mx-auto max-w-xl px-5 text-center md:px-10">
             <p className="font-serif text-[1.15rem] italic text-ink-soft/70">
               Received
@@ -221,7 +222,7 @@ export function ApplyPage() {
     <>
       <Seo path="/apply" />
       <Nav />
-      <main className="min-h-dvh bg-pearl pt-24 pb-20 md:pt-28">
+      <main {...mainLandmarkProps} className="min-h-dvh bg-pearl pt-24 pb-20 md:pt-28">
         <div className="mx-auto max-w-2xl px-5 md:px-10">
           <p className="font-serif text-[1.15rem] italic text-ink-soft/70">
             Check
