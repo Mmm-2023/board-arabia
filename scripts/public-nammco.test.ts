@@ -8,6 +8,7 @@ import { MemoryRouter } from 'react-router-dom'
 import { createServer } from 'vite'
 import {
   FOOTER_NAMMCO_CREDIT,
+  LEGAL_ENTITY_LINE,
   allowsLegalEntityLine,
   strayPublicNammco,
 } from './public-nammco.mjs'
@@ -20,7 +21,7 @@ test('public-nammco exports match the legal allowlist', () => {
   const fileUrl = new URL('./public-nammco.mjs', import.meta.url)
   const bytes = readFileSync(fileUrl)
   const hash = createHash('sha256').update(bytes).digest('hex')
-  assert.equal(hash, 'b7e00f240b14414f42608c76fd0022f676c18bc9bbf0ab68cc39c5b352a580e5')
+  assert.equal(hash, '473f055b2fff46d796313c0609722fcb7069ac0383a28827a7dfe1bdd4e0df74')
   assert.equal(FOOTER_NAMMCO_CREDIT, 'powered by nammco')
   const source = bytes.toString('utf8')
   const listed = source.match(/const LEGAL_HTML = new Set\((\[[^\]]*\])\)/)
@@ -107,7 +108,12 @@ test('the footer credit is the only nammco phrase, including on legal pages', ()
     assert.equal(strayPublicNammco(`${footer}\nNammco`, file), true, file)
     assert.equal(strayPublicNammco(`${footer}\npowered by NAMMCO`, file), true, file)
     assert.equal(strayPublicNammco(`${footer}\nnammco.com`, file), true, file)
+    assert.equal(strayPublicNammco(`${footer}\n${LEGAL_ENTITY_LINE}`, file), false, file)
+    const nameOnly = 'NAM' + 'MCO Holdings LLC'
+    assert.equal(strayPublicNammco(`${footer}\n${nameOnly}`, file), true, file)
   }
+  assert.equal(strayPublicNammco(`${footer}\n${LEGAL_ENTITY_LINE}`, 'apply/index.html'), true)
+  assert.equal(strayPublicNammco(`${footer}\n${LEGAL_ENTITY_LINE}`, 'index.html'), true)
 })
 
 test('the public footer renders the credit and Who runs the desk does not', async () => {

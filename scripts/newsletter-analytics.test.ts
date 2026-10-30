@@ -123,7 +123,8 @@ test('privacy notice states aggregate newsletter measurement', () => {
   assert.match(privacy, /Newsletter open and click records/)
   assert.match(privacy, /Removed on request to \[CONTACT EMAIL\], and in any case within 13 months/)
   assert.match(privacy, /If you agree to receive our newsletter, we measure whether it is opened and which links are clicked/)
-  assert.equal(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/.test(privacy), false)
+  const mailboxes = privacy.match(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g) ?? []
+  assert.deepEqual([...new Set(mailboxes)], ['contact@boardarabia.com'])
   assert.equal(privacy.includes('\u2014') || privacy.includes('\u2013'), false)
   assert.equal(/\bsponsor\b/i.test(privacy), false)
 })

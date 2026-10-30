@@ -238,7 +238,7 @@ const ABOUT_FAQ: FaqItem[] = [
   },
 ]
 
-/** Configured contact mailbox, or null when the legal env is unset. Never a hardcoded address. */
+/** Configured contact mailbox. When the legal env is unset, the public mailbox is used. */
 export function publishedContactEmail(): string | null {
   const value = legalField('contactEmail').trim()
   if (!value || value === LEGAL_PENDING.en || !value.includes('@')) return null

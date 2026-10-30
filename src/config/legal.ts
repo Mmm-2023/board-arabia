@@ -7,6 +7,9 @@ export const LEGAL_PENDING = {
   en: 'To be confirmed',
 } as const
 
+/** The one public mailbox. Used when VITE_LEGAL_CONTACT_EMAIL is unset. */
+export const PUBLIC_CONTACT_EMAIL = 'contact@boardarabia.com'
+
 export const EFFECTIVE_DATE = {
   en: '7 October 2026',
 } as const
@@ -70,7 +73,9 @@ export function legalField(field: LegalField, _lang: LegalLang = 'en'): string {
   const override = envOverride?.[field]
   const raw = override !== undefined ? override : configuredEnv(ENV_NAME[field])
   const value = typeof raw === 'string' ? raw.trim() : ''
-  return value || LEGAL_PENDING.en
+  if (value) return value
+  if (field === 'contactEmail') return PUBLIC_CONTACT_EMAIL
+  return LEGAL_PENDING.en
 }
 
 /** Mailbox for the partner interest form. Set VITE_LEGAL_PARTNERS_EMAIL in the deploy environment. */

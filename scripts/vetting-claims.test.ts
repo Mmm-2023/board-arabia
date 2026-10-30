@@ -18,7 +18,7 @@ const PRE_VET_SCOPE =
   'It checks you are real, a good fit and a decision maker. Nothing about any business or deal.'
 
 const CAPACITY_CHECK =
-  'Used only inside a platform sum, and only after our admin team checks it looks right for a decision maker.'
+  'Used only inside a platform sum, and only after our admin team has looked at it. We do not verify the amount.'
 
 function read(rel: string) {
   return readFileSync(path.join(root, rel), 'utf8')

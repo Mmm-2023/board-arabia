@@ -20,11 +20,12 @@ export const TERMS_EN: LegalDocument = {
       "id": "s-1",
       "text": "1. Who we are"
     },
+    // LEGAL CHANGE: entity line and postal address placeholder on this page only.
     {
       "kind": "clause",
       "id": "c-1-1",
       "number": "1.1",
-      "text": "Board Arabia is the operator of the Platform, of [ADDRESS] (\"Board Arabia\", \"we\", \"us\")."
+      "text": "Board Arabia is operated by NAMMCO Holdings LLC, CR 1009167564, of [POSTAL ADDRESS TBC] (\"Board Arabia\", \"we\", \"us\")."
     },
     {
       "kind": "clause",
@@ -341,7 +342,7 @@ export const TERMS_EN: LegalDocument = {
       "kind": "clause",
       "id": "c-9-4",
       "number": "9.4",
-      "text": "You must verify any output with licensed advisers before you act. You are responsible for any decision you make."
+      "text": "You must check any output with your own licensed advisers before you act. You are responsible for any decision you make."
     },
     {
       "kind": "clause",

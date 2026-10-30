@@ -4,6 +4,7 @@ import path from 'node:path'
 import test from 'node:test'
 import { fileURLToPath } from 'node:url'
 import { publicEntityHits } from './no-public-entity.test.ts'
+import { LEGAL_ENTITY_LINE } from './public-nammco.mjs'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 
@@ -77,15 +78,18 @@ test('a bad staff line fails and the locked credit passes', () => {
   assert.deepEqual(staffNameHits(`${ALLOWED_MICHAEL}\nSasha applies`), ['Sasha'])
 })
 
-test('legal page sources name Board Arabia and carry no entity or registration line', () => {
+test('legal page sources name the exact entity line and no other registration line', () => {
   for (const file of LEGAL_SOURCES) {
     const source = read(file)
-    assert.equal(/nammco/i.test(source), false, file)
-    assert.equal(/\bCR\s*\d{10}\b/.test(source), false, file)
-    assert.deepEqual(publicEntityHits(source), [], file)
+    assert.equal(source.includes(LEGAL_ENTITY_LINE), true, file)
+    const stripped = source.split(LEGAL_ENTITY_LINE).join('')
+    assert.equal(/nammco/i.test(stripped), false, file)
+    assert.equal(/\bCR\s*\d{10}\b/.test(stripped), false, file)
+    assert.deepEqual(publicEntityHits(stripped), [], file)
     assert.equal(source.includes('[BA ENTITY]'), false, file)
     assert.equal(source.includes('commercial registration number [CR]'), false, file)
-    assert.match(source, /Board Arabia is the operator of the Platform/)
+    assert.match(source, /Board Arabia is operated by/)
+    assert.match(source, /\[POSTAL ADDRESS TBC\]/)
   }
   const resolve = read('src/content/legal/resolve.ts')
   assert.match(resolve, /from '\.\.\/\.\.\/config\/legalPageIdentity\.ts'/)
@@ -97,4 +101,5 @@ test('legal page sources name Board Arabia and carry no entity or registration l
   assert.equal(identity.includes('import.meta.env'), false)
   assert.equal(legalSourceBanned('powered by nammco'), true)
   assert.equal(legalSourceBanned('Board Arabia is the operator of the Platform'), false)
+  assert.equal(legalSourceBanned(LEGAL_ENTITY_LINE), true)
 })

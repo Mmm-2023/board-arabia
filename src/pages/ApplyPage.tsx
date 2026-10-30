@@ -340,7 +340,7 @@ export function ApplyPage() {
               onChange={(v) => setField('investable', v)}
               placeholder="e.g. 1000000"
               inputMode="decimal"
-              hint="Optional. US dollars you can put to work. Used only inside a platform sum, and only after our admin team checks it looks right for a decision maker."
+              hint="Optional. US dollars you can put to work. Used only inside a platform sum, and only after our admin team has looked at it. We do not verify the amount."
             />
             <div>
               <label className="flex min-h-11 cursor-pointer items-center gap-3 text-[0.98rem] leading-relaxed text-ink">
@@ -400,6 +400,10 @@ export function ApplyPage() {
             >
               {submitting ? 'Submitting…' : 'Submit for consideration'}
             </button>
+            {/* LEGAL CHANGE: line under Apply submit. */}
+            <p className="text-[0.875rem] leading-relaxed text-ink/65" data-apply-submit-note="">
+              If we don't accept your application, we keep it and your contact details for 12 months after our decision, in case you ask about it or apply again, and then delete them. You can ask us to delete them sooner at any time by writing to contact@boardarabia.com.
+            </p>
             <p className="text-[0.875rem] leading-relaxed text-ink/65" data-trust-strip="apply">
               {APPLY_STRIP}{' '}
               <Link to={publicHref('/privacy')} className="border-b border-brass text-ink">

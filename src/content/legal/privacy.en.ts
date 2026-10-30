@@ -20,11 +20,12 @@ export const PRIVACY_EN: LegalDocument = {
       "id": "s-1",
       "text": "1. Who we are"
     },
+    // LEGAL CHANGE: entity line and postal address placeholder on this page only.
     {
       "kind": "clause",
       "id": "c-1-1",
       "number": "1.1",
-      "text": "Board Arabia is the operator of the Platform, of [ADDRESS] (\"we\", \"us\"). Board Arabia is the controller of the personal data described in this notice."
+      "text": "Board Arabia is operated by NAMMCO Holdings LLC, CR 1009167564, of [POSTAL ADDRESS TBC] (\"we\", \"us\"). Board Arabia is the controller of the personal data described in this notice."
     },
     {
       "kind": "clause",
@@ -136,7 +137,7 @@ export const PRIVACY_EN: LegalDocument = {
       "kind": "clause",
       "id": "c-3-12",
       "number": "3.12",
-      "text": "Public totals. If you leave the public-totals box checked, a capacity figure can be added into a platform total after you are admitted. Our admin team checks it looks right for a decision maker. The public site shows the total only. It does not show your name, company or amount."
+      "text": "Public totals. If you leave the public-totals box checked, a capacity figure can be added into a platform total after you are admitted. Our admin team looks at it before it is included. We do not check or verify the amount. The public site shows the total only. It does not show your name, company or amount."
     },
     {
       "kind": "clause",
@@ -424,8 +425,8 @@ export const PRIVACY_EN: LegalDocument = {
           "Deleted after 7 days if your email is never verified. Otherwise deleted 12 months after your last majlis. If you were never accepted, deleted 12 months after we decline your request, 12 months after the majlis date if your request was never decided, or 12 months after your last update if all your requests were cancelled. These limits stop if you become a member. You can ask us to delete it sooner at [CONTACT EMAIL]."
         ],
         [
-          "Rejected, declined, withdrawn or closed applications, and legacy applications",
-          "Deleted 12 months after the decision"
+          "Applications that are rejected, declined, withdrawn or closed: your application answers, contact details and our decision notes.",
+          "Deleted 12 months after the decision. You can ask us to delete them sooner at contact@boardarabia.com. Copies held by our hosting provider follow our deletion section."
         ],
         [
           "Member data, including profile, intros, \"Deal started\" tags, mandates and event records",
@@ -450,6 +451,11 @@ export const PRIVACY_EN: LegalDocument = {
         [
           "Consent log",
           "13 months"
+        ],
+        // LEGAL CHANGE: staff access log retention row. The sweep keeps this record for 13 months.
+        [
+          "Staff access log",
+          "A record that staff opened your member record or a file you shared. Kept for 13 months."
         ],
         [
           "Marketing stats cache",

@@ -6,6 +6,7 @@ import path from 'node:path'
 import test from 'node:test'
 import { footerWithOperator, operatorCredit } from '../src/lib/aiReportOperator.ts'
 import { renderToolCopy } from '../src/lib/aiToolCopy.ts'
+import { LEGAL_ENTITY_LINE, allowsLegalEntityLine } from './public-nammco.mjs'
 
 const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..')
 const OPERATOR_NAME = 'Example Operator'
@@ -150,8 +151,14 @@ test('the operator placeholder is gone from src and edge, and the seed is only i
   const publicPlaceholder: string[] = []
 
   for (const file of files) {
-    const text = readFileSync(file, 'utf8')
+    const raw = readFileSync(file, 'utf8')
     const name = rel(file)
+    const text = name === 'src/content/legal/privacy.en.ts' || name === 'src/content/legal/terms.en.ts'
+      ? raw.split(LEGAL_ENTITY_LINE).join('')
+      : raw
+    if (name === 'src/content/legal/privacy.en.ts' || name === 'src/content/legal/terms.en.ts') {
+      if (!raw.includes(LEGAL_ENTITY_LINE)) nameLiteral.push(`${name}: missing exact entity line`)
+    }
     const namesHolding = /nammco/i.test(text) && /holding/i.test(text)
     if (namesHolding || text.includes(OPERATOR_CR)) {
       if (namesHolding) nameLiteral.push(name)
@@ -234,14 +241,15 @@ test('the built site has no operator name and no registration number', () => {
   ]
   const hits: string[] = []
   for (const file of walk(dist)) {
-    const text = readFileSync(file).toString('latin1')
+    const raw = readFileSync(file).toString('latin1')
+    const relative = rel(file)
+    const text = allowsLegalEntityLine(relative) ? raw.split(LEGAL_ENTITY_LINE).join('') : raw
     const reasons: string[] = []
     if (name.test(text)) reasons.push('name')
     if (text.includes(OPERATOR_CR)) reasons.push('cr')
     if (codes.some((code) => text.includes(code))) reasons.push('char-codes')
     if (encoded.some((value) => text.includes(value))) reasons.push('base64')
     if (!reasons.length) continue
-    const relative = rel(file)
     hits.push(`${relative}: ${reasons.join(', ')}`)
   }
   assert.deepEqual(hits, [])
