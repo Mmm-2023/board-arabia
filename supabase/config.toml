@@ -23,6 +23,8 @@ verify_jwt = true
 [functions.majlis-calendar-sync]
 verify_jwt = true
 
+# MAJLIS_REMINDERS_ENABLED is off unless the value is the exact string true.
+# No schedule. The owner approves the cron and the first live send separately.
 # Cron uses MAJLIS_CRON_SECRET or the service role. The anon key is not enough.
 [functions.majlis-reminders]
 verify_jwt = false

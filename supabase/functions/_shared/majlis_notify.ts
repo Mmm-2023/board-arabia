@@ -11,6 +11,8 @@ import {
   hostRsvpLetter,
   reminderLetter,
   type MajlisMailEvent,
+  type ReminderKind,
+  type ReminderLetterOptions,
 } from './majlis_mail.ts'
 
 const ICS = { filename: 'majlis.ics', contentType: 'text/calendar; charset=UTF-8; method=PUBLISH' }
@@ -138,8 +140,9 @@ export async function mailReminder(
   admin: SupabaseClient,
   to: string,
   event: MajlisMailEvent,
-  kind: 't7' | 't1',
+  kind: ReminderKind,
   notice?: { userId: string; refId: string; eventId: string },
+  options?: ReminderLetterOptions,
 ) {
   if (notice?.userId && notice.refId && notice.eventId) {
     await enqueueMemberNotice({
@@ -149,15 +152,45 @@ export async function mailReminder(
       payload: { event_id: notice.eventId },
     })
   }
-  const letter = reminderLetter(publicSite(), event, kind)
+  if (notice?.userId) {
+    const gate = await eventReminderGate(admin, notice.userId)
+    if (gate !== 'allow') {
+      return {
+        dryRun: false,
+        provider: 'gmail',
+        providerId: null,
+        status: 'error' as const,
+        detail: gate === 'suppressed' ? 'suppressed' : 'blocked_check_failed',
+      }
+    }
+  }
+  const letter = reminderLetter(publicSite(), event, kind, options)
   return deliver(admin, {
     to,
-    kind: kind === 't7' ? 'majlis_e10' : 'majlis_e11',
+    kind: reminderMailKind(kind),
     eventId: event.id,
     subject: letter.subject,
     text: letter.text,
     html: letter.html,
   })
+}
+
+function reminderMailKind(kind: ReminderKind): string {
+  if (kind === 't7') return 'majlis_e10'
+  if (kind === 't1') return 'majlis_e11'
+  if (kind === 't1h') return 'majlis_e14'
+  return 'majlis_e15'
+}
+
+/** Fail closed. A missing check does not send. */
+async function eventReminderGate(
+  admin: SupabaseClient,
+  userId: string,
+): Promise<'allow' | 'suppressed' | 'failed'> {
+  const { data, error } = await admin.rpc('service_event_reminder_blocked', { p_user: userId })
+  if (error) return 'failed'
+  if (data !== false) return 'suppressed'
+  return 'allow'
 }
 
 export async function mailEventCancelled(
