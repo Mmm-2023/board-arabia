@@ -5,7 +5,7 @@ Two undrafted pull requests. Backend first, then the screens. Nothing here is ap
 ## Pull requests
 
 - Backend: https://github.com/Mmm-2023/board-arabia/pull/228 against `main`. Head `5cb99d7bb4461d6ef34ce9652e499c167b8901d6`.
-- UI: https://github.com/Mmm-2023/board-arabia/pull/229 against the backend branch. Head is the latest commit on `cursor/sm-1-seat-match-ui-ebc5`.
+- UI: https://github.com/Mmm-2023/board-arabia/pull/229 against `main`. The branch also contains the backend commit, so this pull request shows both until the backend pull request merges. Head is the latest commit on `cursor/sm-1-seat-match-ui-ebc5`.
 
 ## Secrets grade
 
