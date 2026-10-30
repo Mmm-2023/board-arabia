@@ -237,6 +237,9 @@ export type ProfileMatchInput = {
   status: 'loading' | 'ready' | 'error'
   availabilitySet: boolean
   sectorSet: boolean
+  /** Set once the focus columns have loaded. Empty string means none chosen. */
+  helpWith?: string
+  lookingFor?: string
 }
 
 export type ProfileMatchNudge = {

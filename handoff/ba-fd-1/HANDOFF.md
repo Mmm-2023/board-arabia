@@ -1,6 +1,8 @@
 # FD-1 handoff
 
-Brief A, first change. One public button on the landing page, the nav, How it works, and About. Base `6e507096f0a423ad4b7b9905dafc47191c6aa6e9` on main. No merge. No force push.
+Brief A, first change. One public button on the landing page, the nav, How it works, and About. The branch started from `6e507096f0a423ad4b7b9905dafc47191c6aa6e9`. Main then moved, so this branch merged `4f6c510` with a normal merge commit. No rebase. No force push. The pull request is not merged.
+
+Main's focus fields stay. Main's Apply page still calls the first step Check. The public landing, nav, How it works, and About still use Apply for consideration and the three Brief A steps. `isTwoTierRegisterEnabled` still returns false. WhoRunsTheDesk and prerender.mjs were not edited in the resolution.
 
 ## What changed
 

@@ -24,6 +24,7 @@ import { DirectoryIntroAction } from './DirectoryIntroAction'
 import type { IntroQuota, IntroStatus } from '../../lib/memberIntros'
 import type { SeatCountState } from './DirectoryEmpty'
 import { DirectoryBoardroomDetail, DirectoryBoardroomFace } from './DirectoryBoardroom'
+import { DirectoryFocus } from './DirectoryFocus'
 import { chipOptions, FilterRow, MemberFilterControls } from './MemberFilters'
 
 const searchClass =
@@ -39,6 +40,7 @@ export function DirectoryBoard({
   errorId = null,
   requestError = '',
   quota = null,
+  viewerLookingFor = [],
   onRequestIntro,
 }: {
   cards: DirectoryCard[]
@@ -50,6 +52,7 @@ export function DirectoryBoard({
   errorId?: string | null
   requestError?: string
   quota?: IntroQuota | null
+  viewerLookingFor?: readonly string[]
   onRequestIntro?: (id: string, reason: string, askDesk: boolean) => void
 }) {
   const photos = useSignedPortraits(cards)
@@ -159,6 +162,7 @@ export function DirectoryBoard({
                 busy={busyId === card.id}
                 error={errorId === card.id ? requestError : ''}
                 quota={quota}
+                viewerLookingFor={viewerLookingFor}
                 onRequest={onRequestIntro ? (reason, askDesk) => onRequestIntro(card.id, reason, askDesk) : undefined}
               />
             </li>
@@ -182,6 +186,7 @@ function DirectoryPerson({
   busy,
   error,
   quota,
+  viewerLookingFor,
   onRequest,
 }: {
   card: DirectoryCard
@@ -191,6 +196,7 @@ function DirectoryPerson({
   busy: boolean
   error: string
   quota: IntroQuota | null
+  viewerLookingFor: readonly string[]
   onRequest?: (reason: string, askDesk: boolean) => void
 }) {
   const [open, setOpen] = useState(false)
@@ -240,6 +246,7 @@ function DirectoryPerson({
           {firm}
         </dl>
         <DirectoryBoardroomFace card={card} />
+        <DirectoryFocus card={card} expanded={open} viewerLookingFor={viewerLookingFor} self={self} />
         {open ? (
           <div id={moreId}>
             <DirectoryBoardroomDetail card={card} />
@@ -282,6 +289,7 @@ function DirectoryPerson({
           {firm}
         </dl>
         <DirectoryBoardroomFace card={card} />
+        <DirectoryFocus card={card} expanded viewerLookingFor={viewerLookingFor} self={self} />
         <DirectoryBoardroomDetail card={card} />
         {aboutText ? (
           <div className="mt-3">
@@ -328,7 +336,7 @@ function AvailabilityMark({ value }: { value: Availability }) {
 function Field({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <dt className="text-[0.68rem] font-semibold tracking-[0.12em] text-ink/40 uppercase">{label}</dt>
+      <dt className="text-[15px] font-semibold text-ink/70">{label}</dt>
       <dd className="mt-0.5 text-[0.95rem] text-ink/80">{value}</dd>
     </div>
   )

@@ -197,7 +197,7 @@ export function ApplyPage() {
               Consideration requested
             </h1>
             <p className="mt-5 text-[1.05rem] leading-relaxed text-ink/65">
-              Thank you. We have your pre-vet details. There is nothing to
+              Thank you. We have your details from Check. There is nothing to
               arrange on this site. {REVIEW_SLA} You will hear back with an
               acceptance and a private invite email, or with a decline.
             </p>
@@ -224,7 +224,7 @@ export function ApplyPage() {
       <main className="min-h-dvh bg-pearl pt-24 pb-20 md:pt-28">
         <div className="mx-auto max-w-2xl px-5 md:px-10">
           <p className="font-serif text-[1.15rem] italic text-ink-soft/70">
-            Pre-vet
+            Check
           </p>
           <p className="mt-3 text-[1.02rem] leading-relaxed text-ink/80">
             It checks you are real, a good fit and a decision maker. Nothing about any business or deal.
@@ -233,7 +233,7 @@ export function ApplyPage() {
             Apply for consideration
           </h1>
           <p className="mt-5 text-[1.05rem] leading-relaxed text-ink/80">
-            Request consideration for Board Arabia with this pre-vet form. Our
+            Request consideration for Board Arabia. The first step is Check. Our
             admin team reviews your credentials. If you are accepted, you receive a
             private invite email. {REVIEW_SLA} The private invite email is not
             a page on this website.

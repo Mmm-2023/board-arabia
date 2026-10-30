@@ -1,23 +1,19 @@
-import { AVAILABILITY, AVAILABILITY_LABEL, SECTOR_TAGS, VISION_2030_THEMES, type Availability } from '../../lib/profileTags'
+import { useState } from 'react'
+import { AVAILABILITY, AVAILABILITY_LABEL, SECTOR_TAGS, type Availability } from '../../lib/profileTags'
 import { Chip } from './MemberFilters'
 
 export function ProfileTagFields({
   availability,
   sectors,
-  themes,
-  limitNote,
   onAvailability,
   onSector,
-  onTheme,
 }: {
   availability: Availability | null
   sectors: readonly string[]
-  themes: readonly string[]
-  limitNote: string
   onAvailability: (value: Availability) => void
   onSector: (tag: string) => void
-  onTheme: (tag: string) => void
 }) {
+  const [sectorNote, setSectorNote] = useState('')
   return (
     <div className="space-y-5">
       <div>
@@ -35,7 +31,7 @@ export function ProfileTagFields({
           aria-describedby="profile-availability-help"
         >
           {AVAILABILITY.map((value) => (
-            <Chip key={value} radio pressed={availability === value} onClick={() => onAvailability(value)}>
+            <Chip key={value} touch radio pressed={availability === value} onClick={() => onAvailability(value)}>
               {AVAILABILITY_LABEL[value]}
             </Chip>
           ))}
@@ -47,21 +43,16 @@ export function ProfileTagFields({
         help="Pick the sectors where you sit. Up to 3."
         options={SECTOR_TAGS}
         selected={sectors}
-        onPick={onSector}
+        note={sectorNote}
+        onPick={(tag) => {
+          if (!sectors.includes(tag) && sectors.length >= 3) {
+            setSectorNote('Three sectors is the limit.')
+            return
+          }
+          setSectorNote('')
+          onSector(tag)
+        }}
       />
-      <TagGroup
-        id="profile-vision"
-        label="Vision 2030"
-        help="Pick the Vision 2030 themes where you sit. Up to 3."
-        options={VISION_2030_THEMES}
-        selected={themes}
-        onPick={onTheme}
-      />
-      {limitNote ? (
-        <p className="text-[0.92rem] text-ink/70" role="status">
-          {limitNote}
-        </p>
-      ) : null}
     </div>
   )
 }
@@ -72,6 +63,7 @@ function TagGroup({
   help,
   options,
   selected,
+  note,
   onPick,
 }: {
   id: string
@@ -79,6 +71,7 @@ function TagGroup({
   help: string
   options: readonly string[]
   selected: readonly string[]
+  note?: string
   onPick: (tag: string) => void
 }) {
   return (
@@ -91,11 +84,16 @@ function TagGroup({
       </p>
       <div className="mt-3 flex flex-wrap gap-2" role="group" aria-labelledby={`${id}-label`} aria-describedby={`${id}-help`}>
         {options.map((option) => (
-          <Chip key={option} pressed={selected.includes(option)} onClick={() => onPick(option)}>
+          <Chip key={option} touch pressed={selected.includes(option)} onClick={() => onPick(option)}>
             {option}
           </Chip>
         ))}
       </div>
+      {note ? (
+        <p className="mt-3 text-[15px] text-ink" role="status">
+          {note}
+        </p>
+      ) : null}
     </div>
   )
 }

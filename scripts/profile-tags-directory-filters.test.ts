@@ -261,7 +261,7 @@ test('profile, directory, and mandates screens expose the new controls', () => {
   assert.match(profile, /sector_tags: sectors/)
   assert.match(profile, /vision_themes: themes/)
   assert.match(profile, /ProfileTagFields/)
-  assert.match(source('src/pages/dashboard/ProfileTagFields.tsx'), /Vision 2030/)
+  assert.match(source('src/pages/dashboard/FocusFields.tsx'), /Vision 2030 themes/)
   assert.match(source('src/pages/dashboard/ProfileTagFields.tsx'), /At capacity/)
   const directory = source('src/pages/dashboard/DirectoryBoard.tsx')
   assert.match(directory, /id="directory-search"/)

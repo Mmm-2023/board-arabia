@@ -188,6 +188,8 @@ test('public consideration buttons stay on apply after the register switch is re
       assert.equal(cta.href, '/apply/', cta.text)
       assert.equal(cta.text, 'Apply for consideration', cta.text)
     }
+    assert.equal(/pre-vet/i.test(off.combined), false)
+    assert.match(off.apply, /The first step is Check/)
     assert.equal(off.combined.includes('href="/register"'), false)
     assert.equal(off.combined.includes('Register for consideration'), false)
     assert.match(off.apply, /Submit for consideration/)
