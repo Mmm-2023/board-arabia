@@ -1,0 +1,51 @@
+# Daily brief draft. Sunday to Thursday at 02:00 UTC (05:00 in Riyadh).
+# The job stays skipped until the repository variable DAILY_BRIEF_ENABLED
+# is the exact string true. That covers the schedule and a manual run.
+# A run writes a draft. It does not publish and it does not send mail.
+# Members should have a published brief by 04:00 UTC (07:00 in Riyadh).
+# Admin approves, then publishes. This job does not do either.
+# MARKET_BRIEF_DAILY_SECRET is a repository secret and the same Edge secret.
+# SUPABASE_URL is the project origin with no path and no key.
+
+name: Daily brief
+
+on:
+  schedule:
+    - cron: '0 2 * * 0,1,2,3,4'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  draft:
+    if: ${{ vars.DAILY_BRIEF_ENABLED == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call daily brief
+        env:
+          MARKET_BRIEF_DAILY_SECRET: ${{ secrets.MARKET_BRIEF_DAILY_SECRET }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+        run: |
+          if [ -z "$MARKET_BRIEF_DAILY_SECRET" ] || [ -z "$SUPABASE_URL" ]; then
+            echo "MARKET_BRIEF_DAILY_SECRET or SUPABASE_URL is unset. Daily brief run is a no-op."
+            exit 0
+          fi
+          origin=${SUPABASE_URL%/}
+          code=$(curl -sS --max-time 120 -o /tmp/daily-brief-body.txt -w '%{http_code}' \
+            -X POST \
+            -H "Content-Type: application/json" \
+            -H "x-market-brief-daily-secret: ${MARKET_BRIEF_DAILY_SECRET}" \
+            --data '{}' \
+            "${origin}/functions/v1/market-brief-daily")
+          echo "status ${code}"
+          python3 - <<'PY'
+          import pathlib, re
+          text = pathlib.Path("/tmp/daily-brief-body.txt").read_text(encoding="utf-8", errors="replace")
+          text = re.sub(r"[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}", "[redacted]", text)
+          print(text[:300])
+          PY
+          if [ "$code" -lt 200 ] || [ "$code" -ge 300 ]; then
+            echo "daily brief call failed"
+            exit 1
+          fi
