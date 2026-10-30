@@ -92,8 +92,8 @@ export function HomeSnapshotView({
   })).filter((item) => !(staff && item.id === 'profile'))
 
   return (
-    <div className="max-w-3xl" data-home-snapshot="">
-      <section aria-label="Identity" className="flex items-center gap-3 py-1">
+    <div className="max-w-3xl max-md:flex max-md:flex-col" data-home-snapshot="" data-phone-body="">
+      <section aria-label="Identity" className="flex items-center gap-3 py-1 max-md:order-1">
         <Avatar src={model.identity.photoUrl} avatarStyle={model.identity.avatarStyle} size={40} alt="Profile photo" />
         <div className="min-w-0">
           <h1 className="truncate font-display text-[1.35rem] font-bold tracking-[-0.03em] md:text-[1.7rem]">
@@ -110,7 +110,7 @@ export function HomeSnapshotView({
       </section>
 
       {unreadNote ? (
-        <section aria-label="Notification" className="mt-4" data-home-notification="">
+        <section aria-label="Notification" className="mt-4 max-md:order-2" data-home-notification="">
           <div className={`${styles.panel} flex flex-wrap items-center justify-between gap-3 px-4 py-3`}>
             <p className="text-[1rem] text-ink">{notificationLine(unreadNote)}</p>
             <button
@@ -125,7 +125,7 @@ export function HomeSnapshotView({
       ) : null}
 
       {needsItems.length > 0 ? (
-        <section aria-label="Needs you" className="mt-4" data-home-needs="">
+        <section aria-label="Needs you" className="mt-4 max-md:order-7" data-home-needs="">
           <div className={`${styles.panel} px-4 py-3`}>
             <h2 className="font-display text-[1.25rem] font-semibold tracking-[-0.03em]">{NEEDS_YOU_TITLE}</h2>
             <p className={`mt-1 text-[0.95rem] leading-snug ${styles.muted}`}>{NEEDS_YOU_SUBTITLE}</p>
@@ -151,9 +151,9 @@ export function HomeSnapshotView({
         </section>
       ) : null}
 
-      {profileCard ? <div className="mt-4">{profileCard}</div> : null}
+      {profileCard ? <div className="mt-4 max-md:order-8">{profileCard}</div> : null}
 
-      <section aria-label="This week" className="mt-4" data-home-digest="">
+      <section aria-label="This week" className="mt-4 max-md:order-9" data-home-digest="">
         <div className={`${styles.panel} px-4 py-3`}>
           <h2 className="text-[0.72rem] font-semibold tracking-[0.14em] text-ink/40 uppercase">This week</h2>
           {weekLines.length > 0 ? (
@@ -192,7 +192,7 @@ export function HomeSnapshotView({
       </section>
 
       {hasExample && !exampleSeen ? (
-        <div className="mt-4 border border-dashed border-[var(--ba-indigo)] bg-white px-4 py-3" role="status">
+        <div className="mt-4 max-md:order-10 border border-dashed border-[var(--ba-indigo)] bg-white px-4 py-3" role="status" data-home-example="">
           <p className="text-[0.8125rem] leading-relaxed text-ink/80">
             Cards marked Example are samples. They step aside when real items arrive.
           </p>
@@ -211,7 +211,7 @@ export function HomeSnapshotView({
       ) : null}
 
       {model.partialError && onRetry ? (
-        <div className="mt-5">
+        <div className="mt-5 max-md:order-3">
           <ErrorBanner
             tone="member"
             message={MEMBER_VIEWS.home.error}
@@ -222,12 +222,12 @@ export function HomeSnapshotView({
       ) : null}
 
       {model.loading ? (
-        <div className="mt-5">
+        <div className="mt-5 max-md:order-4">
           <HomeSkeleton tone="member" cards={3} />
         </div>
       ) : (
         <>
-          <section aria-label="Next action" className="mt-4" data-home-next="">
+          <section aria-label="Next action" className="mt-4 max-md:order-5" data-home-next="">
             <h2 className="text-[0.8125rem] font-semibold text-ink/70">Next action</h2>
             <Link
               to={primary.to}
@@ -237,9 +237,9 @@ export function HomeSnapshotView({
               {primary.label}
             </Link>
           </section>
-          {shareSlot ? <div className="mt-4">{shareSlot}</div> : null}
+          {shareSlot ? <div className="mt-4 max-md:order-6">{shareSlot}</div> : null}
 
-          <section aria-label="Activity" className="mt-8 border-t border-ink/10 pt-8" data-home-activity="">
+          <section aria-label="Activity" className="mt-8 max-md:order-11 border-t border-ink/10 pt-8" data-home-activity="">
             <h2 className="text-[0.72rem] font-semibold tracking-[0.14em] text-ink/40 uppercase">Activity</h2>
             {model.activityStatus === 'loading' ? (
               <p className={`mt-3 text-[0.95rem] ${styles.muted}`}>Loading activity…</p>
@@ -278,7 +278,7 @@ export function HomeSnapshotView({
             ) : null}
           </section>
 
-          <section className="mt-8 border-t border-ink/10 pt-6" data-home-more="">
+          <section className="mt-8 max-md:order-12 border-t border-ink/10 pt-6" data-home-more="">
             <details
               onToggle={(event) => {
                 setMoreOpen(event.currentTarget.open)

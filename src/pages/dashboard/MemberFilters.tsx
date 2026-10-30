@@ -148,7 +148,7 @@ export function Chip({
       aria-checked={radio ? pressed : undefined}
       aria-pressed={radio ? undefined : pressed}
       onClick={onClick}
-      className={`inline-flex min-h-11 items-center px-3 text-[0.92rem] whitespace-nowrap ${
+      className={`inline-flex min-h-11 min-w-11 items-center justify-center px-3 text-[0.92rem] whitespace-nowrap ${
         pressed ? 'bg-[var(--ba-indigo)] text-[var(--ba-porcelain)]' : 'border border-[var(--ba-line)] bg-white text-ink'
       }`}
     >

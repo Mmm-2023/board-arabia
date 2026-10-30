@@ -88,16 +88,16 @@ export function HelpPage({ desk = true }: { desk?: boolean } = {}) {
       </p>
 
       <nav className="mt-6 flex flex-col" aria-label="Account pages">
-        <Link to="/dashboard/digest" className="inline-flex min-h-11 items-center text-ink underline">
+        <Link to="/dashboard/digest" className="inline-flex min-h-11 min-w-11 items-center text-ink underline">
           This week
         </Link>
-        <Link to="/dashboard/privacy" className="inline-flex min-h-11 items-center text-ink underline">
+        <Link to="/dashboard/privacy" className="inline-flex min-h-11 min-w-11 items-center text-ink underline">
           Your privacy
         </Link>
-        <Link to="/dashboard/two-step" className="inline-flex min-h-11 items-center text-ink underline">
+        <Link to="/dashboard/two-step" className="inline-flex min-h-11 min-w-11 items-center text-ink underline">
           Two-step sign-in
         </Link>
-        <Link to="/dashboard/ai" className="inline-flex min-h-11 items-center text-ink underline">
+        <Link to="/dashboard/ai" className="inline-flex min-h-11 min-w-11 items-center text-ink underline">
           AI tools
         </Link>
       </nav>
@@ -105,11 +105,12 @@ export function HelpPage({ desk = true }: { desk?: boolean } = {}) {
       <div className="mt-8 border-t border-ink/10">
         {ANSWERS.map((item) => (
           <details key={item.question} className="border-b border-ink/10 py-3">
-            <summary className="cursor-pointer py-2 font-display text-[1.15rem] font-semibold tracking-[-0.02em]">
+            <summary className="flex min-h-11 w-full cursor-pointer list-none items-center gap-3 py-2 font-display text-[1.15rem] font-semibold tracking-[-0.02em] [&::-webkit-details-marker]:hidden">
+              <span aria-hidden="true" className="inline-block h-0 w-0 shrink-0 border-y-[5px] border-l-[7px] border-y-transparent border-l-current" />
               {item.question}
             </summary>
             <p className="mt-2 text-[1rem] leading-relaxed text-ink/70">{item.answer}</p>
-            <Link to={item.to} className="mt-3 inline-flex min-h-11 items-center text-ink underline">
+            <Link to={item.to} className="mt-3 inline-flex min-h-11 min-w-11 items-center text-ink underline">
               {item.toLabel}
             </Link>
           </details>
@@ -117,7 +118,7 @@ export function HelpPage({ desk = true }: { desk?: boolean } = {}) {
       </div>
 
       <p className="mt-6">
-        <Link to="/dashboard/profile" className="inline-flex min-h-11 items-center text-ink/75 underline">
+        <Link to="/dashboard/profile" className="inline-flex min-h-11 min-w-11 items-center text-ink/75 underline">
           Profile
         </Link>
       </p>

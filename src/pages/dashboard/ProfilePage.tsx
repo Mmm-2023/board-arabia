@@ -430,7 +430,7 @@ export function ProfilePage({
   })
 
   return (
-    <div className={`max-w-xl ${dirty ? 'pb-24 md:pb-0' : ''}`}>
+    <div className={`max-w-xl ${dirty ? 'pb-24 md:pb-0' : ''}`} data-phone-body="">
       <div className="space-y-2">
         <p className="text-[0.72rem] font-semibold tracking-[0.14em] text-brass uppercase">Profile</p>
         <div className="flex flex-wrap items-center gap-3">
@@ -678,7 +678,7 @@ export function ProfilePage({
                 type="checkbox"
                 checked={includeInPublic}
                 onChange={(event) => setIncludeInPublic(event.target.checked)}
-                className="size-6 shrink-0"
+                className="size-11 shrink-0"
               />
               <span>Include my capacity in Board Arabia&apos;s public platform totals (never shown individually).</span>
             </label>
@@ -782,15 +782,18 @@ function ProfileCardPreview({
 
 function BenefitRows({ rows }: { rows: readonly CompletenessRow[] }) {
   return (
-    <ul aria-label="Profile benefits" data-profile-benefits="" className="mt-3 border border-ink/10 bg-white/50 px-4 py-2">
+    <ul aria-label="Profile benefits" data-profile-benefits="" className="mt-3 border border-ink/10 bg-white/50">
       {rows.map((item) => (
-        <li key={item.id} className="flex min-h-11 items-center justify-between gap-3 text-[0.95rem]">
-          <Link to={item.href} className="text-ink">
-            {item.label}
+        <li key={item.id} className="border-t border-ink/10 first:border-t-0">
+          <Link
+            to={item.href}
+            className="flex min-h-11 w-full items-center justify-between gap-3 px-4 text-[0.95rem] text-ink"
+          >
+            <span>{item.label}</span>
+            <span className={item.done ? 'text-ink/45' : 'font-semibold text-brass'}>
+              {item.done ? <span aria-label="Done">✓</span> : item.addLabel}
+            </span>
           </Link>
-          <span className={item.done ? 'text-ink/45' : 'font-semibold text-brass'}>
-            {item.done ? <span aria-label="Done">✓</span> : item.addLabel}
-          </span>
         </li>
       ))}
     </ul>
