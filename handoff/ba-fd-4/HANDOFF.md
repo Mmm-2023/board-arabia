@@ -2,7 +2,7 @@
 
 A failed, used, or missing account or reset link on `/auth/confirm` and `/auth/reset` now asks for an email and sends a new link through the existing `request-password-reset` function. No new endpoint. No backend change. No migration. Not merged. Not deployed.
 
-Base: `main` at `4d5914840fa588144e66d101bf04d6bf32d3d7d3`.
+Base at the start of this work: `main` at `4d5914840fa588144e66d101bf04d6bf32d3d7d3`. The branch later merged `main` at `c019412` (Deals tab shortening). VERIFIED. `git rev-list --left-right --count origin/main...HEAD` was `0` behind after that merge.
 
 Cited skills: `board-arabia-ux-ui` and `dashboard-ux-desktop-and-mobile`.
 
@@ -40,6 +40,16 @@ Playwright, reduced motion, Vite, fixture host `example.supabase.co`. Before sho
 ![Network error, phone](error-390.png)
 
 ![Network error, desktop](error-1440.png)
+
+## pr-checks on `7ce9abc`
+
+Cause. VERIFIED. Job https://github.com/Mmm-2023/board-arabia/actions/runs/41119790719/job/124283298474 exited 1. The only failing test was `with the two tier flag off, /apply posts to submit-application` in `scripts/membership-tiers.test.ts` line 300. It expects `lineOf` of `/submit-application` in `src/lib/supabase.ts` to be 162. The run reported 177. `requestPasswordResetLetter` had been inserted above `submitApplication`, which moved that fetch down by 15 lines. The other four checks on that commit were green: crawl, Android debug APK, Android emulator Home, and iOS simulator. VERIFIED from `gh pr checks` on that head.
+
+The log also prints `WebSocket server error: Port 24678 is already in use` many times. INFERRED that those lines are not the failure. The suite still recorded one failure, and that failure is the line pin above.
+
+Fix. VERIFIED. `requestPasswordResetLetter` now follows `submitApplication`. `src/lib/supabase.ts` line 162 is the `/submit-application` fetch again. A local re-run of that same test passed: `node --experimental-strip-types --test --test-name-pattern "with the two tier flag off, /apply posts to submit-application" scripts/membership-tiers.test.ts`. No migration, no Edge edit, and no new address or secret.
+
+Whether the five checks are green on the head that contains this note. UNKNOWN until that run finishes.
 
 ## Checks run here
 
