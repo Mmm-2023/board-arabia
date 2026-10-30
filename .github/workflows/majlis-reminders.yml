@@ -1,0 +1,49 @@
+# Majlis reminders every 15 minutes. The job stays skipped until the
+# repository variable MAJLIS_REMINDERS_ENABLED is the exact string true.
+# MAJLIS_CRON_SECRET is a repository secret and the same Edge secret.
+# SUPABASE_URL is the project origin with no path and no key.
+# The function sends nothing unless its MAJLIS_REMINDERS_ENABLED is the
+# exact string true. From and Reply-To stay GMAIL_FROM on the server.
+
+name: Majlis reminders
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  remind:
+    if: ${{ vars.MAJLIS_REMINDERS_ENABLED == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call majlis reminders
+        env:
+          MAJLIS_CRON_SECRET: ${{ secrets.MAJLIS_CRON_SECRET }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+        run: |
+          if [ -z "$MAJLIS_CRON_SECRET" ] || [ -z "$SUPABASE_URL" ]; then
+            echo "MAJLIS_CRON_SECRET or SUPABASE_URL is unset. Reminder run is a no-op."
+            exit 0
+          fi
+          origin=${SUPABASE_URL%/}
+          code=$(curl -sS --max-time 60 -o /tmp/majlis-reminder-body.txt -w '%{http_code}' \
+            -X POST \
+            -H "Content-Type: application/json" \
+            -H "x-majlis-cron: ${MAJLIS_CRON_SECRET}" \
+            --data '{}' \
+            "${origin}/functions/v1/majlis-reminders")
+          echo "status ${code}"
+          python3 - <<'PY'
+          import pathlib, re
+          text = pathlib.Path("/tmp/majlis-reminder-body.txt").read_text(encoding="utf-8", errors="replace")
+          text = re.sub(r"[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}", "[redacted]", text)
+          print(text[:300])
+          PY
+          if [ "$code" -lt 200 ] || [ "$code" -ge 300 ]; then
+            echo "reminder call failed"
+            exit 1
+          fi
