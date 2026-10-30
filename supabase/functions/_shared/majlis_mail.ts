@@ -234,22 +234,65 @@ export function hostRsvpLetter(
   ])
 }
 
+export type ReminderKind = 't7' | 't1' | 't1h' | 'live'
+
+export type ReminderLetterOptions = {
+  registered?: boolean
+  audience?: 'member' | 'guest'
+  meetReady?: boolean
+  format?: string | null
+}
+
+/** Copied from the member majlis page. Do not invent a second sentence. */
+export const MEET_LINK_NOT_READY = 'The Meet link is not ready yet.'
+
+/** Copied from the free account majlis page. Do not invent a second sentence. */
+export const GUEST_JOIN_NOT_READY = 'Your place is confirmed. The Join link appears here when it is ready.'
+
+function reminderParagraph(value: string): string {
+  return `<p style="font-size:16px;line-height:1.5">${escapeHtml(value)}</p>`
+}
+
+function reminderLink(href: string, label: string): string {
+  return `<p style="font-size:16px;line-height:1.5"><a href="${escapeHtml(href)}" style="display:inline-block;min-height:44px;min-width:44px;box-sizing:border-box;padding:10px 16px;font-size:16px;line-height:24px">${escapeHtml(label)}</a></p>`
+}
+
+/**
+ * DRAFT wording for t1h and live. Sending stays off until the owner approves
+ * the words, the cron, and the first send.
+ */
 export function reminderLetter(
   site: string,
   event: MajlisMailEvent,
-  kind: 't7' | 't1',
+  kind: ReminderKind,
+  options?: ReminderLetterOptions,
 ): MajlisLetter {
   const page = majlisPageUrl(site, event.id)
+  const registered = options?.registered !== false
   const lead =
     kind === 't7'
       ? `${event.title} is one week away.`
-      : `${event.title} is one day away.`
-  const lines = [lead, regionLine(event), whenLine(event), venueLine(event, true), page]
+      : kind === 't1'
+        ? `${event.title} is one day away.`
+        : kind === 't1h'
+          ? `${event.title} starts in about one hour.`
+          : `${event.title} is starting now.`
   const subject =
     kind === 't7'
       ? `Board Arabia: ${event.title} is one week away`
-      : `Board Arabia: ${event.title} is tomorrow`
-  return letter(subject, lines, [p(lines[0]), p(lines[1]), p(lines[2]), p(lines[3]), link(page, 'Open the majlis')])
+      : kind === 't1'
+        ? `Board Arabia: ${event.title} is tomorrow`
+        : kind === 't1h'
+          ? `Board Arabia: ${event.title} starts in about one hour`
+          : `Board Arabia: ${event.title} is starting now`
+  const lines = [lead, regionLine(event), whenLine(event), venueLine(event, registered)]
+  if (options?.format === 'virtual' && options.meetReady !== true) {
+    lines.push(options.audience === 'guest' ? GUEST_JOIN_NOT_READY : MEET_LINK_NOT_READY)
+  }
+  lines.push(page)
+  const html = lines.slice(0, -1).map((line) => reminderParagraph(line))
+  html.push(reminderLink(page, 'Open the majlis'))
+  return letter(subject, lines, html)
 }
 
 export function eventCancelledLetter(
