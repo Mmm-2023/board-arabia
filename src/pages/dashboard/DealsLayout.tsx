@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { Navigate, Outlet, useLocation } from 'react-router-dom'
 import { MEMBER_SECTIONS, lastDealsSection, rememberDealsSection } from '../../shell/destinations'
+import { dealsTabSections } from '../../shell/dealsTabLabels'
 import { SectionTabs } from '../../shell/SectionTabs'
 
 export function DealsLayout() {
@@ -10,7 +11,7 @@ export function DealsLayout() {
   }, [location.pathname])
   return (
     <div>
-      <SectionTabs label="Deals sections" sections={MEMBER_SECTIONS.deals ?? []} />
+      <SectionTabs label="Deals sections" sections={dealsTabSections(MEMBER_SECTIONS.deals ?? [])} fit="auto" />
       <div className="mt-6">
         <Outlet />
       </div>

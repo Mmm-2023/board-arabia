@@ -3,6 +3,7 @@ import { Navigate, useLocation } from 'react-router-dom'
 import { accountDealFallback, presentAccountDeals, presentAccountTotals } from '../../../lib/accountPreview'
 import { displayPlatformMoney, type DisplayTotals } from '../../../lib/platformFloors'
 import { fetchPlatformStats, supabase } from '../../../lib/supabase'
+import { dealsTabSections } from '../../../shell/dealsTabLabels'
 import { MEMBER_SECTIONS } from '../../../shell/destinations'
 import { SectionTabs } from '../../../shell/SectionTabs'
 import { DigestUnsubscribePage } from '../DigestPage'
@@ -101,7 +102,7 @@ export function AccountDeals() {
   const { pathname } = useLocation()
   return (
     <div>
-      <SectionTabs label="Deals sections" sections={MEMBER_SECTIONS.deals ?? []} />
+      <SectionTabs label="Deals sections" sections={dealsTabSections(MEMBER_SECTIONS.deals ?? [])} fit="auto" />
       <div className="mt-6">
         {pathname.startsWith('/dashboard/deals/real-estate') ? <AccountRealEstate /> : null}
         {pathname === '/dashboard/deals/rooms' || pathname.startsWith('/dashboard/deals/rooms/') ? <AccountRooms /> : null}
@@ -165,14 +166,7 @@ export function AccountPeople() {
 }
 
 export function AccountAiRoute() {
-  return (
-    <div>
-      <SectionTabs label="AI tools sections" sections={MEMBER_SECTIONS.ai ?? []} />
-      <div className="mt-6">
-        <AccountAi />
-      </div>
-    </div>
-  )
+  return <AccountAi />
 }
 
 export function AccountSurface() {
