@@ -8,17 +8,17 @@ import { MemoryRouter } from 'react-router-dom'
 import { createServer } from 'vite'
 import { FAQ, MARKETING_PAGES, pageGraph, publicFaqItems, publicMarketingTitle } from '../src/content/seo.ts'
 import {
-  ACCOUNT_FLOW_PROMISES,
-  ACCOUNT_OPENS_LINE,
-  HOW_IT_WORKS_HEADING_OFF,
+  CONSIDERATION_NOTE,
+  HOW_IT_WORKS_HEADING,
   howItWorksHeading,
   NO_INSTANT_ACCOUNT_LINE,
+  PUBLIC_PROCESS_STEPS,
   publicProcessSteps,
 } from '../src/content/twoTierCopy.ts'
 import {
+  isTwoTierRegisterEnabled,
   publicConsiderationCta,
   setTwoTierRegisterForTests,
-  twoTierRegisterEnabled,
 } from '../src/lib/twoTierRegister.ts'
 import { LANDING_PREVIEW_EXAMPLES } from '../src/lib/landingPreview.ts'
 
@@ -66,74 +66,61 @@ const PUBLIC_PAGES = [
   ['PrivacyPage', '/src/pages/PrivacyPage.tsx', 'PrivacyPage', '/privacy'],
 ] as const
 
-test('two tier register flag accepts only the exact string true', () => {
-  assert.equal(twoTierRegisterEnabled(undefined), false)
-  assert.equal(twoTierRegisterEnabled(''), false)
-  assert.equal(twoTierRegisterEnabled('false'), false)
-  assert.equal(twoTierRegisterEnabled('TRUE'), false)
-  assert.equal(twoTierRegisterEnabled('1'), false)
-  assert.equal(twoTierRegisterEnabled('true'), true)
-  assert.deepEqual(publicConsiderationCta(false), { to: '/apply', label: 'Apply for consideration' })
-  assert.deepEqual(publicConsiderationCta(true), { to: '/register', label: 'Register for consideration' })
-})
-
-test('account flow lines and Register or Complete wording stay behind the flag', () => {
-  setTwoTierRegisterForTests(false)
-  try {
-    assert.equal(howItWorksHeading(), HOW_IT_WORKS_HEADING_OFF)
-    assert.equal(HOW_IT_WORKS_HEADING_OFF, 'Apply. Review. Invite.')
-    assert.equal(publicProcessSteps()[0]?.title, 'Check')
-    assert.equal(publicProcessSteps().some((step) => step.home.includes('An account opens')), false)
-    assert.equal(publicFaqItems(FAQ)[2]?.answer.includes('Submit Check with your credentials'), true)
-    assert.equal(publicFaqItems(FAQ)[2]?.to, '/apply')
-    assert.equal(publicFaqItems(FAQ)[2]?.toLabel, 'Apply for consideration')
-    assert.equal(
-      publicMarketingTitle(MARKETING_PAGES['/how-it-works']),
-      'How Board Arabia works: apply, review, invite',
-    )
-    for (const page of Object.values(MARKETING_PAGES)) {
-      const title = publicMarketingTitle(page)
-      assert.equal(/\bRegister\b/i.test(title), false, title)
-      assert.equal(/\bComplete\b/i.test(title), false, title)
-      if (page.path !== '/partners') {
-        assert.equal(/\bRegister\b/i.test(page.description), false, page.description)
-      }
-      assert.equal(/\bComplete\b/i.test(page.description), false, page.description)
-    }
-    const graph = JSON.stringify(pageGraph({ path: '/', title: 'Home', description: 'Home page description for the test graph only.' }))
-    assert.equal(graph.includes('An account opens'), false)
-    assert.equal(graph.includes('Submit Check with your credentials'), true)
-  } finally {
-    setTwoTierRegisterForTests(null)
-  }
-
+test('the register switch is gone and consideration always opens apply', () => {
+  assert.equal(isTwoTierRegisterEnabled(), false)
   setTwoTierRegisterForTests(true)
   try {
-    assert.equal(howItWorksHeading(), 'Register. Complete. Review.')
-    assert.equal(
-      publicMarketingTitle(MARKETING_PAGES['/how-it-works']),
-      'How Board Arabia works: register, complete, review',
-    )
-    assert.equal(publicProcessSteps()[0]?.home, 'An account opens so you can see how the membership works.')
-    assert.equal(publicProcessSteps()[1]?.home, 'Complete your credentials inside the account.')
-    assert.equal(publicProcessSteps()[4]?.home, 'On approval, everything opens with the same sign-in.')
-    assert.equal(publicFaqItems(FAQ).find((item) => item.question === 'How do I apply?')?.to, '/register')
-    assert.match(publicFaqItems(FAQ).find((item) => item.question === 'How do I apply?')?.answer ?? '', /An account opens/)
-    const graph = JSON.stringify(pageGraph({ path: '/how-it-works', title: 'How', description: 'How it works description for the test graph only.' }))
-    assert.equal(graph.includes('An account opens'), true)
-    assert.equal(graph.includes(NO_INSTANT_ACCOUNT_LINE), false)
+    assert.equal(isTwoTierRegisterEnabled(), false)
+    assert.deepEqual(publicConsiderationCta(), { to: '/apply', label: 'Apply for consideration' })
   } finally {
     setTwoTierRegisterForTests(null)
   }
+  assert.equal(howItWorksHeading(), HOW_IT_WORKS_HEADING)
+  assert.equal(HOW_IT_WORKS_HEADING, 'Apply. Review. Create your account.')
+  assert.equal(publicProcessSteps().length, 3)
+  assert.deepEqual(
+    publicProcessSteps().map((step) => step.detail),
+    PUBLIC_PROCESS_STEPS.map((step) => step.detail),
+  )
+  assert.equal(publicProcessSteps()[0]?.detail, 'Apply. Three short steps. Takes only your details and your board record.')
+  assert.equal(
+    publicProcessSteps()[1]?.detail,
+    'Our admin team reviews. A named person reads every application. There is no fixed response time.',
+  )
+  assert.equal(
+    publicProcessSteps()[2]?.detail,
+    'Create your account. If you are accepted, we email you a private link. Your account is created then, not before.',
+  )
+  assert.equal(CONSIDERATION_NOTE, 'Three short steps. No account needed yet.')
+  const applyFaq = publicFaqItems(FAQ).find((item) => item.question === 'How do I apply?')
+  assert.equal(applyFaq?.to, '/apply')
+  assert.equal(applyFaq?.toLabel, 'Apply for consideration')
+  assert.match(applyFaq?.answer ?? '', /Three short steps/)
+  assert.equal(
+    publicMarketingTitle(MARKETING_PAGES['/how-it-works']),
+    'How Board Arabia works: apply, review, invite',
+  )
+  for (const page of Object.values(MARKETING_PAGES)) {
+    const title = publicMarketingTitle(page)
+    assert.equal(/\bRegister\b/i.test(title), false, title)
+    assert.equal(/\bComplete\b/i.test(title), false, title)
+    if (page.path !== '/partners') {
+      assert.equal(/\bRegister\b/i.test(page.description), false, page.description)
+    }
+    assert.equal(/\bComplete\b/i.test(page.description), false, page.description)
+  }
+  const graph = JSON.stringify(pageGraph({ path: '/', title: 'Home', description: 'Home page description for the test graph only.' }))
+  assert.equal(graph.includes('An account opens'), false)
+  assert.equal(graph.includes('Three short steps'), true)
 })
 
-test('the flag env is read in one helper', () => {
+test('the register env switch is not read by application code', () => {
   const hits = walk(path.join(root, 'src'))
     .filter((file) => file.endsWith('.ts') || file.endsWith('.tsx'))
     .filter((file) => readFileSync(file, 'utf8').includes('VITE_TWO_TIER_REGISTER_ENABLED'))
     .map((file) => path.relative(root, file))
-  assert.deepEqual(hits, ['src/lib/twoTierRegister.ts'])
-  assert.match(read('.env.example'), /VITE_TWO_TIER_REGISTER_ENABLED=false/)
+  assert.deepEqual(hits, [])
+  assert.equal(read('.env.example').includes('VITE_TWO_TIER_REGISTER_ENABLED'), false)
   assert.match(read('.github/workflows/pages.yml'), /VITE_TWO_TIER_REGISTER_ENABLED: 'false'/)
   const added = [
     'src/lib/twoTierRegister.ts',
@@ -152,7 +139,7 @@ test('the flag env is read in one helper', () => {
   }
 })
 
-test('flag off keeps /apply and the legacy form; flag on points CTAs at /register', async () => {
+test('public consideration buttons stay on apply after the register switch is removed', async () => {
   const vite = await createServer({
     server: { middlewareMode: true, hmr: false },
     appType: 'custom',
@@ -169,8 +156,8 @@ test('flag off keeps /apply and the legacy form; flag on points CTAs at /registe
     const previewMod = await vite.ssrLoadModule('/src/components/DashboardPreviewFrame.tsx')
     const stickyMod = await vite.ssrLoadModule('/src/components/landing/StickyApply.tsx')
 
-    const renderSet = (enabled: boolean) => {
-      gate.setTwoTierRegisterForTests(enabled)
+    const renderSet = () => {
+      gate.setTwoTierRegisterForTests(true)
       const html = pages.map(({ route, View }) =>
         renderToStaticMarkup(
           createElement(MemoryRouter, { initialEntries: [route] }, createElement(View)),
@@ -194,53 +181,43 @@ test('flag off keeps /apply and the legacy form; flag on points CTAs at /registe
       return { html: html.join('\n'), preview, apply, combined: `${html.join('\n')}\n${preview}\n${apply}` }
     }
 
-    gate.setTwoTierRegisterForTests(false)
-    const off = renderSet(false)
-    const offCtas = anchors(`${off.combined}\n${stickyHtml(stickyMod, false)}`)
+    const off = renderSet()
+    const offCtas = anchors(`${off.combined}\n${stickyHtml(stickyMod)}`)
     assert.equal(offCtas.length > 8, true)
     for (const cta of offCtas) {
       assert.equal(cta.href, '/apply/', cta.text)
       assert.equal(cta.text, 'Apply for consideration', cta.text)
     }
     assert.equal(/pre-vet/i.test(off.combined), false)
-    assert.match(off.html, /Start with Check/)
     assert.match(off.apply, /The first step is Check/)
     assert.equal(off.combined.includes('href="/register"'), false)
+    assert.equal(off.combined.includes('Register for consideration'), false)
     assert.match(off.apply, /Submit for consideration/)
     assert.match(off.apply, /LinkedIn/)
     assert.match(off.apply, /Turnover/)
     assert.equal(off.apply.includes('register-candidate'), false)
     assert.equal(off.apply.includes('Security check'), false)
-    for (const line of ACCOUNT_FLOW_PROMISES) {
+    const banned = [
+      'Start with an account',
+      'An account opens',
+      'after you confirm your email',
+      'inside the account',
+      'same sign-in',
+      'Register for consideration',
+    ]
+    for (const line of banned) {
       assert.equal(withoutLegalDocs(off.combined).includes(line), false, line)
     }
     assert.equal(off.html.includes(NO_INSTANT_ACCOUNT_LINE), true)
-    assert.equal(off.html.includes(ACCOUNT_OPENS_LINE), false)
-    assert.equal(off.html.includes('Apply. Review. Invite.'), true)
+    assert.equal(off.html.includes(CONSIDERATION_NOTE), true)
+    assert.equal(off.html.includes('Apply. Review. Create your account.'), true)
     assert.equal(off.html.includes('Register. Complete. Review.'), false)
+    for (const step of PUBLIC_PROCESS_STEPS) {
+      assert.equal(off.html.includes(step.detail), true, step.detail)
+    }
     const offCopy = visibleText(withoutLegalDocs(off.combined))
     assert.equal(/\bRegister\b/i.test(offCopy), false, offCopy.match(/.{0,40}\bRegister\b.{0,40}/i)?.[0])
     assert.equal(/\bComplete\b/i.test(offCopy), false, offCopy.match(/.{0,40}\bComplete\b.{0,40}/i)?.[0])
-
-    const on = renderSet(true)
-    const onCtas = anchors(`${on.combined}\n${stickyHtml(stickyMod, true)}`)
-    assert.equal(onCtas.length, offCtas.length)
-    for (const cta of onCtas) {
-      assert.equal(cta.href, '/register', cta.text)
-      assert.equal(cta.text, 'Register for consideration')
-    }
-    assert.equal(on.combined.includes('href="/apply"'), false)
-    assert.match(on.apply, /Submit for consideration/)
-    assert.match(on.apply, /LinkedIn/)
-    assert.equal(on.apply.includes('register-candidate'), false)
-    assert.equal(on.html.includes('Register. Complete. Review.'), true)
-    assert.equal(on.html.includes('Apply. Review. Invite.'), false)
-    assert.equal(on.html.includes(ACCOUNT_OPENS_LINE), true)
-    assert.equal(on.html.includes(NO_INSTANT_ACCOUNT_LINE), false)
-    assert.equal(on.html.includes('inside the account'), true)
-    assert.equal(on.html.includes('same sign-in'), true)
-    assert.equal(on.html.includes('Start with an account'), false)
-    assert.equal(/pre-vet/i.test(on.combined), false)
     assert.match(read('src/pages/ApplyPage.tsx'), /submitApplication\(/)
     assert.match(read('src/lib/supabase.ts'), /\/submit-application/)
     assert.equal(/registerCandidate\(/.test(read('src/pages/ApplyPage.tsx')), false)
@@ -252,7 +229,7 @@ test('flag off keeps /apply and the legacy form; flag on points CTAs at /registe
   }
 })
 
-function stickyHtml(mod: { StickyApply: unknown }, enabled: boolean) {
+function stickyHtml(mod: { StickyApply: unknown }) {
   const previous = globalThis.window
   globalThis.window = {
     matchMedia(query: string) {
@@ -264,8 +241,6 @@ function stickyHtml(mod: { StickyApply: unknown }, enabled: boolean) {
     },
   } as unknown as Window & typeof globalThis
   try {
-    const gateOn = enabled
-    void gateOn
     return renderToStaticMarkup(
       createElement(MemoryRouter, null, createElement(mod.StickyApply as never, { menuOpen: false })),
     )

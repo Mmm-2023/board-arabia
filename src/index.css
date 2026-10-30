@@ -492,7 +492,8 @@
   color: #ffffff;
 }
 
-.ba-login {
+.ba-login,
+.ba-signin {
   display: inline-flex;
   min-width: 44px;
   min-height: 44px;
@@ -502,6 +503,53 @@
   border-radius: 6px;
   border: 1px solid transparent;
   text-decoration: none;
+}
+
+.ba-signin {
+  border: 0;
+  background: none;
+  padding: 0 0.35rem;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.ba-signin.is-dark {
+  color: #f6f5fb;
+}
+
+.ba-signin.is-light {
+  color: var(--ba-indigo);
+}
+
+.ba-signin:hover {
+  text-decoration: underline;
+}
+
+.ba-apply {
+  min-height: 44px;
+  padding: 0.65rem 1.15rem;
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: 0;
+  text-transform: none;
+  text-decoration: none;
+}
+
+.ba-menu-signin {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  padding: 0 0.15rem;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.2;
+  color: var(--ba-indigo);
+  text-decoration: none;
+}
+
+.ba-menu-signin:hover {
+  text-decoration: underline;
 }
 
 .ba-login.is-dark {
@@ -519,7 +567,11 @@
   min-height: 44px;
   align-items: center;
   justify-content: center;
-  padding: 0 0.9rem;
+  padding: 0.65rem 1.15rem;
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
   text-decoration: none;
 }
 
@@ -551,10 +603,14 @@
 .ba-menu-apply,
 .ba-menu-login {
   display: flex;
-  min-height: 48px;
+  min-height: 44px;
   width: 100%;
   align-items: center;
   justify-content: center;
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
   text-decoration: none;
 }
 
@@ -819,16 +875,16 @@
 
 .ba-steps h3 {
   font-family: var(--font-display);
-  font-size: 0.9375rem;
+  font-size: 1rem;
   font-weight: 650;
-  line-height: 1.3;
+  line-height: 1.35;
 }
 
 .ba-steps p {
-  margin-top: 0.1rem;
+  margin-top: 0.15rem;
   color: #e8e4f7;
-  font-size: 0.875rem;
-  line-height: 1.4;
+  font-size: 1rem;
+  line-height: 1.45;
 }
 
 .ba-icon {
@@ -885,7 +941,7 @@
   }
 
   .ba-steps {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 0.75rem;
   }
 
@@ -938,12 +994,14 @@
 
   .ba-sticky-btn {
     display: flex;
-    min-height: 48px;
+    min-height: 44px;
     width: 100%;
     align-items: center;
     justify-content: center;
-    font-size: 0.9375rem;
+    font-size: 17px;
     font-weight: 600;
+    letter-spacing: 0;
+    text-transform: none;
     text-decoration: none;
   }
 }

@@ -1,83 +1,45 @@
-import { PROCESS_STEPS, type ProcessStep } from './marketing.ts'
-import { isTwoTierRegisterEnabled } from '../lib/twoTierRegister.ts'
+import type { ProcessStep } from './marketing.ts'
 
-/** Pre-TT-4 heading. Shown while the register flag is off. */
-export const HOW_IT_WORKS_HEADING_OFF = 'Apply. Review. Invite.'
+/** Line under the Apply for consideration button. */
+export const CONSIDERATION_NOTE = 'Three short steps. No account needed yet.'
 
-/** Approved heading. Shown only when the register flag is on. */
-export const HOW_IT_WORKS_HEADING_ON = 'Register. Complete. Review.'
+/** Visible heading on How it works. The document title stays for the locked prerender check. */
+export const HOW_IT_WORKS_HEADING = 'Apply. Review. Create your account.'
 
-export function howItWorksHeading(enabled = isTwoTierRegisterEnabled()): string {
-  return enabled ? HOW_IT_WORKS_HEADING_ON : HOW_IT_WORKS_HEADING_OFF
+export function howItWorksHeading(): string {
+  return HOW_IT_WORKS_HEADING
 }
 
 export const NO_INSTANT_ACCOUNT_LINE =
-  'No instant account. Admission follows review and a conversation.'
+  'No account is created until you are accepted. We email you a private link.'
 
-export const ACCOUNT_OPENS_LINE = 'An account opens to look around. Membership follows review.'
-
-export const CLOSING_CTA_BODY = 'Register for consideration. Membership is decided by our admin team.'
-
-export const LEGACY_CLOSING_BODY =
-  'Submit Check. If accepted, you get a private invite.'
-
-export const LEGACY_CTA_BODY =
-  'The first step is Check. Our admin team reviews credentials. If you are accepted, admin sends you a private invite.'
-
-/** Lines that promise the account flow. Hidden on public pages while the flag is off. */
-export const ACCOUNT_FLOW_PROMISES = [
-  'Start with an account',
-  'An account opens',
-  'after you confirm your email',
-  'inside the account',
-  'same sign-in',
-] as const
-
-export const ACCOUNT_FLOW_APPLY_ANSWER =
-  'Register for consideration. An account opens so you can see how the membership works. Our admin team reviews every request personally.'
-
-export const TWO_TIER_PROCESS_STEPS: ProcessStep[] = [
+/** The three public steps, verbatim from Brief A. */
+export const PUBLIC_PROCESS_STEPS: ProcessStep[] = [
   {
     n: '01',
-    title: 'Register for consideration',
-    home: 'An account opens so you can see how the membership works.',
-    detail: 'An account opens so you can see how the membership works.',
+    title: 'Apply',
+    home: 'Apply. Three short steps. Takes only your details and your board record.',
+    detail: 'Apply. Three short steps. Takes only your details and your board record.',
   },
   {
     n: '02',
-    title: 'Complete your credentials',
-    home: 'Complete your credentials inside the account.',
-    detail: 'Complete your credentials inside the account.',
+    title: 'Our admin team reviews',
+    home: 'Our admin team reviews. A named person reads every application. There is no fixed response time.',
+    detail: 'Our admin team reviews. A named person reads every application. There is no fixed response time.',
   },
   {
     n: '03',
-    title: 'Request full membership',
-    home: 'Request full membership.',
-    detail: 'Request full membership.',
-  },
-  {
-    n: '04',
-    title: 'Admin review',
-    home: 'Our admin team reviews every request personally; founding places may include a short conversation.',
+    title: 'Create your account',
+    home: 'Create your account. If you are accepted, we email you a private link. Your account is created then, not before.',
     detail:
-      'Our admin team reviews every request personally; founding places may include a short conversation.',
-  },
-  {
-    n: '05',
-    title: 'Approval',
-    home: 'On approval, everything opens with the same sign-in.',
-    detail: 'On approval, everything opens with the same sign-in.',
+      'Create your account. If you are accepted, we email you a private link. Your account is created then, not before.',
   },
 ]
 
-export function publicProcessSteps(enabled = isTwoTierRegisterEnabled()): ProcessStep[] {
-  return enabled ? TWO_TIER_PROCESS_STEPS : PROCESS_STEPS
+export function publicProcessSteps(): ProcessStep[] {
+  return PUBLIC_PROCESS_STEPS
 }
 
-export function instantAccountLine(enabled = isTwoTierRegisterEnabled()): string {
-  return enabled ? ACCOUNT_OPENS_LINE : NO_INSTANT_ACCOUNT_LINE
-}
-
-export function closingCtaBody(enabled = isTwoTierRegisterEnabled(), legacy = LEGACY_CLOSING_BODY): string {
-  return enabled ? CLOSING_CTA_BODY : legacy
+export function instantAccountLine(): string {
+  return NO_INSTANT_ACCOUNT_LINE
 }

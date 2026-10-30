@@ -1,7 +1,6 @@
 import { Link } from 'react-router-dom'
-import { CLOSING_CTA_BODY, LEGACY_CTA_BODY } from '../content/twoTierCopy'
 import { publicHref } from '../content/seo'
-import { isTwoTierRegisterEnabled, publicConsiderationCta } from '../lib/twoTierRegister'
+import { publicConsiderationCta } from '../lib/twoTierRegister'
 import { trackApplyClick, trackLoginClick } from '../lib/tracking/browser'
 import { Reveal } from './Reveal'
 import { Eyebrow } from './Type'
@@ -10,6 +9,7 @@ export function CtaBand({
   eyebrow = 'Consideration',
   title,
   body,
+  note,
   to,
   label,
   memberLogin = false,
@@ -19,6 +19,7 @@ export function CtaBand({
   eyebrow?: string
   title?: string
   body?: string
+  note?: string
   to?: string
   label?: string
   memberLogin?: boolean
@@ -29,7 +30,6 @@ export function CtaBand({
   const href = to ?? consideration.to
   const ctaLabel = label ?? consideration.label
   const heading = title ?? `${ctaLabel}.`
-  const copy = body ?? (isTwoTierRegisterEnabled() ? CLOSING_CTA_BODY : LEGACY_CTA_BODY)
   return (
     <section id={memberLogin ? 'closing' : undefined} className={`relative overflow-hidden bg-stone ${compact ? 'py-8 md:py-12' : 'py-16 md:py-24'}`}>
       <div className="relative mx-auto max-w-3xl px-5 text-center md:px-10">
@@ -38,12 +38,14 @@ export function CtaBand({
           <h2 className={`font-display font-bold leading-[1.05] tracking-[-0.04em] text-balance text-ink ${compact ? 'text-[clamp(1.7rem,4vw,2.4rem)]' : 'text-[clamp(2.3rem,5.5vw,4rem)]'}`}>
             {heading}
           </h2>
-          <p className="ba-quiet mx-auto mt-3 max-w-lg text-[0.9375rem] leading-relaxed">
-            {copy}
-          </p>
+          {body ? (
+            <p className="ba-quiet mx-auto mt-3 max-w-lg text-[1rem] leading-relaxed">
+              {body}
+            </p>
+          ) : null}
           <Link
             to={publicHref(href)}
-            className="ba-primary mt-5 inline-flex min-h-12 items-center justify-center px-6 text-[0.9375rem] font-semibold"
+            className="ba-primary ba-apply mt-5 inline-flex items-center justify-center"
             data-consideration-cta="public"
             onClick={() => {
               if (href === consideration.to) trackApplyClick(location, ctaLabel)
@@ -51,6 +53,9 @@ export function CtaBand({
           >
             {ctaLabel}
           </Link>
+          {note ? (
+            <p className="mx-auto mt-2 max-w-lg text-[1rem] leading-relaxed text-ink/70">{note}</p>
+          ) : null}
           {memberLogin ? (
             <p className="mt-3 text-[0.9375rem] text-ink">
               Already a member?{' '}

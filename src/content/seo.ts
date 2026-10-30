@@ -1,6 +1,5 @@
 import { LEGAL_PENDING, legalField } from '../config/legal.ts'
-import { ACCOUNT_FLOW_APPLY_ANSWER } from './twoTierCopy.ts'
-import { isTwoTierRegisterEnabled, publicConsiderationCta } from '../lib/twoTierRegister.ts'
+import { publicConsiderationCta } from '../lib/twoTierRegister.ts'
 
 export const SITE_ORIGIN = 'https://boardarabia.com'
 
@@ -77,7 +76,7 @@ export const MARKETING_PAGES: Record<MarketingPath, MarketingPage> = {
     path: '/how-it-works',
     title: 'How Board Arabia works: apply, review, invite',
     description:
-      'Apply with credentials, receive a personal review, then a private email invite if accepted. Members then use the Board Arabia dashboard.',
+      'Apply for consideration in three short steps. Our admin team reviews every application. If you are accepted, we email you a private link. Your account is created then, not before.',
     faq: true,
   },
   '/apply': {
@@ -134,7 +133,7 @@ export type FaqItem = {
 const APPLY_FAQ: FaqItem = {
   question: 'How do I apply?',
   answer:
-    'Submit Check with your credentials (LinkedIn, titles, companies, turnover or family-office AUM). Applications are reviewed personally; accepted candidates receive a private invite email.',
+    'Apply for consideration. Three short steps. Takes only your details and your board record. Our admin team reviews. A named person reads every application. There is no fixed response time. If you are accepted, we email you a private link. Your account is created then, not before.',
   to: '/apply',
   toLabel: 'Apply for consideration',
 }
@@ -142,7 +141,7 @@ const APPLY_FAQ: FaqItem = {
 const CALENDAR_FAQ: FaqItem = {
   question: 'Is there a public calendar or open booking link?',
   answer:
-    'No. Visitors never see an open calendar. A private invite email is sent only after acceptance.',
+    'No. Visitors never see an open calendar. If you are accepted, we email you a private link. Your account is created then, not before.',
   to: '/how-it-works',
   toLabel: 'How admission works',
 }
@@ -226,7 +225,7 @@ const ABOUT_FAQ: FaqItem[] = [
   {
     question: 'How do I join?',
     answer:
-      'Apply at boardarabia.com/apply/. Each application gets a personal review. If accepted, you receive a private invite by email. There is no open signup or public calendar.',
+      'Apply for consideration. Three short steps. No account needed yet. If you are accepted, we email you a private link. Your account is created then, not before. There is no open signup or public calendar.',
   },
   {
     question: 'How do investors engage members?',
@@ -266,25 +265,21 @@ export function faqFor(path: string): FaqItem[] | null {
   return null
 }
 
-/** Apply FAQ link follows the consideration CTA. The account-flow answer is flag-on only. */
-export function publicFaqItems(items: FaqItem[], enabled = isTwoTierRegisterEnabled()): FaqItem[] {
-  const cta = publicConsiderationCta(enabled)
+/** Apply FAQ link follows the consideration CTA. */
+export function publicFaqItems(items: FaqItem[]): FaqItem[] {
+  const cta = publicConsiderationCta()
   return items.map((item) => {
     if (item.question !== 'How do I apply?') return item
     return {
       ...item,
-      answer: enabled ? ACCOUNT_FLOW_APPLY_ANSWER : item.answer,
       to: cta.to,
       toLabel: cta.label,
     }
   })
 }
 
-const HOW_IT_WORKS_TITLE_ON = 'How Board Arabia works: register, complete, review'
-
-/** Page title follows the flag. Off keeps the pre-TT-4 title. */
-export function publicMarketingTitle(page: MarketingPage, enabled = isTwoTierRegisterEnabled()): string {
-  if (page.path === '/how-it-works' && enabled) return HOW_IT_WORKS_TITLE_ON
+/** Document titles stay on the published strings. The register switch no longer changes them. */
+export function publicMarketingTitle(page: MarketingPage): string {
   return page.title
 }
 

@@ -298,7 +298,7 @@ test('with the two tier flag off, /apply posts to submit-application', async () 
     assert.ok(lineOf(app, 'path="/apply" element={<ApplyPage />}') > 0)
     assert.equal(lineOf(apply, 'submitApplication('), 147)
     assert.equal(lineOf(submit, '/submit-application'), 162)
-    assert.equal(lineOf(gate, "return { to: '/apply', label: 'Apply for consideration' }"), 27)
+    assert.equal(lineOf(gate, "return { to: '/apply', label: 'Apply for consideration' }"), 21)
     assert.equal(/register-candidate|registerCandidate/.test(apply), false)
     for (const file of [
       'src/components/Nav.tsx',

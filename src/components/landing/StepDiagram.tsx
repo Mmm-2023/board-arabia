@@ -12,7 +12,7 @@ export function StepDiagram() {
             <i aria-hidden="true" />
             <b>{index + 1}</b>
           </span>
-          <h3>{step.title}</h3>
+          <p>{step.detail}</p>
         </li>
       ))}
     </ol>
