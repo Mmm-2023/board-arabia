@@ -57,7 +57,7 @@ const adminSeat: BoardSeatRow = {
   skillsWanted: ['Governance'],
 }
 
-function MemberShell({ shot, children }: { shot: string; children: ReactNode }) {
+function MemberShell({ shot, children, tabs = true }: { shot: string; children: ReactNode; tabs?: boolean }) {
   return (
     <MemoryRouter initialEntries={['/dashboard/deals/board-seats']}>
       <div data-shot={shot}>
@@ -71,7 +71,7 @@ function MemberShell({ shot, children }: { shot: string; children: ReactNode }) 
           accountLabel="Member"
           accountName="Example Member"
         >
-          <SectionTabs label="Deals sections" sections={MEMBER_SECTIONS.deals ?? []} />
+          {tabs ? <SectionTabs label="Deals sections" sections={MEMBER_SECTIONS.deals ?? []} /> : null}
           <div className="mt-6 max-w-3xl">{children}</div>
         </AppShell>
       </div>
@@ -81,6 +81,22 @@ function MemberShell({ shot, children }: { shot: string; children: ReactNode }) 
 
 function Preview() {
   const shot = new URLSearchParams(window.location.search).get('shot') || 'may-fit'
+  if (shot === 'not-a-fit') {
+    return (
+      <MemberShell shot={shot} tabs={false}>
+        <MayFitYou
+          phase="ready"
+          seats={[seat]}
+          updatedAt={null}
+          toast="Removed from your suggestions"
+          onRetry={() => {}}
+          onDismiss={() => {}}
+          onSeeAll={() => {}}
+          onUndo={() => {}}
+        />
+      </MemberShell>
+    )
+  }
   if (shot === 'not-open') {
     return (
       <MemberShell shot={shot}>

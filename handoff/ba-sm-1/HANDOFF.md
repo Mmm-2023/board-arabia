@@ -63,17 +63,56 @@ INFERRED: a hidden member who is already open sees the designed hidden note insi
 
 UNKNOWN: how many members are open to seats, so no count is quoted.
 
-## Screens
+## UX gate shots
 
-English. No prices. Partners, not sponsors, in the new copy. Five tabs unchanged: Home, Deals, People, Majlis, AI tools. Desktop uses the sidebar. Phone uses the bottom tabs.
+Cited skills: `board-arabia-ux-ui` and `dashboard-ux-desktop-and-mobile`.
 
-Shots at 390 and 1440:
+The shots are phone first at 390px, and desktop at 1440px. Phone uses the bottom tabs (five: Home, Deals, People, Majlis, AI tools on a member screen). Desktop uses the sidebar. The tab bar and the page padding respect the safe area. Body copy is 15px or larger. New buttons and the Yes and No choice are at least 44px, and the primary actions are 17px and sentence case. Placeholders are Example Member, North Court, and name@example.com. No live address.
 
-- May fit you: `/opt/cursor/artifacts/seat-match/may-fit-390.png` and `may-fit-1440.png`
-- Not open, no fit, loading, error: `not-open-*`, `no-fit-*`, `loading-*`, `error-*`
-- Seat reasons: `seat-*`
-- People who may fit, none, and not published: `people-*`, `people-none-*`, `pending-*`
-- Open to new board seats: `open-card-*`
-- Admin switch off: `admin-*`
+Invited and active members both still count. VERIFIED: the match function still uses `m.status in ('invited', 'active')`. This commit does not change that, and it does not change migration pins.
 
-VERIFIED: those files were captured from the smoke page in this workspace. INFERRED: the fixed bottom tab in a full page shot can sit over tall content in the image. The shell already pads the live page for the tab bar.
+### 1. Member seat suggestions card, and empty, loading, and error
+
+The card is the May fit you section.
+
+![Seat suggestions card at 390](member-card-390.png)
+
+![Seat suggestions card at 1440](member-card-1440.png)
+
+![Empty state at 390](member-empty-390.png)
+
+![Empty state at 1440](member-empty-1440.png)
+
+![Loading state at 390](member-loading-390.png)
+
+![Loading state at 1440](member-loading-1440.png)
+
+![Error state at 390](member-error-390.png)
+
+![Error state at 1440](member-error-1440.png)
+
+### 2. Not a fit and Yes
+
+Not a fit removes the suggestion and offers Undo. Yes is the selected Open to new board seats choice.
+
+![Not a fit with Undo at 390](member-not-a-fit-390.png)
+
+![Not a fit with Undo at 1440](member-not-a-fit-1440.png)
+
+![Yes selected at 390](member-yes-390.png)
+
+![Yes selected at 1440](member-yes-1440.png)
+
+### 3. Admin board seats view with suggestions
+
+![Admin board seats at 390](admin-board-seats-390.png)
+
+![Admin board seats at 1440](admin-board-seats-1440.png)
+
+### 4. Seat suggestions switch off
+
+![Seat suggestions off at 390](admin-switch-off-390.png)
+
+![Seat suggestions off at 1440](admin-switch-off-1440.png)
+
+VERIFIED: these files are in `handoff/ba-sm-1/` and were captured from the smoke page with example.com fixtures only.

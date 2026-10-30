@@ -276,12 +276,18 @@ export function MayFitYou({
       ) : null}
       <SuggestionDisclaimer />
       {toast ? (
-        <p className="mt-3 flex flex-wrap items-center gap-3 text-[1rem] text-ink" role="status">
-          <span>{toast}</span>
-          <button type="button" className={quietButton} onClick={onUndo}>
-            {copy.undo}
-          </button>
-        </p>
+        <div
+          data-suggestion-toast=""
+          className="fixed inset-x-4 z-30 bottom-[calc(5.75rem+env(safe-area-inset-bottom,0px))] md:bottom-6 md:left-auto md:right-8 md:w-[28rem]"
+          role="status"
+        >
+          <p className="flex min-h-12 flex-wrap items-center justify-between gap-3 border border-ink/15 bg-white px-4 py-3 text-[1rem] text-ink shadow">
+            <span>{toast}</span>
+            <button type="button" className={quietButton} onClick={onUndo}>
+              {copy.undo}
+            </button>
+          </p>
+        </div>
       ) : null}
       {how ? <HowSuggestionsSheet onClose={() => setHow(false)} /> : null}
     </section>
