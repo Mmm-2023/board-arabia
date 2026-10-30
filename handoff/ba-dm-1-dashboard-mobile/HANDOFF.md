@@ -63,7 +63,7 @@ The 29 Oct production shots were not copied here. The profile shot in that set s
 
 ## Claims
 
-- VERIFIED. At 390px on the fixture, every measured link, button, summary, and visible input on Home, Directory, Profile, Intros, Help, and Mandates is at least 44px wide and 44px tall. Links inside a sentence, and the hidden file input, are not counted. Test: `scripts/dm1-mobile.test.ts`.
+- VERIFIED. At 390px on the fixture, every measured link, button, summary, and visible input on Home, Directory, Profile, Intros, Help, and Mandates is at least 44px wide and 44px tall. Links inside a sentence, and the hidden file input, are not counted. Test: `scripts/dm1-mobile.test.ts`, run locally. On GitHub Actions that browser pass is skipped, because the smoke compile does not finish inside the parallel suite. The source guard in the same file still runs there.
 - VERIFIED. Directory More is `min-h-12 min-w-11` (`DirectoryBoard.tsx:268`). The fixture card's More control is in that measurement.
 - VERIFIED. Each profile checklist row is one full-width link with `min-h-11` (`ProfilePage.tsx:788`).
 - VERIFIED. Intros "Fill it in" is `min-h-12 min-w-11` (`IntroSuggestions.tsx:46`). The All chip is `min-h-11 min-w-11` (`MemberFilters.tsx:151`).
