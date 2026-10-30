@@ -90,7 +90,8 @@ UI only. `supabase/migrations/20270109120000_focus_fields.sql` is unchanged. Lis
 
 | Claim | Where | Test or shot | Grade |
 |---|---|---|---|
-| Main `6e507096` is merged. Newest migration file is `20270110120000_majlis_reminder_windows.sql`. Focus migration still sorts before it. | `scripts/boardroom-fields.test.ts` | `boardroom migration slot, lists, and security text` | VERIFIED |
+| Main `6e507096` is merged. Newest migration file is `20270110120000_majlis_reminder_windows.sql`. Focus migration still sorts before it. | `scripts/boardroom-fields.test.ts` and `scripts/focus-fields.test.ts` | `boardroom migration slot, lists, and security text`; `focus migration slot, lists, and security text` | VERIFIED |
+| Vision 2030 themes render from `FocusFields.tsx`, not the sector component | `src/pages/dashboard/FocusFields.tsx` | `profile, directory, and mandates screens expose the new controls` | VERIFIED |
 | Each question is a card with a count pill, 17px title, 15px helper, and a check on the selected chip | `src/pages/dashboard/FocusFields.tsx` | `after-focus-390.png`, `after-focus-1440.png` | VERIFIED |
 | At the limit, unselected chips stay tappable, use `aria-disabled`, and the message sits under that group | `FocusFields.tsx` `LIMIT_MESSAGE` | source | VERIFIED |
 | Optional line stays behind `Add a line (optional)` until opened or already filled. Counter uses raw length | `OptionalLine` in `FocusFields.tsx` | `after-focus-390.png` shows `51 of 140` | VERIFIED |
