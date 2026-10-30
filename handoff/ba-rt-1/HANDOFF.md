@@ -124,3 +124,5 @@ Scanned the migration, the workflow, and this handoff for a JWT prefix, a privat
 Result: no hits in those three files. The workflow has two secrets references and one vars.RETENTION_SWEEP_ENABLED reference. The copied plan still builds the anonymised address from the previous function. That host is example.com, and it is split across a concatenation, so it is not a literal mailbox.
 
 Two tests name the forbidden strings only to assert that the workflow does not contain them. `scripts/newsletter-analytics.test.ts` asserts the workflow has no URL scheme. `scripts/application-withdrawn-closed-retention.test.ts` asserts the workflow has no project ref and no JWT prefix. Those lines are checks, not credentials.
+
+This branch was merged with main 7ee5eed.
