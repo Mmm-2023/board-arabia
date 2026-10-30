@@ -14,6 +14,9 @@ import {
 } from '../../lib/memberBoardSeats'
 import { SECTOR_TAGS } from '../../lib/profileTags'
 import { RE_REGIONS } from '../../lib/reRegions'
+import { BOARD_EXPERTISE } from '../../lib/boardroom.ts'
+import { SEAT_SUGGESTION_COPY } from '../../lib/seatMatch.ts'
+import { LiveMayFitYou, LivePeopleWhoMayFit, LiveSeatWhy } from './SeatSuggestions.tsx'
 import { ConfirmDialog } from '../../shell/ConfirmDialog'
 import { MEMBER_VIEWS } from '../../shell/viewCopy'
 import { CardSkeleton, EmptyState, ErrorBanner, PermissionState } from '../../shell/ViewState'
@@ -55,11 +58,12 @@ export function MemberBoardSeatList({
       </div>
       <p className="mt-3 max-w-xl text-[1rem] leading-relaxed text-ink/60">{copy.lead}</p>
       <p className="mt-3">
-        <Link to="/dashboard/deals/real-estate?view=roles" className="text-[0.95rem] font-semibold text-ink underline">
+        <Link to="/dashboard/deals/real-estate?view=roles" className="inline-flex min-h-11 items-center text-[1rem] font-semibold text-ink underline">
           {copy.realEstateLink}
         </Link>
       </p>
-      <div className="mt-8">
+      <LiveMayFitYou />
+      <div className="mt-8" id="all-board-seats">
         {status === 'loading' ? <CardSkeleton tone="member" label={copy.loading} /> : null}
         {status === 'error' ? (
           <ErrorBanner tone="member" message={copy.error} retryLabel={copy.retry} onRetry={onRetry} />
@@ -216,6 +220,7 @@ export function MemberBoardSeatDetail({
       ) : null}
       {status === 'ready' && seat ? (
         <article className="mt-6 border border-[var(--ba-line)] bg-white px-5 py-5" data-board-seat={seat.id}>
+          {seat.mine ? null : <LiveSeatWhy seatId={seat.id} />}
           <p className="text-[0.72rem] font-semibold tracking-[0.12em] text-brass uppercase">
             {boardSeatKindLabel(seat.seatKind)}
           </p>
@@ -227,19 +232,27 @@ export function MemberBoardSeatDetail({
           <p className="mt-1 text-[0.98rem] text-ink/75">{seat.capacity}</p>
           <p className="mt-4 text-[0.98rem] leading-relaxed text-ink/75">{seat.terms}</p>
           <p className="mt-4 text-[0.98rem] leading-relaxed text-ink/75">{seat.narrative}</p>
+          {seat.skillsWanted && seat.skillsWanted.length > 0 ? (
+            <p className="mt-4 text-[1rem] text-ink/75">
+              Skills wanted: {seat.skillsWanted.join(', ')}
+            </p>
+          ) : null}
           {seat.mine && seat.status === 'pending_review' ? (
             <p className="mt-5 text-[0.95rem] text-ink/60" role="status">
               {copy.waiting}
             </p>
           ) : null}
           {seat.mine ? (
-            <Shortlist
+            <>
+              <LivePeopleWhoMayFit seatId={seat.id} published={seat.status === 'published'} seatTitle={seat.title} />
+              <Shortlist
               people={shortlist}
               busy={busy}
               notice={notice}
               message={message}
               onAsk={setConfirmId}
             />
+            </>
           ) : (
             <ApplyBlock
               seat={seat}
@@ -319,12 +332,13 @@ function ApplyBlock({
         <>
           <label className={`${labelClass} mt-5`} htmlFor="board-seat-note">
             {copy.noteLabel}
-            <span className="mt-1 block text-[0.85rem] font-normal tracking-normal text-ink/50 normal-case">{copy.noteHint}</span>
+            <span className="mt-1 block text-[1rem] font-normal tracking-normal text-ink/60 normal-case">{copy.noteHint}</span>
             <textarea
               id="board-seat-note"
               value={note}
               maxLength={BOARD_SEAT_NOTE_LIMIT}
               rows={3}
+              placeholder={copy.noteHint}
               onChange={(event) => onNote(event.target.value)}
               className={fieldClass}
             />
@@ -334,7 +348,7 @@ function ApplyBlock({
               {message}
             </p>
           ) : null}
-          <button type="submit" disabled={busy} className={`${buttonClass} mt-4`}>
+          <button type="submit" disabled={busy} className="mt-4 inline-flex min-h-12 items-center bg-[var(--ba-indigo)] px-4 text-[1.0625rem] font-semibold text-[var(--ba-porcelain)] disabled:opacity-40">
             {copy.putForward}
           </button>
         </>
@@ -452,6 +466,15 @@ export function MemberBoardSeatForm({
             selected={draft.sectorTags}
             max={BOARD_SEAT_LIMITS.sectors}
             onToggle={(sectorTags) => onDraft({ ...draft, sectorTags })}
+          />
+          <TagGroup
+            legend={SEAT_SUGGESTION_COPY.skillsLabel}
+            hint={SEAT_SUGGESTION_COPY.skillsHint}
+            name="member-seat-skills"
+            options={BOARD_EXPERTISE}
+            selected={draft.skillsWanted}
+            max={3}
+            onToggle={(skillsWanted) => onDraft({ ...draft, skillsWanted })}
           />
           <TagGroup
             legend="Regions"

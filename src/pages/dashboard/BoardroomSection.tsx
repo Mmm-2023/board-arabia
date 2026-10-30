@@ -1,4 +1,6 @@
 import { useEffect, useId, useState } from 'react'
+import { Link } from 'react-router-dom'
+import { SEAT_SUGGESTION_COPY } from '../../lib/seatMatch.ts'
 import {
   applicationWhereOffer,
   BOARD_EXPERTISE,
@@ -24,7 +26,7 @@ import {
 export type BoardroomPreview = BoardroomRecord
 
 const controlClass =
-  'inline-flex min-h-12 items-center px-3 text-[0.92rem] md:min-h-11 disabled:opacity-50'
+  'inline-flex min-h-12 items-center px-3 text-[1rem] disabled:opacity-50'
 const fieldClass =
   'mt-2 w-full min-h-12 border border-ink/15 bg-white/70 px-4 py-3 text-[1rem] text-ink outline-none focus:border-brass'
 
@@ -78,11 +80,11 @@ export function BoardroomSection({
     }
   }, [attempt, enabled, onMatchChange, preview])
 
-  async function persistFocus(next: BoardroomRecord) {
+  async function persistFocus(next: BoardroomRecord, successNote = 'Saved') {
     if (preview) {
       setRecord(next)
       onMatchChange?.(boardSeatFieldsForCompleteness(next))
-      setNote('Saved')
+      setNote(successNote)
       setError('')
       return true
     }
@@ -97,7 +99,7 @@ export function BoardroomSection({
     }
     setRecord(next)
     onMatchChange?.(boardSeatFieldsForCompleteness(next))
-    setNote('Saved')
+    setNote(successNote)
     return true
   }
 
@@ -133,23 +135,36 @@ export function BoardroomSection({
   }
 
   function onOpen(open: boolean) {
+    setError('')
+    if (!open) {
+      setNote('')
+      void persistFocus(
+        { ...record, openToSeats: false, seatTypes: [], seatWhere: [] },
+        SEAT_SUGGESTION_COPY.savedNo,
+      )
+      return
+    }
+    setRecord((current) => ({ ...current, openToSeats: true }))
     setNote('')
-    void persistFocus({
-      ...record,
-      openToSeats: open,
-      seatTypes: open ? record.seatTypes : [],
-      seatWhere: open ? record.seatWhere : [],
-    })
   }
 
   function onSeatType(value: BoardSeatType) {
     const result = toggleAllowed(record.seatTypes, value, BOARD_SEAT_TYPES.length)
-    void persistFocus({ ...record, seatTypes: result.next })
+    setRecord((current) => ({ ...current, seatTypes: result.next }))
   }
 
   function onWhere(value: BoardSeatWhere) {
     const result = toggleAllowed(record.seatWhere, value, BOARD_SEAT_WHERE.length)
-    void persistFocus({ ...record, seatWhere: result.next })
+    setRecord((current) => ({ ...current, seatWhere: result.next }))
+  }
+
+  function onSaveOpen() {
+    if (record.openToSeats && (record.seatTypes.length === 0 || record.seatWhere.length === 0)) {
+      setError(SEAT_SUGGESTION_COPY.placeError)
+      setNote('')
+      return
+    }
+    void persistFocus(record, record.openToSeats ? SEAT_SUGGESTION_COPY.savedYes : SEAT_SUGGESTION_COPY.savedNo)
   }
 
   async function onUseApplication() {
@@ -273,11 +288,11 @@ export function BoardroomSection({
             onPick={(value) => onExpertise(value as BoardExpertise)}
           />
           <div>
-            <p id="boardroom-open-label" className="text-[0.72rem] font-semibold tracking-[0.08em] text-ink/45 uppercase">
-              Open to new seats
+            <p id="boardroom-open-label" className="text-[1rem] font-semibold text-ink">
+              {SEAT_SUGGESTION_COPY.openTitle}
             </p>
-            <p id="boardroom-open-help" className="mt-2 text-[0.95rem] leading-relaxed text-ink/60">
-              Yes means you will consider a new seat. Not now keeps seat types and places off your card.
+            <p id="boardroom-open-help" className="mt-2 text-[1rem] leading-relaxed text-ink/70">
+              {SEAT_SUGGESTION_COPY.openBody}
             </p>
             <div
               className="mt-3 flex flex-wrap gap-2"
@@ -285,11 +300,11 @@ export function BoardroomSection({
               aria-labelledby="boardroom-open-label"
               aria-describedby="boardroom-open-help"
             >
-              <Choice radio pressed={record.openToSeats} disabled={saving} onClick={() => onOpen(true)}>
-                Yes
-              </Choice>
               <Choice radio pressed={!record.openToSeats} disabled={saving} onClick={() => onOpen(false)}>
-                Not now
+                {SEAT_SUGGESTION_COPY.openNo}
+              </Choice>
+              <Choice radio pressed={record.openToSeats} disabled={saving} onClick={() => onOpen(true)}>
+                {SEAT_SUGGESTION_COPY.openYes}
               </Choice>
             </div>
           </div>
@@ -297,7 +312,7 @@ export function BoardroomSection({
             <>
               <ChipGroup
                 id="boardroom-seat-types"
-                label="Seat types"
+                label={SEAT_SUGGESTION_COPY.typesHeading}
                 help="The kinds of seat you would consider."
                 options={BOARD_SEAT_TYPES}
                 selected={record.seatTypes}
@@ -306,15 +321,24 @@ export function BoardroomSection({
               />
               <ChipGroup
                 id="boardroom-where"
-                label="Where"
+                label={SEAT_SUGGESTION_COPY.whereHeading}
                 help="Where you would sit."
                 options={BOARD_SEAT_WHERE}
                 selected={record.seatWhere}
                 disabled={saving}
                 onPick={(value) => onWhere(value as BoardSeatWhere)}
               />
+              <button type="button" className="inline-flex min-h-12 items-center bg-[var(--ba-indigo)] px-4 text-[1.0625rem] font-semibold text-[var(--ba-porcelain)] disabled:opacity-50" disabled={saving} onClick={onSaveOpen}>
+                {SEAT_SUGGESTION_COPY.save}
+              </button>
             </>
           ) : null}
+          <p className="text-[1rem] leading-relaxed text-ink/70">{SEAT_SUGGESTION_COPY.hiddenNote}</p>
+          <p>
+            <Link to="/dashboard/privacy" className="inline-flex min-h-11 items-center text-[1rem] font-semibold text-ink underline">
+              {SEAT_SUGGESTION_COPY.privacyLink}
+            </Link>
+          </p>
           {offer ? (
             <div className="border border-ink/10 bg-white/60 px-4 py-4" aria-labelledby={offerId}>
               <p id={offerId} className="text-[0.95rem] leading-relaxed text-ink">

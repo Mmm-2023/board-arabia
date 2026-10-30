@@ -10,6 +10,8 @@ import {
   type BoardSeatDraft,
   type BoardSeatRow,
 } from '../../lib/boardSeats'
+import { BOARD_EXPERTISE } from '../../lib/boardroom'
+import { SEAT_SUGGESTION_COPY } from '../../lib/seatMatch'
 import { SECTOR_TAGS } from '../../lib/profileTags'
 import { RE_REGIONS } from '../../lib/reRegions'
 import { ConfirmDialog } from '../../shell/ConfirmDialog'
@@ -38,6 +40,8 @@ export function BoardSeatsView({
   onClose,
   onOpenApplicants,
   onRetry,
+  suggestionsEnabled,
+  onSuggestions,
 }: {
   status: 'loading' | 'error' | 'ready'
   seats: BoardSeatRow[]
@@ -55,6 +59,8 @@ export function BoardSeatsView({
   onClose: (id: string) => void
   onOpenApplicants: (id: string) => void
   onRetry: () => void
+  suggestionsEnabled: boolean | null
+  onSuggestions: (enabled: boolean) => void
 }) {
   const styles = toneClasses('staff')
   const copy = STAFF_VIEWS.boardSeats
@@ -69,6 +75,22 @@ export function BoardSeatsView({
     <section aria-label="Board seats" className="mt-8" data-board-seats-panel="">
       <h2 className={`text-[0.72rem] font-semibold tracking-[0.14em] uppercase ${styles.quiet}`}>{copy.title}</h2>
       <p className={`mt-3 max-w-xl text-[0.98rem] leading-relaxed ${styles.muted}`}>{copy.lead}</p>
+      {suggestionsEnabled == null ? null : (
+        <div className="mt-4 max-w-xl" data-seat-suggestions-switch={suggestionsEnabled ? 'on' : 'off'}>
+          <p className="text-[1.0625rem] font-semibold text-pearl">{SEAT_SUGGESTION_COPY.switchLabel}</p>
+          <p className={`mt-2 text-[1rem] leading-relaxed ${styles.muted}`}>{SEAT_SUGGESTION_COPY.switchHelper}</p>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={suggestionsEnabled}
+            disabled={busy}
+            onClick={() => onSuggestions(!suggestionsEnabled)}
+            className="mt-3 inline-flex min-h-12 items-center px-4 text-[1.0625rem] font-semibold text-pearl disabled:opacity-40"
+          >
+            {suggestionsEnabled ? 'On' : 'Off'}
+          </button>
+        </div>
+      )}
       {status === 'loading' ? <p className={`mt-3 ${styles.muted}`}>{copy.loading}</p> : null}
       {status === 'error' ? (
         <div className="mt-3">
@@ -197,6 +219,15 @@ export function BoardSeatsView({
             selected={draft.sectorTags}
             max={BOARD_SEAT_LIMITS.sectors}
             onToggle={(sectorTags) => onDraft({ ...draft, sectorTags })}
+          />
+          <TagGroup
+            legend={SEAT_SUGGESTION_COPY.skillsLabel}
+            hint={SEAT_SUGGESTION_COPY.skillsHint}
+            name="board-seat-skills"
+            options={BOARD_EXPERTISE}
+            selected={draft.skillsWanted}
+            max={3}
+            onToggle={(skillsWanted) => onDraft({ ...draft, skillsWanted })}
           />
           <TagGroup
             legend={copy.regions}
