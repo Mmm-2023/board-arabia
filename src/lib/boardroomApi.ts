@@ -20,6 +20,7 @@ export function boardroomErrorMessage(message: string): string {
   if (/boardroom_contact/i.test(message)) return 'Leave out email addresses and phone numbers.'
   if (/boardroom_limit/i.test(message)) return 'Five is the limit.'
   if (/boardroom_invalid/i.test(message)) return 'Choose a value from the list.'
+  if (/boardroom_place/i.test(message)) return 'Pick at least one seat type and one place.'
   return 'Could not save the boardroom. Try again.'
 }
 

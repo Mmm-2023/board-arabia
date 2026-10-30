@@ -25,6 +25,7 @@ function args(draft: MemberSeatDraft) {
     p_organisation_name: draft.organisationName.trim(),
     p_terms: draft.terms.trim(),
     p_narrative: draft.narrative.trim(),
+    p_skills_wanted: draft.skillsWanted,
   }
 }
 

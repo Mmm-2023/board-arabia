@@ -1,3 +1,4 @@
+import { BOARD_EXPERTISE } from './boardroom.ts'
 import { normalizeTags, SECTOR_TAGS } from './profileTags.ts'
 import { RE_REGIONS } from './reRegions.ts'
 
@@ -52,6 +53,7 @@ export type BoardSeatDraft = {
   contactEmail: string
   contactPhone: string
   narrative: string
+  skillsWanted: string[]
 }
 
 export type BoardSeatRow = BoardSeatDraft & {
@@ -91,6 +93,7 @@ export function emptyBoardSeatDraft(): BoardSeatDraft {
     contactEmail: '',
     contactPhone: '',
     narrative: '',
+    skillsWanted: [],
   }
 }
 
@@ -146,6 +149,8 @@ export function boardSeatProblem(draft: BoardSeatDraft, mode: 'draft' | 'publish
   if (mode === 'publish' && tags.length === 0 && regions.length === 0) {
     return 'Choose at least one sector or region before you publish.'
   }
+  const skills = stringList(draft.skillsWanted, BOARD_EXPERTISE, 3)
+  if (skills.length !== draft.skillsWanted.length) return 'Choose expertise from the list. Up to 3.'
   if (draft.seatKind === 'company_board') {
     const name = draft.contactName.trim()
     const email = draft.contactEmail.trim()
@@ -186,6 +191,7 @@ export function presentBoardSeat(raw: unknown): BoardSeatRow | null {
     capacity,
     sectorTags: stringList(row.sector_tags, SECTOR_TAGS, BOARD_SEAT_LIMITS.sectors),
     regions: stringList(row.regions, RE_REGIONS, BOARD_SEAT_LIMITS.regions),
+    skillsWanted: stringList(row.skills_wanted, BOARD_EXPERTISE, 3),
     organisationName,
     terms,
     narrative,
@@ -252,5 +258,6 @@ export function draftFromBoardSeat(seat: BoardSeatRow): BoardSeatDraft {
     contactEmail: seat.contactEmail,
     contactPhone: seat.contactPhone,
     narrative: seat.narrative,
+    skillsWanted: seat.skillsWanted,
   }
 }
