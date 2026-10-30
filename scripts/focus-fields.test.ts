@@ -6,6 +6,8 @@ import path from 'node:path'
 import test from 'node:test'
 import { fileURLToPath } from 'node:url'
 import { presentDirectoryCard } from '../src/lib/demoRows.ts'
+import { reasonsAction } from '../src/lib/profileCompleteness.ts'
+import { directoryLanguageLine, matchingAsks } from '../src/lib/focusCard.ts'
 import {
   CAN_HELP_WITH,
   FOCUS_CHIP_WEIGHT,
@@ -142,6 +144,15 @@ test('lines reject email and phone patterns and chips stay on the allowlist', ()
   assert.equal(focusMatchReason('Deal introductions'), 'They can help with deal introductions, which you are looking for.')
   assert.equal(focusMatchReason('GCC partners'), 'They can help with GCC partners, which you are looking for.')
   assert.equal(FOCUS_CHIP_WEIGHT, 1)
+  assert.equal(reasonsAction(2), 'Pick 1 in each group')
+  assert.equal(reasonsAction(1), 'Pick 1 more')
+  assert.equal(reasonsAction(0), '')
+  assert.equal(directoryLanguageLine(['English', 'Arabic']), 'Languages English, Arabic')
+  assert.equal(
+    directoryLanguageLine(['English', 'Arabic', 'French', 'Urdu', 'Hindi']),
+    'Languages English, Arabic, French +2 more',
+  )
+  assert.deepEqual(matchingAsks(['Deal flow', 'Board seat'], ['Deal introductions']), ['Deal flow'])
 })
 
 test('a chip match ranks above no match at equal sectors and the reason is exact', () => {

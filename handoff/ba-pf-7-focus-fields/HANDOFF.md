@@ -84,11 +84,36 @@ VERIFIED. The diff uses `example.com` fixtures only. No keys, tokens, passwords,
 
 Older `search_path = public` definers were not rewritten.
 
+## Focus redesign (30 Oct)
+
+UI only. `supabase/migrations/20270109120000_focus_fields.sql` is unchanged. Lists, limits, `save_my_focus`, and the planner weight are unchanged.
+
+| Claim | Where | Test or shot | Grade |
+|---|---|---|---|
+| Main `6e507096` is merged. Newest migration file is `20270110120000_majlis_reminder_windows.sql`. Focus migration still sorts before it. | `scripts/boardroom-fields.test.ts` | `boardroom migration slot, lists, and security text` | VERIFIED |
+| Each question is a card with a count pill, 17px title, 15px helper, and a check on the selected chip | `src/pages/dashboard/FocusFields.tsx` | `after-focus-390.png`, `after-focus-1440.png` | VERIFIED |
+| At the limit, unselected chips stay tappable, use `aria-disabled`, and the message sits under that group | `FocusFields.tsx` `LIMIT_MESSAGE` | source | VERIFIED |
+| Optional line stays behind `Add a line (optional)` until opened or already filled. Counter uses raw length | `OptionalLine` in `FocusFields.tsx` | `after-focus-390.png` shows `51 of 140` | VERIFIED |
+| Vision 2030 is last and collapsed, with suggestions and `See all 12 themes` | `VisionDisclosure` in `FocusFields.tsx` | `after-focus-390.png` | VERIFIED |
+| Checklist actions are `Pick 1 in each group` and `Pick 1 more`, still linking to `#focus` | `src/lib/profileCompleteness.ts` `reasonsAction` | `PF-6 and PF-7 rows appear only when their fields are passed` | VERIFIED |
+| Directory labels are 15px sentence case. Help chips use a mist fill. Looking-for chips use an indigo outline. Lines sit under their chips | `src/pages/dashboard/DirectoryFocus.tsx`, `DirectoryBoard.tsx` field label | `after-card-390.png`, `after-card-1440.png` | VERIFIED |
+| Languages are one line, with `+N more` after three | `src/lib/focusCard.ts` `directoryLanguageLine` | unit test; card shot shows `+2 more` | VERIFIED |
+| Match cue uses the viewer's looking-for chip | `matchingAsks` and `DirectoryPage.tsx` | unit test; card shot shows `Matches what you are looking for: Deal flow` | VERIFIED |
+| Mobile save bar has Unsaved, Saving, Saved, and Not saved. Saved clears after 5 seconds | `src/pages/dashboard/ProfileSaveBar.tsx`, timeout in `ProfilePage.tsx` | `after-save-390.png`, `after-save-1440.png`. The 5 second timer is in code | VERIFIED for copy and layout. Timer duration INFERRED from `setTimeout(..., 5000)` |
+| Example mark and directory Sector and Firm labels are at least 15px | `src/components/ExampleMark.tsx`, `DirectoryBoard.tsx` `Field` | source uses `text-[15px]` | VERIFIED |
+| Tap targets stay at least 44px and phone body text at least 15px | focus chips `min-h-11 min-w-11`, helpers `text-[15px]`, save button `min-h-12` | `phone tap targets are at least 44px and phone body text is at least 15px` | VERIFIED |
+| Loading, empty, and error states remain on Focus | skeletons and retry in `ProfilePage.tsx`. Empty is an open card with no chips selected | source | VERIFIED |
+| No Edge, legal, or migration edits in the redesign | diff excludes those paths | `git diff` | VERIFIED |
+| Approved 390 before mockups | supplied with the brief, not present as files on disk | not committed | UNKNOWN as repo files. The after shots above are VERIFIED |
+
 ## Shots
 
-Example data only, at 390 and 1280:
+Example data only. After shots are at 390 and 1440. Earlier shots at 1280 remain from the first pass.
 
 - `completeness-390.png`, `completeness-1280.png`
+- `after-focus-390.png`, `after-focus-1440.png`
+- `after-card-390.png`, `after-card-1440.png`
+- `after-save-390.png`, `after-save-1440.png`
 - `focus-390.png` (retaken after the main merge), `focus-1280.png`
 - `directory-chips-390.png`, `directory-chips-1280.png`
 - `directory-lines-390.png`, `directory-lines-1280.png`

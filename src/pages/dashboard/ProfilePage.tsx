@@ -45,6 +45,7 @@ import { LinkedInConnect } from './LinkedInConnect'
 import { MemberAvatar } from './MemberAvatar'
 import { BoardroomSection, type BoardroomPreview } from './BoardroomSection'
 import { FocusFields } from './FocusFields'
+import { ProfileSaveBar, type SaveBarMode } from './ProfileSaveBar'
 import { ProfileTagFields } from './ProfileTagFields'
 
 const fieldClass =
@@ -111,7 +112,7 @@ export function ProfilePage({
   const [focusKnown, setFocusKnown] = useState(focusFromProfile)
   const [focusStatus, setFocusStatus] = useState<'loading' | 'ready' | 'error'>(focusFromProfile ? 'ready' : 'loading')
   const [focusAttempt, setFocusAttempt] = useState(0)
-  const [tagNote, setTagNote] = useState('')
+  const [saveFlash, setSaveFlash] = useState<Exclude<SaveBarMode, 'dirty' | 'saving'> | null>(null)
   const [tagStatus, setTagStatus] = useState<'loading' | 'ready' | 'error'>(tagsFromProfile ? 'ready' : 'loading')
   const [tagAttempt, setTagAttempt] = useState(0)
   const [seatFields, setSeatFields] = useState(() =>
@@ -392,6 +393,11 @@ export function ProfilePage({
   const draft = draftNow()
   const dirty = tagStatus === 'ready' && !sameDraft(draft, saved.current)
   useConfirmLeave(dirty)
+  useEffect(() => {
+    if (saveFlash !== 'saved') return
+    const timer = window.setTimeout(() => setSaveFlash(null), 5000)
+    return () => window.clearTimeout(timer)
+  }, [saveFlash])
 
   async function onSaveProfile(event: FormEvent) {
     event.preventDefault()
@@ -467,8 +473,10 @@ export function ProfilePage({
       setSavingProfile(false)
       if (savedRow.error) {
         setProfileError(savedRow.error.message)
+        setSaveFlash('error')
         return
       }
+      setSaveFlash('saved')
       setProfileNote('Profile saved. Availability and tags are not available yet.')
       saved.current = draftNow()
       tagEdited.current = false
@@ -479,6 +487,7 @@ export function ProfilePage({
     setSavingProfile(false)
     if (savedRow.error) {
       setProfileError(savedRow.error.message)
+      setSaveFlash('error')
       return
     }
     if (focusKnown) {
@@ -500,10 +509,12 @@ export function ProfilePage({
           return
         }
         setProfileError(focusSaved.message)
+        setSaveFlash('error')
         return
       }
     }
-    setProfileNote('Profile saved.')
+    setSaveFlash('saved')
+    setProfileNote('')
     saved.current = draftNow()
     tagEdited.current = false
     focusEdited.current = false
@@ -525,6 +536,16 @@ export function ProfilePage({
     setAvatarStyle(patch.avatar_style)
     await reload()
   }
+
+  const saveMode: SaveBarMode | null = savingProfile
+    ? 'saving'
+    : profileError
+      ? 'error'
+      : saveFlash === 'saved'
+        ? 'saved'
+        : dirty
+          ? 'dirty'
+          : null
 
   const passwordTarget = profilePasswordTarget(hash)
   if (passwordTarget) return <Navigate to={passwordTarget} replace />
@@ -696,9 +717,9 @@ export function ProfilePage({
             <h2 id="focus-title" className="font-display text-[1.6rem] font-semibold tracking-[-0.03em]">
               Focus
             </h2>
-            <p className="mt-2 text-[0.98rem] leading-relaxed text-ink/60">
-              A sector and your availability switch on weekly introductions. Say what you can help with and what you
-              are looking for so a match can be a reason. Vision 2030 themes are optional.
+            <p className="mt-2 text-[15px] leading-relaxed text-ink/70">
+              Say how you can help and what you are looking for. A match can be the reason for a weekly introduction.
+              Admitted members see your picks on your card.
             </p>
           </div>
           <div id="profile-tags" className="scroll-mt-24 space-y-5">
@@ -710,12 +731,12 @@ export function ProfilePage({
             ) : null}
             {tagStatus === 'error' ? (
               <div className="space-y-3">
-                <p className="text-[0.92rem] text-[var(--ba-error)]" role="alert">
+                <p className="text-[15px] text-[var(--ba-error)]" role="alert">
                   Could not load availability and tags.
                 </p>
                 <button
                   type="button"
-                  className="inline-flex min-h-12 items-center border border-ink/20 px-4 text-[0.75rem] font-semibold tracking-[0.08em] uppercase"
+                  className="inline-flex min-h-11 items-center border border-ink/20 px-4 text-[15px] font-semibold"
                   onClick={() => {
                     setTagStatus('loading')
                     setTagAttempt((value) => value + 1)
@@ -729,8 +750,6 @@ export function ProfilePage({
               <ProfileTagFields
                 availability={availability}
                 sectors={sectors}
-                themes={themes}
-                limitNote={tagNote}
                 onAvailability={(value) => {
                   tagEdited.current = true
                   setAvailability((current) => (current === value ? null : value))
@@ -739,13 +758,6 @@ export function ProfilePage({
                   tagEdited.current = true
                   const result = toggleTag(sectors, tag, SECTOR_TAGS)
                   setSectors(result.next)
-                  setTagNote(result.limited ? 'Three sectors is the limit.' : '')
-                }}
-                onTheme={(tag) => {
-                  tagEdited.current = true
-                  const result = toggleTag(themes, tag, VISION_2030_THEMES)
-                  setThemes(result.next)
-                  setTagNote(result.limited ? 'Three Vision 2030 themes is the limit.' : '')
                 }}
               />
             ) : null}
@@ -757,12 +769,12 @@ export function ProfilePage({
             ) : null}
             {focusStatus === 'error' ? (
               <div className="space-y-3">
-                <p className="text-[0.92rem] text-[var(--ba-error)]" role="alert">
+                <p className="text-[15px] text-[var(--ba-error)]" role="alert">
                   Could not load what you can help with and what you are looking for.
                 </p>
                 <button
                   type="button"
-                  className="inline-flex min-h-12 items-center border border-ink/20 px-4 text-[0.75rem] font-semibold tracking-[0.08em] uppercase"
+                  className="inline-flex min-h-11 items-center border border-ink/20 px-4 text-[15px] font-semibold"
                   onClick={() => {
                     setFocusStatus('loading')
                     setFocusAttempt((value) => value + 1)
@@ -779,11 +791,11 @@ export function ProfilePage({
                 lookingFor={lookingFor}
                 lookingForLine={lookingForLine}
                 languages={languages}
+                sectors={sectors}
+                themes={themes}
                 onCanHelp={(tag) => {
                   focusEdited.current = true
-                  const result = toggleTag(canHelp, tag, CAN_HELP_WITH, MAX_FOCUS_CHIPS)
-                  setCanHelp(result.next)
-                  setTagNote(result.limited ? 'Three is the limit for what you can help with.' : '')
+                  setCanHelp(toggleTag(canHelp, tag, CAN_HELP_WITH, MAX_FOCUS_CHIPS).next)
                 }}
                 onCanHelpLine={(value) => {
                   focusEdited.current = true
@@ -791,9 +803,7 @@ export function ProfilePage({
                 }}
                 onLookingFor={(tag) => {
                   focusEdited.current = true
-                  const result = toggleTag(lookingFor, tag, LOOKING_FOR, MAX_FOCUS_CHIPS)
-                  setLookingFor(result.next)
-                  setTagNote(result.limited ? 'Three is the limit for what you are looking for.' : '')
+                  setLookingFor(toggleTag(lookingFor, tag, LOOKING_FOR, MAX_FOCUS_CHIPS).next)
                 }}
                 onLookingForLine={(value) => {
                   focusEdited.current = true
@@ -801,8 +811,11 @@ export function ProfilePage({
                 }}
                 onLanguage={(tag) => {
                   focusEdited.current = true
-                  const result = toggleTag(languages, tag, LANGUAGES, LANGUAGES.length)
-                  setLanguages(result.next)
+                  setLanguages(toggleTag(languages, tag, LANGUAGES, LANGUAGES.length).next)
+                }}
+                onTheme={(tag) => {
+                  tagEdited.current = true
+                  setThemes(toggleTag(themes, tag, VISION_2030_THEMES).next)
                 }}
               />
             ) : null}
@@ -865,7 +878,8 @@ export function ProfilePage({
           </p>
         ) : null}
         {profileNote ? <p className="text-[0.92rem] text-ink/70">{profileNote}</p> : null}
-        <div className="hidden md:block">
+        <div className="hidden space-y-3 md:block">
+          {saveMode ? <ProfileSaveBar mode={saveMode} fixed={false} /> : null}
           <SaveProfileButton saving={savingProfile} error={profileError} disabled={savingProfile || !profile} />
         </div>
         {!profile ? (
@@ -873,22 +887,7 @@ export function ProfilePage({
         ) : null}
       </form>
 
-      {dirty ? (
-        <div
-          data-profile-save-sticky=""
-          className="fixed inset-x-0 z-30 border-t border-ink/10 bg-[var(--ba-porcelain)] px-4 py-2 md:hidden"
-          style={{ bottom: 'calc(3.5rem + env(safe-area-inset-bottom, 0px))' }}
-        >
-          <button
-            type="submit"
-            form="profile-form"
-            disabled={savingProfile || !profile}
-            className="ba-primary inline-flex min-h-12 w-full items-center justify-center px-5 text-[0.75rem] font-semibold tracking-[0.08em] uppercase disabled:opacity-50"
-          >
-            {savingProfile ? 'Saving…' : profileError ? 'Retry' : 'Save profile'}
-          </button>
-        </div>
-      ) : null}
+      {saveMode ? <ProfileSaveBar mode={saveMode} /> : null}
     </div>
   )
 }
@@ -990,9 +989,9 @@ function SaveProfileButton({
     <button
       type="submit"
       disabled={disabled}
-      className="ba-primary inline-flex min-h-12 items-center px-5 py-3 text-[0.75rem] font-semibold tracking-[0.08em] uppercase disabled:opacity-50"
+      className="ba-primary inline-flex min-h-12 items-center px-5 py-3 text-[16px] font-semibold disabled:opacity-50"
     >
-      {saving ? 'Saving…' : error ? 'Retry' : 'Save profile'}
+      {saving ? 'Saving' : error ? 'Try again' : 'Save profile'}
     </button>
   )
 }

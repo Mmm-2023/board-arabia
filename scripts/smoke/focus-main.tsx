@@ -9,6 +9,7 @@ import { MemberContext, type MemberRoom } from '../../src/pages/dashboard/contex
 import { DirectoryBoard } from '../../src/pages/dashboard/DirectoryBoard'
 import { IntroSuggestions } from '../../src/pages/dashboard/IntroSuggestions'
 import { ProfilePage } from '../../src/pages/dashboard/ProfilePage'
+import { ProfileSaveBar } from '../../src/pages/dashboard/ProfileSaveBar'
 import { AppShell } from '../../src/shell/AppShell'
 import { MEMBER_DESTINATIONS, MEMBER_SECONDARY } from '../../src/shell/destinations'
 import './smoke.css'
@@ -114,7 +115,7 @@ const directoryCard: DirectoryCard = {
   looking_for: ['Board seat'],
   can_help_line: 'Example. Introductions to operators in this sector.',
   looking_for_line: 'Example. A board seat with a family company.',
-  languages: ['English', 'Arabic'],
+  languages: ['English', 'Arabic', 'French', 'Urdu', 'Hindi'],
 }
 
 const suggestion: IntroSuggestion = {
@@ -167,8 +168,21 @@ createRoot(root).render(
             cards={[directoryCard]}
             seat={{ status: 'ready', admitted: 2 }}
             selfId="example-viewer"
+            viewerLookingFor={['Deal flow']}
             onRequestIntro={() => undefined}
           />
+        </AppShell>
+      </MemoryRouter>
+    ) : null}
+    {view === 'save' ? (
+      <MemoryRouter initialEntries={['/dashboard/profile']}>
+        <AppShell {...shell}>
+          <div className="max-w-xl space-y-4">
+            <ProfileSaveBar mode="dirty" fixed={false} />
+            <ProfileSaveBar mode="saving" fixed={false} />
+            <ProfileSaveBar mode="saved" fixed={false} />
+            <ProfileSaveBar mode="error" fixed={false} />
+          </div>
         </AppShell>
       </MemoryRouter>
     ) : null}

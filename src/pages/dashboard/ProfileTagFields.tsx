@@ -1,24 +1,19 @@
-import { suggestedVisionThemes } from '../../../supabase/functions/_shared/focus_fields.ts'
-import { AVAILABILITY, AVAILABILITY_LABEL, SECTOR_TAGS, VISION_2030_THEMES, type Availability } from '../../lib/profileTags'
+import { useState } from 'react'
+import { AVAILABILITY, AVAILABILITY_LABEL, SECTOR_TAGS, type Availability } from '../../lib/profileTags'
 import { Chip } from './MemberFilters'
 
 export function ProfileTagFields({
   availability,
   sectors,
-  themes,
-  limitNote,
   onAvailability,
   onSector,
-  onTheme,
 }: {
   availability: Availability | null
   sectors: readonly string[]
-  themes: readonly string[]
-  limitNote: string
   onAvailability: (value: Availability) => void
   onSector: (tag: string) => void
-  onTheme: (tag: string) => void
 }) {
+  const [sectorNote, setSectorNote] = useState('')
   return (
     <div className="space-y-5">
       <div>
@@ -48,56 +43,16 @@ export function ProfileTagFields({
         help="Pick the sectors where you sit. Up to 3."
         options={SECTOR_TAGS}
         selected={sectors}
-        onPick={onSector}
+        note={sectorNote}
+        onPick={(tag) => {
+          if (!sectors.includes(tag) && sectors.length >= 3) {
+            setSectorNote('Three sectors is the limit.')
+            return
+          }
+          setSectorNote('')
+          onSector(tag)
+        }}
       />
-      <VisionThemes sectors={sectors} themes={themes} onTheme={onTheme} />
-      {limitNote ? (
-        <p className="text-[0.92rem] text-ink/70" role="status">
-          {limitNote}
-        </p>
-      ) : null}
-    </div>
-  )
-}
-
-function VisionThemes({
-  sectors,
-  themes,
-  onTheme,
-}: {
-  sectors: readonly string[]
-  themes: readonly string[]
-  onTheme: (tag: string) => void
-}) {
-  const suggested = suggestedVisionThemes(sectors).filter((theme) => !themes.includes(theme))
-  return (
-    <div className="space-y-5">
-      <TagGroup
-        id="profile-vision"
-        label="Vision 2030"
-        help="Optional. Suggestions follow your sectors. Tap to add. Up to 3."
-        options={VISION_2030_THEMES}
-        selected={themes}
-        onPick={onTheme}
-      />
-      {suggested.length > 0 ? (
-        <div>
-          <p id="profile-vision-suggested-label" className="text-[0.72rem] font-semibold tracking-[0.08em] text-ink/45 uppercase">
-            Suggested from your sectors
-          </p>
-          <div
-            className="mt-3 flex flex-wrap gap-2"
-            role="group"
-            aria-labelledby="profile-vision-suggested-label"
-          >
-            {suggested.map((option) => (
-              <Chip key={option} touch pressed={false} onClick={() => onTheme(option)}>
-                {option}
-              </Chip>
-            ))}
-          </div>
-        </div>
-      ) : null}
     </div>
   )
 }
@@ -108,6 +63,7 @@ function TagGroup({
   help,
   options,
   selected,
+  note,
   onPick,
 }: {
   id: string
@@ -115,6 +71,7 @@ function TagGroup({
   help: string
   options: readonly string[]
   selected: readonly string[]
+  note?: string
   onPick: (tag: string) => void
 }) {
   return (
@@ -132,6 +89,11 @@ function TagGroup({
           </Chip>
         ))}
       </div>
+      {note ? (
+        <p className="mt-3 text-[15px] text-ink" role="status">
+          {note}
+        </p>
+      ) : null}
     </div>
   )
 }
