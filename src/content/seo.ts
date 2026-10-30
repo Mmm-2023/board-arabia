@@ -134,7 +134,7 @@ export type FaqItem = {
 const APPLY_FAQ: FaqItem = {
   question: 'How do I apply?',
   answer:
-    'Submit the pre-vet form with your credentials (LinkedIn, titles, companies, turnover or family-office AUM). Applications are reviewed personally; accepted candidates receive a private invite email.',
+    'Submit Check with your credentials (LinkedIn, titles, companies, turnover or family-office AUM). Applications are reviewed personally; accepted candidates receive a private invite email.',
   to: '/apply',
   toLabel: 'Apply for consideration',
 }

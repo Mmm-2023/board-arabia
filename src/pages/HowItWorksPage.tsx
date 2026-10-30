@@ -44,7 +44,7 @@ export function HowItWorksPage() {
             </>
           ) : (
             <>
-              Board Arabia admission is credentials-first. Submit a pre-vet form
+              Board Arabia admission is credentials-first. Submit Check
               and await personal review. If accepted, admin sends you a private
               invite before joining the member dashboard. {REVIEW_SLA}
             </>
@@ -104,7 +104,7 @@ export function HowItWorksPage() {
 
       <CtaBand
         eyebrow="The form"
-        title={enabled ? undefined : 'Start with the pre-vet.'}
+        title={enabled ? undefined : 'Start with Check.'}
         body={closingCtaBody(enabled, FORM_CLOSING)}
         location="section-how-it-works-close"
       />

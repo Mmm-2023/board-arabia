@@ -82,9 +82,9 @@ test('account flow lines and Register or Complete wording stay behind the flag',
   try {
     assert.equal(howItWorksHeading(), HOW_IT_WORKS_HEADING_OFF)
     assert.equal(HOW_IT_WORKS_HEADING_OFF, 'Apply. Review. Invite.')
-    assert.equal(publicProcessSteps()[0]?.title, 'Pre-vet')
+    assert.equal(publicProcessSteps()[0]?.title, 'Check')
     assert.equal(publicProcessSteps().some((step) => step.home.includes('An account opens')), false)
-    assert.equal(publicFaqItems(FAQ)[2]?.answer.includes('Submit the pre-vet form'), true)
+    assert.equal(publicFaqItems(FAQ)[2]?.answer.includes('Submit Check with your credentials'), true)
     assert.equal(publicFaqItems(FAQ)[2]?.to, '/apply')
     assert.equal(publicFaqItems(FAQ)[2]?.toLabel, 'Apply for consideration')
     assert.equal(
@@ -102,7 +102,7 @@ test('account flow lines and Register or Complete wording stay behind the flag',
     }
     const graph = JSON.stringify(pageGraph({ path: '/', title: 'Home', description: 'Home page description for the test graph only.' }))
     assert.equal(graph.includes('An account opens'), false)
-    assert.equal(graph.includes('Submit the pre-vet form'), true)
+    assert.equal(graph.includes('Submit Check with your credentials'), true)
   } finally {
     setTwoTierRegisterForTests(null)
   }
@@ -200,8 +200,11 @@ test('flag off keeps /apply and the legacy form; flag on points CTAs at /registe
     assert.equal(offCtas.length > 8, true)
     for (const cta of offCtas) {
       assert.equal(cta.href, '/apply/', cta.text)
-      assert.equal(cta.text === 'Apply for consideration' || cta.text === 'the pre-vet', true, cta.text)
+      assert.equal(cta.text, 'Apply for consideration', cta.text)
     }
+    assert.equal(/pre-vet/i.test(off.combined), false)
+    assert.match(off.html, /Start with Check/)
+    assert.match(off.apply, /The first step is Check/)
     assert.equal(off.combined.includes('href="/register"'), false)
     assert.match(off.apply, /Submit for consideration/)
     assert.match(off.apply, /LinkedIn/)
@@ -237,6 +240,7 @@ test('flag off keeps /apply and the legacy form; flag on points CTAs at /registe
     assert.equal(on.html.includes('inside the account'), true)
     assert.equal(on.html.includes('same sign-in'), true)
     assert.equal(on.html.includes('Start with an account'), false)
+    assert.equal(/pre-vet/i.test(on.combined), false)
     assert.match(read('src/pages/ApplyPage.tsx'), /submitApplication\(/)
     assert.match(read('src/lib/supabase.ts'), /\/submit-application/)
     assert.equal(/registerCandidate\(/.test(read('src/pages/ApplyPage.tsx')), false)
