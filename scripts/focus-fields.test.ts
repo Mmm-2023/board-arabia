@@ -74,7 +74,7 @@ function week(members: PlanMember[]) {
 
 test('focus migration slot, lists, and security text', () => {
   const names = readdirSync(migrationsDir).filter((name) => name.endsWith('.sql')).sort()
-  assert.equal(names.at(-1), '20270110120000_majlis_reminder_windows.sql')
+  assert.equal(names.at(-1), '20270111120000_application_withdrawn_closed_retention.sql')
   assert.ok(names.includes(migrationName))
   assert.ok(names.indexOf(migrationName) > names.indexOf('20270108120000_boardroom_fields.sql'))
   assert.ok(names.indexOf(migrationName) < names.indexOf('20270110120000_majlis_reminder_windows.sql'))

@@ -83,7 +83,7 @@ export function classifyCandidate(input: CandidateRetentionInput, now: Date): Re
 
 export function applicationExpired(status: string, decisionAt: string | null, now: Date, hasMember: boolean) {
   if (hasMember) return false
-  if (status !== 'rejected' && status !== 'declined') return false
+  if (status !== 'rejected' && status !== 'declined' && status !== 'withdrawn' && status !== 'closed') return false
   const decided = decisionAt ? Date.parse(decisionAt) : Number.NaN
   return Number.isFinite(decided) && decided <= monthsBefore(now, 12)
 }

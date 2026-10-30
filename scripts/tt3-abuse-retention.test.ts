@@ -212,7 +212,7 @@ test('invite return does not refill a decline and candidates get no invites', ()
   assert.match(claim, /spent here, when the invitee registers/)
 })
 
-test('retention job rejects an unset secret, supports dry_run, and has no schedule', () => {
+test('retention job rejects an unset secret, supports dry_run, and the schedule is gated', () => {
   const fn = read('supabase/functions/retention-sweep/index.ts')
   const config = read('supabase/config.toml')
   const workflow = read('.github/workflows/retention-sweep.yml')
@@ -226,8 +226,9 @@ test('retention job rejects an unset secret, supports dry_run, and has no schedu
   assert.match(workflow, /-X POST/)
   assert.match(workflow, /x-retention-sweep/)
   assert.match(workflow, /workflow_dispatch:/)
-  assert.equal(workflow.includes('schedule:'), false)
-  assert.equal(workflow.includes('cron:'), false)
+  assert.match(workflow, /schedule:/)
+  assert.match(workflow, /cron: '0 3 \* \* \*'/)
+  assert.match(workflow, /vars\.RETENTION_SWEEP_ENABLED == 'true'/)
   assert.match(fn, /candidate_events/)
   const mail = idleAccountReminderMail({ dashboardUrl: 'https://boardarabia.com/dashboard/membership' })
   assert.equal(/\bBasic\b/.test(mail.text), false)

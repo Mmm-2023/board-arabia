@@ -90,8 +90,9 @@ test('unsubscribe clicks stay out of the stats and the header stays a raw url', 
   const workflow = read('.github/workflows/retention-sweep.yml')
   assert.match(sweep, /newsletter_events_retention/)
   assert.match(sweep, /if \(!dry\)/)
-  assert.equal(workflow.includes('schedule:'), false)
-  assert.equal(workflow.includes('cron:'), false)
+  assert.match(workflow, /cron: '0 3 \* \* \*'/)
+  assert.match(workflow, /vars\.RETENTION_SWEEP_ENABLED == 'true'/)
+  assert.equal(workflow.includes('https://'), false)
 })
 
 test('tracked news sender is used only when measurement is on and the env is set', () => {
