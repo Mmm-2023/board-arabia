@@ -15,6 +15,7 @@ import {
   type BoardSeatDraft,
   type BoardSeatRow,
 } from '../../lib/boardSeats'
+import { loadSeatSuggestionSwitch, setSeatSuggestionSwitch } from '../../lib/seatMatchApi'
 import { BoardSeatsView } from './BoardSeatsView'
 
 export type BoardSeatsPreview = {
@@ -22,6 +23,7 @@ export type BoardSeatsPreview = {
   applicants?: Record<string, BoardSeatApplicant[]>
   openId?: string | null
   draft?: BoardSeatDraft
+  suggestionsEnabled?: boolean
 }
 
 export function BoardSeatsPanel({ preview }: { preview?: BoardSeatsPreview } = {}) {
@@ -35,10 +37,15 @@ export function BoardSeatsPanel({ preview }: { preview?: BoardSeatsPreview } = {
   const [attempt, setAttempt] = useState(0)
   const [openId, setOpenId] = useState<string | null>(preview?.openId ?? null)
   const [applicants, setApplicants] = useState<Record<string, BoardSeatApplicant[] | 'error'>>(preview?.applicants ?? {})
+  const [suggestionsEnabled, setSuggestionsEnabled] = useState<boolean | null>(preview?.suggestionsEnabled ?? null)
 
   useEffect(() => {
     if (preview) return
     let cancelled = false
+    void loadSeatSuggestionSwitch().then((result) => {
+      if (cancelled || !result.ok) return
+      setSuggestionsEnabled(result.enabled)
+    })
     void loadBoardSeats().then((result) => {
       if (cancelled) return
       if (!result.ok) {
@@ -125,8 +132,23 @@ export function BoardSeatsPanel({ preview }: { preview?: BoardSeatsPreview } = {
     setApplicants((current) => ({ ...current, [id]: result.ok ? result.rows : 'error' }))
   }
 
-  return (
+    async function onSuggestions(enabled: boolean) {
+      setBusy(true)
+      setMessage('')
+      const result = await setSeatSuggestionSwitch(enabled)
+      setBusy(false)
+      if (!result.ok) {
+        setMessage('Could not save that switch. Retry.')
+        return
+      }
+      setSuggestionsEnabled(result.enabled)
+      setNotice(result.enabled ? 'Seat suggestions are on.' : 'Seat suggestions are off.')
+    }
+
+    return (
     <BoardSeatsView
+      suggestionsEnabled={suggestionsEnabled}
+      onSuggestions={(enabled) => void onSuggestions(enabled)}
       status={status}
       seats={seats}
       draft={draft}
