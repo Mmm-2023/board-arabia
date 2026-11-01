@@ -181,6 +181,21 @@ export async function submitApplication(payload: {
   }
 }
 
+/** Posts to the existing request-password-reset function. The reply text is ignored. */
+export async function requestPasswordResetLetter(email: string): Promise<{ ok: boolean; status: number; network?: boolean }> {
+  try {
+    const res = await fetch(`${functionsBase}/request-password-reset`, {
+      method: 'POST',
+      headers: await anonHeaders(),
+      body: JSON.stringify({ email: email.trim() }),
+    })
+    const network = res.status >= 500
+    return { ok: res.ok && !network, status: res.status, network }
+  } catch {
+    return { ok: false, status: 0, network: true }
+  }
+}
+
 async function postAccountDelete(body: Record<string, unknown>): Promise<{ error?: string }> {
   try {
     const res = await fetch(`${functionsBase}/delete-candidate-account`, {

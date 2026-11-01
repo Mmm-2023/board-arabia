@@ -1,7 +1,7 @@
 # UP-3 Keyboard and screen reader basics (P2-8)
 
-Date: 30 Oct 2026
-Base: `main` at `c019412` (Shorten Deals tabs and drop extra navigation rows)
+Date: 1 Nov 2026
+Base: `main` at `bc683da` (Let a failed sign-in link ask for a new one)
 Branch: `cursor/keyboard-screen-reader-b9c7`
 
 Screens: every page gets a skip link. Named controls were measured on the landing page and How it works. Headings changed on Majlis, AI tools, and Help. Routes and `src/shell/destinations.ts` stay as they are.
@@ -45,6 +45,7 @@ The three visible 44px marks with no accessible name were the why card icons on 
 | Public marketing main | `src/components/MarketingLayout.tsx:19` |
 | Landing main | `src/pages/LandingPage.tsx:51` |
 | Member and staff main | `src/shell/AppShell.tsx:397` |
+| New link screen main | `src/pages/LinkProblemScreen.tsx:100` |
 | Skip link position | `src/index.css:118` `.ba-skip` |
 | Focus ring, still 2px | `src/index.css:113` |
 | Majlis heading | `src/pages/dashboard/MajlisPage.tsx:208` |
@@ -52,6 +53,8 @@ The three visible 44px marks with no accessible name were the why card icons on 
 | Help heading | `src/pages/dashboard/HelpPage.tsx:80` |
 
 Locked register and verify screens still own their `<main>`. The skip link stamps `id="main"` and `tabindex="-1"` on the first main after paint, so those files stay untouched. Checked on `/register/verify`: the first tab is the skip link, and the main is `data-screen="verify"` with `id="main"`.
+
+A failed sign-in link still opens the new link screen from main (`LinkProblemScreen`, "Email me a new link"). That screen's main uses the same landmark props. The password step on the confirm page keeps its main landmark. The old "Member sign in" and "Staff sign in" pair is not restored.
 
 ## axe counts
 
@@ -109,6 +112,7 @@ The diff adds no mailbox, API key, token, password, service role key, project re
 - VERIFIED. The skip link is the first control on `/`, `/how-it-works`, `/about`, `/apply`, and `/login` in server markup. `scripts/up-3-a11y.test.ts`.
 - VERIFIED. Tab then Enter on the landing page focuses `main#main` at 390 and 1440. The skip link is at least 44px, 16px, and its outline is 2px. `scripts/up-3-a11y.test.ts` Chrome pass.
 - VERIFIED. `/register/verify` keeps the locked screen. After paint the first tab is the skip link and the main has `id="main"` and `tabindex="-1"`. Local Chrome check.
+- VERIFIED. A failed sign-in link still renders `LinkProblemScreen` with "Email me a new link". `src/pages/AuthConfirmPage.tsx` does not restore "Member sign in" or "Staff sign in". The new link screen main has the skip target.
 - VERIFIED. The three why icons expose the names Access to capital, Business relationships, and Opening doors. The menu button exposes Open menu. Chrome accessibility tree after the change.
 - VERIFIED. How it works has no visible control with an empty accessible name at 390 or 1440. `scripts/up-3-a11y.test.ts` Chrome pass.
 - VERIFIED. Majlis, AI tools, and Help each render one h1, and that h1 is not the top bar title. Help's main text does not contain Help. `scripts/up-3-a11y.test.ts`.

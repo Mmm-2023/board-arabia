@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { mainLandmarkProps } from '../components/SkipLink'
 import { clearPasswordFlag } from '../lib/clearPasswordFlag'
 import { resolveAfterLogin } from '../lib/memberGate'
@@ -10,6 +10,7 @@ import {
   supabase,
 } from '../lib/supabase'
 import { useNoIndex } from '../lib/usePageTitle'
+import { LinkProblemScreen } from './LinkProblemScreen'
 
 const OTP_TYPES = ['invite', 'magiclink', 'email', 'recovery', 'signup'] as const
 type OtpType = (typeof OTP_TYPES)[number]
@@ -19,7 +20,6 @@ export function AuthConfirmPage() {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
   const [phase, setPhase] = useState<Phase>('working')
-  const [error, setError] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [formError, setFormError] = useState('')
@@ -35,13 +35,23 @@ export function AuthConfirmPage() {
     })
 
     async function confirm() {
+      try {
+        await confirmLink()
+      } catch {
+        if (!cancelled) {
+          clearPasswordRecovery()
+          setPhase('error')
+        }
+      }
+    }
+
+    async function confirmLink() {
       const parsed = readRecoveryLocation(window.location.href)
       const type = otpType(parsed.type)
       const recovery = parsed.recovery || passwordRecoveryPending()
 
       if (parsed.errorDescription && !parsed.tokenHash && !parsed.accessToken) {
         clearPasswordRecovery()
-        setError(parsed.errorDescription)
         setPhase('error')
         return
       }
@@ -54,7 +64,6 @@ export function AuthConfirmPage() {
         if (cancelled) return
         if (verifyError) {
           clearPasswordRecovery()
-          setError(verifyError.message)
           setPhase('error')
           return
         }
@@ -65,7 +74,6 @@ export function AuthConfirmPage() {
         clearPasswordRecovery()
         const userId = (await supabase.auth.getUser()).data.user?.id
         if (!userId) {
-          setError('This sign-in link is missing or has expired.')
           setPhase('error')
           return
         }
@@ -86,7 +94,6 @@ export function AuthConfirmPage() {
             const retry = await supabase.auth.getSession()
             if (!(retry.data.session && recovery)) {
               clearPasswordRecovery()
-              setError(sessionError.message)
               setPhase('error')
               return
             }
@@ -106,7 +113,6 @@ export function AuthConfirmPage() {
           if (cancelled) return
           if (exchangeError) {
             clearPasswordRecovery()
-            setError(exchangeError.message)
             setPhase('error')
             return
           }
@@ -118,7 +124,6 @@ export function AuthConfirmPage() {
         }
         const userId = (await supabase.auth.getUser()).data.user?.id
         if (!userId) {
-          setError('This sign-in link is missing or has expired.')
           setPhase('error')
           return
         }
@@ -134,7 +139,6 @@ export function AuthConfirmPage() {
           return
         }
         clearPasswordRecovery()
-        setError('This reset link is missing or has expired.')
         setPhase('error')
         return
       }
@@ -147,7 +151,6 @@ export function AuthConfirmPage() {
         })
         return
       }
-      setError('This sign-in link is missing or has expired.')
       setPhase('error')
     }
 
@@ -185,8 +188,9 @@ export function AuthConfirmPage() {
     navigate('/login', { replace: true })
   }
 
-  const title =
-    phase === 'set_password' ? 'Set a new password' : phase === 'error' ? 'Link not accepted' : 'Signing you in…'
+  if (phase === 'error') return <LinkProblemScreen />
+
+  const title = phase === 'set_password' ? 'Set a new password' : 'Signing you in…'
 
   return (
     <div className="flex min-h-dvh items-center justify-center bg-pearl px-5 text-ink">
@@ -239,25 +243,6 @@ export function AuthConfirmPage() {
               {saving ? 'Saving…' : 'Save password'}
             </button>
           </form>
-        )}
-        {phase === 'error' && (
-          <>
-            <p className="mt-4 text-[1rem] leading-relaxed text-ink/65">{error}</p>
-            <div className="mt-6 flex flex-wrap gap-4">
-              <Link
-                to="/login"
-                className="text-[0.75rem] font-semibold tracking-[0.08em] text-brass uppercase"
-              >
-                Member sign in
-              </Link>
-              <Link
-                to="/login/staff"
-                className="text-[0.75rem] font-semibold tracking-[0.08em] text-brass uppercase"
-              >
-                Staff sign in
-              </Link>
-            </div>
-          </>
         )}
       </main>
     </div>
