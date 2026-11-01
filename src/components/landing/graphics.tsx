@@ -46,9 +46,9 @@ export function ConnectionGraphic() {
   )
 }
 
-export function IconCapital() {
+export function IconCapital({ label = 'Access to capital' }: { label?: string } = {}) {
   return (
-    <svg className="ba-icon" width="44" height="44" viewBox="0 0 44 44" aria-hidden="true">
+    <svg className="ba-icon" width="44" height="44" viewBox="0 0 44 44" role="img" aria-label={label}>
       <rect x="0.5" y="0.5" width="43" height="43" rx="10" fill="#FFFFFF" stroke="#E8E4F7" />
       <path d="M22 31 L30 22 L22 13 L14 22 Z" fill="none" stroke="#1C1343" strokeWidth="1.6" />
       <path d="M22 26 V16 M18.5 19.5 L22 16 L25.5 19.5" fill="none" stroke="#4B3F9A" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
@@ -56,9 +56,9 @@ export function IconCapital() {
   )
 }
 
-export function IconRelationships() {
+export function IconRelationships({ label = 'Business relationships' }: { label?: string } = {}) {
   return (
-    <svg className="ba-icon" width="44" height="44" viewBox="0 0 44 44" aria-hidden="true">
+    <svg className="ba-icon" width="44" height="44" viewBox="0 0 44 44" role="img" aria-label={label}>
       <rect x="0.5" y="0.5" width="43" height="43" rx="10" fill="#FFFFFF" stroke="#E8E4F7" />
       <path d="M14 28 L20 22 L14 16 L8 22 Z" fill="none" stroke="#1C1343" strokeWidth="1.6" />
       <path d="M30 28 L36 22 L30 16 L24 22 Z" fill="none" stroke="#1C1343" strokeWidth="1.6" />
@@ -67,9 +67,9 @@ export function IconRelationships() {
   )
 }
 
-export function IconDoors() {
+export function IconDoors({ label = 'Opening doors' }: { label?: string } = {}) {
   return (
-    <svg className="ba-icon" width="44" height="44" viewBox="0 0 44 44" aria-hidden="true">
+    <svg className="ba-icon" width="44" height="44" viewBox="0 0 44 44" role="img" aria-label={label}>
       <rect x="0.5" y="0.5" width="43" height="43" rx="10" fill="#FFFFFF" stroke="#E8E4F7" />
       <path d="M14 12 H30 V32 H14 Z" fill="none" stroke="#1C1343" strokeWidth="1.6" strokeLinejoin="round" />
       <path d="M16 14 L25 17.2 V28.6 L16 31 Z" fill="none" stroke="#4B3F9A" strokeWidth="1.6" strokeLinejoin="round" strokeLinecap="round" />

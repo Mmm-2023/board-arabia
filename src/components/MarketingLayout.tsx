@@ -3,6 +3,7 @@ import type { MarketingPath } from '../content/seo'
 import { Footer } from './Footer'
 import { Nav } from './Nav'
 import { Seo } from './Seo'
+import { mainLandmarkProps } from './SkipLink'
 
 export function MarketingLayout({
   path,
@@ -15,7 +16,7 @@ export function MarketingLayout({
     <>
       <Seo path={path} />
       <Nav />
-      <main className="ba-marketing min-h-dvh bg-pearl pt-16 md:pt-20">{children}</main>
+      <main {...mainLandmarkProps} className="ba-marketing min-h-dvh bg-pearl pt-16 md:pt-20">{children}</main>
       <Footer />
     </>
   )

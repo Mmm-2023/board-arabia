@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { Link, Navigate, useLocation, useSearchParams } from 'react-router-dom'
 import { BrandLockup } from '../components/BrandLockup'
+import { mainLandmarkProps } from '../components/SkipLink'
 import { MfaHold } from '../components/mfa/MfaHold'
 import { signInFieldClassLight } from '../components/mfa/TwoStepScreens'
 import { clearPasswordFlag } from '../lib/clearPasswordFlag'
@@ -204,9 +205,9 @@ export function LoginPage() {
 
   if (session === undefined) {
     return (
-      <div className="flex min-h-dvh items-center justify-center bg-[var(--ba-porcelain)] text-[var(--ba-ink)]">
+      <main {...mainLandmarkProps} className="flex min-h-dvh items-center justify-center bg-[var(--ba-porcelain)] text-[var(--ba-ink)]">
         <p className="text-[16px] text-[var(--ba-muted)]">Loading…</p>
-      </div>
+      </main>
     )
   }
 
@@ -223,9 +224,9 @@ export function LoginPage() {
     }
     if (hold !== 'clear' || !destination) {
       return (
-        <div className="flex min-h-dvh items-center justify-center bg-[var(--ba-porcelain)] text-[var(--ba-ink)]">
+        <main {...mainLandmarkProps} className="flex min-h-dvh items-center justify-center bg-[var(--ba-porcelain)] text-[var(--ba-ink)]">
           <p className="text-[16px] text-[var(--ba-muted)]">Loading…</p>
-        </div>
+        </main>
       )
     }
     return <Navigate to={destination} replace />
@@ -249,7 +250,7 @@ export function LoginPage() {
           </div>
         </header>
 
-        <main className="flex flex-1 flex-col gap-5 px-5 py-7">
+        <main {...mainLandmarkProps} className="flex flex-1 flex-col gap-5 px-5 py-7">
           <div className="flex flex-col gap-2">
             <p className="text-[15px] font-semibold tracking-[0.06em] text-[var(--ba-indigo)] uppercase">
               {staffEntry ? 'Staff' : 'Members'}

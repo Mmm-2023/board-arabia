@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { BrandLockup } from '../components/BrandLockup'
+import { mainLandmarkProps } from '../components/SkipLink'
 import { signInFieldClassLight } from '../components/mfa/TwoStepScreens'
 import {
   LINK_PROBLEM_HEADING,
@@ -97,7 +98,7 @@ export function LinkProblemScreen() {
           </div>
         </header>
 
-        <main className="flex flex-1 flex-col gap-5 px-5 py-7">
+        <main {...mainLandmarkProps} className="flex flex-1 flex-col gap-5 px-5 py-7">
           <h1 className="font-display text-[30px] leading-[1.2] font-bold tracking-[-0.03em]">{LINK_PROBLEM_HEADING}</h1>
 
           {banner ? <LinkProblemAlert notice={banner} /> : null}
