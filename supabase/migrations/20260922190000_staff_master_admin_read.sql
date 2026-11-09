@@ -17,7 +17,7 @@ declare
   other_masters int;
 begin
   if tg_op = 'DELETE' then
-    if lower(old.email) = 'michael@nammco.com' then
+    if lower(old.email) = 'owner@example.com' then
       raise exception 'cannot_demote_master' using errcode = '42501';
     end if;
     if old.role = 'master' then
@@ -32,7 +32,7 @@ begin
   end if;
 
   if old.role = 'master' and new.role is distinct from 'master' then
-    if lower(old.email) = 'michael@nammco.com' then
+    if lower(old.email) = 'owner@example.com' then
       raise exception 'cannot_demote_master' using errcode = '42501';
     end if;
     select count(*) into other_masters
@@ -43,8 +43,8 @@ begin
     end if;
   end if;
 
-  if lower(old.email) = 'michael@nammco.com'
-     and lower(new.email) is distinct from 'michael@nammco.com' then
+  if lower(old.email) = 'owner@example.com'
+     and lower(new.email) is distinct from 'owner@example.com' then
     raise exception 'cannot_demote_master' using errcode = '42501';
   end if;
 
