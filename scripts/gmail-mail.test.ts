@@ -246,17 +246,17 @@ test('marketing signature is refused and the Gmail API is not called', async () 
   }
 })
 
-test('a mailbox at the same domain is not treated as the marketing site', async () => {
+test('a mailbox address in the body is not treated as the marketing site', async () => {
   clearMailEnv()
   const text = [
     'New pending application.',
     '',
-    'Email: founder@nammco.com',
+    'Email: founder@example.com',
     'LinkedIn: https://www.linkedin.com/in/founder',
     '',
     'Board Arabia',
   ].join('\n')
-  const html = '<p>Email: founder@nammco.com</p><p>LinkedIn: https://www.linkedin.com/in/founder</p>\n<footer>Board Arabia</footer>'
+  const html = '<p>Email: founder@example.com</p><p>LinkedIn: https://www.linkedin.com/in/founder</p>\n<footer>Board Arabia</footer>'
   assert.equal(marketingSignatureHit(text, html), null)
   const result = await sendEmail({
     to: PLACEHOLDER_STAFF,

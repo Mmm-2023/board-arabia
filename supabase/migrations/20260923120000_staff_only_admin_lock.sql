@@ -1,6 +1,6 @@
 -- Staff lock. Admin reads and writes require a staff_users role of staff or master.
--- Do not insert michael@smemarketer.com. That account is a member only.
--- Master remains michael@nammco.com.
+-- Do not insert member@example.com. That account is a member only.
+-- Master remains owner@example.com.
 --
 -- staff_users_claim_first allowed INSERT when the caller could not see any
 -- existing row. Own-row SELECT hides other staff, so NOT EXISTS was true for
