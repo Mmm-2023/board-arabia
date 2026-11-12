@@ -18,7 +18,7 @@ export function AiDueDiligenceReportNotice({ className }: { className?: string }
 /** Short tag beside one member-facing score. */
 export function AiDueDiligenceScoreTag({ className }: { className?: string }) {
   const classes = [
-    'inline-flex max-w-full items-center rounded-full border border-[var(--ba-line)] bg-[var(--ba-porcelain)] px-2.5 py-1 text-[0.8125rem] font-medium leading-snug text-[var(--ba-muted)]',
+    'inline-flex max-w-full items-center rounded-full border border-[var(--ba-line)] bg-[var(--ba-porcelain)] px-2.5 py-1 text-[0.9375rem] font-medium leading-snug text-ink',
     className,
   ]
     .filter(Boolean)

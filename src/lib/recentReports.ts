@@ -256,6 +256,18 @@ function withoutOddChars(value: string): string {
   return value.replace(/[^\p{L}\p{M}\p{N} .,&'\u2019/:()+\u00B7\u2022|\-]/gu, ' ').replace(/\s+/g, ' ').trim()
 }
 
+/** Visible list and report titles. The full cleaned title stays available to assistive tech. */
+export const REPORT_TITLE_MAX = 80
+
+export function clampReportTitle(title: string, max = REPORT_TITLE_MAX): string {
+  const clean = title.replace(/\s+/g, ' ').trim()
+  if (max < 4 || clean.length <= max) return clean
+  const slice = clean.slice(0, max - 3)
+  const cut = slice.lastIndexOf(' ')
+  const base = cut >= 24 ? slice.slice(0, cut) : slice
+  return `${base.trimEnd()}...`
+}
+
 export function reportListTitle(company: string, fileName: string): string {
   const fromCompany = tidyReportTitle(company)
   if (usableTitle(fromCompany) && !titleHasOddChars(fromCompany)) return fromCompany

@@ -9,7 +9,7 @@ import {
 import { AiToolCardList } from '../../components/ai/AiToolCards'
 import { readAiToolFrame, type AiToolFlags } from '../../lib/aiToolApi'
 import { AI_UI } from '../../lib/aiToolUi'
-import { recentReports, type RecentReportRow } from '../../lib/recentReports'
+import { clampReportTitle, recentReports, type RecentReportRow } from '../../lib/recentReports'
 import { useNoIndex } from '../../lib/usePageTitle'
 import { ConfirmDialog } from '../../shell/ConfirmDialog'
 import { CardSkeleton, ErrorBanner } from '../../shell/ViewState'
@@ -226,13 +226,18 @@ export function RecentReportList({
   return (
     <ul className="mt-4 space-y-3">
       {rows.map((report) => (
-        <li key={report.id} className="flex items-stretch border border-[var(--ba-line)] bg-white">
+        <li key={report.id} className="flex items-stretch overflow-hidden rounded-xl border border-[var(--ba-line)] bg-white">
           <Link
             to={`/dashboard/ai/due-diligence/${report.id}`}
-            className="flex min-h-11 min-w-0 flex-1 flex-col justify-center px-4 py-3"
+            aria-label={[report.title, report.tool, report.date].filter(Boolean).join('. ')}
+            className="flex min-h-11 min-w-0 flex-1 flex-col justify-center gap-1 px-4 py-3"
           >
-            <span className="text-[1rem] text-ink">{report.title}</span>
-            <span className="mt-1 block text-[0.92rem] text-ink/70">
+            <span className="grid min-w-0">
+              <span className="line-clamp-2 break-words text-[1rem] leading-snug text-ink" title={report.title}>
+                {clampReportTitle(report.title)}
+              </span>
+            </span>
+            <span className="text-[0.95rem] text-ink/70">
               {report.tool}
               {report.date ? `, ${report.date}` : ''}
             </span>

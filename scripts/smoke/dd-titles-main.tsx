@@ -3,7 +3,6 @@ import { createRoot } from 'react-dom/client'
 import { MemoryRouter } from 'react-router-dom'
 import { fullDraftReport } from '../../src/lib/dueDiligenceMemoFixture'
 import type { HistoryItem } from '../../src/lib/dueDiligence'
-import { reportListTitle } from '../../src/lib/recentReports'
 import { DueDiligenceDeskView } from '../../src/pages/dashboard/DueDiligencePage'
 import { DueDiligenceReport } from '../../src/pages/dashboard/DueDiligenceReport'
 import { AppShell } from '../../src/shell/AppShell'
@@ -14,8 +13,9 @@ import '../../src/index.css'
 
 const view = new URLSearchParams(window.location.search).get('view') || 'list'
 
-// The loading bars use these utilities. Name them here so this fixture's CSS build keeps the height.
-const loadingBar = 'h-20 space-y-3 bg-[var(--ba-lavender)] animate-pulse motion-reduce:animate-none'
+// Name utilities here so this fixture's CSS build keeps the shell and the report list.
+const loadingBar =
+  'h-20 h-11 h-16 h-24 h-36 space-y-3 gap-2 bg-[var(--ba-lavender)] animate-pulse motion-reduce:animate-none flex flex-col flex-1 line-clamp-2 overflow-x-clip rounded-xl rounded-md grid min-w-0 max-w-xs break-words text-start'
 void loadingBar
 
 const reports: HistoryItem[] = [
@@ -92,14 +92,11 @@ const presented = presentReport(garbled, fileName)
 
 const screen =
   view === 'title' ? (
-    <div className="max-w-5xl">
-      <h1
-        className="font-display text-[1.75rem] leading-tight font-bold tracking-[-0.03em] break-words text-balance md:text-[2.2rem]"
-        data-dd-title="report"
-      >
-        {reportListTitle(garbled.company_label, fileName)}
+    <div className="max-w-3xl">
+      <h1 className="font-display text-[1.75rem] leading-tight font-bold tracking-[-0.03em] text-balance md:text-[2.2rem]">
+        AI Due Diligence
       </h1>
-      <p className="mt-3 inline-flex min-h-11 items-center text-[0.95rem] text-[var(--ba-indigo)]">All checks</p>
+      <p className="mt-3 inline-flex min-h-11 items-center text-[1rem] text-[var(--ba-indigo)]">All checks</p>
       <DueDiligenceReport
         presented={presented}
         preparedAt="2026-10-18T09:00:00.000Z"

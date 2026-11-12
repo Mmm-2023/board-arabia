@@ -35,6 +35,9 @@ export const DD_COPY = {
   idle: 'Upload a deck to start a public-information check.',
   fileChosen: 'Deck ready. Add a company site if you have one, then start the check.',
   emptyHistory: 'No checks yet. Your reports will show up here.',
+  startReview: 'Start a review',
+  setupLabel: 'Deck and site',
+  loadError: 'Could not load these reports.',
   deckLabel: 'Pitch deck',
   deckButton: 'Choose PDF or PPTX',
   deckHint:

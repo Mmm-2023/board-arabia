@@ -15,6 +15,7 @@ import { AiDueDiligenceScoreTag } from '../../components/ai/AiDueDiligenceScoreN
 import { AiReportOperatorLine } from '../../components/ai/AiReportOperatorLine'
 import { memberPostureLabel } from '../../lib/aiDueDiligenceNotice'
 import { REPORT_COPY } from '../../lib/dueDiligenceCopy.ts'
+import { clampReportTitle } from '../../lib/recentReports.ts'
 
 const RESULT_LABEL: Record<MathResult, string> = {
   ties: REPORT_COPY.resultTies,
@@ -59,18 +60,12 @@ export function DueDiligenceMemo({
       <p className="mt-1 max-w-3xl text-[0.95rem] leading-relaxed text-[var(--ba-muted)]">{REPORT_COPY.aiScope}</p>
 
       <header className="mt-4 rounded-xl border border-[var(--ba-line)] border-s-2 border-s-[var(--ba-indigo)] bg-white px-4 py-4">
-        <p className="font-display text-[1.55rem] font-semibold leading-tight break-words text-ink">
-          {companyLabel}
-        </p>
-        {analysis.snapshot.one_liner ? (
-          <p className="mt-2 max-w-3xl text-[1rem] leading-relaxed text-ink/80">{analysis.snapshot.one_liner}</p>
-        ) : null}
-        <div className="mt-4" data-dd-overall={overall ?? 'missing'}>
+        <div data-dd-overall={overall ?? 'missing'}>
           <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
             <PostureChip posture={posture} />
-            <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+            <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
               <p className="text-[1rem] text-ink">
-                <span className="text-[0.82rem] font-semibold text-[var(--ba-muted)]">{REPORT_COPY.overallLabel} </span>
+                <span className="text-[0.95rem] font-semibold text-[var(--ba-muted)]">{REPORT_COPY.overallLabel} </span>
                 {overall == null ? (
                   <span className="font-semibold">{REPORT_COPY.scoreMissing}</span>
                 ) : (
@@ -82,6 +77,17 @@ export function DueDiligenceMemo({
             </div>
           </div>
         </div>
+        <p className="mt-3 grid min-w-0" title={companyLabel}>
+          <span
+            className="line-clamp-2 font-display text-[1.25rem] font-semibold leading-tight break-words text-ink"
+            data-dd-title="report"
+          >
+            {clampReportTitle(companyLabel)}
+          </span>
+        </p>
+        {analysis.snapshot.one_liner ? (
+          <p className="mt-2 max-w-3xl text-[1rem] leading-relaxed text-ink/80">{analysis.snapshot.one_liner}</p>
+        ) : null}
         {analysis.snapshot.posture_reason ? (
           <p className="mt-3 max-w-3xl text-[0.98rem] leading-relaxed text-ink/80">{analysis.snapshot.posture_reason}</p>
         ) : null}
@@ -159,7 +165,7 @@ export function DueDiligenceMemo({
               ))}
             </ul>
             <div className="mt-4 hidden overflow-x-auto rounded-xl border border-[var(--ba-line)] bg-white md:block" data-dd-math="table">
-              <table className="w-full min-w-[44rem] border-collapse text-left">
+              <table className="w-full min-w-[44rem] border-collapse text-start">
                 <thead>
                   <tr className="border-b border-[var(--ba-line)] text-[0.82rem] text-[var(--ba-muted)]">
                     <th scope="col" className="px-3 py-3 font-semibold">{REPORT_COPY.colCheck}</th>
@@ -206,7 +212,7 @@ export function DueDiligenceMemo({
               ))}
             </ul>
             <div className="mt-4 hidden overflow-x-auto rounded-xl border border-[var(--ba-line)] bg-white md:block" data-dd-risks="table">
-              <table className="w-full min-w-[40rem] border-collapse text-left">
+              <table className="w-full min-w-[40rem] border-collapse text-start">
                 <thead>
                   <tr className="border-b border-[var(--ba-line)] text-[0.82rem] text-[var(--ba-muted)]">
                     <th scope="col" className="px-3 py-3 font-semibold">{REPORT_COPY.colSeverity}</th>
@@ -264,16 +270,6 @@ export function DueDiligenceMemo({
               {REPORT_COPY.memoTextMissing}
             </p>
           )}
-          {analysis.questions_for_management.length > 0 ? (
-            <div className="mt-6">
-              <h3 className="text-[1rem] font-semibold text-ink">{REPORT_COPY.questionsLabel}</h3>
-              <ol className="mt-3 list-decimal space-y-2 ps-5 text-[1rem] leading-relaxed text-ink/80">
-                {analysis.questions_for_management.map((question) => (
-                  <li key={question}>{question}</li>
-                ))}
-              </ol>
-            </div>
-          ) : null}
           {analysis.suggested_structure ? (
             <div className="mt-6">
               <h3 className="text-[1rem] font-semibold text-ink">{REPORT_COPY.structureLabel}</h3>
@@ -320,9 +316,9 @@ function PostureChip({ posture }: { posture: Posture | '' }) {
   const label = posture ? memberPostureLabel(posture) : REPORT_COPY.scoreMissing
   const tone =
     posture === 'pass'
-      ? 'dd-pill-conflict'
+      ? 'dd-pill-consistent'
       : posture === 'discuss_with_milestones'
-        ? 'dd-pill-consistent'
+        ? 'dd-pill-neutral'
         : 'dd-pill-insufficient'
   return (
     <span className={`dd-pill ${tone}`} data-dd-posture={posture || 'missing'}>
@@ -337,7 +333,7 @@ function ScoreBar({ scoreKey, value }: { scoreKey: ScoreKey; value: number | nul
   return (
     <div className="rounded-xl border border-[var(--ba-line)] bg-white px-4 py-3" data-dd-score={scoreKey}>
       <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
-        <p className="text-[0.95rem] font-medium text-ink">{SCORE_LABEL[scoreKey]}</p>
+        <p className="min-w-0 flex-1 text-[0.95rem] font-medium text-ink">{SCORE_LABEL[scoreKey]}</p>
         <div className="flex flex-wrap items-center gap-2">
           <p className="text-[0.95rem] font-semibold text-ink">{value == null ? REPORT_COPY.scoreMissing : `${value} ${REPORT_COPY.ofFive}`}</p>
           {value == null ? null : <AiDueDiligenceScoreTag />}
