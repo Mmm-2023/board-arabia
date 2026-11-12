@@ -18,10 +18,11 @@ const STAFF = '99999999-9999-4999-8999-999999999999'
 const ACTIVE_SEAT = 'c1111111-1111-4111-8111-111111111111'
 const INVITED_SEAT = 'c2222222-2222-4222-8222-222222222222'
 
-test('joined seat suggestions are the newest migration and stay inert', () => {
+test('joined seat suggestions stay inert and sort before the daily brief', () => {
   const names = readdirSync(migrationsDir).filter((name) => name.endsWith('.sql')).sort()
-  assert.equal(names.at(-1), migrationName)
+  assert.equal(names.at(-1), '20270115120000_daily_brief_publish.sql')
   assert.ok(names.indexOf(migrationName) > names.indexOf(priorName))
+  assert.ok(names.indexOf(migrationName) < names.indexOf('20270115120000_daily_brief_publish.sql'))
   assert.equal(migration.includes('\u2014'), false)
   assert.equal(migration.includes('\u2013'), false)
   assert.equal(/\bcron\b|pg_cron|net\.http|send_email/i.test(migration), false)
