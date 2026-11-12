@@ -61,7 +61,7 @@ export function DueDiligenceMemo({
 
       <header className="mt-4 rounded-xl border border-[var(--ba-line)] border-s-2 border-s-[var(--ba-indigo)] bg-white px-4 py-4">
         <div data-dd-overall={overall ?? 'missing'}>
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+          <div className="dd-score-row">
             <PostureChip posture={posture} />
             <p className="text-[1rem] text-ink">
               <span className="text-[0.95rem] font-semibold text-[var(--ba-muted)]">{REPORT_COPY.overallLabel} </span>
@@ -74,7 +74,7 @@ export function DueDiligenceMemo({
             </p>
           </div>
           {overall == null ? null : (
-            <div className="mt-2">
+            <div className="dd-score-tag-line">
               <AiDueDiligenceScoreTag />
             </div>
           )}
@@ -339,7 +339,7 @@ function ScoreBar({ scoreKey, value }: { scoreKey: ScoreKey; value: number | nul
         <p className="text-[0.95rem] font-semibold text-ink">{value == null ? REPORT_COPY.scoreMissing : `${value} ${REPORT_COPY.ofFive}`}</p>
       </div>
       {value == null ? null : (
-        <div className="mt-2">
+        <div className="dd-score-tag-line">
           <AiDueDiligenceScoreTag />
         </div>
       )}
