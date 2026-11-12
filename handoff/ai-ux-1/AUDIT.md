@@ -20,7 +20,7 @@ Captured from the current desk and report, inside the member shell, at 390 and 1
 | Prior-note rows stacked a long title and squeezed the score, the tag, and the date into one wrapping line. "Example Corridor..." ran on without a clean end. | Dashboard: card rows, 2 or 3 fields, truncate. | P1 |
 | Empty copy said "No checks yet" and had no call to action. | Both: designed empty state with one action. | P1 |
 | "looks clear" used the conflict pill (red). The positive verdict read as a warning. | UX UI: decision first. Score is not colour alone, and the colour must match the words. | P1 |
-| "Not verified" was the short label for both "not publicly verifiable" and "insufficient public data". Those two statuses differed by colour alone. | UX UI: not colour alone. | P1 |
+| "Not verified" was the short label for both "not publicly verifiable" and "insufficient public data". Those two statuses differed by colour alone. The word "verified" is not used on this surface. | UX UI: not colour alone. | P1 |
 | The score tag was 13px. Contrast of muted `#4a4468` on porcelain `#f6f5fb` is 8.36:1, so it already cleared WCAG 2.2 AA. It was still small next to the score. Pill text colours also cleared 4.5:1 (consistent 5.49, neutral 7.17, insufficient 5.02, conflict 5.52). | UX UI: readable score tag. Body text at least 15px. | P2 |
 | Loading was four plain bars, not the button and card rows of the ready page. | Both: skeleton matches the final layout. | P2 |
 | A failed load said "Couldn't refresh. Showing last update" when no report list was on screen. Retry was present. | Both: honest error. No fake last update. | P2 |
@@ -40,9 +40,31 @@ Kept on purpose, before and after: the name AI Due Diligence, the numeric score,
 | Empty, loading, error, permission | PASS | Empty states why and offers "Start a review". Skeleton is a button bar plus card rows. Error is "Could not load these reports." with Retry. Permission copy is unchanged. |
 | No fake proof or fake KPIs | PASS | Shots use Example Co and example report names. The error no longer claims a last update is on screen. |
 | Card rows, truncated titles | PASS | Phone list shows title, score plus tag, and date. The long example title ends in "...". `scripts/dd-title-shots.test.ts` found no horizontal overflow at 390 or 1440. |
-| Score tag readable, not colour alone | PASS | Tag is 15px ink on porcelain (15.83:1). "Not enough" and "Not verified" are different words. "looks clear" uses the consistent pill. |
+| Score tag readable, not colour alone | PASS | Tag is 15px ink on porcelain (15.83:1) and sits on its own line under the score. The short pills say "Not public" and "Not enough". "looks clear" uses the consistent pill. |
 | Tap targets, 15px body, focus, logical properties, safe area | PASS | Title-shot test found no control under 44px and no body text under 15px on the list and report. Focus uses the existing outline. Inline borders and padding use logical properties. Safe-area padding stays on the shell. A physical phone was not used. |
 | Tab bar is navigation only | PASS | The tab bar was not given a page action. |
 | Last updated where relevant | PASS | The shell still shows "Updated 09:15". Each note shows its date. The report shows Prepared. |
+
+The start screen and the empty report list are the same view. With no reports, the desk is the title, the limit line, and the empty card whose only action is "Start a review". `after-start-390.png` and `after-list-empty-390.png` are that one screen, so they match. The list shots are the same desk once example reports are present.
+
+Delete on a report card is a quiet bordered control in muted type, at least 44 by 44px. Choosing it still opens "Delete this report?" before anything is removed.
+
+## Words left in src/
+
+A search of `src/` for the words verified, vetted, and selective. Only the AI Due Diligence short pill was changed. These other user-facing strings stay, because they are not that surface:
+
+| Wording | Where | Surface |
+| --- | --- | --- |
+| Not verified yet, so this figure is not in the public totals. | `src/pages/dashboard/ProfilePage.tsx` | Member profile |
+| Totals go public once enough verified members opt in. | `src/shell/viewCopy.ts` | Member capacity totals |
+| Selective | `src/lib/profileTags.ts` | Member availability label |
+| Email not verified | `src/pages/admin/MajlisRequestsPage.tsx`, `src/lib/majlisRequestReview.ts` | Admin majlis |
+| Email verified, Form sent to email verified, Email verified to checklist | `src/pages/admin/MarketingView.tsx`, `src/lib/marketing.ts` | Admin marketing |
+| Public totals use the verified | `src/pages/admin/ApplicationsPage.tsx` | Admin applications |
+| Capacity saved. Public totals recompute from admitted, verified, opted-in members. | `src/pages/admin/context.tsx` | Admin |
+| Accept is blocked until this email is verified. | `src/shell/viewCopy.ts` | Admin |
+| vetted firms, when one is vetted | `src/lib/rePartnerView.ts` | Admin real estate firms |
+| email is never verified | `src/content/legal/privacy.en.ts` | Legal page, not edited |
+| approved, verified or took part | `src/content/legal/terms.en.ts` | Legal page, not edited |
 
 `scripts/ai-ux-1.test.ts`, `scripts/dd-title-shots.test.ts`, `scripts/due-diligence.test.ts`, `scripts/ai-dd-safeguards.test.ts`, `scripts/deck-analysis.test.ts`, `scripts/prior-notes.test.ts`, and `scripts/migration-hygiene.test.ts` passed locally, including the source check for a private key.

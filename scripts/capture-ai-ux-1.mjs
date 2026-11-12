@@ -16,7 +16,7 @@ const widths = [
   { name: '1440', width: 1440, height: 900 },
 ]
 
-const views = [
+const allViews = [
   { name: 'start', view: 'start', ready: 'h1', scroll: 'top' },
   { name: 'list', view: 'list', ready: 'text=Example Cold Chain', scroll: 'list' },
   { name: 'list-empty', view: 'start', ready: 'text=No checks yet', scroll: 'empty' },
@@ -24,6 +24,8 @@ const views = [
   { name: 'loading', view: 'loading', ready: '[aria-busy="true"]', scroll: 'top' },
   { name: 'error', view: 'error', ready: '[role="alert"]', scroll: 'top' },
 ]
+const only = process.argv.slice(3)
+const views = only.length > 0 ? allViews.filter((item) => only.includes(item.name)) : allViews
 
 const viteModule = await import('vite')
 const vite = await viteModule.createServer({

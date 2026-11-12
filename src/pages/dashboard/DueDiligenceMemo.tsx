@@ -63,19 +63,21 @@ export function DueDiligenceMemo({
         <div data-dd-overall={overall ?? 'missing'}>
           <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
             <PostureChip posture={posture} />
-            <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
-              <p className="text-[1rem] text-ink">
-                <span className="text-[0.95rem] font-semibold text-[var(--ba-muted)]">{REPORT_COPY.overallLabel} </span>
-                {overall == null ? (
-                  <span className="font-semibold">{REPORT_COPY.scoreMissing}</span>
-                ) : (
-                  <span className="font-display text-[1.75rem] font-semibold tracking-[-0.03em]">{overall}</span>
-                )}
-                {overall == null ? null : <span className="text-[var(--ba-muted)]"> {REPORT_COPY.ofFive}</span>}
-              </p>
-              {overall == null ? null : <AiDueDiligenceScoreTag />}
-            </div>
+            <p className="text-[1rem] text-ink">
+              <span className="text-[0.95rem] font-semibold text-[var(--ba-muted)]">{REPORT_COPY.overallLabel} </span>
+              {overall == null ? (
+                <span className="font-semibold">{REPORT_COPY.scoreMissing}</span>
+              ) : (
+                <span className="font-display text-[1.75rem] font-semibold tracking-[-0.03em]">{overall}</span>
+              )}
+              {overall == null ? null : <span className="text-[var(--ba-muted)]"> {REPORT_COPY.ofFive}</span>}
+            </p>
           </div>
+          {overall == null ? null : (
+            <div className="mt-2">
+              <AiDueDiligenceScoreTag />
+            </div>
+          )}
         </div>
         <p className="mt-3 grid min-w-0" title={companyLabel}>
           <span
@@ -334,11 +336,13 @@ function ScoreBar({ scoreKey, value }: { scoreKey: ScoreKey; value: number | nul
     <div className="rounded-xl border border-[var(--ba-line)] bg-white px-4 py-3" data-dd-score={scoreKey}>
       <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
         <p className="min-w-0 flex-1 text-[0.95rem] font-medium text-ink">{SCORE_LABEL[scoreKey]}</p>
-        <div className="flex flex-wrap items-center gap-2">
-          <p className="text-[0.95rem] font-semibold text-ink">{value == null ? REPORT_COPY.scoreMissing : `${value} ${REPORT_COPY.ofFive}`}</p>
-          {value == null ? null : <AiDueDiligenceScoreTag />}
-        </div>
+        <p className="text-[0.95rem] font-semibold text-ink">{value == null ? REPORT_COPY.scoreMissing : `${value} ${REPORT_COPY.ofFive}`}</p>
       </div>
+      {value == null ? null : (
+        <div className="mt-2">
+          <AiDueDiligenceScoreTag />
+        </div>
+      )}
       <div className="mt-2 h-2 rounded-full bg-[var(--ba-line)]" aria-hidden="true">
         <div className="h-2 rounded-full bg-[var(--ba-indigo)]" style={{ width: `${width}%` }} />
       </div>

@@ -82,6 +82,11 @@ test('the desk leads with one start action, an empty reason, and honest states',
       row({ id: 'short', company_label: 'Example Cold Chain' }),
     ])
     assert.match(listed, /line-clamp-2/)
+    const deleteAt = listed.indexOf('>Delete<')
+    const deleteButton = listed.slice(Math.max(0, deleteAt - 500), deleteAt)
+    assert.match(deleteButton, /min-h-11 min-w-11/)
+    assert.match(deleteButton, /dd-delete/)
+    assert.equal(deleteButton.includes('ba-primary'), false)
     assert.match(listed, /Example Cold Chain/)
     assert.match(listed, /Example Corridor Holding Company/)
     assert.match(listed, /\.\.\./)

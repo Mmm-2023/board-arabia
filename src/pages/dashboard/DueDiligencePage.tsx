@@ -809,7 +809,7 @@ function DeleteNoteButton({ busy, title, onClick }: { busy: boolean; title: stri
   return (
     <button
       type="button"
-      className="inline-flex min-h-11 min-w-11 shrink-0 items-center border-s border-[var(--ba-line)] px-4 text-[0.95rem] font-semibold text-ink"
+      className="dd-delete inline-flex min-h-11 min-w-11 shrink-0"
       disabled={busy}
       aria-label={`Delete ${title}`}
       onClick={onClick}

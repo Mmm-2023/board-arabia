@@ -311,6 +311,7 @@ function SummaryCard({
 
 function verdictTag(verdict: ClaimVerdict): string {
   if (verdict === 'insufficient_public_data') return 'Not enough'
+  if (verdict === 'not_publicly_verifiable') return 'Not public'
   return VERDICT_SHORT[verdict]
 }
 
