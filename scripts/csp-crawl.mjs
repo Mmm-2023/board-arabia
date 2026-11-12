@@ -524,6 +524,7 @@ async function main() {
     await collect(member.page, 'flow:dashboard')
 
     await member.page.goto(`${origin}/dashboard/ai/due-diligence`, { waitUntil: 'load' })
+    await member.page.getByText('Start a review').click()
     await member.page.locator('[data-dd-hint]').waitFor()
     await member.page.locator('[data-upload-handling]').waitFor()
     await shots(member.page, 'dd-upload-hint', '[data-dd-hint]')

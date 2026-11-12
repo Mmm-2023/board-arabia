@@ -121,7 +121,7 @@ export function DueDiligenceReport({
         <OverviewItem label={REPORT_COPY.preparedLabel} value={formatDate(preparedAt)} />
         <OverviewItem label={REPORT_COPY.documentsLabel} value={presented.documents_reviewed} />
       </dl>
-      <p className="mt-4 max-w-3xl border-y border-r border-[var(--ba-line)] border-l-2 border-l-[var(--ba-copper)] bg-[var(--ba-porcelain)] px-4 py-3 text-[0.98rem] leading-relaxed text-ink/80">
+      <p className="mt-4 max-w-3xl border-y border-e border-[var(--ba-line)] border-s-2 border-s-[var(--ba-copper)] bg-[var(--ba-porcelain)] px-4 py-3 text-[0.98rem] leading-relaxed text-ink/80">
         {report.disclaimer}
       </p>
       <AiReportOperatorLine className="mt-3 max-w-3xl text-[0.95rem] leading-relaxed text-ink/80" />
@@ -199,10 +199,10 @@ export function DueDiligenceReport({
           ))}
         </ul>
         <div className="mt-4 hidden overflow-x-auto rounded-xl border border-[var(--ba-line)] bg-white md:block" data-scorecard="table">
-          <table className="w-full min-w-[40rem] border-collapse text-left">
+          <table className="w-full min-w-[40rem] border-collapse text-start">
             <thead>
               <tr className="border-b border-[var(--ba-line)] text-[0.82rem] text-[var(--ba-muted)]">
-                <th scope="col" className="sticky left-0 z-10 bg-white px-3 py-3 font-semibold">
+                <th scope="col" className="sticky start-0 z-10 bg-white px-3 py-3 font-semibold">
                   {REPORT_COPY.colArea}
                 </th>
                 <th scope="col" className="px-3 py-3 font-semibold">
@@ -218,7 +218,7 @@ export function DueDiligenceReport({
                 <tr key={area.area} className="group border-b border-[var(--ba-line)] align-top hover:bg-[var(--ba-porcelain)]">
                   <th
                     scope="row"
-                    className="sticky left-0 z-10 bg-white px-3 py-3 text-[1rem] font-medium text-ink group-hover:bg-[var(--ba-porcelain)]"
+                    className="sticky start-0 z-10 bg-white px-3 py-3 text-[1rem] font-medium text-ink group-hover:bg-[var(--ba-porcelain)]"
                   >
                     {area.area}
                   </th>
@@ -309,11 +309,17 @@ function SummaryCard({
   )
 }
 
+function verdictTag(verdict: ClaimVerdict): string {
+  if (verdict === 'insufficient_public_data') return 'Not enough'
+  if (verdict === 'not_publicly_verifiable') return 'Not public'
+  return VERDICT_SHORT[verdict]
+}
+
 function StatusPill({ verdict }: { verdict: ClaimVerdict }) {
   return (
     <span className={PILL_CLASS[verdict]} data-dd-pill={verdict}>
       <span className="dd-pill-dot" aria-hidden="true" />
-      {VERDICT_SHORT[verdict]}
+      {verdictTag(verdict)}
     </span>
   )
 }
@@ -354,7 +360,7 @@ function FindingBlock({
           ))}
         </ul>
         <div className="mt-4 hidden overflow-x-auto rounded-xl border border-[var(--ba-line)] bg-white md:block">
-          <table className="w-full min-w-[44rem] border-collapse text-left">
+          <table className="w-full min-w-[44rem] border-collapse text-start">
             <thead>
               <tr className="border-b border-[var(--ba-line)] text-[0.82rem] text-[var(--ba-muted)]">
                 <th scope="col" className="px-3 py-3 font-semibold">
@@ -530,7 +536,7 @@ function StepRow({
         primary ? 'bg-[var(--ba-lavender-mist)]' : 'bg-white'
       }`}
     >
-      <label className="flex min-h-11 cursor-pointer items-start gap-1 py-2 pr-3">
+      <label className="flex min-h-11 cursor-pointer items-start gap-1 py-2 pe-3">
         <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center">
           <input
             ref={boxRef}
@@ -545,7 +551,7 @@ function StepRow({
           <span className="mt-1 block text-[0.95rem] leading-relaxed text-[var(--ba-muted)]">{item.ask}</span>
         </span>
       </label>
-      <div className="pr-3 pb-2 pl-12">
+      <div className="pe-3 pb-2 ps-12">
         <CopyAsk ask={item.ask} />
       </div>
     </li>

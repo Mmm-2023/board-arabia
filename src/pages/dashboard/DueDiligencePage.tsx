@@ -25,13 +25,13 @@ import {
   type ReadFailure,
 } from '../../lib/dueDiligence'
 import { earlierRunsLabel, groupPriorNotes, type PriorNote, type PriorNoteGroup } from '../../lib/priorNotes'
-import { reportListTitle } from '../../lib/recentReports'
+import { clampReportTitle } from '../../lib/recentReports'
 import { DD_COPY, deckHintText, deskCtaLabel, deskProgressLine, presentDeskError } from '../../lib/dueDiligenceCopy'
 import { deskPhase, nextPollFailures, type DeskPhase } from '../../lib/dueDiligencePhase'
 import { supabase } from '../../lib/supabase'
 import { useNoIndex } from '../../lib/usePageTitle'
 import { ConfirmDialog } from '../../shell/ConfirmDialog'
-import { CardSkeleton, EmptyState, ErrorBanner, PermissionState } from '../../shell/ViewState'
+import { EmptyState, PermissionState } from '../../shell/ViewState'
 import { MEMBER_VIEWS } from '../../shell/viewCopy'
 import { useMember } from './context'
 import { AiOutputAcknowledgement } from '../../components/ai/AiToolDesk'
@@ -396,40 +396,54 @@ export function DueDiligenceDeskView({
   onAcknowledge?: (value: boolean) => void
 }) {
   const fileRef = useRef<HTMLInputElement>(null)
+  const [setupOpen, setSetupOpen] = useState(false)
   const fileChosen = Boolean(fileName)
+  const formOpen = (phase !== 'idle' && phase !== 'idle-empty') || setupOpen
   const showForm = loadState === 'ready'
   const canCheck = fileChosen && acknowledged && !busy && !activeJob
 
   return (
-    <div className="max-w-3xl">
+    <div className="max-w-3xl min-w-0 overflow-x-clip">
       <h1 className="font-display text-[1.75rem] leading-tight font-bold tracking-[-0.03em] text-balance md:text-[2.2rem]">
         AI Due Diligence
       </h1>
 
-      {phase === 'loading' || phase === 'denied' || phase === 'load-error' ? (
-        <div className="mt-8">
-          {phase === 'loading' ? <CardSkeleton tone="member" label="Loading AI Due Diligence" /> : null}
-          {phase === 'denied' ? (
-            <PermissionState tone="member" message={MEMBER_VIEWS.dueDiligence.denied} />
-          ) : null}
-          {phase === 'load-error' ? (
-            <ErrorBanner
-              tone="member"
-              message={
-                loadState === 'unavailable'
-                  ? MEMBER_VIEWS.dueDiligence.unavailable
-                  : MEMBER_VIEWS.dueDiligence.error
-              }
-              onRetry={onReload}
-              retryLabel={MEMBER_VIEWS.dueDiligence.retry}
-            />
-          ) : null}
+      {phase === 'loading' ? <DeskSkeleton /> : null}
+      {phase === 'denied' ? (
+        <div className="mt-6">
+          <PermissionState tone="member" message={MEMBER_VIEWS.dueDiligence.denied} />
         </div>
+      ) : null}
+      {phase === 'load-error' ? (
+        <DeskError
+          message={loadState === 'unavailable' ? MEMBER_VIEWS.dueDiligence.unavailable : DD_COPY.loadError}
+          onRetry={onReload}
+          retryLabel={MEMBER_VIEWS.dueDiligence.retry}
+        />
       ) : null}
 
       {showForm ? (
         <>
-          <form onSubmit={onSubmit} className="mt-4 max-w-xl">
+          <p className="mt-3 max-w-xl text-[1rem] leading-relaxed text-ink">{DUE_DILIGENCE_DISCLAIMER}</p>
+          <AiReportOperatorLine className="mt-2 max-w-xl text-[0.95rem] leading-relaxed text-ink" />
+          <div
+            className={
+              phase === 'idle-empty'
+                ? 'mt-6 rounded-xl border border-[var(--ba-line)] bg-white px-4 py-5'
+                : 'mt-6'
+            }
+            data-dd-empty={phase === 'idle-empty' ? '' : undefined}
+          >
+            {phase === 'idle-empty' ? (
+              <p className="text-[1rem] leading-relaxed text-ink">{DD_COPY.emptyHistory}</p>
+            ) : null}
+            <details
+              className={phase === 'idle-empty' ? 'dd-start mt-4' : 'dd-start'}
+              open={formOpen}
+              onToggle={(event) => setSetupOpen(event.currentTarget.open)}
+            >
+              <summary>{formOpen ? DD_COPY.setupLabel : DD_COPY.startReview}</summary>
+              <form onSubmit={onSubmit} className="mt-4 max-w-xl">
             <label className="block text-[0.95rem] text-ink" htmlFor="dd-file-button">
               {DD_COPY.deckLabel}
             </label>
@@ -437,7 +451,10 @@ export function DueDiligenceDeskView({
               ref={fileRef}
               type="file"
               accept=".pdf,.pptx,application/pdf,application/vnd.openxmlformats-officedocument.presentationml.presentation"
-              className="sr-only"
+              className="dd-file-input"
+              hidden
+              tabIndex={-1}
+              aria-hidden="true"
               onChange={(event) => {
                 onFile(event.target.files?.[0] ?? null)
                 event.target.value = ''
@@ -457,20 +474,18 @@ export function DueDiligenceDeskView({
               {deckHintText(retentionCopy)}
             </p>
             <UploadHandling />
-            <p className="mt-3 text-[0.95rem] leading-relaxed text-ink/80">{DUE_DILIGENCE_DISCLAIMER}</p>
-            <AiReportOperatorLine className="mt-2 text-[0.95rem] leading-relaxed text-ink/80" />
-            <details className="mt-4 border border-[var(--ba-line)] bg-white px-4 py-2">
+            <details className="mt-4 rounded-xl border border-[var(--ba-line)] bg-white px-4 py-2">
               <summary className="flex min-h-11 cursor-pointer items-center text-[1rem] font-semibold text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ba-indigo)]">
                 {DD_COPY.scopeHeading}
               </summary>
               <h2 className="mt-2 text-[1rem] font-semibold text-ink">{DD_COPY.doesHeading}</h2>
-              <ul className="mt-2 list-disc space-y-1 pl-5 text-[0.95rem] leading-relaxed text-ink/80">
+              <ul className="mt-2 list-disc space-y-1 ps-5 text-[0.95rem] leading-relaxed text-ink/80">
                 {DD_COPY.willDo.map((item) => (
                   <li key={item}>{item}</li>
                 ))}
               </ul>
               <h2 className="mt-4 text-[1rem] font-semibold text-ink">{DD_COPY.willNotHeading}</h2>
-              <ul className="mt-2 list-disc space-y-1 pb-2 pl-5 text-[0.95rem] leading-relaxed text-ink/80">
+              <ul className="mt-2 list-disc space-y-1 pb-2 ps-5 text-[0.95rem] leading-relaxed text-ink/80">
                 {DD_COPY.willNot.map((item) => (
                   <li key={item}>{item}</li>
                 ))}
@@ -515,7 +530,7 @@ export function DueDiligenceDeskView({
 
             <div className="mt-3" id="dd-status">
               {phase === 'running' && activeJob ? (
-                <div className="border border-[var(--ba-line)] bg-white px-4 py-4" aria-live="polite" data-dd-job-progress={progress}>
+                <div className="rounded-xl border border-[var(--ba-line)] bg-white px-4 py-4" aria-live="polite" data-dd-job-progress={progress}>
                   <p className="text-[1rem] leading-snug text-ink">
                     {progressLabel}
                     <span className="text-[var(--ba-muted)]"> · {progress}%</span>
@@ -553,10 +568,12 @@ export function DueDiligenceDeskView({
                 <p className="text-[0.98rem] leading-relaxed text-ink/75">{DD_COPY.idle}</p>
               ) : null}
             </div>
-          </form>
+              </form>
+            </details>
+          </div>
 
           {reports.length > 0 ? (
-            <section className="mt-10" aria-labelledby="dd-history">
+            <section className="mt-8 min-w-0" aria-labelledby="dd-history">
               <h2 id="dd-history" className="font-display text-[1.35rem] font-semibold">
                 Prior notes
               </h2>
@@ -571,7 +588,7 @@ export function DueDiligenceDeskView({
                   ) : null}
                 </p>
               ) : null}
-              <ul className="mt-4 space-y-3">
+              <ul className="mt-4 min-w-0 space-y-3">
                 {groupPriorNotes(reports).map((group) => (
                   <PriorNoteGroupRow
                     key={group.latest.id}
@@ -582,10 +599,6 @@ export function DueDiligenceDeskView({
                 ))}
               </ul>
             </section>
-          ) : phase === 'idle-empty' ? (
-            <div className="mt-10">
-              <EmptyState tone="member" message={DD_COPY.emptyHistory} />
-            </div>
           ) : null}
         </>
       ) : null}
@@ -627,32 +640,24 @@ function ReportView({ reportId }: { reportId: string }) {
   const presented = ready ? presentReport(ready.report, fileName) : null
 
   return (
-    <div className="max-w-5xl">
-      <h1
-        className="font-display text-[1.75rem] leading-tight font-bold tracking-[-0.03em] break-words text-balance md:text-[2.2rem]"
-        data-dd-title={ready ? 'report' : 'section'}
-      >
-        {ready ? reportListTitle(ready.report.company_label, fileName) : 'AI Due Diligence'}
+    <div className="max-w-3xl min-w-0 overflow-x-clip">
+      <h1 className="font-display text-[1.75rem] leading-tight font-bold tracking-[-0.03em] text-balance text-ink md:text-[2.2rem]">
+        AI Due Diligence
       </h1>
       <Link
         to="/dashboard/ai/due-diligence"
-        className="mt-3 inline-flex min-h-11 items-center text-[0.95rem] text-[var(--ba-indigo)]"
+        className="mt-3 inline-flex min-h-11 items-center text-[1rem] text-[var(--ba-indigo)]"
       >
         All checks
       </Link>
 
       <div className="mt-6">
-        {state === 'loading' ? <CardSkeleton tone="member" label="Loading note" /> : null}
+        {state === 'loading' ? <ReportSkeleton /> : null}
         {state === 'denied' ? <PermissionState tone="member" message={MEMBER_VIEWS.dueDiligence.denied} /> : null}
         {state === 'missing' ? <EmptyState tone="member" message={MEMBER_MESSAGES.missing} /> : null}
         {state === 'error' || state === 'unavailable' ? (
-          <ErrorBanner
-            tone="member"
-            message={
-              state === 'unavailable'
-                ? MEMBER_VIEWS.dueDiligence.unavailable
-                : MEMBER_VIEWS.dueDiligence.error
-            }
+          <DeskError
+            message={state === 'unavailable' ? MEMBER_VIEWS.dueDiligence.unavailable : DD_COPY.loadError}
             onRetry={() => {
               setState('loading')
               setAttempt((value) => value + 1)
@@ -744,10 +749,10 @@ function PriorNoteGroupRow({
   const [open, setOpen] = useState(false)
   const count = group.earlier.length
   return (
-    <li className="border border-[var(--ba-line)] bg-white" data-prior-company={group.key}>
+    <li className="overflow-hidden rounded-xl border border-[var(--ba-line)] bg-white" data-prior-company={group.key}>
       <div className="flex items-stretch">
         <PriorNoteLink report={group.latest} />
-        <DeleteNoteButton busy={busy} onClick={() => onDelete?.(group.latest.id)} />
+        <DeleteNoteButton busy={busy} title={group.latest.title} onClick={() => onDelete?.(group.latest.id)} />
       </div>
       {count > 0 ? (
         <div className="border-t border-[var(--ba-line)] px-4 py-2">
@@ -762,9 +767,9 @@ function PriorNoteGroupRow({
           {open ? (
             <ul className="mb-2 space-y-2">
               {group.earlier.map((report) => (
-                <li key={report.id} className="flex items-stretch border border-[var(--ba-line)]">
+                <li key={report.id} className="flex items-stretch overflow-hidden rounded-xl border border-[var(--ba-line)]">
                   <PriorNoteLink report={report} />
-                  <DeleteNoteButton busy={busy} onClick={() => onDelete?.(report.id)} />
+                  <DeleteNoteButton busy={busy} title={report.title} onClick={() => onDelete?.(report.id)} />
                 </li>
               ))}
             </ul>
@@ -777,34 +782,87 @@ function PriorNoteGroupRow({
 
 function PriorNoteLink({ report }: { report: PriorNote }) {
   const scoreLine = publicConsistencyLabel(report)
+  const when = formatWhen(report.created_at)
+  const full = report.title
+  const shown = clampReportTitle(full)
   return (
     <Link
       to={`/dashboard/ai/due-diligence/${report.id}`}
-      className="flex min-h-11 min-w-0 flex-1 flex-col justify-center px-4 py-3"
+      aria-label={[full, scoreLine, when].filter(Boolean).join('. ')}
+      className="flex min-h-11 min-w-0 flex-1 flex-col justify-center gap-2 px-4 py-3"
     >
-      <span className="text-[1rem] break-words text-ink" data-dd-title="list">{report.title}</span>
-      <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[0.95rem] text-[var(--ba-muted)]">
-        <span>{scoreLine}</span>
-        {memberTextStatesScore(scoreLine) ? <AiDueDiligenceScoreTag /> : null}
-        <span>
-          {' · '}
-          {formatWhen(report.created_at)}
+      <span className="grid min-w-0">
+        <span className="line-clamp-2 break-words text-[1rem] leading-snug text-ink" data-dd-title="list" title={full}>
+          {shown}
         </span>
       </span>
+      <span className="flex flex-wrap items-center gap-2 text-[0.95rem] leading-snug text-[var(--ba-muted)]">
+        <span>{scoreLine}</span>
+        {memberTextStatesScore(scoreLine) ? <AiDueDiligenceScoreTag /> : null}
+      </span>
+      {when ? <span className="text-[0.95rem] leading-snug text-[var(--ba-muted)]">{when}</span> : null}
     </Link>
   )
 }
 
-function DeleteNoteButton({ busy, onClick }: { busy: boolean; onClick: () => void }) {
+function DeleteNoteButton({ busy, title, onClick }: { busy: boolean; title: string; onClick: () => void }) {
   return (
     <button
       type="button"
-      className="inline-flex min-h-11 shrink-0 items-center border-s border-[var(--ba-line)] px-4 text-[0.95rem] font-semibold text-ink"
+      className="dd-delete inline-flex min-h-11 min-w-11 shrink-0"
       disabled={busy}
+      aria-label={`Delete ${title}`}
       onClick={onClick}
     >
       Delete
     </button>
+  )
+}
+
+function DeskSkeleton() {
+  return (
+    <div aria-busy="true" aria-label="Loading AI Due Diligence" className="mt-6 max-w-3xl space-y-3" data-dd-skeleton="desk">
+      <div className="h-11 max-w-xs rounded-md bg-[var(--ba-lavender)] motion-reduce:animate-none animate-pulse" />
+      {['a', 'b', 'c'].map((id) => (
+        <div key={id} className="h-20 rounded-xl bg-[var(--ba-lavender)] motion-reduce:animate-none animate-pulse" />
+      ))}
+    </div>
+  )
+}
+
+function ReportSkeleton() {
+  return (
+    <div aria-busy="true" aria-label="Loading note" className="max-w-3xl space-y-3" data-dd-skeleton="report">
+      <div className="h-16 rounded-xl bg-[var(--ba-lavender)] motion-reduce:animate-none animate-pulse" />
+      <div className="h-36 rounded-xl bg-[var(--ba-lavender)] motion-reduce:animate-none animate-pulse" />
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="h-24 rounded-xl bg-[var(--ba-lavender)] motion-reduce:animate-none animate-pulse" />
+        <div className="h-24 rounded-xl bg-[var(--ba-lavender)] motion-reduce:animate-none animate-pulse" />
+      </div>
+    </div>
+  )
+}
+
+function DeskError({
+  message,
+  onRetry,
+  retryLabel,
+}: {
+  message: string
+  onRetry: () => void
+  retryLabel: string
+}) {
+  return (
+    <div className="mt-6 rounded-xl border border-[var(--ba-line)] bg-white px-4 py-4" role="alert" data-dd-error="">
+      <p className="text-[1rem] leading-relaxed text-ink">{message}</p>
+      <button
+        type="button"
+        onClick={onRetry}
+        className="mt-3 inline-flex min-h-11 items-center rounded-md border border-[var(--ba-line)] bg-white px-4 text-[1rem] font-semibold text-ink"
+      >
+        {retryLabel}
+      </button>
+    </div>
   )
 }
 
