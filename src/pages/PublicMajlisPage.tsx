@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { Footer } from '../components/Footer'
 import { Nav } from '../components/Nav'
+import { mainLandmarkProps } from '../components/SkipLink'
 import { TurnstileField } from '../components/TurnstileField'
 import { legalField } from '../config/legal'
 import { publicHref } from '../content/seo'
@@ -83,7 +84,7 @@ export function PublicMajlisPage() {
   return (
     <>
       <Nav />
-      <main className="min-h-dvh bg-pearl px-5 pt-24 pb-20 md:px-10 md:pt-28" data-screen="public-majlis">
+      <main {...mainLandmarkProps} className="min-h-dvh bg-pearl px-5 pt-24 pb-20 md:px-10 md:pt-28" data-screen="public-majlis">
         <div className="mx-auto max-w-3xl">
           <p className="text-[0.72rem] font-semibold tracking-[0.14em] text-[var(--ba-indigo)] uppercase">Virtual majlis</p>
           <h1 className="mt-2 font-display text-[clamp(2rem,4.5vw,3.1rem)] font-bold leading-[1.05] tracking-[-0.03em]">

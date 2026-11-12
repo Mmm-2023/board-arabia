@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { Footer } from '../components/Footer'
 import { Nav } from '../components/Nav'
+import { mainLandmarkProps } from '../components/SkipLink'
 import { UNSUBSCRIBE_BUTTON, UNSUBSCRIBE_RETRY } from '../lib/emailCampaign'
 
 export function UnsubscribeConfirm({
@@ -20,7 +21,7 @@ export function UnsubscribeConfirm({
   return (
     <div className="min-h-dvh bg-pearl text-ink" data-screen="unsubscribe" data-unsubscribe={state}>
       <Nav />
-      <main className="mx-auto max-w-xl px-5 pt-28 pb-16">
+      <main {...mainLandmarkProps} className="mx-auto max-w-xl px-5 pt-28 pb-16">
         <p className="text-[0.72rem] font-semibold tracking-[0.14em] text-brass uppercase">Email</p>
         <h1 className="mt-3 font-display text-[2rem] font-semibold tracking-[-0.03em]">Unsubscribe</h1>
         {done && !error ? (

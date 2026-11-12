@@ -115,6 +115,31 @@
     outline-offset: 3px;
   }
 
+  .ba-skip {
+    position: fixed;
+    z-index: 80;
+    top: max(0.75rem, env(safe-area-inset-top));
+    inset-inline-start: max(0.75rem, env(safe-area-inset-left));
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0.65rem 1rem;
+    border-radius: 6px;
+    background: var(--ba-porcelain);
+    color: var(--ba-ink);
+    font-size: 1rem;
+    font-weight: 600;
+    line-height: 1.2;
+    text-decoration: none;
+    transform: translateY(calc(-100% - 1rem));
+  }
+
+  .ba-skip:focus {
+    transform: none;
+  }
+
   section[id],
   article[id] {
     scroll-margin-top: 6rem;
